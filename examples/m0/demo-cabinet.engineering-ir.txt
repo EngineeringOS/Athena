@@ -1,0 +1,13 @@
+system|id=system:DemoCabinet|name=DemoCabinet|provenance=examples/m0/demo-cabinet.athena:1:1-22:2
+component|id=component:PLC1|name=PLC1|kind=device|provenance=examples/m0/demo-cabinet.athena:2:3-5:4
+property|name=type|value=symbol:PLC
+property|name=model|value=text:S7-1200
+component|id=component:M1|name=M1|kind=device|provenance=examples/m0/demo-cabinet.athena:7:3-9:4
+property|name=type|value=symbol:Motor
+port|id=port:PLC1.out|owner=PLC1|ownerResolved=component:PLC1|ownerProvenance=examples/m0/demo-cabinet.athena:11:8-11:16|name=out|provenance=examples/m0/demo-cabinet.athena:11:3-14:4
+property|name=direction|value=symbol:out
+property|name=signal|value=symbol:Digital
+port|id=port:M1.in|owner=M1|ownerResolved=component:M1|ownerProvenance=examples/m0/demo-cabinet.athena:16:8-16:13|name=in|provenance=examples/m0/demo-cabinet.athena:16:3-19:4
+property|name=direction|value=symbol:in
+property|name=signal|value=symbol:Digital
+connection|id=connection:PLC1.out->M1.in|from=PLC1.out|fromResolved=port:PLC1.out|fromProvenance=examples/m0/demo-cabinet.athena:21:11-21:19|to=M1.in|toResolved=port:M1.in|toProvenance=examples/m0/demo-cabinet.athena:21:23-21:28|provenance=examples/m0/demo-cabinet.athena:21:3-21:28

@@ -1,0 +1,6 @@
+status=semantic-invalid
+components=1
+ports=1
+connections=0
+svg=blocked
+diagnostics=property.component.type.invalid,property.port.direction.invalid

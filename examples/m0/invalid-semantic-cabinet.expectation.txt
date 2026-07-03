@@ -1,0 +1,6 @@
+status=semantic-invalid
+components=2
+ports=2
+connections=2
+svg=blocked
+diagnostics=reference.connection-endpoint.unresolved,property.component.type.missing,connection.signal.incompatible

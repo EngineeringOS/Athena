@@ -1,0 +1,22 @@
+system DuplicateIdentityCabinet {
+  device PLC1 {
+    type PLC
+  }
+
+  device PLC1 {
+    type PLC
+  }
+
+  port PLC1.out {
+    direction out
+    signal Digital
+  }
+
+  port PLC1.out {
+    direction out
+    signal Digital
+  }
+
+  connect PLC1.out -> PLC1.out
+  connect PLC1.out -> PLC1.out
+}

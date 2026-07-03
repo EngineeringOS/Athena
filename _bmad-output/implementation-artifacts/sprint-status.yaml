@@ -1,0 +1,67 @@
+# generated: 2026-07-02T13:51:07+08:00
+# last_updated: 2026-07-02T13:51:07+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-07-02T13:51:07+08:00
+last_updated: 2026-07-03T20:58:08+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: done
+  1-1-establish-the-m0-jvm-compiler-workspace: done
+  1-2-author-and-parse-the-m0-electrical-runtime-dsl: done
+  1-3-lower-parsed-intent-into-canonical-engineering-ir: done
+  1-4-validate-engineering-ir-and-emit-provenance-rich-diagnostics: done
+  1-5-execute-the-m0-compiler-as-declared-deterministic-passes: done
+  1-6-derive-a-render-model-and-emit-simple-svg-from-engineering-ir: done
+  1-7-publish-m0-conformance-examples-for-the-end-to-end-proof: done
+  epic-1-retrospective: optional
+  epic-2: done
+  2-1-define-core-owned-typed-plugin-contracts: done
+  2-2-discover-local-plugins-and-validate-compatibility-before-use: done
+  2-3-deliver-electrical-and-runtime-semantics-through-a-real-domain-plugin: done
+  2-4-define-governed-knowledge-artifact-packages: done
+  2-5-resolve-governed-knowledge-artifacts-into-compilation-context: done
+  2-6-define-external-boundary-contract-descriptors: done
+  epic-2-retrospective: optional

@@ -1,0 +1,21 @@
+system InvalidDirectionCabinet {
+  device M1 {
+    type Motor
+  }
+
+  device M2 {
+    type Motor
+  }
+
+  port M1.in {
+    direction in
+    signal Digital
+  }
+
+  port M2.in {
+    direction in
+    signal Digital
+  }
+
+  connect M1.in -> M2.in
+}

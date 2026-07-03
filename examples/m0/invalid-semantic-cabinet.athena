@@ -1,0 +1,22 @@
+system InvalidSemanticCabinet {
+  device PLC1 {
+    model "S7-1200"
+  }
+
+  device M1 {
+    type Motor
+  }
+
+  port PLC1.out {
+    direction out
+    signal Digital
+  }
+
+  port M1.in {
+    direction in
+    signal Analog
+  }
+
+  connect PLC1.out -> M1.in
+  connect PLC1.out -> Missing.in
+}

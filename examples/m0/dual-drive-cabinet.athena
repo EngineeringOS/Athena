@@ -1,0 +1,36 @@
+system DualDriveCabinet {
+  device PLC1 {
+    type PLC
+  }
+
+  device M1 {
+    type Motor
+  }
+
+  device M2 {
+    type Motor
+  }
+
+  port PLC1.out1 {
+    direction out
+    signal Digital
+  }
+
+  port PLC1.out2 {
+    direction out
+    signal Digital
+  }
+
+  port M1.in {
+    direction in
+    signal Digital
+  }
+
+  port M2.in {
+    direction in
+    signal Digital
+  }
+
+  connect PLC1.out1 -> M1.in
+  connect PLC1.out2 -> M2.in
+}

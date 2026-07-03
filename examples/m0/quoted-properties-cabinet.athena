@@ -1,0 +1,10 @@
+system QuotedPropertiesCabinet {
+  device PLC1 {
+    type "PLC"
+  }
+
+  port PLC1.out {
+    direction "out"
+    signal Digital
+  }
+}

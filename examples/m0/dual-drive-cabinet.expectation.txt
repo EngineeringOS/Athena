@@ -1,0 +1,5 @@
+status=valid
+components=3
+ports=4
+connections=2
+svg=emitted
