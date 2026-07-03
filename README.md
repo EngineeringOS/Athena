@@ -90,7 +90,7 @@ If you want the implementation view:
 
 If you want the platform thesis:
 
-1. [`manifesto/README.md`](manifesto/README.md)
+1. [`manifesto/README.md`](https://engineeringos.github.io/manifesto/)
 2. the architecture and technology chapters under `manifesto/docs/`
 
 ## Architecture Notes

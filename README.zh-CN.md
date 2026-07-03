@@ -90,7 +90,7 @@ java25; .\gradlew.bat :cli:run --args "parse examples/m0/demo-cabinet.athena"
 
 如果你想先看平台论点：
 
-1. [`manifesto/README.md`](manifesto/README.md)
+1. [`manifesto/README.md`](https://engineeringos.github.io/manifesto/)
 2. `manifesto/docs/` 下的架构与技术章节
 
 ## 架构说明
