@@ -48,7 +48,7 @@ fun `loads valid passive boundary descriptors and rejects sovereign or operation
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests "com.engineeringood.athena.compiler.AthenaBoundaryDescriptorLoaderTest"`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests "com.engineeringood.athena.compiler.AthenaBoundaryDescriptorLoaderTest"`
 Expected: FAIL because boundary descriptor types do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -63,7 +63,7 @@ class AthenaBoundaryDescriptorResolver(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests "com.engineeringood.athena.compiler.AthenaBoundaryDescriptorLoaderTest"`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests "com.engineeringood.athena.compiler.AthenaBoundaryDescriptorLoaderTest"`
 Expected: PASS
 
 ### Task 2: Compiler Integration Test
@@ -99,7 +99,7 @@ fun `compile exposes boundary validation metadata without changing pass order`()
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests "com.engineeringood.athena.compiler.AthenaCompilerTest"`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests "com.engineeringood.athena.compiler.AthenaCompilerTest"`
 Expected: FAIL because compile results do not expose boundary validation yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -113,7 +113,7 @@ data class CompilerCompilationSuccess(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests "com.engineeringood.athena.compiler.AthenaCompilerTest"`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests "com.engineeringood.athena.compiler.AthenaCompilerTest"`
 Expected: PASS
 
 ### Task 3: Boundary Documentation
@@ -139,12 +139,12 @@ Expected: the doc distinguishes boundary descriptors from plugin discovery and g
 ### Task 4: Full Verification
 
 **Files:**
-- Modify: `_bmad-output/implementation-artifacts/2-6-define-external-boundary-contract-descriptors.md`
+- Modify: `_bmad-output/implementation-artifacts/archive-m0/2-6-define-external-boundary-contract-descriptors.md`
 - Modify: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 - [ ] **Step 1: Run targeted compiler tests**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test`
 Expected: PASS
 
 - [ ] **Step 2: Run full build**

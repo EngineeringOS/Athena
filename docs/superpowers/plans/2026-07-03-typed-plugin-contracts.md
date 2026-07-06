@@ -16,7 +16,7 @@
 - Create: `compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaPluginContractTest.kt`
 
 - [ ] Step 1: Write failing tests for valid and invalid plugin manifests, typed plugin mismatch rejection, and direct sample-plugin instantiation.
-- [ ] Step 2: Run `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests com.engineeringood.athena.compiler.AthenaPluginContractTest` and verify failure.
+- [ ] Step 2: Run `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaPluginContractTest` and verify failure.
 
 ### Task 2: Add Core Plugin Contract Types
 
@@ -38,10 +38,10 @@
 - Create: `domain-electrical-runtime/src/main/kotlin/com/engineeringood/athena/domain/electricalruntime/ElectricalRuntimeDomainPlugin.kt`
 - Modify: `domain-electrical-runtime/src/test/kotlin/com/engineeringood/athena/domain/electricalruntime/ElectricalRuntimeDomainMarkerTest.kt`
 
-- [ ] Step 1: Add the minimal `:compiler` dependency needed for the sample plugin to use core-owned contracts.
+- [ ] Step 1: Add the minimal `:kernel:compiler` dependency needed for the sample plugin to use core-owned contracts.
 - [ ] Step 2: Implement the sample `ElectricalRuntimeDomainPlugin` with a real manifest.
 - [ ] Step 3: Add or update domain-module tests that prove the sample plugin compiles and is directly instantiable.
-- [ ] Step 4: Run `java25; .\gradlew.bat --no-daemon --console=plain :domain-electrical-runtime:test` and verify it passes.
+- [ ] Step 4: Run `java25; .\gradlew.bat --no-daemon --console=plain :extensions:domain-electrical:test` and verify it passes.
 
 ### Task 4: Document the Boundary
 
@@ -53,11 +53,11 @@
 ### Task 5: Full Verification And Story Close-Out
 
 **Files:**
-- Modify: `_bmad-output/implementation-artifacts/2-1-define-core-owned-typed-plugin-contracts.md`
+- Modify: `_bmad-output/implementation-artifacts/archive-m0/2-1-define-core-owned-typed-plugin-contracts.md`
 - Modify: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
-- [ ] Step 1: Run `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test`.
-- [ ] Step 2: Run `java25; .\gradlew.bat --no-daemon --console=plain :domain-electrical-runtime:test`.
+- [ ] Step 1: Run `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test`.
+- [ ] Step 2: Run `java25; .\gradlew.bat --no-daemon --console=plain :extensions:domain-electrical:test`.
 - [ ] Step 3: Run `java25; .\gradlew.bat --no-daemon --console=plain build`.
 - [ ] Step 4: Run `java25; .\gradlew.bat --no-daemon --console=plain test`.
 - [ ] Step 5: Check off all Story `2.1` tasks, update Dev Agent Record, File List, Change Log, and move story status to `review`.

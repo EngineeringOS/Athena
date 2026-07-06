@@ -40,7 +40,7 @@ fun `compile reports declared pass execution for valid input`() {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
 Expected: FAIL because `pipeline` / compiler pass contracts do not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -53,7 +53,7 @@ data class CompilerPipelineReport(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
 Expected: PASS for the new pipeline test and existing compiler tests.
 
 - [ ] **Step 5: Commit**
@@ -86,7 +86,7 @@ fun `compile skips downstream derivation when semantic continuation stops`() {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
 Expected: FAIL because downstream derivation is not yet modeled as a declared pass.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -99,7 +99,7 @@ if (semanticResult.continuationDecision == SemanticContinuationDecision.STOP_DOW
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
 Expected: PASS with deterministic pass statuses for semantic gating.
 
 - [ ] **Step 5: Commit**
@@ -113,7 +113,7 @@ git commit -m "feat: apply deterministic compiler pass gates"
 
 **Files:**
 - Create: `docs/compiler/m0-pass-pipeline.md`
-- Modify: `_bmad-output/implementation-artifacts/1-5-execute-the-m0-compiler-as-declared-deterministic-passes.md`
+- Modify: `_bmad-output/implementation-artifacts/archive-m0/1-5-execute-the-m0-compiler-as-declared-deterministic-passes.md`
 - Modify: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 - [ ] **Step 1: Write the failing test**
@@ -133,7 +133,7 @@ fun `compile produces identical pass reports for identical input`() {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
 Expected: FAIL until the pass report is stable and comparable.
 
 - [ ] **Step 3: Write minimal implementation**
@@ -148,12 +148,12 @@ data class CompilerPassRecord(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `java25; .\gradlew.bat --no-daemon --console=plain :compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
+Run: `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
 Expected: PASS with deterministic pipeline equality and updated docs.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add docs/compiler/m0-pass-pipeline.md _bmad-output/implementation-artifacts/1-5-execute-the-m0-compiler-as-declared-deterministic-passes.md _bmad-output/implementation-artifacts/sprint-status.yaml compiler/src/main/kotlin/com/engineeringood/athena/compiler/* compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaCompilerTest.kt
+git add docs/compiler/m0-pass-pipeline.md _bmad-output/implementation-artifacts/archive-m0/1-5-execute-the-m0-compiler-as-declared-deterministic-passes.md _bmad-output/implementation-artifacts/sprint-status.yaml compiler/src/main/kotlin/com/engineeringood/athena/compiler/* compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaCompilerTest.kt
 git commit -m "docs: record m0 compiler pass pipeline"
 ```

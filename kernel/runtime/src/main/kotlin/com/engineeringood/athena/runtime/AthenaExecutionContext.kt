@@ -1,0 +1,222 @@
+package com.engineeringood.athena.runtime
+
+import com.engineeringood.athena.compiler.AthenaCompiler
+import com.engineeringood.athena.compiler.CompilerAffectedScope
+import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
+import com.engineeringood.athena.compiler.CompilerCompilationResult
+import com.engineeringood.athena.compiler.CompilerCompilationSuccess
+import com.engineeringood.athena.compiler.CompilerLoweringResult
+import com.engineeringood.athena.compiler.CompilerParseResult
+import com.engineeringood.athena.compiler.diagnosticMessages
+import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.renderer.svg.SvgRenderer
+
+/** Shared runtime execution context bound to one active project and one typed service registry. */
+class AthenaExecutionContext(
+    val project: AthenaProjectRef,
+    val services: AthenaServiceRegistry,
+) {
+    private var activeCompilationSnapshot: CompilerCompilationResult? = null
+    private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
+    private var aiProposalState: AthenaAiProposalState = AthenaAiProposalState()
+    private var latestSemanticDiffInspection: AthenaSemanticDiffInspection? = null
+
+    /** Resolves the runtime-owned compiler capability for the active project. */
+    fun compiler(): AthenaCompiler = services.compiler()
+
+    /** Resolves the runtime-owned renderer capability for the active project. */
+    fun renderer(): SvgRenderer = services.renderer()
+
+    /** Resolves the runtime-owned engineering-graph capability for the active project. */
+    fun engineeringGraph(): AthenaEngineeringGraphService = services.engineeringGraph()
+
+    /** Resolves the runtime-owned command capability for the active project. */
+    fun commandRuntime(): AthenaCommandRuntimeService = services.commandRuntime()
+
+    /** Resolves the runtime-owned optional AI proposal capability for the active project. */
+    fun aiProposalRuntime(): AthenaAiProposalRuntimeService = services.aiProposalRuntime()
+
+    /** Resolves the runtime-owned hosted plugin services for the active project. */
+    fun pluginRuntimeServices(): AthenaPluginRuntimeServices = services.pluginRuntimeServices()
+
+    /** Parses the active project's authored DSL through the runtime-owned compiler capability. */
+    fun parseActiveProject(): CompilerParseResult = compiler().parse(project.sourcePath)
+
+    /** Lowers the active project's authored DSL through the runtime-owned compiler capability. */
+    fun lowerActiveProject(): CompilerLoweringResult = compiler().lower(project.sourcePath)
+
+    /**
+     * Resolves the active project's current runtime-owned canonical state.
+     *
+     * The first result is bootstrapped from the authored DSL path. Later command-backed mutations reuse the cached
+     * canonical state instead of reparsing the source text for every projection request.
+     */
+    fun compileActiveProject(): CompilerCompilationResult {
+        return activeCompilationSnapshot ?: compiler().compile(project.sourcePath).also { compilation ->
+            activeCompilationSnapshot = compilation
+        }
+    }
+
+    /**
+     * Returns the runtime-visible semantic diagnostics for the active project.
+     */
+    fun activeDiagnosticsMessages(): List<String> {
+        return compileActiveProject().diagnosticMessages()
+    }
+
+    /**
+     * Returns the latest runtime-visible incremental recompute report when the active project has been mutated.
+     */
+    fun incrementalUpdateReport(): AthenaRuntimeIncrementalUpdateReport? {
+        val compilation = compileActiveProject() as? CompilerCompilationSuccess ?: return null
+        val report = compilation.incrementalUpdateReport ?: return null
+        return AthenaRuntimeIncrementalUpdateReport(
+            changedSemanticIds = report.affectedScope.changedSemanticIds,
+            validationSemanticIds = report.affectedScope.validationSemanticIds,
+            renderComponentSemanticIds = report.affectedScope.renderComponentSemanticIds,
+            renderConnectionSemanticIds = report.affectedScope.renderConnectionSemanticIds,
+            validationMode = report.validationMode.name.lowercase(),
+            renderingMode = report.renderingMode.name.lowercase(),
+        )
+    }
+
+    /**
+     * Returns the latest runtime-owned semantic diff inspection captured after a mutation or history operation.
+     */
+    fun latestSemanticDiffInspection(): AthenaSemanticDiffInspection? = latestSemanticDiffInspection
+
+    /** Projects the active project's canonical semantic state into a runtime-owned engineering graph. */
+    fun projectEngineeringGraphProjection(): AthenaEngineeringGraphProjection {
+        return engineeringGraph().projectProjection(this)
+    }
+
+    /**
+     * Replaces the cached canonical project state after a successful runtime-owned semantic mutation.
+     */
+    internal fun replaceActiveProjectDocument(
+        document: EngineeringIrDocument,
+        changedSemanticIds: List<String>,
+    ): CompilerCompilationSuccess {
+        val currentCompilation = compileActiveProject()
+        check(currentCompilation is CompilerCompilationSuccess) {
+            "Cannot replace canonical project state when the active project is not in a compilable semantic state."
+        }
+        val affectedScope = document.planAffectedScope(changedSemanticIds)
+
+        return compiler().recompute(
+            source = currentCompilation.source,
+            document = document,
+            affectedScope = affectedScope,
+            previousRendering = currentCompilation.rendering,
+        ).also { recomputed ->
+            activeCompilationSnapshot = recomputed
+        }
+    }
+
+    /**
+     * Returns the current internal command-history state for runtime-owned mutation services.
+     */
+    internal fun commandHistoryState(): AthenaCommandHistoryState = commandHistoryState
+
+    /**
+     * Replaces the internal command-history state after one runtime-owned history transition.
+     */
+    internal fun replaceCommandHistoryState(historyState: AthenaCommandHistoryState) {
+        commandHistoryState = historyState
+    }
+
+    /**
+     * Returns the current internal pending AI proposal state for runtime-owned optional AI surfaces.
+     */
+    internal fun aiProposalState(): AthenaAiProposalState = aiProposalState
+
+    /**
+     * Replaces the internal pending AI proposal state after one optional AI queue transition.
+     */
+    internal fun replaceAiProposalState(state: AthenaAiProposalState) {
+        aiProposalState = state
+    }
+
+    /**
+     * Replaces the latest runtime-owned semantic diff inspection after one mutation or history transition.
+     */
+    internal fun replaceLatestSemanticDiffInspection(inspection: AthenaSemanticDiffInspection?) {
+        latestSemanticDiffInspection = inspection
+    }
+}
+
+/**
+ * Derives the minimal runtime-visible recompute scope for the current M1 command mutation path.
+ */
+private fun EngineeringIrDocument.planAffectedScope(changedSemanticIds: List<String>): CompilerAffectedScope {
+    val normalizedChangedIds = changedSemanticIds.distinct().sorted()
+    val portsById = ports.associateBy { port -> port.id.value }
+    val connectionsById = connections.associateBy { connection -> connection.id.value }
+
+    val validationSemanticIds = linkedSetOf<String>()
+    val renderComponentSemanticIds = linkedSetOf<String>()
+    val renderConnectionSemanticIds = linkedSetOf<String>()
+
+    normalizedChangedIds.forEach { semanticId ->
+        validationSemanticIds += semanticId
+        when {
+            semanticId.startsWith(CONNECTION_SEMANTIC_PREFIX) -> renderConnectionSemanticIds += semanticId
+            semanticId.startsWith(COMPONENT_SEMANTIC_PREFIX) -> renderComponentSemanticIds += semanticId
+        }
+
+        portsById[semanticId]?.let { port ->
+            port.includeOwnerScope(
+                validationSemanticIds = validationSemanticIds,
+                renderComponentSemanticIds = renderComponentSemanticIds,
+            )
+        }
+
+        connectionsById[semanticId]?.let { connection ->
+            renderConnectionSemanticIds += connection.id.value
+            listOfNotNull(connection.from.resolvedIdentity?.value, connection.to.resolvedIdentity?.value)
+                .forEach { portSemanticId ->
+                    validationSemanticIds += portSemanticId
+                    portsById[portSemanticId]?.includeOwnerScope(
+                        validationSemanticIds = validationSemanticIds,
+                        renderComponentSemanticIds = renderComponentSemanticIds,
+                    )
+                }
+        }
+    }
+
+    return CompilerAffectedScope(
+        changedSemanticIds = normalizedChangedIds,
+        validationSemanticIds = validationSemanticIds.toList().sorted(),
+        renderComponentSemanticIds = renderComponentSemanticIds.toList().sorted(),
+        renderConnectionSemanticIds = renderConnectionSemanticIds.toList().sorted(),
+    )
+}
+
+/**
+ * Adds the owning component scope implied by one changed or referenced port.
+ */
+private fun EngineeringPort.includeOwnerScope(
+    validationSemanticIds: MutableSet<String>,
+    renderComponentSemanticIds: MutableSet<String>,
+) {
+    ownerReference.resolvedIdentity?.value?.let { ownerSemanticId ->
+        validationSemanticIds += ownerSemanticId
+        renderComponentSemanticIds += ownerSemanticId
+    }
+}
+
+private const val COMPONENT_SEMANTIC_PREFIX = "component:"
+private const val CONNECTION_SEMANTIC_PREFIX = "connection:"
+
+/**
+ * Runtime-owned view of one incremental recompute cycle after a semantic command mutation.
+ */
+data class AthenaRuntimeIncrementalUpdateReport(
+    val changedSemanticIds: List<String>,
+    val validationSemanticIds: List<String>,
+    val renderComponentSemanticIds: List<String>,
+    val renderConnectionSemanticIds: List<String>,
+    val validationMode: String,
+    val renderingMode: String,
+)

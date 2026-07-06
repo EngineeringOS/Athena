@@ -4,9 +4,9 @@
 
 Story `1.3` establishes the first canonical semantic boundary in Athena M0:
 
-- `language/` owns authored text, tokenization, parsing, and the syntax-only AST.
-- `compiler/` owns the deterministic lowering pass from AST into canonical `Engineering IR`.
-- `ir/` owns the canonical semantic model consumed by later validation, rule execution, and rendering passes.
+- `kernel/language/` owns authored text, tokenization, parsing, and the syntax-only AST.
+- `kernel/compiler/` owns the deterministic lowering pass from AST into canonical `Engineering IR`.
+- `kernel/engineering-model/` owns the canonical semantic model consumed by later validation, rule execution, and rendering passes.
 
 After Story `2.3`, the lowering pass is still compiler-owned, but the first Electrical/Runtime declaration mapping is contributed by the active domain plugin rather than hard-coded in the core.
 

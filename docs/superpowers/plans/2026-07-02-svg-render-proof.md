@@ -17,7 +17,7 @@
 - Modify: `renderer-svg/src/test/kotlin/com/engineeringood/athena/renderer/svg/SvgRendererModuleMarkerTest.kt`
 
 - [ ] Write failing tests for valid render derivation, deterministic repeated `SVG`, and blocked invalid rendering.
-- [ ] Run `java25; .\gradlew.bat --no-daemon --console=plain :renderer-svg:test :compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest` sequentially and confirm the failures are missing render contracts.
+- [ ] Run `java25; .\gradlew.bat --no-daemon --console=plain :kernel:svg-renderer:test :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest` sequentially and confirm the failures are missing render contracts.
 - [ ] Implement only the minimal contracts required to compile the tests.
 - [ ] Re-run the targeted tests and confirm green.
 
@@ -38,7 +38,7 @@
 
 **Files:**
 - Create: `docs/compiler/m0-render-boundary.md`
-- Modify: `_bmad-output/implementation-artifacts/1-6-derive-a-render-model-and-emit-simple-svg-from-engineering-ir.md`
+- Modify: `_bmad-output/implementation-artifacts/archive-m0/1-6-derive-a-render-model-and-emit-simple-svg-from-engineering-ir.md`
 - Modify: `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 - [ ] Document the render-facing model scope, the `SVG` backend boundary, and the blocking rules.

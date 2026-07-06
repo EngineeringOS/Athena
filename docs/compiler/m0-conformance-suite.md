@@ -56,7 +56,7 @@ Together, the suite covers valid and invalid cases for declarations, ports, refe
 
 ## Automation
 
-`compiler/src/test/kotlin/com/engineeringood/athena/compiler/M0ConformanceExamplesTest.kt` runs every example through `AthenaCompiler.compile()` and asserts:
+`kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/M0ConformanceExamplesTest.kt` runs every example through `AthenaCompiler.compile()` and asserts:
 
 - inventory is stable and remains within `5-10`
 - component, port, and connection counts match expectations

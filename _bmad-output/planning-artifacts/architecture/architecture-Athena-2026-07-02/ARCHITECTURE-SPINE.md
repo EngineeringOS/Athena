@@ -1,4 +1,4 @@
----
+﻿---
 name: 'Athena'
 type: architecture-spine
 purpose: build-substrate
@@ -23,8 +23,8 @@ binds:
   - 'FR-12'
   - 'FR-13'
 sources:
-  - 'D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/prd.md'
-  - 'D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/addendum.md'
+  - '_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/prd.md'
+  - '_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/addendum.md'
 companions: []
 ---
 
@@ -163,3 +163,4 @@ Athena/
 - Remote plugin distribution, hot loading, sandboxing, and marketplace mechanics are deferred.
 - Rust splits, Compose, WASM, and multiplatform delivery are deferred until the JVM-first compiler proof is complete.
 - First commercial packaging above the open semantic core is deferred.
+

@@ -1,5 +1,10 @@
 # Athena M0 Workspace Bootstrap
 
+> This document remains the historical M0 bootstrap reference.
+> Story `1.1` in M1 adds a runtime host above this workspace; see `docs/compiler/m1-runtime-host-boundary.md`.
+> The module names in the bootstrap section below are the original M0 names, not the current grouped module topology.
+> For the current physical and Gradle layout, use the root README and the group READMEs under `kernel/`, `extensions/`, `ui/`, and `apps/`.
+
 ## Purpose
 
 Story `1.1` establishes the initial Kotlin/JVM workspace for Athena M0. This scaffold is intentionally thin: it proves the build, module seams, and CLI shell without implementing DSL parsing, semantic validation, `Engineering IR`, plugins, or rendering behavior.
@@ -10,8 +15,10 @@ Story `1.1` establishes the initial Kotlin/JVM workspace for Athena M0. This sca
 - Kotlin `2.4.0`
 - Gradle `9.6.1`
 
-The workspace is pinned to Java `25` through the Kotlin/JVM toolchain. Java `25` is a hard requirement for this repo.
-Activate a Java `25` shell before running Gradle. On the current workstation that means invoking `java25` first and then using the wrapper from the same shell.
+Java `25` is a hard requirement for this repo.
+Compilation uses the Kotlin/JVM toolchain, and root verification is pinned through the Gradle daemon JVM criteria.
+See `docs/compiler/java-25-build-and-launch-notes.md` for the verified launcher-versus-daemon-versus-app runtime behavior.
+On the current Windows workstation, still invoke `java25` before running the wrapper so build, test, and launch commands all follow the same Java `25` path.
 
 ## Naming Seed
 
@@ -20,7 +27,7 @@ Activate a Java `25` shell before running Gradle. On the current workstation tha
 
 Story `1.1` originally used an `org.engineeringos` placeholder. That was corrected so the bootstrap matches the actual package ownership from the start.
 
-## Module Shape
+## Original M0 Module Shape
 
 - `cli`
   - Command-line shell and future compiler entrypoint.
@@ -56,7 +63,7 @@ From the repo root:
 java25
 .\gradlew.bat build
 .\gradlew.bat test
-.\gradlew.bat :cli:run --args="--help"
+.\gradlew.bat :apps:cli:run --args="--help"
 ```
 
 These commands are the expected bootstrap verification path for Story `1.1`.

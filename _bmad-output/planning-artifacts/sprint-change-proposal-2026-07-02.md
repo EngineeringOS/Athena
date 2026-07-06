@@ -1,4 +1,4 @@
-# Sprint Change Proposal
+﻿# Sprint Change Proposal
 
 **Date:** 2026-07-02  
 **Project:** Athena  
@@ -21,10 +21,7 @@ The current planning set is close to implementation-ready, but `epics.md` still 
 
 ### Evidence
 
-- Readiness finding: “Missing story-level FR traceability”
-- Readiness finding: “Missing greenfield project bootstrap story”
-- Readiness finding: “Stories 2.4 and 2.5 are under-specified for single-agent implementation”
-
+- Readiness finding: 鈥淢issing story-level FR traceability鈥?- Readiness finding: 鈥淢issing greenfield project bootstrap story鈥?- Readiness finding: 鈥淪tories 2.4 and 2.5 are under-specified for single-agent implementation鈥?
 ## 2. Impact Analysis
 
 ### Epic Impact
@@ -45,7 +42,7 @@ The current planning set is close to implementation-ready, but `epics.md` still 
 ### Artifact Impact
 
 **Requires update**
-- `D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/epics.md`
+- `_bmad-output/planning-artifacts/epics.md`
 
 **No direct update required**
 - PRD: no conflict with current goals, scope, or MVP definition
@@ -358,8 +355,9 @@ Backlog reorganization is required because story insertion, renumbering, and sto
 - **User approval:** Approved on 2026-07-02
 - **Scope classification:** Moderate
 - **Sprint status artifact:** `sprint-status.yaml` not present yet, so no sprint-status update was required at this stage
-- **Primary artifact to change:** `D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/epics.md`
+- **Primary artifact to change:** `_bmad-output/planning-artifacts/epics.md`
 - **Handoff recipients:**
   - Product Owner / planning agent: apply approved `epics.md` corrections and renumbering
   - Developer / implementation agent: consume corrected stories after planning update
   - Readiness reviewer: rerun implementation readiness after corrections land
+

@@ -5,7 +5,7 @@
 Story `1.6` turns the declared downstream stage from Story `1.5` into a real render proof:
 
 - the compiler derives a thin render-facing model from canonical `Engineering IR`
-- `renderer-svg/` emits simple deterministic `SVG` from that model
+- `kernel/svg-renderer/` emits simple deterministic `SVG` from that model
 - invalid semantic state blocks rendering rather than pushing semantic recovery into the renderer
 
 This keeps semantic truth upstream while still proving that Athena can produce a visible downstream artifact.
@@ -14,9 +14,9 @@ This keeps semantic truth upstream while still proving that Athena can produce a
 
 Current responsibilities are:
 
-- `ir/` owns canonical semantic truth
-- `compiler/` owns derivation from `Engineering IR` into a thin render-facing model and integrates that work into the declared pass pipeline
-- `renderer-svg/` owns target-specific `SVG` emission from the already-derived model
+- `kernel/engineering-model/` owns canonical semantic truth
+- `kernel/compiler/` owns derivation from `Engineering IR` into a thin render-facing model and integrates that work into the declared pass pipeline
+- `kernel/svg-renderer/` owns target-specific `SVG` emission from the already-derived model
 
 The renderer does not inspect AST, repair unresolved semantics, or re-run validation logic.
 

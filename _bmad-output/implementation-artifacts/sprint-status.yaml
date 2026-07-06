@@ -1,9 +1,9 @@
-# generated: 2026-07-02T13:51:07+08:00
-# last_updated: 2026-07-02T13:51:07+08:00
+﻿# generated: 2026-07-04T16:35:07.3339178+08:00
+# last_updated: 2026-07-06T17:01:45.2881611+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
-# story_location: D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/implementation-artifacts
+# story_location: _bmad-output/implementation-artifacts
 #
 # STATUS DEFINITIONS:
 # ==================
@@ -40,28 +40,56 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
-generated: 2026-07-02T13:51:07+08:00
-last_updated: 2026-07-03T20:58:08+08:00
+generated: 2026-07-04T16:35:07.3339178+08:00
+last_updated: 2026-07-06T17:01:45.2881611+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
-story_location: D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/implementation-artifacts
+story_location: _bmad-output/implementation-artifacts
 
 development_status:
   epic-1: done
-  1-1-establish-the-m0-jvm-compiler-workspace: done
-  1-2-author-and-parse-the-m0-electrical-runtime-dsl: done
-  1-3-lower-parsed-intent-into-canonical-engineering-ir: done
-  1-4-validate-engineering-ir-and-emit-provenance-rich-diagnostics: done
-  1-5-execute-the-m0-compiler-as-declared-deterministic-passes: done
-  1-6-derive-a-render-model-and-emit-simple-svg-from-engineering-ir: done
-  1-7-publish-m0-conformance-examples-for-the-end-to-end-proof: done
-  epic-1-retrospective: optional
+  1-1-establish-the-runtime-host-above-m0: done
+  1-2-route-the-existing-dsl-path-through-athena-runtime: done
+  1-3-initialize-the-compose-runtime-module-split-and-version-catalog: done
+  1-4-render-the-active-project-in-a-compose-semantic-viewer: done
+  1-5-support-viewport-selection-pan-and-zoom-without-semantic-authority-leakage: done
+  epic-1-retrospective: done
   epic-2: done
-  2-1-define-core-owned-typed-plugin-contracts: done
-  2-2-discover-local-plugins-and-validate-compatibility-before-use: done
-  2-3-deliver-electrical-and-runtime-semantics-through-a-real-domain-plugin: done
-  2-4-define-governed-knowledge-artifact-packages: done
-  2-5-resolve-governed-knowledge-artifacts-into-compilation-context: done
-  2-6-define-external-boundary-contract-descriptors: done
-  epic-2-retrospective: optional
+  2-1-expose-the-engineering-graph-over-the-active-project: done
+  2-2-introduce-the-command-runtime-for-semantic-mutations: done
+  2-3-record-command-history-with-undo-redo-replay-and-serialization: done
+  2-4-deliver-one-gui-command-backed-port-connection-mutation-path: done
+  2-5-recompute-affected-scope-and-refresh-validation-and-rendering: done
+  2-6-expose-semantic-diff-and-history-inspection: done
+  2-7-host-runtime-plugins-for-domain-semantics-commands-and-views: done
+  2-8-enforce-non-sovereign-plugin-boundaries: done
+  2-9-route-optional-ai-proposals-through-accepted-commands: done
+  epic-2-retrospective: done
+
+action_items:
+  - epic: 1
+    action: "Document and enforce the Windows sequential Gradle rule in project operating docs."
+    owner: "Amelia (Developer)"
+    status: done
+  - epic: 1
+    action: "Keep Java 25 launcher guidance explicit for build, test, and desktop run paths."
+    owner: "Amelia (Developer)"
+    status: done
+  - epic: 1
+    action: "Preserve the runtime-above-compiler boundary as the default integration posture for future M1 work."
+    owner: "Aaron (Project Lead)"
+    status: open
+  - epic: 2
+    action: "Keep physical module layout grouped under kernel, extensions, ui, and apps."
+    owner: "Amelia (Developer)"
+    status: done
+  - epic: 2
+    action: "Treat historical compiler docs explicitly as historical when current topology has moved."
+    owner: "Amelia (Developer)"
+    status: done
+  - epic: 2
+    action: "Carry non-sovereign plugin and command-only mutation rules forward into the next epic."
+    owner: "Aaron (Project Lead)"
+    status: open
+

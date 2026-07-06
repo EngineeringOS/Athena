@@ -28,5 +28,8 @@ node_modules
 package-lock.json
 
 .kotlin/
+.codegraph/
 .obsidian/
 draft/
+.superpowers/
+reference/

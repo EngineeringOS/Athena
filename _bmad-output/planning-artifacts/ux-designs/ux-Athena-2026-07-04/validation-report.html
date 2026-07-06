@@ -1,0 +1,156 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validation Report - Athena M1</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1220;
+      --panel: #101b2d;
+      --panel-2: #16243a;
+      --line: #24364f;
+      --text: #d7e2f0;
+      --muted: #93a4bd;
+      --accent: #4c8dff;
+      --ok: #4fbf8f;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #08101b 0%, #0c1523 100%);
+      color: var(--text);
+    }
+
+    main {
+      width: min(960px, calc(100vw - 40px));
+      margin: 24px auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+
+    h1, h2 {
+      margin: 0 0 12px;
+      font-weight: 600;
+    }
+
+    h1 { font-size: 28px; }
+    h2 { font-size: 18px; }
+
+    p, li {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .meta {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(79, 191, 143, 0.14);
+      border: 1px solid rgba(79, 191, 143, 0.28);
+      color: #9ee2bf;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th { color: var(--text); }
+    td { color: var(--muted); }
+
+    .zero { color: var(--ok); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <span class="badge">Strong verdict</span>
+      <h1>Validation Report - Athena M1</h1>
+      <div class="meta">
+        <div><strong>DESIGN.md:</strong> DESIGN.md</div>
+        <div><strong>EXPERIENCE.md:</strong> EXPERIENCE.md</div>
+        <div><strong>Run at:</strong> 2026-07-04T16:35:07.3339178+08:00</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Overall verdict</h2>
+      <p>The spine pair is a strong downstream contract for Athena M1 UX implementation. It is traceable to the PRD and architecture sources, aligned around the runtime-first shell thesis, and specific enough for engineering implementation without drifting into fake full-IDE scope.</p>
+      <p>The final pass found no critical, high, or medium issues. The pair is ready to hand off.</p>
+    </section>
+
+    <section class="card">
+      <h2>Category verdicts</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Flow coverage</td><td>strong</td></tr>
+          <tr><td>Token completeness</td><td>strong</td></tr>
+          <tr><td>Component coverage</td><td>strong</td></tr>
+          <tr><td>State coverage</td><td>strong</td></tr>
+          <tr><td>Visual reference coverage</td><td>strong</td></tr>
+          <tr><td>Bloat &amp; overspecification</td><td>strong</td></tr>
+          <tr><td>Inheritance discipline</td><td>strong</td></tr>
+          <tr><td>Shape fit</td><td>strong</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Findings by severity</h2>
+      <ul>
+        <li><span class="zero">Critical (0)</span> - No findings.</li>
+        <li><span class="zero">High (0)</span> - No findings.</li>
+        <li><span class="zero">Medium (0)</span> - No findings.</li>
+        <li><span class="zero">Low (0)</span> - No findings.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Reviewer files</h2>
+      <ul>
+        <li>`review-rubric.md`</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
+

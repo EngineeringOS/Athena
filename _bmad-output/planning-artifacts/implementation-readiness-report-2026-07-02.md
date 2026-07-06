@@ -1,9 +1,9 @@
----
+﻿---
 stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
-  - D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/prd.md
-  - D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-02/ARCHITECTURE-SPINE.md
-  - D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/epics.md
+  - _bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/prd.md
+  - _bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-02/ARCHITECTURE-SPINE.md
+  - _bmad-output/planning-artifacts/epics.md
 ---
 
 # Implementation Readiness Assessment Report
@@ -16,7 +16,7 @@ inputDocuments:
 ### PRD Files Found
 
 **Whole Documents:**
-- `D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/prd.md` (22484 bytes, modified 2026-07-02 09:59:44)
+- `_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-02/prd.md` (22484 bytes, modified 2026-07-02 09:59:44)
 
 **Sharded Documents:**
 - None found
@@ -24,7 +24,7 @@ inputDocuments:
 ### Architecture Files Found
 
 **Whole Documents:**
-- `D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-02/ARCHITECTURE-SPINE.md` (8404 bytes, modified 2026-07-02 11:08:50)
+- `_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-02/ARCHITECTURE-SPINE.md` (8404 bytes, modified 2026-07-02 11:08:50)
 
 **Sharded Documents:**
 - None found
@@ -32,7 +32,7 @@ inputDocuments:
 ### Epics And Stories Files Found
 
 **Whole Documents:**
-- `D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/epics.md` (24177 bytes, modified 2026-07-02 13:15:58)
+- `_bmad-output/planning-artifacts/epics.md` (24177 bytes, modified 2026-07-02 13:15:58)
 
 **Sharded Documents:**
 - None found
@@ -226,3 +226,4 @@ This assessment identified 2 non-blocking concerns across 2 categories: deferred
 
 **Assessor:** Codex via BMad Implementation Readiness workflow  
 **Assessment Date:** 2026-07-02
+

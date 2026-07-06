@@ -4,17 +4,17 @@
 
 Story `1.4` adds the first semantic validation pass that runs only over canonical `Engineering IR`.
 
-- `language/` still owns syntax and AST.
-- `compiler/EngineeringIrLowerer` still owns syntax-to-IR lowering.
-- `semantics-core/EngineeringIrValidator` owns generic deterministic semantic diagnostics over the lowered IR.
+- `kernel/language/` still owns syntax and AST.
+- `kernel/compiler/EngineeringIrLowerer` still owns syntax-to-IR lowering.
+- `kernel/validation/EngineeringIrValidator` owns generic deterministic semantic diagnostics over the lowered IR.
 - active approved domain plugins contribute domain-owned diagnostics inside the compiler-owned `VALIDATE` pass.
-- `compiler/AthenaCompiler.compile()` exposes parse, lowering, and semantic validation through one entry path.
+- `kernel/compiler/AthenaCompiler.compile()` exposes parse, lowering, and semantic validation through one entry path.
 
 This keeps semantic authority inside `Engineering IR` instead of drifting back into parser or renderer logic.
 
 ## Validation Contracts
 
-`semantics-core/` owns the shared validation contract surface:
+`kernel/validation/` owns the shared validation contract surface:
 
 - `SemanticDiagnosticSeverity`
 - `SemanticDiagnosticCategory`

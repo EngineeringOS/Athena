@@ -29,7 +29,7 @@ The current M0 pipeline is:
 3. `VALIDATE`
 4. `DOWNSTREAM_DERIVATION`
 
-Pass descriptors are declared under `compiler/` and currently mean:
+Pass descriptors are declared under `kernel/compiler/` and currently mean:
 
 | Pass | Responsibility | Input state | Output state |
 | --- | --- | --- | --- |

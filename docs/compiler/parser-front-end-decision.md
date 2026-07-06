@@ -48,7 +48,7 @@ Athena M0 is not building a machine-code compiler backend. Its compiler is a sem
 
 ## Implementation Rules
 
-- Keep AST types in `language/`.
+- Keep AST types in `kernel/language/`.
 - Keep the AST free of semantic validation logic, rule execution, and `Engineering IR` concepts.
 - Keep the DSL free of layout, geometry, and renderer-specific concerns.
 - Parse failure must stop later phases.
