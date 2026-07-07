@@ -679,7 +679,7 @@ class BootstrapCli(
         appendLine("Java 25")
         appendLine("Gradle 9.6.1")
         appendLine(
-            "Modules: apps:cli, kernel:runtime, kernel:language, kernel:validation, kernel:engineering-model, kernel:compiler, extensions:domain-electrical, kernel:svg-renderer",
+            "Modules: apps:cli, kernel:runtime, kernel:language, kernel:validation, kernel:engineering-model, kernel:compiler, extensions:domain-electrical, extensions:domain-dummy, kernel:svg-renderer",
         )
         appendLine(
             "Connected markers: ${runtimeMarker.moduleName}, ${compilerModuleMarker.moduleName}, ${domainMarker.moduleName}, ${rendererMarker.moduleName}",

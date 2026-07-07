@@ -1,4 +1,4 @@
-pluginManagement {
+﻿pluginManagement {
     repositories {
         google {
             mavenContent {
@@ -38,12 +38,15 @@ include(
     ":ui:compose-workbench",
     ":kernel:runtime",
     ":kernel:language",
-    ":kernel:plugin-api",
+    ":kernel:plugins:plugin-api",
+    ":kernel:plugins:plugin-host",
     ":kernel:engineering-model",
     ":kernel:layout-model",
     ":kernel:geometry-model",
     ":kernel:validation",
     ":kernel:compiler",
     ":extensions:domain-electrical",
+    ":extensions:domain-dummy",
     ":kernel:svg-renderer",
 )
+

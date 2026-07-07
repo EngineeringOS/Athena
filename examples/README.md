@@ -24,3 +24,14 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `operator-proof.athena` - desktop operator-proof seed for the runtime-owned multi-view workflow
 
 `m2/` stays intentionally small. It proves the explicit `Engineering IR -> Layout IR -> Geometry IR -> backend` chain and the runtime-owned desktop operator workflow without turning milestone fixtures into a broad documentation or export package.
+
+## `m3/`
+
+- `electrical-proof.athena` - electrical-only hosted proof for the stable M3 SPI
+- `electrical-proof.expectation.txt` - approved-plugin, view, and render contract for the electrical-only path
+- `dummy-proof.athena` - dummy-only hosted proof for the synthetic second domain
+- `dummy-proof.expectation.txt` - hosted proof contract for the dummy-only no-global-view path
+- `dual-domain-proof.athena` - mixed hosted proof showing electrical and dummy domains can coexist
+- `dual-domain-proof.expectation.txt` - approved-plugin and render contract for the combined hosted path
+
+`m3/` stays proof-focused. It publishes only the minimum corpus needed to show that external domains can participate through the same stable hosted contracts and to seed the later zero/one/multi-plugin verification matrix.

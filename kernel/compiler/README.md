@@ -1,19 +1,19 @@
-# `:kernel:compiler`
+﻿# `:kernel:compiler`
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
-The `:kernel:compiler` module is Athena's orchestration core. It exposes the public compiler facade, owns compiler pipeline reporting, hosts plugin discovery and approval, coordinates domain semantics, resolves governed knowledge packages, validates external boundary descriptors, derives explicit `Layout IR`, derives explicit `Geometry IR`, and drives the first geometry-backed downstream backend path.
+The `:kernel:compiler` module is Athena's orchestration core. It exposes the public compiler facade, owns compiler pipeline reporting, coordinates domain semantics, resolves governed knowledge packages, validates external boundary descriptors, derives explicit `Layout IR`, derives explicit `Geometry IR`, and drives the first geometry-backed downstream backend path.
 
 ## Responsibilities
 
 - Expose `AthenaCompiler` with `parse`, `lower`, and `compile` entry points.
-- Keep the declared pass order stable: `PARSE -> LOWER -> VALIDATE -> DOWNSTREAM_DERIVATION`.
+- Keep the declared pass order stable: `PARSE -> LOWER -> SEMANTIC_ENRICHMENT -> VALIDATE -> BACKEND_PREPARATION -> BACKEND_EMISSION`.
 - Lower syntax-owned source into canonical `Engineering IR`.
 - Run generic semantic validation and domain-plugin validation.
 - Derive supported `Layout IR` documents from canonical `Engineering IR` plus typed `ViewDefinition` contributions.
 - Derive supported `Geometry IR` documents from explicit `Layout IR`.
-- Consume the stable public SPI from `:kernel:plugin-api`.
-- Host plugin discovery, approval, validation, and approved inventory models used by the current JVM-first runtime.
+- Consume the stable public SPI from `:kernel:plugins:plugin-api`.
+- Consume the approved hosted plugin inventory governed by `:kernel:plugins:plugin-host`.
 - Load and resolve governed knowledge packages.
 - Load and validate external boundary descriptors.
 - Derive the runtime viewer model from selected `Geometry IR`.
@@ -26,7 +26,7 @@ The `:kernel:compiler` module is Athena's orchestration core. It exposes the pub
 - `GeometryIrDeriver`: deterministic `Layout IR -> Geometry IR` derivation for supported views.
 - `CompilerModels.kt`: public compiler result models.
 - `EngineeringIrLowerer`: syntax-to-IR lowering.
-- `plugin/*`: hosted plugin discovery, activation, approval inventory, and domain coordination.
+- `plugin/*`: compiler-owned domain coordination only.
 - `knowledge/*`: governed knowledge package models, loading, and resolution.
 - `boundary/*`: external boundary descriptor models, loading, and resolution.
 
@@ -43,7 +43,8 @@ Story `2.3` adds the first narrow incremental recompute proof for M2:
 ## Dependencies
 
 - `:kernel:language`
-- `:kernel:plugin-api`
+- `:kernel:plugins:plugin-api`
+- `:kernel:plugins:plugin-host`
 - `:kernel:validation`
 - `:kernel:engineering-model`
 - `:kernel:layout-model`
@@ -56,7 +57,7 @@ Test-only dependency:
 
 ## Boundaries
 
-This module does not own the DSL grammar itself, the canonical IR schema, the public plugin SPI, or the concrete Electrical/Runtime domain rules. It orchestrates those pieces while preserving the architecture rule that the DSL is the authored source, `Engineering IR` is the canonical model, `Layout IR` is the first explicit downstream projection layer, `Geometry IR` is the renderer-facing downstream layer, and renderers are downstream backends fed from geometry rather than semantic shortcuts.
+This module does not own the DSL grammar itself, the canonical IR schema, the public plugin SPI, hosted plugin source or approval governance, or the concrete Electrical/Runtime domain rules. It orchestrates those pieces while preserving the architecture rule that the DSL is the authored source, `Engineering IR` is the canonical model, `Layout IR` is the first explicit downstream projection layer, `Geometry IR` is the renderer-facing downstream layer, and renderers are downstream backends fed from geometry rather than semantic shortcuts.
 
 ## Verification
 
@@ -69,3 +70,4 @@ Windows PowerShell:
 ```powershell
 java25; .\gradlew.bat :kernel:compiler:test
 ```
+

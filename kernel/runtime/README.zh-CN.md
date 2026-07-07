@@ -1,20 +1,11 @@
-# `:kernel:runtime`
+﻿# `:kernel:runtime`
 
-[English](README.md) | 简体中文
+[English](README.md) | 绠€浣撲腑鏂?
+`:kernel:runtime` 妯″潡鎷ユ湁 Athena 鐨勯暱鐢熷懡鍛ㄦ湡杩愯鏃惰竟鐣屻€傚畠璐熻矗宸ヤ綔鍖虹敓鍛藉懆鏈熴€佹椿鍔ㄩ」鐩笂涓嬫枃銆佽繍琛屾椂鏈嶅姟瑙ｆ瀽銆佹姇褰变細璇濄€佸懡浠ゆ墽琛屻€佸巻鍙层€佸伐绋嬪浘鎶曞奖銆佸涓绘彃浠剁敓鍛藉懆鏈熸鏌ヤ笌鎵ц锛屼互鍙婂彲閫夌殑 AI 鎻愭瀹￠槄锛屽悓鏃朵笉浼氬彉鎴愮浜岃涔夌湡婧愩€?
+## 鑱岃矗
 
-`:kernel:runtime` 模块拥有 Athena 的长生命周期运行时边界。它负责工作区生命周期、活动项目上下文、运行时服务解析、投影会话、命令执行、历史、工程图投影、插件托管，以及可选 AI 提案审阅，同时不会变成第二语义真源。
-
-## 职责
-
-- 通过 `AthenaRuntime` 打开和关闭工作区。
-- 将项目激活到共享的 `AthenaExecutionContext`。
-- 解析图、命令、插件与渲染协调等运行时服务。
-- 托管运行时拥有的投影会话，包括受支持视图发现与活动视图切换。
-- 让运行时规范状态始终与 `Engineering IR` 保持一致。
-- 托管命令历史、撤销、重做、重放、差异检查以及已接受 AI 提案流程。
-- 在受支持的语义变更后，对外发布运行时可见的增量刷新元数据。
-
-## 主要类型
+- 閫氳繃 `AthenaRuntime` 鎵撳紑鍜屽叧闂伐浣滃尯銆?- 灏嗛」鐩縺娲诲埌鍏变韩鐨?`AthenaExecutionContext`銆?- 瑙ｆ瀽鍥俱€佸懡浠ゃ€佹彃浠朵笌娓叉煋鍗忚皟绛夎繍琛屾椂鏈嶅姟銆?- 娑堣垂 `:kernel:plugins:plugin-host` 娌荤悊鐨勫凡鎵瑰噯鎻掍欢娓呭崟銆?- 瀵瑰鏆撮湶 runtime 鍙鐨勬彃浠剁敓鍛藉懆鏈熸鏌ワ紝鍚屾椂涓嶆妸缂栨帓鎵€鏈夋潈浜ょ粰鎻掍欢銆?- 鎵樼杩愯鏃舵嫢鏈夌殑鎶曞奖浼氳瘽锛屽寘鎷彈鏀寔瑙嗗浘鍙戠幇涓庢椿鍔ㄨ鍥惧垏鎹€?- 璁╄繍琛屾椂瑙勮寖鐘舵€佸缁堜笌 `Engineering IR` 淇濇寔涓€鑷淬€?- 鎵樼鍛戒护鍘嗗彶銆佹挙閿€銆侀噸鍋氥€侀噸鏀俱€佸樊寮傛鏌ヤ互鍙婂凡鎺ュ彈 AI 鎻愭娴佺▼銆?- 鍦ㄥ彈鏀寔鐨勮涔夊彉鏇村悗锛屽澶栧彂甯冭繍琛屾椂鍙鐨勫閲忓埛鏂板厓鏁版嵁銆?
+## 涓昏绫诲瀷
 
 - `AthenaRuntime`
 - `AthenaWorkspace`
@@ -24,35 +15,17 @@
 - `AthenaCommandRuntimeService`
 - `AthenaEngineeringGraphService`
 
-## 依赖
+## 渚濊禆
 
 - `:kernel:compiler`
+- `:kernel:plugins:plugin-host`
 - `:kernel:engineering-model`
 - `:kernel:svg-renderer`
 
-## 边界
+## 杈圭晫
 
-该模块不直接解析 DSL 源文本，不定义规范 IR 结构，也不拥有领域语义。它拥有这些下层之上的运行时生命周期与编排。投影会话只是建立在编译器派生投影工件之上的运行时状态；切换视图不会修改规范工程语义。
-
-## 增量刷新边界
-
-Story `2.3` 把运行时合同保持在一个非常克制的范围内：
-
-- 第一个 scoped refresh 证明只限于现有的 `connect ports` 命令路径。
-- `AthenaExecutionContext.incrementalUpdateReport()` 暴露语义影响范围，以及 layout、geometry、rendering 刷新模式。
-- 运行时拥有刷新协调与活动投影替换，但编译器仍然是唯一的派生规则拥有者。
-- Desktop 和其他消费者必须通过运行时拥有的投影状态读取刷新结果，而不是维护私有视图缓存。
-- 如果编译器的 scoped reuse 不安全，运行时会显示 fallback 模式，而不会把这个事实隐藏起来。
-
-## 评审合同
-
-Story `2.4` 让语义评审继续保持主位，同时把投影刷新变成可检查的下游证据：
-
-- `AthenaSemanticDiffInspection` 仍然锚定在规范语义 id 和命令关联的历史结果上。
-- 投影刷新证据以“下游 consequence 元数据”附着在语义 diff 上，而不是变成第二套 history 或 diff 系统。
-- 运行时检查可以解释受影响的视图和下游层，但不会把“几何变化”提升成高于语义变化的主解释。
-
-## 验证
+璇ユā鍧椾笉鐩存帴瑙ｆ瀽 DSL 婧愭枃鏈紝涓嶅畾涔夎鑼?IR 缁撴瀯锛屼篃涓嶆嫢鏈夐鍩熻涔夈€傚畠鎷ユ湁杩欎簺涓嬪眰涔嬩笂鐨勮繍琛屾椂鐢熷懡鍛ㄦ湡涓庣紪鎺掋€傛姇褰变細璇濆彧鏄缓绔嬪湪缂栬瘧鍣ㄦ淳鐢熸姇褰卞伐浠朵箣涓婄殑杩愯鏃剁姸鎬侊紱鍒囨崲瑙嗗浘涓嶄細淇敼瑙勮寖宸ョ▼璇箟銆?
+## 楠岃瘉
 
 ```bash
 ./gradlew :kernel:runtime:test
@@ -63,3 +36,4 @@ Windows PowerShell:
 ```powershell
 java25; .\gradlew.bat :kernel:runtime:test
 ```
+

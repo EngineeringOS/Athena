@@ -1,6 +1,6 @@
 system DemoCabinet {
   device PLC1 {
-    type PLC
+    type Switch
     model "S7-1200"
   }
 

@@ -1,10 +1,10 @@
 system DuplicateIdentityCabinet {
   device PLC1 {
-    type PLC
+    type Switch
   }
 
   device PLC1 {
-    type PLC
+    type Switch
   }
 
   port PLC1.out {

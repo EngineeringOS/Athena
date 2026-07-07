@@ -15,6 +15,7 @@ val java25Home = java25Launcher.map { launcher ->
 
 dependencies {
     implementation(project(":ui:compose-workbench"))
+    implementation(project(":extensions:domain-dummy"))
     implementation(project(":extensions:domain-electrical"))
     implementation(project(":kernel:runtime"))
     implementation(compose.desktop.currentOs)

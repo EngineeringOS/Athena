@@ -46,4 +46,22 @@ class ElectricalRuntimeDomainPluginTest {
         assertEquals(listOf("group-by-signal", "group-by-connection-path"), wiring.groupingRules)
         assertEquals(listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW), wiring.viewEmphasis)
     }
+
+    @Test
+    fun `publishes the narrowed m3 proof vocabulary through the stable schema contract`() {
+        val plugin = ElectricalRuntimeDomainPlugin()
+
+        assertEquals(
+            listOf("Lamp", "Motor", "Switch"),
+            plugin.domainSchema.entities.map { entity -> entity.typeId },
+        )
+        assertEquals(
+            listOf("Wire"),
+            plugin.domainSchema.connections.map { connection -> connection.typeId },
+        )
+        assertEquals(
+            setOf("Lamp", "Motor", "Switch"),
+            plugin.domainSchema.properties.first { property -> property.name == "type" }.allowedSymbolValues,
+        )
+    }
 }

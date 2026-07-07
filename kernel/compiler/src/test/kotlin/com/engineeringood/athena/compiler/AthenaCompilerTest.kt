@@ -15,7 +15,6 @@ import com.engineeringood.athena.renderer.svg.SvgRenderBox
 import com.engineeringood.athena.renderer.svg.SvgRenderConnection
 import com.engineeringood.athena.renderer.svg.SvgRenderModel
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
-import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
 import com.engineeringood.athena.geometry.GeometryBounds
 import com.engineeringood.athena.geometry.GeometryElementKind
 import com.engineeringood.athena.geometry.GeometryDocument
@@ -38,8 +37,11 @@ import com.engineeringood.athena.layout.LayoutRelationshipKind
 import com.engineeringood.athena.layout.LayoutRelativePlacement
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.layout.ViewEmphasis
+import com.engineeringood.athena.domain.dummyruntime.DummyRuntimeDomainPlugin
+import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
 import com.engineeringood.athena.plugin.AthenaCoreRuntime
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -58,48 +60,20 @@ class AthenaCompilerTest {
 
         val success = assertIs<CompilerCompilationSuccess>(result)
         assertEquals(
-            listOf(
-                CompilerPassDescriptor(
-                    id = CompilerPassId.PARSE,
-                    responsibility = "Parse authored source into syntax-owned AST",
-                    inputState = "authored source file",
-                    outputState = "syntax-owned source document",
-                ),
-                CompilerPassDescriptor(
-                    id = CompilerPassId.LOWER,
-                    responsibility = "Lower syntax-owned source into canonical Engineering IR",
-                    inputState = "syntax-owned source document",
-                    outputState = "canonical Engineering IR",
-                ),
-                CompilerPassDescriptor(
-                    id = CompilerPassId.VALIDATE,
-                    responsibility = "Validate canonical Engineering IR and compute continuation policy",
-                    inputState = "canonical Engineering IR",
-                    outputState = "semantic validation result",
-                ),
-                CompilerPassDescriptor(
-                    id = CompilerPassId.DOWNSTREAM_DERIVATION,
-                    responsibility = "Feed explicit Geometry IR into the first downstream backend and emit simple SVG when policy allows",
-                    inputState = "semantic validation result plus derived geometry",
-                    outputState = "geometry-backed render result",
-                ),
-            ),
+            expectedM3PassDescriptors(),
             success.pipeline.passes.map { it.pass },
         )
         assertEquals(
-            listOf(
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.SUCCEEDED,
-            ),
+            expectedSuccessfulM3Statuses(),
             success.pipeline.passes.map { it.status },
         )
         assertEquals(
             listOf(
                 "system:DemoCabinet",
                 "system:DemoCabinet",
-                "semantic-valid",
+                "no semantic enrichers",
+                "semantic-valid (kernel=0, domain=0, enrichment=0)",
+                "geometry-prepared",
                 "svg-emitted",
             ),
             success.pipeline.passes.map { it.outputSummary },
@@ -139,6 +113,16 @@ class AthenaCompilerTest {
                     ),
                 ),
                 svg = expectedDemoSvg(),
+                viewId = "cabinet",
+                rendererTarget = "svg",
+                activeRenderContributions = listOf(
+                    CompilerRenderContributionAttribution(
+                        pluginId = "com.engineeringood.athena.domain.electrical-runtime",
+                        contributionId = "electrical-runtime.render.cabinet",
+                        viewIds = setOf("cabinet"),
+                        rendererTargets = setOf("svg"),
+                    ),
+                ),
             ),
             success.rendering,
         )
@@ -167,6 +151,45 @@ class AthenaCompilerTest {
         assertEquals(expectedWiringLayout(), first.layouts.first { layout -> layout.view.id == "wiring" })
         assertEquals(expectedCabinetGeometry(), first.geometries.first { geometry -> geometry.viewId == "cabinet" })
         assertEquals(expectedWiringGeometry(), first.geometries.first { geometry -> geometry.viewId == "wiring" })
+    }
+
+    @Test
+    fun `compile keeps render contribution selection downstream of the emitted view and target`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler()
+
+        val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
+        val rendering = assertIs<CompilerRenderingSuccess>(result.rendering)
+
+        assertEquals(
+            listOf(
+                CompilerRenderContributionAttribution(
+                    pluginId = "com.engineeringood.athena.domain.dummy-runtime",
+                    contributionId = "dummy-runtime.render.synthetic-panel",
+                    viewIds = setOf("dummy-panel"),
+                    rendererTargets = setOf("svg"),
+                ),
+                CompilerRenderContributionAttribution(
+                    pluginId = "com.engineeringood.athena.domain.electrical-runtime",
+                    contributionId = "electrical-runtime.render.cabinet",
+                    viewIds = setOf("cabinet"),
+                    rendererTargets = setOf("svg"),
+                ),
+                CompilerRenderContributionAttribution(
+                    pluginId = "com.engineeringood.athena.domain.electrical-runtime",
+                    contributionId = "electrical-runtime.render.wiring",
+                    viewIds = setOf("wiring"),
+                    rendererTargets = setOf("svg"),
+                ),
+            ),
+            compiler.supportedRenderContributions(),
+        )
+        assertEquals("cabinet", rendering.viewId)
+        assertEquals("svg", rendering.rendererTarget)
+        assertEquals(
+            listOf("electrical-runtime.render.cabinet"),
+            rendering.activeRenderContributions.map { contribution -> contribution.contributionId },
+        )
     }
 
     @Test
@@ -209,12 +232,7 @@ class AthenaCompilerTest {
         val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
 
         assertEquals(
-            listOf(
-                CompilerPassId.PARSE,
-                CompilerPassId.LOWER,
-                CompilerPassId.VALIDATE,
-                CompilerPassId.DOWNSTREAM_DERIVATION,
-            ),
+            expectedM3PassIds(),
             result.pipeline.passes.map { it.pass.id },
         )
         assertEquals(
@@ -257,12 +275,7 @@ class AthenaCompilerTest {
             compiler.pluginInventory.approvedPlugins.map { plugin -> plugin.candidate.manifest.pluginId },
         )
         assertEquals(
-            listOf(
-                CompilerPassId.PARSE,
-                CompilerPassId.LOWER,
-                CompilerPassId.VALIDATE,
-                CompilerPassId.DOWNSTREAM_DERIVATION,
-            ),
+            expectedM3PassIds(),
             result.pipeline.passes.map { it.pass.id },
         )
     }
@@ -311,12 +324,7 @@ class AthenaCompilerTest {
         val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
 
         assertEquals(
-            listOf(
-                CompilerPassId.PARSE,
-                CompilerPassId.LOWER,
-                CompilerPassId.VALIDATE,
-                CompilerPassId.DOWNSTREAM_DERIVATION,
-            ),
+            expectedM3PassIds(),
             result.pipeline.passes.map { it.pass.id },
         )
         assertEquals(
@@ -391,12 +399,7 @@ class AthenaCompilerTest {
         val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
 
         assertEquals(
-            listOf(
-                CompilerPassId.PARSE,
-                CompilerPassId.LOWER,
-                CompilerPassId.VALIDATE,
-                CompilerPassId.DOWNSTREAM_DERIVATION,
-            ),
+            expectedM3PassIds(),
             result.pipeline.passes.map { it.pass.id },
         )
         assertEquals(
@@ -495,27 +498,23 @@ class AthenaCompilerTest {
         val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
 
         assertEquals(
-            listOf(
-                CompilerPassId.PARSE,
-                CompilerPassId.LOWER,
-                CompilerPassId.VALIDATE,
-                CompilerPassId.DOWNSTREAM_DERIVATION,
-            ),
+            expectedM3PassIds(),
             result.pipeline.passes.map { it.pass.id },
         )
         assertEquals(
-            listOf(
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.FAILED,
-            ),
+            expectedValidationBlockedM3Statuses(),
             result.pipeline.passes.map { it.status },
         )
         assertEquals(
             listOf("domain.semantics.unavailable"),
             result.semanticResult.diagnostics.map { it.ruleId.value },
         )
+        assertEquals(emptyList(), result.validationBreakdown.kernelDiagnostics)
+        assertEquals(
+            listOf("domain.semantics.unavailable"),
+            result.validationBreakdown.domainDiagnostics.map { it.ruleId.value },
+        )
+        assertEquals(emptyList(), result.validationBreakdown.domainValidationAttributions)
         assertEquals(
             listOf(SemanticDiagnosticCategory.DOMAIN),
             result.semanticResult.diagnostics.map { it.category },
@@ -530,6 +529,157 @@ class AthenaCompilerTest {
             ),
             result.rendering,
         )
+    }
+
+    @Test
+    fun `compile with only non-lowering domain plugins still reports unavailable domain semantics`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler(
+            pluginDiscovery = AthenaPluginDiscovery(
+                runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                source = FixedAthenaPluginSource(
+                    listOf(
+                        ValidateOnlySemanticsTestPlugin(),
+                    ),
+                ),
+            ),
+        )
+
+        val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
+
+        assertContains(result.semanticResult.diagnostics.map { it.ruleId.value }, "domain.semantics.unavailable")
+        assertEquals(emptyList(), result.validationBreakdown.kernelDiagnostics)
+        assertContains(
+            result.validationBreakdown.domainDiagnostics.map { it.ruleId.value },
+            "domain.semantics.unavailable",
+        )
+        assertContains(
+            result.validationBreakdown.domainDiagnostics.map { it.ruleId.value },
+            "domain.validation.validate-only",
+        )
+        assertEquals(
+            listOf("validate-only.validation.rules"),
+            result.validationBreakdown.domainValidationAttributions.map { attribution -> attribution.contributionId },
+        )
+        assertEquals(
+            CompilerRenderingBlocked(
+                reason = "semantic validation requested STOP_DOWNSTREAM",
+                blockedByPass = CompilerPassId.VALIDATE,
+            ),
+            result.rendering,
+        )
+    }
+
+    @Test
+    fun `compile reports unavailable domain semantics when hosted plugins claim none of the authored declarations`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler(
+            pluginDiscovery = AthenaPluginDiscovery(
+                runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                source = FixedAthenaPluginSource(
+                    listOf(
+                        DummyRuntimeDomainPlugin(),
+                    ),
+                ),
+            ),
+        )
+
+        val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
+
+        assertContains(result.semanticResult.diagnostics.map { it.ruleId.value }, "domain.semantics.unavailable")
+        assertEquals(emptyList(), result.document.components)
+        assertEquals(emptyList(), result.document.ports)
+        assertEquals(emptyList(), result.document.connections)
+        assertEquals(
+            CompilerRenderingBlocked(
+                reason = "semantic validation requested STOP_DOWNSTREAM",
+                blockedByPass = CompilerPassId.VALIDATE,
+            ),
+            result.rendering,
+        )
+    }
+
+    @Test
+    fun `compile executes semantic enrichment contributions through the governed stage`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler(
+            pluginDiscovery = AthenaPluginDiscovery(
+                runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                source = FixedAthenaPluginSource(
+                    listOf(
+                        ElectricalRuntimeDomainPlugin(),
+                        SemanticEnrichmentOnlyTestPlugin(),
+                    ),
+                ),
+            ),
+        )
+
+        val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
+        val semanticEnrichmentPass = result.pipeline.passes.first { pass -> pass.pass.id == CompilerPassId.SEMANTIC_ENRICHMENT }
+
+        assertTrue(result.semanticResult.isSemanticallyValid)
+        assertEquals(
+            listOf("domain.enrichment.synthetic"),
+            result.semanticResult.diagnostics.map { it.ruleId.value },
+        )
+        assertEquals(
+            listOf("domain.enrichment.synthetic"),
+            result.validationBreakdown.semanticEnrichmentDiagnostics.map { it.ruleId.value },
+        )
+        assertEquals(emptyList(), result.validationBreakdown.kernelDiagnostics)
+        assertEquals(emptyList(), result.validationBreakdown.domainDiagnostics)
+        assertEquals(emptyList(), result.validationBreakdown.domainValidationAttributions)
+        assertContains(semanticEnrichmentPass.outputSummary, "semantic-enrichment-only.enrich")
+        assertContains(semanticEnrichmentPass.outputSummary, "synthetic semantic enrichment note")
+        assertContains(semanticEnrichmentPass.outputSummary, "diagnostics=1")
+    }
+
+    @Test
+    fun `compile preserves kernel validation when no domain validation contributors are present`() {
+        val duplicateSource = """
+            system DuplicateConnections {
+              device PLC1 {
+                type Switch
+              }
+
+              port PLC1.out {
+                direction out
+                signal Digital
+              }
+
+              connect PLC1.out -> PLC1.out
+              connect PLC1.out -> PLC1.out
+            }
+        """.trimIndent()
+        val duplicatePath = Files.createTempFile("athena-kernel-validation-without-plugins-", ".athena")
+        Files.writeString(duplicatePath, duplicateSource)
+
+        try {
+            val compiler = AthenaCompiler(
+                pluginDiscovery = AthenaPluginDiscovery(
+                    runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                    source = FixedAthenaPluginSource(listOf(GenericLoweringOnlyTestPlugin())),
+                ),
+            )
+
+            val result = assertIs<CompilerCompilationSuccess>(compiler.compile(duplicatePath))
+
+            assertContains(
+                result.validationBreakdown.kernelDiagnostics.map { it.ruleId.value },
+                "uniqueness.connection.duplicate-authored-key",
+            )
+            assertEquals(emptyList(), result.validationBreakdown.domainDiagnostics.map { it.ruleId.value })
+            assertEquals(emptyList(), result.validationBreakdown.domainValidationAttributions)
+            assertEquals(
+                listOf(
+                    "uniqueness.connection.duplicate-authored-key",
+                    "uniqueness.connection.duplicate-authored-key",
+                ),
+                result.semanticResult.diagnostics.map { it.ruleId.value },
+            )
+        } finally {
+            Files.deleteIfExists(duplicatePath)
+        }
     }
 
     @Test
@@ -566,23 +716,18 @@ class AthenaCompilerTest {
     }
 
     @Test
-    fun `compile skips downstream derivation when semantic continuation stops`() {
+    fun `compile skips backend stages when semantic continuation stops`() {
         val examplePath = resolveRepoRoot().resolve("examples/m0/invalid-semantic-cabinet.athena")
 
         val result = AthenaCompiler().compile(examplePath)
 
         val success = assertIs<CompilerCompilationSuccess>(result)
         assertEquals(
-            listOf(
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.SUCCEEDED,
-                CompilerPassExecutionStatus.FAILED,
-            ),
+            expectedValidationBlockedM3Statuses(),
             success.pipeline.passes.map { it.status },
         )
         assertEquals(
-            "render-blocked",
+            "backend-emission-skipped (validation stopped downstream)",
             success.pipeline.passes.last().outputSummary,
         )
         assertEquals(
@@ -599,7 +744,7 @@ class AthenaCompilerTest {
         val malformedSource = """
             system Broken {
               device PLC1 {
-                type PLC
+                type Switch
               }
         """.trimIndent()
         val malformedPath = Files.createTempFile("athena-malformed-", ".athena")
@@ -610,12 +755,7 @@ class AthenaCompilerTest {
 
             val failure = assertIs<CompilerCompilationParseFailure>(result)
             assertEquals(
-                listOf(
-                    CompilerPassExecutionStatus.FAILED,
-                    CompilerPassExecutionStatus.SKIPPED,
-                    CompilerPassExecutionStatus.SKIPPED,
-                    CompilerPassExecutionStatus.SKIPPED,
-                ),
+                expectedParseFailureM3Statuses(),
                 failure.pipeline.passes.map { it.status },
             )
             assertContains(failure.pipeline.passes.first().outputSummary, "syntax diagnostics")
@@ -634,6 +774,7 @@ class AthenaCompilerTest {
         assertTrue(success.semanticResult.isSemanticallyValid)
         assertEquals(emptyList(), success.semanticResult.diagnostics)
         assertEquals(SemanticContinuationDecision.CONTINUE, success.semanticResult.continuationDecision)
+        assertEquals(CompilerValidationBreakdown(), success.validationBreakdown)
         assertEquals("DemoCabinet", success.source.ast.system.name)
         assertEquals("system:DemoCabinet", success.document.system.id.value)
         assertEquals(expectedDemoSvg(), assertIs<CompilerRenderingSuccess>(success.rendering).svg)
@@ -682,6 +823,75 @@ class AthenaCompilerTest {
             ),
             success.semanticResult.diagnostics.map { it.provenance },
         )
+        assertEquals(
+            listOf("reference.connection-endpoint.unresolved"),
+            success.validationBreakdown.kernelDiagnostics.map { it.ruleId.value },
+        )
+        assertEquals(
+            listOf(
+                "property.component.type.missing",
+                "connection.signal.incompatible",
+            ),
+            success.validationBreakdown.domainDiagnostics.map { it.ruleId.value },
+        )
+        assertEquals(
+            listOf("com.engineeringood.athena.domain.electrical-runtime"),
+            success.validationBreakdown.domainValidationAttributions.map { attribution -> attribution.pluginId },
+        )
+        assertEquals(
+            listOf("electrical-runtime.validation.component-and-port-rules"),
+            success.validationBreakdown.domainValidationAttributions.map { attribution -> attribution.contributionId },
+        )
+        assertEquals(
+            listOf(
+                listOf(
+                    "property.component.type.missing",
+                    "connection.signal.incompatible",
+                ),
+            ),
+            success.validationBreakdown.domainValidationAttributions.map { attribution ->
+                attribution.ruleIds.map { ruleId -> ruleId.value }
+            },
+        )
+        assertEquals(emptyList(), success.validationBreakdown.semanticEnrichmentDiagnostics)
+    }
+
+    @Test
+    fun `compile removes only plugin owned domain validation attribution when the electrical plugin is absent`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/invalid-semantic-cabinet.athena")
+        val electricalCompiler = AthenaCompiler(
+            pluginDiscovery = AthenaPluginDiscovery(
+                runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                source = FixedAthenaPluginSource(listOf(ElectricalRuntimeDomainPlugin())),
+            ),
+        )
+        val genericCompiler = AthenaCompiler(
+            pluginDiscovery = AthenaPluginDiscovery(
+                runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                source = FixedAthenaPluginSource(listOf(GenericLoweringOnlyTestPlugin())),
+            ),
+        )
+
+        val electricalResult = assertIs<CompilerCompilationSuccess>(electricalCompiler.compile(examplePath))
+        val genericResult = assertIs<CompilerCompilationSuccess>(genericCompiler.compile(examplePath))
+
+        assertEquals(
+            electricalResult.validationBreakdown.kernelDiagnostics,
+            genericResult.validationBreakdown.kernelDiagnostics,
+        )
+        assertEquals(
+            listOf(
+                "property.component.type.missing",
+                "connection.signal.incompatible",
+            ),
+            electricalResult.validationBreakdown.domainDiagnostics.map { diagnostic -> diagnostic.ruleId.value },
+        )
+        assertEquals(emptyList(), genericResult.validationBreakdown.domainDiagnostics)
+        assertEquals(
+            listOf("electrical-runtime.validation.component-and-port-rules"),
+            electricalResult.validationBreakdown.domainValidationAttributions.map { attribution -> attribution.contributionId },
+        )
+        assertEquals(emptyList(), genericResult.validationBreakdown.domainValidationAttributions)
     }
 
     @Test
@@ -689,7 +899,7 @@ class AthenaCompilerTest {
         val duplicateSource = """
             system DuplicateConnections {
               device PLC1 {
-                type PLC
+                type Switch
               }
 
               port PLC1.out {
@@ -719,7 +929,7 @@ class AthenaCompilerTest {
         val quotedSource = """
             system QuotedProperties {
               device PLC1 {
-                type "PLC"
+                type "Switch"
               }
 
               port PLC1.out {
@@ -775,7 +985,7 @@ class AthenaCompilerTest {
                         name = "PLC1",
                         kind = "device",
                         properties = listOf(
-                            EngineeringProperty("type", EngineeringPropertyValue.Symbol("PLC")),
+                            EngineeringProperty("type", EngineeringPropertyValue.Symbol("Switch")),
                             EngineeringProperty("model", EngineeringPropertyValue.Text("S7-1200")),
                         ),
                         provenance = SourceProvenance(
@@ -935,7 +1145,7 @@ class AthenaCompilerTest {
         val unresolvedSource = """
             system MissingEndpoint {
               device PLC1 {
-                type PLC
+                type Switch
               }
 
               port PLC1.out {
@@ -969,11 +1179,11 @@ class AthenaCompilerTest {
         val duplicateSource = """
             system DuplicateIdentity {
               device PLC1 {
-                type PLC
+                type Switch
               }
 
               device PLC1 {
-                type PLC
+                type Switch
               }
 
               port PLC1.out {
@@ -1028,7 +1238,7 @@ class AthenaCompilerTest {
         val duplicateSignalSource = """
             system DuplicateSignal {
               device PLC1 {
-                type PLC
+                type Switch
               }
 
               device M1 {
@@ -1148,6 +1358,75 @@ class AthenaCompilerTest {
                 )
             }
         }.trimEnd()
+    }
+
+    private fun expectedM3PassIds(): List<CompilerPassId> = expectedM3PassDescriptors().map { it.id }
+
+    private fun expectedSuccessfulM3Statuses(): List<CompilerPassExecutionStatus> {
+        return List(expectedM3PassDescriptors().size) { CompilerPassExecutionStatus.SUCCEEDED }
+    }
+
+    private fun expectedValidationBlockedM3Statuses(): List<CompilerPassExecutionStatus> {
+        return listOf(
+            CompilerPassExecutionStatus.SUCCEEDED,
+            CompilerPassExecutionStatus.SUCCEEDED,
+            CompilerPassExecutionStatus.SUCCEEDED,
+            CompilerPassExecutionStatus.SUCCEEDED,
+            CompilerPassExecutionStatus.SKIPPED,
+            CompilerPassExecutionStatus.SKIPPED,
+        )
+    }
+
+    private fun expectedParseFailureM3Statuses(): List<CompilerPassExecutionStatus> {
+        return listOf(
+            CompilerPassExecutionStatus.FAILED,
+            CompilerPassExecutionStatus.SKIPPED,
+            CompilerPassExecutionStatus.SKIPPED,
+            CompilerPassExecutionStatus.SKIPPED,
+            CompilerPassExecutionStatus.SKIPPED,
+            CompilerPassExecutionStatus.SKIPPED,
+        )
+    }
+
+    private fun expectedM3PassDescriptors(): List<CompilerPassDescriptor> {
+        return listOf(
+            CompilerPassDescriptor(
+                id = CompilerPassId.PARSE,
+                responsibility = "Parse authored source into syntax-owned AST",
+                inputState = "authored source file",
+                outputState = "syntax-owned source document",
+            ),
+            CompilerPassDescriptor(
+                id = CompilerPassId.LOWER,
+                responsibility = "Lower syntax-owned source into canonical Engineering IR",
+                inputState = "syntax-owned source document",
+                outputState = "canonical Engineering IR",
+            ),
+            CompilerPassDescriptor(
+                id = CompilerPassId.SEMANTIC_ENRICHMENT,
+                responsibility = "Coordinate governed semantic enrichment participation over canonical Engineering IR",
+                inputState = "canonical Engineering IR",
+                outputState = "semantic enrichment coordination result",
+            ),
+            CompilerPassDescriptor(
+                id = CompilerPassId.VALIDATE,
+                responsibility = "Validate canonical Engineering IR and compute continuation policy",
+                inputState = "canonical Engineering IR plus semantic enrichment context",
+                outputState = "semantic validation result",
+            ),
+            CompilerPassDescriptor(
+                id = CompilerPassId.BACKEND_PREPARATION,
+                responsibility = "Prepare downstream backend input from validated canonical semantics and supported projections",
+                inputState = "semantic validation result plus canonical Engineering IR",
+                outputState = "geometry-backed backend input or block reason",
+            ),
+            CompilerPassDescriptor(
+                id = CompilerPassId.BACKEND_EMISSION,
+                responsibility = "Emit downstream backend output from prepared backend input",
+                inputState = "prepared backend input",
+                outputState = "backend emission result",
+            ),
+        )
     }
 
     private fun expectedDemoSvg(): String {

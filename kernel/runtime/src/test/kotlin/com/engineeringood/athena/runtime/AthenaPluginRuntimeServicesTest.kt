@@ -1,7 +1,5 @@
 package com.engineeringood.athena.runtime
 
-import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
-import com.engineeringood.athena.compiler.plugin.AthenaPluginSource
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.plugin.AthenaCoreRuntime
@@ -12,6 +10,10 @@ import com.engineeringood.athena.plugin.AthenaPluginManifest
 import com.engineeringood.athena.plugin.AthenaPluginType
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.CoreVersionRange
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginContributionCategory
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginLifecycleState
+import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
+import com.engineeringood.athena.plugin.host.AthenaPluginSource
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -33,8 +35,20 @@ class AthenaPluginRuntimeServicesTest {
             plugin.candidate.manifest.pluginId
         }
 
-        assertContains(hostedPluginIds, "com.engineeringood.athena.domain.electrical-runtime")
-        assertContains(hostedDomainPluginIds, "com.engineeringood.athena.domain.electrical-runtime")
+        assertEquals(
+            listOf(
+                "com.engineeringood.athena.domain.dummy-runtime",
+                "com.engineeringood.athena.domain.electrical-runtime",
+            ),
+            hostedPluginIds,
+        )
+        assertEquals(
+            listOf(
+                "com.engineeringood.athena.domain.dummy-runtime",
+                "com.engineeringood.athena.domain.electrical-runtime",
+            ),
+            hostedDomainPluginIds,
+        )
         assertEquals(hostedPluginIds, compilerPluginIds)
         assertEquals(
             pluginServices.discoveryReport().approvedInventory.approvedPlugins.map { plugin ->
@@ -51,7 +65,18 @@ class AthenaPluginRuntimeServicesTest {
                 .map { plugin -> plugin.manifest.pluginId },
         )
         assertTrue(pluginServices.coreOwnedInvariants().isNotEmpty())
+        val dummyPlugin = hostedPlugins.first { plugin -> plugin.pluginId == "com.engineeringood.athena.domain.dummy-runtime" }
         val electricalPlugin = hostedPlugins.first { plugin -> plugin.pluginId == "com.engineeringood.athena.domain.electrical-runtime" }
+        assertEquals(AthenaHostedPluginLifecycleState.INITIALIZED, pluginServices.hostedLifecycle().state)
+        assertEquals(AthenaHostedPluginLifecycleState.INITIALIZED, dummyPlugin.lifecycleState)
+        assertEquals(AthenaHostedPluginLifecycleState.INITIALIZED, electricalPlugin.lifecycleState)
+        assertEquals(
+            setOf(
+                AthenaExtensionPoint.DOMAIN_SEMANTICS,
+                AthenaExtensionPoint.RUNTIME_VIEWS,
+            ),
+            dummyPlugin.attachedExtensionPoints,
+        )
         assertEquals(
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
@@ -60,6 +85,25 @@ class AthenaPluginRuntimeServicesTest {
                 AthenaExtensionPoint.RUNTIME_VIEWS,
             ),
             electricalPlugin.attachedExtensionPoints,
+        )
+        assertTrue(
+            AthenaHostedPluginContributionCategory.RUNTIME_COMMAND !in dummyPlugin.contributionCategories,
+        )
+        assertTrue(
+            AthenaHostedPluginContributionCategory.RUNTIME_VIEW in dummyPlugin.contributionCategories,
+        )
+        assertTrue(
+            AthenaHostedPluginContributionCategory.RENDER in dummyPlugin.contributionCategories,
+        )
+        assertEquals(emptyList(), dummyPlugin.viewDefinitionIds)
+        assertTrue(
+            AthenaHostedPluginContributionCategory.RUNTIME_COMMAND in electricalPlugin.contributionCategories,
+        )
+        assertTrue(
+            AthenaHostedPluginContributionCategory.RUNTIME_VIEW in electricalPlugin.contributionCategories,
+        )
+        assertTrue(
+            AthenaHostedPluginContributionCategory.RENDER in electricalPlugin.contributionCategories,
         )
         assertEquals(listOf("cabinet", "wiring"), electricalPlugin.viewDefinitionIds)
     }
@@ -70,7 +114,7 @@ class AthenaPluginRuntimeServicesTest {
             """
                 system PluginCommandDemo {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {
@@ -117,12 +161,69 @@ class AthenaPluginRuntimeServicesTest {
     }
 
     @Test
+    fun `hosted runtime plugin view contributions stay scoped to dummy-owned declarations`() {
+        val sourcePath = writeProject(
+            """
+                system DummyPluginViewDemo {
+                  device G1 {
+                    domain "dummy-runtime"
+                    type Glyph
+                  }
+
+                  device P1 {
+                    domain "dummy-runtime"
+                    type Pulse
+                  }
+
+                  port G1.emit {
+                    flow emit
+                    tint Amber
+                  }
+
+                  port P1.absorb {
+                    flow absorb
+                    tint Amber
+                  }
+
+                  connect G1.emit -> P1.absorb
+                }
+            """.trimIndent(),
+        )
+
+        try {
+            val runtime = AthenaRuntime()
+            val workspace = runtime.openWorkspace(sourcePath.parent)
+            val context = workspace.activateProject(
+                projectName = "dummy-plugin-view-demo",
+                sourcePath = sourcePath,
+            )
+
+            val contributions = runtime.serviceRegistry.pluginRuntimeServices().viewContributions(context)
+
+            assertEquals(
+                listOf("com.engineeringood.athena.domain.dummy-runtime"),
+                contributions.map { contribution -> contribution.pluginId },
+            )
+            assertContains(
+                contributions.flatMap { contribution -> contribution.inspectorGroups }.map { group -> group.title },
+                "Dummy runtime",
+            )
+            assertTrue(
+                contributions.flatMap { contribution -> contribution.diagnosticsEntries }
+                    .any { entry -> entry.contains("Dummy runtime plugin", ignoreCase = true) },
+            )
+        } finally {
+            Files.deleteIfExists(sourcePath)
+        }
+    }
+
+    @Test
     fun `hosted runtime plugin view contributions derive runtime owned inspector and diagnostics data`() {
         val sourcePath = writeProject(
             """
                 system PluginViewDemo {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {
@@ -172,6 +273,10 @@ class AthenaPluginRuntimeServicesTest {
         val runtime = AthenaRuntime()
 
         val contributions = runtime.serviceRegistry.pluginRuntimeServices().viewDefinitionContributions()
+        assertEquals(
+            listOf("com.engineeringood.athena.domain.electrical-runtime"),
+            contributions.map { contribution -> contribution.pluginId },
+        )
         val electricalContribution = contributions.first { contribution ->
             contribution.pluginId == "com.engineeringood.athena.domain.electrical-runtime"
         }
@@ -183,6 +288,54 @@ class AthenaPluginRuntimeServicesTest {
         assertEquals(LayoutIntent.CONNECTIVITY, wiring.layoutIntent)
         assertTrue(cabinet.groupingRules.isNotEmpty())
         assertTrue(wiring.groupingRules.isNotEmpty())
+    }
+
+    @Test
+    fun `hosted runtime services expose electrical render contributions deterministically`() {
+        val runtime = AthenaRuntime()
+
+        val contributions = runtime.serviceRegistry.pluginRuntimeServices().renderContributions()
+        assertEquals(
+            listOf(
+                "com.engineeringood.athena.domain.dummy-runtime",
+                "com.engineeringood.athena.domain.electrical-runtime",
+            ),
+            contributions.map { contribution -> contribution.pluginId },
+        )
+        val dummyContribution = contributions.first { contribution ->
+            contribution.pluginId == "com.engineeringood.athena.domain.dummy-runtime"
+        }
+        val electricalContribution = contributions.first { contribution ->
+            contribution.pluginId == "com.engineeringood.athena.domain.electrical-runtime"
+        }
+
+        assertEquals(
+            listOf("dummy-runtime.render.synthetic-panel"),
+            dummyContribution.renderContributions.map { contribution -> contribution.contributionId },
+        )
+        assertEquals(
+            listOf(setOf("dummy-panel")),
+            dummyContribution.renderContributions.map { contribution -> contribution.viewIds },
+        )
+        assertEquals(
+            listOf(setOf("svg")),
+            dummyContribution.renderContributions.map { contribution -> contribution.rendererTargets },
+        )
+        assertEquals(
+            listOf(
+                "electrical-runtime.render.cabinet",
+                "electrical-runtime.render.wiring",
+            ),
+            electricalContribution.renderContributions.map { contribution -> contribution.contributionId },
+        )
+        assertEquals(
+            listOf(setOf("cabinet"), setOf("wiring")),
+            electricalContribution.renderContributions.map { contribution -> contribution.viewIds },
+        )
+        assertEquals(
+            listOf(setOf("svg"), setOf("svg")),
+            electricalContribution.renderContributions.map { contribution -> contribution.rendererTargets },
+        )
     }
 
     @Test
@@ -226,6 +379,23 @@ class AthenaPluginRuntimeServicesTest {
                 invariant.contains("Engineering IR", ignoreCase = true)
             },
         )
+    }
+
+    @Test
+    fun `hosted runtime lifecycle can be shut down without losing inspection evidence`() {
+        val pluginServices = AthenaHostedPluginRuntimeServices()
+
+        val initialized = pluginServices.hostedLifecycle()
+        val shutdown = pluginServices.shutdownHostedPlugins()
+
+        assertEquals(AthenaHostedPluginLifecycleState.INITIALIZED, initialized.state)
+        assertEquals(AthenaHostedPluginLifecycleState.SHUTDOWN, shutdown.state)
+        assertTrue(shutdown.inventory.approvedPluginCount > 0)
+        assertTrue(shutdown.inventory.approvedPlugins.all { plugin -> plugin.lifecycleState == AthenaHostedPluginLifecycleState.SHUTDOWN })
+        assertEquals(emptyList(), pluginServices.commandContributions())
+        assertEquals(emptyList(), pluginServices.domainSemanticsContributions())
+        assertEquals(emptyList(), pluginServices.renderContributions())
+        assertEquals(emptyList(), pluginServices.viewDefinitionContributions())
     }
 
     private fun writeProject(source: String): Path {

@@ -1,11 +1,14 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
-import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
-import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscoveryReport
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerParseSuccess
 import com.engineeringood.athena.plugin.AthenaCoreRuntime
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginInventorySnapshot
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginLifecycleSnapshot
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginLifecycleState
+import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
+import com.engineeringood.athena.plugin.host.AthenaPluginDiscoveryReport
 import com.engineeringood.athena.renderer.svg.SvgRenderer
 import java.nio.file.Files
 import java.nio.file.Path
@@ -83,9 +86,36 @@ class AthenaRuntimeTest {
 
             override fun hostedPlugins(): List<AthenaHostedRuntimePlugin> = emptyList()
 
+            override fun hostedLifecycle(): AthenaHostedPluginLifecycleSnapshot {
+                return AthenaHostedPluginLifecycleSnapshot(
+                    state = AthenaHostedPluginLifecycleState.INITIALIZED,
+                    inventory = AthenaHostedPluginInventorySnapshot(
+                        lifecycleState = AthenaHostedPluginLifecycleState.INITIALIZED,
+                        candidateCount = 0,
+                        approvedPluginCount = 0,
+                        rejectedPluginCount = 0,
+                        approvedPlugins = emptyList(),
+                        rejectedCandidates = emptyList(),
+                    ),
+                )
+            }
+
+            override fun initializeHostedPlugins(): AthenaHostedPluginLifecycleSnapshot = hostedLifecycle()
+
+            override fun shutdownHostedPlugins(): AthenaHostedPluginLifecycleSnapshot {
+                return AthenaHostedPluginLifecycleSnapshot(
+                    state = AthenaHostedPluginLifecycleState.SHUTDOWN,
+                    inventory = hostedLifecycle().inventory.copy(
+                        lifecycleState = AthenaHostedPluginLifecycleState.SHUTDOWN,
+                    ),
+                )
+            }
+
             override fun domainSemanticsContributions(): List<AthenaRuntimePluginDomainSemanticsContribution> = emptyList()
 
             override fun commandContributions(): List<AthenaRuntimePluginCommandContribution> = emptyList()
+
+            override fun renderContributions(): List<AthenaRuntimePluginRenderContribution> = emptyList()
 
             override fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution> = emptyList()
 

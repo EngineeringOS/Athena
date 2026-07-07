@@ -1,11 +1,13 @@
 package com.engineeringood.athena.compiler
 
-/** Stable identifiers for the explicit compiler passes that make up the current M0 pipeline. */
+/** Stable identifiers for the explicit compiler passes that make up the current M3 pipeline. */
 enum class CompilerPassId {
     PARSE,
     LOWER,
+    SEMANTIC_ENRICHMENT,
     VALIDATE,
-    DOWNSTREAM_DERIVATION,
+    BACKEND_PREPARATION,
+    BACKEND_EMISSION,
 }
 
 /** Declared metadata for one compiler pass, including its responsibility and typed boundary. */

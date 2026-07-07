@@ -1,0 +1,10 @@
+plugin_set=both
+approved_plugins=com.engineeringood.athena.domain.dummy-runtime,com.engineeringood.athena.domain.electrical-runtime
+components=4
+ports=4
+connections=2
+views=cabinet,wiring
+render_contributions=dummy-runtime.render.synthetic-panel,electrical-runtime.render.cabinet,electrical-runtime.render.wiring
+render_status=emitted
+render_view=cabinet
+active_render_contributions=electrical-runtime.render.cabinet

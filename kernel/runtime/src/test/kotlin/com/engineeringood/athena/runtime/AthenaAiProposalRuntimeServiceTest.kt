@@ -154,7 +154,7 @@ class AthenaAiProposalRuntimeServiceTest {
         return """
             system AiProposalDemo {
               device PLC1 {
-                type PLC
+                type Switch
               }
 
               device M1 {

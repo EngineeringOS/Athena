@@ -15,7 +15,7 @@ class ConnectCliTest {
             """
                 system Connectable {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {
@@ -60,7 +60,7 @@ class ConnectCliTest {
             """
                 system Connectable {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   port PLC1.out {

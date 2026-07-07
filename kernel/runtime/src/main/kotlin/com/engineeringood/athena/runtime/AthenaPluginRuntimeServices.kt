@@ -1,18 +1,25 @@
 package com.engineeringood.athena.runtime
 
-import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
-import com.engineeringood.athena.compiler.plugin.ApprovedAthenaPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
-import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscoveryReport
-import com.engineeringood.athena.compiler.plugin.RejectedAthenaPluginCandidate
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPlugin
+import com.engineeringood.athena.plugin.AthenaRenderContribution
+import com.engineeringood.athena.plugin.AthenaRenderContributor
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.PluginValidationDiagnostic
 import com.engineeringood.athena.plugin.PluginValidationRuleId
 import com.engineeringood.athena.plugin.PluginValidationSeverity
+import com.engineeringood.athena.plugin.host.ApprovedAthenaPlugin
+import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginContributionCategory
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginInventorySnapshot
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginLifecycleSnapshot
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginLifecycleState
+import com.engineeringood.athena.plugin.host.AthenaHostedPluginRegistry
+import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
+import com.engineeringood.athena.plugin.host.AthenaPluginDiscoveryReport
+import com.engineeringood.athena.plugin.host.RejectedAthenaPluginCandidate
 
 /**
  * Runtime-owned contract for hosted plugin discovery, inspection, and typed contribution access.
@@ -29,6 +36,26 @@ interface AthenaPluginRuntimeServices {
     fun approvedInventory(): AthenaApprovedPluginInventory = discoveryReport().approvedInventory
 
     /**
+     * Returns the current hosted lifecycle state and inventory snapshot.
+     */
+    fun hostedLifecycle(): AthenaHostedPluginLifecycleSnapshot
+
+    /**
+     * Returns the current hosted inventory snapshot in the same state reported by [hostedLifecycle].
+     */
+    fun hostedInventory(): AthenaHostedPluginInventorySnapshot = hostedLifecycle().inventory
+
+    /**
+     * Transitions hosted plugins into the initialized state without ceding runtime ownership.
+     */
+    fun initializeHostedPlugins(): AthenaHostedPluginLifecycleSnapshot
+
+    /**
+     * Transitions hosted plugins into the shutdown state while preserving inspection evidence.
+     */
+    fun shutdownHostedPlugins(): AthenaHostedPluginLifecycleSnapshot
+
+    /**
      * Returns hosted plugin metadata in deterministic approved-plugin order.
      */
     fun hostedPlugins(): List<AthenaHostedRuntimePlugin>
@@ -42,6 +69,11 @@ interface AthenaPluginRuntimeServices {
      * Returns all runtime command contributions exposed by the hosted plugin set.
      */
     fun commandContributions(): List<AthenaRuntimePluginCommandContribution>
+
+    /**
+     * Returns declared render contributions exposed by the hosted plugin set.
+     */
+    fun renderContributions(): List<AthenaRuntimePluginRenderContribution>
 
     /**
      * Returns supported view-definition contributions exposed by the hosted plugin set.
@@ -74,7 +106,9 @@ data class AthenaHostedRuntimePlugin(
     val pluginId: String,
     val pluginVersion: String,
     val implementationClassName: String,
+    val lifecycleState: AthenaHostedPluginLifecycleState,
     val attachedExtensionPoints: Set<AthenaExtensionPoint>,
+    val contributionCategories: Set<AthenaHostedPluginContributionCategory>,
     val domainCapabilities: Set<String>,
     val commandContributionIds: List<String>,
     val viewDefinitionIds: List<String>,
@@ -87,6 +121,14 @@ data class AthenaHostedRuntimePlugin(
 data class AthenaRuntimePluginViewDefinitionContribution(
     val pluginId: String,
     val viewDefinitions: List<ViewDefinition>,
+)
+
+/**
+ * Runtime-owned inspection record for one hosted plugin render contribution set.
+ */
+data class AthenaRuntimePluginRenderContribution(
+    val pluginId: String,
+    val renderContributions: List<AthenaRenderContribution>,
 )
 
 /**
@@ -233,13 +275,22 @@ class AthenaHostedPluginRuntimeServices(
     private val pluginDiscovery: AthenaPluginDiscovery = AthenaPluginDiscovery(),
     discoveredReport: AthenaPluginDiscoveryReport = pluginDiscovery.discover(),
 ) : AthenaPluginRuntimeServices {
-    private val hostedDiscoveryReport: AthenaPluginDiscoveryReport = enforceHostedRuntimeBoundaries(discoveredReport)
-    private val approvedPlugins = hostedDiscoveryReport.approvedInventory.approvedPlugins
+    private val pluginRegistry: AthenaHostedPluginRegistry = AthenaHostedPluginRegistry(
+        pluginDiscovery = pluginDiscovery,
+        discoveredReport = enforceHostedRuntimeBoundaries(discoveredReport),
+        autoInitialize = true,
+    )
 
-    override fun discoveryReport(): AthenaPluginDiscoveryReport = hostedDiscoveryReport
+    override fun discoveryReport(): AthenaPluginDiscoveryReport = pluginRegistry.discoveryReport()
+
+    override fun hostedLifecycle(): AthenaHostedPluginLifecycleSnapshot = pluginRegistry.lifecycleSnapshot()
+
+    override fun initializeHostedPlugins(): AthenaHostedPluginLifecycleSnapshot = pluginRegistry.initializeHostedPlugins()
+
+    override fun shutdownHostedPlugins(): AthenaHostedPluginLifecycleSnapshot = pluginRegistry.shutdownHostedPlugins()
 
     override fun domainSemanticsContributions(): List<AthenaRuntimePluginDomainSemanticsContribution> {
-        return approvedPlugins.mapNotNull { approvedPlugin ->
+        return activeApprovedPlugins().mapNotNull { approvedPlugin ->
             val domainPlugin = approvedPlugin.candidate.plugin as? AthenaDomainPlugin ?: return@mapNotNull null
             AthenaRuntimePluginDomainSemanticsContribution(
                 pluginId = approvedPlugin.candidate.manifest.pluginId,
@@ -250,29 +301,49 @@ class AthenaHostedPluginRuntimeServices(
     }
 
     override fun hostedPlugins(): List<AthenaHostedRuntimePlugin> {
-        return approvedPlugins.map { approvedPlugin ->
+        val approvedPluginsById = discoveryReport().approvedInventory.approvedPlugins.associateBy { approvedPlugin ->
+            approvedPlugin.candidate.manifest.pluginId
+        }
+        return pluginRegistry.hostedPlugins().map { hostedPlugin ->
+            val approvedPlugin = approvedPluginsById.getValue(hostedPlugin.pluginId)
             val plugin = approvedPlugin.candidate.plugin
             AthenaHostedRuntimePlugin(
-                pluginId = approvedPlugin.candidate.manifest.pluginId,
-                pluginVersion = approvedPlugin.candidate.manifest.pluginVersion,
-                implementationClassName = approvedPlugin.candidate.implementationClassName,
-                attachedExtensionPoints = approvedPlugin.attachedExtensionPoints,
+                pluginId = hostedPlugin.pluginId,
+                pluginVersion = hostedPlugin.pluginVersion,
+                implementationClassName = hostedPlugin.implementationClassName,
+                lifecycleState = hostedPlugin.lifecycleState,
+                attachedExtensionPoints = hostedPlugin.attachedExtensionPoints,
+                contributionCategories = hostedPlugin.contributionCategories,
                 domainCapabilities = domainSemanticsContributionFor(plugin)?.domainCapabilities.orEmpty(),
                 commandContributionIds = commandContributionsFor(plugin).map { contribution -> contribution.contributionId },
-                viewDefinitionIds = viewDefinitionsFor(plugin).map { definition -> definition.id },
+                viewDefinitionIds = hostedPlugin.viewDefinitionIds,
                 viewContributionCount = if (plugin is AthenaRuntimePluginViewContributor) 1 else 0,
             )
         }
     }
 
     override fun commandContributions(): List<AthenaRuntimePluginCommandContribution> {
-        return approvedPlugins.flatMap { approvedPlugin ->
+        return activeApprovedPlugins().flatMap { approvedPlugin ->
             commandContributionsFor(approvedPlugin.candidate.plugin)
         }
     }
 
+    override fun renderContributions(): List<AthenaRuntimePluginRenderContribution> {
+        return activeApprovedPlugins().mapNotNull { approvedPlugin ->
+            val renderContributions = renderContributionsFor(approvedPlugin.candidate.plugin)
+            if (renderContributions.isEmpty()) {
+                null
+            } else {
+                AthenaRuntimePluginRenderContribution(
+                    pluginId = approvedPlugin.candidate.manifest.pluginId,
+                    renderContributions = renderContributions,
+                )
+            }
+        }
+    }
+
     override fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution> {
-        return approvedPlugins.mapNotNull { approvedPlugin ->
+        return activeApprovedPlugins().mapNotNull { approvedPlugin ->
             val viewDefinitions = viewDefinitionsFor(approvedPlugin.candidate.plugin)
             if (viewDefinitions.isEmpty()) {
                 null
@@ -326,7 +397,7 @@ class AthenaHostedPluginRuntimeServices(
     }
 
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
-        return approvedPlugins.flatMap { approvedPlugin ->
+        return activeApprovedPlugins().flatMap { approvedPlugin ->
             val plugin = approvedPlugin.candidate.plugin as? AthenaRuntimePluginViewContributor ?: return@flatMap emptyList()
             plugin.viewContributions(context).map { contribution ->
                 contribution.copy(pluginId = approvedPlugin.candidate.manifest.pluginId)
@@ -350,9 +421,22 @@ class AthenaHostedPluginRuntimeServices(
         )
     }
 
+    private fun renderContributionsFor(plugin: AthenaPlugin): List<AthenaRenderContribution> {
+        val contributor = plugin as? AthenaRenderContributor ?: return emptyList()
+        return contributor.renderContributions
+    }
+
     private fun viewDefinitionsFor(plugin: AthenaPlugin): List<ViewDefinition> {
         val contributor = plugin as? AthenaViewDefinitionContributor ?: return emptyList()
         return contributor.viewDefinitions()
+    }
+
+    private fun activeApprovedPlugins(): List<ApprovedAthenaPlugin> {
+        return if (hostedLifecycle().state == AthenaHostedPluginLifecycleState.SHUTDOWN) {
+            emptyList()
+        } else {
+            discoveryReport().approvedInventory.approvedPlugins
+        }
     }
 
     private fun enforceHostedRuntimeBoundaries(

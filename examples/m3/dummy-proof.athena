@@ -1,0 +1,23 @@
+system DummyProof {
+  device G1 {
+    domain "dummy-runtime"
+    type Glyph
+  }
+
+  device P1 {
+    domain "dummy-runtime"
+    type Pulse
+  }
+
+  port G1.emit {
+    flow emit
+    tint Amber
+  }
+
+  port P1.absorb {
+    flow absorb
+    tint Amber
+  }
+
+  connect G1.emit -> P1.absorb
+}

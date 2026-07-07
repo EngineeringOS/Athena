@@ -13,7 +13,7 @@ class AthenaAiProposalCliTest {
             """
                 system AiCliDemo {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {
@@ -104,7 +104,7 @@ class AthenaAiProposalCliTest {
             """
                 system AiCliCleanupDemo {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {

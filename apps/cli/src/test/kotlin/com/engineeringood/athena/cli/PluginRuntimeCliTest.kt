@@ -5,6 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertTrue
 
 class PluginRuntimeCliTest {
     @Test
@@ -13,7 +14,7 @@ class PluginRuntimeCliTest {
             """
                 system PluginCliDemo {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {
@@ -47,8 +48,14 @@ class PluginRuntimeCliTest {
             val history = BootstrapCli().run(listOf("history", sourcePath.toString()))
 
             assertContains(plugins, "Hosted plugins")
+            assertContains(plugins, "Hosted plugins: 2")
+            assertContains(plugins, "com.engineeringood.athena.domain.dummy-runtime")
             assertContains(plugins, "com.engineeringood.athena.domain.electrical-runtime")
             assertContains(plugins, "electrical-runtime.connect-first-compatible")
+            assertTrue(
+                plugins.indexOf("com.engineeringood.athena.domain.dummy-runtime") <
+                    plugins.indexOf("com.engineeringood.athena.domain.electrical-runtime"),
+            )
 
             assertContains(execution, "Plugin command successful")
             assertContains(execution, "Contribution: electrical-runtime.connect-first-compatible")

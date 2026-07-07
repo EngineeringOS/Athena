@@ -1,0 +1,21 @@
+system ElectricalProof {
+  device PLC1 {
+    type Switch
+  }
+
+  device L1 {
+    type Lamp
+  }
+
+  port PLC1.out {
+    direction out
+    signal Digital
+  }
+
+  port L1.in {
+    direction in
+    signal Digital
+  }
+
+  connect PLC1.out -> L1.in
+}

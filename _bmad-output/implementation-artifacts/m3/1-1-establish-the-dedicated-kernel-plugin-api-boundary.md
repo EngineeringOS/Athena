@@ -1,10 +1,10 @@
----
+﻿---
 baseline_commit: 87b1342e4f95f523c84712c1841aebcaaee7975b
 ---
 
 # Story 1.1: Establish The Dedicated Kernel Plugin API Boundary
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -22,11 +22,11 @@ so that extensions can target an official SPI instead of depending on compiler i
 ## Tasks / Subtasks
 
 - [x] Add the dedicated kernel SPI module without introducing host logic. (AC: 1, 4)
-  - [x] Register `:kernel:plugin-api` in `settings.gradle.kts` and keep it grouped under `kernel/`.
-  - [x] Create `kernel/plugin-api/build.gradle.kts`, `README.md`, and `README.zh-CN.md` using the existing lightweight Kotlin/JVM module pattern.
+  - [x] Register `:kernel:plugins:plugin-api` in `settings.gradle.kts` and keep it grouped under `kernel/`.
+  - [x] Create `kernel/plugins/plugin-api/build.gradle.kts`, `README.md`, and `README.zh-CN.md` using the existing lightweight Kotlin/JVM module pattern.
   - [x] Keep shared versions and plugins sourced through `gradle/libs.versions.toml`; do not introduce ad-hoc version declarations.
 - [x] Move only the durable plugin-facing contracts into the new boundary. (AC: 1, 2, 3)
-  - [x] Relocate the stable SPI types currently buried under `kernel/compiler/.../plugin/` into `:kernel:plugin-api`.
+  - [x] Relocate the stable SPI types currently buried under `kernel/compiler/.../plugin/` into `:kernel:plugins:plugin-api`.
   - [x] Give the moved SPI a package root that no longer advertises compiler ownership, such as `com.engineeringood.athena.plugin`.
   - [x] Keep compiler-private discovery, approval, and orchestration types out of the SPI module.
 - [x] Untangle extension-facing contracts from compiler-private dependencies. (AC: 1, 2, 3)
@@ -34,7 +34,7 @@ so that extensions can target an official SPI instead of depending on compiler i
   - [x] If a plugin-facing contract currently references compiler-private types such as `CompilerSourceDocument`, split or reshape that contract so the extension API remains compiler-independent.
   - [x] Preserve ownership by referencing existing kernel models like `EngineeringDocument`, `StableSemanticIdentity`, layout contracts, and geometry contracts from their current modules instead of rehosting them in the SPI.
 - [x] Rewire current consumers onto the dedicated API boundary. (AC: 1, 2, 3)
-  - [x] Update `:extensions:domain-electrical` to depend on `:kernel:plugin-api` instead of compiler internals for stable plugin contracts.
+  - [x] Update `:extensions:domain-electrical` to depend on `:kernel:plugins:plugin-api` instead of compiler internals for stable plugin contracts.
   - [x] Update any runtime or test imports that should point to the stable SPI package, while leaving host-only logic for later M3 stories.
   - [x] Update the `ServiceLoader` registration path if the public `AthenaPlugin` type moves to a new package.
 - [x] Preserve milestone continuity and document the boundary. (AC: 2, 3, 4)
@@ -91,11 +91,11 @@ so that extensions can target an official SPI instead of depending on compiler i
   - `RejectedAthenaPluginCandidate`
   - `AthenaPluginValidator`
   - host approval and runtime inspection policies
-- If a type is consumed only by compiler-host approval/orchestration and not by extension implementations, keep it out of `:kernel:plugin-api`.
+- If a type is consumed only by compiler-host approval/orchestration and not by extension implementations, keep it out of `:kernel:plugins:plugin-api`.
 
 ### Technical Requirements
 
-- Prefer `:kernel:plugin-api` now and defer `:kernel:plugin-host` until Story `1.3` or `1.4`.
+- Prefer `:kernel:plugins:plugin-api` now and defer `:kernel:plugins:plugin-host` until Story `1.3` or `1.4`.
 - The stable SPI package should be easy to read and module-neutral. `com.engineeringood.athena.plugin` is the preferred target unless an equally clear package is justified.
 - Do not keep the public SPI under `com.engineeringood.athena.compiler.plugin` once moved; that would preserve the wrong ownership signal.
 - Do not duplicate `Engineering IR`, `Layout IR`, `Geometry IR`, or runtime-owned models in the SPI. Reference existing kernel contracts from their current modules.
@@ -123,11 +123,11 @@ so that extensions can target an official SPI instead of depending on compiler i
 ### File Structure Requirements
 
 - Expected new paths:
-  - `kernel/plugin-api/build.gradle.kts`
-  - `kernel/plugin-api/README.md`
-  - `kernel/plugin-api/README.zh-CN.md`
-  - `kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/**`
-  - `kernel/plugin-api/src/test/kotlin/com/engineeringood/athena/plugin/**`
+  - `kernel/plugins/plugin-api/build.gradle.kts`
+  - `kernel/plugins/plugin-api/README.md`
+  - `kernel/plugins/plugin-api/README.zh-CN.md`
+  - `kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/**`
+  - `kernel/plugins/plugin-api/src/test/kotlin/com/engineeringood/athena/plugin/**`
 - Expected update paths:
   - `settings.gradle.kts`
   - `kernel/README.md`
@@ -145,7 +145,7 @@ so that extensions can target an official SPI instead of depending on compiler i
   - `extensions/domain-electrical/src/main/kotlin/com/engineeringood/athena/domain/electricalruntime/ElectricalRuntimeDomainPlugin.kt`
     - Preserve its current domain behavior; only migrate it off compiler-internal SPI usage.
 - Explicit non-goals:
-  - no `:kernel:plugin-host` yet
+  - no `:kernel:plugins:plugin-host` yet
   - no pass-pipeline refactor
   - no plugin lifecycle UI or remote loading
   - no `domain-dummy`
@@ -155,14 +155,14 @@ so that extensions can target an official SPI instead of depending on compiler i
 
 - Minimum verification commands for story completion:
   - `java25`
-  - `.\gradlew.bat --no-daemon --console=plain :kernel:plugin-api:test`
+  - `.\gradlew.bat --no-daemon --console=plain :kernel:plugins:plugin-api:test`
   - `.\gradlew.bat --no-daemon --console=plain :extensions:domain-electrical:test`
   - `.\gradlew.bat --no-daemon --console=plain :kernel:compiler:test`
   - `.\gradlew.bat --no-daemon --console=plain :kernel:runtime:test`
   - `.\gradlew.bat --no-daemon --console=plain build`
 - Run Gradle verification sequentially on Windows. Do not run concurrent Gradle build/test commands; this repo has already hit repeated Windows locking/process issues from parallel execution.
 - Required proof tests:
-  - module marker test for `:kernel:plugin-api`
+  - module marker test for `:kernel:plugins:plugin-api`
   - focused tests that stable SPI types resolve from the new module/package
   - regression tests proving `:extensions:domain-electrical` compiles and loads through the moved public `AthenaPlugin` contract
   - regression checks proving compiler-private discovery/approval types were not accidentally re-exported as the public SPI
@@ -201,7 +201,7 @@ GPT-5 Codex
 - CodeGraph exploration of current plugin contract and discovery ownership
 - `git log -5 --oneline`
 - module build file inspection for `kernel/compiler`, `kernel/runtime`, and `extensions/domain-electrical`
-- `java25; .\gradlew.bat --no-daemon --console=plain :kernel:plugin-api:test`
+- `java25; .\gradlew.bat --no-daemon --console=plain :kernel:plugins:plugin-api:test`
 - `java25; .\gradlew.bat --no-daemon --console=plain :extensions:domain-electrical:test`
 - `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test`
 - `java25; .\gradlew.bat --no-daemon --console=plain :kernel:runtime:test`
@@ -210,12 +210,12 @@ GPT-5 Codex
 
 ### Completion Notes List
 
-- Added `:kernel:plugin-api` as the dedicated extension-facing module with KDoc-backed SPI classes, marker coverage, and focused boundary tests.
+- Added `:kernel:plugins:plugin-api` as the dedicated extension-facing module with KDoc-backed SPI classes, marker coverage, and focused boundary tests.
 - Moved stable plugin contracts, manifest models, compatibility models, validation models, and plugin-facing lowering/validation contexts into `com.engineeringood.athena.plugin`.
 - Kept compiler-private host responsibilities in `kernel/compiler/plugin/*`, including discovery, approval inventory, validator orchestration, and domain coordination.
 - Removed the extension-facing dependency on compiler internals by converting plugin contexts to `AthenaSourceDocument` while keeping `CompilerSourceDocument` as a compiler-owned facade model.
 - Rewired `domain-electrical`, `runtime`, compiler tests, and service registration to the new SPI package and updated grouped READMEs to reflect the ownership split.
-- Verified the boundary with sequential Java 25 runs for `:kernel:plugin-api:test`, `:extensions:domain-electrical:test`, `:kernel:compiler:test`, `:kernel:runtime:test`, and a full `build`.
+- Verified the boundary with sequential Java 25 runs for `:kernel:plugins:plugin-api:test`, `:extensions:domain-electrical:test`, `:kernel:compiler:test`, `:kernel:runtime:test`, and a full `build`.
 
 ### File List
 
@@ -250,17 +250,17 @@ GPT-5 Codex
 - `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaPluginContractTest.kt`
 - `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaPluginDiscoveryTest.kt`
 - `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaPluginTestFixtures.kt`
-- `kernel/plugin-api/README.md`
-- `kernel/plugin-api/README.zh-CN.md`
-- `kernel/plugin-api/build.gradle.kts`
-- `kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaCoreRuntime.kt`
-- `kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaDomainSemanticsModel.kt`
-- `kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaPluginContracts.kt`
-- `kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaPluginManifestModel.kt`
-- `kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaPluginValidationModel.kt`
-- `kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/PluginApiModuleMarker.kt`
-- `kernel/plugin-api/src/test/kotlin/com/engineeringood/athena/plugin/PluginApiBoundaryTest.kt`
-- `kernel/plugin-api/src/test/kotlin/com/engineeringood/athena/plugin/PluginApiModuleMarkerTest.kt`
+- `kernel/plugins/plugin-api/README.md`
+- `kernel/plugins/plugin-api/README.zh-CN.md`
+- `kernel/plugins/plugin-api/build.gradle.kts`
+- `kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaCoreRuntime.kt`
+- `kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaDomainSemanticsModel.kt`
+- `kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaPluginContracts.kt`
+- `kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaPluginManifestModel.kt`
+- `kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaPluginValidationModel.kt`
+- `kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/PluginApiModuleMarker.kt`
+- `kernel/plugins/plugin-api/src/test/kotlin/com/engineeringood/athena/plugin/PluginApiBoundaryTest.kt`
+- `kernel/plugins/plugin-api/src/test/kotlin/com/engineeringood/athena/plugin/PluginApiModuleMarkerTest.kt`
 - `kernel/runtime/build.gradle.kts`
 - `kernel/runtime/src/main/kotlin/com/engineeringood/athena/runtime/AthenaPluginRuntimeServices.kt`
 - `kernel/runtime/src/test/kotlin/com/engineeringood/athena/runtime/AthenaPluginRuntimeServicesTest.kt`
@@ -269,9 +269,11 @@ GPT-5 Codex
 
 ### Change Log
 
-- 2026-07-07: Established `:kernel:plugin-api`, moved stable SPI into `com.engineeringood.athena.plugin`, rewired current consumers, updated service registration, and verified the full Java 25 build.
+- 2026-07-07: Established `:kernel:plugins:plugin-api`, moved stable SPI into `com.engineeringood.athena.plugin`, rewired current consumers, updated service registration, and verified the full Java 25 build.
 
 ### Review Findings
 
-- [ ] [Review][Patch] `domain-electrical` still depends directly on `:kernel:compiler`, so the proof extension can continue compiling against compiler internals even after the SPI extraction and the boundary is not actually enforced. Remove the unnecessary compiler module edge and keep the extension compiling against `:kernel:plugin-api`, `:kernel:runtime`, and other truly needed kernel-owned modules only. [extensions/domain-electrical/build.gradle.kts:6]
-- [ ] [Review][Patch] Host-only compatibility and validation models were promoted into the public `com.engineeringood.athena.plugin` package even though they are consumed only by compiler/runtime host code (`AthenaCoreVersion`, `AthenaCoreRuntime`, `PluginValidationDiagnostic`, `PluginValidationResult`, `PluginValidationRuleId`, `PluginValidationSeverity`). This keeps compiler-private and runtime-private concerns mixed into the stable SPI surface, which violates Story 1.1 AC2 and weakens the boundary. Relocate those host-side models out of `:kernel:plugin-api` and leave only true extension implementation contracts in the stable SPI package. [kernel/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaCoreRuntime.kt:3]
+- [ ] [Review][Patch] `domain-electrical` still depends directly on `:kernel:compiler`, so the proof extension can continue compiling against compiler internals even after the SPI extraction and the boundary is not actually enforced. Remove the unnecessary compiler module edge and keep the extension compiling against `:kernel:plugins:plugin-api`, `:kernel:runtime`, and other truly needed kernel-owned modules only. [extensions/domain-electrical/build.gradle.kts:6]
+- [ ] [Review][Patch] Host-only compatibility and validation models were promoted into the public `com.engineeringood.athena.plugin` package even though they are consumed only by compiler/runtime host code (`AthenaCoreVersion`, `AthenaCoreRuntime`, `PluginValidationDiagnostic`, `PluginValidationResult`, `PluginValidationRuleId`, `PluginValidationSeverity`). This keeps compiler-private and runtime-private concerns mixed into the stable SPI surface, which violates Story 1.1 AC2 and weakens the boundary. Relocate those host-side models out of `:kernel:plugins:plugin-api` and leave only true extension implementation contracts in the stable SPI package. [kernel/plugins/plugin-api/src/main/kotlin/com/engineeringood/athena/plugin/AthenaCoreRuntime.kt:3]
+
+

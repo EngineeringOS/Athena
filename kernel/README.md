@@ -1,4 +1,4 @@
-# `kernel`
+﻿# `kernel`
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
@@ -7,7 +7,9 @@ The `kernel` group contains Athena's semantic backbone. These modules own the au
 ## Modules
 
 - `:kernel:language` -> [`language/`](language/README.md)
-- `:kernel:plugin-api` -> [`plugin-api/`](plugin-api/README.md)
+- `kernel/plugins` subgroup -> [`plugins/`](plugins/README.md)
+- `:kernel:plugins:plugin-api` -> [`plugins/plugin-api/`](plugins/plugin-api/README.md)
+- `:kernel:plugins:plugin-host` -> [`plugins/plugin-host/`](plugins/plugin-host/README.md)
 - `:kernel:engineering-model` -> [`engineering-model/`](engineering-model/README.md)
 - `:kernel:layout-model` -> [`layout-model/`](layout-model/README.md)
 - `:kernel:geometry-model` -> [`geometry-model/`](geometry-model/README.md)
@@ -18,4 +20,5 @@ The `kernel` group contains Athena's semantic backbone. These modules own the au
 
 ## Boundary
 
-The kernel owns semantic authority. Extensions, UI, and apps may depend on it, but they should not redefine the authored source, the canonical model, or the compiler/runtime ownership rules. `:kernel:plugin-api` is the dedicated extension-facing boundary; compiler and runtime host logic remain separate from that public SPI.
+The kernel owns semantic authority. Extensions, UI, and apps may depend on it, but they should not redefine the authored source, the canonical model, or the compiler/runtime ownership rules. `:kernel:plugins:plugin-api` is the dedicated extension-facing boundary, and `:kernel:plugins:plugin-host` owns hosted source, approval, and approved-inventory governance separate from both compiler and runtime orchestration.
+

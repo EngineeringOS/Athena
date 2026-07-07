@@ -1,6 +1,5 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
@@ -12,6 +11,7 @@ import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
+import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
 
 /** Lowers the syntax-only AST into the first canonical Engineering IR document. */
 class EngineeringIrLowerer(

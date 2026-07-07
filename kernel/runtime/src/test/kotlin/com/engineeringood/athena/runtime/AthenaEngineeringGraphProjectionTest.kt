@@ -65,7 +65,7 @@ class AthenaEngineeringGraphProjectionTest {
             """
                 system Broken {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   port Missing.out {

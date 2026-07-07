@@ -171,7 +171,7 @@ class AthenaSemanticDiffInspectionTest {
         return """
             system HistoryDemo {
               device PLC1 {
-                type PLC
+                type Switch
               }
 
               device M1 {

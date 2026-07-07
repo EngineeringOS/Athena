@@ -7,7 +7,8 @@
 ## 模块
 
 - `:extensions:domain-electrical` -> [`domain-electrical/`](domain-electrical/README.zh-CN.md)
+- `:extensions:domain-dummy` -> [`domain-dummy/`](domain-dummy/README.zh-CN.md)
 
 ## 边界
 
-扩展可以通过批准的契约增加 lowering、校验、command 与 view，但不能替代规范工程模型、compiler pass 顺序或 runtime 所有权。
+扩展可以通过获批契约增加 lowering、validation、command、runtime-view 或 renderer contribution，但不能替代规范工程模型、compiler pass 顺序或 runtime 所有权。

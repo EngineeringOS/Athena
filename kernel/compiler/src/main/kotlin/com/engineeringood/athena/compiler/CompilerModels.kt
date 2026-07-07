@@ -8,6 +8,7 @@ import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.language.SourceFileAst
+import com.engineeringood.athena.plugin.AthenaDomainValidationAttribution
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
 
@@ -124,11 +125,20 @@ data class CompilerCompilationParseFailure(
     val pipeline: CompilerPipelineReport,
 ) : CompilerCompilationResult
 
+/** Inspectable validation-boundary breakdown emitted by the compiler-owned validate pass. */
+data class CompilerValidationBreakdown(
+    val semanticEnrichmentDiagnostics: List<SemanticDiagnostic> = emptyList(),
+    val kernelDiagnostics: List<SemanticDiagnostic> = emptyList(),
+    val domainDiagnostics: List<SemanticDiagnostic> = emptyList(),
+    val domainValidationAttributions: List<AthenaDomainValidationAttribution> = emptyList(),
+)
+
 /** Unified compiler success carrying syntax authority, canonical IR, and semantic validation outcome. */
 data class CompilerCompilationSuccess(
     val source: CompilerSourceDocument,
     val document: EngineeringDocument,
     val semanticResult: SemanticValidationResult,
+    val validationBreakdown: CompilerValidationBreakdown = CompilerValidationBreakdown(),
     val layouts: List<LayoutDocument> = emptyList(),
     val geometries: List<GeometryDocument> = emptyList(),
     val rendering: CompilerRenderingResult,

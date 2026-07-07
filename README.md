@@ -20,6 +20,7 @@ The current proof is still architecture-first. It demonstrates that:
 - the DSL is the authored source of truth
 - `Engineering IR` is the canonical semantic model
 - the compiler owns pass orchestration
+- hosted plugins enter through governed source plus approval boundaries
 - extensions add domain behavior without becoming semantic authorities
 - rendering is a downstream backend, not the source of truth
 
@@ -30,10 +31,11 @@ The implemented scope currently includes:
 - lowering into canonical `Engineering IR`
 - core semantic validation plus extension-provided domain semantics
 - deterministic SVG rendering
-- JVM plugin discovery and hosting
+- stable hosted plugin API and hosted plugin approval boundaries
 - governed knowledge package loading and resolution
 - external boundary descriptor validation
 - runtime-hosted graph, command, history, diff, and optional AI proposal flows
+- real `domain-electrical` and synthetic `domain-dummy` proof domains
 - a desktop Compose viewer proof and published examples under [`examples/`](examples/README.md)
 
 This is not the final UX phase yet.
@@ -46,11 +48,16 @@ Athena now names and stores Gradle modules by architectural role. The physical w
 | --- | --- | --- | --- |
 | `kernel` | `:kernel:language` | [`kernel/language/`](kernel/language/README.md) | Syntax layer and parser for authored DSL text |
 | `kernel` | `:kernel:engineering-model` | [`kernel/engineering-model/`](kernel/engineering-model/README.md) | Canonical engineering model after lowering |
+| `kernel` | `:kernel:layout-model` | [`kernel/layout-model/`](kernel/layout-model/README.md) | Explicit layout projection contracts downstream of canonical semantics |
+| `kernel` | `:kernel:geometry-model` | [`kernel/geometry-model/`](kernel/geometry-model/README.md) | Explicit geometry projection contracts downstream of layout intent |
 | `kernel` | `:kernel:validation` | [`kernel/validation/`](kernel/validation/README.md) | Generic semantic validation over the canonical model |
-| `kernel` | `:kernel:compiler` | [`kernel/compiler/`](kernel/compiler/README.md) | Compiler facade, lowering, orchestration, plugin contracts, knowledge, and boundary loading |
+| `kernel` | `:kernel:plugins:plugin-api` | [`kernel/plugins/plugin-api/`](kernel/plugins/plugin-api/README.md) | Stable hosted plugin SPI |
+| `kernel` | `:kernel:plugins:plugin-host` | [`kernel/plugins/plugin-host/`](kernel/plugins/plugin-host/README.md) | Plugin source, approval, inventory, and hosted lifecycle boundary |
+| `kernel` | `:kernel:compiler` | [`kernel/compiler/`](kernel/compiler/README.md) | Compiler facade, lowering, pass orchestration, knowledge, boundary loading, and hosted contribution coordination |
 | `kernel` | `:kernel:runtime` | [`kernel/runtime/`](kernel/runtime/README.md) | Workspace lifecycle, execution context, graph, command, history, plugin, and AI proposal hosting |
 | `kernel` | `:kernel:svg-renderer` | [`kernel/svg-renderer/`](kernel/svg-renderer/README.md) | Deterministic SVG projection from semantic state |
 | `extensions` | `:extensions:domain-electrical` | [`extensions/domain-electrical/`](extensions/domain-electrical/README.md) | First real Electrical domain extension |
+| `extensions` | `:extensions:domain-dummy` | [`extensions/domain-dummy/`](extensions/domain-dummy/README.md) | Synthetic proof domain for hosted SPI generality |
 | `ui` | `:ui:compose-workbench` | [`ui/compose-workbench/`](ui/compose-workbench/README.md) | Shared Compose workbench and viewer interaction infrastructure |
 | `apps` | `:apps:cli` | [`apps/cli/`](apps/cli/README.md) | Shell-facing entry point |
 | `apps` | `:apps:desktop-viewer` | [`apps/desktop-viewer/`](apps/desktop-viewer/README.md) | Desktop Compose application entry point |
@@ -106,9 +113,11 @@ If you want the implementation view:
 
 1. [`kernel/compiler/README.md`](kernel/compiler/README.md)
 2. [`kernel/runtime/README.md`](kernel/runtime/README.md)
-3. [`docs/compiler/m0-pass-pipeline.md`](docs/compiler/m0-pass-pipeline.md)
-4. [`docs/compiler/m1-runtime-host-boundary.md`](docs/compiler/m1-runtime-host-boundary.md)
-5. [`examples/README.md`](examples/README.md)
+3. [`docs/usages/athena-workspace-summary.md`](docs/usages/athena-workspace-summary.md)
+4. [`docs/usages/m3-proof-usage.md`](docs/usages/m3-proof-usage.md)
+5. [`docs/compiler/m0-pass-pipeline.md`](docs/compiler/m0-pass-pipeline.md)
+6. [`docs/compiler/m1-runtime-host-boundary.md`](docs/compiler/m1-runtime-host-boundary.md)
+7. [`examples/README.md`](examples/README.md)
 
 If you want the platform thesis:
 
@@ -134,3 +143,4 @@ See [`LICENSE`](LICENSE).
 2. [GitHub Page](https://engineeringos.github.io/manifesto)
 3. [Github](https://github.com/EngineeringOS/manifesto)
 4. [Athena POC](https://github.com/EngineeringOS/Athena)
+5. [Zread](https://zread.ai/EngineeringOS/Athena)

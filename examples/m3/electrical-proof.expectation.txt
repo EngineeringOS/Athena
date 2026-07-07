@@ -1,0 +1,10 @@
+plugin_set=electrical-only
+approved_plugins=com.engineeringood.athena.domain.electrical-runtime
+components=2
+ports=2
+connections=1
+views=cabinet,wiring
+render_contributions=electrical-runtime.render.cabinet,electrical-runtime.render.wiring
+render_status=emitted
+render_view=cabinet
+active_render_contributions=electrical-runtime.render.cabinet

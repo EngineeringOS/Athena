@@ -1,4 +1,4 @@
----
+﻿---
 title: 'Athena M3'
 type: architecture-spine
 purpose: build-substrate
@@ -186,8 +186,8 @@ flowchart TB
     ui[ui:compose-workbench]
     runtime[kernel:runtime]
     compiler[kernel:compiler]
-    pluginApi[kernel:plugin-api]
-    pluginHost[kernel:plugin-host]
+    pluginApi[kernel:plugins:plugin-api]
+    pluginHost[kernel:plugins:plugin-host]
     engineering[kernel:engineering-model]
     layout[kernel:layout-model]
     geometry[kernel:geometry-model]
@@ -222,8 +222,9 @@ Athena/
     layout-model/                      # explicit downstream layout contracts
     geometry-model/                    # explicit downstream geometry contracts
     validation/                        # generic kernel validation only
-    plugin-api/                        # stable plugin SPI shared by kernel and extensions
-    plugin-host/                       # plugin sources, approval, inventory, and hosted inspection
+    plugins/                           # plugin infrastructure subgroup
+      plugin-api/                      # stable plugin SPI shared by kernel and extensions
+      plugin-host/                     # plugin sources, approval, inventory, and hosted inspection
     compiler/                          # pass pipeline orchestration over canonical semantics
     runtime/                           # lifecycle, command runtime, hosted plugin services, projection runtime
     svg-renderer/                      # generic backend orchestration and renderer output
@@ -248,8 +249,8 @@ Athena/
 | Generic authored DSL and AST | `:kernel:language` | AD-1, AD-2 |
 | Canonical semantic contracts | `:kernel:engineering-model` | inherited AD-3, AD-1 |
 | Generic kernel validation | `:kernel:validation` | AD-1, AD-6 |
-| Stable plugin SPI | `:kernel:plugin-api` | AD-3, AD-5, AD-6, AD-7 |
-| Hosted plugin discovery, approval, and inventory | `:kernel:plugin-host` | inherited AD-6, AD-4 |
+| Stable plugin SPI | `:kernel:plugins:plugin-api` | AD-3, AD-5, AD-6, AD-7 |
+| Hosted plugin discovery, approval, and inventory | `:kernel:plugins:plugin-host` | inherited AD-6, AD-4 |
 | Pass pipeline orchestration | `:kernel:compiler` | AD-1, AD-2, AD-5, AD-6 |
 | Runtime hosting and command-owned mutation | `:kernel:runtime` | inherited AD-2, inherited AD-4, AD-4 |
 | Downstream projection contracts | `:kernel:layout-model`, `:kernel:geometry-model` | inherited AD-1, inherited AD-3 |
@@ -266,3 +267,4 @@ Athena/
 - Plugin-defined grammar extensions are deferred; M3 proves plugin-defined interpretation, not plugin-defined syntax.
 - Broader domain packs beyond the electrical proof set and the dummy proof set are deferred.
 - Marketplace, remote registry, and organization-level plugin governance workflows are deferred.
+

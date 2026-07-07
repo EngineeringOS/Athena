@@ -10,6 +10,8 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.language.PropertyAssignment
+import com.engineeringood.athena.language.ScalarValue
 import com.engineeringood.athena.runtime.AthenaCommandRuntimeService
 import com.engineeringood.athena.runtime.AthenaConnectPortsCommand
 import com.engineeringood.athena.runtime.AthenaEngineeringGraphNodeKind
@@ -31,17 +33,29 @@ import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
+import com.engineeringood.athena.plugin.AthenaDomainConnectionSchema
+import com.engineeringood.athena.plugin.AthenaDomainEntitySchema
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaDomainPortSchema
+import com.engineeringood.athena.plugin.AthenaDomainPropertySchema
+import com.engineeringood.athena.plugin.AthenaDomainPropertyValueKind
+import com.engineeringood.athena.plugin.AthenaDomainSchema
+import com.engineeringood.athena.plugin.AthenaDomainSchemaSubjectKind
+import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
+import com.engineeringood.athena.plugin.AthenaCompilerPassContribution
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPluginManifest
 import com.engineeringood.athena.plugin.AthenaPluginType
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
+import com.engineeringood.athena.plugin.AthenaPluginValidationResult
+import com.engineeringood.athena.plugin.AthenaRenderContribution
+import com.engineeringood.athena.plugin.AthenaValidationContribution
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.CoreVersionRange
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 
-/** Real Electrical/Runtime domain plugin that contributes the first M0 lowering and validation semantics. */
+/** Reference Electrical/Runtime proof plugin that publishes the stable M3 hosted domain surface. */
 class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionContributor, AthenaRuntimePluginCommandContributor, AthenaRuntimePluginViewContributor {
     /** Core-owned manifest declaring the sample plugin's identity, type, compatibility, and extension point. */
     override val manifest: AthenaPluginManifest = AthenaPluginManifest(
@@ -60,9 +74,32 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
     /** Minimal capability declaration showing the plugin remains a domain extension rather than core authority. */
     override val domainCapabilities: Set<String> = setOf("electrical-runtime")
 
-    /** Lowers the current M0 Electrical/Runtime declarations into compiler-owned semantic blueprints. */
+    /** Generic electrical proof schema published through the stable plugin API. */
+    override val domainSchema: AthenaDomainSchema = ELECTRICAL_DOMAIN_SCHEMA
+
+    /** Inspectable validation contribution declarations exposed by the electrical proof plugin. */
+    override val validationContributions: List<AthenaValidationContribution> = ELECTRICAL_VALIDATION_CONTRIBUTIONS
+
+    /** Inspectable compiler-stage contribution declarations exposed by the electrical proof plugin. */
+    override val compilerPassContributions: List<AthenaCompilerPassContribution> = ELECTRICAL_COMPILER_PASS_CONTRIBUTIONS
+
+    /** Inspectable renderer-facing contribution declarations exposed by the electrical proof plugin. */
+    override val renderContributions: List<AthenaRenderContribution> = ELECTRICAL_RENDER_CONTRIBUTIONS
+
+    /** Lowers authored Electrical/Runtime proof declarations into compiler-owned semantic blueprints. */
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
-        val components = context.source.ast.declarations.filterIsInstance<DeviceDeclaration>().map { declaration ->
+        val deviceDeclarations = context.source.ast.declarations.filterIsInstance<DeviceDeclaration>()
+        val explicitForeignDeviceNames = deviceDeclarations
+            .filter { declaration -> declaration.isExplicitForeignDomain() }
+            .map { declaration -> declaration.name }
+            .toSet()
+        val ownedDeviceNames = deviceDeclarations
+            .filter { declaration -> declaration.isElectricalOwned() }
+            .map { declaration -> declaration.name }
+            .toSet()
+        val components = deviceDeclarations
+            .filter { declaration -> declaration.name in ownedDeviceNames }
+            .map { declaration ->
             context.component(
                 name = declaration.name,
                 kind = "device",
@@ -70,7 +107,10 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
                 provenance = context.provenance(declaration.span),
             )
         }
-        val ports = context.source.ast.declarations.filterIsInstance<PortDeclaration>().map { declaration ->
+        val ports = context.source.ast.declarations
+            .filterIsInstance<PortDeclaration>()
+            .filter { declaration -> declaration.qualifiedName.parts.firstOrNull() !in explicitForeignDeviceNames }
+            .map { declaration ->
             context.port(
                 ownerPath = declaration.qualifiedName.parts.dropLast(1),
                 ownerProvenance = context.provenance(declaration.qualifiedName.span),
@@ -79,7 +119,13 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
                 provenance = context.provenance(declaration.span),
             )
         }
-        val connections = context.source.ast.declarations.filterIsInstance<ConnectionDeclaration>().map { declaration ->
+        val connections = context.source.ast.declarations
+            .filterIsInstance<ConnectionDeclaration>()
+            .filter { declaration ->
+                declaration.from.parts.firstOrNull() !in explicitForeignDeviceNames &&
+                    declaration.to.parts.firstOrNull() !in explicitForeignDeviceNames
+            }
+            .map { declaration ->
             context.connection(
                 fromPath = declaration.from.parts,
                 fromProvenance = context.provenance(declaration.from.span),
@@ -96,16 +142,30 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
         )
     }
 
-    /** Validates Electrical/Runtime-specific properties and connection compatibility over canonical Engineering IR. */
-    override fun validate(context: AthenaPluginValidationContext): List<SemanticDiagnostic> {
-        val document = context.document
-        val portsById = document.ports.associateBy { it.id }
-        return buildList {
-            addAll(componentTypeDiagnostics(document, context))
-            addAll(portDirectionDiagnostics(document, context))
-            addAll(portSignalDiagnostics(document, context))
-            addAll(connectionCompatibilityDiagnostics(document.connections, portsById, context))
+    /** Validates Electrical/Runtime proof properties and connection compatibility over canonical Engineering IR. */
+    override fun validate(context: AthenaPluginValidationContext): AthenaPluginValidationResult {
+        val ownedComponents = context.document.components.filter { component -> component.isElectricalOwned() }
+        val ownedComponentIds = ownedComponents.map { component -> component.id }.toSet()
+        val ownedPorts = context.document.ports.filter { port -> port.ownerReference.resolvedIdentity in ownedComponentIds }
+        val portsById = ownedPorts.associateBy { it.id }
+        val ownedConnections = context.document.connections.filter { connection ->
+            connection.from.resolvedIdentity in portsById &&
+                connection.to.resolvedIdentity in portsById
         }
+        val diagnostics = buildList {
+            addAll(componentTypeDiagnostics(ownedComponents, context))
+            addAll(portDirectionDiagnostics(ownedPorts, context))
+            addAll(portSignalDiagnostics(ownedPorts, context))
+            addAll(connectionCompatibilityDiagnostics(ownedConnections, portsById, context))
+        }
+        return AthenaPluginValidationResult(
+            contributions = listOf(
+                context.emitValidationContribution(
+                    contributionId = ELECTRICAL_VALIDATION_CONTRIBUTION_ID,
+                    diagnostics = diagnostics,
+                ),
+            ),
+        )
     }
 
     /** Contributes the first runtime-hosted electrical command proof without bypassing the command runtime. */
@@ -156,6 +216,9 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
     /** Contributes the first runtime-hosted electrical view proof through existing shell seams. */
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
         val summary = context.electricalRuntimeSummary()
+        if (summary.ownedPortCount == 0 && summary.ownedComponentCount == 0) {
+            return emptyList()
+        }
         return listOf(
             AthenaRuntimePluginViewContribution(
                 inspectorGroups = listOf(
@@ -163,6 +226,8 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
                         title = "Electrical runtime",
                         fields = listOf(
                             AthenaRuntimePluginInspectorField("Domain", "electrical-runtime"),
+                            AthenaRuntimePluginInspectorField("Components", summary.ownedComponentCount.toString()),
+                            AthenaRuntimePluginInspectorField("Ports", summary.ownedPortCount.toString()),
                             AthenaRuntimePluginInspectorField("Signals", summary.signalCount.toString()),
                             AthenaRuntimePluginInspectorField("Compatible pairs", summary.compatiblePairCount.toString()),
                             AthenaRuntimePluginInspectorField("Connected pairs", summary.connectedPairCount.toString()),
@@ -177,10 +242,10 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
     }
 
     private fun componentTypeDiagnostics(
-        document: EngineeringDocument,
+        components: List<com.engineeringood.athena.ir.EngineeringComponent>,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
-        return document.components.mapNotNull { component ->
+        return components.mapNotNull { component ->
             when (val type = component.properties.requiredSymbolValue("type")) {
                 PropertySymbolValue.Missing -> context.domainDiagnostic(
                     ruleId = "property.component.type.missing",
@@ -222,10 +287,10 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
     }
 
     private fun portDirectionDiagnostics(
-        document: EngineeringDocument,
+        ports: List<EngineeringPort>,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
-        return document.ports.mapNotNull { port ->
+        return ports.mapNotNull { port ->
             when (val direction = port.properties.requiredSymbolValue("direction")) {
                 PropertySymbolValue.Missing -> context.domainDiagnostic(
                     ruleId = "property.port.direction.missing",
@@ -314,10 +379,10 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
     }
 
     private fun portSignalDiagnostics(
-        document: EngineeringDocument,
+        ports: List<EngineeringPort>,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
-        return document.ports.flatMap { port ->
+        return ports.flatMap { port ->
             when (val signal = port.properties.optionalSymbolValue("signal")) {
                 PropertySymbolValue.Missing,
                 is PropertySymbolValue.SymbolText -> emptyList()
@@ -383,14 +448,153 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
     private fun authoredPath(reference: EngineeringReference): String = authoredPath(reference.authoredPath)
 
     private fun authoredPath(parts: List<String>): String = parts.joinToString(".")
+
+    private fun com.engineeringood.athena.ir.EngineeringComponent.isElectricalOwned(): Boolean {
+        val domain = properties.domainMarkerValue()
+        return domain == null || domain == ELECTRICAL_DOMAIN_ID
+    }
+
+    private fun List<EngineeringProperty>.domainMarkerValue(): String? {
+        val matchingProperties = filter { property -> property.name == "domain" }
+        if (matchingProperties.size != 1) {
+            return null
+        }
+        return when (val value = matchingProperties.single().value) {
+            is EngineeringPropertyValue.Symbol -> value.text
+            is EngineeringPropertyValue.Text -> value.text
+        }
+    }
 }
 
-private val VALID_DEVICE_TYPES = setOf("PLC", "Motor")
+private val VALID_DEVICE_TYPES = setOf("Lamp", "Motor", "Switch")
+
+private const val ELECTRICAL_DOMAIN_ID = "electrical-runtime"
 
 private val VALID_DIRECTIONS = mapOf(
     "in" to PortDirection.IN,
     "out" to PortDirection.OUT,
 )
+
+private val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
+    domainId = ELECTRICAL_DOMAIN_ID,
+    displayName = "Electrical Runtime",
+    description = "Reference real proof-domain schema for hosted electrical semantics on the Athena JVM-first path.",
+    capabilities = setOf(ELECTRICAL_DOMAIN_ID),
+    entities = listOf(
+        AthenaDomainEntitySchema(
+            typeId = "Lamp",
+            displayName = "Lamp",
+            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+            description = "Electrical indicator or load component declared through the generic device surface.",
+            propertyNames = setOf("type"),
+            portTypeIds = setOf("electrical-port"),
+        ),
+        AthenaDomainEntitySchema(
+            typeId = "Motor",
+            displayName = "Motor",
+            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+            description = "Electrical rotating load component declared through the generic device surface.",
+            propertyNames = setOf("type"),
+            portTypeIds = setOf("electrical-port"),
+        ),
+        AthenaDomainEntitySchema(
+            typeId = "Switch",
+            displayName = "Switch",
+            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+            description = "Electrical switching or control component declared through the generic device surface.",
+            propertyNames = setOf("type"),
+            portTypeIds = setOf("electrical-port"),
+        ),
+    ),
+    properties = listOf(
+        AthenaDomainPropertySchema(
+            name = "type",
+            displayName = "Component type",
+            valueKind = AthenaDomainPropertyValueKind.SYMBOL,
+            appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
+            required = true,
+            allowedSymbolValues = VALID_DEVICE_TYPES,
+            description = "Proof-domain type selector interpreted by the electrical proof plugin over generic components.",
+        ),
+        AthenaDomainPropertySchema(
+            name = "direction",
+            displayName = "Port direction",
+            valueKind = AthenaDomainPropertyValueKind.SYMBOL,
+            appliesTo = setOf(AthenaDomainSchemaSubjectKind.PORT),
+            required = true,
+            allowedSymbolValues = setOf("in", "out"),
+            description = "Direction metadata interpreted by the electrical proof plugin over generic ports.",
+        ),
+        AthenaDomainPropertySchema(
+            name = "signal",
+            displayName = "Port signal",
+            valueKind = AthenaDomainPropertyValueKind.SYMBOL,
+            appliesTo = setOf(AthenaDomainSchemaSubjectKind.PORT),
+            required = false,
+            description = "Optional signal metadata used to validate port compatibility and wiring intent.",
+        ),
+    ),
+    ports = listOf(
+        AthenaDomainPortSchema(
+            typeId = "electrical-port",
+            displayName = "Electrical port",
+            description = "Generic hosted electrical port for the first proof domain.",
+            propertyNames = setOf("direction", "signal"),
+            allowedDirections = setOf("in", "out"),
+        ),
+    ),
+    connections = listOf(
+        AthenaDomainConnectionSchema(
+            typeId = "Wire",
+            displayName = "Wire",
+            description = "Hosted wire connection interpreted over the generic connection surface.",
+            sourcePortTypeIds = setOf("electrical-port"),
+            targetPortTypeIds = setOf("electrical-port"),
+        ),
+    ),
+)
+
+private val ELECTRICAL_VALIDATION_CONTRIBUTIONS = listOf(
+    AthenaValidationContribution(
+        contributionId = ELECTRICAL_VALIDATION_CONTRIBUTION_ID,
+        displayName = "Electrical property and compatibility validation",
+        description = "Validates supported component types, port direction and signal metadata, and connection compatibility.",
+    ),
+)
+
+private val ELECTRICAL_COMPILER_PASS_CONTRIBUTIONS = listOf(
+    AthenaCompilerPassContribution(
+        contributionId = "electrical-runtime.lower.devices-ports-connections",
+        stage = AthenaCompilerContributionStage.LOWER,
+        displayName = "Electrical lowering",
+        description = "Interprets generic devices, ports, and connections as hosted electrical proof semantics during lowering.",
+    ),
+    AthenaCompilerPassContribution(
+        contributionId = "electrical-runtime.validate.compatibility-and-property-rules",
+        stage = AthenaCompilerContributionStage.VALIDATE,
+        displayName = "Electrical validation",
+        description = "Applies hosted electrical compatibility and property validation during the compiler-owned validate stage.",
+    ),
+)
+
+private val ELECTRICAL_RENDER_CONTRIBUTIONS = listOf(
+    AthenaRenderContribution(
+        contributionId = "electrical-runtime.render.cabinet",
+        displayName = "Electrical cabinet rendering intent",
+        description = "Publishes cabinet-view visual intent for hosted electrical structure without taking renderer ownership.",
+        viewIds = setOf("cabinet"),
+        rendererTargets = setOf("svg"),
+    ),
+    AthenaRenderContribution(
+        contributionId = "electrical-runtime.render.wiring",
+        displayName = "Electrical wiring rendering intent",
+        description = "Publishes wiring-view visual intent for hosted electrical connectivity without taking renderer ownership.",
+        viewIds = setOf("wiring"),
+        rendererTargets = setOf("svg"),
+    ),
+)
+
+private const val ELECTRICAL_VALIDATION_CONTRIBUTION_ID = "electrical-runtime.validation.component-and-port-rules"
 
 private enum class PortDirection {
     IN,
@@ -407,6 +611,25 @@ private sealed interface PropertySymbolValue {
     data class Duplicate(val values: List<String>) : PropertySymbolValue
 }
 
+private fun PropertyAssignment.scalarIdentifierText(): String? {
+    return when (val value = value) {
+        is ScalarValue.Identifier -> value.text
+        is ScalarValue.StringLiteral -> value.text
+    }
+}
+
+private fun DeviceDeclaration.isElectricalOwned(): Boolean {
+    return fields.firstOrNull { field -> field.name == "domain" }?.scalarIdentifierText().let { domain ->
+        domain == null || domain == ELECTRICAL_DOMAIN_ID
+    }
+}
+
+private fun DeviceDeclaration.isExplicitForeignDomain(): Boolean {
+    return fields.firstOrNull { field -> field.name == "domain" }?.scalarIdentifierText().let { domain ->
+        domain != null && domain != ELECTRICAL_DOMAIN_ID
+    }
+}
+
 private fun EngineeringPropertyValue.renderedValue(): String {
     return when (this) {
         is EngineeringPropertyValue.Symbol -> text
@@ -418,6 +641,8 @@ private fun EngineeringPropertyValue.renderedValue(): String {
  * Runtime-owned summary derived from the active electrical graph projection.
  */
 private data class ElectricalRuntimeSummary(
+    val ownedComponentCount: Int,
+    val ownedPortCount: Int,
     val signalCount: Int,
     val compatiblePairCount: Int,
     val connectedPairCount: Int,
@@ -436,13 +661,18 @@ private fun AthenaExecutionContext.firstCompatibleElectricalPair(): ElectricalCo
 private fun AthenaExecutionContext.electricalRuntimeSummary(): ElectricalRuntimeSummary {
     val graphProjection = projectEngineeringGraphProjection() as? AthenaEngineeringGraphReadyProjection
         ?: return ElectricalRuntimeSummary(
+            ownedComponentCount = 0,
+            ownedPortCount = 0,
             signalCount = 0,
             compatiblePairCount = 0,
             connectedPairCount = 0,
         )
-    val portCandidates = graphProjection.electricalPortCandidates()
+    val electricalComponentIds = graphProjection.electricalComponentSemanticIds()
+    val portCandidates = graphProjection.electricalPortCandidates(electricalComponentIds)
     val connectedPairs = graphProjection.connectedPairs()
     return ElectricalRuntimeSummary(
+        ownedComponentCount = electricalComponentIds.size,
+        ownedPortCount = portCandidates.size,
         signalCount = portCandidates.mapNotNull { candidate -> candidate.signal }.distinct().size,
         compatiblePairCount = electricalCompatiblePairs(graphProjection).size,
         connectedPairCount = connectedPairs.size,
@@ -463,7 +693,8 @@ private fun AthenaExecutionContext.electricalCompatiblePairs(): List<ElectricalC
 private fun electricalCompatiblePairs(
     graphProjection: AthenaEngineeringGraphReadyProjection,
 ): List<ElectricalCompatiblePair> {
-    val candidates = graphProjection.electricalPortCandidates()
+    val electricalComponentIds = graphProjection.electricalComponentSemanticIds()
+    val candidates = graphProjection.electricalPortCandidates(electricalComponentIds)
     val connectedPairs = graphProjection.connectedPairs()
     val outputs = candidates.filter { candidate -> candidate.direction == "out" && candidate.signal != null }
     val inputs = candidates.filter { candidate -> candidate.direction == "in" && candidate.signal != null }
@@ -489,15 +720,34 @@ private fun electricalCompatiblePairs(
 }
 
 /**
+ * Collects electrical-owned component ids from the runtime-owned graph projection.
+ */
+private fun AthenaEngineeringGraphReadyProjection.electricalComponentSemanticIds(): Set<String> {
+    return graph.nodesOfKind(AthenaEngineeringGraphNodeKind.COMPONENT)
+        .filter { node ->
+            val domainValue = node.properties.firstOrNull { property -> property.name == "domain" }?.value
+            domainValue == null || domainValue == ELECTRICAL_DOMAIN_ID
+        }
+        .map { node -> node.semanticId }
+        .toSet()
+}
+
+/**
  * Collects electrical port candidates from the runtime-owned graph projection.
  */
-private fun AthenaEngineeringGraphReadyProjection.electricalPortCandidates(): List<ElectricalPortCandidate> {
+private fun AthenaEngineeringGraphReadyProjection.electricalPortCandidates(
+    electricalComponentIds: Set<String>,
+): List<ElectricalPortCandidate> {
     val graph = graph
-    return graph.nodesOfKind(AthenaEngineeringGraphNodeKind.PORT).map { portNode ->
+    return graph.nodesOfKind(AthenaEngineeringGraphNodeKind.PORT).mapNotNull { portNode ->
         val ownerSemanticId = portNode.references
             .firstOrNull { reference -> reference.kind == AthenaEngineeringGraphReferenceKind.OWNER }
             ?.resolvedSemanticId
-        val ownerName = ownerSemanticId?.let { semanticId -> graph.node(semanticId)?.displayName }
+            ?: return@mapNotNull null
+        if (ownerSemanticId !in electricalComponentIds) {
+            return@mapNotNull null
+        }
+        val ownerName = graph.node(ownerSemanticId)?.displayName
             ?: portNode.references.firstOrNull()?.authoredPath?.joinToString(".")
             ?: "Unknown"
         ElectricalPortCandidate(

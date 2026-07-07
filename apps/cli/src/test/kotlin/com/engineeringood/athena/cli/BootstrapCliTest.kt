@@ -10,7 +10,7 @@ class BootstrapCliTest {
 
         assertContains(help, "Athena M1 runtime host")
         assertContains(help, "Java 25")
-        assertContains(help, "apps:cli, kernel:runtime, kernel:language, kernel:validation, kernel:engineering-model, kernel:compiler, extensions:domain-electrical, kernel:svg-renderer")
+        assertContains(help, "apps:cli, kernel:runtime, kernel:language, kernel:validation, kernel:engineering-model, kernel:compiler, extensions:domain-electrical, extensions:domain-dummy, kernel:svg-renderer")
         assertContains(help, "kernel:runtime")
         assertContains(help, "plugins")
         assertContains(help, "plugin-command <source-file> <contribution-id>")

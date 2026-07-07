@@ -30,7 +30,7 @@ class AthenaCommandRuntimeTest {
             """
                 system Connectable {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {
@@ -121,8 +121,18 @@ class AthenaCommandRuntimeTest {
             assertEquals(listOf("cabinet", "wiring"), incrementalReport.geometryScopedViewIds)
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.renderingMode)
             assertEquals(listOf("cabinet"), incrementalReport.renderingViewIds)
-            assertContains(updatedCompilation.pipeline.passes[2].outputSummary, "scoped")
-            assertContains(updatedCompilation.pipeline.passes[3].outputSummary, "scoped")
+            assertContains(
+                updatedCompilation.pipeline.passes.first { it.pass.id == com.engineeringood.athena.compiler.CompilerPassId.VALIDATE }.outputSummary,
+                "scoped",
+            )
+            assertContains(
+                updatedCompilation.pipeline.passes.first { it.pass.id == com.engineeringood.athena.compiler.CompilerPassId.BACKEND_PREPARATION }.outputSummary,
+                "scoped",
+            )
+            assertContains(
+                updatedCompilation.pipeline.passes.first { it.pass.id == com.engineeringood.athena.compiler.CompilerPassId.BACKEND_EMISSION }.outputSummary,
+                "scoped",
+            )
             val updatedCabinetLayout = updatedCompilation.layouts.first { layout -> layout.view.id == "cabinet" }
             val updatedWiringLayout = updatedCompilation.layouts.first { layout -> layout.view.id == "wiring" }
             assertSame(
@@ -218,7 +228,7 @@ class AthenaCommandRuntimeTest {
             """
                 system Connectable {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   port PLC1.out {

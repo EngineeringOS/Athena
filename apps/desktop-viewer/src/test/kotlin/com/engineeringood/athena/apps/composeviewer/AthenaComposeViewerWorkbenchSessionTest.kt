@@ -17,7 +17,7 @@ class AthenaComposeViewerWorkbenchSessionTest {
             """
                 system Connectable {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {
@@ -113,7 +113,7 @@ class AthenaComposeViewerWorkbenchSessionTest {
             """
                 system Connectable {
                   device PLC1 {
-                    type PLC
+                    type Switch
                   }
 
                   device M1 {

@@ -7,6 +7,7 @@ The `extensions` group contains domain-specific packs that plug into the kernel 
 ## Modules
 
 - `:extensions:domain-electrical` -> [`domain-electrical/`](domain-electrical/README.md)
+- `:extensions:domain-dummy` -> [`domain-dummy/`](domain-dummy/README.md)
 
 ## Boundary
 

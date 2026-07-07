@@ -1,6 +1,6 @@
 system|id=system:DemoCabinet|name=DemoCabinet|provenance=examples/m0/demo-cabinet.athena:1:1-22:2
 component|id=component:PLC1|name=PLC1|kind=device|provenance=examples/m0/demo-cabinet.athena:2:3-5:4
-property|name=type|value=symbol:PLC
+property|name=type|value=symbol:Switch
 property|name=model|value=text:S7-1200
 component|id=component:M1|name=M1|kind=device|provenance=examples/m0/demo-cabinet.athena:7:3-9:4
 property|name=type|value=symbol:Motor

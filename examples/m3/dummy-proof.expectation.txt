@@ -1,0 +1,9 @@
+plugin_set=dummy-only
+approved_plugins=com.engineeringood.athena.domain.dummy-runtime
+components=2
+ports=2
+connections=1
+views=
+render_contributions=dummy-runtime.render.synthetic-panel
+render_status=blocked
+render_blocked_by=BACKEND_PREPARATION

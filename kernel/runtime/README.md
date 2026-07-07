@@ -1,14 +1,16 @@
-# `:kernel:runtime`
+﻿# `:kernel:runtime`
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
-The `:kernel:runtime` module owns Athena's long-lived execution boundary. It manages workspace lifecycle, active project context, runtime service resolution, projection sessions, command execution, history, graph projection, plugin hosting, and optional AI proposal review without becoming a second semantic authority.
+The `:kernel:runtime` module owns Athena's long-lived execution boundary. It manages workspace lifecycle, active project context, runtime service resolution, projection sessions, command execution, history, graph projection, hosted plugin lifecycle inspection and execution, and optional AI proposal review without becoming a second semantic authority.
 
 ## Responsibilities
 
 - Open and close workspaces through `AthenaRuntime`.
 - Activate projects into a shared `AthenaExecutionContext`.
 - Resolve runtime-owned services such as graph, command, plugin, and renderer coordination.
+- Consume the governed approved plugin inventory from `:kernel:plugins:plugin-host`.
+- Expose runtime-visible plugin lifecycle inspection without handing orchestration ownership to plugins.
 - Host runtime-owned projection sessions with supported-view discovery and active-view switching.
 - Keep canonical runtime state aligned with `Engineering IR`.
 - Host command history, undo, redo, replay, diff inspection, and accepted AI proposal flow.
@@ -27,6 +29,7 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 ## Dependencies
 
 - `:kernel:compiler`
+- `:kernel:plugins:plugin-host`
 - `:kernel:engineering-model`
 - `:kernel:svg-renderer`
 
@@ -63,3 +66,4 @@ Windows PowerShell:
 ```powershell
 java25; .\gradlew.bat :kernel:runtime:test
 ```
+
