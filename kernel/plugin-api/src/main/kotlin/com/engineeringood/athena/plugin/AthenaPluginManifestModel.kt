@@ -1,13 +1,13 @@
-package com.engineeringood.athena.compiler.plugin
+package com.engineeringood.athena.plugin
 
-/** Core-owned plugin type vocabulary for the first M0 plugin classes. */
+/** Core-owned plugin type vocabulary for hosted Athena plugins. */
 enum class AthenaPluginType {
     DOMAIN,
     RULE,
     RENDERER,
 }
 
-/** Core-owned extension-point vocabulary for plugin attachment in the M0 compiler substrate. */
+/** Core-owned extension-point vocabulary for approved plugin attachment. */
 enum class AthenaExtensionPoint {
     DOMAIN_SEMANTICS,
     VIEW_DEFINITIONS,

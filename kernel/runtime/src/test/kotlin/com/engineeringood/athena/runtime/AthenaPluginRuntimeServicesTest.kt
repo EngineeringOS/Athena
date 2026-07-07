@@ -1,16 +1,17 @@
 package com.engineeringood.athena.runtime
 
-import com.engineeringood.athena.compiler.plugin.AthenaCoreRuntime
-import com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
-import com.engineeringood.athena.compiler.plugin.AthenaPluginManifest
 import com.engineeringood.athena.compiler.plugin.AthenaPluginSource
-import com.engineeringood.athena.compiler.plugin.AthenaPluginType
-import com.engineeringood.athena.compiler.plugin.CoreVersionRange
-import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
 import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.plugin.AthenaCoreRuntime
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPlugin
+import com.engineeringood.athena.plugin.AthenaPluginManifest
+import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
+import com.engineeringood.athena.plugin.CoreVersionRange
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -46,7 +47,7 @@ class AthenaPluginRuntimeServicesTest {
             runtime.serviceRegistry.compiler().pluginInventory
                 .approvedPlugins
                 .map { plugin -> plugin.candidate.plugin }
-                .filterIsInstance<com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin>()
+                .filterIsInstance<AthenaDomainPlugin>()
                 .map { plugin -> plugin.manifest.pluginId },
         )
         assertTrue(pluginServices.coreOwnedInvariants().isNotEmpty())
@@ -235,9 +236,9 @@ class AthenaPluginRuntimeServicesTest {
 }
 
 private class FixedAthenaPluginSource(
-    private val plugins: List<com.engineeringood.athena.compiler.plugin.AthenaPlugin>,
+    private val plugins: List<AthenaPlugin>,
 ) : AthenaPluginSource {
-    override fun loadPlugins(): List<com.engineeringood.athena.compiler.plugin.AthenaPlugin> = plugins
+    override fun loadPlugins(): List<AthenaPlugin> = plugins
 }
 
 private class UndeclaredRuntimeCommandTestPlugin : AthenaDomainPlugin, AthenaRuntimePluginCommandContributor {

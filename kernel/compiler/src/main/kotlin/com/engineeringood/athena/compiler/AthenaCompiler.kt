@@ -5,13 +5,9 @@ import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorSourc
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeResolver
 import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
-import com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscoveryReport
-import com.engineeringood.athena.compiler.plugin.AthenaPluginValidationContext
-import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.ParseFailure
@@ -30,6 +26,11 @@ import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticRuleId
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
 import com.engineeringood.athena.semantics.core.EngineeringIrValidator
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPluginValidationContext
+import com.engineeringood.athena.plugin.AthenaSourceDocument
+import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -56,9 +57,10 @@ class AthenaCompiler(
     /** Approved plugin inventory attached at core-owned extension points for this compiler instance. */
     val pluginInventory: AthenaApprovedPluginInventory = pluginDiscoveryReport.approvedInventory
 
-    private val domainSemanticsCoordinator: AthenaDomainSemanticsCoordinator = hostedDomainPlugins?.let { domainPlugins ->
-        AthenaDomainSemanticsCoordinator(activeDomainPlugins = domainPlugins)
-    } ?: AthenaDomainSemanticsCoordinator(pluginInventory)
+    private val domainSemanticsCoordinator: AthenaDomainSemanticsCoordinator =
+        hostedDomainPlugins?.let { domainPlugins ->
+            AthenaDomainSemanticsCoordinator(activeDomainPlugins = domainPlugins)
+        } ?: AthenaDomainSemanticsCoordinator(pluginInventory)
     private val lowerer: EngineeringIrLowerer = lowerer ?: EngineeringIrLowerer(domainSemanticsCoordinator)
     private val supportedViewDefinitionsCache: List<ViewDefinition> = pluginInventory
         .attachedPlugins(AthenaExtensionPoint.VIEW_DEFINITIONS)
@@ -338,7 +340,8 @@ class AthenaCompiler(
 
         val previousGeometriesByViewId = previousGeometries.associateBy { geometry -> geometry.viewId }
         val scopedGeometries = layouts.map { layout ->
-            val previousGeometry = previousGeometriesByViewId[layout.view.id] ?: return fallbackGeometryDerivation(layouts)
+            val previousGeometry =
+                previousGeometriesByViewId[layout.view.id] ?: return fallbackGeometryDerivation(layouts)
             geometryIrDeriver.deriveIncremental(
                 layoutDocument = layout,
                 previousGeometry = previousGeometry,
@@ -401,7 +404,7 @@ class AthenaCompiler(
     }
 
     private fun semanticSummary(
-        result: com.engineeringood.athena.semantics.core.SemanticValidationResult,
+        result: SemanticValidationResult,
         affectedScope: CompilerAffectedScope?,
         mode: CompilerIncrementalPassMode,
     ): String {
@@ -415,7 +418,7 @@ class AthenaCompiler(
 
     private fun validateSemantics(
         source: CompilerSourceDocument,
-        document: com.engineeringood.athena.ir.EngineeringDocument,
+        document: EngineeringDocument,
         affectedScope: CompilerAffectedScope?,
     ): Pair<SemanticValidationResult, CompilerIncrementalPassMode> {
         val validationMode = if (affectedScope == null) {
@@ -439,7 +442,7 @@ class AthenaCompiler(
                     document = document,
                     context = AthenaPluginValidationContext(
                         document = document,
-                        source = source,
+                        source = source.toAthenaSourceDocument(),
                         approvedPluginIds = domainSemanticsCoordinator.activePluginIds,
                     ),
                 ).diagnostics,
@@ -459,7 +462,7 @@ class AthenaCompiler(
 
     private fun domainSemanticsUnavailableDiagnostics(
         source: CompilerSourceDocument,
-        document: com.engineeringood.athena.ir.EngineeringDocument,
+        document: EngineeringDocument,
     ): List<SemanticDiagnostic> {
         if (domainSemanticsCoordinator.hasActivePlugins || source.ast.declarations.isEmpty()) {
             return emptyList()
@@ -478,31 +481,28 @@ class AthenaCompiler(
     }
 
     private fun renderResult(
-        result: com.engineeringood.athena.semantics.core.SemanticValidationResult,
-        document: com.engineeringood.athena.ir.EngineeringDocument,
+        result: SemanticValidationResult,
+        document: EngineeringDocument,
         geometries: List<GeometryDocument>,
         affectedScope: CompilerAffectedScope?,
         layoutMode: CompilerIncrementalPassMode,
         geometryMode: CompilerIncrementalPassMode,
         previousRendering: CompilerRenderingResult?,
     ): RenderingDerivationResult {
-        return if (result.continuationDecision == com.engineeringood.athena.semantics.core.SemanticContinuationDecision.CONTINUE) {
-            val renderingGeometry = selectRenderingGeometry(geometries)
-            if (renderingGeometry == null) {
-                return RenderingDerivationResult(
-                    rendering = CompilerRenderingBlocked(
-                        reason = "no supported geometry-backed backend input was derived",
-                        blockedByPass = CompilerPassId.DOWNSTREAM_DERIVATION,
-                    ),
-                    mode = CompilerIncrementalPassMode.FULL_FALLBACK,
-                    viewIds = emptyList(),
-                    passRecord = CompilerPassRecord(
-                        pass = DOWNSTREAM_DERIVATION_PASS,
-                        status = CompilerPassExecutionStatus.FAILED,
-                        outputSummary = "render-blocked (no geometry)",
-                    ),
-                )
-            }
+        return if (result.continuationDecision == SemanticContinuationDecision.CONTINUE) {
+            val renderingGeometry = selectRenderingGeometry(geometries) ?: return RenderingDerivationResult(
+                rendering = CompilerRenderingBlocked(
+                    reason = "no supported geometry-backed backend input was derived",
+                    blockedByPass = CompilerPassId.DOWNSTREAM_DERIVATION,
+                ),
+                mode = CompilerIncrementalPassMode.FULL_FALLBACK,
+                viewIds = emptyList(),
+                passRecord = CompilerPassRecord(
+                    pass = DOWNSTREAM_DERIVATION_PASS,
+                    status = CompilerPassExecutionStatus.FAILED,
+                    outputSummary = "render-blocked (no geometry)",
+                ),
+            )
             val incrementalRenderModel = incrementalRenderModel(
                 systemName = document.system.name,
                 geometry = renderingGeometry,
@@ -625,6 +625,13 @@ class AthenaCompiler(
             ),
         )
     }
+}
+
+private fun CompilerSourceDocument.toAthenaSourceDocument(): AthenaSourceDocument {
+    return AthenaSourceDocument(
+        file = file,
+        ast = ast,
+    )
 }
 
 private data class LayoutDerivationResult(

@@ -1,0 +1,65 @@
+# generated: 2026-07-07T11:57:23.0092637+08:00
+# last_updated: 2026-07-07T15:06:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m3
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M3 milestone sequence sourced from `epics-M3-2026-07-07.md`.
+# - M0, M1, and M2 remain tracked by their own milestone-local sprint-status files.
+# - M3 is an extensibility proof milestone, so the first execution focus is on the hosted SPI, proof domains, and kernel-boundary verification.
+
+generated: 2026-07-07T11:57:23.0092637+08:00
+last_updated: 2026-07-07T15:06:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m3
+
+development_status:
+  epic-1: in-progress
+  1-1-establish-the-dedicated-kernel-plugin-api-boundary: in-progress
+  1-2-define-stable-domain-schema-and-contribution-contracts: backlog
+  1-3-split-hosted-plugin-discovery-into-source-and-approval-layers: backlog
+  1-4-expose-hosted-plugin-lifecycle-and-inventory-inspection: backlog
+  1-5-refactor-the-compiler-into-an-explicit-named-pass-pipeline: backlog
+  1-6-route-domain-semantic-participation-through-governed-pass-stages: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  2-1-preserve-kernel-owned-generic-validation-in-the-pass-pipeline: backlog
+  2-2-add-plugin-owned-domain-validation-contributions: backlog
+  2-3-keep-renderer-orchestration-generic-while-opening-render-contribution-points: backlog
+  2-4-refactor-domain-electrical-into-the-stable-m3-proof-shape: backlog
+  2-5-add-the-synthetic-domain-dummy-proof-plugin: backlog
+  2-6-publish-the-external-domain-proof-corpus: backlog
+  epic-2-retrospective: optional
+  epic-3: backlog
+  3-1-automate-the-hosted-plugin-verification-matrix: backlog
+  3-2-prove-the-kernel-builds-and-runs-without-any-domain-plugin: backlog
+  3-3-detect-regressions-toward-kernel-owned-domain-logic: backlog
+  3-4-publish-the-m3-kernel-stability-proof-outcome: backlog
+  epic-3-retrospective: optional

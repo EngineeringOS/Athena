@@ -1,11 +1,11 @@
 package com.engineeringood.athena.domain.electricalruntime
 
-import com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
-import com.engineeringood.athena.compiler.plugin.AthenaPluginType
-import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.layout.ViewEmphasis
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

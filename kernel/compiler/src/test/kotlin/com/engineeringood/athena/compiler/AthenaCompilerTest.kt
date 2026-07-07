@@ -15,8 +15,6 @@ import com.engineeringood.athena.renderer.svg.SvgRenderBox
 import com.engineeringood.athena.renderer.svg.SvgRenderConnection
 import com.engineeringood.athena.renderer.svg.SvgRenderModel
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
-import com.engineeringood.athena.compiler.plugin.AthenaCoreRuntime
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
 import com.engineeringood.athena.geometry.GeometryBounds
 import com.engineeringood.athena.geometry.GeometryElementKind
@@ -40,6 +38,8 @@ import com.engineeringood.athena.layout.LayoutRelationshipKind
 import com.engineeringood.athena.layout.LayoutRelativePlacement
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.layout.ViewEmphasis
+import com.engineeringood.athena.plugin.AthenaCoreRuntime
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test

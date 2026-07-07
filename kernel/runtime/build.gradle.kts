@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":kernel:compiler"))
+    implementation(project(":kernel:plugin-api"))
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:geometry-model"))
     implementation(project(":kernel:layout-model"))

@@ -1,5 +1,13 @@
 package com.engineeringood.athena.compiler.plugin
 
+import com.engineeringood.athena.plugin.AthenaCoreRuntime
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPlugin
+import com.engineeringood.athena.plugin.AthenaPluginManifest
+import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.PluginValidationDiagnostic
+import com.engineeringood.athena.plugin.PluginValidationRuleId
+import com.engineeringood.athena.plugin.PluginValidationSeverity
 import java.util.ServiceLoader
 
 /** Core-owned source of plugin implementations available to the compiler at startup. */

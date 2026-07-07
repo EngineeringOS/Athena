@@ -1,6 +1,5 @@
-package com.engineeringood.athena.compiler.plugin
+package com.engineeringood.athena.plugin
 
-import com.engineeringood.athena.compiler.CompilerSourceDocument
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
@@ -8,11 +7,18 @@ import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.ScalarValue
+import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticRuleId
+
+/** Syntax-owned source document exposed to plugin contracts without depending on compiler implementation packages. */
+data class AthenaSourceDocument(
+    val file: String,
+    val ast: SourceFileAst,
+)
 
 /** Compiler-owned blueprint for one domain-contributed component before core identity assignment and resolution. */
 data class AthenaDomainComponentBlueprint(
@@ -40,7 +46,7 @@ data class AthenaDomainConnectionBlueprint(
     val provenance: SourceProvenance,
 )
 
-/** Domain-owned lowering contribution aggregated by the compiler inside the declared `LOWER` pass. */
+/** Domain-owned lowering contribution aggregated by the compiler inside the declared lowering stage. */
 data class AthenaDomainLoweringContribution(
     val components: List<AthenaDomainComponentBlueprint> = emptyList(),
     val ports: List<AthenaDomainPortBlueprint> = emptyList(),
@@ -52,9 +58,9 @@ data class AthenaDomainLoweringContribution(
     }
 }
 
-/** Compiler-owned helper context passed to a domain plugin during lowering. */
+/** Plugin-facing helper context passed to a domain plugin during lowering. */
 data class AthenaDomainLoweringContext(
-    val source: CompilerSourceDocument,
+    val source: AthenaSourceDocument,
 ) {
     /** Converts authored property assignments into the canonical typed property surface. */
     fun lowerProperties(assignments: List<PropertyAssignment>): List<EngineeringProperty> {
@@ -130,10 +136,10 @@ data class AthenaDomainLoweringContext(
     }
 }
 
-/** Compiler-owned validation context passed to active domain plugins during the declared `VALIDATE` pass. */
+/** Plugin-facing validation context passed to active domain plugins during the validation stage. */
 data class AthenaPluginValidationContext(
     val document: EngineeringDocument,
-    val source: CompilerSourceDocument? = null,
+    val source: AthenaSourceDocument? = null,
     val approvedPluginIds: List<String> = emptyList(),
 ) {
     /** Creates a domain-scoped semantic diagnostic owned by the active plugin contribution. */

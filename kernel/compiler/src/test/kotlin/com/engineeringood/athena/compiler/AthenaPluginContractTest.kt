@@ -1,18 +1,18 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
-import com.engineeringood.athena.compiler.plugin.AthenaPluginManifest
-import com.engineeringood.athena.compiler.plugin.AthenaPluginOwnershipClaim
-import com.engineeringood.athena.compiler.plugin.AthenaRulePlugin
-import com.engineeringood.athena.compiler.plugin.AthenaPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaPluginType
 import com.engineeringood.athena.compiler.plugin.AthenaPluginValidator
-import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
-import com.engineeringood.athena.compiler.plugin.CoreVersionRange
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.layout.ViewEmphasis
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPlugin
+import com.engineeringood.athena.plugin.AthenaPluginManifest
+import com.engineeringood.athena.plugin.AthenaPluginOwnershipClaim
+import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaRulePlugin
+import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
+import com.engineeringood.athena.plugin.CoreVersionRange
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

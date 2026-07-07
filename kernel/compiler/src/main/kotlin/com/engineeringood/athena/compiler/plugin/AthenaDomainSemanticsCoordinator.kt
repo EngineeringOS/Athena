@@ -1,5 +1,15 @@
 package com.engineeringood.athena.compiler.plugin
 
+import com.engineeringood.athena.compiler.CompilerSourceDocument
+import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
+import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaDomainValidationContribution
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPluginValidationContext
+import com.engineeringood.athena.plugin.AthenaSourceDocument
+
 /** Compiler-owned coordinator that aggregates active domain plugin semantics in deterministic approved-plugin order. */
 class AthenaDomainSemanticsCoordinator(
     private val activeDomainPlugins: List<AthenaDomainPlugin>,
@@ -18,8 +28,8 @@ class AthenaDomainSemanticsCoordinator(
         get() = activeDomainPlugins.isNotEmpty()
 
     /** Aggregates domain lowering contributions inside the declared `LOWER` pass. */
-    fun lower(source: com.engineeringood.athena.compiler.CompilerSourceDocument): AthenaDomainLoweringContribution {
-        val context = AthenaDomainLoweringContext(source)
+    fun lower(source: CompilerSourceDocument): AthenaDomainLoweringContribution {
+        val context = AthenaDomainLoweringContext(source.toAthenaSourceDocument())
         return activeDomainPlugins.fold(AthenaDomainLoweringContribution.EMPTY) { aggregate, plugin ->
             val contribution = plugin.lower(context)
             AthenaDomainLoweringContribution(
@@ -32,7 +42,7 @@ class AthenaDomainSemanticsCoordinator(
 
     /** Aggregates domain validation diagnostics inside the declared `VALIDATE` pass. */
     fun validate(
-        document: com.engineeringood.athena.ir.EngineeringDocument,
+        document: EngineeringDocument,
         context: AthenaPluginValidationContext,
     ): AthenaDomainValidationContribution {
         val diagnostics = activeDomainPlugins.flatMap { plugin ->
@@ -40,4 +50,11 @@ class AthenaDomainSemanticsCoordinator(
         }
         return AthenaDomainValidationContribution(diagnostics)
     }
+}
+
+private fun CompilerSourceDocument.toAthenaSourceDocument(): AthenaSourceDocument {
+    return AthenaSourceDocument(
+        file = file,
+        ast = ast,
+    )
 }

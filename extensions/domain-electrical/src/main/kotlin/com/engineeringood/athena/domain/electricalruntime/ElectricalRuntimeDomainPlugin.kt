@@ -1,14 +1,5 @@
 package com.engineeringood.athena.domain.electricalruntime
 
-import com.engineeringood.athena.compiler.plugin.AthenaDomainLoweringContext
-import com.engineeringood.athena.compiler.plugin.AthenaDomainLoweringContribution
-import com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
-import com.engineeringood.athena.compiler.plugin.AthenaPluginManifest
-import com.engineeringood.athena.compiler.plugin.AthenaPluginValidationContext
-import com.engineeringood.athena.compiler.plugin.AthenaPluginType
-import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
-import com.engineeringood.athena.compiler.plugin.CoreVersionRange
 import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
@@ -38,6 +29,15 @@ import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContributor
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.layout.ViewEmphasis
+import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
+import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPluginManifest
+import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaPluginValidationContext
+import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
+import com.engineeringood.athena.plugin.CoreVersionRange
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 

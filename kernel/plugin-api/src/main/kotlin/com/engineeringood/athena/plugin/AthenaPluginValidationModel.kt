@@ -1,4 +1,4 @@
-package com.engineeringood.athena.compiler.plugin
+package com.engineeringood.athena.plugin
 
 /** Severity assigned to plugin validation diagnostics. */
 enum class PluginValidationSeverity {

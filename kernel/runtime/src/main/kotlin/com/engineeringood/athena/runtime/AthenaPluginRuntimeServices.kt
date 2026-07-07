@@ -2,17 +2,17 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
 import com.engineeringood.athena.compiler.plugin.ApprovedAthenaPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
-import com.engineeringood.athena.compiler.plugin.AthenaPlugin
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscoveryReport
-import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
-import com.engineeringood.athena.compiler.plugin.PluginValidationDiagnostic
-import com.engineeringood.athena.compiler.plugin.PluginValidationRuleId
-import com.engineeringood.athena.compiler.plugin.PluginValidationSeverity
 import com.engineeringood.athena.compiler.plugin.RejectedAthenaPluginCandidate
 import com.engineeringood.athena.layout.ViewDefinition
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPlugin
+import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
+import com.engineeringood.athena.plugin.PluginValidationDiagnostic
+import com.engineeringood.athena.plugin.PluginValidationRuleId
+import com.engineeringood.athena.plugin.PluginValidationSeverity
 
 /**
  * Runtime-owned contract for hosted plugin discovery, inspection, and typed contribution access.

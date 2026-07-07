@@ -11,7 +11,7 @@ The `:extensions:domain-electrical` module is the first real Athena domain plugi
 - Contribute lowering for `device`, `port`, and `connect` declarations.
 - Contribute the first supported `cabinet` and `wiring` view definitions through typed core-owned contracts.
 - Contribute Electrical/Runtime-specific semantic diagnostics such as device type, port direction, and signal compatibility checks.
-- Publish the JVM `ServiceLoader` registration under `META-INF/services/com.engineeringood.athena.compiler.plugin.AthenaPlugin`.
+- Publish the JVM `ServiceLoader` registration under `META-INF/services/com.engineeringood.athena.plugin.AthenaPlugin`.
 
 ## Main Types
 
@@ -21,13 +21,15 @@ The `:extensions:domain-electrical` module is the first real Athena domain plugi
 ## Dependencies
 
 - `:kernel:compiler`
+- `:kernel:plugin-api`
 - `:kernel:language`
 - `:kernel:validation`
 - `:kernel:engineering-model`
+- `:kernel:runtime`
 
 ## Boundaries
 
-This module does not own the canonical IR schema, compiler pass ordering, generic semantic validation, or plugin discovery mechanics. Those remain core-owned in `:kernel:compiler`, `:kernel:engineering-model`, and `:kernel:validation`.
+This module does not own the canonical IR schema, compiler pass ordering, generic semantic validation, public plugin SPI ownership, or plugin discovery mechanics. Those remain core-owned in `:kernel:engineering-model`, `:kernel:plugin-api`, `:kernel:compiler`, and `:kernel:validation`.
 
 ## Verification
 

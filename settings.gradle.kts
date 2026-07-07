@@ -38,6 +38,7 @@ include(
     ":ui:compose-workbench",
     ":kernel:runtime",
     ":kernel:language",
+    ":kernel:plugin-api",
     ":kernel:engineering-model",
     ":kernel:layout-model",
     ":kernel:geometry-model",

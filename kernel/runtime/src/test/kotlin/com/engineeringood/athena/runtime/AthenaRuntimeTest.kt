@@ -2,10 +2,10 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
-import com.engineeringood.athena.compiler.plugin.AthenaCoreRuntime
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscoveryReport
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerParseSuccess
+import com.engineeringood.athena.plugin.AthenaCoreRuntime
 import com.engineeringood.athena.renderer.svg.SvgRenderer
 import java.nio.file.Files
 import java.nio.file.Path

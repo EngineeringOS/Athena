@@ -1,4 +1,4 @@
-package com.engineeringood.athena.compiler.plugin
+package com.engineeringood.athena.plugin
 
 /** Parsed core version value used for plugin compatibility comparisons during activation. */
 data class AthenaCoreVersion(
@@ -46,7 +46,7 @@ data class AthenaCoreVersion(
             )
         }
 
-        /** Returns the current core version surface for the M0 compiler. */
+        /** Returns the current core version surface for the M3 plugin compatibility contract. */
         fun current(): AthenaCoreVersion = parse(ATHENA_CURRENT_CORE_VERSION)
             ?: error("Invalid Athena core version constant `$ATHENA_CURRENT_CORE_VERSION`.")
     }
@@ -63,7 +63,7 @@ data class AthenaCoreRuntime(
     )
 
     companion object {
-        /** Returns the current runtime surface exposed by the core compiler. */
+        /** Returns the current runtime surface exposed by the core plugin API. */
         fun current(): AthenaCoreRuntime = AthenaCoreRuntime()
     }
 }

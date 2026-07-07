@@ -130,7 +130,7 @@ See [`LICENSE`](LICENSE).
 
 ## Reference
 
-1. [Deepwiki](https://deepwiki.com/EngineeringOS/manifesto)
+1. [Deepwiki](https://deepwiki.com/EngineeringOS/Athena)
 2. [GitHub Page](https://engineeringos.github.io/manifesto)
 3. [Github](https://github.com/EngineeringOS/manifesto)
 4. [Athena POC](https://github.com/EngineeringOS/Athena)

@@ -1,6 +1,6 @@
 package com.engineeringood.athena.compiler.knowledge
 
-import com.engineeringood.athena.compiler.plugin.AthenaCoreVersion
+import com.engineeringood.athena.plugin.AthenaCoreVersion
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties

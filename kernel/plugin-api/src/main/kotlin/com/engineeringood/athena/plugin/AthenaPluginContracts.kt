@@ -1,4 +1,4 @@
-package com.engineeringood.athena.compiler.plugin
+package com.engineeringood.athena.plugin
 
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -20,10 +20,10 @@ interface AthenaDomainPlugin : AthenaPlugin {
     val domainCapabilities: Set<String>
         get() = emptySet()
 
-    /** Domain-owned lowering contribution evaluated inside the compiler-owned `LOWER` pass. */
+    /** Domain-owned lowering contribution evaluated inside the compiler-owned lowering stage. */
     fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution = AthenaDomainLoweringContribution.EMPTY
 
-    /** Domain-owned semantic validation diagnostics evaluated inside the compiler-owned `VALIDATE` pass. */
+    /** Domain-owned semantic validation diagnostics evaluated inside the compiler-owned validation stage. */
     fun validate(context: AthenaPluginValidationContext): List<SemanticDiagnostic> = emptyList()
 }
 

@@ -1,7 +1,7 @@
 package com.engineeringood.athena.compiler.knowledge
 
-import com.engineeringood.athena.compiler.plugin.AthenaCoreRuntime
-import com.engineeringood.athena.compiler.plugin.AthenaCoreVersion
+import com.engineeringood.athena.plugin.AthenaCoreRuntime
+import com.engineeringood.athena.plugin.AthenaCoreVersion
 import java.nio.file.Path
 
 /** Resolves reviewed governed knowledge packages into the inspectable compilation context used by one compiler run. */

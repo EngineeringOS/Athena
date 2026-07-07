@@ -1,8 +1,8 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.compiler.plugin.AthenaCoreRuntime
-import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
+import com.engineeringood.athena.plugin.AthenaCoreRuntime
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals

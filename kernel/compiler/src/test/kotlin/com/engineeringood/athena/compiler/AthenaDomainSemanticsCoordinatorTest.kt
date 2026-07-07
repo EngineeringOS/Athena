@@ -4,7 +4,6 @@ import com.engineeringood.athena.compiler.plugin.ApprovedAthenaPlugin
 import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.compiler.plugin.AthenaPluginCandidate
-import com.engineeringood.athena.compiler.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringSystem
 import com.engineeringood.athena.ir.SourceProvenance
@@ -13,6 +12,9 @@ import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.language.SourcePosition
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.language.SystemDeclaration
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaSourceDocument
+import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -66,7 +68,10 @@ class AthenaDomainSemanticsCoordinatorTest {
                     ports = emptyList(),
                     connections = emptyList(),
                 ),
-                source = source,
+                source = AthenaSourceDocument(
+                    file = source.file,
+                    ast = source.ast,
+                ),
                 approvedPluginIds = listOf(
                     "com.engineeringood.athena.domain.alpha-semantics",
                     "com.engineeringood.athena.domain.zeta-semantics",
@@ -90,7 +95,7 @@ class AthenaDomainSemanticsCoordinatorTest {
         )
     }
 
-    private fun approvedPlugin(plugin: com.engineeringood.athena.compiler.plugin.AthenaDomainPlugin): ApprovedAthenaPlugin {
+    private fun approvedPlugin(plugin: AthenaDomainPlugin): ApprovedAthenaPlugin {
         return ApprovedAthenaPlugin(
             candidate = AthenaPluginCandidate(
                 plugin = plugin,

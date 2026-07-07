@@ -1,5 +1,19 @@
 package com.engineeringood.athena.compiler.plugin
 
+import com.engineeringood.athena.plugin.AthenaCoreRuntime
+import com.engineeringood.athena.plugin.AthenaCoreVersion
+import com.engineeringood.athena.plugin.AthenaDomainPlugin
+import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPlugin
+import com.engineeringood.athena.plugin.AthenaPluginManifest
+import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaRendererPlugin
+import com.engineeringood.athena.plugin.AthenaRulePlugin
+import com.engineeringood.athena.plugin.CoreVersionRange
+import com.engineeringood.athena.plugin.PluginValidationDiagnostic
+import com.engineeringood.athena.plugin.PluginValidationResult
+import com.engineeringood.athena.plugin.PluginValidationRuleId
+import com.engineeringood.athena.plugin.PluginValidationSeverity
 /** Validates plugin manifests and directly-instantiated plugin objects against the core-owned M0 contract. */
 class AthenaPluginValidator {
     private val allowedExtensionPointsByType = mapOf(
@@ -53,6 +67,8 @@ class AthenaPluginValidator {
     /** Validates a plugin manifest without requiring classpath discovery or activation. */
     fun validateManifest(manifest: AthenaPluginManifest): PluginValidationResult {
         val diagnostics = buildList {
+            val maximumInclusive = manifest.coreCompatibility.maximumInclusive
+
             if (manifest.pluginId.isBlank()) {
                 add(diagnostic("plugin.manifest.id.blank", "pluginId", "Plugin id must not be blank."))
             } else if (!PLUGIN_ID_PATTERN.matches(manifest.pluginId)) {
@@ -79,7 +95,7 @@ class AthenaPluginValidator {
                 )
             }
 
-            if (manifest.coreCompatibility.maximumInclusive != null && manifest.coreCompatibility.maximumInclusive.isBlank()) {
+            if (maximumInclusive != null && maximumInclusive.isBlank()) {
                 add(
                     diagnostic(
                         "plugin.manifest.core-compatibility.maximum.blank",
@@ -100,7 +116,7 @@ class AthenaPluginValidator {
                 )
             }
 
-            val maximumVersionText = manifest.coreCompatibility.maximumInclusive
+            val maximumVersionText = maximumInclusive
             val maximumVersion = maximumVersionText?.let(AthenaCoreVersion::parse)
             if (maximumVersionText != null && maximumVersionText.isNotBlank() && maximumVersion == null) {
                 add(
