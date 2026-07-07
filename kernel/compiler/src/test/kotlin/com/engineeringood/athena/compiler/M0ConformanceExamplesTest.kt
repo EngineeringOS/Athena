@@ -1,6 +1,6 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.SourceProvenance
 import java.nio.file.Files
@@ -134,7 +134,7 @@ class M0ConformanceExamplesTest {
         )
     }
 
-    private fun renderConformanceArtifact(document: EngineeringIrDocument, repoRoot: Path): String {
+    private fun renderConformanceArtifact(document: EngineeringDocument, repoRoot: Path): String {
         fun renderPath(file: String): String {
             val path = Path.of(file)
             return runCatching { repoRoot.relativize(path).toString().replace('\\', '/') }

@@ -1,0 +1,75 @@
+# generated: 2026-07-06T20:12:18.7825025+08:00
+# last_updated: 2026-07-06T21:00:22.2371527+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m2
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M2 milestone sequence sourced from `epics-M2-2026-07-06.md`.
+# - M1 remains tracked by `_bmad-output/implementation-artifacts/m1/sprint-status.yaml`.
+# - Stories can move independently once corresponding M2 story files are created.
+
+generated: 2026-07-06T20:12:18.7825025+08:00
+last_updated: 2026-07-07T09:17:28.9987139+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m2
+
+development_status:
+  epic-1: done
+  1-1-establish-explicit-layout-and-geometry-model-modules: done
+  1-2-contribute-the-first-supported-view-definitions-from-the-electrical-extension: done
+  1-3-derive-layout-ir-for-cabinet-and-wiring-views: done
+  1-4-derive-geometry-ir-and-preserve-canonical-identity-across-projection-layers: done
+  1-5-feed-geometry-ir-to-the-first-backend-and-publish-the-m2-proof-corpus: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-host-runtime-projection-sessions-and-supported-view-switching: done
+  2-2-expose-runtime-owned-projection-snapshots-to-the-desktop-surface: done
+  2-3-refresh-projection-state-after-one-supported-semantic-mutation-path: done
+  2-4-preserve-history-and-diff-meaning-across-projection-refresh: done
+  2-5-complete-the-desktop-multi-view-operator-proof: done
+  epic-2-retrospective: done
+
+action_items:
+  - epic: 1
+    action: "Keep model nouns package-local and concise; reserve `IR` in names for transformation or validation roles only."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 1
+    action: "Keep geometry proof-corpus fixtures separated from desktop-only operator-proof seeds so automated inventories remain scope-clean."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 2
+    action: "Carry runtime-owned projection sessions and command-only mutation rules forward unchanged into the next milestone."
+    owner: "Aaron (Project Lead)"
+    status: open
+  - epic: 2
+    action: "Close story reviews continuously during the next milestone instead of batching status cleanup at the end."
+    owner: "Amelia (Developer)"
+    status: open

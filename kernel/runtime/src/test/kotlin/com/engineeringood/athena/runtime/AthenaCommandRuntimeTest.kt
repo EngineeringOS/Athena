@@ -2,6 +2,7 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.CompilerIncrementalPassMode
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
+import com.engineeringood.athena.geometry.GeometryElementKind
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -58,6 +59,22 @@ class AthenaCommandRuntimeTest {
 
             val before = assertIs<CompilerCompilationSuccess>(context.compileActiveProject())
             assertTrue(before.document.connections.isEmpty())
+            val beforeCabinetLayout = before.layouts.first { layout -> layout.view.id == "cabinet" }
+            val beforeWiringLayout = before.layouts.first { layout -> layout.view.id == "wiring" }
+            val beforeCabinetComponentNode = beforeCabinetLayout.nodes.first { node ->
+                node.semanticId.value == "component:PLC1"
+            }
+            val beforeWiringPortNode = beforeWiringLayout.nodes.first { node ->
+                node.semanticId.value == "port:PLC1.out"
+            }
+            val beforeCabinetGeometry = before.geometries.first { geometry -> geometry.viewId == "cabinet" }
+            val beforeWiringGeometry = before.geometries.first { geometry -> geometry.viewId == "wiring" }
+            val beforeCabinetComponentBox = beforeCabinetGeometry.elements.first { element ->
+                element.semanticId.value == "component:PLC1" && element.kind == GeometryElementKind.BOX
+            }
+            val beforeWiringPortLabel = beforeWiringGeometry.elements.first { element ->
+                element.semanticId.value == "port:PLC1.out" && element.kind == GeometryElementKind.LABEL
+            }
 
             val result = context.commandRuntime().execute(
                 context = context,
@@ -98,9 +115,48 @@ class AthenaCommandRuntimeTest {
                 incrementalReport.affectedScope.renderConnectionSemanticIds.sorted(),
             )
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.validationMode)
+            assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.layoutMode)
+            assertEquals(listOf("cabinet", "wiring"), incrementalReport.layoutScopedViewIds)
+            assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.geometryMode)
+            assertEquals(listOf("cabinet", "wiring"), incrementalReport.geometryScopedViewIds)
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.renderingMode)
+            assertEquals(listOf("cabinet"), incrementalReport.renderingViewIds)
             assertContains(updatedCompilation.pipeline.passes[2].outputSummary, "scoped")
             assertContains(updatedCompilation.pipeline.passes[3].outputSummary, "scoped")
+            val updatedCabinetLayout = updatedCompilation.layouts.first { layout -> layout.view.id == "cabinet" }
+            val updatedWiringLayout = updatedCompilation.layouts.first { layout -> layout.view.id == "wiring" }
+            assertSame(
+                beforeCabinetComponentNode,
+                updatedCabinetLayout.nodes.first { node -> node.semanticId.value == "component:PLC1" },
+            )
+            assertSame(
+                beforeWiringPortNode,
+                updatedWiringLayout.nodes.first { node -> node.semanticId.value == "port:PLC1.out" },
+            )
+            assertTrue(
+                updatedWiringLayout.groups.first { group -> group.label == "Digital" }.semanticIds
+                    .any { semanticId -> semanticId.value == "connection:PLC1.out->M1.in" },
+            )
+
+            val updatedCabinetGeometry = updatedCompilation.geometries.first { geometry -> geometry.viewId == "cabinet" }
+            val updatedWiringGeometry = updatedCompilation.geometries.first { geometry -> geometry.viewId == "wiring" }
+            assertSame(
+                beforeCabinetComponentBox,
+                updatedCabinetGeometry.elements.first { element ->
+                    element.semanticId.value == "component:PLC1" && element.kind == GeometryElementKind.BOX
+                },
+            )
+            assertSame(
+                beforeWiringPortLabel,
+                updatedWiringGeometry.elements.first { element ->
+                    element.semanticId.value == "port:PLC1.out" && element.kind == GeometryElementKind.LABEL
+                },
+            )
+            assertTrue(
+                updatedCabinetGeometry.elements.any { element ->
+                    element.semanticId.value == "connection:PLC1.out->M1.in" && element.kind == GeometryElementKind.PATH
+                },
+            )
 
             val graphProjection = assertIs<AthenaEngineeringGraphReadyProjection>(context.projectEngineeringGraphProjection())
             assertEquals(
@@ -110,6 +166,13 @@ class AthenaCommandRuntimeTest {
 
             val viewerProjection = assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection())
             assertEquals(1, viewerProjection.scene.connections.size)
+            val projectionSession = context.projectProjectionSession()
+            val cabinetProjection = assertIs<AthenaRuntimeProjectionReadySnapshot>(projectionSession.activeProjection)
+            assertEquals(1, cabinetProjection.scene.connections.size)
+            val switchResult = context.switchActiveProjectionView("wiring")
+            val switchSuccess = assertIs<AthenaRuntimeProjectionSwitchSuccess>(switchResult)
+            val wiringProjection = assertIs<AthenaRuntimeProjectionReadySnapshot>(switchSuccess.session.activeProjection)
+            assertEquals(1, wiringProjection.scene.connections.size)
         } finally {
             Files.deleteIfExists(sourcePath)
         }

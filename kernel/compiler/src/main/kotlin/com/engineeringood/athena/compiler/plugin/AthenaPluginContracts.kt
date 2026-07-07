@@ -1,5 +1,6 @@
 package com.engineeringood.athena.compiler.plugin
 
+import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 
 /** Shared base contract for all Athena plugins published through core-owned extension boundaries. */
@@ -24,6 +25,16 @@ interface AthenaDomainPlugin : AthenaPlugin {
 
     /** Domain-owned semantic validation diagnostics evaluated inside the compiler-owned `VALIDATE` pass. */
     fun validate(context: AthenaPluginValidationContext): List<SemanticDiagnostic> = emptyList()
+}
+
+/**
+ * Typed contract for plugins that contribute supported view-definition metadata.
+ *
+ * View definitions may declare layout intent and presentation policy, but they may not redefine engineering meaning.
+ */
+interface AthenaViewDefinitionContributor : AthenaPlugin {
+    /** Returns supported view definitions in deterministic plugin-owned order. */
+    fun viewDefinitions(): List<ViewDefinition> = emptyList()
 }
 
 /**

@@ -7,10 +7,12 @@ import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.compiler.plugin.AthenaPlugin
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscoveryReport
+import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.compiler.plugin.PluginValidationDiagnostic
 import com.engineeringood.athena.compiler.plugin.PluginValidationRuleId
 import com.engineeringood.athena.compiler.plugin.PluginValidationSeverity
 import com.engineeringood.athena.compiler.plugin.RejectedAthenaPluginCandidate
+import com.engineeringood.athena.layout.ViewDefinition
 
 /**
  * Runtime-owned contract for hosted plugin discovery, inspection, and typed contribution access.
@@ -42,6 +44,11 @@ interface AthenaPluginRuntimeServices {
     fun commandContributions(): List<AthenaRuntimePluginCommandContribution>
 
     /**
+     * Returns supported view-definition contributions exposed by the hosted plugin set.
+     */
+    fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution>
+
+    /**
      * Executes one hosted runtime command contribution through the existing command runtime.
      */
     fun executeCommandContribution(
@@ -70,7 +77,16 @@ data class AthenaHostedRuntimePlugin(
     val attachedExtensionPoints: Set<AthenaExtensionPoint>,
     val domainCapabilities: Set<String>,
     val commandContributionIds: List<String>,
+    val viewDefinitionIds: List<String>,
     val viewContributionCount: Int,
+)
+
+/**
+ * Runtime-owned inspection record for one hosted plugin view-definition contribution.
+ */
+data class AthenaRuntimePluginViewDefinitionContribution(
+    val pluginId: String,
+    val viewDefinitions: List<ViewDefinition>,
 )
 
 /**
@@ -243,6 +259,7 @@ class AthenaHostedPluginRuntimeServices(
                 attachedExtensionPoints = approvedPlugin.attachedExtensionPoints,
                 domainCapabilities = domainSemanticsContributionFor(plugin)?.domainCapabilities.orEmpty(),
                 commandContributionIds = commandContributionsFor(plugin).map { contribution -> contribution.contributionId },
+                viewDefinitionIds = viewDefinitionsFor(plugin).map { definition -> definition.id },
                 viewContributionCount = if (plugin is AthenaRuntimePluginViewContributor) 1 else 0,
             )
         }
@@ -251,6 +268,20 @@ class AthenaHostedPluginRuntimeServices(
     override fun commandContributions(): List<AthenaRuntimePluginCommandContribution> {
         return approvedPlugins.flatMap { approvedPlugin ->
             commandContributionsFor(approvedPlugin.candidate.plugin)
+        }
+    }
+
+    override fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution> {
+        return approvedPlugins.mapNotNull { approvedPlugin ->
+            val viewDefinitions = viewDefinitionsFor(approvedPlugin.candidate.plugin)
+            if (viewDefinitions.isEmpty()) {
+                null
+            } else {
+                AthenaRuntimePluginViewDefinitionContribution(
+                    pluginId = approvedPlugin.candidate.manifest.pluginId,
+                    viewDefinitions = viewDefinitions,
+                )
+            }
         }
     }
 
@@ -319,6 +350,11 @@ class AthenaHostedPluginRuntimeServices(
         )
     }
 
+    private fun viewDefinitionsFor(plugin: AthenaPlugin): List<ViewDefinition> {
+        val contributor = plugin as? AthenaViewDefinitionContributor ?: return emptyList()
+        return contributor.viewDefinitions()
+    }
+
     private fun enforceHostedRuntimeBoundaries(
         discoveryReport: AthenaPluginDiscoveryReport,
     ): AthenaPluginDiscoveryReport {
@@ -364,6 +400,14 @@ class AthenaHostedPluginRuntimeServices(
             undeclaredRuleId = "plugin.runtime.contract.view.undeclared",
             unimplementedRuleId = "plugin.runtime.contract.view.unimplemented",
             contractName = "runtime view contributions",
+        )
+        diagnostics += missingRuntimeContractDiagnostic(
+            approvedPlugin = approvedPlugin,
+            extensionPoint = AthenaExtensionPoint.VIEW_DEFINITIONS,
+            implementsContract = plugin is AthenaViewDefinitionContributor,
+            undeclaredRuleId = "plugin.runtime.contract.view-definition.undeclared",
+            unimplementedRuleId = "plugin.runtime.contract.view-definition.unimplemented",
+            contractName = "view definition contributions",
         )
 
         return diagnostics

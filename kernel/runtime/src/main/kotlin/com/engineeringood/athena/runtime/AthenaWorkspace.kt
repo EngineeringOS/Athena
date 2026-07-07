@@ -2,7 +2,7 @@ package com.engineeringood.athena.runtime
 
 import java.nio.file.Path
 
-/** In-memory runtime workspace that tracks one active project independently from compiler execution. */
+/** In-memory runtime workspace that tracks one active project independently of compiler execution. */
 class AthenaWorkspace internal constructor(
     val rootPath: Path,
     private val services: AthenaServiceRegistry,

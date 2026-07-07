@@ -38,8 +38,8 @@
 
 **Files:**
 - Create: `docs/compiler/m0-render-boundary.md`
-- Modify: `_bmad-output/implementation-artifacts/archive-m0/1-6-derive-a-render-model-and-emit-simple-svg-from-engineering-ir.md`
-- Modify: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- Modify: `_bmad-output/implementation-artifacts/m0/1-6-derive-a-render-model-and-emit-simple-svg-from-engineering-ir.md`
+- Modify: `_bmad-output/implementation-artifacts/m0/sprint-status.yaml`
 
 - [ ] Document the render-facing model scope, the `SVG` backend boundary, and the blocking rules.
 - [ ] Run `java25; .\gradlew.bat --no-daemon --console=plain build`

@@ -3,7 +3,10 @@ package com.engineeringood.athena.compiler.plugin
 /** Validates plugin manifests and directly-instantiated plugin objects against the core-owned M0 contract. */
 class AthenaPluginValidator {
     private val allowedExtensionPointsByType = mapOf(
-        AthenaPluginType.DOMAIN to setOf(AthenaExtensionPoint.DOMAIN_SEMANTICS) + runtimeHostedExtensionPoints,
+        AthenaPluginType.DOMAIN to setOf(
+            AthenaExtensionPoint.DOMAIN_SEMANTICS,
+            AthenaExtensionPoint.VIEW_DEFINITIONS,
+        ) + runtimeHostedExtensionPoints,
         AthenaPluginType.RULE to setOf(AthenaExtensionPoint.RULE_EVALUATION) + runtimeHostedExtensionPoints,
         AthenaPluginType.RENDERER to setOf(AthenaExtensionPoint.RENDERING) + runtimeHostedExtensionPoints,
     )

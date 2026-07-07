@@ -8,6 +8,8 @@ The `kernel` group contains Athena's semantic backbone. These modules own the au
 
 - `:kernel:language` -> [`language/`](language/README.md)
 - `:kernel:engineering-model` -> [`engineering-model/`](engineering-model/README.md)
+- `:kernel:layout-model` -> [`layout-model/`](layout-model/README.md)
+- `:kernel:geometry-model` -> [`geometry-model/`](geometry-model/README.md)
 - `:kernel:validation` -> [`validation/`](validation/README.md)
 - `:kernel:compiler` -> [`compiler/`](compiler/README.md)
 - `:kernel:runtime` -> [`runtime/`](runtime/README.md)

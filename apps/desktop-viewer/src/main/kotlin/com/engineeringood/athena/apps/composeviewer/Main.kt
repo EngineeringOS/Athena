@@ -13,11 +13,12 @@ import androidx.compose.runtime.setValue
  */
 fun main() {
     if (System.getProperty("athena.compose.bootstrap.smoke") == "true") {
-        println(
-            AthenaComposeViewerSmokeVerifier.verify(
-                AthenaComposeViewerBootstrap.loadDefaultProjectSnapshot(),
-            ),
-        )
+        println(AthenaComposeViewerBootstrap.smokeMessage())
+        return
+    }
+
+    if (System.getProperty("athena.compose.operatorProof.smoke") == "true") {
+        println(AthenaComposeViewerBootstrap.operatorProofMessage())
         return
     }
 

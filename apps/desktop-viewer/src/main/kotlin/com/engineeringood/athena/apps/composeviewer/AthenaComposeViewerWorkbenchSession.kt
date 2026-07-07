@@ -3,6 +3,8 @@ import com.engineeringood.athena.composeruntime.AthenaComposeCommandOption
 import com.engineeringood.athena.composeruntime.AthenaComposeCommandPanelState
 import com.engineeringood.athena.composeruntime.AthenaComposeInspectorField
 import com.engineeringood.athena.composeruntime.AthenaComposeInspectorGroup
+import com.engineeringood.athena.composeruntime.AthenaComposeProjectionSessionState
+import com.engineeringood.athena.composeruntime.AthenaComposeProjectionViewState
 import com.engineeringood.athena.composeruntime.AthenaComposeShellIntent
 import com.engineeringood.athena.composeruntime.AthenaComposeShellState
 import com.engineeringood.athena.composeruntime.AthenaComposeSourceDocument
@@ -23,11 +25,13 @@ import com.engineeringood.athena.runtime.AthenaRuntimeIncrementalUpdateReport
 import com.engineeringood.athena.runtime.AthenaSemanticDiffInspection
 import com.engineeringood.athena.runtime.AthenaRuntimePluginInspectorGroup
 import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContribution
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionReadySnapshot
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSession
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSnapshot
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSwitchRejected
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSwitchSuccess
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionUnavailableSnapshot
 import com.engineeringood.athena.runtime.AthenaRuntime
-import com.engineeringood.athena.runtime.AthenaRuntimeViewerProjection
-import com.engineeringood.athena.runtime.AthenaRuntimeViewerReadyProjection
-import com.engineeringood.athena.runtime.AthenaRuntimeViewerUnavailableProjection
-import com.engineeringood.athena.runtime.projectViewerProjection
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -42,6 +46,7 @@ class AthenaComposeViewerWorkbenchSession private constructor(
 ) {
     private var selectedSourcePortSemanticId: String? = null
     private var selectedTargetPortSemanticId: String? = null
+    private var selectedRenderedSemanticId: String? = null
     private var commandPanelStatusMessage: String =
         "Choose a source port to begin the runtime-backed GUI mutation path."
     private val consoleEntries: MutableList<String> = mutableListOf(
@@ -60,12 +65,35 @@ class AthenaComposeViewerWorkbenchSession private constructor(
      */
     fun dispatch(intent: AthenaComposeShellIntent): AthenaComposeShellState {
         when (intent) {
+            is AthenaComposeShellIntent.SwitchProjectionView -> switchProjectionView(intent.viewId)
+            is AthenaComposeShellIntent.SelectRenderedSemantic -> selectRenderedSemantic(intent.semanticId)
             is AthenaComposeShellIntent.SelectSourcePort -> selectSourcePort(intent.semanticId)
             is AthenaComposeShellIntent.SelectTargetPort -> selectTargetPort(intent.semanticId)
             AthenaComposeShellIntent.ExecuteConnectPorts -> executeConnectPorts()
         }
         shellState = rebuildShellState()
         return shellState
+    }
+
+    private fun switchProjectionView(viewId: String) {
+        when (val result = context.switchActiveProjectionView(viewId)) {
+            is AthenaRuntimeProjectionSwitchSuccess -> {
+                consoleEntries += "GUI projection view switched: ${result.requestedViewId}"
+            }
+
+            is AthenaRuntimeProjectionSwitchRejected -> {
+                consoleEntries += "GUI projection view rejected: ${result.reason}"
+            }
+        }
+    }
+
+    private fun selectRenderedSemantic(semanticId: String?) {
+        selectedRenderedSemanticId = semanticId
+        consoleEntries += if (semanticId == null) {
+            "GUI semantic selection cleared."
+        } else {
+            "GUI semantic selection updated: $semanticId"
+        }
     }
 
     private fun selectSourcePort(semanticId: String) {
@@ -142,7 +170,7 @@ class AthenaComposeViewerWorkbenchSession private constructor(
                 commandPanelStatusMessage = "Created $connectionSemanticId through the runtime command path."
                 currentIncrementalReport()?.let { report ->
                     consoleEntries +=
-                        "GUI incremental refresh: validation=${report.validationMode} rendering=${report.renderingMode} changed=${report.changedSemanticIds.size}"
+                        "GUI incremental refresh: validation=${report.validationMode} layout=${report.layoutMode} geometry=${report.geometryMode} rendering=${report.renderingMode} changed=${report.changedSemanticIds.size}"
                 }
                 currentDiffInspection()?.historyConsequences?.firstOrNull()?.let { consequence ->
                     consoleEntries += "GUI history consequence: ${consequence.commandId} ${consequence.status.name}"
@@ -165,9 +193,9 @@ class AthenaComposeViewerWorkbenchSession private constructor(
     }
 
     private fun rebuildShellState(): AthenaComposeShellState {
-        val viewerProjection = context.projectViewerProjection()
-        val scene = viewerProjection.toComposeSceneOrNull()
-        val unavailableReason = viewerProjection.unavailableReasonOrNull()
+        val projectionSession = context.projectProjectionSession()
+        val scene = projectionSession.activeProjection.toComposeSceneOrNull()
+        val unavailableReason = projectionSession.activeProjection.unavailableReasonOrNull()
         val graphProjection = context.projectEngineeringGraphProjection()
         val history = context.commandRuntime().history(context)
         val latestInspection = currentDiffInspection()
@@ -193,6 +221,9 @@ class AthenaComposeViewerWorkbenchSession private constructor(
             ),
             workspaceName = context.project.name,
             projectName = scene?.systemName ?: context.project.name,
+            projectionSession = projectionSession.toComposeProjectionSessionState(
+                selectedSemanticId = selectedRenderedSemanticId,
+            ),
             workspaceTreeItems = workspaceTreeItems(
                 graphProjection = graphProjection,
                 sourcePath = workspaceRoot.relativize(sourcePath).toString().replace('\\', '/'),
@@ -211,6 +242,7 @@ class AthenaComposeViewerWorkbenchSession private constructor(
                 statusMessage = commandPanelStatusMessage,
             ),
             inspectorGroups = inspectorGroups(
+                projectionSession = projectionSession,
                 scene = scene,
                 historyCount = history.records.size,
                 latestInspection = latestInspection,
@@ -253,7 +285,7 @@ class AthenaComposeViewerWorkbenchSession private constructor(
             }
             context.incrementalUpdateReport()?.let { report ->
                 add(
-                    "Incremental validation: ${report.validationMode} | rendering: ${report.renderingMode} | changed ids: ${report.changedSemanticIds.size}",
+                    "Incremental validation: ${report.validationMode} | layout: ${report.layoutMode} | geometry: ${report.geometryMode} | rendering: ${report.renderingMode} | changed ids: ${report.changedSemanticIds.size}",
                 )
             }
             latestInspection?.let { inspection ->
@@ -382,11 +414,15 @@ class AthenaComposeViewerWorkbenchSession private constructor(
     }
 
     private fun inspectorGroups(
+        projectionSession: AthenaRuntimeProjectionSession,
         scene: AthenaSemanticViewerScene?,
         historyCount: Int,
         latestInspection: AthenaSemanticDiffInspection?,
         pluginViewContributions: List<AthenaRuntimePluginViewContribution>,
     ): List<AthenaComposeInspectorGroup> {
+        val shellProjectionSession = projectionSession.toComposeProjectionSessionState(
+            selectedSemanticId = selectedRenderedSemanticId,
+        )
         return buildList {
             add(
             AthenaComposeInspectorGroup(
@@ -405,11 +441,25 @@ class AthenaComposeViewerWorkbenchSession private constructor(
             AthenaComposeInspectorGroup(
                 title = "Runtime view",
                 fields = listOf(
+                    AthenaComposeInspectorField("Active view", shellProjectionSession.activeViewDisplayName ?: "Unavailable"),
+                    AthenaComposeInspectorField(
+                        "Supported views",
+                        shellProjectionSession.supportedViews.joinToString(separator = ", ") { view -> view.displayName },
+                    ),
+                    AthenaComposeInspectorField(
+                        "Projection",
+                        if (shellProjectionSession.activeProjectionAvailable) "Ready" else "Unavailable",
+                    ),
                     AthenaComposeInspectorField("Components", scene?.componentCount?.toString() ?: "0"),
                     AthenaComposeInspectorField("Connections", scene?.connectionCount?.toString() ?: "0"),
                     AthenaComposeInspectorField("History", historyCount.toString()),
                     AthenaComposeInspectorField("GUI source", selectedSourcePortSemanticId ?: "None"),
                     AthenaComposeInspectorField("GUI target", selectedTargetPortSemanticId ?: "None"),
+                    AthenaComposeInspectorField("Selection", shellProjectionSession.selectedSemanticId ?: "None"),
+                    AthenaComposeInspectorField(
+                        "Selection in active view",
+                        if (shellProjectionSession.selectedSemanticVisibleInActiveView) "Yes" else "No",
+                    ),
                 ),
             ),
             )
@@ -490,11 +540,11 @@ private data class AthenaWorkbenchPortCandidate(
 }
 
 /**
- * Converts one runtime viewer projection into the read-only Compose semantic scene when available.
+ * Converts one runtime projection snapshot into the read-only Compose semantic scene when available.
  */
-private fun AthenaRuntimeViewerProjection.toComposeSceneOrNull(): AthenaSemanticViewerScene? {
+private fun AthenaRuntimeProjectionSnapshot.toComposeSceneOrNull(): AthenaSemanticViewerScene? {
     return when (this) {
-        is AthenaRuntimeViewerReadyProjection -> AthenaSemanticViewerScene(
+        is AthenaRuntimeProjectionReadySnapshot -> AthenaSemanticViewerScene(
             systemName = scene.systemName,
             canvasWidth = scene.canvasWidth,
             canvasHeight = scene.canvasHeight,
@@ -519,27 +569,63 @@ private fun AthenaRuntimeViewerProjection.toComposeSceneOrNull(): AthenaSemantic
             },
         )
 
-        is AthenaRuntimeViewerUnavailableProjection -> null
+        is AthenaRuntimeProjectionUnavailableSnapshot -> null
     }
 }
 
 /**
- * Returns the runtime viewer unavailability reason when no semantic scene could be derived.
+ * Converts one runtime projection session into the shell-facing projection-session contract.
  */
-private fun AthenaRuntimeViewerProjection.unavailableReasonOrNull(): String? {
+private fun AthenaRuntimeProjectionSession.toComposeProjectionSessionState(
+    selectedSemanticId: String?,
+): AthenaComposeProjectionSessionState {
+    val scene = activeProjection.toComposeSceneOrNull()
+    return AthenaComposeProjectionSessionState(
+        supportedViews = supportedViews.map { view ->
+            AthenaComposeProjectionViewState(
+                viewId = view.viewId,
+                displayName = view.displayName,
+                description = view.description,
+            )
+        },
+        activeViewId = activeViewId,
+        activeViewDisplayName = supportedViews.firstOrNull { view -> view.viewId == activeViewId }?.displayName,
+        activeProjectionAvailable = scene != null,
+        selectedSemanticId = selectedSemanticId,
+        selectedSemanticVisibleInActiveView = selectedSemanticId != null && scene?.containsSemanticId(selectedSemanticId) == true,
+    )
+}
+
+/**
+ * Returns the runtime projection unavailability reason when no semantic scene could be derived.
+ */
+private fun AthenaRuntimeProjectionSnapshot.unavailableReasonOrNull(): String? {
     return when (this) {
-        is AthenaRuntimeViewerReadyProjection -> null
-        is AthenaRuntimeViewerUnavailableProjection -> reason
+        is AthenaRuntimeProjectionReadySnapshot -> null
+        is AthenaRuntimeProjectionUnavailableSnapshot -> reason
     }
+}
+
+private fun AthenaSemanticViewerScene.containsSemanticId(semanticId: String): Boolean {
+    return components.any { component -> component.semanticId == semanticId } ||
+        connections.any { connection -> connection.semanticId == semanticId }
 }
 
 private fun AthenaSemanticDiffInspection.summaryText(): String {
     val primaryEntry = entries.firstOrNull { entry -> entry.changeKind.name != "CONTEXT" } ?: entries.firstOrNull()
     val primarySummary = primaryEntry?.let { entry -> "${entry.changeKind.name} ${entry.semanticId}" } ?: "No semantic diff entries."
+    val projectionSummary = projectionConsequences.joinToString(separator = ", ") { consequence ->
+        buildString {
+            append(consequence.layer.name.lowercase())
+            append(" ")
+            append(consequence.affectedViewIds.joinToString(separator = "/"))
+            consequence.mode?.let { mode -> append(" ($mode)") }
+        }
+    }.ifBlank { "no projection consequences" }
     val linkedCommands = historyConsequences.joinToString(separator = ", ") { consequence ->
         "${consequence.commandId} ${consequence.status.name}"
     }.ifBlank { "no linked command history" }
-    return "$primarySummary | history: $linkedCommands"
+    return "$primarySummary | projection: $projectionSummary | history: $linkedCommands"
 }
 
 private fun AthenaRuntimePluginInspectorGroup.toComposeInspectorGroup(): AthenaComposeInspectorGroup {

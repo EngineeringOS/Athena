@@ -3,7 +3,7 @@ package com.engineeringood.athena.compiler
 import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorSource
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
@@ -18,8 +18,28 @@ import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
 import com.engineeringood.athena.compiler.plugin.AthenaCoreRuntime
 import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.compiler.plugin.AthenaPluginDiscovery
+import com.engineeringood.athena.geometry.GeometryBounds
+import com.engineeringood.athena.geometry.GeometryElementKind
+import com.engineeringood.athena.geometry.GeometryDocument
+import com.engineeringood.athena.geometry.GeometryElement
+import com.engineeringood.athena.geometry.GeometryElementId
+import com.engineeringood.athena.geometry.GeometryPoint
 import com.engineeringood.athena.semantics.core.SemanticContinuationDecision
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
+import com.engineeringood.athena.layout.LayoutAxis
+import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.LayoutDocument
+import com.engineeringood.athena.layout.LayoutGroup
+import com.engineeringood.athena.layout.LayoutGroupId
+import com.engineeringood.athena.layout.LayoutNode
+import com.engineeringood.athena.layout.LayoutNodeId
+import com.engineeringood.athena.layout.LayoutRelationship
+import com.engineeringood.athena.layout.LayoutRelationshipId
+import com.engineeringood.athena.layout.LayoutPlacementRelation
+import com.engineeringood.athena.layout.LayoutRelationshipKind
+import com.engineeringood.athena.layout.LayoutRelativePlacement
+import com.engineeringood.athena.layout.ViewDefinition
+import com.engineeringood.athena.layout.ViewEmphasis
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -59,9 +79,9 @@ class AthenaCompilerTest {
                 ),
                 CompilerPassDescriptor(
                     id = CompilerPassId.DOWNSTREAM_DERIVATION,
-                    responsibility = "Derive the thin render-facing model and emit simple SVG when policy allows",
-                    inputState = "semantic validation result",
-                    outputState = "render result",
+                    responsibility = "Feed explicit Geometry IR into the first downstream backend and emit simple SVG when policy allows",
+                    inputState = "semantic validation result plus derived geometry",
+                    outputState = "geometry-backed render result",
                 ),
             ),
             success.pipeline.passes.map { it.pass },
@@ -111,10 +131,10 @@ class AthenaCompilerTest {
                     connections = listOf(
                         SvgRenderConnection(
                             semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
-                            x1 = 180,
-                            y1 = 96,
-                            x2 = 300,
-                            y2 = 96,
+                            x1 = 104,
+                            y1 = 86,
+                            x2 = 316,
+                            y2 = 86,
                         ),
                     ),
                 ),
@@ -122,6 +142,53 @@ class AthenaCompilerTest {
             ),
             success.rendering,
         )
+        assertEquals(
+            listOf(expectedCabinetLayout(), expectedWiringLayout()),
+            success.layouts,
+        )
+        assertEquals(
+            listOf(expectedCabinetGeometry(), expectedWiringGeometry()),
+            success.geometries,
+        )
+    }
+
+    @Test
+    fun `compile derives deterministic cabinet and wiring layouts from one semantic source`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler()
+
+        val first = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
+        val second = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
+
+        assertEquals(listOf("cabinet", "wiring"), compiler.supportedViewDefinitions().map { definition -> definition.id })
+        assertEquals(first.layouts, second.layouts)
+        assertEquals(first.geometries, second.geometries)
+        assertEquals(expectedCabinetLayout(), first.layouts.first { layout -> layout.view.id == "cabinet" })
+        assertEquals(expectedWiringLayout(), first.layouts.first { layout -> layout.view.id == "wiring" })
+        assertEquals(expectedCabinetGeometry(), first.geometries.first { geometry -> geometry.viewId == "cabinet" })
+        assertEquals(expectedWiringGeometry(), first.geometries.first { geometry -> geometry.viewId == "wiring" })
+    }
+
+    @Test
+    fun `deriveLayout exposes one supported layout by view id without changing semantic authority`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler()
+        val lowering = assertIs<CompilerLoweringSuccess>(compiler.lower(examplePath))
+
+        assertEquals(expectedCabinetLayout(), compiler.deriveLayout(lowering.document, "cabinet"))
+        assertEquals(expectedWiringLayout(), compiler.deriveLayout(lowering.document, "wiring"))
+    }
+
+    @Test
+    fun `deriveGeometry exposes one supported geometry by layout without changing semantic authority`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler()
+        val lowering = assertIs<CompilerLoweringSuccess>(compiler.lower(examplePath))
+        val cabinetLayout = compiler.deriveLayout(lowering.document, "cabinet")
+        val wiringLayout = compiler.deriveLayout(lowering.document, "wiring")
+
+        assertEquals(expectedCabinetGeometry(), compiler.deriveGeometry(cabinetLayout))
+        assertEquals(expectedWiringGeometry(), compiler.deriveGeometry(wiringLayout))
     }
 
     @Test
@@ -581,6 +648,8 @@ class AthenaCompilerTest {
         val success = assertIs<CompilerCompilationSuccess>(result)
         assertTrue(!success.semanticResult.isSemanticallyValid)
         assertEquals(SemanticContinuationDecision.STOP_DOWNSTREAM, success.semanticResult.continuationDecision)
+        assertEquals(emptyList(), success.layouts)
+        assertEquals(emptyList(), success.geometries)
         assertEquals(
             listOf(
                 "reference.connection-endpoint.unresolved",
@@ -688,7 +757,7 @@ class AthenaCompilerTest {
 
         val success = assertIs<CompilerLoweringSuccess>(result)
         assertEquals(
-            EngineeringIrDocument(
+            EngineeringDocument(
                 system = EngineeringSystem(
                     id = StableSemanticIdentity("system:DemoCabinet"),
                     name = "DemoCabinet",
@@ -1039,7 +1108,7 @@ class AthenaCompilerTest {
         assertTrue(success.source.ast.system.span.end.line >= 22)
     }
 
-    private fun renderConformanceArtifact(document: EngineeringIrDocument, repoRoot: Path): String {
+    private fun renderConformanceArtifact(document: EngineeringDocument, repoRoot: Path): String {
         fun renderPath(file: String): String {
             val path = Path.of(file)
             return runCatching { repoRoot.relativize(path).toString().replace('\\', '/') }
@@ -1083,6 +1152,337 @@ class AthenaCompilerTest {
 
     private fun expectedDemoSvg(): String {
         return Files.readString(resolveRepoRoot().resolve("examples/m0/demo-cabinet.svg")).trimEnd()
+    }
+
+    private fun expectedCabinetLayout(): LayoutDocument {
+        val plcComponentLayoutId = LayoutNodeId("cabinet/node/component_PLC1")
+        val plcPortLayoutId = LayoutNodeId("cabinet/node/port_PLC1_out")
+        val motorComponentLayoutId = LayoutNodeId("cabinet/node/component_M1")
+        val motorPortLayoutId = LayoutNodeId("cabinet/node/port_M1_in")
+        return LayoutDocument(
+            view = cabinetViewDefinition(),
+            groups = listOf(
+                LayoutGroup(
+                    groupId = LayoutGroupId("cabinet/group/component_PLC1"),
+                    label = "PLC1",
+                    kind = "component-group",
+                    semanticIds = listOf(
+                        StableSemanticIdentity("component:PLC1"),
+                        StableSemanticIdentity("port:PLC1.out"),
+                    ),
+                    memberLayoutIds = listOf(plcComponentLayoutId, plcPortLayoutId),
+                ),
+                LayoutGroup(
+                    groupId = LayoutGroupId("cabinet/group/component_M1"),
+                    label = "M1",
+                    kind = "component-group",
+                    semanticIds = listOf(
+                        StableSemanticIdentity("component:M1"),
+                        StableSemanticIdentity("port:M1.in"),
+                    ),
+                    memberLayoutIds = listOf(motorComponentLayoutId, motorPortLayoutId),
+                ),
+            ),
+            nodes = listOf(
+                LayoutNode(
+                    layoutId = plcComponentLayoutId,
+                    semanticId = StableSemanticIdentity("component:PLC1"),
+                    label = "PLC1",
+                    kind = "component",
+                    groupId = LayoutGroupId("cabinet/group/component_PLC1"),
+                    order = 0,
+                    emphasis = listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT),
+                ),
+                LayoutNode(
+                    layoutId = plcPortLayoutId,
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    label = "out",
+                    kind = "port",
+                    groupId = LayoutGroupId("cabinet/group/component_PLC1"),
+                    order = 0,
+                    relativePlacement = LayoutRelativePlacement(
+                        axis = LayoutAxis.VERTICAL,
+                        relation = LayoutPlacementRelation.WITHIN,
+                        referenceLayoutId = plcComponentLayoutId,
+                    ),
+                    emphasis = listOf(ViewEmphasis.PLACEMENT),
+                ),
+                LayoutNode(
+                    layoutId = motorComponentLayoutId,
+                    semanticId = StableSemanticIdentity("component:M1"),
+                    label = "M1",
+                    kind = "component",
+                    groupId = LayoutGroupId("cabinet/group/component_M1"),
+                    order = 1,
+                    relativePlacement = LayoutRelativePlacement(
+                        axis = LayoutAxis.HORIZONTAL,
+                        relation = LayoutPlacementRelation.AFTER,
+                        referenceLayoutId = plcComponentLayoutId,
+                    ),
+                    emphasis = listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT),
+                ),
+                LayoutNode(
+                    layoutId = motorPortLayoutId,
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    label = "in",
+                    kind = "port",
+                    groupId = LayoutGroupId("cabinet/group/component_M1"),
+                    order = 0,
+                    relativePlacement = LayoutRelativePlacement(
+                        axis = LayoutAxis.VERTICAL,
+                        relation = LayoutPlacementRelation.WITHIN,
+                        referenceLayoutId = motorComponentLayoutId,
+                    ),
+                    emphasis = listOf(ViewEmphasis.PLACEMENT),
+                ),
+            ),
+            relationships = listOf(
+                LayoutRelationship(
+                    relationshipId = LayoutRelationshipId("cabinet/relationship/ownership/port_PLC1_out"),
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    kind = LayoutRelationshipKind.OWNERSHIP,
+                    sourceLayoutId = plcComponentLayoutId,
+                    targetLayoutId = plcPortLayoutId,
+                    emphasis = listOf(ViewEmphasis.OWNERSHIP),
+                ),
+                LayoutRelationship(
+                    relationshipId = LayoutRelationshipId("cabinet/relationship/ownership/port_M1_in"),
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    kind = LayoutRelationshipKind.OWNERSHIP,
+                    sourceLayoutId = motorComponentLayoutId,
+                    targetLayoutId = motorPortLayoutId,
+                    emphasis = listOf(ViewEmphasis.OWNERSHIP),
+                ),
+                LayoutRelationship(
+                    relationshipId = LayoutRelationshipId(
+                        "cabinet/relationship/connectivity/connection_PLC1_out_M1_in",
+                    ),
+                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    kind = LayoutRelationshipKind.CONNECTIVITY,
+                    sourceLayoutId = plcPortLayoutId,
+                    targetLayoutId = motorPortLayoutId,
+                ),
+            ),
+        )
+    }
+
+    private fun expectedWiringLayout(): LayoutDocument {
+        val plcComponentLayoutId = LayoutNodeId("wiring/node/component_PLC1")
+        val motorComponentLayoutId = LayoutNodeId("wiring/node/component_M1")
+        val plcPortLayoutId = LayoutNodeId("wiring/node/port_PLC1_out")
+        val motorPortLayoutId = LayoutNodeId("wiring/node/port_M1_in")
+        return LayoutDocument(
+            view = wiringViewDefinition(),
+            groups = listOf(
+                LayoutGroup(
+                    groupId = LayoutGroupId("wiring/group/signal/Digital"),
+                    label = "Digital",
+                    kind = "signal-group",
+                    semanticIds = listOf(
+                        StableSemanticIdentity("port:PLC1.out"),
+                        StableSemanticIdentity("port:M1.in"),
+                        StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    ),
+                    memberLayoutIds = listOf(plcPortLayoutId, motorPortLayoutId),
+                ),
+            ),
+            nodes = listOf(
+                LayoutNode(
+                    layoutId = plcComponentLayoutId,
+                    semanticId = StableSemanticIdentity("component:PLC1"),
+                    label = "PLC1",
+                    kind = "component",
+                    order = 0,
+                ),
+                LayoutNode(
+                    layoutId = motorComponentLayoutId,
+                    semanticId = StableSemanticIdentity("component:M1"),
+                    label = "M1",
+                    kind = "component",
+                    order = 1,
+                    relativePlacement = LayoutRelativePlacement(
+                        axis = LayoutAxis.VERTICAL,
+                        relation = LayoutPlacementRelation.AFTER,
+                        referenceLayoutId = plcComponentLayoutId,
+                    ),
+                ),
+                LayoutNode(
+                    layoutId = plcPortLayoutId,
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    label = "out",
+                    kind = "port",
+                    groupId = LayoutGroupId("wiring/group/signal/Digital"),
+                    order = 0,
+                    relativePlacement = LayoutRelativePlacement(
+                        axis = LayoutAxis.HORIZONTAL,
+                        relation = LayoutPlacementRelation.WITHIN,
+                    ),
+                    emphasis = listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW),
+                ),
+                LayoutNode(
+                    layoutId = motorPortLayoutId,
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    label = "in",
+                    kind = "port",
+                    groupId = LayoutGroupId("wiring/group/signal/Digital"),
+                    order = 1,
+                    relativePlacement = LayoutRelativePlacement(
+                        axis = LayoutAxis.HORIZONTAL,
+                        relation = LayoutPlacementRelation.AFTER,
+                        referenceLayoutId = plcPortLayoutId,
+                    ),
+                    emphasis = listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW),
+                ),
+            ),
+            relationships = listOf(
+                LayoutRelationship(
+                    relationshipId = LayoutRelationshipId("wiring/relationship/ownership/port_PLC1_out"),
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    kind = LayoutRelationshipKind.OWNERSHIP,
+                    sourceLayoutId = plcComponentLayoutId,
+                    targetLayoutId = plcPortLayoutId,
+                ),
+                LayoutRelationship(
+                    relationshipId = LayoutRelationshipId("wiring/relationship/ownership/port_M1_in"),
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    kind = LayoutRelationshipKind.OWNERSHIP,
+                    sourceLayoutId = motorComponentLayoutId,
+                    targetLayoutId = motorPortLayoutId,
+                ),
+                LayoutRelationship(
+                    relationshipId = LayoutRelationshipId(
+                        "wiring/relationship/connectivity/connection_PLC1_out_M1_in",
+                    ),
+                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    kind = LayoutRelationshipKind.CONNECTIVITY,
+                    sourceLayoutId = plcPortLayoutId,
+                    targetLayoutId = motorPortLayoutId,
+                    emphasis = listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW),
+                ),
+            ),
+        )
+    }
+
+    private fun expectedCabinetGeometry(): GeometryDocument {
+        return GeometryDocument(
+            viewId = "cabinet",
+            canvasWidth = 480,
+            canvasHeight = 172,
+            elements = listOf(
+                GeometryElement(
+                    elementId = GeometryElementId("cabinet/geometry/box/component_PLC1"),
+                    semanticId = StableSemanticIdentity("component:PLC1"),
+                    kind = GeometryElementKind.BOX,
+                    bounds = GeometryBounds(x = 40, y = 60, width = 140, height = 72),
+                    label = "PLC1",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("cabinet/geometry/label/port_PLC1_out"),
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    kind = GeometryElementKind.LABEL,
+                    bounds = GeometryBounds(x = 56, y = 78, width = 48, height = 16),
+                    label = "out",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("cabinet/geometry/box/component_M1"),
+                    semanticId = StableSemanticIdentity("component:M1"),
+                    kind = GeometryElementKind.BOX,
+                    bounds = GeometryBounds(x = 300, y = 60, width = 140, height = 72),
+                    label = "M1",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("cabinet/geometry/label/port_M1_in"),
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    kind = GeometryElementKind.LABEL,
+                    bounds = GeometryBounds(x = 316, y = 78, width = 48, height = 16),
+                    label = "in",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("cabinet/geometry/path/connection_PLC1_out_M1_in"),
+                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    kind = GeometryElementKind.PATH,
+                    bounds = GeometryBounds(x = 104, y = 86, width = 212, height = 1),
+                    points = listOf(
+                        GeometryPoint(x = 104, y = 86),
+                        GeometryPoint(x = 210, y = 86),
+                        GeometryPoint(x = 210, y = 86),
+                        GeometryPoint(x = 316, y = 86),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    private fun expectedWiringGeometry(): GeometryDocument {
+        return GeometryDocument(
+            viewId = "wiring",
+            canvasWidth = 490,
+            canvasHeight = 244,
+            elements = listOf(
+                GeometryElement(
+                    elementId = GeometryElementId("wiring/geometry/box/component_PLC1"),
+                    semanticId = StableSemanticIdentity("component:PLC1"),
+                    kind = GeometryElementKind.BOX,
+                    bounds = GeometryBounds(x = 40, y = 40, width = 110, height = 44),
+                    label = "PLC1",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("wiring/geometry/box/component_M1"),
+                    semanticId = StableSemanticIdentity("component:M1"),
+                    kind = GeometryElementKind.BOX,
+                    bounds = GeometryBounds(x = 40, y = 160, width = 110, height = 44),
+                    label = "M1",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("wiring/geometry/label/port_PLC1_out"),
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    kind = GeometryElementKind.LABEL,
+                    bounds = GeometryBounds(x = 240, y = 72, width = 60, height = 18),
+                    label = "out",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("wiring/geometry/label/port_M1_in"),
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    kind = GeometryElementKind.LABEL,
+                    bounds = GeometryBounds(x = 390, y = 72, width = 60, height = 18),
+                    label = "in",
+                ),
+                GeometryElement(
+                    elementId = GeometryElementId("wiring/geometry/path/connection_PLC1_out_M1_in"),
+                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    kind = GeometryElementKind.PATH,
+                    bounds = GeometryBounds(x = 300, y = 81, width = 90, height = 1),
+                    points = listOf(
+                        GeometryPoint(x = 300, y = 81),
+                        GeometryPoint(x = 345, y = 81),
+                        GeometryPoint(x = 345, y = 81),
+                        GeometryPoint(x = 390, y = 81),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    private fun cabinetViewDefinition(): ViewDefinition {
+        return ViewDefinition(
+            id = "cabinet",
+            displayName = "Cabinet",
+            layoutIntent = LayoutIntent.STRUCTURAL,
+            groupingRules = listOf("group-by-owner", "group-by-component"),
+            viewEmphasis = listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT),
+            description = "Highlights structural placement and ownership relationships for electrical devices.",
+        )
+    }
+
+    private fun wiringViewDefinition(): ViewDefinition {
+        return ViewDefinition(
+            id = "wiring",
+            displayName = "Wiring",
+            layoutIntent = LayoutIntent.CONNECTIVITY,
+            groupingRules = listOf("group-by-signal", "group-by-connection-path"),
+            viewEmphasis = listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW),
+            description = "Highlights compatible signal flow and connection relationships between ports.",
+        )
     }
 
     private fun resolveRepoRoot(): Path {

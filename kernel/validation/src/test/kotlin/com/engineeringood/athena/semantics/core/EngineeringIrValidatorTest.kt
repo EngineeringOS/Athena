@@ -2,7 +2,7 @@ package com.engineeringood.athena.semantics.core
 
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
@@ -138,8 +138,8 @@ class EngineeringIrValidatorTest {
         assertEquals(SemanticContinuationDecision.CONTINUE, result.continuationDecision)
     }
 
-    private fun validDocument(): EngineeringIrDocument {
-        return EngineeringIrDocument(
+    private fun validDocument(): EngineeringDocument {
+        return EngineeringDocument(
             system = EngineeringSystem(
                 id = StableSemanticIdentity("system:DemoCabinet"),
                 name = "DemoCabinet",
@@ -202,8 +202,8 @@ class EngineeringIrValidatorTest {
         )
     }
 
-    private fun duplicateAndAmbiguousDocument(): EngineeringIrDocument {
-        return EngineeringIrDocument(
+    private fun duplicateAndAmbiguousDocument(): EngineeringDocument {
+        return EngineeringDocument(
             system = EngineeringSystem(
                 id = StableSemanticIdentity("system:DuplicateIdentity"),
                 name = "DuplicateIdentity",
@@ -270,8 +270,8 @@ class EngineeringIrValidatorTest {
         )
     }
 
-    private fun propertyAndCompatibilityDocument(): EngineeringIrDocument {
-        return EngineeringIrDocument(
+    private fun propertyAndCompatibilityDocument(): EngineeringDocument {
+        return EngineeringDocument(
             system = EngineeringSystem(
                 id = StableSemanticIdentity("system:PropertyChecks"),
                 name = "PropertyChecks",
@@ -376,8 +376,8 @@ class EngineeringIrValidatorTest {
         )
     }
 
-    private fun textValuedPropertyDocument(): EngineeringIrDocument {
-        return EngineeringIrDocument(
+    private fun textValuedPropertyDocument(): EngineeringDocument {
+        return EngineeringDocument(
             system = EngineeringSystem(
                 id = StableSemanticIdentity("system:TextProperties"),
                 name = "TextProperties",

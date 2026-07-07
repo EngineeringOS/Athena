@@ -1,6 +1,6 @@
 package com.engineeringood.athena.runtime
 
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 
 /**
@@ -45,6 +45,25 @@ data class AthenaSemanticHistoryConsequence(
 )
 
 /**
+ * Runtime-owned downstream projection layer classifications attached to semantic review.
+ */
+enum class AthenaProjectionRefreshConsequenceLayer {
+    LAYOUT,
+    GEOMETRY,
+    RENDERING,
+}
+
+/**
+ * One runtime-owned projection refresh consequence anchored to canonical semantic identities.
+ */
+data class AthenaProjectionRefreshConsequence(
+    val layer: AthenaProjectionRefreshConsequenceLayer,
+    val mode: String?,
+    val affectedViewIds: List<String>,
+    val affectedSemanticIds: List<String>,
+)
+
+/**
  * Runtime-owned inspection artifact for one semantic change or history consequence review.
  */
 data class AthenaSemanticDiffInspection(
@@ -54,6 +73,7 @@ data class AthenaSemanticDiffInspection(
     val affectedSemanticIds: List<String>,
     val entries: List<AthenaSemanticDiffEntry>,
     val historyConsequences: List<AthenaSemanticHistoryConsequence>,
+    val projectionConsequences: List<AthenaProjectionRefreshConsequence>,
 )
 
 internal fun buildSemanticDiffInspection(
@@ -61,9 +81,10 @@ internal fun buildSemanticDiffInspection(
     source: AthenaSemanticDiffInspectionSource,
     affectedCommandIds: List<String>,
     affectedSemanticIds: List<String>,
-    beforeDocument: EngineeringIrDocument,
-    afterDocument: EngineeringIrDocument,
+    beforeDocument: EngineeringDocument,
+    afterDocument: EngineeringDocument,
     history: AthenaCommandHistory,
+    projectionConsequences: List<AthenaProjectionRefreshConsequence> = emptyList(),
 ): AthenaSemanticDiffInspection {
     val normalizedAffectedSemanticIds = affectedSemanticIds.distinct().sorted()
     return AthenaSemanticDiffInspection(
@@ -85,8 +106,14 @@ internal fun buildSemanticDiffInspection(
                 },
                 beforeSummary = beforeSnapshot?.summary,
                 afterSummary = afterSnapshot?.summary,
+                )
+            },
+        projectionConsequences = projectionConsequences.map { consequence ->
+            consequence.copy(
+                affectedViewIds = consequence.affectedViewIds.distinct().sorted(),
+                affectedSemanticIds = consequence.affectedSemanticIds.distinct().sorted(),
             )
-        },
+        }.sortedBy { consequence -> consequence.layer.name },
         historyConsequences = history.records
             .filter { record -> record.commandId in affectedCommandIds }
             .map { record ->
@@ -105,7 +132,7 @@ private data class AthenaSemanticObjectSnapshot(
     val summary: String,
 )
 
-private fun EngineeringIrDocument.semanticSnapshot(semanticId: String): AthenaSemanticObjectSnapshot? {
+private fun EngineeringDocument.semanticSnapshot(semanticId: String): AthenaSemanticObjectSnapshot? {
     if (system.id.value == semanticId) {
         return AthenaSemanticObjectSnapshot(
             kind = "system",
@@ -147,6 +174,38 @@ private fun com.engineeringood.athena.ir.EngineeringPropertyValue.summaryText():
     return when (this) {
         is EngineeringPropertyValue.Symbol -> text
         is EngineeringPropertyValue.Text -> text
+    }
+}
+
+internal fun AthenaRuntimeIncrementalUpdateReport.toProjectionConsequences(): List<AthenaProjectionRefreshConsequence> {
+    val normalizedSemanticIds = changedSemanticIds.distinct().sorted()
+    return buildList {
+        add(
+            AthenaProjectionRefreshConsequence(
+                layer = AthenaProjectionRefreshConsequenceLayer.LAYOUT,
+                mode = layoutMode,
+                affectedViewIds = layoutScopedViewIds,
+                affectedSemanticIds = normalizedSemanticIds,
+            ),
+        )
+        add(
+            AthenaProjectionRefreshConsequence(
+                layer = AthenaProjectionRefreshConsequenceLayer.GEOMETRY,
+                mode = geometryMode,
+                affectedViewIds = geometryScopedViewIds,
+                affectedSemanticIds = normalizedSemanticIds,
+            ),
+        )
+        if (renderingViewIds.isNotEmpty()) {
+            add(
+                AthenaProjectionRefreshConsequence(
+                    layer = AthenaProjectionRefreshConsequenceLayer.RENDERING,
+                    mode = renderingMode,
+                    affectedViewIds = renderingViewIds,
+                    affectedSemanticIds = normalizedSemanticIds,
+                ),
+            )
+        }
     }
 }
 

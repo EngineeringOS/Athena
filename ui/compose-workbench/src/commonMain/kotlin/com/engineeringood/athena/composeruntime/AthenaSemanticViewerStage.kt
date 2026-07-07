@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,9 +45,23 @@ import kotlin.math.roundToInt
 @Composable
 fun AthenaSemanticViewerStage(
     scene: AthenaSemanticViewerScene,
+    selectedSemanticId: String? = null,
+    onSelectionChanged: (String?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var interactionState by remember(scene) { mutableStateOf(AthenaSemanticViewerInteractionState()) }
+    var interactionState by remember(scene) {
+        mutableStateOf(
+            AthenaSemanticViewerInteractionState(
+                selection = selectedSemanticId?.let(::AthenaSemanticViewerSelection),
+            ),
+        )
+    }
+    LaunchedEffect(scene, selectedSemanticId) {
+        val nextSelection = selectedSemanticId?.let(::AthenaSemanticViewerSelection)
+        if (interactionState.selection != nextSelection) {
+            interactionState = interactionState.copy(selection = nextSelection)
+        }
+    }
     val density = LocalDensity.current
     val connectionColor = MaterialTheme.colorScheme.primary
     val selectedConnectionColor = MaterialTheme.colorScheme.secondary
@@ -161,11 +176,13 @@ fun AthenaSemanticViewerStage(
                 }
                 .pointerInput(scene, interactionState.camera) {
                     detectTapGestures { offset ->
-                        interactionState = interactionState.selectAt(
+                        val nextState = interactionState.selectAt(
                             scene = scene,
                             screenX = offset.x,
                             screenY = offset.y,
                         )
+                        interactionState = nextState
+                        onSelectionChanged(nextState.selection?.semanticId)
                     }
                 }
                 .pointerInput(scene, interactionState.camera) {

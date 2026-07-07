@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 490 244" width="490" height="244">
+  <title>DemoCabinet</title>
+  <text x="40" y="28" class="system-label">DemoCabinet</text>
+  <line x1="300" y1="81" x2="390" y2="81" class="connection" />
+  <rect x="40" y="40" width="110" height="44" rx="8" ry="8" class="component" />
+  <text x="52" y="68" class="label">PLC1</text>
+  <rect x="40" y="160" width="110" height="44" rx="8" ry="8" class="component" />
+  <text x="52" y="188" class="label">M1</text>
+</svg>

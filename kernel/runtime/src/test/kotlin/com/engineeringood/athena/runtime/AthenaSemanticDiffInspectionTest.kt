@@ -5,6 +5,7 @@ import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.assertNotNull
 
 class AthenaSemanticDiffInspectionTest {
@@ -36,6 +37,28 @@ class AthenaSemanticDiffInspectionTest {
             assertEquals(null, connectionEntry.beforeSummary)
             assertContains(connectionEntry.afterSummary.orEmpty(), "PLC1.out1")
             assertContains(connectionEntry.afterSummary.orEmpty(), "M1.in")
+            assertEquals(
+                listOf(
+                    AthenaProjectionRefreshConsequenceLayer.GEOMETRY,
+                    AthenaProjectionRefreshConsequenceLayer.LAYOUT,
+                    AthenaProjectionRefreshConsequenceLayer.RENDERING,
+                ),
+                latestInspection.projectionConsequences.map { consequence -> consequence.layer }.sortedBy { layer -> layer.name },
+            )
+            val latestLayoutConsequence = latestInspection.projectionConsequences.first { consequence ->
+                consequence.layer == AthenaProjectionRefreshConsequenceLayer.LAYOUT
+            }
+            assertEquals("scoped", latestLayoutConsequence.mode)
+            assertEquals(listOf("cabinet", "wiring"), latestLayoutConsequence.affectedViewIds)
+            assertEquals(
+                listOf("connection:PLC1.out1->M1.in", "port:M1.in", "port:PLC1.out1"),
+                latestLayoutConsequence.affectedSemanticIds.sorted(),
+            )
+            val latestRenderingConsequence = latestInspection.projectionConsequences.first { consequence ->
+                consequence.layer == AthenaProjectionRefreshConsequenceLayer.RENDERING
+            }
+            assertEquals("scoped", latestRenderingConsequence.mode)
+            assertEquals(listOf("cabinet"), latestRenderingConsequence.affectedViewIds)
 
             val commandInspection = assertNotNull(
                 context.commandRuntime().inspectCommandHistoryConsequence(
@@ -48,6 +71,10 @@ class AthenaSemanticDiffInspectionTest {
             assertEquals(AthenaSemanticDiffChangeKind.ADDED, commandInspection.entries.first { entry ->
                 entry.semanticId == "connection:PLC1.out1->M1.in"
             }.changeKind)
+            assertTrue(commandInspection.projectionConsequences.isNotEmpty())
+            assertTrue(commandInspection.projectionConsequences.all { consequence ->
+                "connection:PLC1.out1->M1.in" in consequence.affectedSemanticIds
+            })
         } finally {
             Files.deleteIfExists(sourcePath)
         }
@@ -75,6 +102,18 @@ class AthenaSemanticDiffInspectionTest {
             assertEquals(AthenaSemanticDiffChangeKind.REMOVED, latestAfterUndo.entries.first { entry ->
                 entry.semanticId == "connection:PLC1.out2->M2.in"
             }.changeKind)
+            assertEquals(
+                listOf("cabinet", "wiring"),
+                latestAfterUndo.projectionConsequences.first { consequence ->
+                    consequence.layer == AthenaProjectionRefreshConsequenceLayer.LAYOUT
+                }.affectedViewIds,
+            )
+            assertEquals(
+                listOf("cabinet"),
+                latestAfterUndo.projectionConsequences.first { consequence ->
+                    consequence.layer == AthenaProjectionRefreshConsequenceLayer.RENDERING
+                }.affectedViewIds,
+            )
 
             val commandInspectionAfterUndo = assertNotNull(
                 context.commandRuntime().inspectCommandHistoryConsequence(
@@ -86,6 +125,7 @@ class AthenaSemanticDiffInspectionTest {
             assertEquals(AthenaSemanticDiffChangeKind.ADDED, commandInspectionAfterUndo.entries.first { entry ->
                 entry.semanticId == "connection:PLC1.out2->M2.in"
             }.changeKind)
+            assertTrue(commandInspectionAfterUndo.projectionConsequences.isNotEmpty())
 
             context.commandRuntime().replay(context)
 
@@ -96,6 +136,10 @@ class AthenaSemanticDiffInspectionTest {
                 listOf(AthenaCommandHistoryRecordStatus.APPLIED, AthenaCommandHistoryRecordStatus.APPLIED),
                 latestAfterReplay.historyConsequences.map { consequence -> consequence.status },
             )
+            assertTrue(latestAfterReplay.projectionConsequences.any { consequence ->
+                consequence.layer == AthenaProjectionRefreshConsequenceLayer.GEOMETRY &&
+                    consequence.affectedViewIds == listOf("cabinet", "wiring")
+            })
         } finally {
             Files.deleteIfExists(sourcePath)
         }

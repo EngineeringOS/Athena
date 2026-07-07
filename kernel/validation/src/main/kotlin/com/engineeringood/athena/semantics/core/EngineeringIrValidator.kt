@@ -2,7 +2,7 @@ package com.engineeringood.athena.semantics.core
 
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
@@ -14,7 +14,7 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 class EngineeringIrValidator {
     /** Validates [document] and emits provenance-rich diagnostics without mutating the canonical IR. */
     fun validate(
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         scope: EngineeringIrValidationScope? = null,
     ): SemanticValidationResult {
         val componentsByName = document.components.groupBy { it.name }

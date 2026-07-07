@@ -77,7 +77,7 @@ The initial contract surface should stay narrow:
 
 - expose identity and declared capability metadata
 - expose only core-owned contribution seams
-- do not expose any hook that can replace `EngineeringIrDocument`
+- do not expose any hook that can replace `EngineeringDocument`
 - do not expose any hook that can alter compiler pass ordering
 
 ### Plugin Type Model

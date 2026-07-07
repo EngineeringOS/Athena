@@ -32,7 +32,7 @@ class AthenaDomainSemanticsCoordinator(
 
     /** Aggregates domain validation diagnostics inside the declared `VALIDATE` pass. */
     fun validate(
-        document: com.engineeringood.athena.ir.EngineeringIrDocument,
+        document: com.engineeringood.athena.ir.EngineeringDocument,
         context: AthenaPluginValidationContext,
     ): AthenaDomainValidationContribution {
         val diagnostics = activeDomainPlugins.flatMap { plugin ->

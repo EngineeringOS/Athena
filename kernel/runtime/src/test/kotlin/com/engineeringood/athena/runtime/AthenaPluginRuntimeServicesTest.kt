@@ -8,7 +8,9 @@ import com.engineeringood.athena.compiler.plugin.AthenaPluginManifest
 import com.engineeringood.athena.compiler.plugin.AthenaPluginSource
 import com.engineeringood.athena.compiler.plugin.AthenaPluginType
 import com.engineeringood.athena.compiler.plugin.CoreVersionRange
+import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
+import com.engineeringood.athena.layout.LayoutIntent
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -52,11 +54,13 @@ class AthenaPluginRuntimeServicesTest {
         assertEquals(
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
+                AthenaExtensionPoint.VIEW_DEFINITIONS,
                 AthenaExtensionPoint.RUNTIME_COMMANDS,
                 AthenaExtensionPoint.RUNTIME_VIEWS,
             ),
             electricalPlugin.attachedExtensionPoints,
         )
+        assertEquals(listOf("cabinet", "wiring"), electricalPlugin.viewDefinitionIds)
     }
 
     @Test
@@ -163,6 +167,24 @@ class AthenaPluginRuntimeServicesTest {
     }
 
     @Test
+    fun `hosted runtime services expose electrical view-definition contributions deterministically`() {
+        val runtime = AthenaRuntime()
+
+        val contributions = runtime.serviceRegistry.pluginRuntimeServices().viewDefinitionContributions()
+        val electricalContribution = contributions.first { contribution ->
+            contribution.pluginId == "com.engineeringood.athena.domain.electrical-runtime"
+        }
+        val cabinet = electricalContribution.viewDefinitions.first { definition -> definition.id == "cabinet" }
+        val wiring = electricalContribution.viewDefinitions.first { definition -> definition.id == "wiring" }
+
+        assertEquals(listOf("cabinet", "wiring"), electricalContribution.viewDefinitions.map { definition -> definition.id })
+        assertEquals(LayoutIntent.STRUCTURAL, cabinet.layoutIntent)
+        assertEquals(LayoutIntent.CONNECTIVITY, wiring.layoutIntent)
+        assertTrue(cabinet.groupingRules.isNotEmpty())
+        assertTrue(wiring.groupingRules.isNotEmpty())
+    }
+
+    @Test
     fun `hosted runtime services reject plugins that overreach declared runtime contracts`() {
         val pluginServices = AthenaHostedPluginRuntimeServices(
             pluginDiscovery = AthenaPluginDiscovery(
@@ -172,6 +194,8 @@ class AthenaPluginRuntimeServicesTest {
                         ElectricalRuntimeDomainPlugin(),
                         UndeclaredRuntimeCommandTestPlugin(),
                         DeclaredButMissingRuntimeCommandTestPlugin(),
+                        UndeclaredViewDefinitionTestPlugin(),
+                        DeclaredButMissingViewDefinitionTestPlugin(),
                         UndeclaredRuntimeViewTestPlugin(),
                         DeclaredButMissingRuntimeViewTestPlugin(),
                     ),
@@ -189,6 +213,8 @@ class AthenaPluginRuntimeServicesTest {
             listOf(
                 "plugin.runtime.contract.command.undeclared",
                 "plugin.runtime.contract.command.unimplemented",
+                "plugin.runtime.contract.view-definition.undeclared",
+                "plugin.runtime.contract.view-definition.unimplemented",
                 "plugin.runtime.contract.view.undeclared",
                 "plugin.runtime.contract.view.unimplemented",
             ),
@@ -262,6 +288,38 @@ private class UndeclaredRuntimeViewTestPlugin : AthenaDomainPlugin, AthenaRuntim
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
         return listOf(AthenaRuntimePluginViewContribution())
     }
+}
+
+private class UndeclaredViewDefinitionTestPlugin : AthenaDomainPlugin, AthenaViewDefinitionContributor {
+    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
+        pluginId = "com.engineeringood.athena.domain.undeclared-view-definition",
+        pluginVersion = "0.0.1-SNAPSHOT",
+        pluginType = AthenaPluginType.DOMAIN,
+        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
+        requiredExtensionPoints = setOf(AthenaExtensionPoint.DOMAIN_SEMANTICS),
+    )
+
+    override fun viewDefinitions(): List<com.engineeringood.athena.layout.ViewDefinition> {
+        return listOf(
+            com.engineeringood.athena.layout.ViewDefinition(
+                id = "undeclared",
+                displayName = "Undeclared",
+            ),
+        )
+    }
+}
+
+private class DeclaredButMissingViewDefinitionTestPlugin : AthenaDomainPlugin {
+    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
+        pluginId = "com.engineeringood.athena.domain.missing-view-definition",
+        pluginVersion = "0.0.1-SNAPSHOT",
+        pluginType = AthenaPluginType.DOMAIN,
+        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
+        requiredExtensionPoints = setOf(
+            AthenaExtensionPoint.DOMAIN_SEMANTICS,
+            AthenaExtensionPoint.VIEW_DEFINITIONS,
+        ),
+    )
 }
 
 private class DeclaredButMissingRuntimeViewTestPlugin : AthenaDomainPlugin {

@@ -7,9 +7,10 @@ import com.engineeringood.athena.compiler.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.compiler.plugin.AthenaPluginManifest
 import com.engineeringood.athena.compiler.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.compiler.plugin.AthenaPluginType
+import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.compiler.plugin.CoreVersionRange
 import com.engineeringood.athena.ir.EngineeringConnection
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
@@ -34,11 +35,14 @@ import com.engineeringood.athena.runtime.AthenaRuntimePluginInspectorField
 import com.engineeringood.athena.runtime.AthenaRuntimePluginInspectorGroup
 import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContribution
 import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContributor
+import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.ViewDefinition
+import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 
 /** Real Electrical/Runtime domain plugin that contributes the first M0 lowering and validation semantics. */
-class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginCommandContributor, AthenaRuntimePluginViewContributor {
+class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionContributor, AthenaRuntimePluginCommandContributor, AthenaRuntimePluginViewContributor {
     /** Core-owned manifest declaring the sample plugin's identity, type, compatibility, and extension point. */
     override val manifest: AthenaPluginManifest = AthenaPluginManifest(
         pluginId = "com.engineeringood.athena.domain.electrical-runtime",
@@ -47,6 +51,7 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginCom
         coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
         requiredExtensionPoints = setOf(
             AthenaExtensionPoint.DOMAIN_SEMANTICS,
+            AthenaExtensionPoint.VIEW_DEFINITIONS,
             AthenaExtensionPoint.RUNTIME_COMMANDS,
             AthenaExtensionPoint.RUNTIME_VIEWS,
         ),
@@ -126,6 +131,28 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginCom
         )
     }
 
+    /** Contributes the first supported multi-view proof pair for M2 without turning views into semantic truth. */
+    override fun viewDefinitions(): List<ViewDefinition> {
+        return listOf(
+            ViewDefinition(
+                id = "cabinet",
+                displayName = "Cabinet",
+                layoutIntent = LayoutIntent.STRUCTURAL,
+                groupingRules = listOf("group-by-owner", "group-by-component"),
+                viewEmphasis = listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT),
+                description = "Highlights structural placement and ownership relationships for electrical devices.",
+            ),
+            ViewDefinition(
+                id = "wiring",
+                displayName = "Wiring",
+                layoutIntent = LayoutIntent.CONNECTIVITY,
+                groupingRules = listOf("group-by-signal", "group-by-connection-path"),
+                viewEmphasis = listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW),
+                description = "Highlights compatible signal flow and connection relationships between ports.",
+            ),
+        )
+    }
+
     /** Contributes the first runtime-hosted electrical view proof through existing shell seams. */
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
         val summary = context.electricalRuntimeSummary()
@@ -150,7 +177,7 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginCom
     }
 
     private fun componentTypeDiagnostics(
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
         return document.components.mapNotNull { component ->
@@ -195,7 +222,7 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginCom
     }
 
     private fun portDirectionDiagnostics(
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
         return document.ports.mapNotNull { port ->
@@ -287,7 +314,7 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginCom
     }
 
     private fun portSignalDiagnostics(
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
         return document.ports.flatMap { port ->

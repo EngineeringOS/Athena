@@ -1,9 +1,6 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
-import com.engineeringood.athena.compiler.CompilerCompilationSuccess
-import com.engineeringood.athena.compiler.CompilerRenderingBlocked
-import com.engineeringood.athena.compiler.CompilerRenderingSuccess
 
 /**
  * Runtime-owned projection for one active project viewer request.
@@ -69,45 +66,6 @@ data class AthenaRuntimeViewerConnectionLine(
  * Derives a viewer-safe runtime projection from the active project compilation result.
  */
 fun AthenaExecutionContext.projectViewerProjection(): AthenaRuntimeViewerProjection {
-    return when (val compilation = compileActiveProject()) {
-        is CompilerCompilationParseFailure -> AthenaRuntimeViewerUnavailableProjection(
-            projectName = project.name,
-            reason = compilation.diagnostics.joinToString(separator = "; ") { diagnostic -> diagnostic.message },
-        )
-
-        is CompilerCompilationSuccess -> when (val rendering = compilation.rendering) {
-            is CompilerRenderingBlocked -> AthenaRuntimeViewerUnavailableProjection(
-                projectName = project.name,
-                reason = rendering.reason,
-            )
-
-            is CompilerRenderingSuccess -> AthenaRuntimeViewerReadyProjection(
-                projectName = project.name,
-                scene = AthenaRuntimeViewerScene(
-                    systemName = rendering.model.systemName,
-                    canvasWidth = rendering.model.canvasWidth,
-                    canvasHeight = rendering.model.canvasHeight,
-                    components = rendering.model.boxes.map { box ->
-                        AthenaRuntimeViewerComponentBox(
-                            semanticId = box.semanticId.value,
-                            label = box.label,
-                            x = box.x,
-                            y = box.y,
-                            width = box.width,
-                            height = box.height,
-                        )
-                    },
-                    connections = rendering.model.connections.map { connection ->
-                        AthenaRuntimeViewerConnectionLine(
-                            semanticId = connection.semanticId.value,
-                            x1 = connection.x1,
-                            y1 = connection.y1,
-                            x2 = connection.x2,
-                            y2 = connection.y2,
-                        )
-                    },
-                ),
-            )
-        }
-    }
+    val session = projectProjectionSession()
+    return session.activeProjection.toViewerProjection(projectName = session.projectName)
 }

@@ -3,7 +3,7 @@ package com.engineeringood.athena.runtime
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.ir.EngineeringConnection
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.SourceProvenance
@@ -64,8 +64,8 @@ data class AthenaCommandExecutionSuccess(
     override val commandKind: AthenaCommandKind,
     override val commandOrigin: AthenaCommandOrigin,
     val commandId: String,
-    val beforeDocument: EngineeringIrDocument,
-    val afterDocument: EngineeringIrDocument,
+    val beforeDocument: EngineeringDocument,
+    val afterDocument: EngineeringDocument,
     val changedSemanticIds: List<String>,
 ) : AthenaCommandExecutionResult
 
@@ -207,6 +207,10 @@ class AthenaCommandRuntimeService internal constructor() {
             beforeDocument = record.beforeDocument,
             afterDocument = record.afterDocument,
             history = history,
+            projectionConsequences = projectionConsequencesFor(
+                context = context,
+                affectedSemanticIds = record.changedSemanticIds,
+            ),
         )
     }
 
@@ -249,6 +253,10 @@ class AthenaCommandRuntimeService internal constructor() {
                         beforeDocument = compilation.document,
                         afterDocument = record.beforeDocument,
                         history = history(context),
+                        projectionConsequences = projectionConsequencesFor(
+                            context = context,
+                            affectedSemanticIds = record.changedSemanticIds,
+                        ),
                     ),
                 )
                 AthenaCommandHistoryMutationSuccess(
@@ -309,6 +317,10 @@ class AthenaCommandRuntimeService internal constructor() {
                                 beforeDocument = compilation.document,
                                 afterDocument = mutation.afterDocument,
                                 history = history(context),
+                                projectionConsequences = projectionConsequencesFor(
+                                    context = context,
+                                    affectedSemanticIds = mutation.changedSemanticIds,
+                                ),
                             ),
                         )
                         AthenaCommandHistoryMutationSuccess(
@@ -381,6 +393,10 @@ class AthenaCommandRuntimeService internal constructor() {
                         beforeDocument = compilation.document,
                         afterDocument = replayedDocument,
                         history = history(context),
+                        projectionConsequences = projectionConsequencesFor(
+                            context = context,
+                            affectedSemanticIds = state.records.flatMap { record -> record.changedSemanticIds }.distinct(),
+                        ),
                     ),
                 )
                 AthenaCommandHistoryMutationSuccess(
@@ -396,7 +412,7 @@ class AthenaCommandRuntimeService internal constructor() {
 
     private fun executeAgainstHistoryAwareState(
         context: AthenaExecutionContext,
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         command: AthenaCommand,
         origin: AthenaCommandOrigin,
     ): AthenaCommandExecutionResult {
@@ -424,6 +440,10 @@ class AthenaCommandRuntimeService internal constructor() {
                         beforeDocument = document,
                         afterDocument = mutation.afterDocument,
                         history = history(context),
+                        projectionConsequences = projectionConsequencesFor(
+                            context = context,
+                            affectedSemanticIds = mutation.changedSemanticIds,
+                        ),
                     ),
                 )
                 AthenaCommandExecutionSuccess(
@@ -455,7 +475,7 @@ class AthenaCommandRuntimeService internal constructor() {
 
     private fun applyCommand(
         context: AthenaExecutionContext,
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         command: AthenaCommand,
     ): AthenaCommandApplicationResult {
         return when (command) {
@@ -469,7 +489,7 @@ class AthenaCommandRuntimeService internal constructor() {
 
     private fun applyConnectPorts(
         context: AthenaExecutionContext,
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         command: AthenaConnectPortsCommand,
     ): AthenaCommandApplicationResult {
         val portsBySemanticId = document.ports.associateBy { port -> port.id.value }
@@ -506,8 +526,8 @@ class AthenaCommandRuntimeService internal constructor() {
     private fun recordSuccessfulCommand(
         context: AthenaExecutionContext,
         command: AthenaCommand,
-        beforeDocument: EngineeringIrDocument,
-        afterDocument: EngineeringIrDocument,
+        beforeDocument: EngineeringDocument,
+        afterDocument: EngineeringDocument,
         changedSemanticIds: List<String>,
         origin: AthenaCommandOrigin,
     ): AthenaRecordedCommand {
@@ -532,6 +552,39 @@ class AthenaCommandRuntimeService internal constructor() {
         )
         return recordedCommand
     }
+}
+
+/**
+ * Resolves projection refresh consequences for one semantic inspection request without introducing a second history model.
+ */
+private fun projectionConsequencesFor(
+    context: AthenaExecutionContext,
+    affectedSemanticIds: List<String>,
+): List<AthenaProjectionRefreshConsequence> {
+    val normalizedSemanticIds = affectedSemanticIds.distinct().sorted()
+    val currentReport = context.incrementalUpdateReport()
+    if (currentReport != null && currentReport.changedSemanticIds.sorted() == normalizedSemanticIds) {
+        return currentReport.toProjectionConsequences()
+    }
+
+    val supportedViewIds = context.projectProjectionSession().supportedViews.map { view -> view.viewId }.distinct().sorted()
+    if (supportedViewIds.isEmpty()) {
+        return emptyList()
+    }
+    return listOf(
+        AthenaProjectionRefreshConsequence(
+            layer = AthenaProjectionRefreshConsequenceLayer.LAYOUT,
+            mode = null,
+            affectedViewIds = supportedViewIds,
+            affectedSemanticIds = normalizedSemanticIds,
+        ),
+        AthenaProjectionRefreshConsequence(
+            layer = AthenaProjectionRefreshConsequenceLayer.GEOMETRY,
+            mode = null,
+            affectedViewIds = supportedViewIds,
+            affectedSemanticIds = normalizedSemanticIds,
+        ),
+    )
 }
 
 /**
@@ -575,7 +628,7 @@ private sealed interface AthenaCommandApplicationResult
  * Successful in-memory semantic mutation over a canonical engineering document.
  */
 private data class AthenaCommandApplicationSuccess(
-    val afterDocument: EngineeringIrDocument,
+    val afterDocument: EngineeringDocument,
     val changedSemanticIds: List<String>,
 ) : AthenaCommandApplicationResult
 

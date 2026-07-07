@@ -1,18 +1,23 @@
 # Implementation Artifacts
 
-- Active implementation artifacts for the current planning phase stay in this folder root.
-- Historical completed phase artifacts are archived into phase-specific subfolders.
+- This directory is milestone-indexed.
+- Every milestone must live under its own `m*` folder.
+- The root of `implementation-artifacts/` is reserved for shared index files only and must not hold milestone story files directly.
 
-## Current Active Phase
+## Current Layout
 
-- `1-1-establish-the-runtime-host-above-m0.md`
-- `sprint-status.yaml`
+- `m0/`: completed M0 implementation artifacts and archive notes
+- `m1/`: completed M1 implementation artifacts and sprint tracking
+- `m2/`: completed M2 implementation artifacts and sprint tracking
 
-## Archive Layout
+## Standard
 
-- `archive-m0/` contains the completed M0 story artifacts and their deferred notes.
+- Milestone files must be grouped under `m0/`, `m1/`, `m2/`, and future `mN/` folders.
+- Each active milestone should keep its own `sprint-status.yaml`.
+- Story files, retrospectives, and milestone-local README files belong inside the milestone folder, not at the root.
 
 ## Naming Rule
 
-- Keep the active phase at the folder root so BMAD story workflows can continue using the default `implementation_artifacts` location.
-- When a new major phase restarts story numbering, archive the previous phase into a dedicated subfolder instead of mixing `1.1`, `1.2`, and similar indices across phases.
+- Do not mix different milestone cycles that restart `1.1`, `1.2`, and similar indices in one flat directory.
+- When a milestone is closed, keep its references valid by updating in-repo links to the milestone folder instead of leaving legacy root paths behind.
+- All future milestone execution cycles must follow this folder standard from the beginning.

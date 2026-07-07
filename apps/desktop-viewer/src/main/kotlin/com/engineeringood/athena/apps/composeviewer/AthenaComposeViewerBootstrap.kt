@@ -117,6 +117,14 @@ object AthenaComposeViewerBootstrap {
         return AthenaComposeViewerSmokeVerifier.verify(snapshot)
     }
 
+    /**
+     * Returns a deterministic message for the scripted operator-proof flow.
+     */
+    fun operatorProofMessage(repoRoot: Path = resolveRepoRoot()): String {
+        val session = openDefaultWorkbenchSession(repoRoot)
+        return AthenaComposeViewerOperatorProofVerifier.verify(session)
+    }
+
     private fun snapshotFromProjection(
         projection: AthenaRuntimeViewerProjection,
         sourcePath: String,
@@ -201,7 +209,7 @@ object AthenaComposeViewerBootstrap {
     }
 }
 
-private const val DEFAULT_PROJECT_NAME = "demo-cabinet"
-private const val DEFAULT_PROJECT_SOURCE = "examples/m0/demo-cabinet.athena"
+private const val DEFAULT_PROJECT_NAME = "operator-proof"
+private const val DEFAULT_PROJECT_SOURCE = "examples/m2/operator-proof.athena"
 private const val REPO_ROOT_PROPERTY = "athena.repoRoot"
 private const val REPO_ROOT_ENV = "ATHENA_REPO_ROOT"

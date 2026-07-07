@@ -9,6 +9,7 @@ The `:extensions:domain-electrical` module is the first real Athena domain plugi
 - Implement `ElectricalRuntimeDomainPlugin` as an `AthenaDomainPlugin`.
 - Declare a core-owned plugin manifest with identity, type, compatibility, and extension points.
 - Contribute lowering for `device`, `port`, and `connect` declarations.
+- Contribute the first supported `cabinet` and `wiring` view definitions through typed core-owned contracts.
 - Contribute Electrical/Runtime-specific semantic diagnostics such as device type, port direction, and signal compatibility checks.
 - Publish the JVM `ServiceLoader` registration under `META-INF/services/com.engineeringood.athena.compiler.plugin.AthenaPlugin`.
 

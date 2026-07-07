@@ -5,7 +5,7 @@ import com.engineeringood.athena.compiler.plugin.AthenaDomainLoweringContributio
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.EngineeringSystem
@@ -20,7 +20,7 @@ class EngineeringIrLowerer(
     ),
 ) {
     /** Lowers [source] deterministically into the canonical semantic document used by later compiler passes. */
-    fun lower(source: CompilerSourceDocument): EngineeringIrDocument {
+    fun lower(source: CompilerSourceDocument): EngineeringDocument {
         val contribution = domainSemantics.lower(source)
 
         val components = contribution.components.withDuplicateOrdinals { it.name }.map { (blueprint, duplicateOrdinal) ->
@@ -71,7 +71,7 @@ class EngineeringIrLowerer(
             )
         }
 
-        return EngineeringIrDocument(
+        return EngineeringDocument(
             system = EngineeringSystem(
                 id = systemIdentity(source.ast.system.name),
                 name = source.ast.system.name,

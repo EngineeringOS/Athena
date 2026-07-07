@@ -10,6 +10,7 @@ enum class AthenaPluginType {
 /** Core-owned extension-point vocabulary for plugin attachment in the M0 compiler substrate. */
 enum class AthenaExtensionPoint {
     DOMAIN_SEMANTICS,
+    VIEW_DEFINITIONS,
     RULE_EVALUATION,
     RENDERING,
     RUNTIME_COMMANDS,

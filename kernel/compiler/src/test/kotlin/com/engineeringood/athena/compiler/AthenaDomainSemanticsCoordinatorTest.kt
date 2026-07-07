@@ -5,7 +5,7 @@ import com.engineeringood.athena.compiler.plugin.AthenaApprovedPluginInventory
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.compiler.plugin.AthenaPluginCandidate
 import com.engineeringood.athena.compiler.plugin.AthenaPluginValidationContext
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringSystem
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
@@ -45,7 +45,7 @@ class AthenaDomainSemanticsCoordinatorTest {
         )
 
         val validation = coordinator.validate(
-            document = EngineeringIrDocument(
+            document = EngineeringDocument(
                 system = EngineeringSystem(
                     id = StableSemanticIdentity("system:Deterministic"),
                     name = "Deterministic",
@@ -56,7 +56,7 @@ class AthenaDomainSemanticsCoordinatorTest {
                 connections = emptyList(),
             ),
             context = AthenaPluginValidationContext(
-                document = EngineeringIrDocument(
+                document = EngineeringDocument(
                     system = EngineeringSystem(
                         id = StableSemanticIdentity("system:Deterministic"),
                         name = "Deterministic",

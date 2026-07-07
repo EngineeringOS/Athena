@@ -9,6 +9,7 @@
 - 以 `AthenaDomainPlugin` 的形式实现 `ElectricalRuntimeDomainPlugin`。
 - 声明由核心拥有的插件 manifest，包括标识、类型、兼容性与扩展点。
 - 为 `device`、`port` 与 `connect` 声明提供 lowering 贡献。
+- 通过核心拥有的类型化契约贡献首个受支持的 `cabinet` 与 `wiring` 视图定义。
 - 提供 Electrical/Runtime 专属语义诊断，例如设备类型、端口方向与信号兼容性检查。
 - 在 `META-INF/services/com.engineeringood.athena.compiler.plugin.AthenaPlugin` 下发布 JVM `ServiceLoader` 注册。
 

@@ -8,14 +8,14 @@ IR: borrow from LLVM intermediate representation ("LLVM IR").
 
 ## Responsibilities
 
-- Publish the canonical document model in `EngineeringIrModel.kt`.
+- Publish the canonical document model in `EngineeringModel.kt`.
 - Define stable semantic identities through `StableSemanticIdentity`.
 - Preserve authored provenance through `SourceProvenance`.
 - Provide typed engineering properties and references for downstream validation and rendering.
 
 ## Main Types
 
-- `EngineeringIrDocument`
+- `EngineeringDocument`
 - `EngineeringSystem`
 - `EngineeringComponent`
 - `EngineeringPort`

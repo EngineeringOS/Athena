@@ -1,0 +1,55 @@
+# generated: 2026-07-07T09:28:26.2872243+08:00
+# last_updated: 2026-07-07T09:28:26.2872243+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m0
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file preserves milestone-local status references for the completed M0 archive.
+# - M0 predates the later per-milestone folder standard but now follows it structurally.
+
+generated: 2026-07-07T09:28:26.2872243+08:00
+last_updated: 2026-07-07T09:28:26.2872243+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m0
+
+development_status:
+  epic-1: done
+  1-1-establish-the-m0-jvm-compiler-workspace: done
+  1-2-author-and-parse-the-m0-electrical-runtime-dsl: done
+  1-3-lower-parsed-intent-into-canonical-engineering-ir: done
+  1-4-validate-engineering-ir-and-emit-provenance-rich-diagnostics: done
+  1-5-execute-the-m0-compiler-as-declared-deterministic-passes: done
+  1-6-derive-a-render-model-and-emit-simple-svg-from-engineering-ir: done
+  1-7-publish-m0-conformance-examples-for-the-end-to-end-proof: done
+  epic-1-retrospective: optional
+  epic-2: done
+  2-1-define-core-owned-typed-plugin-contracts: done
+  2-2-discover-local-plugins-and-validate-compatibility-before-use: done
+  2-3-deliver-electrical-and-runtime-semantics-through-a-real-domain-plugin: done
+  2-4-define-governed-knowledge-artifact-packages: done
+  2-5-resolve-governed-knowledge-artifacts-into-compilation-context: done
+  2-6-define-external-boundary-contract-descriptors: done
+  epic-2-retrospective: optional

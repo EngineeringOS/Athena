@@ -25,7 +25,7 @@ The lowering pass is intentionally not a validator. It structures authored meani
 
 The first canonical IR document is intentionally small and typed:
 
-- `EngineeringIrDocument`
+- `EngineeringDocument`
 - `EngineeringSystem`
 - `EngineeringComponent`
 - `EngineeringPort`

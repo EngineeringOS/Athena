@@ -5,6 +5,8 @@ plugins {
 dependencies {
     implementation(project(":kernel:compiler"))
     implementation(project(":kernel:engineering-model"))
+    implementation(project(":kernel:geometry-model"))
+    implementation(project(":kernel:layout-model"))
     implementation(project(":kernel:svg-renderer"))
 
     testImplementation(project(":extensions:domain-electrical"))

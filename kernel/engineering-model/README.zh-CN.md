@@ -6,14 +6,14 @@
 
 ## 职责
 
-- 在 `EngineeringIrModel.kt` 中发布规范文档模型。
+- 在 `EngineeringModel.kt` 中发布规范文档模型。
 - 通过 `StableSemanticIdentity` 定义稳定语义标识。
 - 通过 `SourceProvenance` 保留作者来源信息。
 - 为后续校验与渲染提供带类型的工程属性与引用。
 
 ## 主要类型
 
-- `EngineeringIrDocument`
+- `EngineeringDocument`
 - `EngineeringSystem`
 - `EngineeringComponent`
 - `EngineeringPort`

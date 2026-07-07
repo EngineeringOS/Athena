@@ -39,6 +39,8 @@ include(
     ":kernel:runtime",
     ":kernel:language",
     ":kernel:engineering-model",
+    ":kernel:layout-model",
+    ":kernel:geometry-model",
     ":kernel:validation",
     ":kernel:compiler",
     ":extensions:domain-electrical",

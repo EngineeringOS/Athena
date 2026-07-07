@@ -4,7 +4,9 @@ import com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationRepor
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeArtifactKind
 import com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeProvenance
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.geometry.GeometryDocument
+import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
@@ -34,7 +36,7 @@ sealed interface CompilerLoweringResult
 /** Successful lowering that preserves both the syntax authority and canonical engineering IR. */
 data class CompilerLoweringSuccess(
     val source: CompilerSourceDocument,
-    val document: com.engineeringood.athena.ir.EngineeringIrDocument,
+    val document: com.engineeringood.athena.ir.EngineeringDocument,
 ) : CompilerLoweringResult
 
 /** Failed lowering containing the diagnostics that prevented semantic lowering from running. */
@@ -45,7 +47,7 @@ data class CompilerLoweringFailure(
 /** Failed lowering containing inspectable semantic diagnostics when no active domain semantics can lower the source. */
 data class CompilerLoweringSemanticFailure(
     val source: CompilerSourceDocument,
-    val document: EngineeringIrDocument,
+    val document: EngineeringDocument,
     val diagnostics: List<SemanticDiagnostic>,
 ) : CompilerLoweringResult
 
@@ -84,7 +86,12 @@ data class CompilerAffectedScope(
 data class CompilerIncrementalUpdateReport(
     val affectedScope: CompilerAffectedScope,
     val validationMode: CompilerIncrementalPassMode,
+    val layoutMode: CompilerIncrementalPassMode,
+    val layoutScopedViewIds: List<String>,
+    val geometryMode: CompilerIncrementalPassMode,
+    val geometryScopedViewIds: List<String>,
     val renderingMode: CompilerIncrementalPassMode,
+    val renderingViewIds: List<String>,
 )
 
 /** Stable metadata reference for one governed knowledge artifact that may be attributed to a compiler-facing result. */
@@ -120,8 +127,10 @@ data class CompilerCompilationParseFailure(
 /** Unified compiler success carrying syntax authority, canonical IR, and semantic validation outcome. */
 data class CompilerCompilationSuccess(
     val source: CompilerSourceDocument,
-    val document: EngineeringIrDocument,
+    val document: EngineeringDocument,
     val semanticResult: SemanticValidationResult,
+    val layouts: List<LayoutDocument> = emptyList(),
+    val geometries: List<GeometryDocument> = emptyList(),
     val rendering: CompilerRenderingResult,
     val knowledgeContext: AthenaCompilationKnowledgeContext,
     val boundaryValidation: AthenaBoundaryValidationReport,

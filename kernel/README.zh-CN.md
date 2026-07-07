@@ -8,6 +8,8 @@
 
 - `:kernel:language` -> [`language/`](language/README.zh-CN.md)
 - `:kernel:engineering-model` -> [`engineering-model/`](engineering-model/README.zh-CN.md)
+- `:kernel:layout-model` -> [`layout-model/`](layout-model/README.zh-CN.md)
+- `:kernel:geometry-model` -> [`geometry-model/`](geometry-model/README.zh-CN.md)
 - `:kernel:validation` -> [`validation/`](validation/README.zh-CN.md)
 - `:kernel:compiler` -> [`compiler/`](compiler/README.zh-CN.md)
 - `:kernel:runtime` -> [`runtime/`](runtime/README.zh-CN.md)

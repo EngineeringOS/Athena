@@ -2,7 +2,7 @@ package com.engineeringood.athena.renderer.svg
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 
-/** Thin renderer-facing document derived from canonical semantics for simple SVG emission. */
+/** Thin viewer-facing document derived from explicit geometry for runtime-safe scene projection. */
 data class SvgRenderModel(
     val systemName: String,
     val canvasWidth: Int,
@@ -11,7 +11,7 @@ data class SvgRenderModel(
     val connections: List<SvgRenderConnection>,
 )
 
-/** Simple render-facing rectangle representing one semantic component label box. */
+/** Simple render-facing rectangle representing one semantic component box. */
 data class SvgRenderBox(
     val semanticId: StableSemanticIdentity,
     val label: String,

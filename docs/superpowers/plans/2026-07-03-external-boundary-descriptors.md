@@ -139,8 +139,8 @@ Expected: the doc distinguishes boundary descriptors from plugin discovery and g
 ### Task 4: Full Verification
 
 **Files:**
-- Modify: `_bmad-output/implementation-artifacts/archive-m0/2-6-define-external-boundary-contract-descriptors.md`
-- Modify: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- Modify: `_bmad-output/implementation-artifacts/m0/2-6-define-external-boundary-contract-descriptors.md`
+- Modify: `_bmad-output/implementation-artifacts/m0/sprint-status.yaml`
 
 - [ ] **Step 1: Run targeted compiler tests**
 

@@ -8,8 +8,11 @@ import com.engineeringood.athena.compiler.plugin.AthenaRulePlugin
 import com.engineeringood.athena.compiler.plugin.AthenaPlugin
 import com.engineeringood.athena.compiler.plugin.AthenaPluginType
 import com.engineeringood.athena.compiler.plugin.AthenaPluginValidator
+import com.engineeringood.athena.compiler.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.compiler.plugin.CoreVersionRange
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
+import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.ViewEmphasis
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -167,10 +170,27 @@ class AthenaPluginContractTest {
         assertEquals(
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
+                AthenaExtensionPoint.VIEW_DEFINITIONS,
                 AthenaExtensionPoint.RUNTIME_COMMANDS,
                 AthenaExtensionPoint.RUNTIME_VIEWS,
             ),
             plugin.manifest.requiredExtensionPoints,
         )
+    }
+
+    @Test
+    fun `electrical plugin publishes the supported cabinet and wiring view definitions through a typed contract`() {
+        val plugin = ElectricalRuntimeDomainPlugin()
+        val contributor = assertIs<AthenaViewDefinitionContributor>(plugin)
+
+        val viewDefinitions = contributor.viewDefinitions()
+        val cabinet = viewDefinitions.first { definition -> definition.id == "cabinet" }
+        val wiring = viewDefinitions.first { definition -> definition.id == "wiring" }
+
+        assertEquals(listOf("cabinet", "wiring"), viewDefinitions.map { definition -> definition.id })
+        assertEquals(LayoutIntent.STRUCTURAL, cabinet.layoutIntent)
+        assertEquals(LayoutIntent.CONNECTIVITY, wiring.layoutIntent)
+        assertEquals(listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT), cabinet.viewEmphasis)
+        assertEquals(listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW), wiring.viewEmphasis)
     }
 }

@@ -1,0 +1,2 @@
+cabinet_svg=demo-cabinet.cabinet.svg
+wiring_svg=demo-cabinet.wiring.svg

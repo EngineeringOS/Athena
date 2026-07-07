@@ -7,6 +7,7 @@ data class AthenaComposeShellState(
     val descriptor: AthenaComposeShellDescriptor = AthenaComposeShellDescriptor(),
     val workspaceName: String = "No workspace",
     val projectName: String = "No active project",
+    val projectionSession: AthenaComposeProjectionSessionState? = null,
     val workspaceTreeItems: List<AthenaComposeWorkspaceTreeItem> = emptyList(),
     val sourceDocument: AthenaComposeSourceDocument? = null,
     val commandPanel: AthenaComposeCommandPanelState? = null,
@@ -14,6 +15,27 @@ data class AthenaComposeShellState(
     val diagnosticsEntries: List<String> = listOf("No active diagnostics."),
     val consoleEntries: List<String> = listOf("Runtime shell ready."),
     val scene: AthenaSemanticViewerScene? = null,
+)
+
+/**
+ * Viewer-facing projection-session metadata exposed to the Compose shell.
+ */
+data class AthenaComposeProjectionSessionState(
+    val supportedViews: List<AthenaComposeProjectionViewState> = emptyList(),
+    val activeViewId: String? = null,
+    val activeViewDisplayName: String? = null,
+    val activeProjectionAvailable: Boolean = false,
+    val selectedSemanticId: String? = null,
+    val selectedSemanticVisibleInActiveView: Boolean = false,
+)
+
+/**
+ * One supported view option exposed to the Compose shell from runtime-owned contracts.
+ */
+data class AthenaComposeProjectionViewState(
+    val viewId: String,
+    val displayName: String,
+    val description: String,
 )
 
 /**
@@ -43,6 +65,16 @@ data class AthenaComposeCommandOption(
  * Typed user intents emitted by the shell for the first GUI semantic mutation path.
  */
 sealed interface AthenaComposeShellIntent {
+    /**
+     * Requests runtime-owned switching of the active desktop projection view.
+     */
+    data class SwitchProjectionView(val viewId: String) : AthenaComposeShellIntent
+
+    /**
+     * Updates the desktop-side inspected semantic identity from the active render surface.
+     */
+    data class SelectRenderedSemantic(val semanticId: String?) : AthenaComposeShellIntent
+
     /**
      * Selects the source port for the pending connect-ports command.
      */

@@ -9,20 +9,20 @@ import java.nio.file.Files
 
 class AthenaComposeViewerRuntimeTest {
     @Test
-    fun `loads the demo cabinet viewer snapshot through Athena runtime`() {
+    fun `loads the default M2 operator proof viewer snapshot through Athena runtime`() {
         val snapshot = AthenaComposeViewerBootstrap.loadDefaultProjectSnapshot()
         val scene = requireNotNull(snapshot.scene)
 
-        assertEquals("demo-cabinet", snapshot.projectName)
-        assertEquals("DemoCabinet", scene.systemName)
+        assertEquals("operator-proof", snapshot.projectName)
+        assertEquals("OperatorProof", scene.systemName)
         assertEquals(480, scene.canvasWidth)
         assertEquals(172, scene.canvasHeight)
         assertEquals(2, scene.componentCount)
-        assertEquals(1, scene.connectionCount)
+        assertEquals(0, scene.connectionCount)
         assertEquals("Athena", snapshot.descriptor.windowTitle)
-        assertContains(snapshot.descriptor.statusLine, "DemoCabinet")
-        assertTrue(snapshot.sourcePath.endsWith("examples/m0/demo-cabinet.athena"))
-        assertContains(snapshot.sourceText, "system DemoCabinet")
+        assertContains(snapshot.descriptor.statusLine, "OperatorProof")
+        assertTrue(snapshot.sourcePath.endsWith("examples/m2/operator-proof.athena"))
+        assertContains(snapshot.sourceText, "system OperatorProof")
         assertContains(snapshot.sourceText, "device PLC1")
     }
 
@@ -32,9 +32,22 @@ class AthenaComposeViewerRuntimeTest {
             AthenaComposeViewerBootstrap.loadDefaultProjectSnapshot(),
         )
 
-        assertContains(smokeMessage, "demo-cabinet")
-        assertContains(smokeMessage, "DemoCabinet")
+        assertContains(smokeMessage, "operator-proof")
+        assertContains(smokeMessage, "OperatorProof")
         assertContains(smokeMessage, "rendered")
+    }
+
+    @Test
+    fun `operator proof verifier completes the scripted M2 desktop flow`() {
+        val proofMessage = AthenaComposeViewerBootstrap.operatorProofMessage()
+
+        assertContains(proofMessage, "operator-proof")
+        assertContains(proofMessage, "OperatorProof")
+        assertContains(proofMessage, "component:PLC1")
+        assertContains(proofMessage, "connection:PLC1.out->M1.in")
+        assertContains(proofMessage, "cabinet")
+        assertContains(proofMessage, "wiring")
+        assertContains(proofMessage, "runtime-owned")
     }
 
     @Test
@@ -44,14 +57,14 @@ class AthenaComposeViewerRuntimeTest {
             .toShellState()
 
         assertEquals("Athena", shellState.descriptor.windowTitle)
-        assertEquals("demo-cabinet", shellState.workspaceName)
-        assertEquals("DemoCabinet", shellState.projectName)
+        assertEquals("operator-proof", shellState.workspaceName)
+        assertEquals("OperatorProof", shellState.projectName)
         assertEquals(2, shellState.workspaceTreeItems.count { it.depth == 2 })
-        assertEquals("examples/m0/demo-cabinet.athena", shellState.sourceDocument?.path)
-        assertContains(shellState.sourceDocument?.lines?.first()?.content.orEmpty(), "system DemoCabinet")
+        assertEquals("examples/m2/operator-proof.athena", shellState.sourceDocument?.path)
+        assertContains(shellState.sourceDocument?.lines?.first()?.content.orEmpty(), "system OperatorProof")
         assertContains(shellState.diagnosticsEntries.first(), "No active diagnostics")
         assertContains(shellState.consoleEntries.first(), "Runtime project activated")
-        assertContains(shellState.inspectorGroups.first().fields.first().value, "DemoCabinet")
+        assertContains(shellState.inspectorGroups.first().fields.first().value, "OperatorProof")
     }
 
     @Test

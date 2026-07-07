@@ -87,6 +87,8 @@ class AthenaRuntimeTest {
 
             override fun commandContributions(): List<AthenaRuntimePluginCommandContribution> = emptyList()
 
+            override fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution> = emptyList()
+
             override fun executeCommandContribution(
                 context: AthenaExecutionContext,
                 contributionId: String,

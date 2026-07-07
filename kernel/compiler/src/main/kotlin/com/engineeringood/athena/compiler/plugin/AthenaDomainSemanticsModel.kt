@@ -1,7 +1,7 @@
 package com.engineeringood.athena.compiler.plugin
 
 import com.engineeringood.athena.compiler.CompilerSourceDocument
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.SourceProvenance
@@ -132,7 +132,7 @@ data class AthenaDomainLoweringContext(
 
 /** Compiler-owned validation context passed to active domain plugins during the declared `VALIDATE` pass. */
 data class AthenaPluginValidationContext(
-    val document: EngineeringIrDocument,
+    val document: EngineeringDocument,
     val source: CompilerSourceDocument? = null,
     val approvedPluginIds: List<String> = emptyList(),
 ) {

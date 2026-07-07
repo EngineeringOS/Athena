@@ -58,26 +58,27 @@ fun AthenaComposeShell(
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    AthenaDockPanel(
-                        title = "Workspace",
-                        modifier = Modifier
-                            .width(248.dp)
-                            .fillMaxHeight(),
+                        AthenaDockPanel(
+                            title = "Workspace",
+                            modifier = Modifier
+                                .width(248.dp)
+                                .fillMaxHeight(),
                     ) {
                         AthenaWorkspaceTree(shellState.workspaceTreeItems)
                     }
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        AthenaWorkbenchPanel(
-                            shellState = shellState,
-                            modifier = Modifier.weight(1f),
-                        )
-                        AthenaBottomPanels(shellState = shellState)
-                    }
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            AthenaWorkbenchPanel(
+                                shellState = shellState,
+                                onIntent = onIntent,
+                                modifier = Modifier.weight(1f),
+                            )
+                            AthenaBottomPanels(shellState = shellState)
+                        }
                     AthenaInspectorColumn(
                         shellState = shellState,
                         onIntent = onIntent,
@@ -137,6 +138,9 @@ private fun AthenaShellTopBar(shellState: AthenaComposeShellState) {
             Spacer(modifier = Modifier.weight(1f))
             AthenaChromePill("Workspace ${shellState.workspaceName}")
             AthenaChromePill(shellState.projectName)
+            shellState.projectionSession?.activeViewDisplayName?.let { activeViewDisplayName ->
+                AthenaChromePill("View $activeViewDisplayName")
+            }
             Button(
                 onClick = {},
                 shape = RoundedCornerShape(10.dp),
@@ -150,6 +154,7 @@ private fun AthenaShellTopBar(shellState: AthenaComposeShellState) {
 @Composable
 private fun AthenaWorkbenchPanel(
     shellState: AthenaComposeShellState,
+    onIntent: (AthenaComposeShellIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AthenaDockPanel(
@@ -162,19 +167,25 @@ private fun AthenaWorkbenchPanel(
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                AthenaWorkbenchTab(label = "Source", isActive = shellState.sourceDocument != null)
-                AthenaWorkbenchTab(label = "Render", isActive = shellState.scene != null)
-                AthenaWorkbenchTab(
+                ) {
+                    AthenaWorkbenchTab(label = "Source", isActive = shellState.sourceDocument != null)
+                    AthenaWorkbenchTab(label = "Render", isActive = shellState.scene != null)
+                    AthenaWorkbenchTab(
                     label = "Split",
                     isActive = shellState.sourceDocument != null && shellState.scene != null,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                AthenaChromePill("Quiet competence")
-            }
-            if (shellState.sourceDocument == null && shellState.scene == null) {
-                AthenaEmptyWorkbenchState()
-            } else {
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    AthenaChromePill("Quiet competence")
+                }
+                shellState.projectionSession?.let { projectionSession ->
+                    AthenaProjectionStrip(
+                        projectionSession = projectionSession,
+                        onIntent = onIntent,
+                    )
+                }
+                if (shellState.sourceDocument == null && shellState.scene == null) {
+                    AthenaEmptyWorkbenchState()
+                } else {
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -189,12 +200,79 @@ private fun AthenaWorkbenchPanel(
                     }
                     AthenaRenderPane(
                         scene = shellState.scene,
+                        projectionSession = shellState.projectionSession,
+                        onIntent = onIntent,
                         modifier = Modifier
                             .weight(0.58f)
                             .fillMaxHeight(),
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AthenaProjectionStrip(
+    projectionSession: AthenaComposeProjectionSessionState,
+    onIntent: (AthenaComposeShellIntent) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Views",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            projectionSession.supportedViews.forEach { view ->
+                val isActive = view.viewId == projectionSession.activeViewId
+                if (isActive) {
+                    Button(
+                        onClick = {},
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Text(view.displayName)
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = {
+                            onIntent(
+                                AthenaComposeShellIntent.SwitchProjectionView(
+                                    viewId = view.viewId,
+                                ),
+                            )
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Text(view.displayName)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            AthenaChromePill(
+                text = if (projectionSession.activeProjectionAvailable) {
+                    "Projection ready"
+                } else {
+                    "Projection unavailable"
+                },
+            )
+            AthenaChromePill(
+                text = "Identity ${projectionSession.selectedSemanticId ?: "None"}",
+            )
+        }
+        projectionSession.supportedViews.firstOrNull { view ->
+            view.viewId == projectionSession.activeViewId && view.description.isNotBlank()
+        }?.let { activeView ->
+            Text(
+                text = activeView.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -367,6 +445,8 @@ private fun AthenaSourcePane(
 @Composable
 private fun AthenaRenderPane(
     scene: AthenaSemanticViewerScene?,
+    projectionSession: AthenaComposeProjectionSessionState?,
+    onIntent: (AthenaComposeShellIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AthenaDockPanel(
@@ -378,6 +458,10 @@ private fun AthenaRenderPane(
         } else {
             AthenaSemanticViewerStage(
                 scene = scene,
+                selectedSemanticId = projectionSession?.selectedSemanticId,
+                onSelectionChanged = { semanticId ->
+                    onIntent(AthenaComposeShellIntent.SelectRenderedSemantic(semanticId))
+                },
                 modifier = Modifier.fillMaxSize(),
             )
         }

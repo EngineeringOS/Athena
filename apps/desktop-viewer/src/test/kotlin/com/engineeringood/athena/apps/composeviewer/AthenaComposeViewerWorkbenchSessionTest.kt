@@ -99,6 +99,8 @@ class AthenaComposeViewerWorkbenchSessionTest {
             }, "command-0001")
             assertContains(connectedState.diagnosticsEntries.joinToString(separator = " "), "Incremental")
             assertContains(connectedState.diagnosticsEntries.joinToString(separator = " "), "Semantic diff")
+            assertContains(connectedState.diagnosticsEntries.joinToString(separator = " "), "projection:")
+            assertContains(connectedState.diagnosticsEntries.joinToString(separator = " "), "rendering cabinet")
             assertContains(connectedState.sourceDocument?.text.orEmpty(), "port PLC1.out")
         } finally {
             Files.deleteIfExists(sourcePath)
@@ -165,6 +167,121 @@ class AthenaComposeViewerWorkbenchSessionTest {
         } finally {
             Files.deleteIfExists(sourcePath)
         }
+    }
+
+    @Test
+    fun `desktop session exposes runtime owned projection views and switches the active view`() {
+        val session = AthenaComposeViewerBootstrap.openDefaultWorkbenchSession()
+
+        val initialState = session.shellState()
+        val initialProjectionSession = assertNotNull(initialState.projectionSession)
+
+        assertEquals(listOf("cabinet", "wiring"), initialProjectionSession.supportedViews.map { view -> view.viewId })
+        assertEquals("cabinet", initialProjectionSession.activeViewId)
+        assertEquals(480, initialState.scene?.canvasWidth)
+        assertEquals(172, initialState.scene?.canvasHeight)
+        assertEquals(0, initialState.scene?.connectionCount)
+
+        session.dispatch(
+            AthenaComposeShellIntent.SwitchProjectionView(
+                viewId = "wiring",
+            ),
+        )
+
+        val switchedState = session.shellState()
+        val switchedProjectionSession = assertNotNull(switchedState.projectionSession)
+
+        assertEquals("wiring", switchedProjectionSession.activeViewId)
+        assertEquals(490, switchedState.scene?.canvasWidth)
+        assertEquals(244, switchedState.scene?.canvasHeight)
+        assertContains(switchedState.consoleEntries.joinToString(separator = " "), "wiring")
+    }
+
+    @Test
+    fun `desktop session keeps canonical semantic selection across supported view switching`() {
+        val session = AthenaComposeViewerBootstrap.openDefaultWorkbenchSession()
+
+        session.dispatch(
+            AthenaComposeShellIntent.SelectRenderedSemantic(
+                semanticId = "component:PLC1",
+            ),
+        )
+        val selectedCabinetState = session.shellState()
+        assertEquals("component:PLC1", selectedCabinetState.projectionSession?.selectedSemanticId)
+
+        session.dispatch(
+            AthenaComposeShellIntent.SwitchProjectionView(
+                viewId = "wiring",
+            ),
+        )
+        val selectedWiringState = session.shellState()
+        val switchedProjectionSession = assertNotNull(selectedWiringState.projectionSession)
+
+        assertEquals("component:PLC1", switchedProjectionSession.selectedSemanticId)
+        assertTrue(selectedWiringState.scene?.components?.any { component -> component.semanticId == "component:PLC1" } == true)
+        assertContains(
+            selectedWiringState.inspectorGroups.joinToString(separator = " ") { group ->
+                group.fields.joinToString(separator = " ") { field -> "${field.label} ${field.value}" }
+            },
+            "component:PLC1",
+        )
+    }
+
+    @Test
+    fun `default desktop session completes the final M2 operator proof flow`() {
+        val session = AthenaComposeViewerBootstrap.openDefaultWorkbenchSession()
+
+        val initialState = session.shellState()
+        assertEquals("OperatorProof", initialState.projectName)
+        assertEquals(0, initialState.scene?.connectionCount)
+        assertContains(initialState.sourceDocument?.path.orEmpty(), "examples/m2/operator-proof.athena")
+
+        session.dispatch(
+            AthenaComposeShellIntent.SelectRenderedSemantic(
+                semanticId = "component:PLC1",
+            ),
+        )
+        val selectedCabinetState = session.shellState()
+        assertEquals("component:PLC1", selectedCabinetState.projectionSession?.selectedSemanticId)
+
+        session.dispatch(
+            AthenaComposeShellIntent.SwitchProjectionView(
+                viewId = "wiring",
+            ),
+        )
+        val selectedWiringState = session.shellState()
+        assertEquals("wiring", selectedWiringState.projectionSession?.activeViewId)
+        assertEquals("component:PLC1", selectedWiringState.projectionSession?.selectedSemanticId)
+        assertTrue(selectedWiringState.projectionSession?.selectedSemanticVisibleInActiveView == true)
+
+        session.dispatch(
+            AthenaComposeShellIntent.SelectSourcePort(
+                semanticId = "port:PLC1.out",
+            ),
+        )
+        session.dispatch(
+            AthenaComposeShellIntent.SelectTargetPort(
+                semanticId = "port:M1.in",
+            ),
+        )
+        session.dispatch(AthenaComposeShellIntent.ExecuteConnectPorts)
+
+        val connectedWiringState = session.shellState()
+        assertEquals(1, connectedWiringState.scene?.connectionCount)
+        assertContains(connectedWiringState.commandPanel?.statusMessage.orEmpty(), "connection:PLC1.out->M1.in")
+        assertContains(connectedWiringState.diagnosticsEntries.joinToString(separator = " "), "projection:")
+        assertContains(connectedWiringState.diagnosticsEntries.joinToString(separator = " "), "history: command-0001 APPLIED")
+
+        session.dispatch(
+            AthenaComposeShellIntent.SwitchProjectionView(
+                viewId = "cabinet",
+            ),
+        )
+        val connectedCabinetState = session.shellState()
+        assertEquals("cabinet", connectedCabinetState.projectionSession?.activeViewId)
+        assertEquals(1, connectedCabinetState.scene?.connectionCount)
+        assertEquals("component:PLC1", connectedCabinetState.projectionSession?.selectedSemanticId)
+        assertTrue(connectedCabinetState.projectionSession?.selectedSemanticVisibleInActiveView == true)
     }
 
     private fun writeProject(source: String): Path {

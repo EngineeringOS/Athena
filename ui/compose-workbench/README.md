@@ -8,6 +8,7 @@ The `:ui:compose-workbench` module contains shared Compose workbench infrastruct
 
 - Publish reusable Compose shell and viewer scaffolding.
 - Keep workbench state domain-neutral and disposable.
+- Carry viewer-facing projection-session metadata without becoming a second projection authority.
 - Host selection, viewport, and interaction state for semantic viewing.
 - Support shared UI infrastructure used by desktop-first app surfaces.
 
@@ -21,7 +22,7 @@ The `:ui:compose-workbench` module contains shared Compose workbench infrastruct
 
 ## Boundaries
 
-This module does not own canonical engineering meaning, command execution, compiler orchestration, or domain rule enforcement. It is UI infrastructure only.
+This module does not own canonical engineering meaning, command execution, compiler orchestration, layout derivation, or geometry derivation. It is UI infrastructure only. Selection, pan, zoom, and view switching remain disposable UI state over runtime-owned projection contracts.
 
 ## Verification
 

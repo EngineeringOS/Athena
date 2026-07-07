@@ -1,6 +1,6 @@
 package com.engineeringood.athena.runtime
 
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 
 /**
  * Stable origin classification for commands that reach canonical runtime history.
@@ -28,8 +28,8 @@ data class AthenaCommandHistoryRecord(
     val status: AthenaCommandHistoryRecordStatus,
     val command: AthenaCommand,
     val changedSemanticIds: List<String>,
-    val beforeDocument: EngineeringIrDocument,
-    val afterDocument: EngineeringIrDocument,
+    val beforeDocument: EngineeringDocument,
+    val afterDocument: EngineeringDocument,
 )
 
 /**
@@ -71,8 +71,8 @@ data class AthenaCommandHistoryMutationSuccess(
     override val projectName: String,
     override val operation: AthenaCommandHistoryOperation,
     val affectedCommandIds: List<String>,
-    val beforeDocument: EngineeringIrDocument,
-    val afterDocument: EngineeringIrDocument,
+    val beforeDocument: EngineeringDocument,
+    val afterDocument: EngineeringDocument,
 ) : AthenaCommandHistoryMutationResult
 
 /**
@@ -97,7 +97,7 @@ data class AthenaCommandHistoryMutationUnavailable(
  * Internal runtime-owned state for command history tracking over the active project.
  */
 internal data class AthenaCommandHistoryState(
-    val baselineDocument: EngineeringIrDocument? = null,
+    val baselineDocument: EngineeringDocument? = null,
     val records: List<AthenaRecordedCommand> = emptyList(),
     val appliedRecordCount: Int = 0,
     val nextCommandOrdinal: Int = 1,
@@ -111,6 +111,6 @@ internal data class AthenaRecordedCommand(
     val commandOrigin: AthenaCommandOrigin,
     val command: AthenaCommand,
     val changedSemanticIds: List<String>,
-    val beforeDocument: EngineeringIrDocument,
-    val afterDocument: EngineeringIrDocument,
+    val beforeDocument: EngineeringDocument,
+    val afterDocument: EngineeringDocument,
 )

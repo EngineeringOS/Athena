@@ -8,7 +8,7 @@ import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerLoweringResult
 import com.engineeringood.athena.compiler.CompilerParseResult
 import com.engineeringood.athena.compiler.diagnosticMessages
-import com.engineeringood.athena.ir.EngineeringIrDocument
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.renderer.svg.SvgRenderer
 
@@ -18,6 +18,7 @@ class AthenaExecutionContext(
     val services: AthenaServiceRegistry,
 ) {
     private var activeCompilationSnapshot: CompilerCompilationResult? = null
+    private var activeProjectionViewId: String? = null
     private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
     private var aiProposalState: AthenaAiProposalState = AthenaAiProposalState()
     private var latestSemanticDiffInspection: AthenaSemanticDiffInspection? = null
@@ -77,7 +78,12 @@ class AthenaExecutionContext(
             renderComponentSemanticIds = report.affectedScope.renderComponentSemanticIds,
             renderConnectionSemanticIds = report.affectedScope.renderConnectionSemanticIds,
             validationMode = report.validationMode.name.lowercase(),
+            layoutMode = report.layoutMode.name.lowercase(),
+            layoutScopedViewIds = report.layoutScopedViewIds,
+            geometryMode = report.geometryMode.name.lowercase(),
+            geometryScopedViewIds = report.geometryScopedViewIds,
             renderingMode = report.renderingMode.name.lowercase(),
+            renderingViewIds = report.renderingViewIds,
         )
     }
 
@@ -85,6 +91,18 @@ class AthenaExecutionContext(
      * Returns the latest runtime-owned semantic diff inspection captured after a mutation or history operation.
      */
     fun latestSemanticDiffInspection(): AthenaSemanticDiffInspection? = latestSemanticDiffInspection
+
+    /**
+     * Returns the runtime-owned projection session for the active project.
+     */
+    fun projectProjectionSession(): AthenaRuntimeProjectionSession = buildProjectionSession()
+
+    /**
+     * Switches the runtime-owned active projection view for the active project.
+     */
+    fun switchActiveProjectionView(viewId: String): AthenaRuntimeProjectionSwitchResult {
+        return switchProjectionView(viewId)
+    }
 
     /** Projects the active project's canonical semantic state into a runtime-owned engineering graph. */
     fun projectEngineeringGraphProjection(): AthenaEngineeringGraphProjection {
@@ -95,7 +113,7 @@ class AthenaExecutionContext(
      * Replaces the cached canonical project state after a successful runtime-owned semantic mutation.
      */
     internal fun replaceActiveProjectDocument(
-        document: EngineeringIrDocument,
+        document: EngineeringDocument,
         changedSemanticIds: List<String>,
     ): CompilerCompilationSuccess {
         val currentCompilation = compileActiveProject()
@@ -108,6 +126,8 @@ class AthenaExecutionContext(
             source = currentCompilation.source,
             document = document,
             affectedScope = affectedScope,
+            previousLayouts = currentCompilation.layouts,
+            previousGeometries = currentCompilation.geometries,
             previousRendering = currentCompilation.rendering,
         ).also { recomputed ->
             activeCompilationSnapshot = recomputed
@@ -144,12 +164,24 @@ class AthenaExecutionContext(
     internal fun replaceLatestSemanticDiffInspection(inspection: AthenaSemanticDiffInspection?) {
         latestSemanticDiffInspection = inspection
     }
+
+    /**
+     * Returns the current runtime-owned active projection view id when one has already been selected.
+     */
+    internal fun currentActiveProjectionViewId(): String? = activeProjectionViewId
+
+    /**
+     * Replaces the runtime-owned active projection view id after a successful switch.
+     */
+    internal fun replaceActiveProjectionViewId(viewId: String) {
+        activeProjectionViewId = viewId
+    }
 }
 
 /**
  * Derives the minimal runtime-visible recompute scope for the current M1 command mutation path.
  */
-private fun EngineeringIrDocument.planAffectedScope(changedSemanticIds: List<String>): CompilerAffectedScope {
+private fun EngineeringDocument.planAffectedScope(changedSemanticIds: List<String>): CompilerAffectedScope {
     val normalizedChangedIds = changedSemanticIds.distinct().sorted()
     val portsById = ports.associateBy { port -> port.id.value }
     val connectionsById = connections.associateBy { connection -> connection.id.value }
@@ -218,5 +250,10 @@ data class AthenaRuntimeIncrementalUpdateReport(
     val renderComponentSemanticIds: List<String>,
     val renderConnectionSemanticIds: List<String>,
     val validationMode: String,
+    val layoutMode: String,
+    val layoutScopedViewIds: List<String>,
+    val geometryMode: String,
+    val geometryScopedViewIds: List<String>,
     val renderingMode: String,
+    val renderingViewIds: List<String>,
 )

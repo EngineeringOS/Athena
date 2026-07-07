@@ -53,8 +53,8 @@
 ### Task 5: Full Verification And Story Close-Out
 
 **Files:**
-- Modify: `_bmad-output/implementation-artifacts/archive-m0/2-1-define-core-owned-typed-plugin-contracts.md`
-- Modify: `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- Modify: `_bmad-output/implementation-artifacts/m0/2-1-define-core-owned-typed-plugin-contracts.md`
+- Modify: `_bmad-output/implementation-artifacts/m0/sprint-status.yaml`
 
 - [ ] Step 1: Run `java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test`.
 - [ ] Step 2: Run `java25; .\gradlew.bat --no-daemon --console=plain :extensions:domain-electrical:test`.
