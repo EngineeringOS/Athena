@@ -1,0 +1,78 @@
+# generated: 2026-07-09T13:53:59+08:00
+# last_updated: 2026-07-09T20:39:24+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m6
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M6 milestone sequence sourced from `epics-M6-2026-07-09.md`.
+# - Earlier milestones remain tracked by their own milestone-local sprint-status files.
+# - M6 is the semantic SCM milestone, so the execution sequence starts with the semantic SCM core and baseline model, then review/commit semantics, then semantic history and product exposure.
+
+generated: 2026-07-09T13:53:59+08:00
+last_updated: 2026-07-09T20:39:24+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m6
+
+development_status:
+  epic-1: done
+  1-1-publish-canonical-semantic-scm-contracts-in-kernel-semantic-scm: done
+  1-2-resolve-repository-baselines-through-a-vendor-neutral-adapter-boundary: done
+  1-3-produce-deterministic-semantic-diff-categories-from-baseline-comparison: done
+  1-4-publish-validation-and-contract-consequences-through-the-runtime-semantic-path: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-generate-semantic-review-summaries-from-typed-change-records: done
+  2-2-prepare-deterministic-commit-intent-from-semantic-change: done
+  2-3-allow-hosted-plugins-to-enrich-review-output-without-rewriting-core-facts: done
+  2-4-expose-review-and-commit-semantics-through-runtime-lsp-and-existing-ide-seams: done
+  epic-2-retrospective: done
+  epic-3: done
+  3-1-model-package-aware-semantic-history-over-stable-identities: done
+  3-2-produce-publish-oriented-history-summaries-from-baseline-sequences: done
+  3-3-surface-package-evolution-and-release-relevance-through-existing-athena-product-boundaries: done
+  epic-3-retrospective: done
+
+action_items:
+  - epic: 1
+    action: "Keep future SCM or publish work downstream of the VCS-neutral semantic kernel; do not introduce provider-specific nouns into `kernel/semantic-scm` public contracts."
+    owner: "Architecture"
+    status: open
+  - epic: 2
+    action: "Add automated frontend interaction coverage for semantic SCM review and commit workflows on the current Theia panel."
+    owner: "IDE"
+    status: open
+  - epic: 3
+    action: "Keep `athena/semanticHistoryState` as the sole downstream input for future graphical package-history review."
+    owner: "Architecture"
+    status: open
+  - epic: 3
+    action: "Add automated frontend interaction coverage for the semantic SCM history panel before the IDE workflow expands further."
+    owner: "IDE"
+    status: open

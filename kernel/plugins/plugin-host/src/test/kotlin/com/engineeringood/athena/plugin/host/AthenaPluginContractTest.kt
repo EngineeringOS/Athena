@@ -171,6 +171,7 @@ class AthenaPluginContractTest {
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
                 AthenaExtensionPoint.VIEW_DEFINITIONS,
+                AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
                 AthenaExtensionPoint.RUNTIME_COMMANDS,
                 AthenaExtensionPoint.RUNTIME_VIEWS,
             ),

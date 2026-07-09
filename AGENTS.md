@@ -23,3 +23,16 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 - **Shell**: `codegraph explore "<symbol names or question>"` and `codegraph node <symbol-or-file>` print the same output.
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely.
+
+## Text Encoding Rule
+
+Keep repository text files in UTF-8.
+
+- `*.zh-CN.md` must be saved as UTF-8 with BOM so Windows editors do not guess a legacy code page.
+- All other source and documentation files should stay UTF-8 without introducing legacy encodings.
+- Do not rewrite Chinese docs through shell redirection or any command path that does not explicitly preserve UTF-8.
+- After touching repository docs or other text assets, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\encoding-audit.ps1
+```

@@ -16,6 +16,7 @@ The `:kernel:compiler` module is Athena's orchestration core. It exposes the pub
 - Consume the approved hosted plugin inventory governed by `:kernel:plugins:plugin-host`.
 - Load and resolve governed knowledge packages.
 - Load and validate external boundary descriptors.
+- Load and validate governed Athena repository-root contracts.
 - Derive the runtime viewer model from selected `Geometry IR`.
 - Feed selected `Geometry IR` directly into the SVG backend.
 
@@ -29,6 +30,7 @@ The `:kernel:compiler` module is Athena's orchestration core. It exposes the pub
 - `plugin/*`: compiler-owned domain coordination only.
 - `knowledge/*`: governed knowledge package models, loading, and resolution.
 - `boundary/*`: external boundary descriptor models, loading, and resolution.
+- `repository/*`: governed repository-root contract loading and layout validation.
 
 ## Incremental Refresh Boundary
 

@@ -48,7 +48,7 @@ so that semantic defects are detected in one authoritative model and can be trac
 ### Story Intent
 
 - Story `1.4` is the first real semantic validation pass over canonical `Engineering IR`.
-- The proof target is not “add some checks.�?The proof target is that semantic defects are detected only after lowering, inside one canonical semantic model, with enough evidence for a reviewer to understand what failed and why.
+- The proof target is not “add some checks.” The proof target is that semantic defects are detected only after lowering, inside one canonical semantic model, with enough evidence for a reviewer to understand what failed and why.
 - Validation must consume the IR produced by Story `1.3` exactly as it exists now: with stable identities, explicit references, reference provenance, and duplicate fallback identities for semantically invalid duplicates.
 
 ### Architecture Guardrails

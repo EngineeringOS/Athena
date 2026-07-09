@@ -39,6 +39,11 @@ class AthenaHostedPluginRegistryTest {
             },
         )
         assertTrue(
+            initialized.inventory.approvedPlugins.any { plugin ->
+                AthenaHostedPluginContributionCategory.SEMANTIC_REVIEW_ENRICHMENT in plugin.contributionCategories
+            },
+        )
+        assertTrue(
             shutdown.inventory.approvedPlugins.all { plugin ->
                 plugin.lifecycleState == AthenaHostedPluginLifecycleState.SHUTDOWN
             },

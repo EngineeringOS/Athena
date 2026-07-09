@@ -5,6 +5,7 @@ import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributor
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,11 +17,13 @@ class ElectricalRuntimeDomainPluginTest {
         val plugin = ElectricalRuntimeDomainPlugin()
 
         assertIs<AthenaDomainPlugin>(plugin)
+        assertIs<AthenaSemanticReviewEnrichmentContributor>(plugin)
         assertEquals(AthenaPluginType.DOMAIN, plugin.manifest.pluginType)
         assertEquals(
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
                 AthenaExtensionPoint.VIEW_DEFINITIONS,
+                AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
                 AthenaExtensionPoint.RUNTIME_COMMANDS,
                 AthenaExtensionPoint.RUNTIME_VIEWS,
             ),

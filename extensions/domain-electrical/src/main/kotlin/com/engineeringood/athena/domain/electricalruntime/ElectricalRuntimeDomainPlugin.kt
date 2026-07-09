@@ -46,17 +46,23 @@ import com.engineeringood.athena.plugin.AthenaCompilerPassContribution
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPluginManifest
 import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributor
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.plugin.AthenaPluginValidationResult
 import com.engineeringood.athena.plugin.AthenaRenderContribution
 import com.engineeringood.athena.plugin.AthenaValidationContribution
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.CoreVersionRange
+import com.engineeringood.athena.scm.SemanticReviewEnrichment
+import com.engineeringood.athena.scm.SemanticReviewEnrichmentKind
+import com.engineeringood.athena.scm.SemanticReviewFactKind
+import com.engineeringood.athena.scm.SemanticReviewFactReference
+import com.engineeringood.athena.scm.SemanticReviewSummary
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 
 /** Reference Electrical/Runtime proof plugin that publishes the stable M3 hosted domain surface. */
-class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionContributor, AthenaRuntimePluginCommandContributor, AthenaRuntimePluginViewContributor {
+class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionContributor, AthenaRuntimePluginCommandContributor, AthenaRuntimePluginViewContributor, AthenaSemanticReviewEnrichmentContributor {
     /** Core-owned manifest declaring the sample plugin's identity, type, compatibility, and extension point. */
     override val manifest: AthenaPluginManifest = AthenaPluginManifest(
         pluginId = "com.engineeringood.athena.domain.electrical-runtime",
@@ -66,6 +72,7 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
         requiredExtensionPoints = setOf(
             AthenaExtensionPoint.DOMAIN_SEMANTICS,
             AthenaExtensionPoint.VIEW_DEFINITIONS,
+            AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
             AthenaExtensionPoint.RUNTIME_COMMANDS,
             AthenaExtensionPoint.RUNTIME_VIEWS,
         ),
@@ -237,6 +244,64 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
                 diagnosticsEntries = listOf(
                     "Electrical runtime plugin active: ${summary.compatiblePairCount} compatible pair(s) available.",
                 ),
+            ),
+        )
+    }
+
+    /** Adds electrical review interpretation without mutating or replacing the core semantic review facts. */
+    override fun enrichReview(review: SemanticReviewSummary): List<SemanticReviewEnrichment> {
+        val matchingDiagnostics = review.diagnostics.filter { diagnostic ->
+            diagnostic.ruleId.value.contains("connection.direction", ignoreCase = true) ||
+                diagnostic.ruleId.value.contains("connection.signal", ignoreCase = true) ||
+                diagnostic.message.contains("`direction`", ignoreCase = true) ||
+                diagnostic.message.contains("`signal`", ignoreCase = true) ||
+                diagnostic.message.contains("device type", ignoreCase = true)
+        }
+        val matchingEntries = review.entries.filter { entry ->
+            entry.message.contains("Connection", ignoreCase = true) ||
+                entry.message.contains("signal", ignoreCase = true) ||
+                entry.message.contains("direction", ignoreCase = true)
+        }
+        if (matchingDiagnostics.isEmpty() && matchingEntries.isEmpty()) {
+            return emptyList()
+        }
+
+        val factReferences = (
+            matchingEntries.flatMap { entry -> entry.factReferences } +
+                matchingDiagnostics.map { diagnostic ->
+                    SemanticReviewFactReference(
+                        factKind = SemanticReviewFactKind.DIAGNOSTIC,
+                        identifier = diagnostic.ruleId.value,
+                        subjectIdentity = diagnostic.subjectIdentity,
+                    )
+                }
+            ).distinct()
+            .sortedWith(
+                compareBy<SemanticReviewFactReference>(
+                    { reference -> reference.factKind.name },
+                    { reference -> reference.identifier },
+                    { reference -> reference.subjectIdentity?.value.orEmpty() },
+                ),
+            )
+
+        return listOf(
+            SemanticReviewEnrichment(
+                pluginId = manifest.pluginId,
+                kind = SemanticReviewEnrichmentKind.DOMAIN_LABEL,
+                message = "Electrical runtime semantics are implicated in this review.",
+                factReferences = factReferences,
+            ),
+            SemanticReviewEnrichment(
+                pluginId = manifest.pluginId,
+                kind = SemanticReviewEnrichmentKind.REVIEW_HINT,
+                message = "Check direction, signal, and device-type consistency before finalizing the change.",
+                factReferences = factReferences,
+            ),
+            SemanticReviewEnrichment(
+                pluginId = manifest.pluginId,
+                kind = SemanticReviewEnrichmentKind.DOMAIN_SUMMARY,
+                message = "Electrical review found ${matchingDiagnostics.size} electrical diagnostic(s) and ${matchingEntries.size} electrical review entry candidate(s).",
+                factReferences = factReferences,
             ),
         )
     }

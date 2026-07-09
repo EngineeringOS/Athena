@@ -1,4 +1,4 @@
-# `:apps:cli`
+﻿# `:apps:cli`
 
 [English](README.md) | 简体中文
 

@@ -1,4 +1,4 @@
-# `:extensions:domain-dummy`
+﻿# `:extensions:domain-dummy`
 
 [English](README.md) | 简体中文
 

@@ -1,5 +1,7 @@
 # `:apps:desktop-viewer`
 
+~~KMP~~ solution give up please refer to the new [IDE](../../ide) base on [Eclipse theia(https://theia-ide.org/)
+
 English | [Chinese (Simplified)](README.zh-CN.md)
 
 The `:apps:desktop-viewer` module is Athena's desktop Compose application entry point. It assembles the shared Compose workbench, runtime host, and electrical domain plugin into one desktop surface for viewing and command-backed interaction proofs.

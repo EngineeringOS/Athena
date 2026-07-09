@@ -1,0 +1,35 @@
+{
+  "private": true,
+  "name": "@engineeringood/athena-theia-frontend",
+  "version": "0.0.1",
+  "description": "Athena frontend contributions for the Theia product shell.",
+  "license": "MIT",
+  "dependencies": {
+    "@theia/core": "1.73.1",
+    "@theia/editor": "1.73.1",
+    "@theia/filesystem": "1.73.1",
+    "@theia/markers": "1.73.1",
+    "@theia/monaco": "1.73.1",
+    "@theia/output": "1.73.1",
+    "@theia/workspace": "1.73.1",
+    "inversify": "^6.2.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "theiaExtensions": [
+    {
+      "frontend": "lib/browser/athena-frontend-module"
+    }
+  ],
+  "files": [
+    "lib",
+    "src"
+  ],
+  "peerDependencies": {
+    "react": "^18.3.1"
+  },
+  "scripts": {
+    "clean": "rimraf lib *.tsbuildinfo",
+    "build": "tsc -b --force"
+  }
+}

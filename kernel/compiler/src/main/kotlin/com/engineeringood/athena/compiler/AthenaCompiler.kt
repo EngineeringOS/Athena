@@ -5,6 +5,17 @@ import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorSourc
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeResolver
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoader
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractValidationResult
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryGraphResolutionResult
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryGraphResolver
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryLockMaterializationResult
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryLockMaterializer
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryLockValidationResult
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPublicationResult
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPublisher
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputBuilder
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputResult
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.ParseFailure
@@ -52,6 +63,15 @@ class AthenaCompiler(
     private val knowledgeResolver: AthenaKnowledgeResolver = AthenaKnowledgeResolver(),
     private val boundaryDescriptorSource: AthenaBoundaryDescriptorSource = AthenaBoundaryDescriptorSource.empty(),
     private val boundaryDescriptorResolver: AthenaBoundaryDescriptorResolver = AthenaBoundaryDescriptorResolver(),
+    private val repositoryContractLoader: AthenaRepositoryContractLoader = AthenaRepositoryContractLoader(),
+    private val repositoryResolutionInputBuilder: AthenaRepositoryResolutionInputBuilder = AthenaRepositoryResolutionInputBuilder(),
+    private val repositoryGraphResolver: AthenaRepositoryGraphResolver = AthenaRepositoryGraphResolver(
+        contractLoader = repositoryContractLoader,
+        resolutionInputBuilder = repositoryResolutionInputBuilder,
+    ),
+    private val repositoryLockMaterializer: AthenaRepositoryLockMaterializer = AthenaRepositoryLockMaterializer(
+        graphResolver = repositoryGraphResolver,
+    ),
     lowerer: EngineeringIrLowerer? = null,
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
@@ -64,6 +84,9 @@ class AthenaCompiler(
         hostedDomainPlugins?.let { domainPlugins ->
             AthenaDomainSemanticsCoordinator(activeDomainPlugins = domainPlugins)
         } ?: AthenaDomainSemanticsCoordinator(pluginInventory)
+    private val repositoryReportPublisher = AthenaRepositoryReportPublisher(
+        lockMaterializer = repositoryLockMaterializer,
+    )
     private val lowerer: EngineeringIrLowerer = lowerer ?: EngineeringIrLowerer(domainSemanticsCoordinator)
     private val supportedViewDefinitionsCache: List<ViewDefinition> = pluginInventory
         .attachedPlugins(AthenaExtensionPoint.VIEW_DEFINITIONS)
@@ -89,6 +112,26 @@ class AthenaCompiler(
     /** Parses the authored source file at [path] and returns the full syntax-owned document. */
     fun parse(path: Path): CompilerParseResult {
         return parseSource(path)
+    }
+
+    /**
+     * Parses in-memory authored source text through the same syntax boundary used for file-backed compilation.
+     */
+    fun parse(path: Path, sourceText: String): CompilerParseResult {
+        return parseSource(path.toString(), sourceText)
+    }
+
+    /**
+     * Parses, lowers, and validates in-memory authored source text through the same JVM compiler stack.
+     */
+    fun compile(path: Path, sourceText: String): CompilerCompilationResult {
+        val knowledgeContext = knowledgeResolver.resolve(knowledgePackageSource)
+        val boundaryValidation = boundaryDescriptorResolver.resolve(boundaryDescriptorSource)
+        return compileParsedSource(
+            parseResult = parseSource(path.toString(), sourceText),
+            knowledgeContext = knowledgeContext,
+            boundaryValidation = boundaryValidation,
+        )
     }
 
     /** Parses and lowers the authored source file at [path] into canonical Engineering IR. */
@@ -120,6 +163,50 @@ class AthenaCompiler(
 
     /** Returns declared render contributions in deterministic approved-plugin order. */
     fun supportedRenderContributions(): List<CompilerRenderContributionAttribution> = supportedRenderContributionsCache
+
+    /**
+     * Loads and validates the governed repository-root contract through the compiler-owned semantic path.
+     */
+    fun validateRepositoryContract(repositoryRoot: Path): AthenaRepositoryContractValidationResult {
+        return repositoryContractLoader.load(repositoryRoot)
+    }
+
+    /**
+     * Loads the governed repository contract and derives deterministic package-resolution input from it.
+     */
+    fun buildRepositoryResolutionInput(repositoryRoot: Path): AthenaRepositoryResolutionInputResult {
+        return repositoryResolutionInputBuilder.build(
+            validateRepositoryContract(repositoryRoot),
+        )
+    }
+
+    /**
+     * Resolves the governed repository into the first canonical local-first package graph.
+     */
+    fun resolveRepositoryGraph(repositoryRoot: Path): AthenaRepositoryGraphResolutionResult {
+        return repositoryGraphResolver.resolve(repositoryRoot)
+    }
+
+    /**
+     * Resolves the governed repository graph and writes the canonical `athena.lock` derived state.
+     */
+    fun materializeRepositoryLock(repositoryRoot: Path): AthenaRepositoryLockMaterializationResult {
+        return repositoryLockMaterializer.materialize(repositoryRoot)
+    }
+
+    /**
+     * Resolves the governed repository graph and validates the current `athena.lock` against canonical output.
+     */
+    fun validateRepositoryLock(repositoryRoot: Path): AthenaRepositoryLockValidationResult {
+        return repositoryLockMaterializer.validate(repositoryRoot)
+    }
+
+    /**
+     * Publishes the canonical repository graph report that downstream runtime and IDE layers should consume.
+     */
+    fun publishRepositoryGraphReport(repositoryRoot: Path): AthenaRepositoryReportPublicationResult {
+        return repositoryReportPublisher.publish(repositoryRoot)
+    }
 
     /** Derives all supported layouts from the supplied canonical [document]. */
     fun deriveSupportedLayouts(document: EngineeringDocument): List<LayoutDocument> {
@@ -155,7 +242,19 @@ class AthenaCompiler(
         val knowledgeContext = knowledgeResolver.resolve(knowledgePackageSource)
         val boundaryValidation = boundaryDescriptorResolver.resolve(boundaryDescriptorSource)
 
-        return when (val parseResult = parseSource(path)) {
+        return compileParsedSource(
+            parseResult = parseSource(path),
+            knowledgeContext = knowledgeContext,
+            boundaryValidation = boundaryValidation,
+        )
+    }
+
+    private fun compileParsedSource(
+        parseResult: CompilerParseResult,
+        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
+        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
+    ): CompilerCompilationResult {
+        return when (parseResult) {
             is CompilerParseSuccess -> {
                 val parseRecord = CompilerPassRecord(
                     pass = PARSE_PASS,
@@ -390,16 +489,22 @@ class AthenaCompiler(
                         file = path.toString(),
                         line = 0,
                         column = 0,
+                        endLine = 0,
+                        endColumn = 1,
                         message = "Could not read source file: ${exception.message ?: exception::class.simpleName}",
                     ),
                 ),
             )
         }
 
-        return when (val result: ParseResult = parser.parse(path.toString(), sourceText)) {
+        return parseSource(path.toString(), sourceText)
+    }
+
+    private fun parseSource(file: String, sourceText: String): CompilerParseResult {
+        return when (val result: ParseResult = parser.parse(file, sourceText)) {
             is ParseSuccess -> CompilerParseSuccess(
                 CompilerSourceDocument(
-                    file = path.toString(),
+                    file = file,
                     ast = result.ast,
                 ),
             )
@@ -410,6 +515,8 @@ class AthenaCompiler(
                         file = diagnostic.file,
                         line = diagnostic.line,
                         column = diagnostic.column,
+                        endLine = diagnostic.span.end.line,
+                        endColumn = diagnostic.span.end.column,
                         message = diagnostic.message,
                     )
                 },

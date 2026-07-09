@@ -57,6 +57,8 @@ data class CompilerSyntaxDiagnostic(
     val file: String,
     val line: Int,
     val column: Int,
+    val endLine: Int = line,
+    val endColumn: Int = column + 1,
     val message: String,
 )
 

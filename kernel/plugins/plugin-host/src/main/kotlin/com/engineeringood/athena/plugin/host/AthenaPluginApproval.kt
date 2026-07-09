@@ -289,6 +289,7 @@ class AthenaPluginApprovalService(
 }
 
 private val runtimeHostedExtensionPoints = setOf(
+    AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
     AthenaExtensionPoint.RUNTIME_COMMANDS,
     AthenaExtensionPoint.RUNTIME_VIEWS,
 )

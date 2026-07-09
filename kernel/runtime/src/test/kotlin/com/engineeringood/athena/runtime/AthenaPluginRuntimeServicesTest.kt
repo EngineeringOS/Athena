@@ -2,18 +2,29 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
 import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.plugin.AthenaCoreRuntime
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPlugin
 import com.engineeringood.athena.plugin.AthenaPluginManifest
 import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributor
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.CoreVersionRange
 import com.engineeringood.athena.plugin.host.AthenaHostedPluginContributionCategory
 import com.engineeringood.athena.plugin.host.AthenaHostedPluginLifecycleState
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
 import com.engineeringood.athena.plugin.host.AthenaPluginSource
+import com.engineeringood.athena.repository.PackageIdentifier
+import com.engineeringood.athena.scm.SemanticBaselineDescriptor
+import com.engineeringood.athena.scm.SemanticReviewEnrichment
+import com.engineeringood.athena.scm.SemanticReviewEnrichmentKind
+import com.engineeringood.athena.scm.SemanticReviewSummary
+import com.engineeringood.athena.semantics.core.SemanticDiagnostic
+import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
+import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
+import com.engineeringood.athena.semantics.core.SemanticRuleId
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -81,6 +92,7 @@ class AthenaPluginRuntimeServicesTest {
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
                 AthenaExtensionPoint.VIEW_DEFINITIONS,
+                AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
                 AthenaExtensionPoint.RUNTIME_COMMANDS,
                 AthenaExtensionPoint.RUNTIME_VIEWS,
             ),
@@ -103,9 +115,14 @@ class AthenaPluginRuntimeServicesTest {
             AthenaHostedPluginContributionCategory.RUNTIME_VIEW in electricalPlugin.contributionCategories,
         )
         assertTrue(
+            AthenaHostedPluginContributionCategory.SEMANTIC_REVIEW_ENRICHMENT in electricalPlugin.contributionCategories,
+        )
+        assertTrue(
             AthenaHostedPluginContributionCategory.RENDER in electricalPlugin.contributionCategories,
         )
         assertEquals(listOf("cabinet", "wiring"), electricalPlugin.viewDefinitionIds)
+        assertEquals(0, dummyPlugin.semanticReviewEnrichmentCount)
+        assertEquals(1, electricalPlugin.semanticReviewEnrichmentCount)
     }
 
     @Test
@@ -339,6 +356,51 @@ class AthenaPluginRuntimeServicesTest {
     }
 
     @Test
+    fun `hosted runtime services expose semantic review enrichment contributors deterministically`() {
+        val pluginServices = AthenaHostedPluginRuntimeServices()
+
+        val contributors = pluginServices.semanticReviewEnrichmentContributors()
+        val enrichments = pluginServices.enrichReview(
+            SemanticReviewSummary(
+                baseline = SemanticBaselineDescriptor(
+                    baselineId = "baseline",
+                    label = "Baseline",
+                ),
+                affectedPackages = listOf(PackageIdentifier("com.engineeringood.demo", "1.0.0")),
+                diagnostics = listOf(
+                    SemanticDiagnostic(
+                        severity = SemanticDiagnosticSeverity.ERROR,
+                        ruleId = SemanticRuleId("connection.signal.incompatible"),
+                        category = SemanticDiagnosticCategory.CONNECTION,
+                        subjectIdentity = null,
+                        provenance = SourceProvenance(
+                            file = "src/demo.athena",
+                            startLine = 1,
+                            startColumn = 1,
+                            endLine = 1,
+                            endColumn = 1,
+                        ),
+                        message = "Connection `PLC1.out -> M1.in` mixes incompatible signals `Digital` and `Analog`.",
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("com.engineeringood.athena.domain.electrical-runtime"),
+            contributors.map { contribution -> contribution.pluginId },
+        )
+        assertEquals(
+            listOf(
+                SemanticReviewEnrichmentKind.DOMAIN_LABEL,
+                SemanticReviewEnrichmentKind.REVIEW_HINT,
+                SemanticReviewEnrichmentKind.DOMAIN_SUMMARY,
+            ),
+            enrichments.map { enrichment -> enrichment.kind },
+        )
+    }
+
+    @Test
     fun `hosted runtime services reject plugins that overreach declared runtime contracts`() {
         val pluginServices = AthenaHostedPluginRuntimeServices(
             pluginDiscovery = AthenaPluginDiscovery(
@@ -350,6 +412,8 @@ class AthenaPluginRuntimeServicesTest {
                         DeclaredButMissingRuntimeCommandTestPlugin(),
                         UndeclaredViewDefinitionTestPlugin(),
                         DeclaredButMissingViewDefinitionTestPlugin(),
+                        UndeclaredSemanticReviewEnrichmentTestPlugin(),
+                        DeclaredButMissingSemanticReviewEnrichmentTestPlugin(),
                         UndeclaredRuntimeViewTestPlugin(),
                         DeclaredButMissingRuntimeViewTestPlugin(),
                     ),
@@ -367,6 +431,8 @@ class AthenaPluginRuntimeServicesTest {
             listOf(
                 "plugin.runtime.contract.command.undeclared",
                 "plugin.runtime.contract.command.unimplemented",
+                "plugin.runtime.contract.semantic-review-enrichment.undeclared",
+                "plugin.runtime.contract.semantic-review-enrichment.unimplemented",
                 "plugin.runtime.contract.view-definition.undeclared",
                 "plugin.runtime.contract.view-definition.unimplemented",
                 "plugin.runtime.contract.view.undeclared",
@@ -379,6 +445,31 @@ class AthenaPluginRuntimeServicesTest {
                 invariant.contains("Engineering IR", ignoreCase = true)
             },
         )
+    }
+
+    @Test
+    fun `hosted runtime review enrichment failures degrade into additive warnings`() {
+        val pluginServices = AthenaHostedPluginRuntimeServices(
+            pluginDiscovery = AthenaPluginDiscovery(
+                runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                source = FixedAthenaPluginSource(
+                    listOf(ThrowingSemanticReviewEnrichmentTestPlugin()),
+                ),
+            ),
+        )
+
+        val enrichments = pluginServices.enrichReview(
+            SemanticReviewSummary(
+                baseline = SemanticBaselineDescriptor(
+                    baselineId = "baseline",
+                    label = "Baseline",
+                ),
+            ),
+        )
+
+        assertEquals(1, enrichments.size)
+        assertEquals(SemanticReviewEnrichmentKind.PLUGIN_WARNING, enrichments.single().kind)
+        assertTrue(enrichments.single().message.contains("failed", ignoreCase = true))
     }
 
     @Test
@@ -395,6 +486,7 @@ class AthenaPluginRuntimeServicesTest {
         assertEquals(emptyList(), pluginServices.commandContributions())
         assertEquals(emptyList(), pluginServices.domainSemanticsContributions())
         assertEquals(emptyList(), pluginServices.renderContributions())
+        assertEquals(emptyList(), pluginServices.semanticReviewEnrichmentContributors())
         assertEquals(emptyList(), pluginServices.viewDefinitionContributions())
     }
 
@@ -491,6 +583,48 @@ private class DeclaredButMissingViewDefinitionTestPlugin : AthenaDomainPlugin {
             AthenaExtensionPoint.VIEW_DEFINITIONS,
         ),
     )
+}
+
+private class UndeclaredSemanticReviewEnrichmentTestPlugin : AthenaDomainPlugin, AthenaSemanticReviewEnrichmentContributor {
+    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
+        pluginId = "com.engineeringood.athena.domain.undeclared-semantic-review-enrichment",
+        pluginVersion = "0.0.1-SNAPSHOT",
+        pluginType = AthenaPluginType.DOMAIN,
+        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
+        requiredExtensionPoints = setOf(AthenaExtensionPoint.DOMAIN_SEMANTICS),
+    )
+
+    override fun enrichReview(review: SemanticReviewSummary): List<SemanticReviewEnrichment> = emptyList()
+}
+
+private class DeclaredButMissingSemanticReviewEnrichmentTestPlugin : AthenaDomainPlugin {
+    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
+        pluginId = "com.engineeringood.athena.domain.missing-semantic-review-enrichment",
+        pluginVersion = "0.0.1-SNAPSHOT",
+        pluginType = AthenaPluginType.DOMAIN,
+        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
+        requiredExtensionPoints = setOf(
+            AthenaExtensionPoint.DOMAIN_SEMANTICS,
+            AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
+        ),
+    )
+}
+
+private class ThrowingSemanticReviewEnrichmentTestPlugin : AthenaDomainPlugin, AthenaSemanticReviewEnrichmentContributor {
+    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
+        pluginId = "com.engineeringood.athena.domain.throwing-semantic-review-enrichment",
+        pluginVersion = "0.0.1-SNAPSHOT",
+        pluginType = AthenaPluginType.DOMAIN,
+        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
+        requiredExtensionPoints = setOf(
+            AthenaExtensionPoint.DOMAIN_SEMANTICS,
+            AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
+        ),
+    )
+
+    override fun enrichReview(review: SemanticReviewSummary): List<SemanticReviewEnrichment> {
+        error("boom")
+    }
 }
 
 private class DeclaredButMissingRuntimeViewTestPlugin : AthenaDomainPlugin {

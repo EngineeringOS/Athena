@@ -1,8 +1,13 @@
 package com.engineeringood.athena.plugin
 
+import com.engineeringood.athena.scm.SemanticBaselineDescriptor
+import com.engineeringood.athena.scm.SemanticReviewEnrichment
+import com.engineeringood.athena.scm.SemanticReviewEnrichmentKind
+import com.engineeringood.athena.scm.SemanticReviewSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class PluginApiContributionContractTest {
     @Test
@@ -101,5 +106,53 @@ class PluginApiContributionContractTest {
             listOf(setOf("svg")),
             plugin.renderContributions.map { contribution -> contribution.rendererTargets },
         )
+    }
+
+    @Test
+    fun `publishes additive semantic review enrichment through the stable plugin api`() {
+        val plugin = object : AthenaDomainPlugin, AthenaSemanticReviewEnrichmentContributor {
+            override val manifest: AthenaPluginManifest = AthenaPluginManifest(
+                pluginId = "com.engineeringood.athena.domain.synthetic-review",
+                pluginVersion = "0.0.1-SNAPSHOT",
+                pluginType = AthenaPluginType.DOMAIN,
+                coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
+                requiredExtensionPoints = setOf(
+                    AthenaExtensionPoint.DOMAIN_SEMANTICS,
+                    AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
+                ),
+            )
+            override val domainCapabilities: Set<String> = setOf("synthetic-review")
+
+            override fun enrichReview(review: SemanticReviewSummary): List<SemanticReviewEnrichment> {
+                return listOf(
+                    SemanticReviewEnrichment(
+                        pluginId = manifest.pluginId,
+                        kind = SemanticReviewEnrichmentKind.DOMAIN_SUMMARY,
+                        message = "Synthetic review covers the current semantic review summary.",
+                    ),
+                )
+            }
+        }
+
+        val enrichments = plugin.enrichReview(
+            SemanticReviewSummary(
+                baseline = SemanticBaselineDescriptor(
+                    baselineId = "baseline",
+                    label = "Baseline",
+                ),
+            ),
+        )
+
+        assertIs<AthenaSemanticReviewEnrichmentContributor>(plugin)
+        assertEquals(
+            setOf(
+                AthenaExtensionPoint.DOMAIN_SEMANTICS,
+                AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
+            ),
+            plugin.manifest.requiredExtensionPoints,
+        )
+        assertEquals(1, enrichments.size)
+        assertEquals(SemanticReviewEnrichmentKind.DOMAIN_SUMMARY, enrichments.single().kind)
+        assertTrue(enrichments.single().message.contains("semantic review summary"))
     }
 }

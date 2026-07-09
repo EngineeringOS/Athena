@@ -1,0 +1,771 @@
+import * as monaco from '@theia/monaco-editor-core';
+
+import URI from '@theia/core/lib/common/uri';
+import { DisposableCollection } from '@theia/core/lib/common/disposable';
+import { FrontendApplication, FrontendApplicationContribution } from '@theia/core/lib/browser';
+import { MessageService } from '@theia/core';
+import { inject, injectable } from '@theia/core/shared/inversify';
+import {
+    CompletionItem,
+    CompletionList,
+    Diagnostic,
+    DocumentSymbol,
+    Location
+} from '@theia/core/shared/vscode-languageserver-protocol';
+import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
+import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
+import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
+import {
+    ATHENA_LANGUAGE_ID,
+    athenaLanguageConfiguration,
+    athenaMonarchLanguage
+} from './athena-language-definition';
+import { AthenaRepositorySessionService } from './athena-repository-session-service';
+
+type AthenaLspTransportEnvelope = {
+    method: string;
+    params?: unknown;
+};
+
+type AthenaTextDocumentPositionParams = {
+    textDocument: {
+        uri: string;
+    };
+    position: {
+        line: number;
+        character: number;
+    };
+};
+
+type AthenaDocumentSnapshot = {
+    uri: string;
+    version: number;
+    text: string;
+    languageId: string;
+};
+
+export type AthenaSemanticInspectionComponent = {
+    semanticId: string;
+    name: string;
+    kind: string;
+    properties: string;
+};
+
+export type AthenaSemanticInspectionPort = {
+    semanticId: string;
+    path: string;
+    properties: string;
+};
+
+export type AthenaSemanticInspectionConnection = {
+    semanticId: string;
+    fromPath: string;
+    toPath: string;
+};
+
+export type AthenaSemanticInspectionPayload = {
+    uri: string;
+    version: number;
+    status: string;
+    systemName?: string;
+    diagnosticsCount: number;
+    diagnosticSummaries: string[];
+    componentCount: number;
+    portCount: number;
+    connectionCount: number;
+    components: AthenaSemanticInspectionComponent[];
+    ports: AthenaSemanticInspectionPort[];
+    connections: AthenaSemanticInspectionConnection[];
+};
+
+export type AthenaRepositoryManifestDependencyPayload = {
+    name: string;
+    version?: string;
+    source: string;
+    locator?: string;
+};
+
+export type AthenaRepositoryResolvedPackagePayload = {
+    name: string;
+    version?: string;
+    sourceRoot: string;
+    directDependencies: string[];
+};
+
+export type AthenaRepositoryDiagnosticPayload = {
+    code: string;
+    severity: string;
+    message: string;
+};
+
+export type AthenaSemanticPackagePayload = {
+    name: string;
+    version?: string;
+};
+
+export type AthenaSemanticFactReferencePayload = {
+    kind: string;
+    identifier: string;
+    affectedPackage?: AthenaSemanticPackagePayload;
+    subjectIdentity?: string;
+};
+
+export type AthenaSemanticScmDiagnosticPayload = {
+    severity: string;
+    ruleId: string;
+    message: string;
+    provenance: string;
+};
+
+export type AthenaSemanticReviewEntryPayload = {
+    kind: string;
+    message: string;
+    affectedPackage?: AthenaSemanticPackagePayload;
+    subjectIdentity?: string;
+    factReferences: AthenaSemanticFactReferencePayload[];
+};
+
+export type AthenaSemanticReviewEnrichmentPayload = {
+    pluginId: string;
+    kind: string;
+    message: string;
+    affectedPackage?: AthenaSemanticPackagePayload;
+    subjectIdentity?: string;
+    factReferences: AthenaSemanticFactReferencePayload[];
+};
+
+export type AthenaSemanticReviewPayload = {
+    baselineId: string;
+    baselineLabel: string;
+    affectedPackages: AthenaSemanticPackagePayload[];
+    entryCount: number;
+    enrichmentCount: number;
+    entries: AthenaSemanticReviewEntryPayload[];
+    enrichments: AthenaSemanticReviewEnrichmentPayload[];
+};
+
+export type AthenaSemanticCommitEntryPayload = {
+    kind: string;
+    message: string;
+    affectedPackage?: AthenaSemanticPackagePayload;
+    subjectIdentity?: string;
+    factReferences: AthenaSemanticFactReferencePayload[];
+};
+
+export type AthenaSemanticCommitPayload = {
+    baselineId: string;
+    baselineLabel: string;
+    affectedPackages: AthenaSemanticPackagePayload[];
+    summary?: string;
+    entryCount: number;
+    entries: AthenaSemanticCommitEntryPayload[];
+};
+
+export type AthenaSemanticScmStatePayload = {
+    status: string;
+    adapterId: string;
+    locator: string;
+    locatorLabel?: string;
+    baselineId: string;
+    baselineLabel: string;
+    semanticPath: string;
+    diagnostics: AthenaSemanticScmDiagnosticPayload[];
+    review?: AthenaSemanticReviewPayload;
+    commit?: AthenaSemanticCommitPayload;
+};
+
+export type AthenaSemanticScmStateParams = {
+    adapterId: string;
+    locator: string;
+    locatorLabel?: string;
+    baselineId?: string;
+    baselineLabel?: string;
+    metadata?: Record<string, string>;
+};
+
+export type AthenaSemanticHistoryBaselineParams = {
+    adapterId: string;
+    locator: string;
+    locatorLabel?: string;
+    baselineId?: string;
+    baselineLabel?: string;
+    metadata?: Record<string, string>;
+};
+
+export type AthenaSemanticHistoryStateParams = {
+    packageName: string;
+    packageVersion?: string;
+    baselines: AthenaSemanticHistoryBaselineParams[];
+};
+
+export type AthenaSemanticHistoryBaselinePayload = {
+    adapterId: string;
+    locator: string;
+    locatorLabel?: string;
+    baselineId: string;
+    baselineLabel: string;
+};
+
+export type AthenaSemanticPackageVersionPayload = {
+    packageId: AthenaSemanticPackagePayload;
+    baselineVersion?: string;
+    currentVersion?: string;
+    changeKind: string;
+};
+
+export type AthenaSemanticDependencyMovementPayload = {
+    packageId: AthenaSemanticPackagePayload;
+    kind: string;
+    baselineVersion?: string;
+    currentVersion?: string;
+    message: string;
+};
+
+export type AthenaSemanticValidationMovementPayload = {
+    baselineErrorCount: number;
+    baselineWarningCount: number;
+    currentErrorCount: number;
+    currentWarningCount: number;
+    baselineContinuationDecision?: string;
+    currentContinuationDecision?: string;
+    message: string;
+};
+
+export type AthenaSemanticHistoryEntryPayload = {
+    kind: string;
+    baselineId: string;
+    baselineLabel: string;
+    packageVersion: AthenaSemanticPackageVersionPayload;
+    changeCategory?: string;
+    releaseRelevance: string;
+    contractBreakRisk: string;
+    message: string;
+    dependencyMovements: AthenaSemanticDependencyMovementPayload[];
+    validationMovement?: AthenaSemanticValidationMovementPayload;
+    authoredChangeCount: number;
+    derivedConsequenceCount: number;
+};
+
+export type AthenaSemanticHistoryPayload = {
+    packageId: AthenaSemanticPackagePayload;
+    baselineCount: number;
+    packageLineage: AthenaSemanticPackageVersionPayload[];
+    validationMovements: AthenaSemanticValidationMovementPayload[];
+    entryCount: number;
+    releaseRelevance: string;
+    contractBreakRisk: string;
+    summary?: string;
+    entries: AthenaSemanticHistoryEntryPayload[];
+};
+
+export type AthenaSemanticHistoryStatePayload = {
+    status: string;
+    semanticPath: string;
+    packageId: AthenaSemanticPackagePayload;
+    baselines: AthenaSemanticHistoryBaselinePayload[];
+    diagnostics: AthenaSemanticScmDiagnosticPayload[];
+    history?: AthenaSemanticHistoryPayload;
+};
+
+export type AthenaRepositoryGraphSessionPayload = {
+    repositoryRoot: string;
+    manifestPath: string;
+    lockPath: string;
+    sourceRootPath: string;
+    sourcePath: string;
+    projectName: string;
+    primaryPackageName: string;
+    semanticPath: string;
+    lastOpenedDocumentUri?: string;
+    lockState: string;
+    isValid: boolean;
+    manifestDependencies: AthenaRepositoryManifestDependencyPayload[];
+    resolvedPackages: AthenaRepositoryResolvedPackagePayload[];
+    diagnostics: AthenaRepositoryDiagnosticPayload[];
+};
+
+@injectable()
+export class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
+    protected static readonly MARKER_OWNER = 'athena-lsp';
+
+    @inject(EditorManager)
+    protected readonly editorManager: EditorManager;
+
+    @inject(ProblemManager)
+    protected readonly problemManager: ProblemManager;
+
+    @inject(OutputChannelManager)
+    protected readonly outputChannelManager: OutputChannelManager;
+
+    @inject(MessageService)
+    protected readonly messageService: MessageService;
+
+    @inject(AthenaRepositorySessionService)
+    protected readonly repositorySessionService: AthenaRepositorySessionService;
+
+    protected readonly openedDocumentVersions = new Map<string, number>();
+    protected readonly documentSyncOperations = new Map<string, Promise<void>>();
+    protected activeEditorListeners = new DisposableCollection();
+    protected languageProviderListeners = new DisposableCollection();
+    protected semanticBoundaryMessageShown = false;
+
+    async onStart(_app: FrontendApplication): Promise<void> {
+        this.registerAthenaLanguage();
+        this.outputChannel.appendLine('Athena semantic path ready: frontend -> LSP -> runtime/compiler');
+
+        this.editorManager.onCurrentEditorChanged(widget => {
+            this.bindCurrentEditor(widget);
+            void this.forwardDidOpen(widget).catch(error => this.reportBridgeFailure(error));
+        });
+        this.repositorySessionService.onDidChangeState(state => {
+            if (state.lifecycle === 'ready') {
+                void this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
+                return;
+            }
+            this.problemManager.cleanAllMarkers();
+            this.openedDocumentVersions.clear();
+            this.documentSyncOperations.clear();
+        });
+
+        this.bindCurrentEditor(this.editorManager.currentEditor);
+        await this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
+    }
+
+    protected registerAthenaLanguage(): void {
+        const alreadyRegistered = monaco.languages.getLanguages().some(language => language.id === ATHENA_LANGUAGE_ID);
+        if (!alreadyRegistered) {
+            monaco.languages.register({
+                id: ATHENA_LANGUAGE_ID,
+                extensions: ['.athena'],
+                aliases: ['Athena', 'athena']
+            });
+        }
+        monaco.languages.setLanguageConfiguration(ATHENA_LANGUAGE_ID, athenaLanguageConfiguration);
+        this.registerAthenaLanguageProviders();
+    }
+
+    protected registerAthenaLanguageProviders(): void {
+        this.languageProviderListeners.dispose();
+        this.languageProviderListeners = new DisposableCollection();
+
+        this.languageProviderListeners.push(
+            monaco.languages.setMonarchTokensProvider(ATHENA_LANGUAGE_ID, athenaMonarchLanguage)
+        );
+
+        this.languageProviderListeners.push(monaco.languages.registerCompletionItemProvider(ATHENA_LANGUAGE_ID, {
+            triggerCharacters: ['.', ' '],
+            provideCompletionItems: async (model, position) => {
+                const payload = await this.sendLanguageRequest<CompletionItem[] | CompletionList>(
+                    'textDocument/completion',
+                    this.toTextDocumentPositionParams(model, position),
+                    model
+                );
+                const items = Array.isArray(payload) ? payload : payload?.items ?? [];
+                return {
+                    suggestions: items.map(item => this.toMonacoCompletion(item, model, position))
+                };
+            }
+        }));
+
+        this.languageProviderListeners.push(monaco.languages.registerDocumentSymbolProvider(ATHENA_LANGUAGE_ID, {
+            provideDocumentSymbols: async model => {
+                const payload = await this.sendLanguageRequest<DocumentSymbol[]>(
+                    'textDocument/documentSymbol',
+                    {
+                        textDocument: {
+                            uri: model.uri.toString()
+                        }
+                    },
+                    model
+                );
+                return (payload ?? []).map(symbol => this.toMonacoDocumentSymbol(symbol));
+            }
+        }));
+
+        this.languageProviderListeners.push(monaco.languages.registerDefinitionProvider(ATHENA_LANGUAGE_ID, {
+            provideDefinition: async (model, position) => {
+                const payload = await this.sendLanguageRequest<Location[]>(
+                    'textDocument/definition',
+                    this.toTextDocumentPositionParams(model, position),
+                    model
+                );
+                return (payload ?? []).map(location => this.toMonacoLocation(location));
+            }
+        }));
+
+        this.languageProviderListeners.push(monaco.languages.registerReferenceProvider(ATHENA_LANGUAGE_ID, {
+            provideReferences: async (model, position) => {
+                const payload = await this.sendLanguageRequest<Location[]>(
+                    'textDocument/references',
+                    {
+                        ...this.toTextDocumentPositionParams(model, position),
+                        context: {
+                            includeDeclaration: true
+                        }
+                    },
+                    model
+                );
+                return (payload ?? []).map(location => this.toMonacoLocation(location));
+            }
+        }));
+    }
+
+    protected async forwardDidOpen(widget: EditorWidget | undefined): Promise<void> {
+        if (!this.isAthenaEditor(widget)) {
+            return;
+        }
+        await this.synchronizeDocumentSnapshot(this.toWidgetSnapshot(widget));
+    }
+
+    protected async forwardDidChange(widget: EditorWidget): Promise<void> {
+        if (!this.isAthenaEditor(widget)) {
+            return;
+        }
+        await this.synchronizeDocumentSnapshot(this.toWidgetSnapshot(widget));
+    }
+
+    protected async ensureDocumentSynchronized(model: monaco.editor.ITextModel): Promise<void> {
+        const snapshot = await this.resolveDocumentSnapshot(model);
+        if (!snapshot || !this.isAthenaDocumentUri(snapshot.uri)) {
+            return;
+        }
+        await this.synchronizeDocumentSnapshot(snapshot);
+    }
+
+    protected async resolveDocumentSnapshot(model: monaco.editor.ITextModel): Promise<AthenaDocumentSnapshot | undefined> {
+        const uri = model.uri.toString();
+        const widget = await this.editorManager.getByUri(new URI(uri));
+        if (this.isAthenaEditor(widget)) {
+            return this.toWidgetSnapshot(widget);
+        }
+        return {
+            uri,
+            version: model.getVersionId(),
+            text: model.getValue(),
+            languageId: model.getLanguageId()
+        };
+    }
+
+    protected toWidgetSnapshot(widget: EditorWidget): AthenaDocumentSnapshot {
+        return {
+            uri: widget.editor.uri.toString(),
+            version: widget.editor.document.version,
+            text: widget.editor.document.getText(),
+            languageId: ATHENA_LANGUAGE_ID
+        };
+    }
+
+    protected async synchronizeDocumentSnapshot(snapshot: AthenaDocumentSnapshot): Promise<void> {
+        const sessionState = this.repositorySessionService.state;
+        if (sessionState.lifecycle !== 'ready') {
+            this.outputChannel.appendLine(
+                `Skipped document synchronization for ${snapshot.uri} because the repository session is ${sessionState.lifecycle}.`
+            );
+            return;
+        }
+
+        await this.enqueueDocumentSync(snapshot.uri, async () => {
+            const currentVersion = this.openedDocumentVersions.get(snapshot.uri);
+            if (currentVersion === snapshot.version) {
+                return;
+            }
+
+            const method = currentVersion === undefined
+                ? 'textDocument/didOpen'
+                : 'textDocument/didChange';
+            const response = await fetch('/athena/lsp/notify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    method,
+                    params: method === 'textDocument/didOpen'
+                        ? {
+                            textDocument: {
+                                uri: snapshot.uri,
+                                languageId: snapshot.languageId,
+                                version: snapshot.version,
+                                text: snapshot.text
+                            }
+                        }
+                        : {
+                            textDocument: {
+                                uri: snapshot.uri,
+                                version: snapshot.version
+                            },
+                            contentChanges: [{
+                                text: snapshot.text
+                            }]
+                        }
+                } satisfies AthenaLspTransportEnvelope)
+            });
+
+            if (!response.ok) {
+                const failure = await response.json() as { message?: string };
+                throw new Error(failure.message ?? `Athena LSP ${method} bridge failed for ${snapshot.uri}`);
+            }
+
+            this.openedDocumentVersions.set(snapshot.uri, snapshot.version);
+            if (method === 'textDocument/didOpen') {
+                this.outputChannel.appendLine(`frontend -> textDocument/didOpen -> Athena LSP -> runtime/compiler :: ${snapshot.uri}`);
+                this.outputChannel.show({ preserveFocus: true });
+                await this.repositorySessionService.refreshSessionState();
+                if (!this.semanticBoundaryMessageShown) {
+                    this.semanticBoundaryMessageShown = true;
+                    void this.messageService.info('Athena .athena files now flow through Athena LSP as the sole semantic boundary.');
+                }
+            } else {
+                this.outputChannel.appendLine(`frontend -> textDocument/didChange -> Athena LSP diagnostics :: ${snapshot.uri} @ v${snapshot.version}`);
+            }
+            await this.syncPublishedDiagnostics(snapshot.uri);
+        });
+    }
+
+    protected enqueueDocumentSync(uri: string, task: () => Promise<void>): Promise<void> {
+        const previous = this.documentSyncOperations.get(uri) ?? Promise.resolve();
+        const next = previous
+            .catch(() => undefined)
+            .then(task);
+        const tracked = next.finally(() => {
+            if (this.documentSyncOperations.get(uri) === tracked) {
+                this.documentSyncOperations.delete(uri);
+            }
+        });
+        this.documentSyncOperations.set(uri, tracked);
+        return tracked;
+    }
+
+    protected bindCurrentEditor(widget: EditorWidget | undefined): void {
+        this.activeEditorListeners.dispose();
+        this.activeEditorListeners = new DisposableCollection();
+        if (!this.isAthenaEditor(widget)) {
+            return;
+        }
+
+        this.activeEditorListeners.push(widget.editor.onDocumentContentChanged(() => {
+            void this.forwardDidChange(widget).catch(error => this.reportBridgeFailure(error));
+        }));
+    }
+
+    protected isAthenaEditor(widget: EditorWidget | undefined): widget is EditorWidget {
+        if (!widget) {
+            return false;
+        }
+        return this.isAthenaDocumentUri(widget.editor.uri.toString());
+    }
+
+    protected isAthenaDocumentUri(uri: string): boolean {
+        return uri.toLowerCase().endsWith('.athena');
+    }
+
+    protected async syncPublishedDiagnostics(uri: string): Promise<void> {
+        const response = await fetch(`/athena/lsp/diagnostics?uri=${encodeURIComponent(uri)}`);
+        if (!response.ok) {
+            const failure = await response.json() as { message?: string };
+            throw new Error(failure.message ?? `Athena diagnostics fetch failed for ${uri}`);
+        }
+
+        const payload = await response.json() as Array<{ uri: string; diagnostics: Diagnostic[] }>;
+        const diagnostics = payload[0]?.diagnostics ?? [];
+        this.problemManager.setMarkers(new URI(uri), AthenaLspEditorBridgeService.MARKER_OWNER, diagnostics);
+        this.outputChannel.appendLine(`Athena diagnostics synced to editor and Problems: ${diagnostics.length} item(s) for ${uri}`);
+    }
+
+    protected get outputChannel() {
+        return this.outputChannelManager.getChannel('Athena LSP');
+    }
+
+    async requestSemanticInspection(widget: EditorWidget | undefined): Promise<AthenaSemanticInspectionPayload | undefined> {
+        if (!this.isAthenaEditor(widget)) {
+            return undefined;
+        }
+
+        await this.synchronizeDocumentSnapshot(this.toWidgetSnapshot(widget));
+        return this.sendLanguageRequest<AthenaSemanticInspectionPayload>('athena/semanticInspection', {
+            textDocument: {
+                uri: widget.editor.uri.toString()
+            }
+        });
+    }
+
+    async requestRepositoryGraphSession(): Promise<AthenaRepositoryGraphSessionPayload | undefined> {
+        return this.sendLanguageRequest<AthenaRepositoryGraphSessionPayload>(
+            'athena/repositoryGraphSession',
+            {}
+        );
+    }
+
+    async requestSemanticScmState(
+        params: AthenaSemanticScmStateParams
+    ): Promise<AthenaSemanticScmStatePayload | undefined> {
+        return this.sendLanguageRequest<AthenaSemanticScmStatePayload>(
+            'athena/semanticScmState',
+            params
+        );
+    }
+
+    async requestSemanticHistoryState(
+        params: AthenaSemanticHistoryStateParams
+    ): Promise<AthenaSemanticHistoryStatePayload | undefined> {
+        return this.sendLanguageRequest<AthenaSemanticHistoryStatePayload>(
+            'athena/semanticHistoryState',
+            params
+        );
+    }
+
+    protected async sendLanguageRequest<T>(
+        method: string,
+        params: unknown,
+        model?: monaco.editor.ITextModel
+    ): Promise<T | undefined> {
+        if (this.repositorySessionService.state.lifecycle !== 'ready') {
+            return undefined;
+        }
+        if (model) {
+            await this.ensureDocumentSynchronized(model);
+        }
+
+        const response = await fetch('/athena/lsp/request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                method,
+                params
+            } satisfies AthenaLspTransportEnvelope)
+        });
+
+        if (!response.ok) {
+            const failure = await response.json() as { message?: string };
+            throw new Error(failure.message ?? `Athena LSP request failed for ${method}`);
+        }
+
+        const payload = await response.json() as { result?: T };
+        return payload.result;
+    }
+
+    protected toTextDocumentPositionParams(
+        model: monaco.editor.ITextModel,
+        position: monaco.Position
+    ): AthenaTextDocumentPositionParams {
+        return {
+            textDocument: {
+                uri: model.uri.toString()
+            },
+            position: {
+                line: position.lineNumber - 1,
+                character: position.column - 1
+            }
+        };
+    }
+
+    protected toMonacoCompletion(
+        item: CompletionItem,
+        model: monaco.editor.ITextModel,
+        position: monaco.Position
+    ): monaco.languages.CompletionItem {
+        const label = item.label;
+        const documentation = typeof item.documentation === 'string'
+            ? item.documentation
+            : item.documentation?.value;
+        return {
+            label,
+            detail: item.detail,
+            documentation,
+            insertText: item.insertText ?? label,
+            kind: this.toMonacoCompletionKind(item.kind),
+            range: this.toMonacoCompletionRange(model, position)
+        };
+    }
+
+    protected toMonacoCompletionRange(
+        model: monaco.editor.ITextModel,
+        position: monaco.Position
+    ): monaco.IRange {
+        const lineContent = model.getLineContent(position.lineNumber);
+        let startColumn = position.column;
+        while (startColumn > 1 && /[A-Za-z0-9_.]/.test(lineContent[startColumn - 2] ?? '')) {
+            startColumn -= 1;
+        }
+        return {
+            startLineNumber: position.lineNumber,
+            startColumn,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column
+        };
+    }
+
+    protected toMonacoCompletionKind(kind?: number): monaco.languages.CompletionItemKind {
+        switch (kind) {
+            case 5:
+                return monaco.languages.CompletionItemKind.Field;
+            case 6:
+                return monaco.languages.CompletionItemKind.Variable;
+            case 7:
+                return monaco.languages.CompletionItemKind.Class;
+            case 10:
+                return monaco.languages.CompletionItemKind.Property;
+            case 13:
+                return monaco.languages.CompletionItemKind.EnumMember;
+            case 14:
+                return monaco.languages.CompletionItemKind.Keyword;
+            case 18:
+                return monaco.languages.CompletionItemKind.Reference;
+            default:
+                return monaco.languages.CompletionItemKind.Text;
+        }
+    }
+
+    protected toMonacoDocumentSymbol(symbol: DocumentSymbol): monaco.languages.DocumentSymbol {
+        return {
+            name: symbol.name,
+            detail: symbol.detail ?? '',
+            kind: this.toMonacoSymbolKind(symbol.kind),
+            tags: symbol.tags ?? [],
+            range: this.toMonacoRange(symbol.range),
+            selectionRange: this.toMonacoRange(symbol.selectionRange),
+            children: (symbol.children ?? []).map(child => this.toMonacoDocumentSymbol(child))
+        };
+    }
+
+    protected toMonacoSymbolKind(kind: number): monaco.languages.SymbolKind {
+        switch (kind) {
+            case 2:
+                return monaco.languages.SymbolKind.Module;
+            case 5:
+                return monaco.languages.SymbolKind.Class;
+            case 7:
+                return monaco.languages.SymbolKind.Property;
+            case 8:
+                return monaco.languages.SymbolKind.Field;
+            case 25:
+                return monaco.languages.SymbolKind.Function;
+            default:
+                return monaco.languages.SymbolKind.Object;
+        }
+    }
+
+    protected toMonacoLocation(location: Location): monaco.languages.Location {
+        return {
+            uri: monaco.Uri.parse(location.uri),
+            range: this.toMonacoRange(location.range)
+        };
+    }
+
+    protected toMonacoRange(range: { start: { line: number; character: number }; end: { line: number; character: number } }): monaco.IRange {
+        return {
+            startLineNumber: range.start.line + 1,
+            startColumn: range.start.character + 1,
+            endLineNumber: range.end.line + 1,
+            endColumn: range.end.character + 1
+        };
+    }
+
+    protected reportBridgeFailure(error: unknown): void {
+        const message = error instanceof Error ? error.message : String(error);
+        this.outputChannel.appendLine(`Athena LSP bridge failure: ${message}`);
+        void this.messageService.warn(`Athena LSP bridge failure: ${message}`);
+    }
+}

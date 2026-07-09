@@ -11,6 +11,7 @@
 - 物化确定性的插件候选记录与拒绝记录。
 - 校验清单兼容性、类型契约一致性、扩展点合法性与被禁止的所有权声明。
 - 构建由 compiler 与 runtime 共享的已批准插件清单。
+- 用与其他 hosted extension point 相同的审批与 runtime 契约规则治理 optional semantic review-enrichment contributor。
 - 在同一份已批准清单之上暴露宿主拥有的 `loaded`、`initialized` 与 `shutdown` 生命周期状态。
 - 保持来源枚举与审批作为两个分离且显式的层次。
 

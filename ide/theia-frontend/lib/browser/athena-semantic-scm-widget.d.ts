@@ -1,0 +1,42 @@
+import * as React from '@theia/core/shared/react';
+import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
+import { AthenaLspEditorBridgeService, AthenaSemanticCommitEntryPayload, AthenaSemanticHistoryBaselineParams, AthenaSemanticHistoryEntryPayload, AthenaSemanticHistoryStatePayload, AthenaSemanticPackagePayload, AthenaSemanticReviewEntryPayload, AthenaSemanticReviewEnrichmentPayload, AthenaSemanticScmStatePayload, AthenaSemanticValidationMovementPayload } from './athena-lsp-editor-bridge-service';
+import { AthenaRepositorySessionService } from './athena-repository-session-service';
+export declare class AthenaSemanticScmWidget extends ReactWidget {
+    static readonly ID = "athena.semanticScm";
+    static readonly LABEL = "Semantic SCM";
+    protected static readonly DEFAULT_ADAPTER_ID = "scm-git";
+    protected readonly repositorySessionService: AthenaRepositorySessionService;
+    protected readonly lspEditorBridgeService: AthenaLspEditorBridgeService;
+    protected semanticScmState: AthenaSemanticScmStatePayload | undefined;
+    protected semanticHistoryState: AthenaSemanticHistoryStatePayload | undefined;
+    protected errorMessage: string | undefined;
+    protected historyErrorMessage: string | undefined;
+    protected loading: boolean;
+    protected refreshHandle: number | undefined;
+    protected baselineLabel: string;
+    protected baselineLocator: string;
+    protected historyPackageName: string;
+    protected historyBaselineSequence: string;
+    protected init(): void;
+    protected scheduleRefresh(): void;
+    protected refreshSemanticScmState(): Promise<void>;
+    protected baselineId(): string;
+    protected historyBaselines(): AthenaSemanticHistoryBaselineParams[];
+    protected historyBaselineId(label: string, locator: string, index: number): string;
+    protected onBaselineLabelChanged(event: React.ChangeEvent<HTMLInputElement>): void;
+    protected onBaselineLocatorChanged(event: React.ChangeEvent<HTMLInputElement>): void;
+    protected onHistoryPackageNameChanged(event: React.ChangeEvent<HTMLInputElement>): void;
+    protected onHistoryBaselineSequenceChanged(event: React.ChangeEvent<HTMLTextAreaElement>): void;
+    protected render(): React.ReactNode;
+    protected renderControls(primaryPackageName: string | undefined): React.ReactNode;
+    protected renderHistorySection(semanticHistoryState: AthenaSemanticHistoryStatePayload | undefined, history: AthenaSemanticHistoryStatePayload['history'], primaryPackageName: string | undefined): React.ReactNode;
+    protected renderAffectedPackages(packages: AthenaSemanticPackagePayload[]): string;
+    protected renderPackage(pkg: AthenaSemanticPackagePayload): string;
+    protected renderReviewEntry(entry: AthenaSemanticReviewEntryPayload): React.ReactNode;
+    protected renderReviewEnrichment(enrichment: AthenaSemanticReviewEnrichmentPayload): React.ReactNode;
+    protected renderCommitEntry(entry: AthenaSemanticCommitEntryPayload): React.ReactNode;
+    protected renderValidationMovement(movement: AthenaSemanticValidationMovementPayload): React.ReactNode;
+    protected renderHistoryEntry(entry: AthenaSemanticHistoryEntryPayload): React.ReactNode;
+}
+//# sourceMappingURL=athena-semantic-scm-widget.d.ts.map

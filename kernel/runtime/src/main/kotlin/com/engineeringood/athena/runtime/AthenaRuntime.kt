@@ -10,6 +10,10 @@ class AthenaRuntime(
     var activeWorkspace: AthenaWorkspace? = null
         private set
 
+    /** Currently active authoritative repository graph session, or `null` when none is active. */
+    var activeRepositoryGraphSession: RepositoryGraphSession? = null
+        private set
+
     /** Currently active execution context, or `null` when no project has been activated yet. */
     var activeExecutionContext: AthenaExecutionContext? = null
         private set
@@ -21,8 +25,10 @@ class AthenaRuntime(
             rootPath = rootPath,
             services = serviceRegistry,
             onProjectActivated = ::setActiveExecutionContext,
+            onRepositoryGraphSessionActivated = ::setActiveRepositoryGraphSession,
         )
         activeWorkspace = workspace
+        activeRepositoryGraphSession = null
         activeExecutionContext = null
         return workspace
     }
@@ -31,10 +37,17 @@ class AthenaRuntime(
     fun closeWorkspace() {
         activeWorkspace?.close()
         activeWorkspace = null
+        activeRepositoryGraphSession = null
         activeExecutionContext = null
     }
 
     private fun setActiveExecutionContext(context: AthenaExecutionContext) {
         activeExecutionContext = context
+        activeRepositoryGraphSession = null
+    }
+
+    private fun setActiveRepositoryGraphSession(session: RepositoryGraphSession) {
+        activeRepositoryGraphSession = session
+        activeExecutionContext = session.executionContext
     }
 }

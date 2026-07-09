@@ -9,6 +9,7 @@ The important boundary is that Athena currently has three distinct JVM selection
 - Gradle launcher JVM
 - Gradle daemon JVM used by root verification tasks such as `verifyJava25`
 - Compose Desktop application JVM used by `:apps:desktop-viewer:run`
+- Electron-hosted Athena JVM child processes used by the M4 Theia desktop shell
 
 Treating those as one thing caused the original failures.
 
@@ -20,6 +21,7 @@ That created two different failure modes:
 
 - root `build` and `test` failed at `:verifyJava25` because that task checks the JVM actually running Gradle build logic
 - `:apps:desktop-viewer:run` could start with Java `19` and fail with `UnsupportedClassVersionError` because the app classes were compiled for Java `25`
+- the M4 Theia shell could boot while later JVM child launches still inherited Java `19`, because `java25.bat` does not modify the parent PowerShell process
 
 The Kotlin toolchain alone was not enough. It controls compilation, not every runtime that Athena uses.
 
@@ -55,6 +57,34 @@ This fixes two real problems:
 - the desktop app no longer launches on Java `19`
 - the first Windows desktop proof avoids the native crash observed without the stable Skiko/runtime flags
 
+### M4 Theia Desktop Run
+
+The M4 Theia desktop shell uses Electron for the main product process and a JVM child process under `ide/lsp` for repository-session authority.
+
+That created one extra Windows rule:
+
+- `java25.bat` can help only when it runs in the same Windows process tree as the eventual JVM child launcher
+
+The final M4 fix lives in:
+
+- `ide/theia-product/scripts/athena-electron-main.js`
+  - resolves Java `25` automatically on Windows before Theia boots
+  - exports `ATHENA_JAVA_HOME` and `JAVA_HOME` into the Electron/backend child environment
+  - emits deterministic startup sentinels for smoke verification
+- `ide/theia-product/scripts/verify-athena-start.js`
+  - launches the real Electron entrypoint
+  - waits for a real window-ready signal
+  - exits cleanly for deterministic verification
+
+The verified M4 desktop commands are now:
+
+```powershell
+Set-Location ide
+yarn build
+yarn start:smoke
+yarn start
+```
+
 ## Verified Behavior
 
 The following checks were rerun successfully after the final fix:
@@ -66,6 +96,9 @@ The following checks were rerun successfully after the final fix:
 .\gradlew.bat --no-daemon --console=plain build
 .\gradlew.bat --no-daemon --console=plain test
 .\gradlew.bat --no-daemon --console=plain :apps:desktop-viewer:run
+Set-Location ide
+yarn build
+yarn start:smoke
 ```
 
 The live desktop proof also verified that:
@@ -74,6 +107,8 @@ The live desktop proof also verified that:
 - the actual application process ran on the Java `25` toolchain under `D:\GRADLE\jdks\...`
 - the process command line included `--enable-native-access=ALL-UNNAMED`
 - the process command line included `-Dskiko.renderApi=SOFTWARE`
+- the Theia desktop smoke verifier reached a real window-ready signal
+- the Theia desktop wrapper resolved `D:\Program Files\Java\openjdk-25.0.2` automatically on Windows
 
 ## Operational Guidance
 

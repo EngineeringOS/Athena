@@ -5,6 +5,7 @@
 dependencies {
     implementation(project(":kernel:plugins:plugin-api"))
     implementation(project(":kernel:plugins:plugin-host"))
+    implementation(project(":kernel:repository-model"))
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:geometry-model"))
     implementation(project(":kernel:layout-model"))

@@ -1,4 +1,4 @@
-# `:kernel:svg-renderer`
+﻿# `:kernel:svg-renderer`
 
 [English](README.md) | 简体中文
 

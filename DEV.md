@@ -4,7 +4,8 @@
 
 - `manifesto/` remains a git submodule and reference input.
 - `manifesto/` is not part of the Gradle module graph.
-- Gradle modules are grouped logically as `kernel`, `extensions`, `ui`, and `apps`, while the current physical directories remain stable.
+- The JVM/Gradle modules are grouped logically as `kernel`, `extensions`, `ui`, and `apps`.
+- The primary M4 IDE product path is seeded physically under `ide/` and is intentionally separate from the current JVM/Gradle module graph.
 
 ## Submodule
 
@@ -31,12 +32,16 @@ java25
 .\gradlew.bat build
 .\gradlew.bat test
 .\gradlew.bat :apps:cli:run --args="--help"
+Set-Location ide
+yarn build
+yarn start:smoke
 ```
 
 ## Windows Rule
 
 - Use Java 25 for all Gradle build, test, and run tasks.
 - Run Gradle tasks sequentially on Windows. Do not overlap build/test/run commands in parallel shells.
+- `java25.bat` does not mutate the parent PowerShell environment. Use `cmd /c "call java25 && ..."` when a child Windows launcher must inherit Java 25 in the same process tree.
 
 ## Reference
 

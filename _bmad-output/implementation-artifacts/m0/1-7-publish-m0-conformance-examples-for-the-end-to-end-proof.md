@@ -40,7 +40,7 @@ so that the end-to-end semantic compilation proof can be verified repeatedly aga
 ### Story Intent
 
 - Story `1.7` turns the current seed fixtures into the explicit M0 proof set.
-- The proof target is not “more examples�?in isolation. The proof target is a stable, rerunnable conformance contract over the real compiler path.
+- The proof target is not “more examples” in isolation. The proof target is a stable, rerunnable conformance contract over the real compiler path.
 - The examples must remain DSL-authored sources. Expected artifacts and expectation files may sit beside them, but the examples themselves must not move into downstream-only formats.
 
 ### Architecture Guardrails

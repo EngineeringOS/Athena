@@ -10,6 +10,7 @@
 - 发布插件清单元数据、扩展点词汇表与兼容性模型。
 - 发布面向实体、属性、端口与连接的通用领域 schema 契约。
 - 发布可检查的 validation、compiler-stage 与 renderer-facing contribution 描述符。
+- 发布 additive semantic review-enrichment 契约，让 hosted plugin 只能追加 label、hint 与 summary，而不能改写 core semantic SCM facts。
 - 发布与编译器私有实现解耦的 lowering、semantic-enrichment 与 validation 上下文模型。
 - 发布稳定的 stage 词汇表，供编译器宿主治理声明式领域参与。
 - 保持公共 SPI 精简、文档清晰，并由 kernel 拥有。

@@ -1,0 +1,28 @@
+{
+  "private": true,
+  "name": "@engineeringood/athena-theia-backend",
+  "version": "0.0.1",
+  "description": "Athena backend contributions for the Theia product shell.",
+  "license": "MIT",
+  "dependencies": {
+    "@theia/core": "1.73.1",
+    "inversify": "^6.2.2",
+    "vscode-jsonrpc": "8.2.0",
+    "vscode-languageserver-protocol": "3.17.5",
+    "vscode-uri": "3.0.8"
+  },
+  "theiaExtensions": [
+    {
+      "backend": "lib/node/athena-backend-module"
+    }
+  ],
+  "files": [
+    "lib",
+    "src"
+  ],
+  "scripts": {
+    "clean": "rimraf lib *.tsbuildinfo",
+    "build": "tsc -b --force",
+    "test": "yarn build && node --test scripts/athena-repository-bootstrapper.test.mjs"
+  }
+}

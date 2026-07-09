@@ -1,0 +1,32 @@
+{
+  "private": true,
+  "name": "@engineeringood/athena-ide",
+  "version": "0.0.1",
+  "description": "Athena Theia product workspace for M4.",
+  "license": "MIT",
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=22",
+    "yarn": ">=1.7.0 <2"
+  },
+  "scripts": {
+    "clean": "yarn workspace @engineeringood/athena-theia-frontend clean && yarn workspace @engineeringood/athena-theia-backend clean && yarn workspace @engineeringood/athena-theia-product clean",
+    "build": "yarn workspace @engineeringood/athena-theia-frontend build && yarn workspace @engineeringood/athena-theia-backend build && yarn workspace @engineeringood/athena-theia-product build",
+    "start": "yarn workspace @engineeringood/athena-theia-product start",
+    "start:smoke": "yarn workspace @engineeringood/athena-theia-product start:smoke",
+    "verify:desktop": "yarn build && yarn start:smoke",
+    "watch": "yarn workspace @engineeringood/athena-theia-product watch"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "reflect-metadata": "0.2.2",
+    "rimraf": "^2.7.1",
+    "typescript": "^5.9.2"
+  },
+  "workspaces": [
+    "theia-product",
+    "theia-frontend",
+    "theia-backend"
+  ]
+}

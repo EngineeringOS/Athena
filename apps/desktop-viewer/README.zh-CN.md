@@ -1,4 +1,6 @@
-# `:apps:desktop-viewer`
+﻿# `:apps:desktop-viewer`
+
+~~KMP~~ solution give up please refer to the new [IDE](../../ide) base on [Eclipse theia(https://theia-ide.org/)
 
 [English](README.md) | 简体中文
 

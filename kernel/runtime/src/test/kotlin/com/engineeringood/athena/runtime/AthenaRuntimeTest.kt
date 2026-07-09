@@ -10,6 +10,8 @@ import com.engineeringood.athena.plugin.host.AthenaHostedPluginLifecycleState
 import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscoveryReport
 import com.engineeringood.athena.renderer.svg.SvgRenderer
+import com.engineeringood.athena.scm.SemanticReviewEnrichment
+import com.engineeringood.athena.scm.SemanticReviewSummary
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -119,6 +121,10 @@ class AthenaRuntimeTest {
 
             override fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution> = emptyList()
 
+            override fun semanticReviewEnrichmentContributors(): List<AthenaRuntimePluginSemanticReviewEnrichmentContribution> = emptyList()
+
+            override fun enrichReview(summary: SemanticReviewSummary): List<SemanticReviewEnrichment> = emptyList()
+
             override fun executeCommandContribution(
                 context: AthenaExecutionContext,
                 contributionId: String,
@@ -141,6 +147,13 @@ class AthenaRuntimeTest {
         assertSame(compiler, services.compiler())
         assertSame(compiler, services.compiler())
         assertSame(renderer, services.renderer())
+        assertSame(services.repositoryReports(), services.repositoryReports())
+        assertSame(services.semanticBaselines(), services.semanticBaselines())
+        assertSame(services.semanticDiffs(), services.semanticDiffs())
+        assertSame(services.semanticReviews(), services.semanticReviews())
+        assertSame(services.semanticCommits(), services.semanticCommits())
+        assertSame(services.semanticScmStates(), services.semanticScmStates())
+        assertSame(services.semanticHistoryStates(), services.semanticHistoryStates())
         assertSame(services.engineeringGraph(), services.engineeringGraph())
         assertSame(services.commandRuntime(), services.commandRuntime())
         assertSame(services.aiProposalRuntime(), services.aiProposalRuntime())

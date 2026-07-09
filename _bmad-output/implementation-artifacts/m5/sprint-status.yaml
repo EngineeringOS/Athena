@@ -1,0 +1,79 @@
+# generated: 2026-07-09T06:55:44+08:00
+# last_updated: 2026-07-09T06:58:07+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m5
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M5 milestone sequence sourced from `epics-M5-2026-07-08.md`.
+# - Earlier milestones remain tracked by their own milestone-local sprint-status files.
+# - M5 is the repository and package graph milestone, so the execution sequence starts with the governed repository contract, then package graph resolution, then IDE operability.
+
+generated: 2026-07-09T06:55:44+08:00
+last_updated: 2026-07-09T11:51:01+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m5
+
+development_status:
+  epic-1: done
+  1-1-publish-canonical-repository-contracts-in-kernel-repository-model: done
+  1-2-validate-repository-root-contract-and-primary-package-layout: done
+  1-3-create-a-new-governed-athena-repository: done
+  1-4-open-a-governed-repository-into-a-contract-aware-session-seed: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-build-deterministic-resolution-inputs-from-the-repository-contract: done
+  2-2-resolve-local-first-dependencies-into-a-canonical-package-graph: done
+  2-3-materialize-and-validate-athena-lock-from-resolver-output: done
+  2-4-publish-package-diagnostics-and-graph-reports-for-runtime-ide-and-m6-foundations: done
+  epic-2-retrospective: done
+  epic-3: done
+  3-1-upgrade-the-active-runtime-session-into-a-repository-graph-session: done
+  3-2-expose-package-state-through-ide-lsp-as-the-sole-ide-semantic-path: done
+  3-3-surface-package-diagnostics-and-repository-graph-feedback-in-the-existing-athena-ide: done
+  3-4-add-only-the-narrow-editor-hardening-needed-for-package-aware-operation: done
+  epic-3-retrospective: done
+
+action_items:
+  - epic: 1
+    action: "Keep repository create/open flows consuming the canonical repository-model and compiler/runtime authority when M6 semantic SCM is introduced."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 2
+    action: "Add a direct operator-facing proof path for repository graph and lock publication outside focused tests when the next package-management surface is introduced."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 3
+    action: "Add a focused frontend regression harness for repository graph, package diagnostics, and `.athena` highlighting when the Athena Theia test path is ready."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 3
+    action: "Keep richer editor features such as semantic tokens, hover, rename, and formatting behind Athena LSP and out of frontend-owned parsing."
+    owner: "Amelia (Developer)"
+    status: open

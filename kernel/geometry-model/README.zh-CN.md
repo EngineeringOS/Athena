@@ -1,4 +1,4 @@
-# `:kernel:geometry-model`
+﻿# `:kernel:geometry-model`
 
 [English](README.md) | 简体中文
 

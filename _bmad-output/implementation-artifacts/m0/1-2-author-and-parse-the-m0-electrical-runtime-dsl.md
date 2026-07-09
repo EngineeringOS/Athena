@@ -154,7 +154,7 @@ so that authored engineering intent becomes deterministic compiler input for lat
 - `manifesto/docs/architecture/09-layout-and-geometry.md` - authored engineering language must exclude layout and geometry mechanics.
 - `manifesto/docs/prd/01-kernel-v0.md` - canonical minimal DSL/IR proof shape and the connected example pattern.
 - `draft/0001.md` - stack note that parser choice should stay lightweight (`Kotlin parser combinators or ANTLR only if needed`).
-- `draft/0002.md` - M0 success criteria and the “DSL is the source of truth, IR is the canonical model�?thesis.
+- `draft/0002.md` - M0 success criteria and the “DSL is the source of truth, IR is the canonical model” thesis.
 
 ## Story Completion Status
 
@@ -193,7 +193,7 @@ GPT-5 Codex
 - Verified the final state with sequential Java `25` `clean build`, `test`, CLI help, and CLI parse commands.
 - Created a dedicated implementation story for the first real language/parser work in M0.
 - Carried forward the compiler-first, syntax-only AST boundary from the epics, PRD, architecture spine, SPEC, manifesto, and draft notes.
-- Made the “no layout or renderer concerns in the DSL�?rule explicit for the dev agent.
+- Made the “no layout or renderer concerns in the DSL” rule explicit for the dev agent.
 - Marked Story `1.2` as `ready-for-dev` for the next implementation step.
 
 ### File List

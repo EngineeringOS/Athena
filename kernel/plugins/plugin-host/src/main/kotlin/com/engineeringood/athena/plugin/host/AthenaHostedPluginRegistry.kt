@@ -23,6 +23,7 @@ enum class AthenaHostedPluginContributionCategory {
     COMPILER_PASS,
     RENDER,
     VIEW_DEFINITION,
+    SEMANTIC_REVIEW_ENRICHMENT,
     RUNTIME_COMMAND,
     RUNTIME_VIEW,
 }
@@ -192,6 +193,9 @@ class AthenaHostedPluginRegistry(
             }
             if (viewDefinitionIds.isNotEmpty()) {
                 add(AthenaHostedPluginContributionCategory.VIEW_DEFINITION)
+            }
+            if (AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT in approvedPlugin.attachedExtensionPoints) {
+                add(AthenaHostedPluginContributionCategory.SEMANTIC_REVIEW_ENRICHMENT)
             }
             if (AthenaExtensionPoint.RUNTIME_COMMANDS in approvedPlugin.attachedExtensionPoints) {
                 add(AthenaHostedPluginContributionCategory.RUNTIME_COMMAND)

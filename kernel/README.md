@@ -10,6 +10,8 @@ The `kernel` group contains Athena's semantic backbone. These modules own the au
 - `kernel/plugins` subgroup -> [`plugins/`](plugins/README.md)
 - `:kernel:plugins:plugin-api` -> [`plugins/plugin-api/`](plugins/plugin-api/README.md)
 - `:kernel:plugins:plugin-host` -> [`plugins/plugin-host/`](plugins/plugin-host/README.md)
+- `:kernel:repository-model` -> [`repository-model/`](repository-model/README.md)
+- `:kernel:semantic-scm` -> [`semantic-scm/`](semantic-scm/README.md)
 - `:kernel:engineering-model` -> [`engineering-model/`](engineering-model/README.md)
 - `:kernel:layout-model` -> [`layout-model/`](layout-model/README.md)
 - `:kernel:geometry-model` -> [`geometry-model/`](geometry-model/README.md)
@@ -20,5 +22,5 @@ The `kernel` group contains Athena's semantic backbone. These modules own the au
 
 ## Boundary
 
-The kernel owns semantic authority. Extensions, UI, and apps may depend on it, but they should not redefine the authored source, the canonical model, or the compiler/runtime ownership rules. `:kernel:plugins:plugin-api` is the dedicated extension-facing boundary, and `:kernel:plugins:plugin-host` owns hosted source, approval, and approved-inventory governance separate from both compiler and runtime orchestration.
+The kernel owns semantic authority. Extensions, UI, and apps may depend on it, but they should not redefine the authored source, the canonical model, or the compiler/runtime ownership rules. `:kernel:repository-model` is the dedicated M5 repository/package contract boundary, `:kernel:semantic-scm` is the dedicated M6 semantic SCM boundary above repository/package meaning, `:kernel:plugins:plugin-api` is the dedicated extension-facing boundary, and `:kernel:plugins:plugin-host` owns hosted source, approval, and approved-inventory governance separate from both compiler and runtime orchestration.
 

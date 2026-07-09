@@ -1,0 +1,66 @@
+{
+  "private": true,
+  "name": "@engineeringood/athena-theia-product",
+  "productName": "Athena",
+  "version": "0.0.1",
+  "description": "Athena desktop-first Theia product shell.",
+  "main": "scripts/athena-electron-main.js",
+  "license": "MIT",
+  "engines": {
+    "yarn": ">=1.7.0 <2",
+    "node": ">=22"
+  },
+  "theia": {
+    "target": "electron",
+    "frontend": {
+      "config": {
+        "applicationName": "Athena",
+        "reloadOnReconnect": true,
+        "preferences": {
+          "toolbar.showToolbar": true
+        }
+      }
+    },
+    "backend": {
+      "config": {
+        "frontendConnectionTimeout": -1,
+        "startupTimeout": -1,
+        "configurationFolder": ".athena"
+      }
+    }
+  },
+  "dependencies": {
+    "@engineeringood/athena-theia-backend": "0.0.1",
+    "@engineeringood/athena-theia-frontend": "0.0.1",
+    "@theia/core": "1.73.1",
+    "@theia/editor": "1.73.1",
+    "@theia/editor-preview": "1.73.1",
+    "@theia/electron": "1.73.1",
+    "@theia/filesystem": "1.73.1",
+    "@theia/keymaps": "1.73.1",
+    "@theia/markers": "1.73.1",
+    "@theia/messages": "1.73.1",
+    "@theia/monaco": "1.73.1",
+    "@theia/navigator": "1.73.1",
+    "@theia/output": "1.73.1",
+    "@theia/preferences": "1.73.1",
+    "@theia/process": "1.73.1",
+    "@theia/terminal": "1.73.1",
+    "@theia/userstorage": "1.73.1",
+    "@theia/workspace": "1.73.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@theia/cli": "1.73.1",
+    "electron": "39.8.7"
+  },
+  "scripts": {
+    "clean": "theia clean && rimraf lib src-gen",
+    "build": "theia build --mode development",
+    "rebuild": "theia rebuild:electron",
+    "start": "electron scripts/athena-electron-main.js",
+    "start:smoke": "node scripts/verify-athena-start.js",
+    "watch": "theia build --watch --mode development"
+  }
+}

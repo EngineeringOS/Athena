@@ -11,6 +11,7 @@ The `:kernel:plugins:plugin-host` module owns Athena's hosted plugin governance 
 - Materialize deterministic plugin candidate and rejection records.
 - Validate manifest compatibility, typed-contract conformance, extension-point legality, and forbidden ownership claims.
 - Build the approved plugin inventory shared by compiler and runtime.
+- Govern optional semantic review-enrichment contributors with the same approval and hosted-runtime contract rules used for other hosted extension points.
 - Expose host-owned `loaded`, `initialized`, and `shutdown` lifecycle state over one approved inventory.
 - Keep source enumeration and approval as separate explicit layers.
 

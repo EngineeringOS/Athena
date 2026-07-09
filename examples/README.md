@@ -35,3 +35,19 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `dual-domain-proof.expectation.txt` - approved-plugin and render contract for the combined hosted path
 
 `m3/` stays proof-focused. It publishes only the minimum corpus needed to show that external domains can participate through the same stable hosted contracts and to seed the later zero/one/multi-plugin verification matrix.
+
+## `m4/`
+
+- `open-repository-proof/` - first M4 Engineering Repository fixture for the Theia repository-open flow
+- `open-repository-proof/src/factory-line.athena` - the single authored source resolved by the temporary M4 repository rule
+
+`m4/` publishes repository-root fixtures instead of loose standalone source files. The current M4 rule intentionally stays narrow: one repository opens only when Athena can resolve exactly one `.athena` source, preferring `src/` when it exists.
+
+## `m5/`
+
+- `repository-graph-proof/` - governed repository/package graph fixture for the completed M5 proof
+- `repository-graph-proof/athena.yaml` - authored repository/package intent contract
+- `repository-graph-proof/athena.lock` - canonical derived lock contract in stable rendered form
+- `repository-graph-proof/src/root.athena` - primary package authored source
+
+`m5/` publishes governed repository-root fixtures instead of standalone source files. The published operator fixture stays intentionally minimal: one primary package, one canonical lock, and one valid repository root. Wider local-first dependency resolution remains proven primarily by focused compiler tests.

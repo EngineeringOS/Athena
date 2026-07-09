@@ -6,6 +6,7 @@ import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPlugin
 import com.engineeringood.athena.plugin.AthenaRenderContribution
 import com.engineeringood.athena.plugin.AthenaRenderContributor
+import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributor
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.PluginValidationDiagnostic
 import com.engineeringood.athena.plugin.PluginValidationRuleId
@@ -20,6 +21,9 @@ import com.engineeringood.athena.plugin.host.AthenaHostedPluginRegistry
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscoveryReport
 import com.engineeringood.athena.plugin.host.RejectedAthenaPluginCandidate
+import com.engineeringood.athena.scm.SemanticReviewEnrichment
+import com.engineeringood.athena.scm.SemanticReviewEnrichmentKind
+import com.engineeringood.athena.scm.SemanticReviewSummary
 
 /**
  * Runtime-owned contract for hosted plugin discovery, inspection, and typed contribution access.
@@ -81,6 +85,16 @@ interface AthenaPluginRuntimeServices {
     fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution>
 
     /**
+     * Returns hosted semantic review enrichers in deterministic approved-plugin order.
+     */
+    fun semanticReviewEnrichmentContributors(): List<AthenaRuntimePluginSemanticReviewEnrichmentContribution>
+
+    /**
+     * Publishes additive semantic review enrichments over one already-generated core review summary.
+     */
+    fun enrichReview(summary: SemanticReviewSummary): List<SemanticReviewEnrichment>
+
+    /**
      * Executes one hosted runtime command contribution through the existing command runtime.
      */
     fun executeCommandContribution(
@@ -112,6 +126,7 @@ data class AthenaHostedRuntimePlugin(
     val domainCapabilities: Set<String>,
     val commandContributionIds: List<String>,
     val viewDefinitionIds: List<String>,
+    val semanticReviewEnrichmentCount: Int,
     val viewContributionCount: Int,
 )
 
@@ -138,6 +153,14 @@ data class AthenaRuntimePluginDomainSemanticsContribution(
     val pluginId: String,
     val domainCapabilities: Set<String>,
     val domainPlugin: AthenaDomainPlugin,
+)
+
+/**
+ * Runtime-owned descriptor for one hosted semantic review enrichment contributor.
+ */
+data class AthenaRuntimePluginSemanticReviewEnrichmentContribution(
+    val pluginId: String,
+    val enricher: AthenaSemanticReviewEnrichmentContributor,
 )
 
 /**
@@ -317,6 +340,7 @@ class AthenaHostedPluginRuntimeServices(
                 domainCapabilities = domainSemanticsContributionFor(plugin)?.domainCapabilities.orEmpty(),
                 commandContributionIds = commandContributionsFor(plugin).map { contribution -> contribution.contributionId },
                 viewDefinitionIds = hostedPlugin.viewDefinitionIds,
+                semanticReviewEnrichmentCount = if (plugin is AthenaSemanticReviewEnrichmentContributor) 1 else 0,
                 viewContributionCount = if (plugin is AthenaRuntimePluginViewContributor) 1 else 0,
             )
         }
@@ -353,6 +377,32 @@ class AthenaHostedPluginRuntimeServices(
                     viewDefinitions = viewDefinitions,
                 )
             }
+        }
+    }
+
+    override fun semanticReviewEnrichmentContributors(): List<AthenaRuntimePluginSemanticReviewEnrichmentContribution> {
+        return activeApprovedPlugins().mapNotNull { approvedPlugin ->
+            val enricher = approvedPlugin.candidate.plugin as? AthenaSemanticReviewEnrichmentContributor ?: return@mapNotNull null
+            AthenaRuntimePluginSemanticReviewEnrichmentContribution(
+                pluginId = approvedPlugin.candidate.manifest.pluginId,
+                enricher = enricher,
+            )
+        }
+    }
+
+    override fun enrichReview(summary: SemanticReviewSummary): List<SemanticReviewEnrichment> {
+        return semanticReviewEnrichmentContributors().flatMap { contribution ->
+            runCatching { contribution.enricher.enrichReview(summary) }
+                .getOrElse { error ->
+                    listOf(
+                        SemanticReviewEnrichment(
+                            pluginId = contribution.pluginId,
+                            kind = SemanticReviewEnrichmentKind.PLUGIN_WARNING,
+                            message = "Hosted semantic review enrichment failed: ${error.message ?: error::class.simpleName.orEmpty()}",
+                        ),
+                    )
+                }
+                .map { enrichment -> enrichment.copy(pluginId = contribution.pluginId) }
         }
     }
 
@@ -492,6 +542,14 @@ class AthenaHostedPluginRuntimeServices(
             undeclaredRuleId = "plugin.runtime.contract.view-definition.undeclared",
             unimplementedRuleId = "plugin.runtime.contract.view-definition.unimplemented",
             contractName = "view definition contributions",
+        )
+        diagnostics += missingRuntimeContractDiagnostic(
+            approvedPlugin = approvedPlugin,
+            extensionPoint = AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
+            implementsContract = plugin is AthenaSemanticReviewEnrichmentContributor,
+            undeclaredRuleId = "plugin.runtime.contract.semantic-review-enrichment.undeclared",
+            unimplementedRuleId = "plugin.runtime.contract.semantic-review-enrichment.unimplemented",
+            contractName = "semantic review enrichment contributions",
         )
 
         return diagnostics

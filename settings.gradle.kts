@@ -35,9 +35,13 @@ rootProject.name = "Athena"
 include(
     ":apps:cli",
     ":apps:desktop-viewer",
+    ":integrations:scm-git",
+    ":ide:lsp",
     ":ui:compose-workbench",
     ":kernel:runtime",
     ":kernel:language",
+    ":kernel:repository-model",
+    ":kernel:semantic-scm",
     ":kernel:plugins:plugin-api",
     ":kernel:plugins:plugin-host",
     ":kernel:engineering-model",

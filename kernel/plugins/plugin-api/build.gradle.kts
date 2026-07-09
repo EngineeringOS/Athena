@@ -6,5 +6,6 @@ dependencies {
     implementation(project(":kernel:language"))
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:layout-model"))
+    implementation(project(":kernel:semantic-scm"))
     implementation(project(":kernel:validation"))
 }

@@ -1,0 +1,84 @@
+# generated: 2026-07-08T13:38:38.6578289+08:00
+# last_updated: 2026-07-08T18:10:00.0000000+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m4
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M4 milestone sequence sourced from `epics.md`.
+# - M0, M1, M2, and M3 remain tracked by their own milestone-local sprint-status files.
+# - M4 is the Theia-based Athena IDE embodiment milestone, so the first execution focus is on product shell setup, Athena LSP integration, and a professional downstream workbench.
+
+generated: 2026-07-08T13:38:38.6578289+08:00
+last_updated: 2026-07-08T22:52:00.0000000+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m4
+
+development_status:
+  epic-1: done
+  1-1-establish-the-ide-product-group-from-the-known-good-theia-baseline: done
+  1-2-launch-a-branded-athena-theia-desktop-shell-with-a-curated-capability-set: done
+  1-3-open-one-existing-engineering-repository-into-an-active-repository-session: done
+  1-4-create-a-new-engineering-repository-from-the-athena-welcome-flow: done
+  1-5-stabilize-the-desktop-first-build-launch-and-verification-path-for-the-product-shell: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-bootstrap-athena-lsp-as-the-sole-semantic-entry-point-for-the-ide: done
+  2-2-surface-authored-source-diagnostics-through-athena-lsp: done
+  2-3-add-core-language-navigation-and-authoring-support-through-athena-lsp: done
+  2-4-keep-diagnostics-and-navigation-stable-across-repeated-editing: done
+  epic-2-retrospective: done
+  epic-3: done
+  3-1-compose-a-professional-multi-panel-athena-workbench: done
+  3-2-route-core-athena-commands-and-views-through-explicit-product-boundaries: done
+  3-3-surface-read-only-semantic-inspection-beside-source-editing: done
+  3-4-keep-athena-workbench-extensions-additive-instead-of-replacing-the-shell: done
+  epic-3-retrospective: done
+
+action_items:
+  - epic: 2
+    action: "Add a backend transport regression proof for stale or superseded diagnostics versions when the IDE transport contract changes."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 2
+    action: "Keep Epic 3 story status cleanup continuous instead of batching review-to-done transitions at epic closeout."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 3
+    action: "Add a focused frontend regression harness for Athena-owned workbench composition and semantic inspection surfaces when the Theia test path is introduced."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 3
+    action: "Backlog minimal .athena syntax highlighting and later semantic token support without changing the semantic authority model."
+    owner: "Amelia (Developer)"
+    status: open
+  - epic: 3
+    action: "Keep future Athena workbench panels attached through athena-workbench-extensions.ts instead of scattering panel-specific wiring."
+    owner: "Amelia (Developer)"
+    status: open

@@ -1,4 +1,4 @@
-# `:extensions:domain-electrical`
+﻿# `:extensions:domain-electrical`
 
 [English](README.md) | 简体中文
 
