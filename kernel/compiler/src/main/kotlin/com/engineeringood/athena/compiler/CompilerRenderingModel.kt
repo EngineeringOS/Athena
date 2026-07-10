@@ -1,13 +1,17 @@
 package com.engineeringood.athena.compiler
 
+import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.renderer.svg.SvgRenderModel
 
 /** Compiler-visible render contribution attribution selected for one downstream render target. */
 data class CompilerRenderContributionAttribution(
     val pluginId: String,
     val contributionId: String,
+    val displayName: String = "",
+    val description: String = "",
     val viewIds: Set<String> = emptySet(),
     val rendererTargets: Set<String> = emptySet(),
+    val surfaceMappings: List<AthenaRenderSurfaceMapping> = emptyList(),
 )
 
 /** Compiler-facing rendering outcome derived from the downstream rendering stage. */

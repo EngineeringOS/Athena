@@ -6,15 +6,13 @@ English | [Chinese (Simplified)](README.zh-CN.md)
 
 ## Current fixture
 
-- `open-repository-proof/` - first openable Engineering Repository for Story `1.3`
+- `open-repository-proof/` - first openable Engineering Repository for Story `1.3`, now kept compatible with the governed repository contract used by the current desktop path
+- `open-repository-proof/athena.yaml` - authored repository/package intent contract for the fixture
+- `open-repository-proof/athena.lock` - canonical derived lock contract for the same repository
 - `open-repository-proof/src/factory-line.athena` - the authored source resolved into the active runtime-backed session
 
-New repositories created from the Athena welcome flow follow the same light physical shape:
+New repositories created from the Athena welcome flow follow the same governed physical shape:
 
+- `<repository-root>/athena.yaml`
+- `<repository-root>/athena.lock`
 - `<repository-root>/src/<project>.athena`
-
-## Temporary M4 repository rule
-
-M4 does not freeze the final manifest, lockfile, or package-graph contracts yet.
-
-For this milestone, Athena opens a repository only when it resolves exactly one authored `.athena` source. If a `src/` directory exists, it is searched first.

@@ -40,7 +40,9 @@ import org.eclipse.lsp4j.services.WorkspaceService
 import java.net.URI
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.Locale
 import java.util.concurrent.CompletableFuture
+import kotlin.system.measureTimeMillis
 
 /**
  * Minimal Athena LSP server for the governed M5 repository-open milestone.
@@ -111,6 +113,7 @@ class AthenaLanguageServer(
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
         return CompletableFuture.supplyAsync {
+            val initializeStartedAt = System.nanoTime()
             sessionHost.shutdown()
 
             val repositoryRoot = resolveRepositoryRoot(params)
@@ -124,8 +127,11 @@ class AthenaLanguageServer(
 
             when (val activation = sessionHost.activateRepository(repositoryRoot)) {
                 is AthenaLspSessionHostReady -> {
+                    val languageFeatureInitializationMs: Long
                     activeSession = activation
-                    languageFeatures = AthenaLanguageFeatures(activation.context.compiler())
+                    languageFeatureInitializationMs = measureTimeMillis {
+                        languageFeatures = AthenaLanguageFeatures(activation.context.compiler())
+                    }
                     sessionSnapshot = AthenaLspSessionSnapshot(
                         repositoryRoot = activation.repositoryRoot,
                         manifestPath = activation.manifestPath,
@@ -134,6 +140,14 @@ class AthenaLanguageServer(
                         sourcePath = activation.sourcePath,
                         projectName = activation.projectName,
                         primaryPackageName = activation.primaryPackageName,
+                    )
+                    val totalInitializationMs = (System.nanoTime() - initializeStartedAt) / 1_000_000.0
+                    languageClient?.logMessage(
+                        MessageParams(
+                            MessageType.Info,
+                            "Athena LSP initialize timings: total=${"%.1f".format(Locale.US, totalInitializationMs)}ms, " +
+                                "languageFeatures=${languageFeatureInitializationMs}ms, repositoryRoot=${activation.repositoryRoot}",
+                        ),
                     )
 
                     InitializeResult(
@@ -245,6 +259,36 @@ class AthenaLanguageServer(
                     baselineRequests = params.toBaselineRequests(),
                 )
                 ?.toPayload(sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"),
+        )
+    }
+
+    /**
+     * Returns the current runtime-owned projection session through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/projectionSession")
+    fun projectionSession(params: AthenaProjectionSessionParams): CompletableFuture<AthenaProjectionSessionPayload?> {
+        @Suppress("UnusedParameter")
+        val ignored = params
+        return CompletableFuture.completedFuture(
+            activeSession?.toProjectionSessionPayload(
+                snapshot = sessionSnapshot,
+                languageFeatures = languageFeatures,
+            ),
+        )
+    }
+
+    /**
+     * Executes one explicit allowlisted projection command through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/projectionCommand")
+    fun projectionCommand(params: AthenaProjectionCommandParams): CompletableFuture<AthenaProjectionCommandPayload?> {
+        val activation = activeSession
+        return CompletableFuture.completedFuture(
+            activation?.executeProjectionCommand(
+                params = params,
+                snapshot = sessionSnapshot,
+                languageFeatures = languageFeatures,
+            ),
         )
     }
 

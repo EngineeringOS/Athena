@@ -82,6 +82,12 @@ class PluginApiContributionContractTest {
                     description = "Publishes renderer-facing intent without owning backend orchestration.",
                     viewIds = setOf("default"),
                     rendererTargets = setOf("svg"),
+                    surfaceMappings = listOf(
+                        AthenaRenderSurfaceMapping(
+                            surface = AthenaRenderSurface.NODE,
+                            tokens = mapOf("fill" to "#123456"),
+                        ),
+                    ),
                 ),
             )
         }
@@ -105,6 +111,10 @@ class PluginApiContributionContractTest {
         assertEquals(
             listOf(setOf("svg")),
             plugin.renderContributions.map { contribution -> contribution.rendererTargets },
+        )
+        assertEquals(
+            listOf(listOf(AthenaRenderSurface.NODE)),
+            plugin.renderContributions.map { contribution -> contribution.surfaceMappings.map { mapping -> mapping.surface } },
         )
     }
 

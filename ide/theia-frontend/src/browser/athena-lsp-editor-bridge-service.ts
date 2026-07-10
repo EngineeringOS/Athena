@@ -10,7 +10,8 @@ import {
     CompletionList,
     Diagnostic,
     DocumentSymbol,
-    Location
+    Location,
+    Range
 } from '@theia/core/shared/vscode-languageserver-protocol';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
@@ -20,6 +21,7 @@ import {
     athenaLanguageConfiguration,
     athenaMonarchLanguage
 } from './athena-language-definition';
+import { toAthenaBackendUrl } from './athena-backend-endpoint';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 
 type AthenaLspTransportEnvelope = {
@@ -49,18 +51,21 @@ export type AthenaSemanticInspectionComponent = {
     name: string;
     kind: string;
     properties: string;
+    sourceRange: Range;
 };
 
 export type AthenaSemanticInspectionPort = {
     semanticId: string;
     path: string;
     properties: string;
+    sourceRange: Range;
 };
 
 export type AthenaSemanticInspectionConnection = {
     semanticId: string;
     fromPath: string;
     toPath: string;
+    sourceRange: Range;
 };
 
 export type AthenaSemanticInspectionPayload = {
@@ -284,6 +289,101 @@ export type AthenaRepositoryGraphSessionPayload = {
     diagnostics: AthenaRepositoryDiagnosticPayload[];
 };
 
+export type AthenaProjectionViewPayload = {
+    viewId: string;
+    displayName: string;
+    description: string;
+};
+
+export type AthenaProjectionGovernedCommandPayload = {
+    commandId: string;
+    displayName: string;
+    description: string;
+    requiredArguments: string[];
+};
+
+export type AthenaProjectionComponentPayload = {
+    semanticId: string;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+export type AthenaProjectionConnectionPayload = {
+    semanticId: string;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+};
+
+export type AthenaProjectionLabelPayload = {
+    semanticId: string;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+export type AthenaProjectionReadyPayload = {
+    viewId: string;
+    systemName: string;
+    canvasWidth: number;
+    canvasHeight: number;
+    activeRenderContributions: AthenaProjectionRenderContributionPayload[];
+    components: AthenaProjectionComponentPayload[];
+    connections: AthenaProjectionConnectionPayload[];
+    labels: AthenaProjectionLabelPayload[];
+};
+
+export type AthenaProjectionRenderContributionPayload = {
+    pluginId: string;
+    contributionId: string;
+    displayName: string;
+    description: string;
+    rendererTarget: string;
+    surfaceMappings: AthenaProjectionSurfaceMappingPayload[];
+};
+
+export type AthenaProjectionSurfaceMappingPayload = {
+    surface: string;
+    tokens: Record<string, string>;
+};
+
+export type AthenaProjectionDiagnosticPayload = {
+    severity: string;
+    code: string;
+    message: string;
+    provenance?: string;
+};
+
+export type AthenaProjectionCommandParams = {
+    commandId: string;
+    viewId?: string;
+};
+
+export type AthenaProjectionSessionPayload = {
+    projectName: string;
+    semanticPath: string;
+    activeViewId: string;
+    supportedViews: AthenaProjectionViewPayload[];
+    governedCommands: AthenaProjectionGovernedCommandPayload[];
+    status: string;
+    readyProjection?: AthenaProjectionReadyPayload;
+    unavailableReason?: string;
+    diagnostics: AthenaProjectionDiagnosticPayload[];
+};
+
+export type AthenaProjectionCommandPayload = {
+    commandId: string;
+    status: string;
+    reason?: string;
+    session?: AthenaProjectionSessionPayload;
+};
+
 @injectable()
 export class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
     protected static readonly MARKER_OWNER = 'athena-lsp';
@@ -473,7 +573,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             const method = currentVersion === undefined
                 ? 'textDocument/didOpen'
                 : 'textDocument/didChange';
-            const response = await fetch('/athena/lsp/notify', {
+            const response = await fetch(toAthenaBackendUrl('athena/lsp/notify'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -559,8 +659,18 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         return uri.toLowerCase().endsWith('.athena');
     }
 
+    protected currentAthenaEditorModel(): monaco.editor.ITextModel | undefined {
+        const widget = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(widget)) {
+            return undefined;
+        }
+        return monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString())) ?? undefined;
+    }
+
     protected async syncPublishedDiagnostics(uri: string): Promise<void> {
-        const response = await fetch(`/athena/lsp/diagnostics?uri=${encodeURIComponent(uri)}`);
+        const response = await fetch(toAthenaBackendUrl('athena/lsp/diagnostics', {
+            uri,
+        }));
         if (!response.ok) {
             const failure = await response.json() as { message?: string };
             throw new Error(failure.message ?? `Athena diagnostics fetch failed for ${uri}`);
@@ -596,6 +706,26 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         );
     }
 
+    async requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined> {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest<AthenaProjectionSessionPayload>(
+            'athena/projectionSession',
+            {},
+            model,
+        );
+    }
+
+    async requestProjectionCommand(
+        params: AthenaProjectionCommandParams
+    ): Promise<AthenaProjectionCommandPayload | undefined> {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest<AthenaProjectionCommandPayload>(
+            'athena/projectionCommand',
+            params,
+            model,
+        );
+    }
+
     async requestSemanticScmState(
         params: AthenaSemanticScmStateParams
     ): Promise<AthenaSemanticScmStatePayload | undefined> {
@@ -626,7 +756,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             await this.ensureDocumentSynchronized(model);
         }
 
-        const response = await fetch('/athena/lsp/request', {
+        const response = await fetch(toAthenaBackendUrl('athena/lsp/request'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

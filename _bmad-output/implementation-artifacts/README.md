@@ -12,6 +12,8 @@
 - `m3/`: completed M3 implementation artifacts and sprint tracking
 - `m4/`: completed M4 implementation artifacts and sprint tracking
 - `m5/`: completed M5 implementation artifacts and sprint tracking
+- `m6/`: completed M6 implementation artifacts and sprint tracking
+- `m7/`: completed M7 implementation artifacts and sprint tracking
 
 ## Standard
 

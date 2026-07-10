@@ -9,6 +9,7 @@ import {
     AthenaSemanticInspectionPayload
 } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
+import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 
 @injectable()
 export class AthenaSemanticInspectionWidget extends ReactWidget {
@@ -23,6 +24,9 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
 
     @inject(AthenaLspEditorBridgeService)
     protected readonly lspEditorBridgeService: AthenaLspEditorBridgeService;
+
+    @inject(AthenaSemanticSelectionService)
+    protected readonly semanticSelectionService: AthenaSemanticSelectionService;
 
     protected currentEditorListeners = new DisposableCollection();
     protected inspection: AthenaSemanticInspectionPayload | undefined;
@@ -41,6 +45,7 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
 
         this.toDispose.push(this.currentEditorListeners);
         this.toDispose.push(this.repositorySessionService.onDidChangeState(() => this.scheduleRefresh()));
+        this.toDispose.push(this.semanticSelectionService.onDidChangeSelection(() => this.update()));
         this.toDispose.push(this.editorManager.onCurrentEditorChanged(widget => {
             this.bindCurrentEditor(widget);
             this.scheduleRefresh();
@@ -188,31 +193,31 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
                 </div>
             </header>
 
-            <section className='athena-semantic-inspection__metrics'>
-                <article className='athena-semantic-inspection__metric'>
-                    <span className='athena-semantic-inspection__metric-value'>{inspection.componentCount}</span>
-                    <span className='athena-semantic-inspection__metric-label'>Components</span>
-                </article>
-                <article className='athena-semantic-inspection__metric'>
-                    <span className='athena-semantic-inspection__metric-value'>{inspection.portCount}</span>
-                    <span className='athena-semantic-inspection__metric-label'>Ports</span>
-                </article>
-                <article className='athena-semantic-inspection__metric'>
-                    <span className='athena-semantic-inspection__metric-value'>{inspection.connectionCount}</span>
-                    <span className='athena-semantic-inspection__metric-label'>Connections</span>
-                </article>
-                <article className='athena-semantic-inspection__metric'>
-                    <span className='athena-semantic-inspection__metric-value'>{inspection.diagnosticsCount}</span>
-                    <span className='athena-semantic-inspection__metric-label'>Diagnostics</span>
-                </article>
+            <section className='athena-semantic-inspection__summary'>
+                <ul className='athena-semantic-inspection__summary-list'>
+                    <li><span>Components</span><strong>{inspection.componentCount}</strong></li>
+                    <li><span>Ports</span><strong>{inspection.portCount}</strong></li>
+                    <li><span>Connections</span><strong>{inspection.connectionCount}</strong></li>
+                    <li><span>Diagnostics</span><strong>{inspection.diagnosticsCount}</strong></li>
+                </ul>
+            </section>
+
+            <section className='athena-semantic-inspection__section'>
+                <h3>Selected semantic</h3>
+                {this.semanticSelectionService.selection
+                    ? <div className='athena-semantic-inspection__selection'>
+                        <strong>{this.semanticSelectionService.selection.label ?? this.semanticSelectionService.selection.semanticId}</strong><br />
+                        <code>{this.semanticSelectionService.selection.semanticId}</code>
+                    </div>
+                    : <p>No synchronized semantic selection is active yet.</p>}
             </section>
 
             <section className='athena-semantic-inspection__section'>
                 <h3>Document state</h3>
-                <ul>
-                    <li>Version: {inspection.version}</li>
-                    <li>Semantic path: {sessionState.semanticPath ?? 'frontend -> LSP -> runtime/compiler'}</li>
-                    <li>Current editor: <code>{currentEditor.editor.uri.toString()}</code></li>
+                <ul className='athena-semantic-inspection__detail-list'>
+                    <li><span>Version</span><strong>{inspection.version}</strong></li>
+                    <li><span>Semantic path</span><strong>{sessionState.semanticPath ?? 'frontend -> LSP -> runtime/compiler'}</strong></li>
+                    <li><span>Current editor</span><strong><code>{currentEditor.editor.uri.toString()}</code></strong></li>
                 </ul>
             </section>
 
@@ -220,7 +225,7 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
                 <h3>Diagnostics</h3>
                 {inspection.diagnosticSummaries.length === 0
                     ? <p>No diagnostics are currently attached to this tracked document state.</p>
-                    : <ul>
+                    : <ul className='athena-semantic-inspection__dense-list'>
                         {inspection.diagnosticSummaries.map(summary => <li key={summary}>{summary}</li>)}
                     </ul>}
             </section>
@@ -229,10 +234,19 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
                 <h3>Components</h3>
                 {inspection.components.length === 0
                     ? <p>No canonical components were derived from the current document state.</p>
-                    : <ul>
-                        {inspection.components.map(component => <li key={component.semanticId}>
-                            <strong>{component.name}</strong> <span>({component.kind})</span><br />
-                            <span>{component.properties}</span>
+                    : <ul className='athena-semantic-inspection__list'>
+                        {inspection.components.map(component => <li
+                            key={component.semanticId}
+                            className={`athena-semantic-inspection__item ${this.isSelected(component.semanticId) ? 'athena-semantic-inspection__item--selected' : ''}`}
+                        >
+                            <button
+                                className='athena-semantic-inspection__selectable'
+                                type='button'
+                                onClick={() => void this.semanticSelectionService.selectSemanticId(component.semanticId)}
+                            >
+                                <span className='athena-semantic-inspection__item-title'>{component.name} <span>({component.kind})</span></span>
+                                <span className='athena-semantic-inspection__item-meta'>{component.properties}</span>
+                            </button>
                         </li>)}
                     </ul>}
             </section>
@@ -241,10 +255,19 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
                 <h3>Ports</h3>
                 {inspection.ports.length === 0
                     ? <p>No canonical ports were derived from the current document state.</p>
-                    : <ul>
-                        {inspection.ports.map(port => <li key={port.semanticId}>
-                            <strong>{port.path}</strong><br />
-                            <span>{port.properties}</span>
+                    : <ul className='athena-semantic-inspection__list'>
+                        {inspection.ports.map(port => <li
+                            key={port.semanticId}
+                            className={`athena-semantic-inspection__item ${this.isSelected(port.semanticId) ? 'athena-semantic-inspection__item--selected' : ''}`}
+                        >
+                            <button
+                                className='athena-semantic-inspection__selectable'
+                                type='button'
+                                onClick={() => void this.semanticSelectionService.selectSemanticId(port.semanticId)}
+                            >
+                                <span className='athena-semantic-inspection__item-title'>{port.path}</span>
+                                <span className='athena-semantic-inspection__item-meta'>{port.properties}</span>
+                            </button>
                         </li>)}
                     </ul>}
             </section>
@@ -253,12 +276,25 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
                 <h3>Connections</h3>
                 {inspection.connections.length === 0
                     ? <p>No canonical connections are present in the current document state.</p>
-                    : <ul>
-                        {inspection.connections.map(connection => <li key={connection.semanticId}>
-                            <strong>{connection.fromPath}</strong> <span>-&gt;</span> <strong>{connection.toPath}</strong>
+                    : <ul className='athena-semantic-inspection__list'>
+                        {inspection.connections.map(connection => <li
+                            key={connection.semanticId}
+                            className={`athena-semantic-inspection__item ${this.isSelected(connection.semanticId) ? 'athena-semantic-inspection__item--selected' : ''}`}
+                        >
+                            <button
+                                className='athena-semantic-inspection__selectable'
+                                type='button'
+                                onClick={() => void this.semanticSelectionService.selectSemanticId(connection.semanticId)}
+                            >
+                                <span className='athena-semantic-inspection__item-title'>{connection.fromPath} <span>-&gt;</span> {connection.toPath}</span>
+                            </button>
                         </li>)}
                     </ul>}
             </section>
         </div>;
+    }
+
+    protected isSelected(semanticId: string): boolean {
+        return this.semanticSelectionService.selection?.semanticId === semanticId;
     }
 }

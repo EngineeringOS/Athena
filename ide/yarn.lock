@@ -842,6 +842,10 @@
     node-gyp "^12.2.0"
     read-binary-file-arch "^1.0.6"
 
+"@engineeringood/athena-graph-glsp@link:../integrations/graph-glsp":
+  version "0.0.0"
+  uid ""
+
 "@esbuild/aix-ppc64@0.24.2":
   version "0.24.2"
   resolved "https://registry.npmmirror.com/@esbuild/aix-ppc64/-/aix-ppc64-0.24.2.tgz#38848d3e25afe842a7943643cbcd387cc6e13461"

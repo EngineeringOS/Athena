@@ -23,6 +23,6 @@
   "scripts": {
     "clean": "rimraf lib *.tsbuildinfo",
     "build": "tsc -b --force",
-    "test": "yarn build && node --test scripts/athena-repository-bootstrapper.test.mjs"
+    "test": "yarn build && node --test scripts/athena-repository-bootstrapper.test.mjs scripts/athena-jvm-runtime-resolver.test.mjs scripts/athena-repository-session-manager.test.mjs"
   }
 }

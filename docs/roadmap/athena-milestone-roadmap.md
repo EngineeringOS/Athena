@@ -2,21 +2,22 @@
 
 ## Purpose
 
-This note records the current milestone sequence after the completed M5 proof.
+This note records the current milestone sequence after the completed M7 proof.
 
 Its job is to keep the next milestone boundaries explicit so later planning does not drift back to older draft-era meanings.
 
 ## Authority
 
-This roadmap follows the completed M5 PRD and M5 architecture spine.
+This roadmap follows the completed M7 PRD and M7 architecture spine.
 
 That means:
 
-- M5 is now complete as the repository/package graph milestone
-- M6 is the semantic SCM milestone
-- graphical projection remains later than both
+- M5 is complete as the repository/package graph milestone
+- M6 is complete as the semantic SCM milestone
+- M7 is complete as the first graphical projection and visual workbench milestone
+- the next milestone is not frozen in this note
 
-Older draft notes that assigned M5 or M6 to UI, AI, or GLSP research should now be treated as exploratory background, not as the active delivery contract.
+Older draft notes that assigned M5, M6, or M7 to UI-only, AI-first, or unresolved framework research should now be treated as exploratory background, not as the active delivery contract.
 
 ## Completed Milestones
 
@@ -28,8 +29,10 @@ Older draft notes that assigned M5 or M6 to UI, AI, or GLSP research should now 
 | M3 | done | stable plugin API, hosted plugin platform, external proof domains |
 | M4 | done | Theia desktop shell, repository session, Athena LSP, professional workbench, semantic inspection |
 | M5 | done | governed repository contract, deterministic package graph, canonical lock, repository graph session, package-aware IDE operation |
+| M6 | done | semantic baseline, semantic diff, review/commit/history, runtime/LSP/Theia semantic SCM panel |
+| M7 | done | projection model, runtime-owned projection sessions, graph adapter, graph-first workbench, first renderer proof |
 
-## Next Milestone Sequence
+## Milestone Notes
 
 ### M5 - Repository And Package Graph
 
@@ -61,47 +64,39 @@ What M5 did not become:
 
 ### M6 - Semantic SCM
 
-M6 comes after M5 freezes repository and package meaning.
+M6 is complete.
 
-Core objective:
+Proven outcome:
 
-> Lift source-control and review behavior from raw file mechanics into semantic repository and package meaning without replacing Git.
-
-Core scope:
-
-- a VCS-neutral semantic SCM boundary that sits above vendor storage mechanics
-- semantic diff
-- intent commit flows
-- semantic review flows
-- publish-oriented semantic history
-- package-aware change analysis
-
-What M6 is not:
-
-- basic package contract work that belongs to M5
-- graphical projection milestone
-- AI-first milestone
+- a VCS-neutral semantic SCM boundary above vendor storage mechanics
+- semantic diff, review, commit-intent, and publish-oriented history flows
+- runtime-owned semantic SCM state exposed through Athena LSP
+- Theia semantic SCM inspection as a downstream product surface
 
 ### M7 - Graphical Projection And Visual Workbench
 
-M7 is the first milestone where real graphical projection should become the center.
+M7 is complete.
 
-Core objective:
+Proven outcome:
 
-> Add a governed graphical projection path under the same semantic authority model proven by M0 to M6.
+- dedicated projection protocol and server boundary under runtime and `ide/lsp`
+- graph-first split workbench with source and graphical view visible together
+- infinite-canvas-style diagram surface and professional engineering-workbench density
+- inspect-first graphical review and navigation with transient frontend state by default
+- layout and presentation state kept downstream of canonical semantic state
+- explicit first graphical technology path recorded instead of left open-ended
 
-Core scope:
+What M7 did not become:
 
-- projection protocol and server boundary
-- read-only and later interactive graphical views
-- layout/presentation state kept downstream of canonical semantic state
-- future GLSP-class or equivalent graph architecture if still the best fit when M7 begins
+- a replacement for the Athena LSP path
+- canvas-owned engineering truth
+- a bypass around repository/package or semantic SCM contracts
+- full bidirectional graphical authoring
+- final QElectroTech/EPLAN-class domain depth in one step
 
-What M7 is not:
+Current architecture decision record:
 
-- replacing the LSP path
-- moving engineering truth into canvas state
-- bypassing repository/package or semantic SCM contracts
+- [`_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-09-m7/GRAPHICAL-TECHNOLOGY-DECISION.md`](../../_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-09-m7/GRAPHICAL-TECHNOLOGY-DECISION.md)
 
 ## Practical Backlog Placement
 
@@ -115,6 +110,8 @@ What M7 is not:
 | SCM abstraction above Git/vendor storage | M6 core |
 | semantic diff / semantic review | M6 core |
 | real diagram / graph canvas / GLSP-class projection | M7 core |
+| governed bidirectional code/graph edit-review | post-M7 milestone |
+| QElectroTech/EPLAN-class domain workbench depth | post-M7 milestone |
 
 ## Cross-Cutting Technical Watchpoints
 
@@ -148,6 +145,13 @@ If the answer is:
 
 If it is only IDE usability polish, it should attach to the current nearest milestone as supporting backlog, not replace the milestone core.
 
-## Immediate Recommendation
+## Post-M7 Carry-Forward
 
-The next planning cycle should start with M6 semantic SCM planning on top of the completed M5 repository/package graph foundation.
+The next milestone should build on the completed M7 proof instead of reopening it.
+
+Primary carry-forward items:
+
+- governed bidirectional code/graph edit and review
+- graph actions routed back through Athena commands and semantic authority
+- richer domain workbench behavior that can grow toward electrical and other industrial projections without fragmenting the core model
+- notation, symbol-pack, and renderer depth beyond the first relationship-forward proof

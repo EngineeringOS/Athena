@@ -4,6 +4,7 @@ import type { Command } from '@theia/core/lib/common/command';
 import { PROBLEMS_WIDGET_ID } from '@theia/markers/lib/browser/problem/problem-widget';
 import { FILE_NAVIGATOR_ID } from '@theia/navigator/lib/browser/navigator-widget';
 import { OutputWidget } from '@theia/output/lib/browser/output-widget';
+import { AthenaGraphWorkbenchWidget } from './athena-graph-workbench-widget';
 import { AthenaRepositoryGraphWidget } from './athena-repository-graph-widget';
 import { AthenaSemanticScmWidget } from './athena-semantic-scm-widget';
 import { AthenaSemanticInspectionWidget } from './athena-semantic-inspection-widget';
@@ -64,6 +65,12 @@ export namespace AthenaCommands {
         category: 'Athena',
         label: 'Reveal Repository Graph'
     };
+
+    export const REVEAL_GRAPHICAL_VIEW: Command = {
+        id: 'athena.revealGraphicalView',
+        category: 'Athena',
+        label: 'Reveal Graphical View'
+    };
 }
 
 export interface AthenaWorkbenchExtension {
@@ -101,10 +108,17 @@ export const ATHENA_WORKBENCH_EXTENSIONS: readonly AthenaWorkbenchExtension[] = 
         startupRank: 250
     },
     {
+        command: AthenaCommands.REVEAL_GRAPHICAL_VIEW,
+        widgetId: AthenaGraphWorkbenchWidget.ID,
+        area: 'main',
+        menuOrder: '5',
+        quickActionLabel: 'Graphical View'
+    },
+    {
         command: AthenaCommands.REVEAL_REPOSITORY_GRAPH,
         widgetId: AthenaRepositoryGraphWidget.ID,
         area: 'right',
-        menuOrder: '5',
+        menuOrder: '6',
         quickActionLabel: 'Repository Graph',
         startupRank: 300
     },
@@ -112,7 +126,7 @@ export const ATHENA_WORKBENCH_EXTENSIONS: readonly AthenaWorkbenchExtension[] = 
         command: AthenaCommands.REVEAL_SEMANTIC_SCM,
         widgetId: AthenaSemanticScmWidget.ID,
         area: 'right',
-        menuOrder: '6',
+        menuOrder: '7',
         quickActionLabel: 'Semantic SCM',
         startupRank: 350
     },
@@ -120,7 +134,7 @@ export const ATHENA_WORKBENCH_EXTENSIONS: readonly AthenaWorkbenchExtension[] = 
         command: AthenaCommands.REVEAL_SEMANTIC_INSPECTION,
         widgetId: AthenaSemanticInspectionWidget.ID,
         area: 'right',
-        menuOrder: '7',
+        menuOrder: '8',
         quickActionLabel: 'Semantic Inspection'
     }
 ];

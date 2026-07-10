@@ -1,4 +1,4 @@
-# `:kernel:repository-model`
+﻿# `:kernel:repository-model`
 
 [English](README.md) | 简体中文
 

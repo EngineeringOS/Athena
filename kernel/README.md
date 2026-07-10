@@ -15,6 +15,7 @@ The `kernel` group contains Athena's semantic backbone. These modules own the au
 - `:kernel:engineering-model` -> [`engineering-model/`](engineering-model/README.md)
 - `:kernel:layout-model` -> [`layout-model/`](layout-model/README.md)
 - `:kernel:geometry-model` -> [`geometry-model/`](geometry-model/README.md)
+- `:kernel:projection-model` -> [`projection-model/`](projection-model/README.md)
 - `:kernel:validation` -> [`validation/`](validation/README.md)
 - `:kernel:compiler` -> [`compiler/`](compiler/README.md)
 - `:kernel:runtime` -> [`runtime/`](runtime/README.md)
@@ -22,5 +23,5 @@ The `kernel` group contains Athena's semantic backbone. These modules own the au
 
 ## Boundary
 
-The kernel owns semantic authority. Extensions, UI, and apps may depend on it, but they should not redefine the authored source, the canonical model, or the compiler/runtime ownership rules. `:kernel:repository-model` is the dedicated M5 repository/package contract boundary, `:kernel:semantic-scm` is the dedicated M6 semantic SCM boundary above repository/package meaning, `:kernel:plugins:plugin-api` is the dedicated extension-facing boundary, and `:kernel:plugins:plugin-host` owns hosted source, approval, and approved-inventory governance separate from both compiler and runtime orchestration.
+The kernel owns semantic authority. Extensions, UI, and apps may depend on it, but they should not redefine the authored source, the canonical model, or the compiler/runtime ownership rules. `:kernel:repository-model` is the dedicated M5 repository/package contract boundary, `:kernel:semantic-scm` is the dedicated M6 semantic SCM boundary above repository/package meaning, `:kernel:projection-model` is the dedicated M7 renderer-neutral graphical projection boundary above geometry and below runtime/LSP transport, `:kernel:plugins:plugin-api` is the dedicated extension-facing boundary, and `:kernel:plugins:plugin-host` owns hosted source, approval, and approved-inventory governance separate from both compiler and runtime orchestration.
 

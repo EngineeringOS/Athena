@@ -5,6 +5,7 @@ const common_frontend_contribution_1 = require("@theia/core/lib/browser/common-f
 const problem_widget_1 = require("@theia/markers/lib/browser/problem/problem-widget");
 const navigator_widget_1 = require("@theia/navigator/lib/browser/navigator-widget");
 const output_widget_1 = require("@theia/output/lib/browser/output-widget");
+const athena_graph_workbench_widget_1 = require("./athena-graph-workbench-widget");
 const athena_repository_graph_widget_1 = require("./athena-repository-graph-widget");
 const athena_semantic_scm_widget_1 = require("./athena-semantic-scm-widget");
 const athena_semantic_inspection_widget_1 = require("./athena-semantic-inspection-widget");
@@ -56,6 +57,11 @@ var AthenaCommands;
         category: 'Athena',
         label: 'Reveal Repository Graph'
     };
+    AthenaCommands.REVEAL_GRAPHICAL_VIEW = {
+        id: 'athena.revealGraphicalView',
+        category: 'Athena',
+        label: 'Reveal Graphical View'
+    };
 })(AthenaCommands || (exports.AthenaCommands = AthenaCommands = {}));
 exports.ATHENA_WORKBENCH_EXTENSIONS = [
     {
@@ -83,10 +89,17 @@ exports.ATHENA_WORKBENCH_EXTENSIONS = [
         startupRank: 250
     },
     {
+        command: AthenaCommands.REVEAL_GRAPHICAL_VIEW,
+        widgetId: athena_graph_workbench_widget_1.AthenaGraphWorkbenchWidget.ID,
+        area: 'main',
+        menuOrder: '5',
+        quickActionLabel: 'Graphical View'
+    },
+    {
         command: AthenaCommands.REVEAL_REPOSITORY_GRAPH,
         widgetId: athena_repository_graph_widget_1.AthenaRepositoryGraphWidget.ID,
         area: 'right',
-        menuOrder: '5',
+        menuOrder: '6',
         quickActionLabel: 'Repository Graph',
         startupRank: 300
     },
@@ -94,7 +107,7 @@ exports.ATHENA_WORKBENCH_EXTENSIONS = [
         command: AthenaCommands.REVEAL_SEMANTIC_SCM,
         widgetId: athena_semantic_scm_widget_1.AthenaSemanticScmWidget.ID,
         area: 'right',
-        menuOrder: '6',
+        menuOrder: '7',
         quickActionLabel: 'Semantic SCM',
         startupRank: 350
     },
@@ -102,7 +115,7 @@ exports.ATHENA_WORKBENCH_EXTENSIONS = [
         command: AthenaCommands.REVEAL_SEMANTIC_INSPECTION,
         widgetId: athena_semantic_inspection_widget_1.AthenaSemanticInspectionWidget.ID,
         area: 'right',
-        menuOrder: '7',
+        menuOrder: '8',
         quickActionLabel: 'Semantic Inspection'
     }
 ];

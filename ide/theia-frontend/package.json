@@ -5,6 +5,7 @@
   "description": "Athena frontend contributions for the Theia product shell.",
   "license": "MIT",
   "dependencies": {
+    "@engineeringood/athena-graph-glsp": "link:../../integrations/graph-glsp",
     "@theia/core": "1.73.1",
     "@theia/editor": "1.73.1",
     "@theia/filesystem": "1.73.1",
@@ -30,6 +31,7 @@
   },
   "scripts": {
     "clean": "rimraf lib *.tsbuildinfo",
-    "build": "tsc -b --force"
+    "build": "tsc -b --force",
+    "test": "yarn build && node --test scripts/*.test.mjs"
   }
 }

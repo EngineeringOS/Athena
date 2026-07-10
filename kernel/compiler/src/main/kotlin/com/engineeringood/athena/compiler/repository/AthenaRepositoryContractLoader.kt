@@ -80,12 +80,12 @@ class AthenaRepositoryContractLoader {
             )
         }
 
-        if (!lockPresent) {
+        if (options.requireLockFile && !lockPresent) {
             diagnostics += diagnostic(
                 code = "repository.contract.lock.missing",
                 message = "Repository root must contain `$LOCK_FILE_NAME`.",
             )
-        } else if (!Files.isRegularFile(lockPath)) {
+        } else if (lockPresent && !Files.isRegularFile(lockPath)) {
             diagnostics += diagnostic(
                 code = "repository.contract.lock.not-file",
                 message = "Repository root `$LOCK_FILE_NAME` must be a regular file.",

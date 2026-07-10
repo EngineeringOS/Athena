@@ -1,4 +1,4 @@
-# `ide/lsp`
+﻿# `ide/lsp`
 
 [English](README.md) | 简体中文
 
@@ -14,8 +14,19 @@
 - 由 Athena 自有文档状态驱动的 `textDocument/completion`、`textDocument/documentSymbol`、`textDocument/definition` 与 `textDocument/references`
 - 具备版本感知的 tracked document state，在重复编辑时拒绝陈旧回滚
 - 面向 baseline-driven review、commit-preparation 与 package-history state 的增量语义 SCM 请求表面
+- 面向 runtime-owned graphical state inspection 的增量 projection-session 请求表面
+- 面向 inspect-first graphical interaction 的显式 governed projection-command allowlist，目前仅包含 active-view switching
 - 后续故事中的 hover、rename 与更丰富的 workspace navigation
 
 ## 边界
 
-Story `2.4` 把这个包从 authoring transport 扩展为第一条 semantic SCM projection bridge。Story `3.3` 再沿用同一条增量桥接路径，把 package evolution 与 release relevance 也投影到现有产品边界。Theia 可以负责进程生命周期与传输，但语义访问必须继续经由这里的 LSP 方法流动，而不是直接调用 `kernel/*`。
+Story `2.4` 把这个包从 authoring transport 扩展为第一条 semantic SCM projection bridge。Story `3.3` 再沿用同一条增量桥接路径，把 package evolution 与 release relevance 也投影到现有产品边界。M7 Story `1.4` 在此基础上增加了面向 runtime-owned projection session 的 typed query，以及一个受治理的 projection-command seam。
+
+Theia 可以负责进程生命周期与传输，但语义或 projection 访问必须继续经由这里的 LSP 方法流动，而不是直接调用 `kernel/*`。
+
+当前 M7 projection boundary 故意保持狭窄：
+
+- `athena/projectionSession` 返回 runtime-owned supported views、active view state、可检查的 ready 或 unavailable projection payload，以及已发布的 command allowlist
+- unavailable projection payload 会保留底层 runtime diagnostic；当上游失败暴露 stable code 与 provenance 时，这些细节也会一并透出
+- `athena/projectionCommand` 只接受 Athena allowlist 中的 projection action，而不是暴露通用 runtime tunnel
+- hosted plugin commands、graph-framework commands 与任意 frontend-local actions 都不是这里的公开传输契约

@@ -7,6 +7,8 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotSame
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class AthenaRuntimeProjectionSessionTest {
@@ -29,8 +31,10 @@ class AthenaRuntimeProjectionSessionTest {
         assertEquals("DemoCabinet", ready.scene.systemName)
         assertEquals(480, ready.scene.canvasWidth)
         assertEquals(172, ready.scene.canvasHeight)
+        assertEquals(listOf("electrical-runtime.render.cabinet"), ready.activeRenderContributions.map { contribution -> contribution.contributionId })
         assertEquals(2, ready.scene.components.size)
         assertEquals(1, ready.scene.connections.size)
+        assertEquals(2, ready.scene.labels.size)
     }
 
     @Test
@@ -53,8 +57,10 @@ class AthenaRuntimeProjectionSessionTest {
         assertEquals("wiring", ready.viewId)
         assertEquals(490, ready.scene.canvasWidth)
         assertEquals(244, ready.scene.canvasHeight)
+        assertEquals(listOf("electrical-runtime.render.wiring"), ready.activeRenderContributions.map { contribution -> contribution.contributionId })
         assertEquals(2, ready.scene.components.size)
         assertEquals(1, ready.scene.connections.size)
+        assertEquals(2, ready.scene.labels.size)
 
         val afterDocument = assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document
         assertEquals(baselineDocument, afterDocument)
@@ -62,6 +68,68 @@ class AthenaRuntimeProjectionSessionTest {
         val legacyProjection = assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection())
         assertEquals(490, legacyProjection.scene.canvasWidth)
         assertEquals(244, legacyProjection.scene.canvasHeight)
+    }
+
+    @Test
+    fun `projection session cache stays stable until runtime invalidates it`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+
+        val firstSession = context.projectProjectionSession()
+        val secondSession = context.projectProjectionSession()
+
+        assertSame(firstSession, secondSession)
+
+        val switchResult = assertIs<AthenaRuntimeProjectionSwitchSuccess>(context.switchActiveProjectionView("wiring"))
+        assertNotSame(firstSession, switchResult.session)
+        assertSame(switchResult.session, context.projectProjectionSession())
+        assertEquals("wiring", switchResult.session.activeViewId)
+    }
+
+    @Test
+    fun `projection preview can follow in memory compilation without mutating runtime owned cache`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+        val baselineSession = context.projectProjectionSession()
+        val editedCompilation = context.compiler().compile(
+            sourcePath,
+            """
+                system DemoCabinet {
+                  device PLC1 {
+                    type Switch
+                    model "S7-1200"
+                  }
+
+                  device M1 {
+                    type Motor
+                  }
+
+                  port PLC1.out {
+                    direction out
+                    signal Digital
+                  }
+
+                  port M1.in {
+                    direction in
+                    signal Digital
+                  }
+                }
+            """.trimIndent(),
+        )
+
+        val previewSession = context.previewProjectionSession(editedCompilation)
+
+        assertEquals(0, assertIs<AthenaRuntimeProjectionReadySnapshot>(previewSession.activeProjection).scene.connections.size)
+        assertSame(baselineSession, context.projectProjectionSession())
+        assertEquals(1, assertIs<AthenaRuntimeProjectionReadySnapshot>(baselineSession.activeProjection).scene.connections.size)
     }
 
     @Test

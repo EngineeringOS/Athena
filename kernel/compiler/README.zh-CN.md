@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-`:kernel:compiler` 模块是 Athena 的编译编排核心。它公开编译器门面，拥有编译流水线报告，协调领域语义，解析受治理的知识包，校验外部边界描述符，加载并验证受治理的 Athena 仓库根契约，推导显式的 `Layout IR` 与 `Geometry IR`，并驱动第一条基于几何结果的下游后端路径。
+`:kernel:compiler` 模块是 Athena 的编译编排核心。它公开编译器门面，拥有编译流水线报告，协调领域语义，解析受治理的知识包，校验外部边界描述符，加载并验证受治理的 Athena 仓库根契约，推导显式的 `Layout IR`、`Geometry IR` 与渲染器中立的 `projection-model` 文档，并驱动第一条基于几何结果的下游后端路径。
 
 ## 职责
 
@@ -12,6 +12,7 @@
 - 运行通用语义校验与领域插件校验。
 - 从规范 `Engineering IR` 与类型化 `ViewDefinition` 贡献推导受支持的 `Layout IR`。
 - 从显式 `Layout IR` 推导受支持的 `Geometry IR`。
+- 从 `Geometry IR` 与 layout-owned `ViewDefinition` 推导受支持的 `ProjectionDocument`。
 - 消费 `:kernel:plugins:plugin-api` 提供的稳定公共 SPI。
 - 消费由 `:kernel:plugins:plugin-host` 治理的已批准插件清单。
 - 加载并解析受治理知识包。
@@ -51,6 +52,7 @@ Story `2.3` 为 M2 引入了第一条窄范围增量重算证明：
 - `:kernel:engineering-model`
 - `:kernel:layout-model`
 - `:kernel:geometry-model`
+- `:kernel:projection-model`
 - `:kernel:repository-model`
 - `:kernel:svg-renderer`
 
@@ -60,7 +62,7 @@ Story `2.3` 为 M2 引入了第一条窄范围增量重算证明：
 
 ## 边界
 
-该模块不拥有 DSL 语法本身，不拥有规范 IR 结构，不拥有公共插件 SPI，不拥有宿主插件 source 或 approval 治理，也不拥有具体的 Electrical/Runtime 领域规则。它负责编排这些部分，同时保持架构规则不变：DSL 是作者输入源，`Engineering IR` 是规范模型，`Layout IR` 是第一层显式下游投影，`Geometry IR` 是面向 renderer 的下游层，而 renderer 是消费 geometry 的后端，而不是语义捷径。
+该模块不拥有 DSL 语法本身，不拥有规范 IR 结构，不拥有公共插件 SPI，不拥有宿主插件 source 或 approval 治理，也不拥有具体的 Electrical/Runtime 领域规则。它负责编排这些部分，同时保持架构规则不变：DSL 是作者输入源，`Engineering IR` 是规范模型，`Layout IR` 是第一层显式下游投影，`Geometry IR` 是几何层下游结果，`:kernel:projection-model` 是位于 runtime、LSP 与图适配器之上的渲染器中立图形投影边界，而 renderer 仍然只是下游后端，不是语义捷径。
 
 ## 验证
 

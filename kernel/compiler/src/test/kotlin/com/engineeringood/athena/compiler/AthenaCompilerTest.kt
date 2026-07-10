@@ -41,7 +41,18 @@ import com.engineeringood.athena.domain.dummyruntime.DummyRuntimeDomainPlugin
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
 import com.engineeringood.athena.plugin.AthenaCoreRuntime
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaRenderSurface
+import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
+import com.engineeringood.athena.projection.ProjectionBounds
+import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionConnectionId
+import com.engineeringood.athena.projection.ProjectionDocument
+import com.engineeringood.athena.projection.ProjectionLabel
+import com.engineeringood.athena.projection.ProjectionLabelId
+import com.engineeringood.athena.projection.ProjectionNode
+import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionPoint
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -119,8 +130,11 @@ class AthenaCompilerTest {
                     CompilerRenderContributionAttribution(
                         pluginId = "com.engineeringood.athena.domain.electrical-runtime",
                         contributionId = "electrical-runtime.render.cabinet",
+                        displayName = "Electrical cabinet rendering intent",
+                        description = "Publishes cabinet-view visual intent for hosted electrical structure without taking renderer ownership.",
                         viewIds = setOf("cabinet"),
-                        rendererTargets = setOf("svg"),
+                        rendererTargets = setOf("svg", "graph-workbench"),
+                        surfaceMappings = expectedCabinetSurfaceMappings(),
                     ),
                 ),
             ),
@@ -133,6 +147,10 @@ class AthenaCompilerTest {
         assertEquals(
             listOf(expectedCabinetGeometry(), expectedWiringGeometry()),
             success.geometries,
+        )
+        assertEquals(
+            listOf(expectedCabinetProjection(), expectedWiringProjection()),
+            success.projections,
         )
     }
 
@@ -147,10 +165,13 @@ class AthenaCompilerTest {
         assertEquals(listOf("cabinet", "wiring"), compiler.supportedViewDefinitions().map { definition -> definition.id })
         assertEquals(first.layouts, second.layouts)
         assertEquals(first.geometries, second.geometries)
+        assertEquals(first.projections, second.projections)
         assertEquals(expectedCabinetLayout(), first.layouts.first { layout -> layout.view.id == "cabinet" })
         assertEquals(expectedWiringLayout(), first.layouts.first { layout -> layout.view.id == "wiring" })
         assertEquals(expectedCabinetGeometry(), first.geometries.first { geometry -> geometry.viewId == "cabinet" })
         assertEquals(expectedWiringGeometry(), first.geometries.first { geometry -> geometry.viewId == "wiring" })
+        assertEquals(expectedCabinetProjection(), first.projections.first { projection -> projection.view.id == "cabinet" })
+        assertEquals(expectedWiringProjection(), first.projections.first { projection -> projection.view.id == "wiring" })
     }
 
     @Test
@@ -166,20 +187,28 @@ class AthenaCompilerTest {
                 CompilerRenderContributionAttribution(
                     pluginId = "com.engineeringood.athena.domain.dummy-runtime",
                     contributionId = "dummy-runtime.render.synthetic-panel",
+                    displayName = "Dummy render intent",
+                    description = "Publishes synthetic renderer-facing intent without widening the default global view-definition set.",
                     viewIds = setOf("dummy-panel"),
                     rendererTargets = setOf("svg"),
                 ),
                 CompilerRenderContributionAttribution(
                     pluginId = "com.engineeringood.athena.domain.electrical-runtime",
                     contributionId = "electrical-runtime.render.cabinet",
+                    displayName = "Electrical cabinet rendering intent",
+                    description = "Publishes cabinet-view visual intent for hosted electrical structure without taking renderer ownership.",
                     viewIds = setOf("cabinet"),
-                    rendererTargets = setOf("svg"),
+                    rendererTargets = setOf("svg", "graph-workbench"),
+                    surfaceMappings = expectedCabinetSurfaceMappings(),
                 ),
                 CompilerRenderContributionAttribution(
                     pluginId = "com.engineeringood.athena.domain.electrical-runtime",
                     contributionId = "electrical-runtime.render.wiring",
+                    displayName = "Electrical wiring rendering intent",
+                    description = "Publishes wiring-view visual intent for hosted electrical connectivity without taking renderer ownership.",
                     viewIds = setOf("wiring"),
-                    rendererTargets = setOf("svg"),
+                    rendererTargets = setOf("svg", "graph-workbench"),
+                    surfaceMappings = expectedWiringSurfaceMappings(),
                 ),
             ),
             compiler.supportedRenderContributions(),
@@ -1433,6 +1462,62 @@ class AthenaCompilerTest {
         return Files.readString(resolveRepoRoot().resolve("examples/m0/demo-cabinet.svg")).trimEnd()
     }
 
+    private fun expectedCabinetSurfaceMappings(): List<AthenaRenderSurfaceMapping> {
+        return listOf(
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.CANVAS,
+                tokens = mapOf(
+                    "canvasTint" to "rgba(22, 18, 12, 0.92)",
+                    "gridMajor" to "rgba(209, 151, 67, 0.16)",
+                    "gridMinor" to "rgba(209, 151, 67, 0.06)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.NODE,
+                tokens = mapOf(
+                    "fill" to "rgba(52, 38, 21, 0.88)",
+                    "stroke" to "rgba(224, 176, 92, 0.94)",
+                    "label" to "#fff3d9",
+                    "meta" to "rgba(235, 206, 150, 0.84)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.EDGE,
+                tokens = mapOf(
+                    "stroke" to "rgba(240, 191, 98, 0.92)",
+                ),
+            ),
+        )
+    }
+
+    private fun expectedWiringSurfaceMappings(): List<AthenaRenderSurfaceMapping> {
+        return listOf(
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.CANVAS,
+                tokens = mapOf(
+                    "canvasTint" to "rgba(9, 24, 33, 0.94)",
+                    "gridMajor" to "rgba(95, 207, 240, 0.16)",
+                    "gridMinor" to "rgba(95, 207, 240, 0.06)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.NODE,
+                tokens = mapOf(
+                    "fill" to "rgba(15, 42, 56, 0.9)",
+                    "stroke" to "rgba(101, 216, 247, 0.96)",
+                    "label" to "#e8fbff",
+                    "meta" to "rgba(158, 225, 240, 0.82)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.EDGE,
+                tokens = mapOf(
+                    "stroke" to "rgba(96, 223, 255, 0.94)",
+                ),
+            ),
+        )
+    }
+
     private fun expectedCabinetLayout(): LayoutDocument {
         val plcComponentLayoutId = LayoutNodeId("cabinet/node/component_PLC1")
         val plcPortLayoutId = LayoutNodeId("cabinet/node/port_PLC1_out")
@@ -1737,6 +1822,104 @@ class AthenaCompilerTest {
                         GeometryPoint(x = 345, y = 81),
                         GeometryPoint(x = 390, y = 81),
                     ),
+                ),
+            ),
+        )
+    }
+
+    private fun expectedCabinetProjection(): ProjectionDocument {
+        return ProjectionDocument(
+            view = cabinetViewDefinition(),
+            canvasWidth = 480,
+            canvasHeight = 172,
+            nodes = listOf(
+                ProjectionNode(
+                    projectionId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
+                    semanticId = StableSemanticIdentity("component:PLC1"),
+                    label = "PLC1",
+                    bounds = ProjectionBounds(x = 40, y = 60, width = 140, height = 72),
+                    originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_PLC1"),
+                ),
+                ProjectionNode(
+                    projectionId = ProjectionNodeId("cabinet/projection/node/component_M1"),
+                    semanticId = StableSemanticIdentity("component:M1"),
+                    label = "M1",
+                    bounds = ProjectionBounds(x = 300, y = 60, width = 140, height = 72),
+                    originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_M1"),
+                ),
+            ),
+            connections = listOf(
+                ProjectionConnection(
+                    projectionId = ProjectionConnectionId("cabinet/projection/connection/connection_PLC1_out_M1_in"),
+                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    start = ProjectionPoint(x = 104, y = 86),
+                    end = ProjectionPoint(x = 316, y = 86),
+                    originGeometryElementId = GeometryElementId("cabinet/geometry/path/connection_PLC1_out_M1_in"),
+                ),
+            ),
+            labels = listOf(
+                ProjectionLabel(
+                    projectionId = ProjectionLabelId("cabinet/projection/label/port_PLC1_out"),
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    label = "out",
+                    bounds = ProjectionBounds(x = 56, y = 78, width = 48, height = 16),
+                    originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_PLC1_out"),
+                ),
+                ProjectionLabel(
+                    projectionId = ProjectionLabelId("cabinet/projection/label/port_M1_in"),
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    label = "in",
+                    bounds = ProjectionBounds(x = 316, y = 78, width = 48, height = 16),
+                    originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_M1_in"),
+                ),
+            ),
+        )
+    }
+
+    private fun expectedWiringProjection(): ProjectionDocument {
+        return ProjectionDocument(
+            view = wiringViewDefinition(),
+            canvasWidth = 490,
+            canvasHeight = 244,
+            nodes = listOf(
+                ProjectionNode(
+                    projectionId = ProjectionNodeId("wiring/projection/node/component_PLC1"),
+                    semanticId = StableSemanticIdentity("component:PLC1"),
+                    label = "PLC1",
+                    bounds = ProjectionBounds(x = 40, y = 40, width = 110, height = 44),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/box/component_PLC1"),
+                ),
+                ProjectionNode(
+                    projectionId = ProjectionNodeId("wiring/projection/node/component_M1"),
+                    semanticId = StableSemanticIdentity("component:M1"),
+                    label = "M1",
+                    bounds = ProjectionBounds(x = 40, y = 160, width = 110, height = 44),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/box/component_M1"),
+                ),
+            ),
+            connections = listOf(
+                ProjectionConnection(
+                    projectionId = ProjectionConnectionId("wiring/projection/connection/connection_PLC1_out_M1_in"),
+                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    start = ProjectionPoint(x = 300, y = 81),
+                    end = ProjectionPoint(x = 390, y = 81),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/path/connection_PLC1_out_M1_in"),
+                ),
+            ),
+            labels = listOf(
+                ProjectionLabel(
+                    projectionId = ProjectionLabelId("wiring/projection/label/port_PLC1_out"),
+                    semanticId = StableSemanticIdentity("port:PLC1.out"),
+                    label = "out",
+                    bounds = ProjectionBounds(x = 240, y = 72, width = 60, height = 18),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_PLC1_out"),
+                ),
+                ProjectionLabel(
+                    projectionId = ProjectionLabelId("wiring/projection/label/port_M1_in"),
+                    semanticId = StableSemanticIdentity("port:M1.in"),
+                    label = "in",
+                    bounds = ProjectionBounds(x = 390, y = 72, width = 60, height = 18),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_M1_in"),
                 ),
             ),
         )

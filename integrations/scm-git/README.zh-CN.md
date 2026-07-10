@@ -1,4 +1,4 @@
-# `:integrations:scm-git`
+﻿# `:integrations:scm-git`
 
 [English](README.md) | 简体中文
 

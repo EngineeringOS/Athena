@@ -174,41 +174,26 @@ export class AthenaRepositoryGraphWidget extends ReactWidget {
                 </div>
             </header>
 
-            <section className='athena-repository-graph__metrics'>
-                <article className='athena-repository-graph__metric'>
-                    <span className='athena-repository-graph__metric-value'>{graphSession.resolvedPackages.length}</span>
-                    <span className='athena-repository-graph__metric-label'>Resolved packages</span>
-                </article>
-                <article className='athena-repository-graph__metric'>
-                    <span className='athena-repository-graph__metric-value'>{graphSession.manifestDependencies.length}</span>
-                    <span className='athena-repository-graph__metric-label'>Manifest dependencies</span>
-                </article>
-                <article className='athena-repository-graph__metric'>
-                    <span className='athena-repository-graph__metric-value'>{graphSession.diagnostics.length}</span>
-                    <span className='athena-repository-graph__metric-label'>Package diagnostics</span>
-                </article>
-                <article className='athena-repository-graph__metric'>
-                    <span className='athena-repository-graph__metric-value'>{graphSession.lockState}</span>
-                    <span className='athena-repository-graph__metric-label'>Lock state</span>
-                </article>
+            <section className='athena-repository-graph__summary'>
+                <ul className='athena-repository-graph__summary-list'>
+                    <li><span>Resolved packages</span><strong>{graphSession.resolvedPackages.length}</strong></li>
+                    <li><span>Manifest dependencies</span><strong>{graphSession.manifestDependencies.length}</strong></li>
+                    <li><span>Package diagnostics</span><strong>{graphSession.diagnostics.length}</strong></li>
+                    <li><span>Lock state</span><strong>{graphSession.lockState}</strong></li>
+                </ul>
             </section>
 
             <section className='athena-repository-graph__section'>
                 <h3>Repository contract</h3>
-                <ul>
-                    <li>Manifest: <code>{graphSession.manifestPath}</code></li>
-                    <li>Lock: <code>{graphSession.lockPath}</code></li>
-                    <li>Governed source root: <code>{graphSession.sourceRootPath}</code></li>
-                    <li>Authored source: <code>{graphSession.sourcePath}</code></li>
-                    <li>Project key: {graphSession.projectName}</li>
-                    <li>Semantic path: {graphSession.semanticPath}</li>
-                    <li>Last Athena editor: {graphSession.lastOpenedDocumentUri ?? 'Not opened yet'}</li>
-                    <li>
-                        Lock status:
-                        <span className={`athena-repository-graph__pill athena-repository-graph__pill--${lockStateTone}`}>
-                            {graphSession.lockState}
-                        </span>
-                    </li>
+                <ul className='athena-repository-graph__detail-list'>
+                    <li><span>Manifest</span><strong><code>{graphSession.manifestPath}</code></strong></li>
+                    <li><span>Lock</span><strong><code>{graphSession.lockPath}</code></strong></li>
+                    <li><span>Governed source root</span><strong><code>{graphSession.sourceRootPath}</code></strong></li>
+                    <li><span>Authored source</span><strong><code>{graphSession.sourcePath}</code></strong></li>
+                    <li><span>Project key</span><strong>{graphSession.projectName}</strong></li>
+                    <li><span>Semantic path</span><strong>{graphSession.semanticPath}</strong></li>
+                    <li><span>Last Athena editor</span><strong>{graphSession.lastOpenedDocumentUri ?? 'Not opened yet'}</strong></li>
+                    <li><span>Lock status</span><strong><span className={`athena-repository-graph__pill athena-repository-graph__pill--${lockStateTone}`}>{graphSession.lockState}</span></strong></li>
                 </ul>
             </section>
 
@@ -244,8 +229,8 @@ export class AthenaRepositoryGraphWidget extends ReactWidget {
     protected renderDependency(dependency: AthenaRepositoryManifestDependencyPayload): React.ReactNode {
         const dependencyTarget = dependency.locator ?? dependency.version ?? 'unspecified';
         return <li key={`${dependency.name}:${dependency.source}:${dependencyTarget}`} className='athena-repository-graph__item'>
-            <strong>{dependency.name}</strong>
-            <div>{dependency.source} | {dependencyTarget}</div>
+            <span className='athena-repository-graph__item-title'>{dependency.name}</span>
+            <span className='athena-repository-graph__item-meta'>{dependency.source} | {dependencyTarget}</span>
         </li>;
     }
 
@@ -257,9 +242,9 @@ export class AthenaRepositoryGraphWidget extends ReactWidget {
             ? 'No direct dependencies'
             : resolvedPackage.directDependencies.join(', ');
         return <li key={`${resolvedPackage.name}:${resolvedPackage.sourceRoot}`} className='athena-repository-graph__item'>
-            <strong>{packageLabel}</strong>
-            <div><code>{resolvedPackage.sourceRoot}</code></div>
-            <div>{dependencies}</div>
+            <span className='athena-repository-graph__item-title'>{packageLabel}</span>
+            <span className='athena-repository-graph__item-meta'><code>{resolvedPackage.sourceRoot}</code></span>
+            <span className='athena-repository-graph__item-meta'>{dependencies}</span>
         </li>;
     }
 

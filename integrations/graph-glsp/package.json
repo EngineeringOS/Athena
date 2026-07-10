@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "name": "@engineeringood/athena-graph-glsp",
+  "version": "0.0.1",
+  "description": "Translation-only GLSP adapter for Athena projection sessions.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "src",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"const fs = require('node:fs'); fs.rmSync('lib', { recursive: true, force: true }); fs.rmSync('tsconfig.tsbuildinfo', { force: true });\"",
+    "build": "yarn install --frozen-lockfile --silent && tsc -b --force",
+    "test": "yarn build && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

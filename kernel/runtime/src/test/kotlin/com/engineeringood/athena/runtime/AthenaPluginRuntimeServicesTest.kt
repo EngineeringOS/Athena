@@ -350,8 +350,20 @@ class AthenaPluginRuntimeServicesTest {
             electricalContribution.renderContributions.map { contribution -> contribution.viewIds },
         )
         assertEquals(
-            listOf(setOf("svg"), setOf("svg")),
+            listOf(
+                setOf("svg", "graph-workbench"),
+                setOf("svg", "graph-workbench"),
+            ),
             electricalContribution.renderContributions.map { contribution -> contribution.rendererTargets },
+        )
+        assertEquals(
+            listOf(
+                listOf("canvas", "node", "edge"),
+                listOf("canvas", "node", "edge"),
+            ),
+            electricalContribution.renderContributions.map { contribution ->
+                contribution.surfaceMappings.map { mapping -> mapping.surface.name.lowercase() }
+            },
         )
     }
 

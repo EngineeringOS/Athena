@@ -2,7 +2,7 @@
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
-The `ide` group is Athena's primary desktop-first product path. It now hosts the runnable Eclipse Theia based Athena shell, the M5 repository seams, and the current M6 semantic SCM plus package-history workbench projections.
+The `ide` group is Athena's primary desktop-first product path. It now hosts the runnable Eclipse Theia based Athena shell, the M5 repository seams, the current M6 semantic SCM plus package-history workbench projections, and the first M7 graphical workbench surface.
 
 ## Scope
 
@@ -22,12 +22,15 @@ It currently establishes:
 - the Athena-owned completion, document-symbol, definition, and references path through the same LSP boundary
 - the repeated-edit stability path that keeps diagnostics and navigation aligned with the latest in-memory Athena state
 - the additive Athena semantic SCM workbench panel that now projects baseline-driven review, commit-preparation, package evolution, and release relevance through the existing backend plus LSP bridge
+- the additive Athena graphical workbench panel that now projects runtime-owned node and relationship views through the graph adapter boundary without moving projection authority into the frontend
+- the first synchronized semantic-selection path that now keeps graphical selection, source reveal, semantic inspection, and semantic SCM context aligned through canonical semantic ids
+- the first inspect-first graphical interaction path that now keeps active-view switching governed by the Athena runtime command allowlist and discards stale transient selection on projection refresh
 
 It does not yet deliver:
 
 - full hover, rename, formatting, and richer multi-file language tooling coverage through Athena LSP
 - syntax highlighting or semantic tokens for `.athena`
-- graphical projection tooling
+- richer review overlays or richer governed graphical interaction
 
 ## Packages
 

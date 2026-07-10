@@ -2,7 +2,7 @@ import * as monaco from '@theia/monaco-editor-core';
 import { DisposableCollection } from '@theia/core/lib/common/disposable';
 import { FrontendApplication, FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { MessageService } from '@theia/core';
-import { CompletionItem, DocumentSymbol, Location } from '@theia/core/shared/vscode-languageserver-protocol';
+import { CompletionItem, DocumentSymbol, Location, Range } from '@theia/core/shared/vscode-languageserver-protocol';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
@@ -27,16 +27,19 @@ export type AthenaSemanticInspectionComponent = {
     name: string;
     kind: string;
     properties: string;
+    sourceRange: Range;
 };
 export type AthenaSemanticInspectionPort = {
     semanticId: string;
     path: string;
     properties: string;
+    sourceRange: Range;
 };
 export type AthenaSemanticInspectionConnection = {
     semanticId: string;
     fromPath: string;
     toPath: string;
+    sourceRange: Range;
 };
 export type AthenaSemanticInspectionPayload = {
     uri: string;
@@ -235,6 +238,89 @@ export type AthenaRepositoryGraphSessionPayload = {
     resolvedPackages: AthenaRepositoryResolvedPackagePayload[];
     diagnostics: AthenaRepositoryDiagnosticPayload[];
 };
+export type AthenaProjectionViewPayload = {
+    viewId: string;
+    displayName: string;
+    description: string;
+};
+export type AthenaProjectionGovernedCommandPayload = {
+    commandId: string;
+    displayName: string;
+    description: string;
+    requiredArguments: string[];
+};
+export type AthenaProjectionComponentPayload = {
+    semanticId: string;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+export type AthenaProjectionConnectionPayload = {
+    semanticId: string;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+};
+export type AthenaProjectionLabelPayload = {
+    semanticId: string;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+export type AthenaProjectionReadyPayload = {
+    viewId: string;
+    systemName: string;
+    canvasWidth: number;
+    canvasHeight: number;
+    activeRenderContributions: AthenaProjectionRenderContributionPayload[];
+    components: AthenaProjectionComponentPayload[];
+    connections: AthenaProjectionConnectionPayload[];
+    labels: AthenaProjectionLabelPayload[];
+};
+export type AthenaProjectionRenderContributionPayload = {
+    pluginId: string;
+    contributionId: string;
+    displayName: string;
+    description: string;
+    rendererTarget: string;
+    surfaceMappings: AthenaProjectionSurfaceMappingPayload[];
+};
+export type AthenaProjectionSurfaceMappingPayload = {
+    surface: string;
+    tokens: Record<string, string>;
+};
+export type AthenaProjectionDiagnosticPayload = {
+    severity: string;
+    code: string;
+    message: string;
+    provenance?: string;
+};
+export type AthenaProjectionCommandParams = {
+    commandId: string;
+    viewId?: string;
+};
+export type AthenaProjectionSessionPayload = {
+    projectName: string;
+    semanticPath: string;
+    activeViewId: string;
+    supportedViews: AthenaProjectionViewPayload[];
+    governedCommands: AthenaProjectionGovernedCommandPayload[];
+    status: string;
+    readyProjection?: AthenaProjectionReadyPayload;
+    unavailableReason?: string;
+    diagnostics: AthenaProjectionDiagnosticPayload[];
+};
+export type AthenaProjectionCommandPayload = {
+    commandId: string;
+    status: string;
+    reason?: string;
+    session?: AthenaProjectionSessionPayload;
+};
 export declare class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
     protected static readonly MARKER_OWNER = "athena-lsp";
     protected readonly editorManager: EditorManager;
@@ -260,10 +346,13 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
     protected bindCurrentEditor(widget: EditorWidget | undefined): void;
     protected isAthenaEditor(widget: EditorWidget | undefined): widget is EditorWidget;
     protected isAthenaDocumentUri(uri: string): boolean;
+    protected currentAthenaEditorModel(): monaco.editor.ITextModel | undefined;
     protected syncPublishedDiagnostics(uri: string): Promise<void>;
     protected get outputChannel(): import("@theia/output/lib/browser/output-channel").OutputChannel;
     requestSemanticInspection(widget: EditorWidget | undefined): Promise<AthenaSemanticInspectionPayload | undefined>;
     requestRepositoryGraphSession(): Promise<AthenaRepositoryGraphSessionPayload | undefined>;
+    requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined>;
+    requestProjectionCommand(params: AthenaProjectionCommandParams): Promise<AthenaProjectionCommandPayload | undefined>;
     requestSemanticScmState(params: AthenaSemanticScmStateParams): Promise<AthenaSemanticScmStatePayload | undefined>;
     requestSemanticHistoryState(params: AthenaSemanticHistoryStateParams): Promise<AthenaSemanticHistoryStatePayload | undefined>;
     protected sendLanguageRequest<T>(method: string, params: unknown, model?: monaco.editor.ITextModel): Promise<T | undefined>;

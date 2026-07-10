@@ -38,10 +38,12 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 
 ## `m4/`
 
-- `open-repository-proof/` - first M4 Engineering Repository fixture for the Theia repository-open flow
-- `open-repository-proof/src/factory-line.athena` - the single authored source resolved by the temporary M4 repository rule
+- `open-repository-proof/` - first M4 Engineering Repository fixture for the Theia repository-open flow, upgraded to the governed repository contract used by the current desktop path
+- `open-repository-proof/athena.yaml` - authored repository/package intent contract for the factory-line fixture
+- `open-repository-proof/athena.lock` - canonical derived lock contract for the same governed repository
+- `open-repository-proof/src/factory-line.athena` - the authored source resolved into the active runtime-backed session
 
-`m4/` publishes repository-root fixtures instead of loose standalone source files. The current M4 rule intentionally stays narrow: one repository opens only when Athena can resolve exactly one `.athena` source, preferring `src/` when it exists.
+`m4/` remains the first desktop repository-open proof, but the published fixture now follows the same governed `athena.yaml` plus `athena.lock` contract required by the post-M5 desktop path.
 
 ## `m5/`
 
@@ -51,3 +53,10 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `repository-graph-proof/src/root.athena` - primary package authored source
 
 `m5/` publishes governed repository-root fixtures instead of standalone source files. The published operator fixture stays intentionally minimal: one primary package, one canonical lock, and one valid repository root. Wider local-first dependency resolution remains proven primarily by focused compiler tests.
+
+## `m7/`
+
+- `README.md` - proof corpus entry for the graphical projection milestone
+- `../m4/open-repository-proof/` - reused governed repository fixture that now drives the published M7 graphical proof
+
+`m7/` is documentation-first on purpose. The milestone proves graphical projection by reusing the real governed repository fixture from `m4/` and layering graph-first workbench behavior, extension-owned renderer mappings, and the technology-decision record on top of that same repository shape.

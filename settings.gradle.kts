@@ -47,6 +47,7 @@ include(
     ":kernel:engineering-model",
     ":kernel:layout-model",
     ":kernel:geometry-model",
+    ":kernel:projection-model",
     ":kernel:validation",
     ":kernel:compiler",
     ":extensions:domain-electrical",

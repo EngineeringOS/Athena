@@ -2,12 +2,14 @@ import * as React from '@theia/core/shared/react';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { AthenaLspEditorBridgeService, AthenaSemanticCommitEntryPayload, AthenaSemanticHistoryBaselineParams, AthenaSemanticHistoryEntryPayload, AthenaSemanticHistoryStatePayload, AthenaSemanticPackagePayload, AthenaSemanticReviewEntryPayload, AthenaSemanticReviewEnrichmentPayload, AthenaSemanticScmStatePayload, AthenaSemanticValidationMovementPayload } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
+import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 export declare class AthenaSemanticScmWidget extends ReactWidget {
     static readonly ID = "athena.semanticScm";
     static readonly LABEL = "Semantic SCM";
     protected static readonly DEFAULT_ADAPTER_ID = "scm-git";
     protected readonly repositorySessionService: AthenaRepositorySessionService;
     protected readonly lspEditorBridgeService: AthenaLspEditorBridgeService;
+    protected readonly semanticSelectionService: AthenaSemanticSelectionService;
     protected semanticScmState: AthenaSemanticScmStatePayload | undefined;
     protected semanticHistoryState: AthenaSemanticHistoryStatePayload | undefined;
     protected errorMessage: string | undefined;
@@ -38,5 +40,9 @@ export declare class AthenaSemanticScmWidget extends ReactWidget {
     protected renderCommitEntry(entry: AthenaSemanticCommitEntryPayload): React.ReactNode;
     protected renderValidationMovement(movement: AthenaSemanticValidationMovementPayload): React.ReactNode;
     protected renderHistoryEntry(entry: AthenaSemanticHistoryEntryPayload): React.ReactNode;
+    protected isSelectedContext(carrier: {
+        subjectIdentity?: string;
+        factReferences: AthenaSemanticReviewEntryPayload['factReferences'];
+    }): boolean;
 }
 //# sourceMappingURL=athena-semantic-scm-widget.d.ts.map

@@ -12,6 +12,7 @@ This document summarizes the current Athena workspace as it exists today:
 - what M4 proved
 - what M5 proved
 - what M6 proved
+- what M7 proved
 - how to use the current runnable and verifiable surfaces
 - how the current implementation aligns with the EngineeringOS manifesto
 
@@ -19,7 +20,7 @@ This is the current workspace summary, not a historical story note.
 
 ## One-Line Summary
 
-Athena is the JVM-first EngineeringOS implementation workspace that now proves seven milestone layers:
+Athena is the JVM-first EngineeringOS implementation workspace that now proves eight milestone layers:
 
 1. M0: `DSL -> AST -> Engineering IR -> validation -> SVG`
 2. M1: `runtime -> graph -> commands -> history/diff -> plugin-hosted extension`
@@ -28,6 +29,7 @@ Athena is the JVM-first EngineeringOS implementation workspace that now proves s
 5. M4: `Theia desktop shell -> single repository session -> Athena LSP authority -> diagnostics/navigation/inspection -> additive professional workbench`
 6. M5: `governed repository contract -> deterministic package graph -> canonical lock -> RepositoryGraphSession -> package-aware IDE operation`
 7. M6: `semantic baseline -> semantic diff -> review/commit/history -> runtime/LSP/Theia semantic SCM panel`
+8. M7: `projection model -> runtime-owned ProjectionSession -> graph adapter -> graph-first workbench -> first renderer proof`
 
 The central architectural claim remains unchanged:
 
@@ -43,7 +45,7 @@ The central architectural claim remains unchanged:
 ### Top-Level Repo Role
 
 - `kernel/`: core semantic, projection, runtime, and rendering substrate
-- `integrations/`: vendor substrate adapters kept downstream of Athena semantic authority
+- `integrations/`: vendor substrate adapters and graph-framework translators kept downstream of Athena semantic authority
 - `ide/`: primary M4 IDE product path with the first branded Athena Theia desktop shell
 - `extensions/`: domain-specific extensions that attach through approved contracts
 - `ui/`: shared UI and interaction infrastructure
@@ -65,12 +67,14 @@ The central architectural claim remains unchanged:
 | `kernel` | `:kernel:engineering-model` | canonical semantic model after lowering |
 | `kernel` | `:kernel:layout-model` | explicit layout projection contracts |
 | `kernel` | `:kernel:geometry-model` | explicit geometry projection contracts |
+| `kernel` | `:kernel:projection-model` | renderer-neutral graphical projection documents derived from geometry and consumed by runtime/LSP/graph seams |
 | `kernel` | `:kernel:validation` | generic semantic validation |
 | `kernel` | `:kernel:plugins:plugin-api` | stable plugin SPI for hosted extension contracts |
 | `kernel` | `:kernel:plugins:plugin-host` | plugin sources, approval, inventory, and hosted lifecycle inspection |
 | `kernel` | `:kernel:compiler` | lowering, pass orchestration, validation orchestration, layout derivation, geometry derivation, rendering coordination |
 | `kernel` | `:kernel:runtime` | workspace lifecycle, execution context, graph, command runtime, history, diff, plugin hosting, projection sessions |
 | `kernel` | `:kernel:svg-renderer` | deterministic SVG backend fed from `Geometry IR` |
+| `integrations` | `node: graph-glsp` | translation-only graph adapter that consumes Athena-owned projection-session payloads and rebuilds disposable GLSP-shaped graph data |
 | `integrations` | `:integrations:scm-git` | first vendor adapter for semantic baseline loading behind the M6 semantic SCM seam |
 | `extensions` | `:extensions:domain-electrical` | first real Electrical domain extension and first supported view definitions |
 | `extensions` | `:extensions:domain-dummy` | synthetic proof domain proving the SPI is not secretly electrical-shaped |
@@ -81,6 +85,72 @@ The central architectural claim remains unchanged:
 The `ide/` group is now present physically as the primary M4 product path and already contains a runnable Node/Yarn Theia workspace. It remains separate from the Gradle module graph because cross-language boundaries are still protocol boundaries.
 
 M6 is now fully present in the workspace shape: `:kernel:semantic-scm` owns the semantic SCM boundary above `:kernel:repository-model`, `:integrations:scm-git` seeds the first downstream baseline-loading substrate, runtime owns semantic diff/review/commit/history projection state, `ide/lsp` exposes additive request surfaces, and the current Theia `Semantic SCM` panel projects review, commit preparation, package evolution, release relevance, contract-break risk, and validation movement without creating a second semantic authority in the frontend.
+
+M7 is now fully present in the current workspace shape: `integrations/graph-glsp` translates runtime-owned projection sessions into disposable graph data, the Theia frontend hosts the first real `Graphical View` panel inside the existing workbench, the current workbench synchronizes graphical selection back into source reveal, semantic inspection, and semantic SCM context through canonical semantic ids, and the first inspect-first interaction slice routes active-view switching through governed runtime commands while discarding stale transient selection on projection refresh.
+
+The current M7 workspace shape is intentionally still boundary-first: `:kernel:projection-model` now freezes the compiler-derived graphical document boundary above geometry, `integrations/graph-glsp` is the first dedicated home for GLSP-class graph translation, `ide/theia-frontend` consumes that adapter through the existing Athena LSP bridge, and `ide/lsp` plus `kernel/runtime` remain the only semantic and projection authorities for the IDE path.
+
+## What M7 Achieved
+
+M7 is complete as the first graphical projection and visual workbench proof.
+
+Per BMAD tracking, Epic 1, Epic 2, and Epic 3 are now `done` in [`_bmad-output/implementation-artifacts/m7/sprint-status.yaml`](../../_bmad-output/implementation-artifacts/m7/sprint-status.yaml).
+
+### Epic 1 Result: Freeze The Projection Boundary And Runtime Authority
+
+Epic 1 proved that graphical projection can remain downstream of canonical engineering meaning while still becoming a real runtime-owned product surface.
+
+Delivered:
+
+- dedicated `:kernel:projection-model` boundary above layout and geometry
+- deterministic projection derivation from canonical engineering, layout, and geometry inputs
+- runtime-owned `ProjectionSession` lifecycle with deterministic invalidation and refresh
+- typed projection queries and governed command routing through `ide/lsp`
+- explicit rule that frontend and graph adapters remain disposable consumers, not semantic authorities
+
+### Epic 2 Result: Deliver The First Graphical Workbench Surface
+
+Epic 2 proved that Athena can host a serious graph-first panel inside the existing Theia shell without creating a second semantic center in the frontend.
+
+Delivered:
+
+- translation-only `integrations/graph-glsp` boundary for graph-framework vocabulary
+- graph-first `Graphical View` panel inside the Athena workbench
+- synchronized selection across source, graphical view, semantic inspection, and semantic SCM
+- inspect-first interaction rules with transient frontend state discarded on projection refresh
+- denser IDE-style panel layout so the main canvas remains the dominant work surface
+
+### Epic 3 Result: Prove The First Renderer And Lock The Technology Path
+
+Epic 3 proved the first relationship-forward renderer and closed the architectural question around the M7 technology path.
+
+Delivered:
+
+- first renderer proof over canonical object and relationship identities
+- extension-owned electrical `cabinet` and `wiring` projection mappings
+- published graphical proof corpus under [`examples/m7/`](../../examples/m7/README.md)
+- explicit graphical technology decision record for the current Athena constraints
+- documented carry-forward boundary for later bidirectional code/graph work instead of hiding it inside M7
+
+### M7 Proven Chain
+
+```text
+Athena DSL
+        ->
+Engineering IR
+        ->
+Layout / Geometry
+        ->
+Projection model
+        ->
+runtime-owned ProjectionSession
+        ->
+Athena LSP projection protocol
+        ->
+translation-only graph adapter
+        ->
+graph-first Athena workbench
+```
 
 ## What M0 Achieved
 
@@ -126,6 +196,7 @@ Epic 1 proved the manifesto split between semantics, layout intent, and geometry
 Delivered:
 
 - dedicated `:kernel:layout-model` and `:kernel:geometry-model` modules
+- dedicated `:kernel:projection-model` module above geometry for renderer-neutral graphical documents
 - first supported `cabinet` and `wiring` `ViewDefinition` pair from the electrical extension
 - deterministic `Layout IR` derivation from canonical semantics
 - deterministic `Geometry IR` derivation from layout intent
@@ -411,6 +482,7 @@ Athena is now:
 - a desktop-first Theia IDE product proof with JVM-owned language tooling
 - a governed repository/package graph proof with package-aware IDE operation
 - a semantic SCM proof with review, commit, and package-history flows on the same JVM-owned semantic path
+- a graphical projection and visual workbench proof with runtime-owned projection authority
 
 It is not yet:
 
@@ -479,6 +551,38 @@ Current M6 interactive proof inside the Athena shell:
 Focused guide:
 
 - [`docs/usages/m6-proof-usage.md`](m6-proof-usage.md)
+
+### M7 Graphical Projection And Visual Workbench
+
+Use the published graphical proof fixture:
+
+- [`examples/m4/open-repository-proof/`](../../examples/m4/open-repository-proof/)
+- [`examples/m4/open-repository-proof/src/factory-line.athena`](../../examples/m4/open-repository-proof/src/factory-line.athena)
+
+Primary verification commands:
+
+```powershell
+cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:projection-model:test :kernel:compiler:test :kernel:runtime:test :extensions:domain-electrical:test :ide:lsp:test"
+yarn --cwd integrations/graph-glsp test
+yarn --cwd ide/theia-frontend test
+java25; yarn --cwd ide build
+java25; yarn --cwd ide verify:m7
+java25; yarn --cwd ide start:smoke
+```
+
+Current M7 interactive proof inside the Athena shell:
+
+1. Open the repository fixture at `examples/m4/open-repository-proof`.
+2. Open `src/factory-line.athena`.
+3. Reveal `Graphical View`.
+4. Switch between `Cabinet` and `Wiring`.
+5. Pan, zoom, and fit the graph viewport.
+6. Use graphical selection to inspect synchronized source, semantic inspection, and semantic SCM context.
+
+Focused guides:
+
+- [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
+- [`_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md`](../../_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md)
 
 ### M4 Theia Desktop Shell
 
@@ -651,6 +755,7 @@ Focused guide:
 - [`docs/usages/m3-proof-usage.md`](m3-proof-usage.md)
 - [`docs/usages/m4-proof-usage.md`](m4-proof-usage.md)
 - [`docs/usages/m5-proof-usage.md`](m5-proof-usage.md)
+- [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
 
 ## Alignment With The Manifesto
 
@@ -664,6 +769,7 @@ Focused guide:
 | Hosted extensibility platform | implemented | stable plugin SPI, hosted approval boundary, explicit pass-pipeline participation |
 | Layout distinct from semantics | implemented | `:kernel:layout-model` and layout derivation are explicit |
 | Geometry is downstream | implemented | `:kernel:geometry-model` and geometry-backed SVG/backend proof |
+| Graphical projection stays downstream | implemented | `:kernel:projection-model`, runtime-owned projection sessions, and translation-only graph adapters |
 | Studio is downstream shell | first serious proof implemented | Theia desktop shell, Athena LSP boundary, and additive workbench now exist without moving semantic truth into UI state |
 | AI augments, not replaces | partially implemented | optional AI proposals still route only as accepted command-shaped changes |
 | Open semantic infrastructure | partially implemented | strong local JVM-first proof exists; broader ecosystem targets remain future work |
@@ -690,20 +796,23 @@ If you want the current implementation in the right order, read:
 3. [`examples/m2/README.md`](../../examples/m2/README.md)
 4. [`kernel/layout-model/README.md`](../../kernel/layout-model/README.md)
 5. [`kernel/geometry-model/README.md`](../../kernel/geometry-model/README.md)
-6. [`docs/usages/m3-proof-usage.md`](m3-proof-usage.md)
-7. [`apps/desktop-viewer/README.md`](../../apps/desktop-viewer/README.md)
-8. [`docs/usages/m4-proof-usage.md`](m4-proof-usage.md)
-9. [`docs/usages/m5-proof-usage.md`](m5-proof-usage.md)
-10. [`docs/usages/m6-proof-usage.md`](m6-proof-usage.md)
-11. [`docs/roadmap/athena-milestone-roadmap.md`](../roadmap/athena-milestone-roadmap.md)
-12. [`manifesto/docs/architecture/03-ir.md`](../../manifesto/docs/architecture/03-ir.md)
-13. [`manifesto/docs/architecture/05-plugin.md`](../../manifesto/docs/architecture/05-plugin.md)
-14. [`manifesto/docs/architecture/07-studio.md`](../../manifesto/docs/architecture/07-studio.md)
-15. [`manifesto/docs/architecture/09-layout-and-geometry.md`](../../manifesto/docs/architecture/09-layout-and-geometry.md)
+6. [`kernel/projection-model/README.md`](../../kernel/projection-model/README.md)
+7. [`docs/usages/m3-proof-usage.md`](m3-proof-usage.md)
+8. [`apps/desktop-viewer/README.md`](../../apps/desktop-viewer/README.md)
+9. [`docs/usages/m4-proof-usage.md`](m4-proof-usage.md)
+10. [`docs/usages/m5-proof-usage.md`](m5-proof-usage.md)
+11. [`docs/usages/m6-proof-usage.md`](m6-proof-usage.md)
+12. [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
+13. [`_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md`](../../_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md)
+14. [`docs/roadmap/athena-milestone-roadmap.md`](../roadmap/athena-milestone-roadmap.md)
+15. [`manifesto/docs/architecture/03-ir.md`](../../manifesto/docs/architecture/03-ir.md)
+16. [`manifesto/docs/architecture/05-plugin.md`](../../manifesto/docs/architecture/05-plugin.md)
+17. [`manifesto/docs/architecture/07-studio.md`](../../manifesto/docs/architecture/07-studio.md)
+18. [`manifesto/docs/architecture/09-layout-and-geometry.md`](../../manifesto/docs/architecture/09-layout-and-geometry.md)
 
 ## Bottom Line
 
-Athena has now completed the first seven implementation phases that matter most to EngineeringOS:
+Athena has now completed the first eight implementation phases that matter most to EngineeringOS:
 
 - M0 proved that semantic engineering can be compiled from authored DSL into canonical `Engineering IR` and deterministic downstream artifacts.
 - M1 proved that the same semantic core can be hosted by runtime, inspected as graph, changed through commands, and extended by plugins without giving up canonical ownership.
@@ -712,7 +821,8 @@ Athena has now completed the first seven implementation phases that matter most 
 - M4 proved that Athena can become a real Theia-based engineering product shell, keep authored-source tooling behind Athena LSP, and host professional downstream workbench panels without creating a frontend-owned semantic authority.
 - M5 proved that Athena can freeze repository/package meaning through canonical manifest and lock contracts, resolve deterministic local-first package graphs, host one runtime-owned `RepositoryGraphSession`, and surface package-aware operation inside the Athena IDE without moving semantic ownership into the frontend.
 - M6 proved that Athena can understand repository change semantically through VCS-neutral baselines, deterministic diff/review/commit/history flows, and a current professional IDE surface for review, commit preparation, package evolution, and release relevance.
+- M7 proved that Athena can keep graphical projection downstream of semantic authority through a dedicated projection model, runtime-owned projection sessions, a translation-only graph adapter, and a graph-first professional workbench inside the existing Athena shell.
 
 That means Athena now embodies the manifesto's central thesis more completely than before:
 
-Engineering meaning is primary, and layout, geometry, hosted domain behavior, runtime behavior, UI, and backend output are controlled downstream consequences.
+Engineering meaning is primary, and layout, geometry, graphical projection, hosted domain behavior, runtime behavior, UI, and backend output are controlled downstream consequences.

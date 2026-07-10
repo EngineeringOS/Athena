@@ -1,10 +1,12 @@
 import { AbstractViewContribution, ApplicationShell, FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { CommandContribution, CommandRegistry } from '@theia/core/lib/common/command';
 import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu';
+import { EditorManager } from '@theia/editor/lib/browser';
 import { AthenaHomeWidget } from './athena-home-widget';
 import { AthenaRepositoryCreationService } from './athena-repository-creation-service';
 import { AthenaWorkbenchExtension } from './athena-workbench-extensions';
 export declare class AthenaProductContribution extends AbstractViewContribution<AthenaHomeWidget> implements FrontendApplicationContribution, CommandContribution, MenuContribution {
+    protected readonly editorManager: EditorManager;
     protected readonly repositoryCreationService: AthenaRepositoryCreationService;
     constructor();
     initializeLayout(): Promise<void>;
@@ -14,5 +16,6 @@ export declare class AthenaProductContribution extends AbstractViewContribution<
     protected ensureWidget(widgetId: string, options: ApplicationShell.WidgetOptions): Promise<void>;
     protected revealWorkbenchWidget(widgetId: string, area: ApplicationShell.Area): Promise<void>;
     protected revealWorkbenchExtension(extension: AthenaWorkbenchExtension): Promise<void>;
+    protected revealGraphWorkbench(extension: AthenaWorkbenchExtension): Promise<void>;
 }
 //# sourceMappingURL=athena-product-contribution.d.ts.map

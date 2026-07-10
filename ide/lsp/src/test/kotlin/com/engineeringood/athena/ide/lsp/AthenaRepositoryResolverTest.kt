@@ -58,7 +58,7 @@ class AthenaRepositoryResolverTest {
     }
 
     @Test
-    fun `resolve reports compiler-owned contract diagnostics for invalid repositories`() {
+    fun `resolve allows a missing lock for first-open authoring repositories`() {
         val repositoryRoot = kotlin.io.path.createTempDirectory("athena-repository-")
         try {
             repositoryRoot.resolve("athena.yaml").writeText(
@@ -69,12 +69,14 @@ class AthenaRepositoryResolverTest {
                       sourceRoot: src
                 """.trimIndent(),
             )
+            repositoryRoot.resolve("src").createDirectories()
+            repositoryRoot.resolve("src").resolve("factory-line.athena").writeText("system FactoryLine { }")
 
             val resolution = AthenaRepositoryResolver().resolve(repositoryRoot)
 
-            val failure = assertIs<AthenaRepositoryResolutionFailure>(resolution)
-            assertTrue(failure.reason.contains("repository.contract.lock.missing"))
-            assertTrue(failure.reason.contains("athena.lock"))
+            val success = assertIs<AthenaRepositoryResolutionSuccess>(resolution)
+            assertEquals(repositoryRoot.resolve("athena.lock").toAbsolutePath().normalize(), success.descriptor.lockPath)
+            assertEquals("com.engineeringood.factory-line", success.descriptor.primaryPackageName)
         } finally {
             repositoryRoot.toFile().deleteRecursively()
         }

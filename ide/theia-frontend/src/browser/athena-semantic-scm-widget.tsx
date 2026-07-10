@@ -16,6 +16,8 @@ import {
     AthenaSemanticValidationMovementPayload
 } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
+import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
+import { matchesSemanticScmContext } from './athena-semantic-selection-model';
 
 @injectable()
 export class AthenaSemanticScmWidget extends ReactWidget {
@@ -28,6 +30,9 @@ export class AthenaSemanticScmWidget extends ReactWidget {
 
     @inject(AthenaLspEditorBridgeService)
     protected readonly lspEditorBridgeService: AthenaLspEditorBridgeService;
+
+    @inject(AthenaSemanticSelectionService)
+    protected readonly semanticSelectionService: AthenaSemanticSelectionService;
 
     protected semanticScmState: AthenaSemanticScmStatePayload | undefined;
     protected semanticHistoryState: AthenaSemanticHistoryStatePayload | undefined;
@@ -50,6 +55,7 @@ export class AthenaSemanticScmWidget extends ReactWidget {
         this.addClass('athena-semantic-scm-widget');
 
         this.toDispose.push(this.repositorySessionService.onDidChangeState(() => this.scheduleRefresh()));
+        this.toDispose.push(this.semanticSelectionService.onDidChangeSelection(() => this.update()));
         this.toDispose.push(Disposable.create(() => {
             if (this.refreshHandle !== undefined) {
                 window.clearTimeout(this.refreshHandle);
@@ -278,42 +284,26 @@ export class AthenaSemanticScmWidget extends ReactWidget {
                 </div>
             </header>
 
-            <section className='athena-semantic-scm__metrics'>
-                <article className='athena-semantic-scm__metric'>
-                    <span className='athena-semantic-scm__metric-value'>{review?.entryCount ?? 0}</span>
-                    <span className='athena-semantic-scm__metric-label'>Review entries</span>
-                </article>
-                <article className='athena-semantic-scm__metric'>
-                    <span className='athena-semantic-scm__metric-value'>{review?.enrichmentCount ?? 0}</span>
-                    <span className='athena-semantic-scm__metric-label'>Review enrichments</span>
-                </article>
-                <article className='athena-semantic-scm__metric'>
-                    <span className='athena-semantic-scm__metric-value'>{commit?.entryCount ?? 0}</span>
-                    <span className='athena-semantic-scm__metric-label'>Commit entries</span>
-                </article>
-                <article className='athena-semantic-scm__metric'>
-                    <span className='athena-semantic-scm__metric-value'>{history?.entryCount ?? 0}</span>
-                    <span className='athena-semantic-scm__metric-label'>History entries</span>
-                </article>
-                <article className='athena-semantic-scm__metric'>
-                    <span className='athena-semantic-scm__metric-value'>{semanticScmState?.diagnostics.length ?? 0}</span>
-                    <span className='athena-semantic-scm__metric-label'>Baseline diagnostics</span>
-                </article>
-                <article className='athena-semantic-scm__metric'>
-                    <span className='athena-semantic-scm__metric-value'>{history?.baselineCount ?? semanticHistoryState?.baselines.length ?? 0}</span>
-                    <span className='athena-semantic-scm__metric-label'>History baselines</span>
-                </article>
+            <section className='athena-semantic-scm__summary'>
+                <ul className='athena-semantic-scm__summary-list'>
+                    <li><span>Review entries</span><strong>{review?.entryCount ?? 0}</strong></li>
+                    <li><span>Review enrichments</span><strong>{review?.enrichmentCount ?? 0}</strong></li>
+                    <li><span>Commit entries</span><strong>{commit?.entryCount ?? 0}</strong></li>
+                    <li><span>History entries</span><strong>{history?.entryCount ?? 0}</strong></li>
+                    <li><span>Baseline diagnostics</span><strong>{semanticScmState?.diagnostics.length ?? 0}</strong></li>
+                    <li><span>History baselines</span><strong>{history?.baselineCount ?? semanticHistoryState?.baselines.length ?? 0}</strong></li>
+                </ul>
             </section>
 
             <section className='athena-semantic-scm__section'>
                 <h3>Baseline request</h3>
                 {!semanticScmState
                     ? <p>{this.errorMessage ?? 'No semantic SCM payload is available yet for the active Athena session.'}</p>
-                    : <ul>
-                        <li>Adapter bridge: {semanticScmState.adapterId}</li>
-                        <li>Locator label: {semanticScmState.locatorLabel ?? 'Not provided'}</li>
-                        <li>Baseline id: {semanticScmState.baselineId}</li>
-                        <li>Repository root: <code>{sessionState.repositoryRoot}</code></li>
+                    : <ul className='athena-semantic-scm__detail-list'>
+                        <li><span>Adapter bridge</span><strong>{semanticScmState.adapterId}</strong></li>
+                        <li><span>Locator label</span><strong>{semanticScmState.locatorLabel ?? 'Not provided'}</strong></li>
+                        <li><span>Baseline id</span><strong>{semanticScmState.baselineId}</strong></li>
+                        <li><span>Repository root</span><strong><code>{sessionState.repositoryRoot}</code></strong></li>
                     </ul>}
             </section>
 
@@ -338,6 +328,16 @@ export class AthenaSemanticScmWidget extends ReactWidget {
                                 <div><code>{diagnostic.provenance}</code></div>
                             </li>)}
                         </ul>}
+            </section>
+
+            <section className='athena-semantic-scm__section'>
+                <h3>Selected semantic</h3>
+                {this.semanticSelectionService.selection
+                    ? <div className='athena-semantic-scm__selection'>
+                        <strong>{this.semanticSelectionService.selection.label ?? this.semanticSelectionService.selection.semanticId}</strong><br />
+                        <code>{this.semanticSelectionService.selection.semanticId}</code>
+                    </div>
+                    : <p>No synchronized semantic selection is active yet.</p>}
             </section>
 
             <section className='athena-semantic-scm__section'>
@@ -382,43 +382,45 @@ export class AthenaSemanticScmWidget extends ReactWidget {
 
     protected renderControls(primaryPackageName: string | undefined): React.ReactNode {
         return <section className='athena-semantic-scm__controls'>
-            <div className='athena-semantic-scm__control'>
-                <label htmlFor='athena-semantic-scm-label'>Baseline label</label>
-                <input
-                    id='athena-semantic-scm-label'
-                    type='text'
-                    value={this.baselineLabel}
-                    onChange={event => this.onBaselineLabelChanged(event)}
-                />
-            </div>
-            <div className='athena-semantic-scm__control'>
-                <label htmlFor='athena-semantic-scm-locator'>Baseline locator</label>
-                <input
-                    id='athena-semantic-scm-locator'
-                    type='text'
-                    value={this.baselineLocator}
-                    onChange={event => this.onBaselineLocatorChanged(event)}
-                />
-            </div>
-            <div className='athena-semantic-scm__control'>
-                <label htmlFor='athena-semantic-scm-package'>History package</label>
-                <input
-                    id='athena-semantic-scm-package'
-                    type='text'
-                    placeholder={primaryPackageName ?? 'com.engineeringood.package'}
-                    value={this.historyPackageName}
-                    onChange={event => this.onHistoryPackageNameChanged(event)}
-                />
-            </div>
-            <div className='athena-semantic-scm__control athena-semantic-scm__control--wide'>
-                <label htmlFor='athena-semantic-scm-history-baselines'>History baselines</label>
-                <textarea
-                    id='athena-semantic-scm-history-baselines'
-                    rows={3}
-                    value={this.historyBaselineSequence}
-                    onChange={event => this.onHistoryBaselineSequenceChanged(event)}
-                />
-                <span className='athena-semantic-scm__hint'>Use one baseline per line as <code>Label|locator</code>.</span>
+            <div className='athena-semantic-scm__control-grid'>
+                <div className='athena-semantic-scm__control'>
+                    <label htmlFor='athena-semantic-scm-label'>Baseline label</label>
+                    <input
+                        id='athena-semantic-scm-label'
+                        type='text'
+                        value={this.baselineLabel}
+                        onChange={event => this.onBaselineLabelChanged(event)}
+                    />
+                </div>
+                <div className='athena-semantic-scm__control'>
+                    <label htmlFor='athena-semantic-scm-locator'>Baseline locator</label>
+                    <input
+                        id='athena-semantic-scm-locator'
+                        type='text'
+                        value={this.baselineLocator}
+                        onChange={event => this.onBaselineLocatorChanged(event)}
+                    />
+                </div>
+                <div className='athena-semantic-scm__control'>
+                    <label htmlFor='athena-semantic-scm-package'>History package</label>
+                    <input
+                        id='athena-semantic-scm-package'
+                        type='text'
+                        placeholder={primaryPackageName ?? 'com.engineeringood.package'}
+                        value={this.historyPackageName}
+                        onChange={event => this.onHistoryPackageNameChanged(event)}
+                    />
+                </div>
+                <div className='athena-semantic-scm__control athena-semantic-scm__control--wide'>
+                    <label htmlFor='athena-semantic-scm-history-baselines'>History baselines</label>
+                    <textarea
+                        id='athena-semantic-scm-history-baselines'
+                        rows={3}
+                        value={this.historyBaselineSequence}
+                        onChange={event => this.onHistoryBaselineSequenceChanged(event)}
+                    />
+                    <span className='athena-semantic-scm__hint'>Use one baseline per line as <code>Label|locator</code>.</span>
+                </div>
             </div>
             <button
                 className='athena-semantic-scm__refresh'
@@ -456,7 +458,7 @@ export class AthenaSemanticScmWidget extends ReactWidget {
                     ? <span className='athena-semantic-scm__pill'>{primaryPackageName}</span>
                     : undefined}
             </div>
-            <ul>
+            <ul className='athena-semantic-scm__dense-list'>
                 {semanticHistoryState.baselines.map(baseline => <li key={`${baseline.baselineId}:${baseline.locator}`}>
                     {baseline.baselineLabel}: <code>{baseline.locator}</code>
                 </li>)}
@@ -509,7 +511,10 @@ export class AthenaSemanticScmWidget extends ReactWidget {
     }
 
     protected renderReviewEntry(entry: AthenaSemanticReviewEntryPayload): React.ReactNode {
-        return <li key={`${entry.kind}:${entry.message}`} className='athena-semantic-scm__item'>
+        return <li
+            key={`${entry.kind}:${entry.message}`}
+            className={`athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}`}
+        >
             <strong>{entry.kind}</strong>
             <div>{entry.message}</div>
             {entry.factReferences.length > 0
@@ -519,7 +524,10 @@ export class AthenaSemanticScmWidget extends ReactWidget {
     }
 
     protected renderReviewEnrichment(enrichment: AthenaSemanticReviewEnrichmentPayload): React.ReactNode {
-        return <li key={`${enrichment.pluginId}:${enrichment.kind}:${enrichment.message}`} className='athena-semantic-scm__item athena-semantic-scm__item--enrichment'>
+        return <li
+            key={`${enrichment.pluginId}:${enrichment.kind}:${enrichment.message}`}
+            className={`athena-semantic-scm__item athena-semantic-scm__item--enrichment ${this.isSelectedContext(enrichment) ? 'athena-semantic-scm__item--selected' : ''}`}
+        >
             <strong>{enrichment.kind}</strong>
             <div>{enrichment.message}</div>
             <div>{enrichment.pluginId}</div>
@@ -527,7 +535,10 @@ export class AthenaSemanticScmWidget extends ReactWidget {
     }
 
     protected renderCommitEntry(entry: AthenaSemanticCommitEntryPayload): React.ReactNode {
-        return <li key={`${entry.kind}:${entry.message}`} className='athena-semantic-scm__item'>
+        return <li
+            key={`${entry.kind}:${entry.message}`}
+            className={`athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}`}
+        >
             <strong>{entry.kind}</strong>
             <div>{entry.message}</div>
             {entry.factReferences.length > 0
@@ -582,5 +593,14 @@ export class AthenaSemanticScmWidget extends ReactWidget {
                 : undefined}
             <div>Authored changes: {entry.authoredChangeCount} | Derived consequences: {entry.derivedConsequenceCount}</div>
         </li>;
+    }
+
+    protected isSelectedContext(
+        carrier: {
+            subjectIdentity?: string;
+            factReferences: AthenaSemanticReviewEntryPayload['factReferences'];
+        }
+    ): boolean {
+        return matchesSemanticScmContext(carrier, this.semanticSelectionService.selection?.semanticId);
     }
 }

@@ -13,6 +13,7 @@ exports.AthenaRepositorySessionService = void 0;
 const core_1 = require("@theia/core");
 const inversify_1 = require("@theia/core/shared/inversify");
 const workspace_service_1 = require("@theia/workspace/lib/browser/workspace-service");
+const athena_backend_endpoint_1 = require("./athena-backend-endpoint");
 let AthenaRepositorySessionService = class AthenaRepositorySessionService {
     workspaceService;
     messageService;
@@ -59,7 +60,9 @@ let AthenaRepositorySessionService = class AthenaRepositorySessionService {
             message: 'Activating the Athena JVM repository session.'
         });
         try {
-            const response = await fetch(`/athena/repository-session/activate?repositoryRootPath=${encodeURIComponent(repositoryRootPath)}`, {
+            const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/repository-session/activate', {
+                repositoryRootPath,
+            }), {
                 method: 'POST'
             });
             const nextState = await response.json();
@@ -80,7 +83,7 @@ let AthenaRepositorySessionService = class AthenaRepositorySessionService {
     }
     async refreshSessionState() {
         try {
-            const response = await fetch('/athena/repository-session');
+            const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/repository-session'));
             const nextState = await response.json();
             this.setState(nextState);
         }

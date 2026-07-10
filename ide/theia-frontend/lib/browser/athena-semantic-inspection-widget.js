@@ -51,6 +51,7 @@ const inversify_1 = require("@theia/core/shared/inversify");
 const browser_1 = require("@theia/editor/lib/browser");
 const athena_lsp_editor_bridge_service_1 = require("./athena-lsp-editor-bridge-service");
 const athena_repository_session_service_1 = require("./athena-repository-session-service");
+const athena_semantic_selection_service_1 = require("./athena-semantic-selection-service");
 let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extends react_widget_1.ReactWidget {
     static { AthenaSemanticInspectionWidget_1 = this; }
     static ID = 'athena.semanticInspection';
@@ -58,6 +59,7 @@ let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extend
     editorManager;
     repositorySessionService;
     lspEditorBridgeService;
+    semanticSelectionService;
     currentEditorListeners = new disposable_1.DisposableCollection();
     inspection;
     errorMessage;
@@ -72,6 +74,7 @@ let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extend
         this.addClass('athena-semantic-inspection-widget');
         this.toDispose.push(this.currentEditorListeners);
         this.toDispose.push(this.repositorySessionService.onDidChangeState(() => this.scheduleRefresh()));
+        this.toDispose.push(this.semanticSelectionService.onDidChangeSelection(() => this.update()));
         this.toDispose.push(this.editorManager.onCurrentEditorChanged(widget => {
             this.bindCurrentEditor(widget);
             this.scheduleRefresh();
@@ -194,67 +197,83 @@ let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extend
                         " | ",
                         React.createElement("code", null, inspection.uri))),
                 React.createElement("div", { className: `athena-semantic-inspection__status athena-semantic-inspection__status--${inspection.status}` }, inspection.status)),
-            React.createElement("section", { className: 'athena-semantic-inspection__metrics' },
-                React.createElement("article", { className: 'athena-semantic-inspection__metric' },
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-value' }, inspection.componentCount),
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-label' }, "Components")),
-                React.createElement("article", { className: 'athena-semantic-inspection__metric' },
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-value' }, inspection.portCount),
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-label' }, "Ports")),
-                React.createElement("article", { className: 'athena-semantic-inspection__metric' },
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-value' }, inspection.connectionCount),
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-label' }, "Connections")),
-                React.createElement("article", { className: 'athena-semantic-inspection__metric' },
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-value' }, inspection.diagnosticsCount),
-                    React.createElement("span", { className: 'athena-semantic-inspection__metric-label' }, "Diagnostics"))),
+            React.createElement("section", { className: 'athena-semantic-inspection__summary' },
+                React.createElement("ul", { className: 'athena-semantic-inspection__summary-list' },
+                    React.createElement("li", null,
+                        React.createElement("span", null, "Components"),
+                        React.createElement("strong", null, inspection.componentCount)),
+                    React.createElement("li", null,
+                        React.createElement("span", null, "Ports"),
+                        React.createElement("strong", null, inspection.portCount)),
+                    React.createElement("li", null,
+                        React.createElement("span", null, "Connections"),
+                        React.createElement("strong", null, inspection.connectionCount)),
+                    React.createElement("li", null,
+                        React.createElement("span", null, "Diagnostics"),
+                        React.createElement("strong", null, inspection.diagnosticsCount)))),
+            React.createElement("section", { className: 'athena-semantic-inspection__section' },
+                React.createElement("h3", null, "Selected semantic"),
+                this.semanticSelectionService.selection
+                    ? React.createElement("div", { className: 'athena-semantic-inspection__selection' },
+                        React.createElement("strong", null, this.semanticSelectionService.selection.label ?? this.semanticSelectionService.selection.semanticId),
+                        React.createElement("br", null),
+                        React.createElement("code", null, this.semanticSelectionService.selection.semanticId))
+                    : React.createElement("p", null, "No synchronized semantic selection is active yet.")),
             React.createElement("section", { className: 'athena-semantic-inspection__section' },
                 React.createElement("h3", null, "Document state"),
-                React.createElement("ul", null,
+                React.createElement("ul", { className: 'athena-semantic-inspection__detail-list' },
                     React.createElement("li", null,
-                        "Version: ",
-                        inspection.version),
+                        React.createElement("span", null, "Version"),
+                        React.createElement("strong", null, inspection.version)),
                     React.createElement("li", null,
-                        "Semantic path: ",
-                        sessionState.semanticPath ?? 'frontend -> LSP -> runtime/compiler'),
+                        React.createElement("span", null, "Semantic path"),
+                        React.createElement("strong", null, sessionState.semanticPath ?? 'frontend -> LSP -> runtime/compiler')),
                     React.createElement("li", null,
-                        "Current editor: ",
-                        React.createElement("code", null, currentEditor.editor.uri.toString())))),
+                        React.createElement("span", null, "Current editor"),
+                        React.createElement("strong", null,
+                            React.createElement("code", null, currentEditor.editor.uri.toString()))))),
             React.createElement("section", { className: 'athena-semantic-inspection__section' },
                 React.createElement("h3", null, "Diagnostics"),
                 inspection.diagnosticSummaries.length === 0
                     ? React.createElement("p", null, "No diagnostics are currently attached to this tracked document state.")
-                    : React.createElement("ul", null, inspection.diagnosticSummaries.map(summary => React.createElement("li", { key: summary }, summary)))),
+                    : React.createElement("ul", { className: 'athena-semantic-inspection__dense-list' }, inspection.diagnosticSummaries.map(summary => React.createElement("li", { key: summary }, summary)))),
             React.createElement("section", { className: 'athena-semantic-inspection__section' },
                 React.createElement("h3", null, "Components"),
                 inspection.components.length === 0
                     ? React.createElement("p", null, "No canonical components were derived from the current document state.")
-                    : React.createElement("ul", null, inspection.components.map(component => React.createElement("li", { key: component.semanticId },
-                        React.createElement("strong", null, component.name),
-                        " ",
-                        React.createElement("span", null,
-                            "(",
-                            component.kind,
-                            ")"),
-                        React.createElement("br", null),
-                        React.createElement("span", null, component.properties))))),
+                    : React.createElement("ul", { className: 'athena-semantic-inspection__list' }, inspection.components.map(component => React.createElement("li", { key: component.semanticId, className: `athena-semantic-inspection__item ${this.isSelected(component.semanticId) ? 'athena-semantic-inspection__item--selected' : ''}` },
+                        React.createElement("button", { className: 'athena-semantic-inspection__selectable', type: 'button', onClick: () => void this.semanticSelectionService.selectSemanticId(component.semanticId) },
+                            React.createElement("span", { className: 'athena-semantic-inspection__item-title' },
+                                component.name,
+                                " ",
+                                React.createElement("span", null,
+                                    "(",
+                                    component.kind,
+                                    ")")),
+                            React.createElement("span", { className: 'athena-semantic-inspection__item-meta' }, component.properties)))))),
             React.createElement("section", { className: 'athena-semantic-inspection__section' },
                 React.createElement("h3", null, "Ports"),
                 inspection.ports.length === 0
                     ? React.createElement("p", null, "No canonical ports were derived from the current document state.")
-                    : React.createElement("ul", null, inspection.ports.map(port => React.createElement("li", { key: port.semanticId },
-                        React.createElement("strong", null, port.path),
-                        React.createElement("br", null),
-                        React.createElement("span", null, port.properties))))),
+                    : React.createElement("ul", { className: 'athena-semantic-inspection__list' }, inspection.ports.map(port => React.createElement("li", { key: port.semanticId, className: `athena-semantic-inspection__item ${this.isSelected(port.semanticId) ? 'athena-semantic-inspection__item--selected' : ''}` },
+                        React.createElement("button", { className: 'athena-semantic-inspection__selectable', type: 'button', onClick: () => void this.semanticSelectionService.selectSemanticId(port.semanticId) },
+                            React.createElement("span", { className: 'athena-semantic-inspection__item-title' }, port.path),
+                            React.createElement("span", { className: 'athena-semantic-inspection__item-meta' }, port.properties)))))),
             React.createElement("section", { className: 'athena-semantic-inspection__section' },
                 React.createElement("h3", null, "Connections"),
                 inspection.connections.length === 0
                     ? React.createElement("p", null, "No canonical connections are present in the current document state.")
-                    : React.createElement("ul", null, inspection.connections.map(connection => React.createElement("li", { key: connection.semanticId },
-                        React.createElement("strong", null, connection.fromPath),
-                        " ",
-                        React.createElement("span", null, "->"),
-                        " ",
-                        React.createElement("strong", null, connection.toPath))))));
+                    : React.createElement("ul", { className: 'athena-semantic-inspection__list' }, inspection.connections.map(connection => React.createElement("li", { key: connection.semanticId, className: `athena-semantic-inspection__item ${this.isSelected(connection.semanticId) ? 'athena-semantic-inspection__item--selected' : ''}` },
+                        React.createElement("button", { className: 'athena-semantic-inspection__selectable', type: 'button', onClick: () => void this.semanticSelectionService.selectSemanticId(connection.semanticId) },
+                            React.createElement("span", { className: 'athena-semantic-inspection__item-title' },
+                                connection.fromPath,
+                                " ",
+                                React.createElement("span", null, "->"),
+                                " ",
+                                connection.toPath)))))));
+    }
+    isSelected(semanticId) {
+        return this.semanticSelectionService.selection?.semanticId === semanticId;
     }
 };
 exports.AthenaSemanticInspectionWidget = AthenaSemanticInspectionWidget;
@@ -270,6 +289,10 @@ __decorate([
     (0, inversify_1.inject)(athena_lsp_editor_bridge_service_1.AthenaLspEditorBridgeService),
     __metadata("design:type", athena_lsp_editor_bridge_service_1.AthenaLspEditorBridgeService)
 ], AthenaSemanticInspectionWidget.prototype, "lspEditorBridgeService", void 0);
+__decorate([
+    (0, inversify_1.inject)(athena_semantic_selection_service_1.AthenaSemanticSelectionService),
+    __metadata("design:type", athena_semantic_selection_service_1.AthenaSemanticSelectionService)
+], AthenaSemanticInspectionWidget.prototype, "semanticSelectionService", void 0);
 __decorate([
     (0, inversify_1.postConstruct)(),
     __metadata("design:type", Function),

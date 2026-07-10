@@ -78,6 +78,7 @@ data class AthenaSemanticInspectionComponent(
     val name: String,
     val kind: String,
     val properties: String,
+    val sourceRange: Range,
 )
 
 /**
@@ -87,6 +88,7 @@ data class AthenaSemanticInspectionPort(
     val semanticId: String,
     val path: String,
     val properties: String,
+    val sourceRange: Range,
 )
 
 /**
@@ -96,6 +98,7 @@ data class AthenaSemanticInspectionConnection(
     val semanticId: String,
     val fromPath: String,
     val toPath: String,
+    val sourceRange: Range,
 )
 
 /**
@@ -156,6 +159,17 @@ class AthenaLanguageFeatures(
      * Returns the tracked document for [uri], if the frontend has already opened it through Athena LSP.
      */
     fun trackedDocument(uri: String): AthenaTrackedDocument? = documentsByUri[uri]
+
+    /**
+     * Returns the latest tracked document for [path], if Athena LSP currently owns an in-memory buffer for it.
+     */
+    fun trackedDocumentByPath(path: Path): AthenaTrackedDocument? {
+        val normalizedPath = path.normalize()
+        return documentsByUri.values
+            .asSequence()
+            .filter { tracked -> tracked.path.normalize() == normalizedPath }
+            .maxByOrNull(AthenaTrackedDocument::version)
+    }
 
     /**
      * Builds M4 completion results for the document and cursor in [params].
@@ -302,6 +316,7 @@ class AthenaLanguageFeatures(
 
             is CompilerCompilationSuccess -> {
                 val document = compilation.document
+                val navigationIndex = tracked.navigationIndex
                 AthenaSemanticInspectionPayload(
                     uri = tracked.uri,
                     version = tracked.version,
@@ -322,6 +337,11 @@ class AthenaLanguageFeatures(
                                 name = component.name,
                                 kind = component.kind,
                                 properties = component.properties.summaryText(),
+                                sourceRange = requireSourceRange(
+                                    semanticId = component.id.value,
+                                    kind = "component",
+                                    range = navigationIndex?.componentSourceRange(component.name),
+                                ),
                             )
                         },
                     ports = document.ports
@@ -331,6 +351,11 @@ class AthenaLanguageFeatures(
                                 semanticId = port.id.value,
                                 path = port.summaryPath(),
                                 properties = port.properties.summaryText(),
+                                sourceRange = requireSourceRange(
+                                    semanticId = port.id.value,
+                                    kind = "port",
+                                    range = navigationIndex?.portSourceRange(port.summaryPath()),
+                                ),
                             )
                         },
                     connections = document.connections
@@ -343,6 +368,14 @@ class AthenaLanguageFeatures(
                                 semanticId = connection.id.value,
                                 fromPath = connection.from.authoredPath(),
                                 toPath = connection.to.authoredPath(),
+                                sourceRange = requireSourceRange(
+                                    semanticId = connection.id.value,
+                                    kind = "connection",
+                                    range = navigationIndex?.connectionSourceRange(
+                                        fromPath = connection.from.authoredPath(),
+                                        toPath = connection.to.authoredPath(),
+                                    ),
+                                ),
                             )
                         },
                 )
@@ -437,6 +470,34 @@ class AthenaNavigationIndex(
                     .mapTo(this) { reference -> documentLocation(reference.span) }
             }
         }
+    }
+
+    /**
+     * Resolves the full authored declaration range for one inspected component.
+     */
+    fun componentSourceRange(componentName: String): Range? {
+        return deviceDeclarations[componentName]?.span?.toLspRange()
+    }
+
+    /**
+     * Resolves the full authored declaration range for one inspected port.
+     */
+    fun portSourceRange(qualifiedName: String): Range? {
+        return portDeclarations[qualifiedName]?.span?.toLspRange()
+    }
+
+    /**
+     * Resolves the full authored declaration range for one inspected connection.
+     */
+    fun connectionSourceRange(fromPath: String, toPath: String): Range? {
+        return ast.declarations
+            .filterIsInstance<ConnectionDeclaration>()
+            .firstOrNull { declaration ->
+                declaration.from.parts.joinToString(".") == fromPath &&
+                    declaration.to.parts.joinToString(".") == toPath
+            }
+            ?.span
+            ?.toLspRange()
     }
 
     private fun targetAt(offset: Int): AthenaTarget? {
@@ -586,6 +647,16 @@ private fun EngineeringPropertyValue.summaryText(): String {
 private fun com.engineeringood.athena.ir.EngineeringReference.authoredPath(): String = authoredPath.joinToString(".")
 
 private fun com.engineeringood.athena.ir.EngineeringPort.summaryPath(): String = (ownerReference.authoredPath + name).joinToString(".")
+
+private fun requireSourceRange(
+    semanticId: String,
+    kind: String,
+    range: Range?,
+): Range {
+    return requireNotNull(range) {
+        "Athena semantic inspection could not resolve the authored $kind range for `$semanticId`."
+    }
+}
 
 private fun String.cursorContext(
     position: Position,

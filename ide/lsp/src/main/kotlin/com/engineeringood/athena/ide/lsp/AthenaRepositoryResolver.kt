@@ -1,6 +1,7 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoadOptions
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractValidationResult
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import java.nio.file.Files
@@ -24,7 +25,12 @@ class AthenaRepositoryResolver(
      */
     fun resolve(repositoryRoot: Path): AthenaRepositoryResolutionResult {
         val normalizedRepositoryRoot = repositoryRoot.toAbsolutePath().normalize()
-        val validation = compiler.validateRepositoryContract(normalizedRepositoryRoot)
+        val validation = compiler.validateRepositoryContract(
+            normalizedRepositoryRoot,
+            AthenaRepositoryContractLoadOptions(
+                requireLockFile = false,
+            ),
+        )
         if (!validation.isValid || validation.repository == null) {
             return AthenaRepositoryResolutionFailure(
                 reason = renderContractFailure(validation),

@@ -105,6 +105,37 @@ class AthenaRepositoryContractLoaderTest {
     }
 
     @Test
+    fun `allows missing lock when a caller opts into authoring-first repository validation`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("src").createDirectories()
+            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+
+            val result = AthenaRepositoryContractLoader().load(
+                repositoryRoot = repositoryRoot,
+                options = AthenaRepositoryContractLoadOptions(
+                    requireLockFile = false,
+                ),
+            )
+
+            assertTrue(result.isValid)
+            assertTrue(result.diagnostics.isEmpty())
+            assertTrue(result.manifestPresent)
+            assertFalse(result.lockPresent)
+            assertEquals("com.engineeringood.demo", result.repository?.manifest?.primaryPackage?.id?.name)
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `rejects authored sources outside src and nested manifests`() {
         val repositoryRoot = createTempDirectory("athena-repository-contract-")
         try {
@@ -217,6 +248,32 @@ class AthenaRepositoryContractLoaderTest {
 
             assertTrue(result.isValid)
             assertEquals("com.engineeringood.demo", result.repository?.manifest?.primaryPackage?.id?.name)
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `compiler facade keeps strict lock validation by default`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("src").createDirectories()
+            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+
+            val result = AthenaCompiler().validateRepositoryContract(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertEquals(
+                listOf("repository.contract.lock.missing"),
+                result.diagnostics.map { diagnostic -> diagnostic.code },
+            )
         } finally {
             repositoryRoot.toFile().deleteRecursively()
         }

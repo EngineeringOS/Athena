@@ -1,4 +1,4 @@
-# `ide/theia-product`
+﻿# `ide/theia-product`
 
 [English](README.md) | 简体中文
 

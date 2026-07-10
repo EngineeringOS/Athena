@@ -2,7 +2,7 @@
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
-The `:kernel:compiler` module is Athena's orchestration core. It exposes the public compiler facade, owns compiler pipeline reporting, coordinates domain semantics, resolves governed knowledge packages, validates external boundary descriptors, derives explicit `Layout IR`, derives explicit `Geometry IR`, and drives the first geometry-backed downstream backend path.
+The `:kernel:compiler` module is Athena's orchestration core. It exposes the public compiler facade, owns compiler pipeline reporting, coordinates domain semantics, resolves governed knowledge packages, validates external boundary descriptors, derives explicit `Layout IR`, derives explicit `Geometry IR`, derives renderer-neutral `projection-model` documents, and drives the first geometry-backed downstream backend path.
 
 ## Responsibilities
 
@@ -12,6 +12,7 @@ The `:kernel:compiler` module is Athena's orchestration core. It exposes the pub
 - Run generic semantic validation and domain-plugin validation.
 - Derive supported `Layout IR` documents from canonical `Engineering IR` plus typed `ViewDefinition` contributions.
 - Derive supported `Geometry IR` documents from explicit `Layout IR`.
+- Derive supported `ProjectionDocument` outputs from `Geometry IR` plus layout-owned `ViewDefinition`.
 - Consume the stable public SPI from `:kernel:plugins:plugin-api`.
 - Consume the approved hosted plugin inventory governed by `:kernel:plugins:plugin-host`.
 - Load and resolve governed knowledge packages.
@@ -51,6 +52,7 @@ Story `2.3` adds the first narrow incremental recompute proof for M2:
 - `:kernel:engineering-model`
 - `:kernel:layout-model`
 - `:kernel:geometry-model`
+- `:kernel:projection-model`
 - `:kernel:svg-renderer`
 
 Test-only dependency:
@@ -59,7 +61,7 @@ Test-only dependency:
 
 ## Boundaries
 
-This module does not own the DSL grammar itself, the canonical IR schema, the public plugin SPI, hosted plugin source or approval governance, or the concrete Electrical/Runtime domain rules. It orchestrates those pieces while preserving the architecture rule that the DSL is the authored source, `Engineering IR` is the canonical model, `Layout IR` is the first explicit downstream projection layer, `Geometry IR` is the renderer-facing downstream layer, and renderers are downstream backends fed from geometry rather than semantic shortcuts.
+This module does not own the DSL grammar itself, the canonical IR schema, the public plugin SPI, hosted plugin source or approval governance, or the concrete Electrical/Runtime domain rules. It orchestrates those pieces while preserving the architecture rule that the DSL is the authored source, `Engineering IR` is the canonical model, `Layout IR` is the first explicit downstream projection layer, `Geometry IR` is the geometry-facing downstream layer, `:kernel:projection-model` is the renderer-neutral graphical projection boundary above runtime/LSP consumers, and renderers remain downstream backends rather than semantic shortcuts.
 
 ## Verification
 

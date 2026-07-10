@@ -6,6 +6,7 @@ import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeResolver
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoader
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoadOptions
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractValidationResult
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryGraphResolutionResult
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryGraphResolver
@@ -26,6 +27,7 @@ import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.renderer.svg.SvgRenderer
 import com.engineeringood.athena.renderer.svg.SvgRenderModel
+import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.semantics.core.EngineeringIrValidationScope
 import com.engineeringood.athena.semantics.core.SemanticContinuationDecision
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -54,6 +56,7 @@ class AthenaCompiler(
     private val validator: EngineeringIrValidator = EngineeringIrValidator(),
     private val geometryIrDeriver: GeometryIrDeriver = GeometryIrDeriver(),
     private val layoutIrDeriver: LayoutIrDeriver = LayoutIrDeriver(),
+    private val projectionModelDeriver: ProjectionModelDeriver = ProjectionModelDeriver(),
     private val renderModelDeriver: SvgRenderModelDeriver = SvgRenderModelDeriver(),
     private val svgRenderer: SvgRenderer = SvgRenderer(),
     private val pluginDiscovery: AthenaPluginDiscovery = AthenaPluginDiscovery(),
@@ -103,8 +106,11 @@ class AthenaCompiler(
                     CompilerRenderContributionAttribution(
                         pluginId = pluginId,
                         contributionId = contribution.contributionId,
+                        displayName = contribution.displayName,
+                        description = contribution.description,
                         viewIds = contribution.viewIds,
                         rendererTargets = contribution.rendererTargets,
+                        surfaceMappings = contribution.surfaceMappings,
                     )
                 }
         }
@@ -164,11 +170,22 @@ class AthenaCompiler(
     /** Returns declared render contributions in deterministic approved-plugin order. */
     fun supportedRenderContributions(): List<CompilerRenderContributionAttribution> = supportedRenderContributionsCache
 
+    /** Returns render contributions active for one downstream view and renderer target. */
+    fun activeRenderContributions(
+        viewId: String,
+        rendererTarget: String,
+    ): List<CompilerRenderContributionAttribution> {
+        return activeRenderContributionsFor(viewId, rendererTarget)
+    }
+
     /**
      * Loads and validates the governed repository-root contract through the compiler-owned semantic path.
      */
-    fun validateRepositoryContract(repositoryRoot: Path): AthenaRepositoryContractValidationResult {
-        return repositoryContractLoader.load(repositoryRoot)
+    fun validateRepositoryContract(
+        repositoryRoot: Path,
+        options: AthenaRepositoryContractLoadOptions = AthenaRepositoryContractLoadOptions(),
+    ): AthenaRepositoryContractValidationResult {
+        return repositoryContractLoader.load(repositoryRoot, options)
     }
 
     /**
@@ -219,6 +236,18 @@ class AthenaCompiler(
     fun deriveSupportedGeometries(layouts: List<LayoutDocument>): List<GeometryDocument> {
         return layouts.map { layoutDocument ->
             geometryIrDeriver.derive(layoutDocument)
+        }
+    }
+
+    /** Derives renderer-neutral projection documents for all supported views in deterministic order. */
+    fun deriveSupportedProjections(geometries: List<GeometryDocument>): List<ProjectionDocument> {
+        return geometries.map { geometryDocument ->
+            val viewDefinition = supportedViewDefinitionsCache.firstOrNull { definition -> definition.id == geometryDocument.viewId }
+                ?: error("Unsupported view definition `${geometryDocument.viewId}` for projection derivation.")
+            projectionModelDeriver.derive(
+                view = viewDefinition,
+                geometry = geometryDocument,
+            )
         }
     }
 
@@ -366,6 +395,7 @@ class AthenaCompiler(
             blockedReason = backendPreparation.blockedReason,
             blockedByPass = backendPreparation.blockedByPass,
         )
+        val projections = deriveSupportedProjections(backendPreparation.geometries)
         val knowledgeAttributions = buildKnowledgeAttributions(knowledgeContext)
         return CompilerCompilationSuccess(
             source = source,
@@ -374,6 +404,7 @@ class AthenaCompiler(
             validationBreakdown = validationResult.validationBreakdown,
             layouts = backendPreparation.layouts,
             geometries = backendPreparation.geometries,
+            projections = projections,
             rendering = backendEmission.rendering,
             knowledgeContext = knowledgeContext,
             boundaryValidation = boundaryValidation,
@@ -901,7 +932,7 @@ class AthenaCompiler(
             ?: geometries.firstOrNull()
     }
 
-    private fun activeRenderContributions(
+    private fun activeRenderContributionsFor(
         viewId: String,
         rendererTarget: String,
     ): List<CompilerRenderContributionAttribution> {

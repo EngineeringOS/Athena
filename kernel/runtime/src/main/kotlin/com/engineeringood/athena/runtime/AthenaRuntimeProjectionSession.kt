@@ -1,11 +1,16 @@
 package com.engineeringood.athena.runtime
 
+import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
+import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
 import com.engineeringood.athena.compiler.CompilerRenderingBlocked
-import com.engineeringood.athena.geometry.GeometryDocument
-import com.engineeringood.athena.geometry.GeometryElement
-import com.engineeringood.athena.geometry.GeometryPoint
+import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
+import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionDocument
+import com.engineeringood.athena.projection.ProjectionLabel
+import com.engineeringood.athena.projection.ProjectionNode
+import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 
 /**
  * Runtime-owned view descriptor hosted inside one active projection session.
@@ -27,6 +32,36 @@ data class AthenaRuntimeProjectionSession(
 )
 
 /**
+ * Inspectable runtime-owned diagnostic attached to an unavailable projection snapshot.
+ */
+data class AthenaRuntimeProjectionDiagnostic(
+    val severity: String,
+    val code: String,
+    val message: String,
+    val provenance: String? = null,
+)
+
+/**
+ * Runtime-owned downstream surface mapping for one active graphical projection contribution.
+ */
+data class AthenaRuntimeProjectionSurfaceMapping(
+    val surface: String,
+    val tokens: Map<String, String> = emptyMap(),
+)
+
+/**
+ * Runtime-owned active render contribution attached to one graphical projection snapshot.
+ */
+data class AthenaRuntimeProjectionRenderContribution(
+    val pluginId: String,
+    val contributionId: String,
+    val displayName: String,
+    val description: String,
+    val rendererTarget: String,
+    val surfaceMappings: List<AthenaRuntimeProjectionSurfaceMapping> = emptyList(),
+)
+
+/**
  * Runtime-owned projection snapshot for one active view.
  */
 sealed interface AthenaRuntimeProjectionSnapshot {
@@ -42,6 +77,7 @@ sealed interface AthenaRuntimeProjectionSnapshot {
 data class AthenaRuntimeProjectionReadySnapshot(
     override val viewId: String,
     val scene: AthenaRuntimeViewerScene,
+    val activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution> = emptyList(),
 ) : AthenaRuntimeProjectionSnapshot
 
 /**
@@ -50,6 +86,7 @@ data class AthenaRuntimeProjectionReadySnapshot(
 data class AthenaRuntimeProjectionUnavailableSnapshot(
     override val viewId: String,
     val reason: String,
+    val diagnostics: List<AthenaRuntimeProjectionDiagnostic> = emptyList(),
 ) : AthenaRuntimeProjectionSnapshot
 
 /**
@@ -90,6 +127,15 @@ data class AthenaRuntimeProjectionSwitchRejected(
  * Builds the runtime-owned projection session for the active project.
  */
 internal fun AthenaExecutionContext.buildProjectionSession(): AthenaRuntimeProjectionSession {
+    return buildProjectionSession(compilation = compileActiveProject())
+}
+
+/**
+ * Builds the runtime-owned projection session for the active project from one supplied compilation result.
+ */
+internal fun AthenaExecutionContext.buildProjectionSession(
+    compilation: CompilerCompilationResult,
+): AthenaRuntimeProjectionSession {
     val supportedViews = compiler().supportedViewDefinitions().map { definition ->
         AthenaRuntimeProjectionView(
             viewId = definition.id,
@@ -101,13 +147,14 @@ internal fun AthenaExecutionContext.buildProjectionSession(): AthenaRuntimeProje
         "Runtime projection session requires at least one supported view definition for project `${project.name}`."
     }
     val activeViewId = activeProjectionViewId(supportedViews)
+    replaceActiveProjectionViewId(activeViewId)
     return AthenaRuntimeProjectionSession(
         projectName = project.name,
         supportedViews = supportedViews,
         activeViewId = activeViewId,
         activeProjection = buildProjectionSnapshot(
             viewId = activeViewId,
-            compilation = compileActiveProject(),
+            compilation = compilation,
         ),
     )
 }
@@ -116,13 +163,8 @@ internal fun AthenaExecutionContext.buildProjectionSession(): AthenaRuntimeProje
  * Attempts to switch the runtime-owned active projection view for the active project.
  */
 internal fun AthenaExecutionContext.switchProjectionView(viewId: String): AthenaRuntimeProjectionSwitchResult {
-    val supportedViews = compiler().supportedViewDefinitions().map { definition ->
-        AthenaRuntimeProjectionView(
-            viewId = definition.id,
-            displayName = definition.displayName,
-            description = definition.description.orEmpty(),
-        )
-    }
+    val currentSession = projectProjectionSession()
+    val supportedViews = currentSession.supportedViews
     val supportedViewIds = supportedViews.map { view -> view.viewId }
     if (viewId !in supportedViewIds) {
         return AthenaRuntimeProjectionSwitchRejected(
@@ -132,11 +174,19 @@ internal fun AthenaExecutionContext.switchProjectionView(viewId: String): Athena
             reason = "Runtime projection session does not support active view `$viewId` for project `${project.name}`.",
         )
     }
+    if (viewId == currentSession.activeViewId) {
+        return AthenaRuntimeProjectionSwitchSuccess(
+            projectName = project.name,
+            requestedViewId = viewId,
+            session = currentSession,
+        )
+    }
     replaceActiveProjectionViewId(viewId)
+    invalidateProjectionSession()
     return AthenaRuntimeProjectionSwitchSuccess(
         projectName = project.name,
         requestedViewId = viewId,
-        session = buildProjectionSession(),
+        session = projectProjectionSession(),
     )
 }
 
@@ -170,82 +220,158 @@ private fun AthenaExecutionContext.activeProjectionViewId(
 
 private fun AthenaExecutionContext.buildProjectionSnapshot(
     viewId: String,
-    compilation: com.engineeringood.athena.compiler.CompilerCompilationResult,
+    compilation: CompilerCompilationResult,
 ): AthenaRuntimeProjectionSnapshot {
     return when (compilation) {
-        is CompilerCompilationParseFailure -> AthenaRuntimeProjectionUnavailableSnapshot(
-            viewId = viewId,
-            reason = compilation.diagnostics.joinToString(separator = "; ") { diagnostic -> diagnostic.message },
-        )
+        is CompilerCompilationParseFailure -> {
+            val diagnostics = compilation.diagnostics.map(CompilerSyntaxDiagnostic::toProjectionDiagnostic)
+            AthenaRuntimeProjectionUnavailableSnapshot(
+                viewId = viewId,
+                reason = diagnostics.joinToString(separator = "; ") { diagnostic -> diagnostic.message },
+                diagnostics = diagnostics,
+            )
+        }
 
         is CompilerCompilationSuccess -> {
-            val geometry = compilation.geometries.firstOrNull { document -> document.viewId == viewId }
+            val projection = compilation.projections.firstOrNull { document -> document.view.id == viewId }
             val rendering = compilation.rendering
             when {
-                geometry != null -> AthenaRuntimeProjectionReadySnapshot(
+                projection != null -> AthenaRuntimeProjectionReadySnapshot(
                     viewId = viewId,
-                    scene = geometry.toViewerScene(compilation.document.system.name),
+                    scene = projection.toViewerScene(compilation.document.system.name),
+                    activeRenderContributions = activeProjectionRenderContributions(
+                        viewId = viewId,
+                        rendererTarget = GRAPH_WORKBENCH_RENDERER_TARGET,
+                    ),
                 )
 
-                rendering is CompilerRenderingBlocked -> AthenaRuntimeProjectionUnavailableSnapshot(
-                    viewId = viewId,
-                    reason = rendering.reason,
-                )
+                rendering is CompilerRenderingBlocked -> {
+                    val diagnostics = compilation.semanticResult.diagnostics.map(SemanticDiagnostic::toProjectionDiagnostic)
+                        .ifEmpty {
+                            listOf(
+                                AthenaRuntimeProjectionDiagnostic(
+                                    severity = "error",
+                                    code = "rendering.blocked",
+                                    message = rendering.reason,
+                                ),
+                            )
+                        }
+                    AthenaRuntimeProjectionUnavailableSnapshot(
+                        viewId = viewId,
+                        reason = rendering.reason,
+                        diagnostics = diagnostics,
+                    )
+                }
 
-                else -> AthenaRuntimeProjectionUnavailableSnapshot(
-                    viewId = viewId,
-                    reason = "No geometry-backed runtime projection is available for supported view `$viewId`.",
+                else -> {
+                    val reason = "No geometry-backed runtime projection is available for supported view `$viewId`."
+                    AthenaRuntimeProjectionUnavailableSnapshot(
+                        viewId = viewId,
+                        reason = reason,
+                        diagnostics = listOf(
+                            AthenaRuntimeProjectionDiagnostic(
+                                severity = "error",
+                                code = "projection.geometry-unavailable",
+                                message = reason,
+                            ),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun CompilerSyntaxDiagnostic.toProjectionDiagnostic(): AthenaRuntimeProjectionDiagnostic {
+    return AthenaRuntimeProjectionDiagnostic(
+        severity = "error",
+        code = "compiler.syntax",
+        message = message,
+        provenance = "$file:$line:$column",
+    )
+}
+
+private fun SemanticDiagnostic.toProjectionDiagnostic(): AthenaRuntimeProjectionDiagnostic {
+    return AthenaRuntimeProjectionDiagnostic(
+        severity = severity.name.lowercase(),
+        code = ruleId.value,
+        message = message,
+        provenance = "${provenance.file}:${provenance.startLine}:${provenance.startColumn}",
+    )
+}
+
+private fun AthenaExecutionContext.activeProjectionRenderContributions(
+    viewId: String,
+    rendererTarget: String,
+): List<AthenaRuntimeProjectionRenderContribution> {
+    return pluginRuntimeServices().renderContributions().flatMap { contributionSet ->
+        contributionSet.renderContributions.mapNotNull { contribution ->
+            val supportsView = contribution.viewIds.isEmpty() || viewId in contribution.viewIds
+            val supportsTarget = contribution.rendererTargets.isEmpty() || rendererTarget in contribution.rendererTargets
+            if (!supportsView || !supportsTarget) {
+                null
+            } else {
+                AthenaRuntimeProjectionRenderContribution(
+                    pluginId = contributionSet.pluginId,
+                    contributionId = contribution.contributionId,
+                    displayName = contribution.displayName,
+                    description = contribution.description,
+                    rendererTarget = rendererTarget,
+                    surfaceMappings = contribution.surfaceMappings.map(AthenaRenderSurfaceMapping::toRuntimeProjectionSurfaceMapping),
                 )
             }
         }
     }
 }
 
-private fun GeometryDocument.toViewerScene(systemName: String): AthenaRuntimeViewerScene {
+private fun AthenaRenderSurfaceMapping.toRuntimeProjectionSurfaceMapping(): AthenaRuntimeProjectionSurfaceMapping {
+    return AthenaRuntimeProjectionSurfaceMapping(
+        surface = surface.name.lowercase(),
+        tokens = tokens.toSortedMap(),
+    )
+}
+
+private fun ProjectionDocument.toViewerScene(systemName: String): AthenaRuntimeViewerScene {
     return AthenaRuntimeViewerScene(
         systemName = systemName,
         canvasWidth = canvasWidth,
         canvasHeight = canvasHeight,
-        components = elements
-            .filter { element -> element.kind == com.engineeringood.athena.geometry.GeometryElementKind.BOX }
-            .map { element ->
-                AthenaRuntimeViewerComponentBox(
-                    semanticId = element.semanticId.value,
-                    label = element.label.orEmpty(),
-                    x = element.bounds.x,
-                    y = element.bounds.y,
-                    width = element.bounds.width,
-                    height = element.bounds.height,
-                )
-            },
-        connections = elements
-            .filter { element -> element.kind == com.engineeringood.athena.geometry.GeometryElementKind.PATH }
-            .map { element ->
-                val start = element.connectionStart()
-                val end = element.connectionEnd()
-                AthenaRuntimeViewerConnectionLine(
-                    semanticId = element.semanticId.value,
-                    x1 = start.x,
-                    y1 = start.y,
-                    x2 = end.x,
-                    y2 = end.y,
-                )
-            },
+        components = nodes.map(ProjectionNode::toViewerComponent),
+        connections = connections.map(ProjectionConnection::toViewerConnection),
+        labels = labels.map(ProjectionLabel::toViewerLabel),
     )
 }
 
-private fun GeometryElement.connectionStart(): GeometryPoint {
-    return points.firstOrNull()
-        ?: GeometryPoint(
-            x = bounds.x,
-            y = bounds.y + bounds.height / 2,
-        )
+private const val GRAPH_WORKBENCH_RENDERER_TARGET = "graph-workbench"
+
+private fun ProjectionNode.toViewerComponent(): AthenaRuntimeViewerComponentBox {
+    return AthenaRuntimeViewerComponentBox(
+        semanticId = semanticId.value,
+        label = label,
+        x = bounds.x,
+        y = bounds.y,
+        width = bounds.width,
+        height = bounds.height,
+    )
 }
 
-private fun GeometryElement.connectionEnd(): GeometryPoint {
-    return points.lastOrNull()
-        ?: GeometryPoint(
-            x = bounds.x + bounds.width,
-            y = bounds.y + bounds.height / 2,
-        )
+private fun ProjectionConnection.toViewerConnection(): AthenaRuntimeViewerConnectionLine {
+    return AthenaRuntimeViewerConnectionLine(
+        semanticId = semanticId.value,
+        x1 = start.x,
+        y1 = start.y,
+        x2 = end.x,
+        y2 = end.y,
+    )
+}
+
+private fun ProjectionLabel.toViewerLabel(): AthenaRuntimeViewerLabel {
+    return AthenaRuntimeViewerLabel(
+        semanticId = semanticId.value,
+        label = label,
+        x = bounds.x,
+        y = bounds.y,
+        width = bounds.width,
+        height = bounds.height,
+    )
 }

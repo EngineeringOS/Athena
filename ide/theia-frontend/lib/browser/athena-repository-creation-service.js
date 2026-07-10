@@ -19,6 +19,7 @@ const browser_1 = require("@theia/core/lib/browser");
 const inversify_1 = require("@theia/core/shared/inversify");
 const browser_2 = require("@theia/filesystem/lib/browser");
 const workspace_service_1 = require("@theia/workspace/lib/browser/workspace-service");
+const athena_backend_endpoint_1 = require("./athena-backend-endpoint");
 let AthenaRepositoryCreationService = class AthenaRepositoryCreationService {
     fileDialogService;
     workspaceService;
@@ -73,7 +74,10 @@ let AthenaRepositoryCreationService = class AthenaRepositoryCreationService {
         };
     }
     async requestRepositoryBootstrap(parentDirectoryPath, repositoryName) {
-        const response = await fetch(`/athena/repositories/create?parentDirectoryPath=${encodeURIComponent(parentDirectoryPath)}&repositoryName=${encodeURIComponent(repositoryName)}`, {
+        const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/repositories/create', {
+            parentDirectoryPath,
+            repositoryName,
+        }), {
             method: 'POST'
         });
         const result = await response.json();

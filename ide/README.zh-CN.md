@@ -1,8 +1,8 @@
-# `ide`
+﻿# `ide`
 
 [English](README.md) | 简体中文
 
-`ide` 分组是 Athena 当前以桌面优先为主的产品路径。它现在承载可运行的 Eclipse Theia 版 Athena 外壳、M5 仓库接缝，以及当前 M6 semantic SCM 与 package-history workbench projection。
+`ide` 分组是 Athena 当前以桌面优先为主的产品路径。它现在承载可运行的 Eclipse Theia 版 Athena 外壳、M5 仓库接缝、当前 M6 semantic SCM 与 package-history workbench projection，以及第一个 M7 图形 workbench surface。
 
 ## 范围
 
@@ -22,12 +22,15 @@
 - 通过同一条 LSP 边界提供的 completion、document-symbol、definition 与 references 路径
 - 在重复编辑下保持 diagnostics 与 navigation 对齐最新内存态 Athena 文档的稳定路径
 - 通过现有 backend 与 LSP bridge 投影 baseline-driven review、commit-preparation、package evolution 与 release relevance 的 Athena semantic SCM workbench panel
+- 通过 graph adapter boundary 投影 runtime-owned node 与 relationship view，同时不把 projection authority 移入前端的 Athena 图形 workbench panel
+- 通过 canonical semantic id 保持图形 selection、source reveal、semantic inspection 与 semantic SCM context 对齐的第一条同步语义选择路径
+- 第一条 inspect-first 图形交互路径：active-view switching 通过 Athena runtime command allowlist 受治理，projection refresh 时会丢弃陈旧的 transient selection
 
 它还没有交付：
 
 - 通过 Athena LSP 提供的完整 hover、rename、formatting 与更丰富的多文件语言能力
 - `.athena` 的 syntax highlighting 或 semantic tokens
-- 图形 projection 工具
+- 更丰富的 review overlay 或更丰富的 governed 图形交互
 
 ## Packages
 

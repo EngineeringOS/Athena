@@ -37,6 +37,7 @@ data class AthenaRuntimeViewerScene(
     val canvasHeight: Int,
     val components: List<AthenaRuntimeViewerComponentBox>,
     val connections: List<AthenaRuntimeViewerConnectionLine>,
+    val labels: List<AthenaRuntimeViewerLabel>,
 )
 
 /**
@@ -60,6 +61,18 @@ data class AthenaRuntimeViewerConnectionLine(
     val y1: Int,
     val x2: Int,
     val y2: Int,
+)
+
+/**
+ * Runtime-facing semantic label derived from canonical projection output.
+ */
+data class AthenaRuntimeViewerLabel(
+    val semanticId: String,
+    val label: String,
+    val x: Int,
+    val y: Int,
+    val width: Int,
+    val height: Int,
 )
 
 /**

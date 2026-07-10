@@ -15,6 +15,7 @@
 - 在 core review 生成之后应用 hosted semantic review enrichment，同时保持 core review entry 仍然是 semantic authority。
 - 对外暴露 runtime 可见的插件生命周期检查，同时不把编排所有权交给插件。
 - 托管运行时拥有的投影会话，包括受支持视图发现与活动视图切换。
+- 消费编译器派生的 `:kernel:projection-model` 文档，作为图形投影的主输入。
 - 让运行时规范状态始终与 `Engineering IR` 保持一致。
 - 托管命令历史、撤销、重做、重放、差异检查以及已接受 AI 提案流程。
 - 在受支持的语义变更后，对外发布运行时可见的增量刷新元数据。
@@ -38,13 +39,14 @@
 ## 依赖
 
 - `:kernel:compiler`
+- `:kernel:projection-model`
 - `:kernel:plugins:plugin-host`
 - `:kernel:engineering-model`
 - `:kernel:svg-renderer`
 
 ## 边界
 
-该模块不直接解析 DSL 源文本，不定义规范 IR 结构，也不拥有领域语义。它拥有这些下层之上的运行时生命周期与编排。投影会话只是建立在编译器派生投影工件之上的运行时状态；切换视图不会修改规范工程语义。
+该模块不直接解析 DSL 源文本，不定义规范 IR 结构，也不拥有领域语义。它拥有这些下层之上的运行时生命周期与编排。投影会话只是建立在编译器派生的 `:kernel:projection-model` 工件之上的运行时状态；切换视图不会修改规范工程语义。
 
 ## Review Contract
 

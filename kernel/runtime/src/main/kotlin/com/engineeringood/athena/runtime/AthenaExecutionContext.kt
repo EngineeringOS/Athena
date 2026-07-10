@@ -18,6 +18,7 @@ class AthenaExecutionContext(
     val services: AthenaServiceRegistry,
 ) {
     private var activeCompilationSnapshot: CompilerCompilationResult? = null
+    private var activeProjectionSessionSnapshot: AthenaRuntimeProjectionSession? = null
     private var activeProjectionViewId: String? = null
     private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
     private var aiProposalState: AthenaAiProposalState = AthenaAiProposalState()
@@ -95,7 +96,21 @@ class AthenaExecutionContext(
     /**
      * Returns the runtime-owned projection session for the active project.
      */
-    fun projectProjectionSession(): AthenaRuntimeProjectionSession = buildProjectionSession()
+    fun projectProjectionSession(): AthenaRuntimeProjectionSession {
+        return activeProjectionSessionSnapshot ?: buildProjectionSession().also { session ->
+            activeProjectionSessionSnapshot = session
+        }
+    }
+
+    /**
+     * Builds one non-cached projection preview from the supplied in-memory [compilation].
+     *
+     * This path is intended for IDE-owned dirty buffers that must stay visually aligned with the
+     * latest tracked editor state without mutating runtime-owned canonical cache.
+     */
+    fun previewProjectionSession(compilation: CompilerCompilationResult): AthenaRuntimeProjectionSession {
+        return buildProjectionSession(compilation)
+    }
 
     /**
      * Switches the runtime-owned active projection view for the active project.
@@ -131,6 +146,7 @@ class AthenaExecutionContext(
             previousRendering = currentCompilation.rendering,
         ).also { recomputed ->
             activeCompilationSnapshot = recomputed
+            invalidateProjectionSession()
         }
     }
 
@@ -175,6 +191,13 @@ class AthenaExecutionContext(
      */
     internal fun replaceActiveProjectionViewId(viewId: String) {
         activeProjectionViewId = viewId
+    }
+
+    /**
+     * Clears the cached runtime-owned projection session after one canonical input transition.
+     */
+    internal fun invalidateProjectionSession() {
+        activeProjectionSessionSnapshot = null
     }
 }
 

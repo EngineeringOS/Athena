@@ -11,6 +11,7 @@ export declare namespace AthenaCommands {
     const REVEAL_SEMANTIC_INSPECTION: Command;
     const REVEAL_SEMANTIC_SCM: Command;
     const REVEAL_REPOSITORY_GRAPH: Command;
+    const REVEAL_GRAPHICAL_VIEW: Command;
 }
 export interface AthenaWorkbenchExtension {
     readonly command: Command;

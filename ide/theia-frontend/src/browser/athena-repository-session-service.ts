@@ -2,6 +2,7 @@ import { Emitter, MessageService } from '@theia/core';
 import { FrontendApplication, FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { inject, injectable } from '@theia/core/shared/inversify';
 import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
+import { toAthenaBackendUrl } from './athena-backend-endpoint';
 
 export type AthenaRepositorySessionState = {
     lifecycle: 'idle' | 'activating' | 'ready' | 'unavailable';
@@ -75,7 +76,9 @@ export class AthenaRepositorySessionService implements FrontendApplicationContri
         });
 
         try {
-            const response = await fetch(`/athena/repository-session/activate?repositoryRootPath=${encodeURIComponent(repositoryRootPath)}`, {
+            const response = await fetch(toAthenaBackendUrl('athena/repository-session/activate', {
+                repositoryRootPath,
+            }), {
                 method: 'POST'
             });
             const nextState = await response.json() as AthenaRepositorySessionState;
@@ -96,7 +99,7 @@ export class AthenaRepositorySessionService implements FrontendApplicationContri
 
     async refreshSessionState(): Promise<void> {
         try {
-            const response = await fetch('/athena/repository-session');
+            const response = await fetch(toAthenaBackendUrl('athena/repository-session'));
             const nextState = await response.json() as AthenaRepositorySessionState;
             this.setState(nextState);
         } catch (error) {

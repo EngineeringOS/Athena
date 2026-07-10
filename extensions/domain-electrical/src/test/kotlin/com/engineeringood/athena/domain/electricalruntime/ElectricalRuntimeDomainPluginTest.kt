@@ -5,6 +5,7 @@ import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaRenderSurface
 import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributor
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import kotlin.test.Test
@@ -66,5 +67,30 @@ class ElectricalRuntimeDomainPluginTest {
             setOf("Lamp", "Motor", "Switch"),
             plugin.domainSchema.properties.first { property -> property.name == "type" }.allowedSymbolValues,
         )
+    }
+
+    @Test
+    fun `publishes graphical surface mappings through extension owned render contributions`() {
+        val plugin = ElectricalRuntimeDomainPlugin()
+
+        val cabinetContribution = plugin.renderContributions.first { contribution ->
+            contribution.contributionId == "electrical-runtime.render.cabinet"
+        }
+        val wiringContribution = plugin.renderContributions.first { contribution ->
+            contribution.contributionId == "electrical-runtime.render.wiring"
+        }
+
+        assertEquals(setOf("svg", "graph-workbench"), cabinetContribution.rendererTargets)
+        assertEquals(
+            listOf(AthenaRenderSurface.CANVAS, AthenaRenderSurface.NODE, AthenaRenderSurface.EDGE),
+            cabinetContribution.surfaceMappings.map { mapping -> mapping.surface },
+        )
+        assertEquals("rgba(22, 18, 12, 0.92)", cabinetContribution.surfaceMappings.first().tokens["canvasTint"])
+        assertEquals(setOf("svg", "graph-workbench"), wiringContribution.rendererTargets)
+        assertEquals(
+            listOf(AthenaRenderSurface.CANVAS, AthenaRenderSurface.NODE, AthenaRenderSurface.EDGE),
+            wiringContribution.surfaceMappings.map { mapping -> mapping.surface },
+        )
+        assertEquals("rgba(96, 223, 255, 0.94)", wiringContribution.surfaceMappings.last().tokens["stroke"])
     }
 }

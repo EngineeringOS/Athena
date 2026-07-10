@@ -3,7 +3,9 @@ import { CommonMenus } from '@theia/core/lib/browser/common-frontend-contributio
 import { CommandContribution, CommandRegistry } from '@theia/core/lib/common/command';
 import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu';
 import { injectable, inject } from '@theia/core/shared/inversify';
+import { EditorManager } from '@theia/editor/lib/browser';
 import { WorkspaceCommands } from '@theia/workspace/lib/browser/workspace-commands';
+import { AthenaGraphWorkbenchWidget } from './athena-graph-workbench-widget';
 import { AthenaHomeWidget } from './athena-home-widget';
 import { AthenaRepositoryCreationService } from './athena-repository-creation-service';
 import {
@@ -16,6 +18,9 @@ import {
 @injectable()
 export class AthenaProductContribution extends AbstractViewContribution<AthenaHomeWidget>
 implements FrontendApplicationContribution, CommandContribution, MenuContribution {
+    @inject(EditorManager)
+    protected readonly editorManager: EditorManager;
+
     @inject(AthenaRepositoryCreationService)
     protected readonly repositoryCreationService: AthenaRepositoryCreationService;
 
@@ -132,6 +137,30 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
     }
 
     protected revealWorkbenchExtension(extension: AthenaWorkbenchExtension): Promise<void> {
+        if (extension.widgetId === AthenaGraphWorkbenchWidget.ID) {
+            return this.revealGraphWorkbench(extension);
+        }
         return this.revealWorkbenchWidget(extension.widgetId, extension.area);
+    }
+
+    protected async revealGraphWorkbench(extension: AthenaWorkbenchExtension): Promise<void> {
+        const existing = this.shell.getWidgetById(extension.widgetId);
+        if (!existing) {
+            const widget = await this.widgetManager.getOrCreateWidget(extension.widgetId);
+            const currentEditor = this.editorManager.currentEditor;
+            if (currentEditor) {
+                await this.shell.addWidget(widget, {
+                    area: 'main',
+                    mode: 'open-to-right',
+                    ref: currentEditor
+                });
+            } else {
+                await this.shell.addWidget(widget, { area: extension.area });
+            }
+        } else {
+            await this.shell.revealWidget(extension.widgetId);
+        }
+
+        await this.shell.activateWidget(extension.widgetId);
     }
 }

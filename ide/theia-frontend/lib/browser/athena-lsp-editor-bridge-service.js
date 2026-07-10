@@ -56,6 +56,7 @@ const browser_1 = require("@theia/editor/lib/browser");
 const problem_manager_1 = require("@theia/markers/lib/browser/problem/problem-manager");
 const output_channel_1 = require("@theia/output/lib/browser/output-channel");
 const athena_language_definition_1 = require("./athena-language-definition");
+const athena_backend_endpoint_1 = require("./athena-backend-endpoint");
 const athena_repository_session_service_1 = require("./athena-repository-session-service");
 let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
     static { AthenaLspEditorBridgeService_1 = this; }
@@ -197,7 +198,7 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
             const method = currentVersion === undefined
                 ? 'textDocument/didOpen'
                 : 'textDocument/didChange';
-            const response = await fetch('/athena/lsp/notify', {
+            const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/lsp/notify'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -276,8 +277,17 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
     isAthenaDocumentUri(uri) {
         return uri.toLowerCase().endsWith('.athena');
     }
+    currentAthenaEditorModel() {
+        const widget = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(widget)) {
+            return undefined;
+        }
+        return monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString())) ?? undefined;
+    }
     async syncPublishedDiagnostics(uri) {
-        const response = await fetch(`/athena/lsp/diagnostics?uri=${encodeURIComponent(uri)}`);
+        const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/lsp/diagnostics', {
+            uri,
+        }));
         if (!response.ok) {
             const failure = await response.json();
             throw new Error(failure.message ?? `Athena diagnostics fetch failed for ${uri}`);
@@ -304,6 +314,14 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
     async requestRepositoryGraphSession() {
         return this.sendLanguageRequest('athena/repositoryGraphSession', {});
     }
+    async requestProjectionSession() {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest('athena/projectionSession', {}, model);
+    }
+    async requestProjectionCommand(params) {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest('athena/projectionCommand', params, model);
+    }
     async requestSemanticScmState(params) {
         return this.sendLanguageRequest('athena/semanticScmState', params);
     }
@@ -317,7 +335,7 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         if (model) {
             await this.ensureDocumentSynchronized(model);
         }
-        const response = await fetch('/athena/lsp/request', {
+        const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/lsp/request'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

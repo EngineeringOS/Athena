@@ -9,4 +9,5 @@ package com.engineeringood.athena.compiler.repository
  */
 data class AthenaRepositoryContractLoadOptions(
     val allowNestedGovernedSubrepositories: Boolean = false,
+    val requireLockFile: Boolean = true,
 )

@@ -9,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -75,6 +76,7 @@ class AthenaCommandRuntimeTest {
             val beforeWiringPortLabel = beforeWiringGeometry.elements.first { element ->
                 element.semanticId.value == "port:PLC1.out" && element.kind == GeometryElementKind.LABEL
             }
+            val baselineProjectionSession = context.projectProjectionSession()
 
             val result = context.commandRuntime().execute(
                 context = context,
@@ -177,6 +179,7 @@ class AthenaCommandRuntimeTest {
             val viewerProjection = assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection())
             assertEquals(1, viewerProjection.scene.connections.size)
             val projectionSession = context.projectProjectionSession()
+            assertNotSame(baselineProjectionSession, projectionSession)
             val cabinetProjection = assertIs<AthenaRuntimeProjectionReadySnapshot>(projectionSession.activeProjection)
             assertEquals(1, cabinetProjection.scene.connections.size)
             val switchResult = context.switchActiveProjectionView("wiring")

@@ -4,6 +4,7 @@ import { DialogMode, SingleTextInputDialog, SingleTextInputDialogProps } from '@
 import { injectable, inject } from '@theia/core/shared/inversify';
 import { FileDialogService } from '@theia/filesystem/lib/browser';
 import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
+import { toAthenaBackendUrl } from './athena-backend-endpoint';
 
 type AthenaRepositoryBootstrapResult = {
     repositoryRootPath: string;
@@ -84,7 +85,10 @@ export class AthenaRepositoryCreationService {
         repositoryName: string,
     ): Promise<AthenaRepositoryBootstrapResult> {
         const response = await fetch(
-            `/athena/repositories/create?parentDirectoryPath=${encodeURIComponent(parentDirectoryPath)}&repositoryName=${encodeURIComponent(repositoryName)}`,
+            toAthenaBackendUrl('athena/repositories/create', {
+                parentDirectoryPath,
+                repositoryName,
+            }),
             {
                 method: 'POST'
             }

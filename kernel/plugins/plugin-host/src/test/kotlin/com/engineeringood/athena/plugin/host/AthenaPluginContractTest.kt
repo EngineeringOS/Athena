@@ -229,7 +229,10 @@ class AthenaPluginContractTest {
             plugin.renderContributions.map { contribution -> contribution.viewIds },
         )
         assertEquals(
-            listOf(setOf("svg"), setOf("svg")),
+            listOf(
+                setOf("svg", "graph-workbench"),
+                setOf("svg", "graph-workbench"),
+            ),
             plugin.renderContributions.map { contribution -> contribution.rendererTargets },
         )
     }

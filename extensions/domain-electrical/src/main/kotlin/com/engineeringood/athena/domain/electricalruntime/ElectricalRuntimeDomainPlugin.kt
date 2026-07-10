@@ -50,6 +50,8 @@ import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributo
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.plugin.AthenaPluginValidationResult
 import com.engineeringood.athena.plugin.AthenaRenderContribution
+import com.engineeringood.athena.plugin.AthenaRenderSurface
+import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.plugin.AthenaValidationContribution
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.CoreVersionRange
@@ -648,14 +650,64 @@ private val ELECTRICAL_RENDER_CONTRIBUTIONS = listOf(
         displayName = "Electrical cabinet rendering intent",
         description = "Publishes cabinet-view visual intent for hosted electrical structure without taking renderer ownership.",
         viewIds = setOf("cabinet"),
-        rendererTargets = setOf("svg"),
+        rendererTargets = setOf("svg", "graph-workbench"),
+        surfaceMappings = listOf(
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.CANVAS,
+                tokens = mapOf(
+                    "canvasTint" to "rgba(22, 18, 12, 0.92)",
+                    "gridMajor" to "rgba(209, 151, 67, 0.16)",
+                    "gridMinor" to "rgba(209, 151, 67, 0.06)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.NODE,
+                tokens = mapOf(
+                    "fill" to "rgba(52, 38, 21, 0.88)",
+                    "stroke" to "rgba(224, 176, 92, 0.94)",
+                    "label" to "#fff3d9",
+                    "meta" to "rgba(235, 206, 150, 0.84)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.EDGE,
+                tokens = mapOf(
+                    "stroke" to "rgba(240, 191, 98, 0.92)",
+                ),
+            ),
+        ),
     ),
     AthenaRenderContribution(
         contributionId = "electrical-runtime.render.wiring",
         displayName = "Electrical wiring rendering intent",
         description = "Publishes wiring-view visual intent for hosted electrical connectivity without taking renderer ownership.",
         viewIds = setOf("wiring"),
-        rendererTargets = setOf("svg"),
+        rendererTargets = setOf("svg", "graph-workbench"),
+        surfaceMappings = listOf(
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.CANVAS,
+                tokens = mapOf(
+                    "canvasTint" to "rgba(9, 24, 33, 0.94)",
+                    "gridMajor" to "rgba(95, 207, 240, 0.16)",
+                    "gridMinor" to "rgba(95, 207, 240, 0.06)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.NODE,
+                tokens = mapOf(
+                    "fill" to "rgba(15, 42, 56, 0.9)",
+                    "stroke" to "rgba(101, 216, 247, 0.96)",
+                    "label" to "#e8fbff",
+                    "meta" to "rgba(158, 225, 240, 0.82)",
+                ),
+            ),
+            AthenaRenderSurfaceMapping(
+                surface = AthenaRenderSurface.EDGE,
+                tokens = mapOf(
+                    "stroke" to "rgba(96, 223, 255, 0.94)",
+                ),
+            ),
+        ),
     ),
 )
 

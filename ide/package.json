@@ -10,10 +10,11 @@
     "yarn": ">=1.7.0 <2"
   },
   "scripts": {
-    "clean": "yarn workspace @engineeringood/athena-theia-frontend clean && yarn workspace @engineeringood/athena-theia-backend clean && yarn workspace @engineeringood/athena-theia-product clean",
-    "build": "yarn workspace @engineeringood/athena-theia-frontend build && yarn workspace @engineeringood/athena-theia-backend build && yarn workspace @engineeringood/athena-theia-product build",
+    "clean": "yarn --cwd ../integrations/graph-glsp clean && yarn workspace @engineeringood/athena-theia-frontend clean && yarn workspace @engineeringood/athena-theia-backend clean && yarn workspace @engineeringood/athena-theia-product clean",
+    "build": "yarn --cwd ../integrations/graph-glsp build && yarn workspace @engineeringood/athena-theia-frontend build && yarn workspace @engineeringood/athena-theia-backend build && yarn workspace @engineeringood/athena-theia-product build",
     "start": "yarn workspace @engineeringood/athena-theia-product start",
     "start:smoke": "yarn workspace @engineeringood/athena-theia-product start:smoke",
+    "verify:m7": "yarn --cwd ../integrations/graph-glsp test && yarn workspace @engineeringood/athena-theia-frontend test && yarn build && yarn start:smoke",
     "verify:desktop": "yarn build && yarn start:smoke",
     "watch": "yarn workspace @engineeringood/athena-theia-product watch"
   },

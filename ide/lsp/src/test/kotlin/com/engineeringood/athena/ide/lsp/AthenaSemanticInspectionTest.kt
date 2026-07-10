@@ -10,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.eclipse.lsp4j.Range
 
 /**
  * Verifies that Athena LSP exposes a read-only semantic inspection snapshot for the latest tracked document state.
@@ -106,6 +107,27 @@ class AthenaSemanticInspectionTest {
             assertTrue(validInspection.ports.any { port -> port.path == "Motor1.out" })
             assertEquals("Motor1.out", validInspection.connections.single().fromPath)
             assertEquals("Missing.in", validInspection.connections.single().toPath)
+            assertEquals(
+                Range(
+                    org.eclipse.lsp4j.Position(5, 2),
+                    org.eclipse.lsp4j.Position(7, 3),
+                ),
+                validInspection.components.first { component -> component.name == "Missing" }.sourceRange,
+            )
+            assertEquals(
+                Range(
+                    org.eclipse.lsp4j.Position(9, 2),
+                    org.eclipse.lsp4j.Position(12, 3),
+                ),
+                validInspection.ports.first { port -> port.path == "Motor1.out" }.sourceRange,
+            )
+            assertEquals(
+                Range(
+                    org.eclipse.lsp4j.Position(19, 2),
+                    org.eclipse.lsp4j.Position(19, 34),
+                ),
+                validInspection.connections.single().sourceRange,
+            )
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()

@@ -38,6 +38,7 @@ The implemented scope currently includes:
 - real `domain-electrical` and synthetic `domain-dummy` proof domains
 - a desktop Compose viewer proof and published examples under [`examples/`](examples/README.md)
 - a desktop-first Athena Theia IDE proof with runtime-backed repository sessions, Athena LSP authoring support, and professional workbench panels
+- a compiler-derived `:kernel:projection-model` boundary for renderer-neutral graphical projection documents
 - a governed repository/package graph proof with canonical `athena.yaml`, canonical `athena.lock`, runtime-owned `RepositoryGraphSession`, and package-aware IDE feedback
 - a VCS-neutral semantic SCM kernel boundary for baseline, diff, consequence, review, commit-intent, and history contracts above `:kernel:repository-model`
 - a deterministic semantic diff layer that compares current and baseline repository/package/engineering meaning through the governed JVM path
@@ -47,6 +48,7 @@ The implemented scope currently includes:
 - deterministic semantic commit-intent generation that keeps adapter-ready commit preparation semantic-first, inspectable, and free of Git-specific staging nouns
 - package-aware semantic history and release-relevance contracts anchored to stable package identity and version meaning
 - runtime/LSP/Theia semantic SCM projection that exposes baseline-driven review, commit-preparation, package evolution, and release-relevance state through the existing Athena workbench without moving semantic authority into the frontend
+- the first `integrations/graph-glsp` translation-only graph adapter boundary that consumes Athena-owned projection-session payloads without adding a second semantic transport
 
 This is not the final UX phase yet.
 
@@ -60,6 +62,7 @@ Athena now groups implementation assets by architectural role. The current JVM/G
 | `ide` | `node: theia-frontend` | [`ide/theia-frontend/`](ide/theia-frontend/README.md) | Theia frontend contributions, workbench composition, panels, and commands |
 | `ide` | `node: theia-backend` | [`ide/theia-backend/`](ide/theia-backend/README.md) | Theia backend contributions, startup, path handling, and process orchestration |
 | `ide` | `gradle: :ide:lsp` | [`ide/lsp/`](ide/lsp/README.md) | Athena LSP host and JVM semantic-service boundary for the IDE path |
+| `integrations` | `node: graph-glsp` | [`integrations/graph-glsp/`](integrations/graph-glsp/README.md) | Translation-only graph adapter that keeps GLSP-class protocol and rendering vocabulary downstream of Athena-owned projection sessions |
 | `integrations` | `:integrations:scm-git` | [`integrations/scm-git/`](integrations/scm-git/README.md) | First vendor substrate adapter for semantic baseline loading |
 | `kernel` | `:kernel:language` | [`kernel/language/`](kernel/language/README.md) | Syntax layer and parser for authored DSL text |
 | `kernel` | `:kernel:repository-model` | [`kernel/repository-model/`](kernel/repository-model/README.md) | Canonical M5 repository/package contract boundary for manifest, lock, package identity, and package graph reports |
@@ -67,6 +70,7 @@ Athena now groups implementation assets by architectural role. The current JVM/G
 | `kernel` | `:kernel:engineering-model` | [`kernel/engineering-model/`](kernel/engineering-model/README.md) | Canonical engineering model after lowering |
 | `kernel` | `:kernel:layout-model` | [`kernel/layout-model/`](kernel/layout-model/README.md) | Explicit layout projection contracts downstream of canonical semantics |
 | `kernel` | `:kernel:geometry-model` | [`kernel/geometry-model/`](kernel/geometry-model/README.md) | Explicit geometry projection contracts downstream of layout intent |
+| `kernel` | `:kernel:projection-model` | [`kernel/projection-model/`](kernel/projection-model/README.md) | Renderer-neutral projection documents derived from layout and geometry for runtime/LSP/graph consumers |
 | `kernel` | `:kernel:validation` | [`kernel/validation/`](kernel/validation/README.md) | Generic semantic validation over the canonical model |
 | `kernel` | `:kernel:plugins:plugin-api` | [`kernel/plugins/plugin-api/`](kernel/plugins/plugin-api/README.md) | Stable hosted plugin SPI, including additive semantic review enrichment contracts |
 | `kernel` | `:kernel:plugins:plugin-host` | [`kernel/plugins/plugin-host/`](kernel/plugins/plugin-host/README.md) | Plugin source, approval, inventory, and hosted lifecycle boundary |
@@ -161,6 +165,7 @@ If you want the platform thesis:
 - `:kernel:repository-model` is the VCS-neutral repository/package contract boundary for M5 and later SCM work must consume it from above.
 - `:kernel:semantic-scm` is the VCS-neutral baseline/diff/review layer above `:kernel:repository-model`, and runtime consumes it through the JVM-owned repository session path.
 - `Engineering IR` is the canonical engineering model.
+- `:kernel:projection-model` is the M7 renderer-neutral graphical projection boundary above geometry and below runtime, LSP, and graph adapters.
 - Generic validation lives in `:kernel:validation`; domain validation lives in extensions.
 - Plugins are real and discoverable, but non-sovereign.
 - Governed knowledge packages and external boundary descriptors are separate from authored project input.

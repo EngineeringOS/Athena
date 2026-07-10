@@ -89,7 +89,7 @@ class AthenaLanguageServerTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `initialize rejects invalid repositories with contract-aware diagnostics`() {
+    fun `initialize rejects invalid repositories when the governed source root has no authored source`() {
         val repositoryRoot = createTempDirectory("athena-lsp-invalid-")
         repositoryRoot.resolve("athena.yaml").writeText(
             """
@@ -112,8 +112,8 @@ class AthenaLanguageServerTest {
             }
 
             val message = exception.cause?.message.orEmpty()
-            assertTrue(message.contains("repository.contract.lock.missing"))
-            assertTrue(message.contains("athena.lock"))
+            assertTrue(message.contains("does not contain an authored `.athena` source"))
+            assertTrue(message.contains("src/"))
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()

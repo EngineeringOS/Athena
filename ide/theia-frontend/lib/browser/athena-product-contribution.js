@@ -13,11 +13,14 @@ exports.AthenaProductContribution = void 0;
 const browser_1 = require("@theia/core/lib/browser");
 const common_frontend_contribution_1 = require("@theia/core/lib/browser/common-frontend-contribution");
 const inversify_1 = require("@theia/core/shared/inversify");
+const browser_2 = require("@theia/editor/lib/browser");
 const workspace_commands_1 = require("@theia/workspace/lib/browser/workspace-commands");
+const athena_graph_workbench_widget_1 = require("./athena-graph-workbench-widget");
 const athena_home_widget_1 = require("./athena-home-widget");
 const athena_repository_creation_service_1 = require("./athena-repository-creation-service");
 const athena_workbench_extensions_1 = require("./athena-workbench-extensions");
 let AthenaProductContribution = class AthenaProductContribution extends browser_1.AbstractViewContribution {
+    editorManager;
     repositoryCreationService;
     constructor() {
         super({
@@ -117,10 +120,38 @@ let AthenaProductContribution = class AthenaProductContribution extends browser_
         await this.shell.activateWidget(widgetId);
     }
     revealWorkbenchExtension(extension) {
+        if (extension.widgetId === athena_graph_workbench_widget_1.AthenaGraphWorkbenchWidget.ID) {
+            return this.revealGraphWorkbench(extension);
+        }
         return this.revealWorkbenchWidget(extension.widgetId, extension.area);
+    }
+    async revealGraphWorkbench(extension) {
+        const existing = this.shell.getWidgetById(extension.widgetId);
+        if (!existing) {
+            const widget = await this.widgetManager.getOrCreateWidget(extension.widgetId);
+            const currentEditor = this.editorManager.currentEditor;
+            if (currentEditor) {
+                await this.shell.addWidget(widget, {
+                    area: 'main',
+                    mode: 'open-to-right',
+                    ref: currentEditor
+                });
+            }
+            else {
+                await this.shell.addWidget(widget, { area: extension.area });
+            }
+        }
+        else {
+            await this.shell.revealWidget(extension.widgetId);
+        }
+        await this.shell.activateWidget(extension.widgetId);
     }
 };
 exports.AthenaProductContribution = AthenaProductContribution;
+__decorate([
+    (0, inversify_1.inject)(browser_2.EditorManager),
+    __metadata("design:type", browser_2.EditorManager)
+], AthenaProductContribution.prototype, "editorManager", void 0);
 __decorate([
     (0, inversify_1.inject)(athena_repository_creation_service_1.AthenaRepositoryCreationService),
     __metadata("design:type", athena_repository_creation_service_1.AthenaRepositoryCreationService)
