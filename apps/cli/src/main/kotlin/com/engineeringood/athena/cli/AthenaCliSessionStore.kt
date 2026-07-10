@@ -2,12 +2,15 @@ package com.engineeringood.athena.cli
 
 import com.engineeringood.athena.runtime.AthenaAiCommandProposal
 import com.engineeringood.athena.runtime.AthenaAiProposalQueueSnapshot
+import com.engineeringood.athena.runtime.AthenaCommandExecutionValidationFeedback
 import com.engineeringood.athena.runtime.AthenaCommandExecutionRejected
 import com.engineeringood.athena.runtime.AthenaCommandExecutionSuccess
 import com.engineeringood.athena.runtime.AthenaCommandExecutionUnavailable
+import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationValidationFeedback
 import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationRejected
 import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationSuccess
 import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationUnavailable
+import com.engineeringood.athena.runtime.AthenaMutationValidationFeedback
 import com.engineeringood.athena.runtime.AthenaCommandOrigin
 import com.engineeringood.athena.runtime.AthenaConnectPortsCommand
 import com.engineeringood.athena.runtime.AthenaExecutionContext
@@ -60,6 +63,12 @@ internal class AthenaCliSessionStore {
                     )
                 }
 
+                is AthenaCommandExecutionValidationFeedback -> {
+                    return AthenaCliPersistedSessionRestoreResult.Failed(
+                        "Persisted CLI session at `$sessionPath` produced validation feedback: ${replay.validationFeedback.renderedFeedback()}",
+                    )
+                }
+
                 is AthenaCommandExecutionUnavailable -> {
                     return AthenaCliPersistedSessionRestoreResult.Failed(
                         "Persisted CLI session at `$sessionPath` is unavailable: ${replay.reason}",
@@ -74,6 +83,12 @@ internal class AthenaCliSessionStore {
                 is AthenaCommandHistoryMutationRejected -> {
                     return AthenaCliPersistedSessionRestoreResult.Failed(
                         "Persisted CLI session at `$sessionPath` could not restore undo state: ${undo.reason}",
+                    )
+                }
+
+                is AthenaCommandHistoryMutationValidationFeedback -> {
+                    return AthenaCliPersistedSessionRestoreResult.Failed(
+                        "Persisted CLI session at `$sessionPath` produced history validation feedback: ${undo.validationFeedback.renderedFeedback()}",
                     )
                 }
 
@@ -160,6 +175,12 @@ internal class AthenaCliSessionStore {
                     error("Persisted CLI session is missing a valid next AI proposal ordinal.")
                 },
         )
+    }
+}
+
+private fun List<AthenaMutationValidationFeedback>.renderedFeedback(): String {
+    return joinToString(separator = "; ") { feedback ->
+        "${feedback.severity.name.lowercase()}: ${feedback.message}"
     }
 }
 

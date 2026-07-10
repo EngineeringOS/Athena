@@ -1,6 +1,7 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
+import com.engineeringood.athena.layout.ProjectionInteractivity
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -22,10 +23,31 @@ class AthenaRuntimeProjectionSessionTest {
         )
 
         val session = context.projectProjectionSession()
+        val cabinetView = session.supportedViews.first { view -> view.viewId == "cabinet" }
+        val wiringView = session.supportedViews.first { view -> view.viewId == "wiring" }
 
         assertEquals("demo-cabinet", session.projectName)
         assertEquals(listOf("cabinet", "wiring"), session.supportedViews.map { view -> view.viewId })
         assertEquals("cabinet", session.activeViewId)
+        assertEquals(ProjectionInteractivity.INTERACTIVE, cabinetView.ownershipContract.interactivity)
+        assertEquals(
+            listOf("adjust-layout-placement", "adjust-layout-grouping"),
+            cabinetView.ownershipContract.projectionCommandIds,
+        )
+        assertEquals(
+            listOf("navigate-view", "inspect-selection", "preview-related-elements"),
+            cabinetView.ownershipContract.transientInteractionKinds,
+        )
+        assertEquals(
+            listOf("layout-placement", "layout-group-membership"),
+            cabinetView.ownershipContract.persistedProjectionMetadataKeys,
+        )
+        assertEquals(ProjectionInteractivity.INSPECT_ONLY, wiringView.ownershipContract.interactivity)
+        assertTrue(wiringView.ownershipContract.projectionCommandIds.isEmpty())
+        assertEquals(
+            listOf("navigate-view", "inspect-selection", "preview-related-elements"),
+            wiringView.ownershipContract.transientInteractionKinds,
+        )
         val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(session.activeProjection)
         assertEquals("cabinet", ready.viewId)
         assertEquals("DemoCabinet", ready.scene.systemName)

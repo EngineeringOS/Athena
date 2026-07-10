@@ -36,7 +36,15 @@ const readyDiagram = {
         {
             viewId: 'cabinet',
             displayName: 'Cabinet',
-            description: 'Cabinet projection'
+            description: 'Cabinet projection',
+            ownershipContract: {
+                interactivity: 'interactive',
+                displayScopes: ['devices', 'ports'],
+                semanticCommandIds: [],
+                projectionCommandIds: ['adjust-layout-placement'],
+                transientInteractionKinds: ['navigate-view', 'inspect-selection'],
+                persistedProjectionMetadataKeys: ['layout-placement']
+            }
         }
     ],
     governedCommands: [],

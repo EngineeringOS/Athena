@@ -30,6 +30,7 @@ data class AthenaCommandHistoryRecord(
     val changedSemanticIds: List<String>,
     val beforeDocument: EngineeringDocument,
     val afterDocument: EngineeringDocument,
+    val mutationCategory: AthenaMutationCategory = command.mutationCategory,
 )
 
 /**
@@ -52,16 +53,14 @@ enum class AthenaCommandHistoryOperation {
 /**
  * Inspectable result of one history-backed runtime mutation operation.
  */
-sealed interface AthenaCommandHistoryMutationResult {
-    /**
-     * Runtime project name associated with the history operation.
-     */
-    val projectName: String
-
+sealed interface AthenaCommandHistoryMutationResult : AthenaMutationResult {
     /**
      * The history mutation operation that was attempted.
      */
     val operation: AthenaCommandHistoryOperation
+
+    override val mutationCategory: AthenaMutationCategory
+        get() = operation.defaultMutationCategory()
 }
 
 /**
@@ -73,7 +72,10 @@ data class AthenaCommandHistoryMutationSuccess(
     val affectedCommandIds: List<String>,
     val beforeDocument: EngineeringDocument,
     val afterDocument: EngineeringDocument,
-) : AthenaCommandHistoryMutationResult
+) : AthenaCommandHistoryMutationResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.ACCEPTED
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
 
 /**
  * Explicit rejection when the requested history operation had no applicable command to act on.
@@ -82,7 +84,29 @@ data class AthenaCommandHistoryMutationRejected(
     override val projectName: String,
     override val operation: AthenaCommandHistoryOperation,
     val reason: String,
-) : AthenaCommandHistoryMutationResult
+) : AthenaCommandHistoryMutationResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.REJECTED
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
+
+/**
+ * Explicit validation feedback when a history-backed mutation requires caller-visible validation guidance
+ * before Athena can safely update canonical state.
+ */
+data class AthenaCommandHistoryMutationValidationFeedback(
+    override val projectName: String,
+    override val operation: AthenaCommandHistoryOperation,
+    override val validationFeedback: List<AthenaMutationValidationFeedback>,
+    val affectedCommandIds: List<String> = emptyList(),
+) : AthenaCommandHistoryMutationResult {
+    init {
+        require(validationFeedback.isNotEmpty()) {
+            "Validation feedback results must include at least one feedback item."
+        }
+    }
+
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.VALIDATION_FEEDBACK
+}
 
 /**
  * Explicit runtime-unavailable result when the active project has no usable canonical state for history operations.
@@ -91,7 +115,10 @@ data class AthenaCommandHistoryMutationUnavailable(
     override val projectName: String,
     override val operation: AthenaCommandHistoryOperation,
     val reason: String,
-) : AthenaCommandHistoryMutationResult
+) : AthenaCommandHistoryMutationResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.UNAVAILABLE
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
 
 /**
  * Internal runtime-owned state for command history tracking over the active project.

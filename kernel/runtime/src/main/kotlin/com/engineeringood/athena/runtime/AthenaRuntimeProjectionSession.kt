@@ -5,6 +5,7 @@ import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
 import com.engineeringood.athena.compiler.CompilerRenderingBlocked
+import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.projection.ProjectionConnection
 import com.engineeringood.athena.projection.ProjectionDocument
@@ -19,6 +20,7 @@ data class AthenaRuntimeProjectionView(
     val viewId: String,
     val displayName: String,
     val description: String,
+    val ownershipContract: ProjectionOwnershipContract = ProjectionOwnershipContract(),
 )
 
 /**
@@ -141,6 +143,7 @@ internal fun AthenaExecutionContext.buildProjectionSession(
             viewId = definition.id,
             displayName = definition.displayName,
             description = definition.description.orEmpty(),
+            ownershipContract = definition.ownershipContract,
         )
     }
     require(supportedViews.isNotEmpty()) {

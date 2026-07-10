@@ -3,6 +3,8 @@ package com.engineeringood.athena.projection
 import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.ProjectionInteractivity
+import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.layout.ViewDefinition
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,6 +18,13 @@ class ProjectionModelContractTest {
                 displayName = "Cabinet",
                 layoutIntent = LayoutIntent.STRUCTURAL,
                 description = "Structural view",
+                ownershipContract = ProjectionOwnershipContract(
+                    interactivity = ProjectionInteractivity.INTERACTIVE,
+                    displayScopes = listOf("devices", "ports"),
+                    projectionCommandIds = listOf("move-projection-node"),
+                    transientInteractionKinds = listOf("pan", "zoom"),
+                    persistedProjectionMetadataKeys = listOf("node-position"),
+                ),
             ),
             canvasWidth = 480,
             canvasHeight = 172,
@@ -55,5 +64,7 @@ class ProjectionModelContractTest {
             document.connections.single().originGeometryElementId.value,
         )
         assertEquals("cabinet/geometry/label/port_PLC1_out", document.labels.single().originGeometryElementId.value)
+        assertEquals(true, document.view.ownershipContract.isInteractive)
+        assertEquals(listOf("move-projection-node"), document.view.ownershipContract.projectionCommandIds)
     }
 }

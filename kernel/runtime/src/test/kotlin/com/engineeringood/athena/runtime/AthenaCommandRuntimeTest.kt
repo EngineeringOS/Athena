@@ -88,7 +88,10 @@ class AthenaCommandRuntimeTest {
 
             val success = assertIs<AthenaCommandExecutionSuccess>(result)
             assertEquals("connectable", success.projectName)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, success.mutationCategory)
             assertEquals(AthenaCommandKind.CONNECT_PORTS, success.commandKind)
+            assertEquals(AthenaMutationOutcome.ACCEPTED, success.outcome)
+            assertTrue(success.validationFeedback.isEmpty())
             assertTrue(success.beforeDocument.connections.isEmpty())
             assertEquals(
                 listOf("connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
@@ -218,7 +221,10 @@ class AthenaCommandRuntimeTest {
 
             val unavailable = assertIs<AthenaCommandExecutionUnavailable>(result)
             assertEquals("broken", unavailable.projectName)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, unavailable.mutationCategory)
             assertEquals(AthenaCommandKind.CONNECT_PORTS, unavailable.commandKind)
+            assertEquals(AthenaMutationOutcome.UNAVAILABLE, unavailable.outcome)
+            assertTrue(unavailable.validationFeedback.isEmpty())
             assertContains(unavailable.reason, "Expected")
         } finally {
             Files.deleteIfExists(brokenPath)
@@ -259,13 +265,60 @@ class AthenaCommandRuntimeTest {
 
             val rejected = assertIs<AthenaCommandExecutionRejected>(result)
             assertEquals("connectable", rejected.projectName)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, rejected.mutationCategory)
             assertEquals(AthenaCommandKind.CONNECT_PORTS, rejected.commandKind)
+            assertEquals(AthenaMutationOutcome.REJECTED, rejected.outcome)
             assertContains(rejected.reason, "port:Missing.in")
             assertTrue(rejected.changedSemanticIds.isEmpty())
+            assertTrue(rejected.validationFeedback.isEmpty())
             assertTrue(assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document.connections.isEmpty())
         } finally {
             Files.deleteIfExists(sourcePath)
         }
+    }
+
+    @Test
+    fun `runtime-owned mutation contracts publish explicit category and validation feedback vocabulary`() {
+        val feedback = AthenaMutationValidationFeedback(
+            code = "validation.connection.missing-target",
+            message = "Target port must be selected before Athena can connect ports.",
+            severity = AthenaMutationValidationFeedbackSeverity.ERROR,
+            relatedSemanticIds = listOf("port:PLC1.out"),
+        )
+
+        val command = AthenaConnectPortsCommand(
+            sourcePortSemanticId = "port:PLC1.out",
+            targetPortSemanticId = "port:M1.in",
+        )
+        val executionFeedback = AthenaCommandExecutionValidationFeedback(
+            projectName = "contract-demo",
+            commandKind = command.commandKind,
+            commandOrigin = AthenaCommandOrigin.STANDARD,
+            validationFeedback = listOf(feedback),
+            changedSemanticIds = listOf("port:PLC1.out"),
+        )
+        val historyFeedback = AthenaCommandHistoryMutationValidationFeedback(
+            projectName = "contract-demo",
+            operation = AthenaCommandHistoryOperation.REPLAY,
+            validationFeedback = listOf(feedback),
+            affectedCommandIds = listOf("command-0001"),
+        )
+
+        assertEquals(
+            listOf(
+                AthenaMutationCategory.SEMANTIC_MUTATION,
+                AthenaMutationCategory.PROJECTION_MUTATION,
+                AthenaMutationCategory.TRANSIENT_INTERACTION,
+            ),
+            AthenaMutationCategory.entries,
+        )
+        assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, command.mutationCategory)
+        assertEquals(AthenaMutationOutcome.VALIDATION_FEEDBACK, executionFeedback.outcome)
+        assertEquals(listOf(feedback), executionFeedback.validationFeedback)
+        assertEquals(listOf("port:PLC1.out"), executionFeedback.changedSemanticIds)
+        assertEquals(AthenaMutationOutcome.VALIDATION_FEEDBACK, historyFeedback.outcome)
+        assertEquals(listOf(feedback), historyFeedback.validationFeedback)
+        assertEquals(listOf("command-0001"), historyFeedback.affectedCommandIds)
     }
 
     private fun writeProject(source: String): Path {

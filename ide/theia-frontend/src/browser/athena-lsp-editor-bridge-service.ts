@@ -21,6 +21,10 @@ import {
     athenaLanguageConfiguration,
     athenaMonarchLanguage
 } from './athena-language-definition';
+import {
+    buildAthenaSourceMutationRequest,
+    type AthenaSourceMutationPayload
+} from './athena-source-mutation-protocol';
 import { toAthenaBackendUrl } from './athena-backend-endpoint';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 
@@ -293,6 +297,16 @@ export type AthenaProjectionViewPayload = {
     viewId: string;
     displayName: string;
     description: string;
+    ownershipContract: AthenaProjectionOwnershipContractPayload;
+};
+
+export type AthenaProjectionOwnershipContractPayload = {
+    interactivity: string;
+    displayScopes: string[];
+    semanticCommandIds: string[];
+    projectionCommandIds: string[];
+    transientInteractionKinds: string[];
+    persistedProjectionMetadataKeys: string[];
 };
 
 export type AthenaProjectionGovernedCommandPayload = {
@@ -383,6 +397,16 @@ export type AthenaProjectionCommandPayload = {
     reason?: string;
     session?: AthenaProjectionSessionPayload;
 };
+
+export type {
+    AthenaMutationValidationFeedbackPayload,
+    AthenaProjectionRefreshConsequencePayload,
+    AthenaSemanticDiffEntryPayload,
+    AthenaSemanticDiffInspectionPayload,
+    AthenaSemanticHistoryConsequencePayload,
+    AthenaSourceMutationParams,
+    AthenaSourceMutationTextDocument
+} from './athena-source-mutation-protocol';
 
 @injectable()
 export class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
@@ -697,6 +721,23 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
                 uri: widget.editor.uri.toString()
             }
         });
+    }
+
+    async requestSourceMutationEvaluation(widget: EditorWidget | undefined): Promise<AthenaSourceMutationPayload | undefined> {
+        if (!this.isAthenaEditor(widget)) {
+            return undefined;
+        }
+
+        await this.synchronizeDocumentSnapshot(this.toWidgetSnapshot(widget));
+        const request = buildAthenaSourceMutationRequest(
+            widget.editor.uri.toString(),
+            this.currentAthenaEditorModel(),
+        );
+        return this.sendLanguageRequest<AthenaSourceMutationPayload>(
+            request.method,
+            request.params,
+            request.model,
+        );
     }
 
     async requestRepositoryGraphSession(): Promise<AthenaRepositoryGraphSessionPayload | undefined> {

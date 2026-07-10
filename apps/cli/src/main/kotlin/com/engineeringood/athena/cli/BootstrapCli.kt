@@ -13,21 +13,26 @@ import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.renderer.svg.SvgRendererModuleMarker
 import com.engineeringood.athena.runtime.AthenaAiCommandProposalAccepted
+import com.engineeringood.athena.runtime.AthenaAiCommandProposalAcceptanceValidationFeedback
 import com.engineeringood.athena.runtime.AthenaAiCommandProposalAcceptanceRejected
 import com.engineeringood.athena.runtime.AthenaAiCommandProposalAcceptanceUnavailable
 import com.engineeringood.athena.runtime.AthenaAiCommandProposalDraft
 import com.engineeringood.athena.runtime.AthenaAiCommandProposalRejected
 import com.engineeringood.athena.runtime.AthenaAiCommandProposalRejectionRejected
 import com.engineeringood.athena.runtime.AthenaAiCommandProposalSubmitted
+import com.engineeringood.athena.runtime.AthenaCommandExecutionValidationFeedback
 import com.engineeringood.athena.runtime.AthenaCommandExecutionRejected
 import com.engineeringood.athena.runtime.AthenaCommandExecutionSuccess
 import com.engineeringood.athena.runtime.AthenaCommandExecutionUnavailable
+import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationValidationFeedback
 import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationRejected
 import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationSuccess
 import com.engineeringood.athena.runtime.AthenaCommandHistoryMutationUnavailable
 import com.engineeringood.athena.runtime.AthenaConnectPortsCommand
 import com.engineeringood.athena.runtime.AthenaExecutionContext
+import com.engineeringood.athena.runtime.AthenaMutationValidationFeedback
 import com.engineeringood.athena.runtime.AthenaRuntime
+import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionValidationFeedback
 import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionRejected
 import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionSuccess
 import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionUnavailable
@@ -219,6 +224,13 @@ class BootstrapCli(
                         append(result.reason)
                     }
 
+                    is AthenaCommandExecutionValidationFeedback -> buildString {
+                        appendLine("Command validation feedback")
+                        appendLine("Project: ${result.projectName}")
+                        appendLine("Command: ${result.commandKind}")
+                        append(renderValidationFeedback(result.validationFeedback))
+                    }
+
                     is AthenaCommandExecutionUnavailable -> unavailableCommandOutput(
                         reason = result.reason,
                         compilation = context.compileActiveProject() as? CompilerCompilationParseFailure,
@@ -345,6 +357,16 @@ class BootstrapCli(
                     appendLine("AI proposal acceptance rejected")
                     appendLine("Proposal: ${result.proposalId}")
                     append(result.reason)
+                }
+            }
+
+            is AthenaAiCommandProposalAcceptanceValidationFeedback -> {
+                persistExecutionSession(context)
+                buildString {
+                    appendLine("AI proposal validation feedback")
+                    appendLine("Proposal: ${result.proposal.proposalId}")
+                    appendLine("Command: ${result.proposal.command.commandKind}")
+                    append(renderValidationFeedback(result.execution.validationFeedback))
                 }
             }
 
@@ -496,6 +518,13 @@ class BootstrapCli(
                 append(result.reason)
             }
 
+            is AthenaRuntimePluginCommandExecutionValidationFeedback -> buildString {
+                appendLine("Plugin command validation feedback")
+                appendLine("Plugin: ${result.pluginId}")
+                appendLine("Contribution: ${result.contributionId}")
+                append(renderValidationFeedback(result.result.validationFeedback))
+            }
+
             is AthenaRuntimePluginCommandExecutionUnavailable -> buildString {
                 appendLine("Plugin command unavailable")
                 if (result.pluginId.isNotBlank()) {
@@ -595,6 +624,11 @@ class BootstrapCli(
                 append(result.reason)
             }
 
+            is AthenaCommandHistoryMutationValidationFeedback -> buildString {
+                appendLine("Undo validation feedback")
+                append(renderValidationFeedback(result.validationFeedback))
+            }
+
             is AthenaCommandHistoryMutationUnavailable -> buildString {
                 appendLine("Undo unavailable")
                 append(result.reason)
@@ -631,6 +665,11 @@ class BootstrapCli(
                 append(result.reason)
             }
 
+            is AthenaCommandHistoryMutationValidationFeedback -> buildString {
+                appendLine("Redo validation feedback")
+                append(renderValidationFeedback(result.validationFeedback))
+            }
+
             is AthenaCommandHistoryMutationUnavailable -> buildString {
                 appendLine("Redo unavailable")
                 append(result.reason)
@@ -665,6 +704,11 @@ class BootstrapCli(
             is AthenaCommandHistoryMutationRejected -> buildString {
                 appendLine("Replay rejected")
                 append(result.reason)
+            }
+
+            is AthenaCommandHistoryMutationValidationFeedback -> buildString {
+                appendLine("Replay validation feedback")
+                append(renderValidationFeedback(result.validationFeedback))
             }
 
             is AthenaCommandHistoryMutationUnavailable -> buildString {
@@ -748,6 +792,14 @@ class BootstrapCli(
             )
 
             is AthenaCliPersistedSessionRestoreResult.Failed -> AthenaCliExecutionSessionUnavailable(restore.reason)
+        }
+    }
+
+    private fun renderValidationFeedback(
+        validationFeedback: List<AthenaMutationValidationFeedback>,
+    ): String {
+        return validationFeedback.joinToString(separator = System.lineSeparator()) { feedback ->
+            "${feedback.severity.name.lowercase()}: ${feedback.message}"
         }
     }
 

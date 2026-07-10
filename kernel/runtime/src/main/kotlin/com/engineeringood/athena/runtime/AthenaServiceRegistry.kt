@@ -8,6 +8,7 @@ class AthenaServiceRegistry(
     compilerProvider: (() -> AthenaCompiler)? = null,
     rendererProvider: () -> SvgRenderer = { SvgRenderer() },
     pluginRuntimeServicesProvider: (() -> AthenaPluginRuntimeServices)? = null,
+    sourceMutationRuntimeServiceProvider: (() -> AthenaSourceMutationRuntimeService)? = null,
     semanticBaselineServiceProvider: (() -> AthenaSemanticBaselineService)? = null,
     semanticDiffServiceProvider: (() -> AthenaSemanticDiffService)? = null,
     semanticReviewServiceProvider: (() -> AthenaSemanticReviewService)? = null,
@@ -60,6 +61,9 @@ class AthenaServiceRegistry(
             diffService = semanticDiffServiceInstance,
         )
     }
+    private val sourceMutationRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
+        sourceMutationRuntimeServiceProvider?.invoke() ?: AthenaSourceMutationRuntimeService()
+    }
     private val commandRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaCommandRuntimeService() }
     private val aiProposalRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaAiProposalRuntimeService() }
 
@@ -92,6 +96,9 @@ class AthenaServiceRegistry(
 
     /** Resolves the shared semantic history projection capability for the current runtime. */
     fun semanticHistoryStates(): AthenaSemanticHistoryStateService = semanticHistoryStateServiceInstance
+
+    /** Resolves the shared source-mutation evaluation capability for the current runtime. */
+    fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = sourceMutationRuntimeServiceInstance
 
     /** Resolves the shared command-runtime capability for the current runtime. */
     fun commandRuntime(): AthenaCommandRuntimeService = commandRuntimeInstance

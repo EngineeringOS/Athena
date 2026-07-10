@@ -20,6 +20,16 @@ export type AthenaGLSPProjectionViewSource = {
     viewId: string;
     displayName: string;
     description: string;
+    ownershipContract: AthenaGLSPProjectionOwnershipContractSource;
+};
+
+export type AthenaGLSPProjectionOwnershipContractSource = {
+    interactivity: string;
+    displayScopes: string[];
+    semanticCommandIds: string[];
+    projectionCommandIds: string[];
+    transientInteractionKinds: string[];
+    persistedProjectionMetadataKeys: string[];
 };
 
 export type AthenaGLSPGovernedCommandSource = {

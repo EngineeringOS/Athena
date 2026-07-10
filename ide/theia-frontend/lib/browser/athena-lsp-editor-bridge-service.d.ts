@@ -6,6 +6,7 @@ import { CompletionItem, DocumentSymbol, Location, Range } from '@theia/core/sha
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
+import { type AthenaSourceMutationPayload } from './athena-source-mutation-protocol';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 type AthenaTextDocumentPositionParams = {
     textDocument: {
@@ -242,6 +243,15 @@ export type AthenaProjectionViewPayload = {
     viewId: string;
     displayName: string;
     description: string;
+    ownershipContract: AthenaProjectionOwnershipContractPayload;
+};
+export type AthenaProjectionOwnershipContractPayload = {
+    interactivity: string;
+    displayScopes: string[];
+    semanticCommandIds: string[];
+    projectionCommandIds: string[];
+    transientInteractionKinds: string[];
+    persistedProjectionMetadataKeys: string[];
 };
 export type AthenaProjectionGovernedCommandPayload = {
     commandId: string;
@@ -321,6 +331,7 @@ export type AthenaProjectionCommandPayload = {
     reason?: string;
     session?: AthenaProjectionSessionPayload;
 };
+export type { AthenaMutationValidationFeedbackPayload, AthenaProjectionRefreshConsequencePayload, AthenaSemanticDiffEntryPayload, AthenaSemanticDiffInspectionPayload, AthenaSemanticHistoryConsequencePayload, AthenaSourceMutationParams, AthenaSourceMutationTextDocument } from './athena-source-mutation-protocol';
 export declare class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
     protected static readonly MARKER_OWNER = "athena-lsp";
     protected readonly editorManager: EditorManager;
@@ -350,6 +361,7 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
     protected syncPublishedDiagnostics(uri: string): Promise<void>;
     protected get outputChannel(): import("@theia/output/lib/browser/output-channel").OutputChannel;
     requestSemanticInspection(widget: EditorWidget | undefined): Promise<AthenaSemanticInspectionPayload | undefined>;
+    requestSourceMutationEvaluation(widget: EditorWidget | undefined): Promise<AthenaSourceMutationPayload | undefined>;
     requestRepositoryGraphSession(): Promise<AthenaRepositoryGraphSessionPayload | undefined>;
     requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined>;
     requestProjectionCommand(params: AthenaProjectionCommandParams): Promise<AthenaProjectionCommandPayload | undefined>;
@@ -375,5 +387,4 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
     }): monaco.IRange;
     protected reportBridgeFailure(error: unknown): void;
 }
-export {};
 //# sourceMappingURL=athena-lsp-editor-bridge-service.d.ts.map

@@ -1,6 +1,7 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
+import com.engineeringood.athena.layout.ProjectionInteractivity
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import kotlin.test.Test
@@ -43,6 +44,36 @@ class AthenaProjectionRequestTest {
                 assertEquals("factory-line", payload.projectName)
                 assertEquals(listOf("cabinet", "wiring"), payload.supportedViews.map { view -> view.viewId })
                 assertEquals("cabinet", payload.activeViewId)
+                val cabinetView = payload.supportedViews.first { view -> view.viewId == "cabinet" }
+                val wiringView = payload.supportedViews.first { view -> view.viewId == "wiring" }
+                assertEquals(ProjectionInteractivity.INTERACTIVE.name.lowercase(), cabinetView.ownershipContract.interactivity)
+                assertEquals(
+                    listOf("devices", "ports", "ownership-relationships", "connectivity-relationships", "grouped-placement"),
+                    cabinetView.ownershipContract.displayScopes,
+                )
+                assertEquals(
+                    listOf("adjust-layout-placement", "adjust-layout-grouping"),
+                    cabinetView.ownershipContract.projectionCommandIds,
+                )
+                assertEquals(
+                    listOf("navigate-view", "inspect-selection", "preview-related-elements"),
+                    cabinetView.ownershipContract.transientInteractionKinds,
+                )
+                assertEquals(
+                    listOf("layout-placement", "layout-group-membership"),
+                    cabinetView.ownershipContract.persistedProjectionMetadataKeys,
+                )
+                assertEquals(ProjectionInteractivity.INSPECT_ONLY.name.lowercase(), wiringView.ownershipContract.interactivity)
+                assertEquals(
+                    listOf("devices", "ports", "signal-groups", "connectivity-relationships"),
+                    wiringView.ownershipContract.displayScopes,
+                )
+                assertTrue(wiringView.ownershipContract.projectionCommandIds.isEmpty())
+                assertEquals(
+                    listOf("navigate-view", "inspect-selection", "preview-related-elements"),
+                    wiringView.ownershipContract.transientInteractionKinds,
+                )
+                assertTrue(wiringView.ownershipContract.persistedProjectionMetadataKeys.isEmpty())
                 assertEquals(
                     listOf("switch-active-view"),
                     payload.governedCommands.map { command -> command.commandId },

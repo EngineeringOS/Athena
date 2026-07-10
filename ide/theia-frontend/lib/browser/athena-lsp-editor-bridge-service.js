@@ -56,6 +56,7 @@ const browser_1 = require("@theia/editor/lib/browser");
 const problem_manager_1 = require("@theia/markers/lib/browser/problem/problem-manager");
 const output_channel_1 = require("@theia/output/lib/browser/output-channel");
 const athena_language_definition_1 = require("./athena-language-definition");
+const athena_source_mutation_protocol_1 = require("./athena-source-mutation-protocol");
 const athena_backend_endpoint_1 = require("./athena-backend-endpoint");
 const athena_repository_session_service_1 = require("./athena-repository-session-service");
 let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
@@ -310,6 +311,14 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
                 uri: widget.editor.uri.toString()
             }
         });
+    }
+    async requestSourceMutationEvaluation(widget) {
+        if (!this.isAthenaEditor(widget)) {
+            return undefined;
+        }
+        await this.synchronizeDocumentSnapshot(this.toWidgetSnapshot(widget));
+        const request = (0, athena_source_mutation_protocol_1.buildAthenaSourceMutationRequest)(widget.editor.uri.toString(), this.currentAthenaEditorModel());
+        return this.sendLanguageRequest(request.method, request.params, request.model);
     }
     async requestRepositoryGraphSession() {
         return this.sendLanguageRequest('athena/repositoryGraphSession', {});

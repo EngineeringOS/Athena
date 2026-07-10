@@ -11,7 +11,15 @@ const readyProjectionSession = {
         {
             viewId: 'cabinet',
             displayName: 'Cabinet',
-            description: 'Cabinet projection'
+            description: 'Cabinet projection',
+            ownershipContract: {
+                interactivity: 'interactive',
+                displayScopes: ['devices', 'ports', 'ownership-relationships'],
+                semanticCommandIds: [],
+                projectionCommandIds: ['adjust-layout-placement', 'adjust-layout-grouping'],
+                transientInteractionKinds: ['navigate-view', 'inspect-selection', 'preview-related-elements'],
+                persistedProjectionMetadataKeys: ['layout-placement', 'layout-group-membership']
+            }
         }
     ],
     governedCommands: [
@@ -105,6 +113,7 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.status, 'ready');
     assert.equal(diagram.activeRenderContributions.length, 1);
     assert.equal(diagram.activeRenderContributions[0].contributionId, 'electrical-runtime.render.cabinet');
+    assert.deepEqual(diagram.supportedViews[0].ownershipContract, readyProjectionSession.supportedViews[0].ownershipContract);
     assert.equal(diagram.graph.type, 'graph');
     assert.equal(diagram.graph.nodes.length, 2);
     assert.equal(diagram.graph.edges.length, 1);
@@ -188,4 +197,55 @@ test('normalizes omitted projection arrays from transport payloads before buildi
     assert.deepEqual(diagram.activeRenderContributions, []);
     assert.deepEqual(diagram.graph.nodes, []);
     assert.deepEqual(diagram.graph.edges, []);
+});
+
+test('normalizes partial or missing ownership contracts inside supported views', () => {
+    assert.equal(typeof adapter.translateProjectionSessionToGLSPDiagram, 'function');
+
+    const diagram = adapter.translateProjectionSessionToGLSPDiagram({
+        projectName: 'FactoryLine',
+        semanticPath: 'frontend -> LSP -> runtime/compiler',
+        activeViewId: 'cabinet',
+        status: 'ready',
+        supportedViews: [
+            {
+                viewId: 'cabinet',
+                displayName: 'Cabinet',
+                description: 'Cabinet projection',
+                ownershipContract: {
+                    interactivity: 'interactive',
+                    displayScopes: ['devices'],
+                    projectionCommandIds: ['adjust-layout-placement']
+                }
+            },
+            {
+                viewId: 'wiring',
+                displayName: 'Wiring',
+                description: 'Wiring projection'
+            }
+        ],
+        readyProjection: {
+            viewId: 'cabinet',
+            systemName: 'FactoryLine',
+            canvasWidth: 1440,
+            canvasHeight: 900,
+        },
+    });
+
+    assert.deepEqual(diagram.supportedViews[0].ownershipContract, {
+        interactivity: 'interactive',
+        displayScopes: ['devices'],
+        semanticCommandIds: [],
+        projectionCommandIds: ['adjust-layout-placement'],
+        transientInteractionKinds: [],
+        persistedProjectionMetadataKeys: []
+    });
+    assert.deepEqual(diagram.supportedViews[1].ownershipContract, {
+        interactivity: 'inspect_only',
+        displayScopes: [],
+        semanticCommandIds: [],
+        projectionCommandIds: [],
+        transientInteractionKinds: [],
+        persistedProjectionMetadataKeys: []
+    });
 });

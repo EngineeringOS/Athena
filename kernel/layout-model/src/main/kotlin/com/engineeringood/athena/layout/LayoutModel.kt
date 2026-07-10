@@ -3,6 +3,39 @@ package com.engineeringood.athena.layout
 import com.engineeringood.athena.ir.StableSemanticIdentity
 
 /**
+ * Explicit interactivity posture for one supported projection view.
+ *
+ * The posture governs whether the view is inspect-only or may participate in future governed
+ * command emission. It does not itself grant frontend-local mutation authority.
+ */
+enum class ProjectionInteractivity {
+    INSPECT_ONLY,
+    INTERACTIVE,
+}
+
+/**
+ * Explicit ownership contract for one supported projection view.
+ *
+ * The contract states what the projection may display, what governed command families it may
+ * emit later, which interaction remains transient-only, and which representation metadata may
+ * persist without redefining engineering truth.
+ */
+data class ProjectionOwnershipContract(
+    val interactivity: ProjectionInteractivity = ProjectionInteractivity.INSPECT_ONLY,
+    val displayScopes: List<String> = emptyList(),
+    val semanticCommandIds: List<String> = emptyList(),
+    val projectionCommandIds: List<String> = emptyList(),
+    val transientInteractionKinds: List<String> = emptyList(),
+    val persistedProjectionMetadataKeys: List<String> = emptyList(),
+) {
+    /**
+     * Returns `true` when the projection is allowed to participate in governed mutation paths.
+     */
+    val isInteractive: Boolean
+        get() = interactivity == ProjectionInteractivity.INTERACTIVE
+}
+
+/**
  * Typed definition of one supported human-facing projection context.
  *
  * View definitions describe presentation intent only. They do not redefine engineering meaning.
@@ -14,6 +47,7 @@ data class ViewDefinition(
     val groupingRules: List<String> = emptyList(),
     val viewEmphasis: List<ViewEmphasis> = emptyList(),
     val description: String? = null,
+    val ownershipContract: ProjectionOwnershipContract = ProjectionOwnershipContract(),
 )
 
 /**

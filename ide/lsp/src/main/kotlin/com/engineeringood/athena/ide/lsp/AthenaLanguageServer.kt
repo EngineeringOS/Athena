@@ -213,6 +213,51 @@ class AthenaLanguageServer(
     }
 
     /**
+     * Returns the runtime-owned source mutation evaluation for the latest tracked dirty document state.
+     */
+    @JsonRequest("athena/sourceMutationEvaluation")
+    fun sourceMutationEvaluation(params: AthenaSourceMutationParams): CompletableFuture<AthenaSourceMutationPayload?> {
+        val activation = activeSession
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        val trackedDocument = languageFeatures?.trackedDocument(params.textDocument.uri)
+        if (activation == null) {
+            return CompletableFuture.completedFuture(
+                unavailableSourceMutationPayload(
+                    projectName = sessionSnapshot?.projectName ?: inferredSourceMutationProjectName(params.textDocument.uri),
+                    semanticPath = semanticPath,
+                    uri = params.textDocument.uri,
+                    version = trackedDocument?.version ?: 0,
+                    reason = "Athena LSP session is inactive, so source mutation evaluation is unavailable for `${params.textDocument.uri}`.",
+                ),
+            )
+        }
+
+        val document = trackedDocument ?: return CompletableFuture.completedFuture(
+                unavailableSourceMutationPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                    uri = params.textDocument.uri,
+                    version = 0,
+                    reason = "Athena LSP has no tracked dirty document for `${params.textDocument.uri}`.",
+                ),
+            )
+
+        return CompletableFuture.completedFuture(
+            activation.context.sourceMutationRuntime()
+                .evaluate(
+                    context = activation.context,
+                    sourcePath = document.path,
+                    compilation = document.compilation,
+                )
+                .toPayload(
+                    uri = document.uri,
+                    version = document.version,
+                    semanticPath = semanticPath,
+                ),
+        )
+    }
+
+    /**
      * Returns the current runtime-owned repository graph session state through the Athena LSP boundary.
      */
     @JsonRequest("athena/repositoryGraphSession")
@@ -313,6 +358,12 @@ class AthenaLanguageServer(
             ?.toString()
             ?.takeIf { it.isNotBlank() }
         return repositoryRoot?.let(Path::of)
+    }
+
+    private fun inferredSourceMutationProjectName(documentUri: String): String {
+        return runCatching {
+            Paths.get(URI(documentUri)).fileName.toString().substringBeforeLast('.')
+        }.getOrDefault("unknown")
     }
 
     private fun updateSnapshot(documentUri: String) {

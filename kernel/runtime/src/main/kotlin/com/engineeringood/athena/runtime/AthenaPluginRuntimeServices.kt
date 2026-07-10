@@ -216,7 +216,7 @@ data class AthenaRuntimePluginCommandRejected(
 /**
  * Runtime-owned outcome of one contributed plugin command execution attempt.
  */
-sealed interface AthenaRuntimePluginCommandExecution {
+sealed interface AthenaRuntimePluginCommandExecution : AthenaMutationResult {
     /**
      * Contributed command identifier associated with the execution attempt.
      */
@@ -235,7 +235,7 @@ data class AthenaRuntimePluginCommandExecutionSuccess(
     override val contributionId: String,
     override val pluginId: String,
     val result: AthenaCommandExecutionSuccess,
-) : AthenaRuntimePluginCommandExecution
+) : AthenaRuntimePluginCommandExecution, AthenaMutationResult by result
 
 /**
  * Rejected contributed plugin command because the contribution could not safely produce or apply a command.
@@ -244,7 +244,21 @@ data class AthenaRuntimePluginCommandExecutionRejected(
     override val contributionId: String,
     override val pluginId: String,
     val reason: String,
-) : AthenaRuntimePluginCommandExecution
+    override val projectName: String = "",
+    override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION,
+) : AthenaRuntimePluginCommandExecution {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.REJECTED
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
+
+/**
+ * Contributed plugin command produced runtime-owned validation feedback before canonical mutation could proceed.
+ */
+data class AthenaRuntimePluginCommandExecutionValidationFeedback(
+    override val contributionId: String,
+    override val pluginId: String,
+    val result: AthenaCommandExecutionValidationFeedback,
+) : AthenaRuntimePluginCommandExecution, AthenaMutationResult by result
 
 /**
  * Unavailable contributed plugin command because the contribution id was not hosted or the runtime path was blocked.
@@ -253,7 +267,12 @@ data class AthenaRuntimePluginCommandExecutionUnavailable(
     override val contributionId: String,
     override val pluginId: String,
     val reason: String,
-) : AthenaRuntimePluginCommandExecution
+    override val projectName: String = "",
+    override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION,
+) : AthenaRuntimePluginCommandExecution {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.UNAVAILABLE
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
 
 /**
  * Optional plugin-side contract for runtime view contributions.
@@ -415,6 +434,7 @@ class AthenaHostedPluginRuntimeServices(
                 contributionId = contributionId,
                 pluginId = "",
                 reason = "Hosted runtime command contribution `$contributionId` is not available.",
+                projectName = context.project.name,
             )
 
         return when (val request = contribution.factory.create(context)) {
@@ -422,6 +442,7 @@ class AthenaHostedPluginRuntimeServices(
                 contributionId = contribution.contributionId,
                 pluginId = contribution.pluginId,
                 reason = request.reason,
+                projectName = context.project.name,
             )
 
             is AthenaRuntimePluginCommandReady -> when (val execution = context.commandRuntime().execute(context, request.command)) {
@@ -435,12 +456,22 @@ class AthenaHostedPluginRuntimeServices(
                     contributionId = contribution.contributionId,
                     pluginId = contribution.pluginId,
                     reason = execution.reason,
+                    projectName = execution.projectName,
+                    mutationCategory = execution.mutationCategory,
+                )
+
+                is AthenaCommandExecutionValidationFeedback -> AthenaRuntimePluginCommandExecutionValidationFeedback(
+                    contributionId = contribution.contributionId,
+                    pluginId = contribution.pluginId,
+                    result = execution,
                 )
 
                 is AthenaCommandExecutionUnavailable -> AthenaRuntimePluginCommandExecutionUnavailable(
                     contributionId = contribution.contributionId,
                     pluginId = contribution.pluginId,
                     reason = execution.reason,
+                    projectName = execution.projectName,
+                    mutationCategory = execution.mutationCategory,
                 )
             }
         }

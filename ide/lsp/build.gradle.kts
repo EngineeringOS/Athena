@@ -7,6 +7,7 @@ dependencies {
     implementation(project(":integrations:scm-git"))
     implementation(project(":kernel:compiler"))
     implementation(project(":kernel:engineering-model"))
+    implementation(project(":kernel:layout-model"))
     implementation(project(":kernel:language"))
     implementation(project(":kernel:repository-model"))
     implementation(project(":kernel:runtime"))

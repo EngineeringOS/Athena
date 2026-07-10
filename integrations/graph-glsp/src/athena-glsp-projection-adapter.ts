@@ -22,7 +22,10 @@ export function translateProjectionSessionToGLSPDiagram(
                 tokens: { ...mapping.tokens },
             })),
         })) ?? [],
-        supportedViews: normalizeArray(projection.supportedViews).map(view => ({ ...view })),
+        supportedViews: normalizeArray(projection.supportedViews).map(view => ({
+            ...view,
+            ownershipContract: normalizeOwnershipContract(view.ownershipContract),
+        })),
         governedCommands: normalizeArray(projection.governedCommands).map(command => ({
             ...command,
             requiredArguments: [...normalizeArray(command.requiredArguments)],
@@ -102,4 +105,17 @@ function toGraph(projection: AthenaGLSPProjectionSource): AthenaGLSPGraph {
 
 function normalizeArray<T>(value: readonly T[] | T[] | undefined): T[] {
     return Array.isArray(value) ? [...value] : [];
+}
+
+function normalizeOwnershipContract(
+    ownershipContract: AthenaGLSPProjectionSource['supportedViews'][number]['ownershipContract'] | undefined,
+): AthenaGLSPProjectionSource['supportedViews'][number]['ownershipContract'] {
+    return {
+        interactivity: ownershipContract?.interactivity ?? 'inspect_only',
+        displayScopes: [...normalizeArray(ownershipContract?.displayScopes)],
+        semanticCommandIds: [...normalizeArray(ownershipContract?.semanticCommandIds)],
+        projectionCommandIds: [...normalizeArray(ownershipContract?.projectionCommandIds)],
+        transientInteractionKinds: [...normalizeArray(ownershipContract?.transientInteractionKinds)],
+        persistedProjectionMetadataKeys: [...normalizeArray(ownershipContract?.persistedProjectionMetadataKeys)],
+    };
 }

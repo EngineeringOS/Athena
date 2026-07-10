@@ -168,6 +168,9 @@ class AthenaPluginRuntimeServicesTest {
 
             assertContains(contributionIds, "electrical-runtime.connect-first-compatible")
             val success = assertIs<AthenaRuntimePluginCommandExecutionSuccess>(execution)
+            assertEquals(context.project.name, success.projectName)
+            assertEquals(AthenaMutationOutcome.ACCEPTED, success.outcome)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, success.mutationCategory)
             assertEquals(AthenaCommandKind.CONNECT_PORTS, success.result.commandKind)
             assertEquals(1, context.commandRuntime().history(context).records.size)
             val graphProjection = assertIs<AthenaEngineeringGraphReadyProjection>(context.projectEngineeringGraphProjection())

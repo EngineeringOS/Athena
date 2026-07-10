@@ -7,6 +7,7 @@ import com.engineeringood.athena.ir.EngineeringPropertyValue
  * Runtime-owned source that produced one semantic diff inspection result.
  */
 enum class AthenaSemanticDiffInspectionSource {
+    SOURCE,
     COMMAND,
     UNDO,
     REDO,

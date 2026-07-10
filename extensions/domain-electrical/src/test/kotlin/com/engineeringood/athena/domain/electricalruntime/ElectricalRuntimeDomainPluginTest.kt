@@ -1,6 +1,7 @@
 package com.engineeringood.athena.domain.electricalruntime
 
 import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.ProjectionInteractivity
 import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
@@ -46,9 +47,29 @@ class ElectricalRuntimeDomainPluginTest {
         assertEquals(LayoutIntent.STRUCTURAL, cabinet.layoutIntent)
         assertEquals(listOf("group-by-owner", "group-by-component"), cabinet.groupingRules)
         assertEquals(listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT), cabinet.viewEmphasis)
+        assertEquals(ProjectionInteractivity.INTERACTIVE, cabinet.ownershipContract.interactivity)
+        assertEquals(
+            listOf("adjust-layout-placement", "adjust-layout-grouping"),
+            cabinet.ownershipContract.projectionCommandIds,
+        )
+        assertEquals(
+            listOf("navigate-view", "inspect-selection", "preview-related-elements"),
+            cabinet.ownershipContract.transientInteractionKinds,
+        )
+        assertEquals(
+            listOf("layout-placement", "layout-group-membership"),
+            cabinet.ownershipContract.persistedProjectionMetadataKeys,
+        )
         assertEquals(LayoutIntent.CONNECTIVITY, wiring.layoutIntent)
         assertEquals(listOf("group-by-signal", "group-by-connection-path"), wiring.groupingRules)
         assertEquals(listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW), wiring.viewEmphasis)
+        assertEquals(ProjectionInteractivity.INSPECT_ONLY, wiring.ownershipContract.interactivity)
+        assertEquals(emptyList(), wiring.ownershipContract.projectionCommandIds)
+        assertEquals(
+            listOf("navigate-view", "inspect-selection", "preview-related-elements"),
+            wiring.ownershipContract.transientInteractionKinds,
+        )
+        assertEquals(emptyList(), wiring.ownershipContract.persistedProjectionMetadataKeys)
     }
 
     @Test

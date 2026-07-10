@@ -68,5 +68,7 @@ class LayoutModelTest {
         assertEquals("cabinet/node/main", document.nodes.first().layoutId.value)
         assertEquals(LayoutPlacementRelation.WITHIN, document.nodes.last().relativePlacement?.relation)
         assertEquals(LayoutRelationshipKind.OWNERSHIP, document.relationships.single().kind)
+        assertEquals(ProjectionInteractivity.INSPECT_ONLY, document.view.ownershipContract.interactivity)
+        assertEquals(false, document.view.ownershipContract.isInteractive)
     }
 }

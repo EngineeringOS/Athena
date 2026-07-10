@@ -1,6 +1,6 @@
 ---
 title: Athena M7
-status: draft
+status: completed
 created: 2026-07-09
 updated: 2026-07-10
 ---
@@ -12,6 +12,8 @@ updated: 2026-07-10
 ## 0. Document Purpose
 
 This PRD defines the M7 product requirements for Athena after the completed M6 milestone.
+
+It now also serves as the synced historical record for the completed M7 milestone, aligned with the final implementation, milestone summary, and architecture closure notes recorded on 2026-07-10.
 
 M7 exists to close the next platform gap intentionally left open by M6:
 
@@ -293,14 +295,27 @@ Athena can choose or validate the graphical technology path at M7 time. Realizes
 - **Primary text/language-service foundation:** Athena LSP
 - **Primary graphical delivery concern:** governed visual projection over canonical upstream state
 
-## 11. Open Questions
+## 11. Resolved Outcomes At M7 Closure
 
-1. What is the narrowest useful projection protocol or server boundary for M7?
-2. Should M7 remain purely read-only visually, or is there one narrow governed interaction slice worth proving now?
-3. Which current Athena views should become the first graphical workbench proof surfaces?
-4. Does the current GLSP direction still fit the real Athena constraints, or does M7 need a different protocol/runtime arrangement?
-5. What selection, focus, or inspection synchronization is mandatory between text, semantic inspection, semantic SCM, and graphical views?
-6. Which first renderer target best proves the model: relationship graph, IEC-style engineering projection, or another view that stays faithful to the same canonical objects?
+1. **Projection boundary choice**
+   - M7 closed with a dedicated `kernel/projection-model` boundary, runtime-owned `ProjectionSession`, and typed Athena-owned projection protocol through `ide/lsp`.
+
+2. **Interaction posture**
+   - M7 did not stay purely read-only.
+   - It closed as **inspect-first** with one narrow governed interaction slice: active-view switching routes through governed commands, while selection, pan, zoom, fit-to-viewport, and comparable workbench interactions remain transient frontend behavior.
+
+3. **First workbench proof surfaces**
+   - The current proof surfaces are the graph-first `Graphical View` plus the extension-owned electrical `cabinet` and `wiring` projections over the same repository fixture.
+
+4. **Technology decision**
+   - M7 kept the generic architectural boundary under `integrations/graph-*`, but the actual proof implementation selected `integrations/graph-glsp` as the translation-only adapter package.
+   - M7 did **not** adopt a full GLSP runtime as the live editor core.
+
+5. **Required synchronization**
+   - Graphical selection is synchronized through canonical semantic ids into source reveal, semantic inspection, and semantic SCM context.
+
+6. **First renderer target**
+   - M7 closed with a relationship-forward renderer proof over canonical engineering identities, while extension-owned electrical mappings prove that `cabinet` and `wiring` remain downstream projection contributions rather than kernel-owned semantic truth.
 
 ## 12. Assumptions Index
 

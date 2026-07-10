@@ -24,6 +24,12 @@ sealed interface AthenaCommand {
      * Stable command category used for inspectable execution reporting.
      */
     val commandKind: AthenaCommandKind
+
+    /**
+     * Explicit mutation category carried through the shared runtime-owned mutation model.
+     */
+    val mutationCategory: AthenaMutationCategory
+        get() = commandKind.defaultMutationCategory()
 }
 
 /**
@@ -39,12 +45,7 @@ data class AthenaConnectPortsCommand(
 /**
  * Inspectable runtime-owned result of one attempted semantic command execution.
  */
-sealed interface AthenaCommandExecutionResult {
-    /**
-     * Runtime project name associated with the command attempt.
-     */
-    val projectName: String
-
+sealed interface AthenaCommandExecutionResult : AthenaMutationResult {
     /**
      * Stable command category associated with the command attempt.
      */
@@ -54,6 +55,9 @@ sealed interface AthenaCommandExecutionResult {
      * Stable origin classification for the command attempt.
      */
     val commandOrigin: AthenaCommandOrigin
+
+    override val mutationCategory: AthenaMutationCategory
+        get() = commandKind.defaultMutationCategory()
 }
 
 /**
@@ -67,7 +71,10 @@ data class AthenaCommandExecutionSuccess(
     val beforeDocument: EngineeringDocument,
     val afterDocument: EngineeringDocument,
     val changedSemanticIds: List<String>,
-) : AthenaCommandExecutionResult
+) : AthenaCommandExecutionResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.ACCEPTED
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
 
 /**
  * Explicit rejection when the command was understood but could not be applied safely.
@@ -78,7 +85,30 @@ data class AthenaCommandExecutionRejected(
     override val commandOrigin: AthenaCommandOrigin,
     val reason: String,
     val changedSemanticIds: List<String> = emptyList(),
-) : AthenaCommandExecutionResult
+) : AthenaCommandExecutionResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.REJECTED
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
+
+/**
+ * Explicit validation feedback when Athena accepts the request boundary but requires caller-visible
+ * validation guidance before a canonical mutation can proceed.
+ */
+data class AthenaCommandExecutionValidationFeedback(
+    override val projectName: String,
+    override val commandKind: AthenaCommandKind,
+    override val commandOrigin: AthenaCommandOrigin,
+    override val validationFeedback: List<AthenaMutationValidationFeedback>,
+    val changedSemanticIds: List<String> = emptyList(),
+) : AthenaCommandExecutionResult {
+    init {
+        require(validationFeedback.isNotEmpty()) {
+            "Validation feedback results must include at least one feedback item."
+        }
+    }
+
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.VALIDATION_FEEDBACK
+}
 
 /**
  * Explicit runtime-unavailable result when no canonical semantic state exists to mutate.
@@ -88,7 +118,10 @@ data class AthenaCommandExecutionUnavailable(
     override val commandKind: AthenaCommandKind,
     override val commandOrigin: AthenaCommandOrigin,
     val reason: String,
-) : AthenaCommandExecutionResult
+) : AthenaCommandExecutionResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.UNAVAILABLE
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
 
 /**
  * Runtime-owned command service that applies semantic mutations over the active project's canonical state.
@@ -159,6 +192,8 @@ class AthenaCommandRuntimeService internal constructor() {
                     buildString {
                         append("{\"commandId\":\"")
                         append(record.commandId.jsonEscaped())
+                        append("\",\"mutationCategory\":\"")
+                        append(record.mutationCategory.name.jsonEscaped())
                         append("\",\"commandKind\":\"")
                         append(record.commandKind.name.jsonEscaped())
                         append("\",\"commandOrigin\":\"")

@@ -12,6 +12,7 @@ import com.engineeringood.athena.composeruntime.AthenaComposeWorkspaceTreeItem
 import com.engineeringood.athena.composeruntime.AthenaSemanticViewerComponentBox
 import com.engineeringood.athena.composeruntime.AthenaSemanticViewerConnectionLine
 import com.engineeringood.athena.composeruntime.AthenaSemanticViewerScene
+import com.engineeringood.athena.runtime.AthenaCommandExecutionValidationFeedback
 import com.engineeringood.athena.runtime.AthenaCommandExecutionRejected
 import com.engineeringood.athena.runtime.AthenaCommandExecutionSuccess
 import com.engineeringood.athena.runtime.AthenaCommandExecutionUnavailable
@@ -183,6 +184,14 @@ class AthenaComposeViewerWorkbenchSession private constructor(
             is AthenaCommandExecutionRejected -> {
                 commandPanelStatusMessage = result.reason
                 consoleEntries += "GUI connect command rejected: ${result.reason}"
+            }
+
+            is AthenaCommandExecutionValidationFeedback -> {
+                val feedbackMessage = result.validationFeedback.joinToString(separator = "; ") { feedback ->
+                    "${feedback.severity.name.lowercase()}: ${feedback.message}"
+                }
+                commandPanelStatusMessage = feedbackMessage
+                consoleEntries += "GUI connect command validation feedback: $feedbackMessage"
             }
 
             is AthenaCommandExecutionUnavailable -> {

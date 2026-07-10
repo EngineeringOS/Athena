@@ -254,3 +254,20 @@ It should be framed as:
 - raising the domain workbench toward QElectroTech/EPLAN-class daily usability without narrowing Athena to electrical-only scope
 
 That later milestone should prove that Athena is not just a semantic platform with a viewer, but a real engineering workbench where code and graph are two governed projections over the same model.
+
+## 10. Closure Sync
+
+M7 closed with the following concrete outcomes:
+
+- `kernel/projection-model` became the dedicated renderer-neutral projection boundary
+- runtime-owned `ProjectionSession` plus `ide/lsp` typed projection requests became the active projection authority path
+- `integrations/graph-glsp` became the first translation-only adapter implementation under the generic `integrations/graph-*` rule
+- the delivered workbench posture is graph-first and inspect-first rather than dashboard-first or unrestricted editing
+- `cabinet` and `wiring` became the first extension-owned proof surfaces for downstream renderer mappings
+
+This means the original M7 planning questions were resolved without changing the milestone center:
+
+- the architectural boundary stayed generic
+- the implementation selected one concrete adapter
+- the interaction slice stayed narrow and governed
+- bidirectional code/graph mutation remains the next milestone concern rather than hidden M7 scope

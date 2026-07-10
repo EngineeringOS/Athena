@@ -42,7 +42,12 @@ data class AthenaAiCommandProposalSubmitted(
 /**
  * Outcome of attempting to accept one pending AI proposal into canonical command history.
  */
-sealed interface AthenaAiCommandProposalAcceptanceResult
+sealed interface AthenaAiCommandProposalAcceptanceResult : AthenaMutationResult {
+    /**
+     * Stable proposal identifier associated with the acceptance attempt.
+     */
+    val proposalId: String
+}
 
 /**
  * Pending AI proposal was accepted and executed through the normal command runtime path.
@@ -50,23 +55,47 @@ sealed interface AthenaAiCommandProposalAcceptanceResult
 data class AthenaAiCommandProposalAccepted(
     val proposal: AthenaAiCommandProposal,
     val execution: AthenaCommandExecutionSuccess,
-) : AthenaAiCommandProposalAcceptanceResult
+) : AthenaAiCommandProposalAcceptanceResult, AthenaMutationResult by execution {
+    override val proposalId: String
+        get() = proposal.proposalId
+}
 
 /**
  * Pending AI proposal could not be accepted, but canonical state was left unchanged.
  */
 data class AthenaAiCommandProposalAcceptanceRejected(
-    val proposalId: String,
+    override val proposalId: String,
     val reason: String,
-) : AthenaAiCommandProposalAcceptanceResult
+    override val projectName: String = "",
+    override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION,
+) : AthenaAiCommandProposalAcceptanceResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.REJECTED
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
+
+/**
+ * Pending AI proposal produced runtime-owned validation feedback and remains outside canonical history.
+ */
+data class AthenaAiCommandProposalAcceptanceValidationFeedback(
+    val proposal: AthenaAiCommandProposal,
+    val execution: AthenaCommandExecutionValidationFeedback,
+) : AthenaAiCommandProposalAcceptanceResult, AthenaMutationResult by execution {
+    override val proposalId: String
+        get() = proposal.proposalId
+}
 
 /**
  * Pending AI proposal could not be accepted because the runtime had no usable canonical state.
  */
 data class AthenaAiCommandProposalAcceptanceUnavailable(
-    val proposalId: String,
+    override val proposalId: String,
     val reason: String,
-) : AthenaAiCommandProposalAcceptanceResult
+    override val projectName: String = "",
+    override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION,
+) : AthenaAiCommandProposalAcceptanceResult {
+    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.UNAVAILABLE
+    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
+}
 
 /**
  * Outcome of attempting to reject one pending AI proposal.
@@ -163,6 +192,7 @@ class AthenaAiProposalRuntimeService internal constructor() {
             ?: return AthenaAiCommandProposalAcceptanceRejected(
                 proposalId = proposalId,
                 reason = "No pending AI proposal matches `$proposalId`.",
+                projectName = context.project.name,
             )
 
         return when (
@@ -187,11 +217,20 @@ class AthenaAiProposalRuntimeService internal constructor() {
             is AthenaCommandExecutionRejected -> AthenaAiCommandProposalAcceptanceRejected(
                 proposalId = proposalId,
                 reason = execution.reason,
+                projectName = context.project.name,
+                mutationCategory = proposal.command.mutationCategory,
+            )
+
+            is AthenaCommandExecutionValidationFeedback -> AthenaAiCommandProposalAcceptanceValidationFeedback(
+                proposal = proposal,
+                execution = execution,
             )
 
             is AthenaCommandExecutionUnavailable -> AthenaAiCommandProposalAcceptanceUnavailable(
                 proposalId = proposalId,
                 reason = execution.reason,
+                projectName = context.project.name,
+                mutationCategory = proposal.command.mutationCategory,
             )
         }
     }

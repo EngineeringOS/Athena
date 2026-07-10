@@ -29,6 +29,8 @@ import com.engineeringood.athena.runtime.AthenaRuntimePluginInspectorGroup
 import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContribution
 import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContributor
 import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.ProjectionInteractivity
+import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
@@ -210,6 +212,29 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
                 groupingRules = listOf("group-by-owner", "group-by-component"),
                 viewEmphasis = listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT),
                 description = "Highlights structural placement and ownership relationships for electrical devices.",
+                ownershipContract = ProjectionOwnershipContract(
+                    interactivity = ProjectionInteractivity.INTERACTIVE,
+                    displayScopes = listOf(
+                        "devices",
+                        "ports",
+                        "ownership-relationships",
+                        "connectivity-relationships",
+                        "grouped-placement",
+                    ),
+                    projectionCommandIds = listOf(
+                        "adjust-layout-placement",
+                        "adjust-layout-grouping",
+                    ),
+                    transientInteractionKinds = listOf(
+                        "navigate-view",
+                        "inspect-selection",
+                        "preview-related-elements",
+                    ),
+                    persistedProjectionMetadataKeys = listOf(
+                        "layout-placement",
+                        "layout-group-membership",
+                    ),
+                ),
             ),
             ViewDefinition(
                 id = "wiring",
@@ -218,6 +243,20 @@ class ElectricalRuntimeDomainPlugin : AthenaDomainPlugin, AthenaViewDefinitionCo
                 groupingRules = listOf("group-by-signal", "group-by-connection-path"),
                 viewEmphasis = listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW),
                 description = "Highlights compatible signal flow and connection relationships between ports.",
+                ownershipContract = ProjectionOwnershipContract(
+                    interactivity = ProjectionInteractivity.INSPECT_ONLY,
+                    displayScopes = listOf(
+                        "devices",
+                        "ports",
+                        "signal-groups",
+                        "connectivity-relationships",
+                    ),
+                    transientInteractionKinds = listOf(
+                        "navigate-view",
+                        "inspect-selection",
+                        "preview-related-elements",
+                    ),
+                ),
             ),
         )
     }

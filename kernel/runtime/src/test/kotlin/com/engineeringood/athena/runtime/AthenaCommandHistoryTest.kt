@@ -29,6 +29,7 @@ class AthenaCommandHistoryTest {
             assertEquals(2, history.records.size)
             assertEquals(2, history.appliedRecordCount)
             assertEquals(listOf("command-0001", "command-0002"), history.records.map { it.commandId })
+            assertTrue(history.records.all { it.mutationCategory == AthenaMutationCategory.SEMANTIC_MUTATION })
             assertEquals(
                 listOf(AthenaCommandHistoryRecordStatus.APPLIED, AthenaCommandHistoryRecordStatus.APPLIED),
                 history.records.map { it.status },
@@ -45,6 +46,7 @@ class AthenaCommandHistoryTest {
 
             assertContains(serialized, "\"commandId\":\"command-0001\"")
             assertContains(serialized, "\"commandId\":\"command-0002\"")
+            assertContains(serialized, "\"mutationCategory\":\"SEMANTIC_MUTATION\"")
             assertContains(serialized, "\"commandKind\":\"CONNECT_PORTS\"")
             assertContains(serialized, "\"commandOrigin\":\"STANDARD\"")
             assertContains(serialized, "\"sourcePortSemanticId\":\"port:PLC1.out1\"")
@@ -72,7 +74,9 @@ class AthenaCommandHistoryTest {
             val undo = context.commandRuntime().undo(context)
 
             val undoSuccess = assertIs<AthenaCommandHistoryMutationSuccess>(undo)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, undoSuccess.mutationCategory)
             assertEquals(AthenaCommandHistoryOperation.UNDO, undoSuccess.operation)
+            assertEquals(AthenaMutationOutcome.ACCEPTED, undoSuccess.outcome)
             assertEquals(listOf("command-0002"), undoSuccess.affectedCommandIds)
             assertEquals(2, undoSuccess.beforeDocument.connections.size)
             assertEquals(1, undoSuccess.afterDocument.connections.size)
@@ -89,7 +93,9 @@ class AthenaCommandHistoryTest {
             val redo = context.commandRuntime().redo(context)
 
             val redoSuccess = assertIs<AthenaCommandHistoryMutationSuccess>(redo)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, redoSuccess.mutationCategory)
             assertEquals(AthenaCommandHistoryOperation.REDO, redoSuccess.operation)
+            assertEquals(AthenaMutationOutcome.ACCEPTED, redoSuccess.outcome)
             assertEquals(listOf("command-0002"), redoSuccess.affectedCommandIds)
             assertEquals(1, redoSuccess.beforeDocument.connections.size)
             assertEquals(2, redoSuccess.afterDocument.connections.size)
@@ -121,7 +127,9 @@ class AthenaCommandHistoryTest {
             val replay = context.commandRuntime().replay(context)
 
             val replaySuccess = assertIs<AthenaCommandHistoryMutationSuccess>(replay)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, replaySuccess.mutationCategory)
             assertEquals(AthenaCommandHistoryOperation.REPLAY, replaySuccess.operation)
+            assertEquals(AthenaMutationOutcome.ACCEPTED, replaySuccess.outcome)
             assertEquals(listOf("command-0001", "command-0002"), replaySuccess.affectedCommandIds)
             assertEquals(0, replaySuccess.beforeDocument.connections.size)
             assertEquals(2, replaySuccess.afterDocument.connections.size)
@@ -151,6 +159,10 @@ class AthenaCommandHistoryTest {
 
             val undoRejected = assertIs<AthenaCommandHistoryMutationRejected>(undo)
             val redoRejected = assertIs<AthenaCommandHistoryMutationRejected>(redo)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, undoRejected.mutationCategory)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, redoRejected.mutationCategory)
+            assertEquals(AthenaMutationOutcome.REJECTED, undoRejected.outcome)
+            assertEquals(AthenaMutationOutcome.REJECTED, redoRejected.outcome)
             assertContains(undoRejected.reason, "No applied command")
             assertContains(redoRejected.reason, "No undone command")
         } finally {

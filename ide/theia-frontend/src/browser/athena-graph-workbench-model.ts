@@ -45,6 +45,7 @@ export type AthenaGraphWorkbenchModel = {
         viewId: string;
         displayName: string;
         description: string;
+        ownershipContract: AthenaGLSPDiagram['supportedViews'][number]['ownershipContract'];
         isActive: boolean;
     }>;
     diagnostics: AthenaGLSPDiagram['diagnostics'];

@@ -75,6 +75,9 @@ class AthenaAiProposalRuntimeServiceTest {
             )
 
             val accepted = assertIs<AthenaAiCommandProposalAccepted>(acceptance)
+            assertEquals("ai-proposals", accepted.projectName)
+            assertEquals(AthenaMutationOutcome.ACCEPTED, accepted.outcome)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, accepted.mutationCategory)
             assertEquals("command-0001", accepted.execution.commandId)
             assertEquals(AthenaCommandOrigin.AI_ACCEPTED, accepted.execution.commandOrigin)
             assertEquals(1, accepted.execution.afterDocument.connections.size)
@@ -126,6 +129,9 @@ class AthenaAiProposalRuntimeServiceTest {
             )
 
             val rejectedAcceptance = assertIs<AthenaAiCommandProposalAcceptanceRejected>(failedAcceptance)
+            assertEquals("ai-proposals", rejectedAcceptance.projectName)
+            assertEquals(AthenaMutationOutcome.REJECTED, rejectedAcceptance.outcome)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, rejectedAcceptance.mutationCategory)
             assertContains(rejectedAcceptance.reason, "port:Missing.in")
             assertTrue(assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document.connections.isEmpty())
             assertTrue(context.commandRuntime().history(context).records.isEmpty())

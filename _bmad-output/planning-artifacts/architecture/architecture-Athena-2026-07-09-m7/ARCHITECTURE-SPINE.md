@@ -5,9 +5,9 @@ purpose: build-substrate
 altitude: initiative
 paradigm: 'engineering-object-graph-first visual projection with runtime-owned projection sessions and Theia-hosted downstream graphical workbench'
 scope: 'Athena M7 graphical projection and visual workbench proof'
-status: draft
+status: completed
 created: '2026-07-09'
-updated: '2026-07-09'
+updated: '2026-07-10'
 binds:
   - 'FR-1'
   - 'FR-2'
@@ -43,6 +43,16 @@ Athena M7 is an **engineering-object-graph-first visual projection with runtime-
 - **visual projection** means graphical state is produced from downstream view definition, layout, and geometry layers instead of redefining semantics in canvas code.
 - **runtime-owned projection sessions** means the active graphical projection state stays under JVM/runtime authority beside repository and semantic SCM meaning.
 - **Theia-hosted downstream graphical workbench** means Athena adds real graphical capability inside the existing product shell while keeping frontend state disposable and downstream.
+
+## Closure Sync
+
+M7 closed on 2026-07-10 with the following implementation decisions aligned to this spine:
+
+- the generic graph adapter boundary remained under `integrations/graph-*`
+- the current proof implementation selected `integrations/graph-glsp`
+- that adapter stayed translation-only and disposable
+- runtime plus `ide/lsp` remained the only projection authorities
+- the first delivered workbench posture was graph-first and inspect-first rather than unrestricted editing
 
 ## Inherited Invariants
 
@@ -83,7 +93,7 @@ Athena M7 is an **engineering-object-graph-first visual projection with runtime-
 
 - **Binds:** `FR-1`, `FR-3`, `FR-4`, `FR-6`, `FR-8`
 - **Prevents:** Theia frontend, backend, or a third-party canvas framework from becoming a second owner of projection truth or semantic synchronization
-- **Rule:** The active graphical view in M7 is fed from runtime-owned projection sessions exposed through Athena-owned IDE transport rooted at `ide/lsp`. That transport is limited to typed projection queries, deterministic projection updates, and an explicit allowlist of governed commands. Theia frontend and backend may host graphical panels, lifecycle wiring, and transport bridges. Any optional graph-framework or protocol adapter remains downstream of Athena-owned projection contracts, may translate protocol and rendering mechanics only, and may not redefine semantic identity, synthesize engineering truth, or persist local state as authority.
+- **Rule:** The active graphical view in M7 is fed from runtime-owned projection sessions exposed through Athena-owned IDE transport rooted at `ide/lsp`. That transport is limited to typed projection queries, deterministic projection updates, and an explicit allowlist of governed commands. Theia frontend and backend may host graphical panels, lifecycle wiring, and transport bridges. Any optional graph-framework or protocol adapter remains downstream of Athena-owned projection contracts, may translate protocol and rendering mechanics only, and may not redefine semantic identity, synthesize engineering truth, or persist local state as authority. The completed M7 proof realizes this through `integrations/graph-glsp`.
 
 ### AD-31 - M7 Is Inspect-First; Meaningful Graphical Mutation Routes Through Governed Commands
 
@@ -115,7 +125,7 @@ flowchart LR
   geometry[kernel/geometry-model]
   semanticScm[kernel/semantic-scm]
   extensions[extensions/domain-*\nview definitions + renderer mappings]
-  graphAdapter[integrations/graph-*\noptional graph framework adapter]
+  graphAdapter[integrations/graph-*\ncurrent proof: graph-glsp]
 
   frontend --> graphAdapter
   backend --> graphAdapter
@@ -136,7 +146,7 @@ flowchart LR
 | Naming (entities, files, interfaces, events) | Use `EngineeringObjectGraph`, `ProjectionModel`, `ViewDefinition`, `ProjectionSession`, `GraphicalElementRef`, `GraphSelection`, `ViewAssetPack`, and `GraphWorkbenchState` consistently. `ProjectionModel` is the kernel boundary name; `ViewDefinition` is one downstream ingredient within it. Avoid naming renderer-facing contracts after specific notation standards unless they are extension-local. |
 | Data & formats (ids, dates, error shapes, envelopes) | Graphical element ids must carry or reference stable canonical engineering ids plus view-scoped projection ids. Renderer asset references stay separate from engineering identity. Projection payloads must be inspectable and deterministic for the same upstream state. |
 | State & cross-cutting (mutation, errors, logging, config, auth) | Runtime owns active projection sessions. Frontend state is disposable workbench state. Backend state is transport and process wiring. Projection refresh, inspection sync, and persisted layout changes route through governed commands or request-response boundaries rather than direct widget mutation. Stale or unapproved frontend projection state is discarded on refresh. |
-| Build and dependency management | `kernel/projection-model` may depend on engineering, layout, and geometry contracts but not on Theia, Node, or any graph framework. `integrations/graph-*` is the only place allowed to depend on a chosen graphical transport or canvas framework, and it remains translation-only. `ide/*` consumes projection state only through Athena-owned protocol seams. |
+| Build and dependency management | `kernel/projection-model` may depend on engineering, layout, and geometry contracts but not on Theia, Node, or any graph framework. `integrations/graph-*` is the only place allowed to depend on a chosen graphical transport or canvas framework, and it remains translation-only. The completed M7 proof uses `integrations/graph-glsp` as that adapter boundary. `ide/*` consumes projection state only through Athena-owned protocol seams. |
 
 ## Stack
 
@@ -163,7 +173,7 @@ flowchart TB
   geometry[kernel/geometry-model]
   frontend[ide/theia-frontend]
   backend[ide/theia-backend]
-  adapter[integrations/graph-*]
+  adapter[integrations/graph-*\ncurrent proof: graph-glsp]
   scm[kernel/semantic-scm]
   extensions[extensions/domain-*]
 
@@ -201,7 +211,7 @@ Athena/
     theia-backend/              # service lifecycle and process wiring
     lsp/                        # sole IDE semantic and projection entry point
   integrations/
-    graph-*/                    # chosen graph transport or framework adapter if needed
+    graph-*/                    # chosen graph transport or framework adapter boundary
   examples/
     m7/                         # graphical projection proof corpus
 ```
@@ -213,14 +223,14 @@ Athena/
 | Stable graphical projection boundary | `kernel/projection-model`, `kernel/runtime`, `ide/lsp` | AD-27, AD-30 |
 | Engineering object graph vs view assets separation | `kernel/engineering-model`, `kernel/projection-model`, `extensions/domain-*` | AD-28, AD-33 |
 | Layout and geometry ownership | `kernel/layout-model`, `kernel/geometry-model`, `kernel/runtime` | AD-27, AD-29 |
-| Graphical workbench delivery | `ide/theia-frontend`, `ide/theia-backend`, `integrations/graph-*`, `ide/lsp` | AD-30, inherited AD-18 |
+| Graphical workbench delivery | `ide/theia-frontend`, `ide/theia-backend`, `integrations/graph-*` (`graph-glsp` in M7), `ide/lsp` | AD-30, inherited AD-18 |
 | Graphical navigation and inspection sync | `ide/theia-frontend`, `ide/lsp`, `kernel/runtime`, `kernel/semantic-scm` | AD-30, AD-31 |
-| First renderer target strategy | `kernel/projection-model`, `extensions/domain-*`, `integrations/graph-*` | AD-32, AD-33 |
+| First renderer target strategy | `kernel/projection-model`, `extensions/domain-*`, `integrations/graph-*` (`graph-glsp` in M7) | AD-32, AD-33 |
 | Future notation-specific renderer packs | `extensions/domain-*`, later renderer integrations | AD-28, AD-32, AD-33 |
 
 ## Deferred
 
-- Hard-binding one graph framework or protocol implementation is deferred until the first M7 implementation spike; the integration placement is fixed now, but the exact adapter technology remains downstream.
+- The generic graph adapter boundary remains reusable beyond M7, but the completed M7 proof already selected `integrations/graph-glsp` as the first translation-only adapter implementation.
 - Notation-specific IEC symbol packs, QElectroTech-style renderer assets, and broader renderer libraries are deferred until the relationship-forward proof path is stable.
 - Broad graphical authoring, freeform semantic editing, and unrestricted canvas mutation are deferred beyond M7.
 - Web-first or WASM-first graphical deployment is deferred; the inherited delivery target remains the desktop-first Theia product.

@@ -36,6 +36,9 @@ class AthenaExecutionContext(
     /** Resolves the runtime-owned command capability for the active project. */
     fun commandRuntime(): AthenaCommandRuntimeService = services.commandRuntime()
 
+    /** Resolves the runtime-owned source-mutation evaluation capability for the active project. */
+    fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = services.sourceMutationRuntime()
+
     /** Resolves the runtime-owned optional AI proposal capability for the active project. */
     fun aiProposalRuntime(): AthenaAiProposalRuntimeService = services.aiProposalRuntime()
 

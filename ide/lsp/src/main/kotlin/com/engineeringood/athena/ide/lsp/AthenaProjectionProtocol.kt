@@ -1,5 +1,6 @@
 package com.engineeringood.athena.ide.lsp
 
+import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionReadySnapshot
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionDiagnostic
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionRenderContribution
@@ -44,6 +45,19 @@ data class AthenaProjectionViewPayload(
     val viewId: String,
     val displayName: String,
     val description: String,
+    val ownershipContract: AthenaProjectionOwnershipContractPayload = AthenaProjectionOwnershipContractPayload(),
+)
+
+/**
+ * Renderer-neutral projection ownership contract exposed through the Athena LSP boundary.
+ */
+data class AthenaProjectionOwnershipContractPayload(
+    val interactivity: String = "inspect_only",
+    val displayScopes: List<String> = emptyList(),
+    val semanticCommandIds: List<String> = emptyList(),
+    val projectionCommandIds: List<String> = emptyList(),
+    val transientInteractionKinds: List<String> = emptyList(),
+    val persistedProjectionMetadataKeys: List<String> = emptyList(),
 )
 
 /**
@@ -243,6 +257,7 @@ private fun AthenaRuntimeProjectionSession.toPayload(
                 viewId = view.viewId,
                 displayName = view.displayName,
                 description = view.description,
+                ownershipContract = view.ownershipContract.toPayload(),
             )
         },
         governedCommands = projectionGovernedCommands(),
@@ -250,6 +265,17 @@ private fun AthenaRuntimeProjectionSession.toPayload(
         readyProjection = projection.toReadyPayload(),
         unavailableReason = projection.toUnavailableReason(),
         diagnostics = projection.toDiagnostics(),
+    )
+}
+
+private fun ProjectionOwnershipContract.toPayload(): AthenaProjectionOwnershipContractPayload {
+    return AthenaProjectionOwnershipContractPayload(
+        interactivity = interactivity.name.lowercase(),
+        displayScopes = displayScopes,
+        semanticCommandIds = semanticCommandIds,
+        projectionCommandIds = projectionCommandIds,
+        transientInteractionKinds = transientInteractionKinds,
+        persistedProjectionMetadataKeys = persistedProjectionMetadataKeys,
     )
 }
 
