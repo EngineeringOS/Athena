@@ -14,6 +14,7 @@ This document summarizes the current Athena workspace as it exists today:
 - what M6 proved
 - what M7 proved
 - what M8 proved
+- what M9 proved
 - how to use the current runnable and verifiable surfaces
 - how the current implementation aligns with the EngineeringOS manifesto
 
@@ -21,7 +22,7 @@ This is the current workspace summary, not a historical story note.
 
 ## One-Line Summary
 
-Athena is the JVM-first EngineeringOS implementation workspace that now proves nine milestone layers:
+Athena is the JVM-first EngineeringOS implementation workspace that now proves ten milestone layers:
 
 1. M0: `DSL -> AST -> Engineering IR -> validation -> SVG`
 2. M1: `runtime -> graph -> commands -> history/diff -> plugin-hosted extension`
@@ -32,6 +33,7 @@ Athena is the JVM-first EngineeringOS implementation workspace that now proves n
 7. M6: `semantic baseline -> semantic diff -> review/commit/history -> runtime/LSP/Theia semantic SCM panel`
 8. M7: `projection model -> runtime-owned ProjectionSession -> graph adapter -> graph-first workbench -> first renderer proof`
 9. M8: `unified mutation authority -> graph semantic and projection mutation -> shared semantic review -> canonical reveal -> published proof corpus`
+10. M9: `Engineering IR -> derived engineering context -> capability facts -> fixed knowledge pack -> constraint evaluation -> engineering impact -> review/diagnostic delivery`
 
 The central architectural claim remains unchanged:
 
@@ -94,6 +96,55 @@ M7 is now fully present in the current workspace shape: `integrations/graph-glsp
 The current M7 workspace shape is intentionally still boundary-first: `:kernel:projection-model` now freezes the compiler-derived graphical document boundary above geometry, `integrations/graph-glsp` is the first dedicated home for GLSP-class graph translation, `ide/theia-frontend` consumes that adapter through the existing Athena LSP bridge, and `ide/lsp` plus `kernel/runtime` remain the only semantic and projection authorities for the IDE path.
 
 M8 is now fully present in the current workspace shape: runtime and `ide/lsp` expose one mutation-result vocabulary above source and graph, the graph workbench emits Athena-owned semantic and projection intent requests instead of renderer-owned save behavior, accepted mutation consequences feed the same semantic review vocabulary from `:kernel:semantic-scm`, and source, graph, and semantic SCM reveal through canonical semantic identity rather than graph-local ids.
+
+M9 is now fully present in the current workspace shape: `:kernel:engineering-model` carries first-class derived-context, capability-fact, constraint-evaluation, impact-consequence, and neutral knowledge-state contracts, `:kernel:compiler` executes the first governed electrical knowledge-pack slice, runtime and semantic-SCM flows preserve typed engineering consequence above canonical state, and `ide/lsp` delivers those outputs through the existing semantic inspection, review, and diagnostics seams without opening a second knowledge authority.
+
+## What M9 Achieved
+
+M9 is complete as the first executable engineering knowledge proof.
+
+Per BMAD tracking, Epic 1 and Epic 2 are now `done` in [`_bmad-output/implementation-artifacts/m9/sprint-status.yaml`](../../_bmad-output/implementation-artifacts/m9/sprint-status.yaml).
+
+### Epic 1 Result: Prove Executable Engineering Knowledge From Canonical State
+
+Epic 1 proved that Athena can derive and evaluate a narrow slice of engineering meaning above canonical `Engineering IR` instead of stopping at stored structure.
+
+Delivered:
+
+- a first-class `Derived Engineering Context` layer above canonical engineering state
+- typed capability facts promoted through one fixed governed electrical knowledge pack
+- deterministic constraint evaluation with accepted, warning, and error outcomes
+- `KNOWLEDGE` diagnostics kept separate from parser and structural semantic validation
+- a narrow proof slice for protection, cable, and relay sufficiency without widening into general rule authoring
+
+### Epic 2 Result: Publish Engineering Consequence Through Existing Semantic Surfaces
+
+Epic 2 proved that downstream engineering consequence can flow through Athena's existing runtime, review, SCM, and LSP seams without creating a new frontend-owned subsystem.
+
+Delivered:
+
+- deterministic engineering-impact consequences over governed before/after change
+- semantic review and commit vocabulary that distinguishes direct edits from downstream affected subjects
+- baseline and accepted-mutation review paths carrying the same typed engineering-impact consequence state
+- published M9 proof corpus, usage guide, milestone summary, and retrospective under [`examples/m9/`](../../examples/m9/README.md) and [`_bmad-output/implementation-artifacts/m9/`](../../_bmad-output/implementation-artifacts/m9/)
+
+### M9 Proven Chain
+
+```text
+canonical Engineering IR
+        ->
+Derived Engineering Context
+        ->
+Capability Facts
+        ->
+Constraint Evaluation
+        ->
+Impact Consequences
+        ->
+Diagnostics and Review Facts
+        ->
+runtime, semantic SCM, and ide/lsp surfaces
+```
 
 ## What M8 Achieved
 
@@ -546,6 +597,7 @@ Athena is now:
 - a semantic SCM proof with review, commit, and package-history flows on the same JVM-owned semantic path
 - a graphical projection and visual workbench proof with runtime-owned projection authority
 - a unified mutation proof where source and graph now share one Athena-owned mutation boundary
+- an executable engineering knowledge proof where derived context, capability facts, sufficiency diagnostics, and engineering impact stay kernel-owned
 
 It is not yet:
 
@@ -684,6 +736,26 @@ Focused guides:
 - [`docs/usages/m8-proof-usage.md`](m8-proof-usage.md)
 - [`_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md)
 - [`_bmad-output/implementation-artifacts/m8/m8-retrospective-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m8/m8-retrospective-2026-07-11.md)
+
+### M9 Executable Engineering Knowledge
+
+Use the published M9 proof fixtures:
+
+- [`examples/m9/motor-derived-context.athena`](../../examples/m9/motor-derived-context.athena)
+- [`examples/m9/motor-impact-before.athena`](../../examples/m9/motor-impact-before.athena)
+- [`examples/m9/motor-impact-after.athena`](../../examples/m9/motor-impact-after.athena)
+
+Primary verification commands:
+
+```powershell
+cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:engineering-model:test :kernel:compiler:test :kernel:semantic-scm:test :kernel:runtime:test :ide:lsp:test"
+```
+
+Focused guides:
+
+- [`docs/usages/m9-proof-usage.md`](m9-proof-usage.md)
+- [`_bmad-output/implementation-artifacts/m9/milestone-summary-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m9/milestone-summary-2026-07-11.md)
+- [`_bmad-output/implementation-artifacts/m9/m9-retrospective-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m9/m9-retrospective-2026-07-11.md)
 
 ### M4 Theia Desktop Shell
 
@@ -906,16 +978,17 @@ If you want the current implementation in the right order, read:
 11. [`docs/usages/m6-proof-usage.md`](m6-proof-usage.md)
 12. [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
 13. [`docs/usages/m8-proof-usage.md`](m8-proof-usage.md)
-14. [`_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md)
-15. [`docs/roadmap/athena-milestone-roadmap.md`](../roadmap/athena-milestone-roadmap.md)
-16. [`manifesto/docs/architecture/03-ir.md`](../../manifesto/docs/architecture/03-ir.md)
-17. [`manifesto/docs/architecture/05-plugin.md`](../../manifesto/docs/architecture/05-plugin.md)
-18. [`manifesto/docs/architecture/07-studio.md`](../../manifesto/docs/architecture/07-studio.md)
-19. [`manifesto/docs/architecture/09-layout-and-geometry.md`](../../manifesto/docs/architecture/09-layout-and-geometry.md)
+14. [`docs/usages/m9-proof-usage.md`](m9-proof-usage.md)
+15. [`_bmad-output/implementation-artifacts/m9/milestone-summary-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m9/milestone-summary-2026-07-11.md)
+16. [`docs/roadmap/athena-milestone-roadmap.md`](../roadmap/athena-milestone-roadmap.md)
+17. [`manifesto/docs/architecture/03-ir.md`](../../manifesto/docs/architecture/03-ir.md)
+18. [`manifesto/docs/architecture/05-plugin.md`](../../manifesto/docs/architecture/05-plugin.md)
+19. [`manifesto/docs/architecture/07-studio.md`](../../manifesto/docs/architecture/07-studio.md)
+20. [`manifesto/docs/architecture/09-layout-and-geometry.md`](../../manifesto/docs/architecture/09-layout-and-geometry.md)
 
 ## Bottom Line
 
-Athena has now completed the first nine implementation phases that matter most to EngineeringOS:
+Athena has now completed the first ten implementation phases that matter most to EngineeringOS:
 
 - M0 proved that semantic engineering can be compiled from authored DSL into canonical `Engineering IR` and deterministic downstream artifacts.
 - M1 proved that the same semantic core can be hosted by runtime, inspected as graph, changed through commands, and extended by plugins without giving up canonical ownership.
@@ -926,6 +999,7 @@ Athena has now completed the first nine implementation phases that matter most t
 - M6 proved that Athena can understand repository change semantically through VCS-neutral baselines, deterministic diff/review/commit/history flows, and a current professional IDE surface for review, commit preparation, package evolution, and release relevance.
 - M7 proved that Athena can keep graphical projection downstream of semantic authority through a dedicated projection model, runtime-owned projection sessions, a translation-only graph adapter, and a graph-first professional workbench inside the existing Athena shell.
 - M8 proved that Athena can unify source and graph under one runtime-owned mutation model, keep graph edits downstream of Athena command meaning, and preserve shared review and reveal coherence across source, graph, and semantic SCM.
+- M9 proved that Athena can execute a governed slice of engineering knowledge above canonical structure, emit typed sufficiency diagnostics, and publish downstream engineering impact through the same runtime, review, and LSP semantic seams.
 
 That means Athena now embodies the manifesto's central thesis more completely than before:
 

@@ -79,6 +79,8 @@ data class AthenaSemanticDiffInspectionPayload(
     val entries: List<AthenaSemanticDiffEntryPayload>,
     val historyConsequences: List<AthenaSemanticHistoryConsequencePayload>,
     val projectionConsequences: List<AthenaProjectionRefreshConsequencePayload>,
+    val knowledgeDiagnostics: List<AthenaEngineeringKnowledgeDiagnosticPayload>,
+    val impactConsequences: List<AthenaEngineeringImpactConsequencePayload>,
 )
 
 /**
@@ -177,6 +179,8 @@ internal fun AthenaSemanticDiffInspection.toPayload(): AthenaSemanticDiffInspect
         entries = entries.map(AthenaSemanticDiffEntry::toPayload),
         historyConsequences = historyConsequences.map(AthenaSemanticHistoryConsequence::toPayload),
         projectionConsequences = projectionConsequences.map(AthenaProjectionRefreshConsequence::toPayload),
+        knowledgeDiagnostics = knowledgeDiagnostics.map { diagnostic -> diagnostic.toKnowledgePayload() },
+        impactConsequences = impactConsequences.consequences.map { consequence -> consequence.toPayload() },
     )
 }
 

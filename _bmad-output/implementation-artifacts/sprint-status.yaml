@@ -1,0 +1,171 @@
+# generated: 2026-07-11
+# last_updated: 2026-07-11T19:03:18+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# KEY CONVENTION:
+#   - Keys are milestone-prefixed (for example m9-epic-1, m9-1-2-story-title)
+#   - This workspace keeps one epic file per milestone, so milestone prefixes avoid collisions
+
+generated: 2026-07-11
+last_updated: 2026-07-11T21:16:22+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: {project-root}/_bmad-output/implementation-artifacts
+
+development_status:
+  m2-epic-1: done
+  m2-1-1-establish-explicit-layout-and-geometry-model-modules: done
+  m2-1-2-contribute-the-first-supported-view-definitions-from-the-electrical-extension: done
+  m2-1-3-derive-layout-ir-for-cabinet-and-wiring-views: done
+  m2-1-4-derive-geometry-ir-and-preserve-canonical-identity-across-projection-layers: done
+  m2-1-5-feed-geometry-ir-to-the-first-backend-and-publish-the-m2-proof-corpus: done
+  m2-epic-1-retrospective: done
+  m2-epic-2: done
+  m2-2-1-host-runtime-projection-sessions-and-supported-view-switching: done
+  m2-2-2-expose-runtime-owned-projection-snapshots-to-the-desktop-surface: done
+  m2-2-3-refresh-projection-state-after-one-supported-semantic-mutation-path: done
+  m2-2-4-preserve-history-and-diff-meaning-across-projection-refresh: done
+  m2-2-5-complete-the-desktop-multi-view-operator-proof: done
+  m2-epic-2-retrospective: done
+  m3-epic-1: done
+  m3-1-1-establish-the-dedicated-kernel-plugin-api-boundary: done
+  m3-1-2-define-stable-domain-schema-and-contribution-contracts: done
+  m3-1-3-split-hosted-plugin-discovery-into-source-and-approval-layers: done
+  m3-1-4-expose-hosted-plugin-lifecycle-and-inventory-inspection: done
+  m3-1-5-refactor-the-compiler-into-an-explicit-named-pass-pipeline: done
+  m3-1-6-route-domain-semantic-participation-through-governed-pass-stages: done
+  m3-epic-1-retrospective: done
+  m3-epic-2: done
+  m3-2-1-preserve-kernel-owned-generic-validation-in-the-pass-pipeline: done
+  m3-2-2-add-plugin-owned-domain-validation-contributions: done
+  m3-2-3-keep-renderer-orchestration-generic-while-opening-render-contribution-points: done
+  m3-2-4-refactor-domain-electrical-into-the-stable-m3-proof-shape: done
+  m3-2-5-add-the-synthetic-domain-dummy-proof-plugin: done
+  m3-2-6-publish-the-external-domain-proof-corpus: done
+  m3-epic-2-retrospective: done
+  m3-epic-3: backlog
+  m3-3-1-automate-the-hosted-plugin-verification-matrix: backlog
+  m3-3-2-prove-the-kernel-builds-and-runs-without-any-domain-plugin: backlog
+  m3-3-3-detect-regressions-toward-kernel-owned-domain-logic: backlog
+  m3-3-4-publish-the-m3-kernel-stability-proof-outcome: backlog
+  m3-epic-3-retrospective: optional
+  m4-epic-1: done
+  m4-1-1-establish-the-ide-product-group-from-the-known-good-theia-baseline: done
+  m4-1-2-launch-a-branded-athena-theia-desktop-shell-with-a-curated-capability-set: done
+  m4-1-3-open-one-existing-engineering-repository-into-an-active-repository-session: done
+  m4-1-4-create-a-new-engineering-repository-from-the-athena-welcome-flow: done
+  m4-1-5-stabilize-the-desktop-first-build-launch-and-verification-path-for-the-product-shell: done
+  m4-epic-1-retrospective: done
+  m4-epic-2: done
+  m4-2-1-bootstrap-athena-lsp-as-the-sole-semantic-entry-point-for-the-ide: done
+  m4-2-2-surface-authored-source-diagnostics-through-athena-lsp: done
+  m4-2-3-add-core-language-navigation-and-authoring-support-through-athena-lsp: done
+  m4-2-4-keep-diagnostics-and-navigation-stable-across-repeated-editing: done
+  m4-epic-2-retrospective: done
+  m4-epic-3: done
+  m4-3-1-compose-a-professional-multi-panel-athena-workbench: done
+  m4-3-2-route-core-athena-commands-and-views-through-explicit-product-boundaries: done
+  m4-3-3-surface-read-only-semantic-inspection-beside-source-editing: done
+  m4-3-4-keep-athena-workbench-extensions-additive-instead-of-replacing-the-shell: done
+  m4-epic-3-retrospective: done
+  m5-epic-1: done
+  m5-1-1-publish-canonical-repository-contracts-in-kernel-repository-model: done
+  m5-1-2-validate-repository-root-contract-and-primary-package-layout: done
+  m5-1-3-create-a-new-governed-athena-repository: done
+  m5-1-4-open-a-governed-repository-into-a-contract-aware-session-seed: done
+  m5-epic-1-retrospective: done
+  m5-epic-2: done
+  m5-2-1-build-deterministic-resolution-inputs-from-the-repository-contract: done
+  m5-2-2-resolve-local-first-dependencies-into-a-canonical-package-graph: done
+  m5-2-3-materialize-and-validate-athena-lock-from-resolver-output: done
+  m5-2-4-publish-package-diagnostics-and-graph-reports-for-runtime-ide-and-m6-foundations: done
+  m5-epic-2-retrospective: done
+  m5-epic-3: done
+  m5-3-1-upgrade-the-active-runtime-session-into-a-repository-graph-session: done
+  m5-3-2-expose-package-state-through-ide-lsp-as-the-sole-ide-semantic-path: done
+  m5-3-3-surface-package-diagnostics-and-repository-graph-feedback-in-the-existing-athena-ide: done
+  m5-3-4-add-only-the-narrow-editor-hardening-needed-for-package-aware-operation: done
+  m5-epic-3-retrospective: done
+  m6-epic-1: done
+  m6-1-1-publish-canonical-semantic-scm-contracts-in-kernel-semantic-scm: done
+  m6-1-2-resolve-repository-baselines-through-a-vendor-neutral-adapter-boundary: done
+  m6-1-3-produce-deterministic-semantic-diff-categories-from-baseline-comparison: done
+  m6-1-4-publish-validation-and-contract-consequences-through-the-runtime-semantic-path: done
+  m6-epic-1-retrospective: done
+  m6-epic-2: done
+  m6-2-1-generate-semantic-review-summaries-from-typed-change-records: done
+  m6-2-2-prepare-deterministic-commit-intent-from-semantic-change: done
+  m6-2-3-allow-hosted-plugins-to-enrich-review-output-without-rewriting-core-facts: done
+  m6-2-4-expose-review-and-commit-semantics-through-runtime-lsp-and-existing-ide-seams: done
+  m6-epic-2-retrospective: done
+  m6-epic-3: done
+  m6-3-1-model-package-aware-semantic-history-over-stable-identities: done
+  m6-3-2-produce-publish-oriented-history-summaries-from-baseline-sequences: done
+  m6-3-3-surface-package-evolution-and-release-relevance-through-existing-athena-product-boundaries: done
+  m6-epic-3-retrospective: done
+  m7-epic-1: done
+  m7-1-1-publish-canonical-projection-contracts-in-kernel-projection-model: done
+  m7-1-2-materialize-deterministic-projection-state-from-engineering-layout-and-geometry-inputs: done
+  m7-1-3-host-runtime-owned-projection-sessions-with-deterministic-invalidation-and-refresh: done
+  m7-1-4-expose-typed-projection-queries-and-governed-commands-through-ide-lsp: done
+  m7-epic-1-retrospective: done
+  m7-epic-2: done
+  m7-2-1-introduce-the-graph-adapter-boundary-under-integrations-graph: done
+  m7-2-2-surface-a-graphical-athena-view-inside-the-existing-workbench: done
+  m7-2-3-synchronize-graphical-selection-with-source-semantic-inspection-and-semantic-scm-context: done
+  m7-2-4-keep-graphical-interaction-inspect-first-and-transient-by-default: done
+  m7-epic-2-retrospective: done
+  m7-epic-3: done
+  m7-3-1-build-the-relationship-forward-first-renderer-proof-over-canonical-object-identities: done
+  m7-3-2-route-electrical-view-definitions-and-renderer-mappings-through-extensions-domain-electrical: done
+  m7-3-3-validate-the-first-graphical-technology-path-and-publish-the-m7-proof-corpus: done
+  m7-epic-3-retrospective: done
+  m8-epic-1: done
+  m8-1-1-publish-unified-mutation-contracts-and-categories-in-runtime-owned-command-surfaces: done
+  m8-1-2-define-projection-ownership-contracts-for-the-first-interactive-projections: done
+  m8-1-3-normalize-source-originated-changes-into-the-same-runtime-mutation-result-path: done
+  m8-epic-1-retrospective: optional
+  m8-epic-2: done
+  m8-2-1-translate-supported-graph-gestures-into-athena-command-intents: done
+  m8-2-2-prove-the-first-semantic-mutation-path-from-the-graph-workbench: done
+  m8-2-3-prove-the-first-projection-mutation-path-from-the-graph-workbench: done
+  m8-epic-2-retrospective: done
+  m8-epic-3: done
+  m8-3-1-feed-accepted-mutation-outcomes-into-one-semantic-review-model: done
+  m8-3-2-support-bidirectional-reveal-across-source-graph-and-semantic-scm-context: done
+  m8-3-3-publish-the-m8-proof-corpus-and-verification-path: done
+  m8-epic-3-retrospective: done
+  m9-epic-1: done
+  m9-1-1-publish-derived-engineering-context-contracts-for-the-first-electrical-proof-slice: done
+  m9-1-2-derive-the-first-electrical-context-values-deterministically: done
+  m9-1-3-promote-capability-facts-through-a-fixed-electrical-knowledge-pack: done
+  m9-1-4-evaluate-the-first-knowledge-pack-rule-slice-and-emit-engineering-sufficiency-diagnostics: done
+  m9-epic-1-retrospective: done
+  m9-epic-2: done
+  m9-2-1-compute-impact-consequences-for-governed-engineering-changes: done
+  m9-2-2-route-knowledge-diagnostics-through-existing-athena-semantic-surfaces: done
+  m9-2-3-extend-semantic-review-with-engineering-impact-and-affected-subjects: done
+  m9-2-4-publish-the-m9-proof-corpus-and-verification-path: done
+  m9-epic-2-retrospective: done

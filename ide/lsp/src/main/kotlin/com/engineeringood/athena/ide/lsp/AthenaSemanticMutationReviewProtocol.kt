@@ -11,6 +11,7 @@ import com.engineeringood.athena.runtime.AthenaSemanticMutationReview
 data class AthenaSemanticMutationReviewPayload(
     val authoredChangeCount: Int,
     val derivedConsequenceCount: Int,
+    val engineeringImpactCount: Int,
     val reviewSummary: AthenaSemanticReviewPayload,
     val commitIntent: AthenaSemanticCommitPayload,
 )
@@ -19,6 +20,7 @@ internal fun AthenaSemanticMutationReview.toPayload(): AthenaSemanticMutationRev
     return AthenaSemanticMutationReviewPayload(
         authoredChangeCount = diff.authoredChanges.size,
         derivedConsequenceCount = diff.derivedConsequences.size,
+        engineeringImpactCount = diff.engineeringImpactConsequences.consequences.size,
         reviewSummary = reviewSummary.toPayload(),
         commitIntent = commitIntent.toPayload(),
     )

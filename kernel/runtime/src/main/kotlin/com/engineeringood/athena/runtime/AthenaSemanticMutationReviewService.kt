@@ -1,5 +1,11 @@
 package com.engineeringood.athena.runtime
 
+import com.engineeringood.athena.compiler.CompilerAffectedScope
+import com.engineeringood.athena.compiler.CompilerCompilationSuccess
+import com.engineeringood.athena.compiler.EngineeringImpactConsequenceCalculator
+import com.engineeringood.athena.compiler.CompilerPassId
+import com.engineeringood.athena.compiler.CompilerRenderingBlocked
+import com.engineeringood.athena.ir.EngineeringKnowledgeState
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.repository.RepositoryGraphReport
 import com.engineeringood.athena.scm.SemanticBaselineDescriptor
@@ -33,6 +39,7 @@ data class AthenaSemanticMutationReview(
  */
 class AthenaSemanticMutationReviewService(
     private val calculator: SemanticDiffCalculator = SemanticDiffCalculator(),
+    private val impactCalculator: EngineeringImpactConsequenceCalculator = EngineeringImpactConsequenceCalculator(),
     private val reviewService: AthenaSemanticReviewService = AthenaSemanticReviewService(),
     private val commitService: AthenaSemanticCommitService = AthenaSemanticCommitService(),
 ) {
@@ -44,6 +51,8 @@ class AthenaSemanticMutationReviewService(
         context: AthenaExecutionContext,
         beforeDocument: EngineeringDocument,
         afterDocument: EngineeringDocument,
+        beforeCompilation: CompilerCompilationSuccess? = null,
+        afterCompilation: CompilerCompilationSuccess? = null,
         beforeValidationResult: SemanticValidationResult? = null,
         afterValidationResult: SemanticValidationResult? = null,
     ): AthenaSemanticMutationReview? {
@@ -53,6 +62,21 @@ class AthenaSemanticMutationReviewService(
             return null
         }
 
+        val afterKnowledgeCompilation = afterCompilation ?: context.compileActiveProject() as? CompilerCompilationSuccess
+        val beforeKnowledgeCompilation = beforeCompilation ?: afterKnowledgeCompilation?.let { currentCompilation ->
+            context.compiler().recompute(
+                source = currentCompilation.source,
+                document = beforeDocument,
+                affectedScope = beforeDocument.fullKnowledgeAffectedScope(),
+                previousLayouts = emptyList(),
+                previousGeometries = emptyList(),
+                previousRendering = CompilerRenderingBlocked(
+                    reason = "semantic mutation review synthesized the prior engineering knowledge snapshot",
+                    blockedByPass = CompilerPassId.BACKEND_PREPARATION,
+                ),
+            )
+        }
+
         val baseline = SemanticBaselineSnapshot(
             descriptor = SemanticBaselineDescriptor(
                 baselineId = "accepted-mutation-before:${context.project.name}",
@@ -60,7 +84,9 @@ class AthenaSemanticMutationReviewService(
             ),
             repositoryReport = report,
             engineeringDocuments = listOf(beforeDocument),
-            validationResult = beforeValidationResult,
+            engineeringKnowledgeState = beforeKnowledgeCompilation?.toKnowledgeState(),
+            knowledgeDiagnostics = beforeKnowledgeCompilation?.validationBreakdown?.engineeringSufficiencyDiagnostics.orEmpty(),
+            validationResult = beforeValidationResult ?: beforeKnowledgeCompilation?.semanticResult,
         )
         val current = SemanticBaselineSnapshot(
             descriptor = SemanticBaselineDescriptor(
@@ -69,11 +95,22 @@ class AthenaSemanticMutationReviewService(
             ),
             repositoryReport = report,
             engineeringDocuments = listOf(afterDocument),
-            validationResult = afterValidationResult,
+            engineeringKnowledgeState = afterKnowledgeCompilation?.toKnowledgeState(),
+            knowledgeDiagnostics = afterKnowledgeCompilation?.validationBreakdown?.engineeringSufficiencyDiagnostics.orEmpty(),
+            validationResult = afterValidationResult ?: afterKnowledgeCompilation?.semanticResult,
         )
         val diff = calculator.calculate(
             baseline = baseline,
             current = current,
+        ).copy(
+            engineeringImpactConsequences = if (beforeKnowledgeCompilation != null && afterKnowledgeCompilation != null) {
+                impactCalculator.calculate(
+                    before = beforeKnowledgeCompilation.toKnowledgeState(),
+                    after = afterKnowledgeCompilation.toKnowledgeState(),
+                )
+            } else {
+                com.engineeringood.athena.ir.EngineeringImpactConsequences.canonical(emptyList())
+            },
         )
         val review = reviewService.summarizeDiff(diff)
         return AthenaSemanticMutationReview(
@@ -82,6 +119,29 @@ class AthenaSemanticMutationReviewService(
             commitIntent = commitService.prepareReview(review),
         )
     }
+}
+
+private fun CompilerCompilationSuccess.toKnowledgeState(): EngineeringKnowledgeState {
+    return EngineeringKnowledgeState(
+        derivedContext = derivedContext,
+        capabilityFacts = capabilityFacts,
+        constraintEvaluations = constraintEvaluations,
+    )
+}
+
+private fun EngineeringDocument.fullKnowledgeAffectedScope(): CompilerAffectedScope {
+    return CompilerAffectedScope(
+        changedSemanticIds = listOf(system.id.value) +
+            components.map { component -> component.id.value } +
+            ports.map { port -> port.id.value } +
+            connections.map { connection -> connection.id.value },
+        validationSemanticIds = listOf(system.id.value) +
+            components.map { component -> component.id.value } +
+            ports.map { port -> port.id.value } +
+            connections.map { connection -> connection.id.value },
+        renderComponentSemanticIds = components.map { component -> component.id.value },
+        renderConnectionSemanticIds = connections.map { connection -> connection.id.value },
+    )
 }
 
 private fun Path.isWithinPrimarySourceRoot(

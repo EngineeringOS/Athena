@@ -12,6 +12,7 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 - Resolve runtime-owned semantic baseline, semantic diff, semantic review, and semantic commit services over the active `RepositoryGraphSession`.
 - Resolve runtime-owned semantic SCM projection state that combines baseline diagnostics, semantic review, and commit-preparation output for downstream IDE seams.
 - Resolve runtime-owned semantic history projection state that combines baseline-sequence diagnostics and package-evolution summaries for downstream IDE seams.
+- Carry current fixed knowledge-pack activation into runtime-facing compiler sessions so IDE and mutation flows can see M9 knowledge outputs.
 - Consume the governed approved plugin inventory from `:kernel:plugins:plugin-host`.
 - Expose runtime-visible plugin lifecycle inspection without handing orchestration ownership to plugins.
 - Apply hosted semantic review enrichments after core review generation while preserving core review entries as the semantic authority.
@@ -20,6 +21,7 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 - Keep canonical runtime state aligned with `Engineering IR`.
 - Host command history, undo, redo, replay, diff inspection, and accepted AI proposal flow.
 - Publish runtime-visible incremental refresh metadata after supported semantic mutations.
+- Publish additive engineering sufficiency diagnostics and impact consequences through existing runtime-owned mutation inspection surfaces.
 
 ## Main Types
 
@@ -66,8 +68,11 @@ Story `2.4` keeps semantic review primary while making projection refresh inspec
 - `AthenaSemanticDiffInspection` remains anchored in canonical semantic ids and command-linked history consequences.
 - Projection refresh evidence is attached as downstream consequence metadata, not as a second history or diff system.
 - Runtime inspection may explain affected views and downstream layers, but it does not replace semantic change review with geometry-only review.
+- Runtime source-mutation inspection may now carry engineering sufficiency diagnostics plus typed impact consequences, but those remain additive evidence and not a second review subsystem.
+- Accepted mutation review now reuses the same semantic review and commit vocabulary to distinguish direct engineering edits from downstream affected subjects through typed engineering-impact entries.
 - Repository baseline comparison now stays on the runtime-owned JVM path and publishes compiler-derived validation plus repository-contract consequences instead of frontend-guessed fallout.
 - Runtime review publication now reuses the same baseline/diff path and emits typed review entries for affected packages, authored intent categories, derived consequences, validation impact, and degraded input warnings.
+- Runtime review publication now also carries typed engineering-impact consequences so SCM and accepted-mutation review can inspect the same affected-subject consequence contract as Problems and semantic inspection.
 - Hosted review enrichment now stays additive on the same JVM path: approved plugins can append deterministic labels, hints, and summaries, but they cannot suppress or rewrite core review entries.
 - Runtime commit publication now reuses the same baseline/diff/review path and emits typed commit-intent entries for adapter-ready commit preparation without leaking staging or provider nouns into the kernel.
 - Runtime semantic SCM projection now reuses the same baseline/diff/review/commit path and publishes one typed state object for LSP and workbench consumers instead of making frontend code reconstruct review/commit meaning.

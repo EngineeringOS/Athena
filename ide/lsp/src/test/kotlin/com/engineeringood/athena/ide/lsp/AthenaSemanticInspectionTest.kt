@@ -133,4 +133,79 @@ class AthenaSemanticInspectionTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `semantic inspection includes current knowledge diagnostics and m9 knowledge counts`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-knowledge-inspection-",
+            sourceFileName = "motor-proof.athena",
+            sourceText = m9SemanticInspectionKnowledgeSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+
+        val server = AthenaLanguageServer()
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = repositoryRoot.toUri().toString()
+                },
+            ).get()
+
+            val documentUri = sourcePath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        documentUri,
+                        "athena",
+                        1,
+                        m9SemanticInspectionKnowledgeSource,
+                    ),
+                ),
+            )
+
+            val inspection = server.semanticInspection(
+                AthenaSemanticInspectionParams(
+                    AthenaSemanticInspectionTextDocument(documentUri),
+                ),
+            ).get()
+
+            assertNotNull(inspection)
+            assertEquals("diagnostics", inspection.status)
+            assertEquals(3, inspection.diagnosticsCount)
+            assertTrue(inspection.diagnosticSummaries.any { summary -> summary.contains("knowledge.protection_sufficiency") })
+            val knowledge = assertNotNull(inspection.knowledgeInspection)
+            assertEquals(1, knowledge.derivedSubjectCount)
+            assertEquals(3, knowledge.capabilityFactCount)
+            assertEquals(3, knowledge.constraintEvaluationCount)
+            assertEquals(3, knowledge.knowledgeDiagnosticsCount)
+            assertEquals(
+                listOf(
+                    "knowledge.cable_sufficiency",
+                    "knowledge.protection_sufficiency",
+                    "knowledge.relay_sufficiency",
+                ),
+                knowledge.knowledgeDiagnostics.map { diagnostic -> diagnostic.ruleId }.sorted(),
+            )
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
 }
+
+private val m9SemanticInspectionKnowledgeSource = """
+    system MotorDerivedContext {
+      device M1 {
+        type Motor
+        power "7.5kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
+    }
+""".trimIndent()

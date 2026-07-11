@@ -16,6 +16,7 @@ enum class SemanticDiagnosticCategory {
     PROPERTY,
     CONNECTION,
     DOMAIN,
+    KNOWLEDGE,
 }
 
 /** Stable identifier for one semantic validation rule. */

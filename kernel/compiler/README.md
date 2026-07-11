@@ -2,7 +2,7 @@
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
-The `:kernel:compiler` module is Athena's orchestration core. It exposes the public compiler facade, owns compiler pipeline reporting, coordinates domain semantics, resolves governed knowledge packages, validates external boundary descriptors, derives explicit `Layout IR`, derives explicit `Geometry IR`, derives renderer-neutral `projection-model` documents, and drives the first geometry-backed downstream backend path.
+The `:kernel:compiler` module is Athena's orchestration core. It exposes the public compiler facade, owns compiler pipeline reporting, coordinates domain semantics, resolves governed knowledge packages, validates external boundary descriptors, derives explicit `Layout IR`, derives explicit `Geometry IR`, derives renderer-neutral `projection-model` documents, publishes the first M9 `DerivedEngineeringContext`, promotes the first M9 `EngineeringCapabilityFacts`, evaluates the first fixed M9 constraint slice, computes the first M9 impact consequences across compiled canonical states, and drives the first geometry-backed downstream backend path.
 
 ## Responsibilities
 
@@ -13,6 +13,10 @@ The `:kernel:compiler` module is Athena's orchestration core. It exposes the pub
 - Derive supported `Layout IR` documents from canonical `Engineering IR` plus typed `ViewDefinition` contributions.
 - Derive supported `Geometry IR` documents from explicit `Layout IR`.
 - Derive supported `ProjectionDocument` outputs from `Geometry IR` plus layout-owned `ViewDefinition`.
+- Derive the first governed `DerivedEngineeringContext` snapshot from canonical `Engineering IR`.
+- Promote the first governed `EngineeringCapabilityFacts` through a fixed reviewed knowledge pack.
+- Evaluate the first governed engineering sufficiency rule slice and emit typed renderer-independent diagnostics.
+- Compute deterministic engineering impact consequences from before/after compiled canonical states.
 - Consume the stable public SPI from `:kernel:plugins:plugin-api`.
 - Consume the approved hosted plugin inventory governed by `:kernel:plugins:plugin-host`.
 - Load and resolve governed knowledge packages.
@@ -27,6 +31,10 @@ The `:kernel:compiler` module is Athena's orchestration core. It exposes the pub
 - `LayoutIrDeriver`: deterministic `Engineering IR -> Layout IR` derivation for supported views.
 - `GeometryIrDeriver`: deterministic `Layout IR -> Geometry IR` derivation for supported views.
 - `CompilerModels.kt`: public compiler result models.
+- `DerivedEngineeringContextDeriver`: narrow compiler-owned derivation from canonical `Engineering IR` to first-wave M9 derived context.
+- `EngineeringCapabilityFactPromoter`: fixed knowledge-pack promotion from derived context to first-wave M9 capability facts.
+- `EngineeringConstraintEvaluator`: fixed knowledge-pack rule-slice evaluation from capability facts to typed engineering sufficiency results and diagnostics.
+- `EngineeringImpactConsequenceCalculator`: deterministic before/after impact evaluation over governed inputs, derived context, capability facts, and constraint results.
 - `EngineeringIrLowerer`: syntax-to-IR lowering.
 - `plugin/*`: compiler-owned domain coordination only.
 - `knowledge/*`: governed knowledge package models, loading, and resolution.
@@ -43,6 +51,22 @@ Story `2.3` adds the first narrow incremental recompute proof for M2:
 - The compiler stays honest: if a safe scoped merge is not available, the pass reports `FULL_FALLBACK` instead of pretending the refresh stayed incremental.
 - The canonical semantic source of truth does not move. Runtime mutates `Engineering IR`; compiler recomputes downstream artifacts from that canonical state.
 
+## Derived Context Boundary
+
+Story `1.2` adds the first narrow M9 derivation proof:
+
+- The compiler publishes `CompilerCompilationSuccess.derivedContext` as Athena-owned kernel/compiler output.
+- The compiler publishes `CompilerCompilationSuccess.capabilityFacts` as Athena-owned kernel/compiler output.
+- The compiler publishes `CompilerCompilationSuccess.constraintEvaluations` plus separate `engineeringSufficiencyDiagnostics` in the validation breakdown.
+- The compiler exposes `AthenaCompiler.calculateImpactConsequences(before, after)` so later runtime and review stories can reuse a typed impact calculation instead of rebuilding it from strings.
+- The first proof slice is intentionally narrow and electrical only: motor `power`, `voltage`, `powerFactor`/`pf`, and `efficiency` can be normalized from existing authored `Symbol` or `Text` values.
+- The current proof derives deterministic intermediate values such as motor full-load current and thermal load, then promotes fixed current-demand facts, then evaluates a fixed sufficiency slice against authored breaker/cable/relay current inputs.
+- The first impact proof compares governed before/after states and publishes affected semantic identities plus short categorized reason labels for changed inputs, derived context, capability facts, and constraint evaluations.
+- The current fixed pack then promotes selected meanings such as required protection current, cable current demand, and relay sizing demand.
+- Engineering sufficiency stays separate from structural validation: accepted results live in `constraintEvaluations`, while warning/error outcomes are also published as `KNOWLEDGE` diagnostics for later semantic delivery.
+- This still stays below SCM review, LSP delivery, and renderer metadata.
+- The parser grammar does not widen in this story; quantity parsing is a narrow compiler-owned normalization step.
+
 ## Dependencies
 
 - `:kernel:language`
@@ -53,6 +77,7 @@ Story `2.3` adds the first narrow incremental recompute proof for M2:
 - `:kernel:layout-model`
 - `:kernel:geometry-model`
 - `:kernel:projection-model`
+- `:kernel:repository-model`
 - `:kernel:svg-renderer`
 
 Test-only dependency:

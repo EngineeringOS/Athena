@@ -1,0 +1,50 @@
+# generated: 2026-07-11T13:34:04+08:00
+# last_updated: 2026-07-11T19:03:18+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m9
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M9 milestone sequence sourced from `epics-M9-2026-07-11.md`.
+# - M9 proves the first kernel-owned engineering knowledge runtime above canonical Engineering IR.
+
+generated: 2026-07-11T13:34:04+08:00
+last_updated: 2026-07-11T21:16:22+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m9
+
+development_status:
+  epic-1: done
+  1-1-publish-derived-engineering-context-contracts-for-the-first-electrical-proof-slice: done
+  1-2-derive-the-first-electrical-context-values-deterministically: done
+  1-3-promote-capability-facts-through-a-fixed-electrical-knowledge-pack: done
+  1-4-evaluate-the-first-knowledge-pack-rule-slice-and-emit-engineering-sufficiency-diagnostics: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-compute-impact-consequences-for-governed-engineering-changes: done
+  2-2-route-knowledge-diagnostics-through-existing-athena-semantic-surfaces: done
+  2-3-extend-semantic-review-with-engineering-impact-and-affected-subjects: done
+  2-4-publish-the-m9-proof-corpus-and-verification-path: done
+  epic-2-retrospective: done

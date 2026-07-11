@@ -67,3 +67,12 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `../m4/open-repository-proof/` - reused governed repository fixture that now drives the published source-plus-graph mutation proof
 
 `m8/` stays narrow on purpose. The milestone proves one mutation authority across source and graph, one real semantic graph mutation, one real projection mutation, and one shared review and reveal path without widening into broad graphical authoring.
+
+## `m9/`
+
+- `motor-derived-context.athena` - smallest derived-context seed for the first electrical knowledge-runtime proof
+- `motor-impact-before.athena` - baseline state for governed engineering impact and sufficiency verification
+- `motor-impact-after.athena` - changed state for governed engineering impact and sufficiency verification
+- `README.md` - published proof-corpus entry for the first engineering-knowledge runtime milestone
+
+`m9/` stays kernel-first on purpose. The milestone proves derived engineering context, capability facts, fixed-rule sufficiency diagnostics, and typed engineering-impact review over one narrow electrical slice without widening into standards platforms, vendor catalogs, or new editor modes.

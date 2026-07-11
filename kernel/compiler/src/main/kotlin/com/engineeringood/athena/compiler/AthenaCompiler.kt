@@ -66,6 +66,10 @@ class AthenaCompiler(
     private val knowledgeResolver: AthenaKnowledgeResolver = AthenaKnowledgeResolver(),
     private val boundaryDescriptorSource: AthenaBoundaryDescriptorSource = AthenaBoundaryDescriptorSource.empty(),
     private val boundaryDescriptorResolver: AthenaBoundaryDescriptorResolver = AthenaBoundaryDescriptorResolver(),
+    private val derivedEngineeringContextDeriver: DerivedEngineeringContextDeriver = DerivedEngineeringContextDeriver(),
+    private val capabilityFactPromoter: EngineeringCapabilityFactPromoter = EngineeringCapabilityFactPromoter(),
+    private val constraintEvaluator: EngineeringConstraintEvaluator = EngineeringConstraintEvaluator(),
+    private val impactConsequenceCalculator: EngineeringImpactConsequenceCalculator = EngineeringImpactConsequenceCalculator(),
     private val repositoryContractLoader: AthenaRepositoryContractLoader = AthenaRepositoryContractLoader(),
     private val repositoryResolutionInputBuilder: AthenaRepositoryResolutionInputBuilder = AthenaRepositoryResolutionInputBuilder(),
     private val repositoryGraphResolver: AthenaRepositoryGraphResolver = AthenaRepositoryGraphResolver(
@@ -162,6 +166,19 @@ class AthenaCompiler(
 
             is CompilerParseFailure -> CompilerLoweringFailure(parseResult.diagnostics)
         }
+    }
+
+    /**
+     * Computes deterministic engineering impact consequences across two compiled canonical states.
+     */
+    fun calculateImpactConsequences(
+        before: CompilerCompilationSuccess,
+        after: CompilerCompilationSuccess,
+    ): com.engineeringood.athena.ir.EngineeringImpactConsequences {
+        return impactConsequenceCalculator.calculate(
+            before = before,
+            after = after,
+        )
     }
 
     /** Returns supported view definitions in deterministic approved-plugin order. */
@@ -371,11 +388,22 @@ class AthenaCompiler(
             source = source,
             document = document,
         )
+        val derivedContext = derivedEngineeringContextDeriver.derive(document)
+        val capabilityFacts = capabilityFactPromoter.promote(
+            derivedContext = derivedContext,
+            knowledgeContext = knowledgeContext,
+        )
+        val constraintEvaluationOutcome = constraintEvaluator.evaluate(
+            derivedContext = derivedContext,
+            capabilityFacts = capabilityFacts,
+            knowledgeContext = knowledgeContext,
+        )
         val validationResult = validatePass(
             source = source,
             document = document,
             affectedScope = affectedScope,
             semanticEnrichment = semanticEnrichmentResult,
+            engineeringSufficiencyDiagnostics = constraintEvaluationOutcome.diagnostics,
         )
         val backendPreparation = prepareBackend(
             result = validationResult.semanticResult,
@@ -400,6 +428,9 @@ class AthenaCompiler(
         return CompilerCompilationSuccess(
             source = source,
             document = document,
+            derivedContext = derivedContext,
+            capabilityFacts = capabilityFacts,
+            constraintEvaluations = constraintEvaluationOutcome.evaluations,
             semanticResult = validationResult.semanticResult,
             validationBreakdown = validationResult.validationBreakdown,
             layouts = backendPreparation.layouts,
@@ -634,12 +665,14 @@ class AthenaCompiler(
         document: EngineeringDocument,
         affectedScope: CompilerAffectedScope?,
         semanticEnrichment: SemanticEnrichmentPassResult,
+        engineeringSufficiencyDiagnostics: List<SemanticDiagnostic>,
     ): ValidationPassResult {
         val validation = validateSemantics(
             source = source,
             document = document,
             affectedScope = affectedScope,
             enrichmentDiagnostics = semanticEnrichment.contribution.diagnostics,
+            engineeringSufficiencyDiagnostics = engineeringSufficiencyDiagnostics,
         )
         return ValidationPassResult(
             semanticResult = validation.semanticResult,
@@ -829,6 +862,7 @@ class AthenaCompiler(
         document: EngineeringDocument,
         affectedScope: CompilerAffectedScope?,
         enrichmentDiagnostics: List<SemanticDiagnostic>,
+        engineeringSufficiencyDiagnostics: List<SemanticDiagnostic>,
     ): ValidationComputationResult {
         val validationMode = if (affectedScope == null) {
             CompilerIncrementalPassMode.FULL_FALLBACK
@@ -859,6 +893,7 @@ class AthenaCompiler(
             semanticEnrichmentDiagnostics = enrichmentDiagnostics,
             kernelDiagnostics = kernelResult.diagnostics,
             domainDiagnostics = domainDiagnostics,
+            engineeringSufficiencyDiagnostics = engineeringSufficiencyDiagnostics,
             domainValidationAttributions = domainValidationContribution.attributions,
         )
         val diagnostics = validationBreakdown.semanticEnrichmentDiagnostics +

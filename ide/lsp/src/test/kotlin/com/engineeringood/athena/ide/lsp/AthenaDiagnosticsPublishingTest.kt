@@ -77,6 +77,50 @@ class AthenaDiagnosticsPublishingTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `publish knowledge diagnostics for governed engineering insufficiency through normal lsp problems flow`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-knowledge-diagnostics-",
+            sourceFileName = "motor-proof.athena",
+            sourceText = m9KnowledgeProofSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = repositoryRoot.toUri().toString()
+                },
+            ).get()
+
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        sourcePath.toUri().toString(),
+                        "athena",
+                        1,
+                        m9KnowledgeProofSource,
+                    ),
+                ),
+            )
+
+            val knowledgeOpen = client.publishedDiagnostics.last()
+            assertEquals(3, knowledgeOpen.diagnostics.size)
+            assertTrue(knowledgeOpen.diagnostics.all { diagnostic -> diagnostic.source == "Athena knowledge" })
+            assertTrue(knowledgeOpen.diagnostics.any { diagnostic -> diagnostic.code.left == "knowledge.protection_sufficiency" })
+            assertTrue(knowledgeOpen.diagnostics.any { diagnostic -> diagnostic.message.contains("Breaker current 10A is below required 18A") })
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
 }
 
 class AthenaRecordingLanguageClient : LanguageClient {
@@ -99,3 +143,18 @@ class AthenaRecordingLanguageClient : LanguageClient {
         loggedMessages += message.message
     }
 }
+
+private val m9KnowledgeProofSource = """
+    system MotorDerivedContext {
+      device M1 {
+        type Motor
+        power "7.5kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
+    }
+""".trimIndent()

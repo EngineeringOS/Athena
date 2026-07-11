@@ -1944,6 +1944,9 @@ class AthenaCompilerTest {
                     "connectivity-relationships",
                     "grouped-placement",
                 ),
+                semanticCommandIds = listOf(
+                    "connect-ports",
+                ),
                 projectionCommandIds = listOf(
                     "adjust-layout-placement",
                     "adjust-layout-grouping",

@@ -262,6 +262,87 @@ class AthenaSourceMutationRequestTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `source mutation request transports knowledge diagnostics and impact consequences for governed engineering change`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-source-mutation-knowledge-",
+            sourceFileName = "motor-proof.athena",
+            sourceText = sourceMutationKnowledgeBaselineSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val documentUri = sourcePath.toUri().toString()
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            documentUri,
+                            "athena",
+                            1,
+                            sourceMutationKnowledgeBaselineSource,
+                        ),
+                    ),
+                )
+                server.textDocumentService.didChange(
+                    DidChangeTextDocumentParams(
+                        VersionedTextDocumentIdentifier(documentUri, 2),
+                        listOf(
+                            TextDocumentContentChangeEvent(
+                                sourceMutationKnowledgeChangedSource,
+                            ),
+                        ),
+                    ),
+                )
+
+                val payload = assertNotNull(
+                    server.sourceMutationEvaluation(
+                        AthenaSourceMutationParams(
+                            textDocument = AthenaSourceMutationTextDocument(documentUri),
+                        ),
+                    ).get(),
+                )
+
+                assertEquals("accepted", payload.outcome)
+                val inspection = assertNotNull(payload.inspection)
+                assertEquals(3, inspection.knowledgeDiagnostics.size)
+                assertEquals(1, inspection.impactConsequences.size)
+                assertEquals("component:M1", inspection.impactConsequences.single().affectedSubjectIdentity)
+                assertEquals(
+                    listOf(
+                        "governed-input-changed",
+                        "derived-context-changed",
+                        "capability-fact-changed",
+                        "constraint-evaluation-changed",
+                    ),
+                    inspection.impactConsequences.single().reasonKinds,
+                )
+                assertTrue(inspection.impactConsequences.single().affectedConstraintRuleKinds.isNotEmpty())
+                val semanticReview = assertNotNull(payload.semanticReview)
+                assertEquals(1, semanticReview.engineeringImpactCount)
+                assertEquals(1, semanticReview.reviewSummary.engineeringImpactConsequences.size)
+                assertEquals(1, semanticReview.commitIntent.engineeringImpactConsequences.size)
+                assertTrue(semanticReview.reviewSummary.entries.any { entry -> entry.kind == "engineering-impact" })
+                assertTrue(semanticReview.commitIntent.entries.any { entry -> entry.kind == "engineering-impact" })
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
 }
 
 private val sourceMutationDemoCabinetSource = """
@@ -286,5 +367,35 @@ private val sourceMutationDemoCabinetSource = """
       }
 
       connect PLC1.out -> M1.in
+    }
+""".trimIndent()
+
+private val sourceMutationKnowledgeBaselineSource = """
+    system MotorImpactProof {
+      device M1 {
+        type Motor
+        power "7.5kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
+    }
+""".trimIndent()
+
+private val sourceMutationKnowledgeChangedSource = """
+    system MotorImpactProof {
+      device M1 {
+        type Motor
+        power "9kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
     }
 """.trimIndent()

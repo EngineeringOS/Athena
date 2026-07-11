@@ -18,6 +18,9 @@ class SemanticCommitIntentGenerator {
         val derivedConsequences = review.derivedConsequences
             .distinct()
             .sortedWith(commitDerivedConsequenceComparator())
+        val engineeringImpactConsequences = review.engineeringImpactConsequences.consequences
+            .distinct()
+            .sortedWith(compareBy { consequence -> consequence.affectedSubjectIdentity.value })
         val diagnostics = review.diagnostics
             .distinct()
             .sortedWith(commitDiagnosticComparator())
@@ -27,6 +30,7 @@ class SemanticCommitIntentGenerator {
         val entries = buildList {
             addAll(affectedPackageEntries(review.affectedPackages, reviewEntries))
             addAll(authoredEntries(authoredChanges, reviewEntries))
+            addAll(engineeringImpactEntries(reviewEntries))
             addAll(derivedEntries(derivedConsequences, reviewEntries))
             addAll(validationEntries(reviewEntries))
             addAll(inputWarningEntries(reviewEntries))
@@ -37,6 +41,7 @@ class SemanticCommitIntentGenerator {
             affectedPackages = review.affectedPackages,
             authoredChanges = authoredChanges,
             derivedConsequences = derivedConsequences,
+            engineeringImpactConsequences = com.engineeringood.athena.ir.EngineeringImpactConsequences.canonical(engineeringImpactConsequences),
             diagnostics = diagnostics,
             entries = entries,
             summary = "Semantic commit intent for ${review.affectedPackages.size} affected package(s).",
@@ -117,6 +122,23 @@ class SemanticCommitIntentGenerator {
                             add(diagnostic.toCommitFactReference(consequence.affectedPackage))
                         }
                     }.distinct().sortedWith(commitFactReferenceComparator()),
+                )
+            }
+    }
+
+    private fun engineeringImpactEntries(
+        reviewEntries: List<SemanticReviewEntry>,
+    ): List<SemanticCommitEntry> {
+        return reviewEntries
+            .filter { entry -> entry.kind == SemanticReviewEntryKind.ENGINEERING_IMPACT }
+            .map { entry ->
+                SemanticCommitEntry(
+                    kind = SemanticCommitEntryKind.ENGINEERING_IMPACT,
+                    message = entry.message.replace("Engineering impact:", "Commit engineering impact review:"),
+                    affectedPackage = entry.affectedPackage,
+                    subjectIdentity = entry.subjectIdentity,
+                    factReferences = listOf(entry.commitReviewFactReference()) +
+                        entry.factReferences.map { reference -> reference.toCommitFactReference() },
                 )
             }
     }
@@ -205,6 +227,7 @@ private fun SemanticReviewFactReference.toCommitFactReference(): SemanticCommitF
     return SemanticCommitFactReference(
         factKind = when (factKind) {
             SemanticReviewFactKind.AUTHORED_CHANGE -> SemanticCommitFactKind.AUTHORED_CHANGE
+            SemanticReviewFactKind.ENGINEERING_IMPACT -> SemanticCommitFactKind.ENGINEERING_IMPACT
             SemanticReviewFactKind.DERIVED_CONSEQUENCE -> SemanticCommitFactKind.DERIVED_CONSEQUENCE
             SemanticReviewFactKind.DIAGNOSTIC -> SemanticCommitFactKind.DIAGNOSTIC
         },

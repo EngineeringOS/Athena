@@ -77,7 +77,7 @@ class AthenaSemanticReviewServiceTest {
                         AthenaSemanticBaselineService(
                             baselineResolver = SemanticBaselineResolver(
                                 adapters = listOf(
-                                    GitSemanticBaselineAdapter { AthenaCompiler() },
+                                    GitSemanticBaselineAdapter(),
                                 ),
                             ),
                         )
@@ -207,6 +207,90 @@ class AthenaSemanticReviewServiceTest {
             root.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun `extends semantic review with engineering impact and knowledge diagnostics for the m9 electrical proof slice`() {
+        val root = createTempDirectory("athena-runtime-semantic-review-m9-")
+        try {
+            val currentRoot = root.resolve("current")
+            val baselineRoot = root.resolve("baseline")
+            writeReviewRepository(
+                repositoryRoot = baselineRoot,
+                packageName = "com.engineeringood.demo",
+                sourceFileName = "motor-proof.athena",
+                sourceText = reviewKnowledgeBaselineSource,
+            )
+            writeReviewRepository(
+                repositoryRoot = currentRoot,
+                packageName = "com.engineeringood.demo",
+                sourceFileName = "motor-proof.athena",
+                sourceText = reviewKnowledgeChangedSource,
+            )
+            AthenaCompiler().materializeRepositoryLock(baselineRoot)
+            AthenaCompiler().materializeRepositoryLock(currentRoot)
+
+            val runtime = AthenaRuntime(
+                serviceRegistry = AthenaServiceRegistry(
+                    semanticBaselineServiceProvider = {
+                        AthenaSemanticBaselineService(
+                            baselineResolver = SemanticBaselineResolver(
+                                adapters = listOf(
+                                    GitSemanticBaselineAdapter { AthenaCompiler() },
+                                ),
+                            ),
+                        )
+                    },
+                ),
+            )
+            val workspace = runtime.openWorkspace(currentRoot)
+            val session = workspace.activateRepositoryGraphSession(
+                projectName = "demo",
+                sourcePath = currentRoot.resolve("src").resolve("motor-proof.athena"),
+            )
+            val baseline = runtime.serviceRegistry.semanticBaselines().resolveBaseline(
+                session = session,
+                descriptor = SemanticBaselineDescriptor(
+                    baselineId = "baseline-m9-review",
+                    label = "M9 baseline",
+                ),
+                locator = SemanticBaselineLocator(
+                    adapterId = GitSemanticBaselineAdapter.ADAPTER_ID,
+                    locator = "../baseline",
+                ),
+            ).snapshot ?: error("Expected baseline snapshot")
+
+            val summary = runtime.serviceRegistry.semanticReviews().summarizeAgainstBaseline(
+                session = session,
+                baseline = baseline,
+            )
+            val commit = runtime.serviceRegistry.semanticCommits().prepareReview(summary)
+
+            assertEquals(1, summary.engineeringImpactConsequences.consequences.size)
+            assertTrue(summary.entries.any { entry ->
+                entry.kind == SemanticReviewEntryKind.ENGINEERING_CHANGE &&
+                    entry.subjectIdentity?.value == "component:M1"
+            })
+            assertTrue(summary.entries.any { entry ->
+                entry.kind == SemanticReviewEntryKind.ENGINEERING_IMPACT &&
+                    entry.subjectIdentity?.value == "component:M1"
+            })
+            assertTrue(summary.diagnostics.any { diagnostic ->
+                diagnostic.ruleId.value == "knowledge.protection_sufficiency"
+            })
+            assertTrue(summary.entries.any { entry ->
+                entry.kind == SemanticReviewEntryKind.VALIDATION_IMPACT &&
+                    entry.factReferences.any { reference ->
+                        reference.identifier.contains("knowledge.protection_sufficiency")
+                    }
+            })
+            assertTrue(commit.entries.any { entry ->
+                entry.kind.name == "ENGINEERING_IMPACT" &&
+                    entry.subjectIdentity?.value == "component:M1"
+            })
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
 }
 
 private fun writeReviewRepository(
@@ -252,3 +336,33 @@ private fun writeReviewRepository(
         AthenaCompiler().materializeRepositoryLock(dependencyRoot)
     }
 }
+
+private val reviewKnowledgeBaselineSource = """
+    system MotorImpactProof {
+      device M1 {
+        type Motor
+        power "7.5kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
+    }
+""".trimIndent()
+
+private val reviewKnowledgeChangedSource = """
+    system MotorImpactProof {
+      device M1 {
+        type Motor
+        power "9kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
+    }
+""".trimIndent()

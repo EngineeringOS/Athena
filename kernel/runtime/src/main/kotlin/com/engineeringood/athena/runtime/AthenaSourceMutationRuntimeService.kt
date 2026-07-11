@@ -162,11 +162,18 @@ class AthenaSourceMutationRuntimeService internal constructor() {
                                 afterCompilation = compilation,
                                 changedSemanticIds = changedSemanticIds,
                             ),
+                            knowledgeDiagnostics = compilation.validationBreakdown.engineeringSufficiencyDiagnostics,
+                            impactConsequences = context.compiler().calculateImpactConsequences(
+                                before = canonicalSuccess,
+                                after = compilation,
+                            ),
                         ),
                         semanticReview = context.semanticMutationReviews().summarizeAcceptedMutation(
                             context = context,
                             beforeDocument = beforeDocument,
                             afterDocument = afterDocument,
+                            beforeCompilation = canonicalSuccess,
+                            afterCompilation = compilation,
                             beforeValidationResult = canonicalSuccess.semanticResult,
                             afterValidationResult = compilation.semanticResult,
                         ),

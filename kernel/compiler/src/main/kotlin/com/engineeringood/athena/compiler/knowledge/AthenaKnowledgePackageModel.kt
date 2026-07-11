@@ -7,6 +7,7 @@ enum class AthenaKnowledgeArtifactKind {
     ONTOLOGY,
     STANDARDS_MAPPING,
     RULE,
+    KNOWLEDGE_PACK,
 }
 
 /** Reviewable provenance carried by one governed knowledge artifact package. */

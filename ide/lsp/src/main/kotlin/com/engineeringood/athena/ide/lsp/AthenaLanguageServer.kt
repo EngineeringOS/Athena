@@ -5,6 +5,7 @@ import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
+import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.Diagnostic
@@ -582,7 +583,10 @@ private fun String.toDocumentPath(): Path? {
 private fun CompilerCompilationResult.toLspDiagnostics(): List<Diagnostic> {
     return when (this) {
         is CompilerCompilationParseFailure -> diagnostics.map { diagnostic -> diagnostic.toLspDiagnostic() }
-        is CompilerCompilationSuccess -> semanticResult.diagnostics.map { diagnostic -> diagnostic.toLspDiagnostic() }
+        is CompilerCompilationSuccess -> (
+            semanticResult.diagnostics +
+                validationBreakdown.engineeringSufficiencyDiagnostics
+            ).distinct().map { diagnostic -> diagnostic.toLspDiagnostic() }
     }
 }
 
@@ -605,7 +609,11 @@ private fun SemanticDiagnostic.toLspDiagnostic(): Diagnostic {
             SemanticDiagnosticSeverity.ERROR -> DiagnosticSeverity.Error
             SemanticDiagnosticSeverity.WARNING -> DiagnosticSeverity.Warning
         }
-        source = "Athena semantic"
+        source = if (this@toLspDiagnostic.category == SemanticDiagnosticCategory.KNOWLEDGE) {
+            "Athena knowledge"
+        } else {
+            "Athena semantic"
+        }
         code = Either.forLeft(ruleId.value)
         message = this@toLspDiagnostic.message
         range = Range(

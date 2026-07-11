@@ -11,8 +11,12 @@
 - 在 `initialize` 阶段于 LSP 边界内完成仓库激活
 - 面向 `.athena` authored source 的 `textDocument/didOpen` 语义路径
 - 来自 Athena 自有解析、语义分析与校验的 `textDocument/publishDiagnostics`
+- 通过同一条面向 Problems 的 `textDocument/publishDiagnostics` 路径发布增量 M9 knowledge diagnostics
 - 由 Athena 自有文档状态驱动的 `textDocument/completion`、`textDocument/documentSymbol`、`textDocument/definition` 与 `textDocument/references`
 - 具备版本感知的 tracked document state，在重复编辑时拒绝陈旧回滚
+- 在 semantic inspection 中增量暴露 derived context、capability facts、constraint evaluations 与 engineering sufficiency diagnostics 的当前计数
+- 通过现有 runtime-backed source-mutation request 增量传输 typed engineering impact consequences
+- 通过现有 semantic review 与 semantic SCM transport 增量传输 typed engineering-impact consequence 列表，以及显式的 `engineering-impact` review / commit entry
 - 面向 baseline-driven review、commit-preparation 与 package-history state 的增量语义 SCM 请求表面
 - 面向 runtime-owned graphical state inspection 的增量 projection-session 请求表面
 - 面向 inspect-first graphical interaction 的显式 governed projection-command allowlist，目前仅包含 active-view switching
@@ -23,6 +27,13 @@
 Story `2.4` 把这个包从 authoring transport 扩展为第一条 semantic SCM projection bridge。Story `3.3` 再沿用同一条增量桥接路径，把 package evolution 与 release relevance 也投影到现有产品边界。M7 Story `1.4` 在此基础上增加了面向 runtime-owned projection session 的 typed query，以及一个受治理的 projection-command seam。
 
 Theia 可以负责进程生命周期与传输，但语义或 projection 访问必须继续经由这里的 LSP 方法流动，而不是直接调用 `kernel/*`。
+
+M9 保持交付规则狭窄：
+
+- knowledge diagnostics 继续走现有 diagnostics path，而不是新开一条 renderer-only 或 workbench-only warning channel
+- semantic inspection 仍然是 JVM-owned 的只读快照，只是增量暴露当前 knowledge-runtime 计数
+- before/after engineering impact 继续走现有 source-mutation request 表面，而不是引入第二套 knowledge transport
+- semantic SCM 与 accepted-mutation review 现在也会投影同一套 typed engineering-impact consequence，让 direct edit 与 downstream affected subject 在 LSP 边界保持可区分
 
 当前 M7 projection boundary 故意保持狭窄：
 

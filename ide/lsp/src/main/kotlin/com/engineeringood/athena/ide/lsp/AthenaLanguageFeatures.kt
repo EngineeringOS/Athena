@@ -62,6 +62,7 @@ data class AthenaSemanticInspectionPayload(
     val systemName: String?,
     val diagnosticsCount: Int,
     val diagnosticSummaries: List<String>,
+    val knowledgeInspection: AthenaEngineeringKnowledgeInspectionPayload? = null,
     val componentCount: Int,
     val portCount: Int,
     val connectionCount: Int,
@@ -306,6 +307,7 @@ class AthenaLanguageFeatures(
                 diagnosticSummaries = compilation.diagnostics.map { diagnostic ->
                     "L${diagnostic.line}:${diagnostic.column} ${diagnostic.message}"
                 },
+                knowledgeInspection = null,
                 componentCount = 0,
                 portCount = 0,
                 connectionCount = 0,
@@ -317,15 +319,29 @@ class AthenaLanguageFeatures(
             is CompilerCompilationSuccess -> {
                 val document = compilation.document
                 val navigationIndex = tracked.navigationIndex
+                val visibleDiagnostics = (
+                    compilation.semanticResult.diagnostics +
+                        compilation.validationBreakdown.engineeringSufficiencyDiagnostics
+                    ).distinct()
+                val knowledgeDiagnostics = compilation.validationBreakdown.engineeringSufficiencyDiagnostics
+                    .distinct()
+                    .sortedWith(knowledgeDiagnosticComparator())
                 AthenaSemanticInspectionPayload(
                     uri = tracked.uri,
                     version = tracked.version,
-                    status = if (compilation.semanticResult.diagnostics.isEmpty()) "ready" else "diagnostics",
+                    status = if (visibleDiagnostics.isEmpty()) "ready" else "diagnostics",
                     systemName = document.system.name,
-                    diagnosticsCount = compilation.semanticResult.diagnostics.size,
-                    diagnosticSummaries = compilation.semanticResult.diagnostics.map { diagnostic ->
+                    diagnosticsCount = visibleDiagnostics.size,
+                    diagnosticSummaries = visibleDiagnostics.map { diagnostic ->
                         "${diagnostic.ruleId.value}: ${diagnostic.message}"
                     },
+                    knowledgeInspection = AthenaEngineeringKnowledgeInspectionPayload(
+                        derivedSubjectCount = compilation.derivedContext.subjects.size,
+                        capabilityFactCount = compilation.capabilityFacts.subjects.sumOf { subject -> subject.facts.size },
+                        constraintEvaluationCount = compilation.constraintEvaluations.subjects.sumOf { subject -> subject.evaluations.size },
+                        knowledgeDiagnosticsCount = knowledgeDiagnostics.size,
+                        knowledgeDiagnostics = knowledgeDiagnostics.map { diagnostic -> diagnostic.toKnowledgePayload() },
+                    ),
                     componentCount = document.components.size,
                     portCount = document.ports.size,
                     connectionCount = document.connections.size,
@@ -647,6 +663,16 @@ private fun EngineeringPropertyValue.summaryText(): String {
 private fun com.engineeringood.athena.ir.EngineeringReference.authoredPath(): String = authoredPath.joinToString(".")
 
 private fun com.engineeringood.athena.ir.EngineeringPort.summaryPath(): String = (ownerReference.authoredPath + name).joinToString(".")
+
+private fun knowledgeDiagnosticComparator(): Comparator<com.engineeringood.athena.semantics.core.SemanticDiagnostic> {
+    return compareBy<com.engineeringood.athena.semantics.core.SemanticDiagnostic>(
+        { diagnostic -> diagnostic.ruleId.value },
+        { diagnostic -> diagnostic.provenance.file },
+        { diagnostic -> diagnostic.provenance.startLine },
+        { diagnostic -> diagnostic.provenance.startColumn },
+        { diagnostic -> diagnostic.message },
+    )
+}
 
 private fun requireSourceRange(
     semanticId: String,

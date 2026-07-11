@@ -11,13 +11,14 @@ The `:kernel:semantic-scm` module defines Athena's canonical M6 semantic SCM con
 - Publish deterministic semantic diff categorization over repository/package and engineering meaning.
 - Publish snapshot-scoped semantic diagnostics so incomplete or partially resolvable comparison inputs remain inspectable.
 - Publish stable semantic change, consequence, review, commit-intent, and history contract shapes.
+- Publish optional engineering-knowledge snapshots on baseline state so review flows can stay upstream of renderer and frontend reconstruction.
 - Generate deterministic semantic review summaries from one `SemanticDiff`.
 - Publish additive semantic review enrichment records that remain separate from core review entries.
 - Generate deterministic semantic commit intent from reviewed semantic change.
 - Publish package-aware semantic history requests, baseline-sequence comparisons, package-version meaning, dependency movement, validation movement, contract-break risk, and release relevance in transport-light typed form.
 - Generate deterministic publish-oriented semantic history summaries from baseline-sequence comparisons.
-- Keep review entries typed enough to distinguish repository-contract change, dependency movement, engineering change, validation impact, and degraded comparison input.
-- Keep commit-intent entries typed enough to distinguish repository-contract work, dependency movement, engineering change, derived consequences, validation consequences, and degraded comparison input.
+- Keep review entries typed enough to distinguish repository-contract change, dependency movement, direct engineering change, downstream engineering impact, validation impact, and degraded comparison input.
+- Keep commit-intent entries typed enough to distinguish repository-contract work, dependency movement, direct engineering change, downstream engineering impact, derived consequences, validation consequences, and degraded comparison input.
 - Keep semantic history package-centered and baseline-sequence-oriented without widening M6 into registry or release-transport workflows.
 - Keep every review entry traceable back to authored changes, derived consequences, or diagnostics through stable fact references.
 - Keep every commit-intent entry traceable back to reviewed semantic facts, authored changes, derived consequences, or diagnostics through stable fact references.
@@ -69,7 +70,7 @@ The `:kernel:semantic-scm` module defines Athena's canonical M6 semantic SCM con
 
 ## Boundaries
 
-This module publishes the baseline-loading seam plus deterministic semantic diff, consequence, review-summary, review-enrichment, commit-intent, and package-aware history contracts and generators, but it still does not implement vendor substrate access, commit execution, hosted-plugin enrichment orchestration, LSP or Theia SCM transport, registry workflows, or remote publish transport. It stays JVM-first, VCS-neutral, and centered on semantic contracts plus small orchestration helpers.
+This module publishes the baseline-loading seam plus deterministic semantic diff, consequence, engineering-impact-aware review-summary, review-enrichment, commit-intent, and package-aware history contracts and generators, but it still does not implement vendor substrate access, commit execution, hosted-plugin enrichment orchestration, LSP or Theia SCM transport, registry workflows, or remote publish transport. It stays JVM-first, VCS-neutral, and centered on semantic contracts plus small orchestration helpers.
 
 ## Verification
 

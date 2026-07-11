@@ -1,6 +1,7 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
+import com.engineeringood.athena.compiler.defaultAthenaKnowledgePackageSource
 import com.engineeringood.athena.renderer.svg.SvgRenderer
 
 /** Runtime-owned typed registry for platform capabilities needed by the active execution context. */
@@ -23,6 +24,7 @@ class AthenaServiceRegistry(
     }
     private val compilerInstance by lazy(LazyThreadSafetyMode.NONE) {
         compilerProvider?.invoke() ?: AthenaCompiler(
+            knowledgePackageSource = defaultAthenaKnowledgePackageSource(),
             hostedPluginDiscoveryReport = pluginRuntimeServicesInstance.discoveryReport(),
             hostedDomainPlugins = pluginRuntimeServicesInstance.domainSemanticsContributions()
                 .map { contribution -> contribution.domainPlugin },

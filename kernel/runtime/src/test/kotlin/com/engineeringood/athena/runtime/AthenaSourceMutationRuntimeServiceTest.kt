@@ -409,4 +409,73 @@ class AthenaSourceMutationRuntimeServiceTest {
         Files.writeString(path, source)
         return path
     }
+
+    @Test
+    fun `accepted source mutation carries knowledge diagnostics and impact consequences for governed engineering change`() {
+        val sourcePath = writeProject(
+            """
+                system MotorImpactProof {
+                  device M1 {
+                    type Motor
+                    power "7.5kw"
+                    voltage "400V"
+                    powerFactor "0.86"
+                    efficiency "0.92"
+                    breakerRatedCurrent "10A"
+                    cableAllowedCurrent "12A"
+                    relayRatedCurrent "13A"
+                  }
+                }
+            """.trimIndent(),
+        )
+
+        try {
+            val runtime = AthenaRuntime()
+            val context = runtime.openWorkspace(sourcePath.parent).activateProject(
+                projectName = "motor-impact-proof",
+                sourcePath = sourcePath,
+            )
+
+            val dirtyCompilation = context.compiler().compile(
+                sourcePath,
+                """
+                    system MotorImpactProof {
+                      device M1 {
+                        type Motor
+                        power "9kw"
+                        voltage "400V"
+                        powerFactor "0.86"
+                        efficiency "0.92"
+                        breakerRatedCurrent "10A"
+                        cableAllowedCurrent "12A"
+                        relayRatedCurrent "13A"
+                      }
+                    }
+                """.trimIndent(),
+            )
+
+            val result = context.sourceMutationRuntime().evaluate(
+                context = context,
+                sourcePath = sourcePath,
+                compilation = dirtyCompilation,
+            )
+
+            val accepted = assertIs<AthenaSourceMutationAccepted>(result)
+            assertEquals(3, accepted.inspection.knowledgeDiagnostics.size)
+            val consequence = accepted.inspection.impactConsequences.consequences.single()
+            assertEquals("component:M1", consequence.affectedSubjectIdentity.value)
+            assertEquals(listOf("component:M1"), consequence.triggerSubjectIdentities.map { identity -> identity.value })
+            assertEquals(
+                listOf(
+                    com.engineeringood.athena.ir.EngineeringImpactReasonKind.GOVERNED_INPUT_CHANGED,
+                    com.engineeringood.athena.ir.EngineeringImpactReasonKind.DERIVED_CONTEXT_CHANGED,
+                    com.engineeringood.athena.ir.EngineeringImpactReasonKind.CAPABILITY_FACT_CHANGED,
+                    com.engineeringood.athena.ir.EngineeringImpactReasonKind.CONSTRAINT_EVALUATION_CHANGED,
+                ),
+                consequence.reasonKinds,
+            )
+        } finally {
+            Files.deleteIfExists(sourcePath)
+        }
+    }
 }

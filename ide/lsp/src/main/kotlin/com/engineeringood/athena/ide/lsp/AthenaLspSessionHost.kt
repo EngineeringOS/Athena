@@ -1,6 +1,7 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
+import com.engineeringood.athena.compiler.defaultAthenaKnowledgePackageSource
 import com.engineeringood.athena.integrations.scm.git.GitSemanticBaselineAdapter
 import com.engineeringood.athena.runtime.AthenaExecutionContext
 import com.engineeringood.athena.runtime.AthenaRuntime
@@ -78,7 +79,11 @@ private fun defaultAthenaLspRuntime(): AthenaRuntime {
                 AthenaSemanticBaselineService(
                     baselineResolver = SemanticBaselineResolver(
                         adapters = listOf(
-                            GitSemanticBaselineAdapter { AthenaCompiler() },
+                            GitSemanticBaselineAdapter {
+                                AthenaCompiler(
+                                    knowledgePackageSource = defaultAthenaKnowledgePackageSource(),
+                                )
+                            },
                         ),
                     ),
                 )

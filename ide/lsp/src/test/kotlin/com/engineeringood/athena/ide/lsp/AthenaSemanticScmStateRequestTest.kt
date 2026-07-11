@@ -132,6 +132,57 @@ class AthenaSemanticScmStateRequestTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `semantic scm request exposes engineering impact and affected subjects for the m9 proof slice`() {
+        val root = kotlin.io.path.createTempDirectory("athena-lsp-semantic-scm-m9-")
+        val current = root.resolve("current")
+        val baseline = root.resolve("baseline")
+        try {
+            writeSemanticScmFixture(
+                repositoryRoot = baseline,
+                sourceText = semanticScmKnowledgeBaselineSource,
+            )
+            writeSemanticScmFixture(
+                repositoryRoot = current,
+                sourceText = semanticScmKnowledgeChangedSource,
+            )
+            AthenaCompiler().materializeRepositoryLock(baseline)
+            AthenaCompiler().materializeRepositoryLock(current)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = current.toUri().toString()
+                    },
+                ).get()
+
+                val payload = server.semanticScmState(
+                    AthenaSemanticScmStateParams(
+                        adapterId = "scm-git",
+                        locator = "../baseline",
+                        baselineId = "baseline-m9-review",
+                        baselineLabel = "M9 baseline",
+                    ),
+                ).get()
+
+                assertNotNull(payload)
+                val review = assertNotNull(payload.review)
+                val commit = assertNotNull(payload.commit)
+                assertEquals(1, review.engineeringImpactConsequences.size)
+                assertEquals("component:M1", review.engineeringImpactConsequences.single().affectedSubjectIdentity)
+                assertTrue(review.entries.any { entry -> entry.kind == "engineering-impact" })
+                assertTrue(commit.entries.any { entry -> entry.kind == "engineering-impact" })
+                assertTrue(payload.diagnostics.isEmpty())
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
 }
 
 private fun writeSemanticScmFixture(
@@ -175,3 +226,33 @@ private fun writeSemanticScmFixture(
         AthenaCompiler().materializeRepositoryLock(dependencyRoot)
     }
 }
+
+private val semanticScmKnowledgeBaselineSource = """
+    system MotorImpactProof {
+      device M1 {
+        type Motor
+        power "7.5kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
+    }
+""".trimIndent()
+
+private val semanticScmKnowledgeChangedSource = """
+    system MotorImpactProof {
+      device M1 {
+        type Motor
+        power "9kw"
+        voltage "400V"
+        powerFactor "0.86"
+        efficiency "0.92"
+        breakerRatedCurrent "10A"
+        cableAllowedCurrent "12A"
+        relayRatedCurrent "13A"
+      }
+    }
+""".trimIndent()

@@ -3,6 +3,8 @@ package com.engineeringood.athena.integrations.scm.git
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
+import com.engineeringood.athena.compiler.defaultAthenaKnowledgePackageSource
+import com.engineeringood.athena.ir.EngineeringKnowledgeState
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
 import com.engineeringood.athena.repository.RepositoryGraphReport
@@ -27,7 +29,11 @@ import kotlin.io.path.pathString
  * Athena-owned semantic baseline contracts to `:kernel:semantic-scm`.
  */
 class GitSemanticBaselineAdapter(
-    private val compilerProvider: () -> AthenaCompiler = { AthenaCompiler() },
+    private val compilerProvider: () -> AthenaCompiler = {
+        AthenaCompiler(
+            knowledgePackageSource = defaultAthenaKnowledgePackageSource(),
+        )
+    },
 ) : SemanticBaselineAdapter {
     override val adapterId: String = ADAPTER_ID
 
@@ -77,6 +83,8 @@ class GitSemanticBaselineAdapter(
                         descriptor = request.descriptor,
                         repositoryReport = report,
                         engineeringDocuments = engineeringState.engineeringDocuments,
+                        engineeringKnowledgeState = engineeringState.knowledgeState,
+                        knowledgeDiagnostics = engineeringState.knowledgeDiagnostics,
                         validationResult = engineeringState.validationResult,
                         diagnostics = snapshotDiagnostics,
                     ),
@@ -134,6 +142,12 @@ class GitSemanticBaselineAdapter(
         return when (val compilation = compiler.compile(sourcePath)) {
             is CompilerCompilationSuccess -> BaselineEngineeringState(
                 engineeringDocuments = listOf(compilation.document),
+                knowledgeState = EngineeringKnowledgeState(
+                    derivedContext = compilation.derivedContext,
+                    capabilityFacts = compilation.capabilityFacts,
+                    constraintEvaluations = compilation.constraintEvaluations,
+                ),
+                knowledgeDiagnostics = compilation.validationBreakdown.engineeringSufficiencyDiagnostics,
                 validationResult = compilation.semanticResult,
                 diagnostics = compilation.semanticResult.diagnostics,
             )
@@ -189,6 +203,8 @@ class GitSemanticBaselineAdapter(
 
 private data class BaselineEngineeringState(
     val engineeringDocuments: List<com.engineeringood.athena.ir.EngineeringDocument> = emptyList(),
+    val knowledgeState: EngineeringKnowledgeState? = null,
+    val knowledgeDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val validationResult: com.engineeringood.athena.semantics.core.SemanticValidationResult? = null,
     val diagnostics: List<SemanticDiagnostic> = emptyList(),
 )

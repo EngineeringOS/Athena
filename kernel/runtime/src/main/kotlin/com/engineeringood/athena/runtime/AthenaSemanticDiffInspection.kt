@@ -1,7 +1,9 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringImpactConsequences
 import com.engineeringood.athena.ir.EngineeringPropertyValue
+import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 
 /**
  * Runtime-owned source that produced one semantic diff inspection result.
@@ -75,6 +77,8 @@ data class AthenaSemanticDiffInspection(
     val entries: List<AthenaSemanticDiffEntry>,
     val historyConsequences: List<AthenaSemanticHistoryConsequence>,
     val projectionConsequences: List<AthenaProjectionRefreshConsequence>,
+    val knowledgeDiagnostics: List<SemanticDiagnostic> = emptyList(),
+    val impactConsequences: EngineeringImpactConsequences = EngineeringImpactConsequences.canonical(emptyList()),
 )
 
 internal fun buildSemanticDiffInspection(
@@ -86,6 +90,8 @@ internal fun buildSemanticDiffInspection(
     afterDocument: EngineeringDocument,
     history: AthenaCommandHistory,
     projectionConsequences: List<AthenaProjectionRefreshConsequence> = emptyList(),
+    knowledgeDiagnostics: List<SemanticDiagnostic> = emptyList(),
+    impactConsequences: EngineeringImpactConsequences = EngineeringImpactConsequences.canonical(emptyList()),
 ): AthenaSemanticDiffInspection {
     val normalizedAffectedSemanticIds = affectedSemanticIds.distinct().sorted()
     return AthenaSemanticDiffInspection(
@@ -125,6 +131,10 @@ internal fun buildSemanticDiffInspection(
                     changedSemanticIds = record.changedSemanticIds.sorted(),
                 )
             },
+        knowledgeDiagnostics = knowledgeDiagnostics
+            .distinct()
+            .sortedWith(semanticDiagnosticComparator()),
+        impactConsequences = EngineeringImpactConsequences.canonical(impactConsequences.consequences),
     )
 }
 
@@ -213,3 +223,13 @@ internal fun AthenaRuntimeIncrementalUpdateReport.toProjectionConsequences(): Li
 private fun com.engineeringood.athena.ir.EngineeringReference.authoredPath(): String = authoredPath.joinToString(".")
 
 private fun com.engineeringood.athena.ir.EngineeringPort.summaryPath(): String = (ownerReference.authoredPath + name).joinToString(".")
+
+private fun semanticDiagnosticComparator(): Comparator<SemanticDiagnostic> {
+    return compareBy<SemanticDiagnostic>(
+        { diagnostic -> diagnostic.ruleId.value },
+        { diagnostic -> diagnostic.provenance.file },
+        { diagnostic -> diagnostic.provenance.startLine },
+        { diagnostic -> diagnostic.provenance.startColumn },
+        { diagnostic -> diagnostic.message },
+    )
+}

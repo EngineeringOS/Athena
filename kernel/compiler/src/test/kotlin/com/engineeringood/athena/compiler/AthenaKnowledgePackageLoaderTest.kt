@@ -17,15 +17,18 @@ class AthenaKnowledgePackageLoaderTest {
         val ontologyPath = repoRoot.resolve("kernel/compiler/src/test/resources/knowledge-packages/valid-ontology")
         val mappingPath = repoRoot.resolve("kernel/compiler/src/test/resources/knowledge-packages/valid-standards-mapping")
         val rulePath = repoRoot.resolve("kernel/compiler/src/test/resources/knowledge-packages/valid-rule")
+        val knowledgePackPath = repoRoot.resolve("extensions/knowledge-electrical-basic")
 
         val ontologyResult = loader.load(ontologyPath)
         val mappingResult = loader.load(mappingPath)
         val ruleResult = loader.load(rulePath)
+        val knowledgePackResult = loader.load(knowledgePackPath)
         val ontologyResultRepeat = loader.load(ontologyPath)
 
         assertTrue(ontologyResult.isValid)
         assertTrue(mappingResult.isValid)
         assertTrue(ruleResult.isValid)
+        assertTrue(knowledgePackResult.isValid)
         assertEquals(ontologyResult, ontologyResultRepeat)
 
         assertEquals(
@@ -33,11 +36,13 @@ class AthenaKnowledgePackageLoaderTest {
                 AthenaKnowledgeArtifactKind.ONTOLOGY,
                 AthenaKnowledgeArtifactKind.STANDARDS_MAPPING,
                 AthenaKnowledgeArtifactKind.RULE,
+                AthenaKnowledgeArtifactKind.KNOWLEDGE_PACK,
             ),
             listOf(
                 assertNotNull(ontologyResult.loadedPackage).manifest.artifactKind,
                 assertNotNull(mappingResult.loadedPackage).manifest.artifactKind,
                 assertNotNull(ruleResult.loadedPackage).manifest.artifactKind,
+                assertNotNull(knowledgePackResult.loadedPackage).manifest.artifactKind,
             ),
         )
         assertEquals(
@@ -45,21 +50,28 @@ class AthenaKnowledgePackageLoaderTest {
                 "ontology",
                 "mapping",
                 "rule",
+                "capability",
+                "constraint",
             ),
             assertNotNull(ontologyResult.loadedPackage).payloadEntries.map { it.entryId } +
                 assertNotNull(mappingResult.loadedPackage).payloadEntries.map { it.entryId } +
-                assertNotNull(ruleResult.loadedPackage).payloadEntries.map { it.entryId },
+                assertNotNull(ruleResult.loadedPackage).payloadEntries.map { it.entryId } +
+                assertNotNull(knowledgePackResult.loadedPackage).payloadEntries.map { it.entryId },
         )
         assertEquals(
             listOf(
                 "payload/base-entities.txt",
                 "payload/automationml-map.txt",
                 "payload/connection-safety-rule.txt",
+                "payload/capability-semantics.properties",
+                "payload/constraint-slice.properties",
             ),
             listOf(
                 assertNotNull(ontologyResult.loadedPackage).payloadEntries.single().relativePath,
                 assertNotNull(mappingResult.loadedPackage).payloadEntries.single().relativePath,
                 assertNotNull(ruleResult.loadedPackage).payloadEntries.single().relativePath,
+                assertNotNull(knowledgePackResult.loadedPackage).payloadEntries.first { entry -> entry.entryId == "capability" }.relativePath,
+                assertNotNull(knowledgePackResult.loadedPackage).payloadEntries.first { entry -> entry.entryId == "constraint" }.relativePath,
             ),
         )
     }

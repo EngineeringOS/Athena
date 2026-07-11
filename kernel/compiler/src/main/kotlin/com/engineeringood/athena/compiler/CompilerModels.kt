@@ -4,7 +4,10 @@ import com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationRepor
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeArtifactKind
 import com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeProvenance
+import com.engineeringood.athena.ir.EngineeringCapabilityFacts
+import com.engineeringood.athena.ir.EngineeringConstraintEvaluations
 import com.engineeringood.athena.geometry.GeometryDocument
+import com.engineeringood.athena.ir.DerivedEngineeringContext
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.language.SourceFileAst
@@ -133,6 +136,7 @@ data class CompilerValidationBreakdown(
     val semanticEnrichmentDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val kernelDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val domainDiagnostics: List<SemanticDiagnostic> = emptyList(),
+    val engineeringSufficiencyDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val domainValidationAttributions: List<AthenaDomainValidationAttribution> = emptyList(),
 )
 
@@ -140,6 +144,9 @@ data class CompilerValidationBreakdown(
 data class CompilerCompilationSuccess(
     val source: CompilerSourceDocument,
     val document: EngineeringDocument,
+    val derivedContext: DerivedEngineeringContext = DerivedEngineeringContext.canonical(emptyList()),
+    val capabilityFacts: EngineeringCapabilityFacts = EngineeringCapabilityFacts.canonical(emptyList()),
+    val constraintEvaluations: EngineeringConstraintEvaluations = EngineeringConstraintEvaluations.canonical(emptyList()),
     val semanticResult: SemanticValidationResult,
     val validationBreakdown: CompilerValidationBreakdown = CompilerValidationBreakdown(),
     val layouts: List<LayoutDocument> = emptyList(),
@@ -159,6 +166,9 @@ data class CompilerCompilationSuccess(
 fun CompilerCompilationResult.diagnosticMessages(): List<String> {
     return when (this) {
         is CompilerCompilationParseFailure -> diagnostics.map { diagnostic -> diagnostic.message }
-        is CompilerCompilationSuccess -> semanticResult.diagnostics.map { diagnostic -> diagnostic.message }
+        is CompilerCompilationSuccess -> (
+            semanticResult.diagnostics +
+                validationBreakdown.engineeringSufficiencyDiagnostics
+            ).map { diagnostic -> diagnostic.message }
     }
 }
