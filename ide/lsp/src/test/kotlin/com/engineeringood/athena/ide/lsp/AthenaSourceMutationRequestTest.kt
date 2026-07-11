@@ -1,5 +1,6 @@
 package com.engineeringood.athena.ide.lsp
 
+import com.engineeringood.athena.compiler.AthenaCompiler
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.InitializeParams
@@ -26,6 +27,8 @@ class AthenaSourceMutationRequestTest {
         val sourcePath = repository.seedSourcePath
 
         try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
             val server = AthenaLanguageServer()
             try {
                 server.initialize(
@@ -99,6 +102,10 @@ class AthenaSourceMutationRequestTest {
                 val inspection = assertNotNull(payload.inspection)
                 assertEquals("source", inspection.source)
                 assertContains(inspection.affectedSemanticIds, "connection:PLC1.out->M1.in")
+                val semanticReview = assertNotNull(payload.semanticReview)
+                assertEquals(1, semanticReview.authoredChangeCount)
+                assertTrue(semanticReview.reviewSummary.entryCount > 0)
+                assertTrue(semanticReview.commitIntent.entryCount > 0)
             } finally {
                 server.shutdown().get()
             }

@@ -49,6 +49,7 @@ The implemented scope currently includes:
 - package-aware semantic history and release-relevance contracts anchored to stable package identity and version meaning
 - runtime/LSP/Theia semantic SCM projection that exposes baseline-driven review, commit-preparation, package evolution, and release-relevance state through the existing Athena workbench without moving semantic authority into the frontend
 - the first `integrations/graph-glsp` translation-only graph adapter boundary that consumes Athena-owned projection-session payloads without adding a second semantic transport
+- a unified M8 mutation model where source and graph now share runtime-owned mutation categories, graph semantic mutation proof, graph projection mutation proof, shared semantic review facts, and canonical reveal across source, graph, and semantic SCM
 
 This is not the final UX phase yet.
 
@@ -138,6 +139,8 @@ yarn start:smoke
 
 For the M6 Athena IDE shell, the Electron wrapper now resolves Java 25 automatically on Windows. Use `yarn start:smoke` under `ide/` as the deterministic desktop-start proof, then `yarn start` for the live interactive window. The current workbench now includes the additive `Semantic SCM` panel for baseline-driven review, commit preparation, package evolution, and release relevance. For focused milestone usage, read [`docs/usages/m5-proof-usage.md`](docs/usages/m5-proof-usage.md) and [`docs/usages/m6-proof-usage.md`](docs/usages/m6-proof-usage.md).
 
+For the finished M8 mutation proof, use [`docs/usages/m8-proof-usage.md`](docs/usages/m8-proof-usage.md). The current boundary is explicit: graph semantic and graph projection mutation are real accepted paths, while source-originated mutation remains preview-first evaluation plus shared review and reveal coherence.
+
 ## What To Read
 
 If you want the implementation view:
@@ -145,14 +148,15 @@ If you want the implementation view:
 1. [`kernel/compiler/README.md`](kernel/compiler/README.md)
 2. [`kernel/runtime/README.md`](kernel/runtime/README.md)
 3. [`docs/usages/athena-workspace-summary.md`](docs/usages/athena-workspace-summary.md)
-4. [`docs/usages/m6-proof-usage.md`](docs/usages/m6-proof-usage.md)
-5. [`docs/usages/m5-proof-usage.md`](docs/usages/m5-proof-usage.md)
-6. [`docs/usages/m4-proof-usage.md`](docs/usages/m4-proof-usage.md)
-7. [`docs/usages/m3-proof-usage.md`](docs/usages/m3-proof-usage.md)
-8. [`docs/compiler/m0-pass-pipeline.md`](docs/compiler/m0-pass-pipeline.md)
-9. [`docs/compiler/m1-runtime-host-boundary.md`](docs/compiler/m1-runtime-host-boundary.md)
-10. [`examples/README.md`](examples/README.md)
-11. [`docs/roadmap/athena-milestone-roadmap.md`](docs/roadmap/athena-milestone-roadmap.md)
+4. [`docs/usages/m8-proof-usage.md`](docs/usages/m8-proof-usage.md)
+5. [`docs/usages/m6-proof-usage.md`](docs/usages/m6-proof-usage.md)
+6. [`docs/usages/m5-proof-usage.md`](docs/usages/m5-proof-usage.md)
+7. [`docs/usages/m4-proof-usage.md`](docs/usages/m4-proof-usage.md)
+8. [`docs/usages/m3-proof-usage.md`](docs/usages/m3-proof-usage.md)
+9. [`docs/compiler/m0-pass-pipeline.md`](docs/compiler/m0-pass-pipeline.md)
+10. [`docs/compiler/m1-runtime-host-boundary.md`](docs/compiler/m1-runtime-host-boundary.md)
+11. [`examples/README.md`](examples/README.md)
+12. [`docs/roadmap/athena-milestone-roadmap.md`](docs/roadmap/athena-milestone-roadmap.md)
 
 If you want the platform thesis:
 

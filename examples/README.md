@@ -60,3 +60,10 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `../m4/open-repository-proof/` - reused governed repository fixture that now drives the published M7 graphical proof
 
 `m7/` is documentation-first on purpose. The milestone proves graphical projection by reusing the real governed repository fixture from `m4/` and layering graph-first workbench behavior, extension-owned renderer mappings, and the technology-decision record on top of that same repository shape.
+
+## `m8/`
+
+- `README.md` - proof corpus entry for the unified semantic mutation milestone
+- `../m4/open-repository-proof/` - reused governed repository fixture that now drives the published source-plus-graph mutation proof
+
+`m8/` stays narrow on purpose. The milestone proves one mutation authority across source and graph, one real semantic graph mutation, one real projection mutation, and one shared review and reveal path without widening into broad graphical authoring.

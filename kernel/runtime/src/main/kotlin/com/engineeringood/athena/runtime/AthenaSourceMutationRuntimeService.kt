@@ -38,6 +38,7 @@ data class AthenaSourceMutationAccepted(
     val afterDocument: EngineeringDocument,
     val changedSemanticIds: List<String>,
     val inspection: AthenaSemanticDiffInspection,
+    val semanticReview: AthenaSemanticMutationReview? = null,
 ) : AthenaSourceMutationResult {
     override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION
     override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.ACCEPTED
@@ -161,6 +162,13 @@ class AthenaSourceMutationRuntimeService internal constructor() {
                                 afterCompilation = compilation,
                                 changedSemanticIds = changedSemanticIds,
                             ),
+                        ),
+                        semanticReview = context.semanticMutationReviews().summarizeAcceptedMutation(
+                            context = context,
+                            beforeDocument = beforeDocument,
+                            afterDocument = afterDocument,
+                            beforeValidationResult = canonicalSuccess.semanticResult,
+                            afterValidationResult = compilation.semanticResult,
                         ),
                     )
                 }

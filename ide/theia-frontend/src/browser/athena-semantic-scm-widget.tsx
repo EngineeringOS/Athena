@@ -17,7 +17,10 @@ import {
 } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
-import { matchesSemanticScmContext } from './athena-semantic-selection-model';
+import {
+    matchesSemanticScmContext,
+    selectableSemanticIdFromScmContext
+} from './athena-semantic-selection-model';
 
 @injectable()
 export class AthenaSemanticScmWidget extends ReactWidget {
@@ -511,39 +514,85 @@ export class AthenaSemanticScmWidget extends ReactWidget {
     }
 
     protected renderReviewEntry(entry: AthenaSemanticReviewEntryPayload): React.ReactNode {
+        const semanticId = selectableSemanticIdFromScmContext(entry);
         return <li
             key={`${entry.kind}:${entry.message}`}
             className={`athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}`}
         >
-            <strong>{entry.kind}</strong>
-            <div>{entry.message}</div>
-            {entry.factReferences.length > 0
-                ? <div>{entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', ')}</div>
-                : undefined}
+            {semanticId
+                ? <button
+                    className='athena-semantic-scm__selectable'
+                    type='button'
+                    onClick={() => void this.semanticSelectionService.selectSemanticId(semanticId)}
+                >
+                    <strong>{entry.kind}</strong>
+                    <div>{entry.message}</div>
+                    <div><code>{semanticId}</code></div>
+                    {entry.factReferences.length > 0
+                        ? <div>{entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', ')}</div>
+                        : undefined}
+                </button>
+                : <>
+                    <strong>{entry.kind}</strong>
+                    <div>{entry.message}</div>
+                    {entry.factReferences.length > 0
+                        ? <div>{entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', ')}</div>
+                        : undefined}
+                </>}
         </li>;
     }
 
     protected renderReviewEnrichment(enrichment: AthenaSemanticReviewEnrichmentPayload): React.ReactNode {
+        const semanticId = selectableSemanticIdFromScmContext(enrichment);
         return <li
             key={`${enrichment.pluginId}:${enrichment.kind}:${enrichment.message}`}
             className={`athena-semantic-scm__item athena-semantic-scm__item--enrichment ${this.isSelectedContext(enrichment) ? 'athena-semantic-scm__item--selected' : ''}`}
         >
-            <strong>{enrichment.kind}</strong>
-            <div>{enrichment.message}</div>
-            <div>{enrichment.pluginId}</div>
+            {semanticId
+                ? <button
+                    className='athena-semantic-scm__selectable'
+                    type='button'
+                    onClick={() => void this.semanticSelectionService.selectSemanticId(semanticId)}
+                >
+                    <strong>{enrichment.kind}</strong>
+                    <div>{enrichment.message}</div>
+                    <div>{enrichment.pluginId}</div>
+                    <div><code>{semanticId}</code></div>
+                </button>
+                : <>
+                    <strong>{enrichment.kind}</strong>
+                    <div>{enrichment.message}</div>
+                    <div>{enrichment.pluginId}</div>
+                </>}
         </li>;
     }
 
     protected renderCommitEntry(entry: AthenaSemanticCommitEntryPayload): React.ReactNode {
+        const semanticId = selectableSemanticIdFromScmContext(entry);
         return <li
             key={`${entry.kind}:${entry.message}`}
             className={`athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}`}
         >
-            <strong>{entry.kind}</strong>
-            <div>{entry.message}</div>
-            {entry.factReferences.length > 0
-                ? <div>{entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', ')}</div>
-                : undefined}
+            {semanticId
+                ? <button
+                    className='athena-semantic-scm__selectable'
+                    type='button'
+                    onClick={() => void this.semanticSelectionService.selectSemanticId(semanticId)}
+                >
+                    <strong>{entry.kind}</strong>
+                    <div>{entry.message}</div>
+                    <div><code>{semanticId}</code></div>
+                    {entry.factReferences.length > 0
+                        ? <div>{entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', ')}</div>
+                        : undefined}
+                </button>
+                : <>
+                    <strong>{entry.kind}</strong>
+                    <div>{entry.message}</div>
+                    {entry.factReferences.length > 0
+                        ? <div>{entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', ')}</div>
+                        : undefined}
+                </>}
         </li>;
     }
 

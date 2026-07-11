@@ -29,6 +29,7 @@ let AthenaSemanticSelectionService = class AthenaSemanticSelectionService {
     decorationIds = [];
     refreshHandle;
     activeRepositoryRoot;
+    suppressEditorSelectionSync = false;
     get selection() {
         return this.selectionValue;
     }
@@ -69,6 +70,7 @@ let AthenaSemanticSelectionService = class AthenaSemanticSelectionService {
             return;
         }
         this.currentEditorListeners.push(widget.editor.onDocumentContentChanged(() => this.scheduleSelectionRefresh()));
+        this.currentEditorListeners.push(widget.editor.onSelectionChanged(() => this.scheduleSelectionRefresh()));
         this.currentEditorListeners.push(disposable_1.Disposable.create(() => {
             if (this.refreshHandle !== undefined) {
                 window.clearTimeout(this.refreshHandle);
@@ -77,10 +79,6 @@ let AthenaSemanticSelectionService = class AthenaSemanticSelectionService {
         }));
     }
     scheduleSelectionRefresh() {
-        if (!this.selectionValue) {
-            this.clearDecorations();
-            return;
-        }
         if (this.refreshHandle !== undefined) {
             window.clearTimeout(this.refreshHandle);
         }
@@ -90,17 +88,26 @@ let AthenaSemanticSelectionService = class AthenaSemanticSelectionService {
         }, 120);
     }
     async refreshSelectionFromCurrentEditor() {
-        const currentSelection = this.selectionValue;
-        if (!currentSelection) {
+        if (this.suppressEditorSelectionSync) {
+            return;
+        }
+        const currentEditor = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(currentEditor)) {
             this.clearDecorations();
             return;
         }
-        const resolved = await this.resolveSelection(currentSelection.semanticId);
-        if (resolved) {
-            this.selectionValue = resolved;
-            this.onDidChangeSelectionEmitter.fire(resolved);
+        const inspection = await this.lspEditorBridgeService.requestSemanticInspection(currentEditor);
+        const resolvedFromSource = (0, athena_semantic_selection_model_1.resolveSemanticSelectionFromSourceRange)(inspection, currentEditor.editor.uri.toString(), currentEditor.editor.selection);
+        if (resolvedFromSource) {
+            this.setSelection(resolvedFromSource, false);
+            return;
         }
-        this.applySelectionToCurrentEditor(resolved ?? currentSelection);
+        if (this.selectionValue?.sourceUri === currentEditor.editor.uri.toString()) {
+            this.setSelection(undefined, false);
+        }
+        else {
+            this.clearDecorations();
+        }
     }
     async resolveSelection(semanticId) {
         const currentEditor = this.editorManager.currentEditor;
@@ -110,10 +117,21 @@ let AthenaSemanticSelectionService = class AthenaSemanticSelectionService {
         const inspection = await this.lspEditorBridgeService.requestSemanticInspection(currentEditor);
         return (0, athena_semantic_selection_model_1.resolveSemanticSelectionFromInspection)(inspection, semanticId);
     }
-    setSelection(selection) {
+    setSelection(selection, applyToEditor = true) {
+        if (selectionsEqual(this.selectionValue, selection)) {
+            if (applyToEditor) {
+                this.applySelectionToCurrentEditor(selection);
+            }
+            return;
+        }
         this.selectionValue = selection;
         this.onDidChangeSelectionEmitter.fire(selection);
-        this.applySelectionToCurrentEditor(selection);
+        if (applyToEditor) {
+            this.applySelectionToCurrentEditor(selection);
+        }
+        else if (!selection) {
+            this.clearDecorations();
+        }
     }
     applySelectionToCurrentEditor(selection) {
         const currentEditor = this.editorManager.currentEditor;
@@ -122,11 +140,19 @@ let AthenaSemanticSelectionService = class AthenaSemanticSelectionService {
             return;
         }
         const editor = currentEditor.editor;
-        editor.selection = {
-            ...selection.sourceRange,
-            direction: 'ltr'
-        };
-        editor.revealRange(selection.sourceRange, { at: 'center' });
+        this.suppressEditorSelectionSync = true;
+        try {
+            editor.selection = {
+                ...selection.sourceRange,
+                direction: 'ltr'
+            };
+            editor.revealRange(selection.sourceRange, { at: 'center' });
+        }
+        finally {
+            window.setTimeout(() => {
+                this.suppressEditorSelectionSync = false;
+            }, 0);
+        }
         this.decoratedEditor = editor;
         this.decorationIds = editor.deltaDecorations({
             oldDecorations: this.decorationIds,
@@ -168,4 +194,29 @@ __decorate([
 exports.AthenaSemanticSelectionService = AthenaSemanticSelectionService = __decorate([
     (0, inversify_1.injectable)()
 ], AthenaSemanticSelectionService);
+function selectionsEqual(left, right) {
+    if (left === right) {
+        return true;
+    }
+    if (!left || !right) {
+        return false;
+    }
+    return left.semanticId === right.semanticId &&
+        left.label === right.label &&
+        left.kind === right.kind &&
+        left.sourceUri === right.sourceUri &&
+        rangesEqual(left.sourceRange, right.sourceRange);
+}
+function rangesEqual(left, right) {
+    if (left === right) {
+        return true;
+    }
+    if (!left || !right) {
+        return false;
+    }
+    return left.start.line === right.start.line &&
+        left.start.character === right.start.character &&
+        left.end.line === right.end.line &&
+        left.end.character === right.end.character;
+}
 //# sourceMappingURL=athena-semantic-selection-service.js.map

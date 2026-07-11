@@ -71,6 +71,7 @@ class AthenaWorkspace internal constructor(
         val project = AthenaProjectRef(
             name = projectName,
             sourcePath = sourcePath,
+            workspaceRoot = rootPath,
         )
         return AthenaExecutionContext(
             project = project,

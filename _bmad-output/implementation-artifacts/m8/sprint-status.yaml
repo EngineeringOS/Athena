@@ -1,5 +1,5 @@
 # generated: 2026-07-10T16:45:21+08:00
-# last_updated: 2026-07-11T11:32:00+08:00
+# last_updated: 2026-07-11T08:39:25+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -30,7 +30,7 @@
 # - M8 is the unified semantic mutation milestone, so the execution sequence starts with freezing one mutation authority, then graph-originated command routing, then unified review and reveal.
 
 generated: 2026-07-10T16:45:21+08:00
-last_updated: 2026-07-11T11:32:00+08:00
+last_updated: 2026-07-11T11:37:26+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -42,13 +42,13 @@ development_status:
   1-2-define-projection-ownership-contracts-for-the-first-interactive-projections: done
   1-3-normalize-source-originated-changes-into-the-same-runtime-mutation-result-path: done
   epic-1-retrospective: optional
-  epic-2: backlog
-  2-1-translate-supported-graph-gestures-into-athena-command-intents: backlog
-  2-2-prove-the-first-semantic-mutation-path-from-the-graph-workbench: backlog
-  2-3-prove-the-first-projection-mutation-path-from-the-graph-workbench: backlog
-  epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-feed-accepted-mutation-outcomes-into-one-semantic-review-model: backlog
-  3-2-support-bidirectional-reveal-across-source-graph-and-semantic-scm-context: backlog
-  3-3-publish-the-m8-proof-corpus-and-verification-path: backlog
-  epic-3-retrospective: optional
+  epic-2: done
+  2-1-translate-supported-graph-gestures-into-athena-command-intents: done
+  2-2-prove-the-first-semantic-mutation-path-from-the-graph-workbench: done
+  2-3-prove-the-first-projection-mutation-path-from-the-graph-workbench: done
+  epic-2-retrospective: done
+  epic-3: done
+  3-1-feed-accepted-mutation-outcomes-into-one-semantic-review-model: done
+  3-2-support-bidirectional-reveal-across-source-graph-and-semantic-scm-context: done
+  3-3-publish-the-m8-proof-corpus-and-verification-path: done
+  epic-3-retrospective: done

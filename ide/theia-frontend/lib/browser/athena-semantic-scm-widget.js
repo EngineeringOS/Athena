@@ -436,26 +436,54 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
         return pkg.version ? `${pkg.name}@${pkg.version}` : pkg.name;
     }
     renderReviewEntry(entry) {
-        return React.createElement("li", { key: `${entry.kind}:${entry.message}`, className: `athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}` },
-            React.createElement("strong", null, entry.kind),
-            React.createElement("div", null, entry.message),
-            entry.factReferences.length > 0
-                ? React.createElement("div", null, entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', '))
-                : undefined);
+        const semanticId = (0, athena_semantic_selection_model_1.selectableSemanticIdFromScmContext)(entry);
+        return React.createElement("li", { key: `${entry.kind}:${entry.message}`, className: `athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}` }, semanticId
+            ? React.createElement("button", { className: 'athena-semantic-scm__selectable', type: 'button', onClick: () => void this.semanticSelectionService.selectSemanticId(semanticId) },
+                React.createElement("strong", null, entry.kind),
+                React.createElement("div", null, entry.message),
+                React.createElement("div", null,
+                    React.createElement("code", null, semanticId)),
+                entry.factReferences.length > 0
+                    ? React.createElement("div", null, entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', '))
+                    : undefined)
+            : React.createElement(React.Fragment, null,
+                React.createElement("strong", null, entry.kind),
+                React.createElement("div", null, entry.message),
+                entry.factReferences.length > 0
+                    ? React.createElement("div", null, entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', '))
+                    : undefined));
     }
     renderReviewEnrichment(enrichment) {
-        return React.createElement("li", { key: `${enrichment.pluginId}:${enrichment.kind}:${enrichment.message}`, className: `athena-semantic-scm__item athena-semantic-scm__item--enrichment ${this.isSelectedContext(enrichment) ? 'athena-semantic-scm__item--selected' : ''}` },
-            React.createElement("strong", null, enrichment.kind),
-            React.createElement("div", null, enrichment.message),
-            React.createElement("div", null, enrichment.pluginId));
+        const semanticId = (0, athena_semantic_selection_model_1.selectableSemanticIdFromScmContext)(enrichment);
+        return React.createElement("li", { key: `${enrichment.pluginId}:${enrichment.kind}:${enrichment.message}`, className: `athena-semantic-scm__item athena-semantic-scm__item--enrichment ${this.isSelectedContext(enrichment) ? 'athena-semantic-scm__item--selected' : ''}` }, semanticId
+            ? React.createElement("button", { className: 'athena-semantic-scm__selectable', type: 'button', onClick: () => void this.semanticSelectionService.selectSemanticId(semanticId) },
+                React.createElement("strong", null, enrichment.kind),
+                React.createElement("div", null, enrichment.message),
+                React.createElement("div", null, enrichment.pluginId),
+                React.createElement("div", null,
+                    React.createElement("code", null, semanticId)))
+            : React.createElement(React.Fragment, null,
+                React.createElement("strong", null, enrichment.kind),
+                React.createElement("div", null, enrichment.message),
+                React.createElement("div", null, enrichment.pluginId)));
     }
     renderCommitEntry(entry) {
-        return React.createElement("li", { key: `${entry.kind}:${entry.message}`, className: `athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}` },
-            React.createElement("strong", null, entry.kind),
-            React.createElement("div", null, entry.message),
-            entry.factReferences.length > 0
-                ? React.createElement("div", null, entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', '))
-                : undefined);
+        const semanticId = (0, athena_semantic_selection_model_1.selectableSemanticIdFromScmContext)(entry);
+        return React.createElement("li", { key: `${entry.kind}:${entry.message}`, className: `athena-semantic-scm__item ${this.isSelectedContext(entry) ? 'athena-semantic-scm__item--selected' : ''}` }, semanticId
+            ? React.createElement("button", { className: 'athena-semantic-scm__selectable', type: 'button', onClick: () => void this.semanticSelectionService.selectSemanticId(semanticId) },
+                React.createElement("strong", null, entry.kind),
+                React.createElement("div", null, entry.message),
+                React.createElement("div", null,
+                    React.createElement("code", null, semanticId)),
+                entry.factReferences.length > 0
+                    ? React.createElement("div", null, entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', '))
+                    : undefined)
+            : React.createElement(React.Fragment, null,
+                React.createElement("strong", null, entry.kind),
+                React.createElement("div", null, entry.message),
+                entry.factReferences.length > 0
+                    ? React.createElement("div", null, entry.factReferences.map(reference => `${reference.kind}:${reference.identifier}`).join(', '))
+                    : undefined));
     }
     renderValidationMovement(movement) {
         return React.createElement("li", { key: `${movement.baselineErrorCount}:${movement.currentErrorCount}:${movement.message}`, className: 'athena-semantic-scm__item' },

@@ -25,6 +25,13 @@ type AthenaProjectionSelectionCarrier = {
     };
 };
 
+type AthenaSemanticInspectionEntry = {
+    semanticId: string;
+    label: string;
+    kind: 'component' | 'port' | 'connection';
+    sourceRange: Range;
+};
+
 /** Resolves one canonical semantic selection from the current inspection payload, if the document publishes it. */
 export function resolveSemanticSelectionFromInspection(
     inspection: AthenaSemanticInspectionPayload | undefined,
@@ -70,6 +77,31 @@ export function resolveSemanticSelectionFromInspection(
     return undefined;
 }
 
+/** Resolves the most specific semantic subject that contains the current source-editor selection. */
+export function resolveSemanticSelectionFromSourceRange(
+    inspection: AthenaSemanticInspectionPayload | undefined,
+    sourceUri: string,
+    selectionRange: Range
+): AthenaActiveSemanticSelection | undefined {
+    if (!inspection || inspection.uri !== sourceUri) {
+        return undefined;
+    }
+
+    const matchingEntry = inspectionEntries(inspection)
+        .filter(entry => rangeContainsRange(entry.sourceRange, selectionRange))
+        .sort((left, right) => rangeWeight(left.sourceRange) - rangeWeight(right.sourceRange))[0];
+
+    return matchingEntry
+        ? {
+            semanticId: matchingEntry.semanticId,
+            label: matchingEntry.label,
+            kind: matchingEntry.kind,
+            sourceUri: inspection.uri,
+            sourceRange: matchingEntry.sourceRange
+        }
+        : undefined;
+}
+
 /** Reuses M6 semantic SCM subject-identity vocabulary to determine whether one SCM context matches the active selection. */
 export function matchesSemanticScmContext(
     carrier: AthenaSemanticScmContextCarrier,
@@ -91,6 +123,19 @@ export function selectableSemanticIdFromScmContext(
     return carrier.subjectIdentity ?? carrier.factReferences.find(reference => reference.subjectIdentity)?.subjectIdentity;
 }
 
+/** Returns whether the current graph snapshot already exposes the canonical semantic id. */
+export function graphContainsSemanticId(
+    diagram: AthenaProjectionSelectionCarrier | undefined,
+    semanticId: string
+): boolean {
+    if (!diagram) {
+        return false;
+    }
+    const existsInNodes = diagram.graph.nodes.some(node => node.id === semanticId);
+    const existsInEdges = diagram.graph.edges.some(edge => edge.id === semanticId);
+    return existsInNodes || existsInEdges;
+}
+
 /** Keeps transient selection only while the refreshed projection still contains the same canonical semantic id. */
 export function retainSelectionIfPresent(
     diagram: AthenaProjectionSelectionCarrier,
@@ -100,7 +145,51 @@ export function retainSelectionIfPresent(
         return undefined;
     }
 
-    const existsInNodes = diagram.graph.nodes.some(node => node.id === selection.semanticId);
-    const existsInEdges = diagram.graph.edges.some(edge => edge.id === selection.semanticId);
-    return existsInNodes || existsInEdges ? selection : undefined;
+    return graphContainsSemanticId(diagram, selection.semanticId) ? selection : undefined;
+}
+
+function inspectionEntries(inspection: AthenaSemanticInspectionPayload): AthenaSemanticInspectionEntry[] {
+    return [
+        ...inspection.components.map(component => ({
+            semanticId: component.semanticId,
+            label: component.name,
+            kind: 'component' as const,
+            sourceRange: component.sourceRange
+        })),
+        ...inspection.ports.map(port => ({
+            semanticId: port.semanticId,
+            label: port.path,
+            kind: 'port' as const,
+            sourceRange: port.sourceRange
+        })),
+        ...inspection.connections.map(connection => ({
+            semanticId: connection.semanticId,
+            label: `${connection.fromPath} -> ${connection.toPath}`,
+            kind: 'connection' as const,
+            sourceRange: connection.sourceRange
+        }))
+    ];
+}
+
+function rangeContainsRange(container: Range, candidate: Range): boolean {
+    return comparePosition(container.start, candidate.start) <= 0 &&
+        comparePosition(container.end, candidate.end) >= 0;
+}
+
+function comparePosition(
+    left: { line: number; character: number },
+    right: { line: number; character: number }
+): number {
+    if (left.line !== right.line) {
+        return left.line - right.line;
+    }
+    return left.character - right.character;
+}
+
+function rangeWeight(range: Range): number {
+    const lineSpan = Math.max(range.end.line - range.start.line, 0);
+    const characterSpan = lineSpan === 0
+        ? Math.max(range.end.character - range.start.character, 0)
+        : Math.max(range.end.character + range.start.character, 0);
+    return (lineSpan * 10_000) + characterSpan;
 }

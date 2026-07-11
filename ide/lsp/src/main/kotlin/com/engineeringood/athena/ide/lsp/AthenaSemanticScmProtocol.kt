@@ -333,7 +333,7 @@ internal fun AthenaSemanticHistoryState.toPayload(semanticPath: String): AthenaS
     )
 }
 
-private fun SemanticReviewSummary.toPayload(): AthenaSemanticReviewPayload {
+internal fun SemanticReviewSummary.toPayload(): AthenaSemanticReviewPayload {
     return AthenaSemanticReviewPayload(
         baselineId = baseline.baselineId,
         baselineLabel = baseline.label,
@@ -345,7 +345,7 @@ private fun SemanticReviewSummary.toPayload(): AthenaSemanticReviewPayload {
     )
 }
 
-private fun SemanticCommitIntent.toPayload(): AthenaSemanticCommitPayload {
+internal fun SemanticCommitIntent.toPayload(): AthenaSemanticCommitPayload {
     return AthenaSemanticCommitPayload(
         baselineId = baseline.baselineId,
         baselineLabel = baseline.label,

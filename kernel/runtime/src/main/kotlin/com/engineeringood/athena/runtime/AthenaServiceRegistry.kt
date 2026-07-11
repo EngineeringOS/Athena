@@ -9,10 +9,12 @@ class AthenaServiceRegistry(
     rendererProvider: () -> SvgRenderer = { SvgRenderer() },
     pluginRuntimeServicesProvider: (() -> AthenaPluginRuntimeServices)? = null,
     sourceMutationRuntimeServiceProvider: (() -> AthenaSourceMutationRuntimeService)? = null,
+    graphCommandIntentRuntimeServiceProvider: (() -> AthenaGraphCommandIntentRuntimeService)? = null,
     semanticBaselineServiceProvider: (() -> AthenaSemanticBaselineService)? = null,
     semanticDiffServiceProvider: (() -> AthenaSemanticDiffService)? = null,
     semanticReviewServiceProvider: (() -> AthenaSemanticReviewService)? = null,
     semanticCommitServiceProvider: (() -> AthenaSemanticCommitService)? = null,
+    semanticMutationReviewServiceProvider: (() -> AthenaSemanticMutationReviewService)? = null,
     semanticScmStateServiceProvider: (() -> AthenaSemanticScmStateService)? = null,
     semanticHistoryStateServiceProvider: (() -> AthenaSemanticHistoryStateService)? = null,
 ) {
@@ -48,6 +50,12 @@ class AthenaServiceRegistry(
             reviewService = semanticReviewServiceInstance,
         )
     }
+    private val semanticMutationReviewServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
+        semanticMutationReviewServiceProvider?.invoke() ?: AthenaSemanticMutationReviewService(
+            reviewService = semanticReviewServiceInstance,
+            commitService = semanticCommitServiceInstance,
+        )
+    }
     private val semanticScmStateServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         semanticScmStateServiceProvider?.invoke() ?: AthenaSemanticScmStateService(
             baselineService = semanticBaselineServiceInstance,
@@ -63,6 +71,9 @@ class AthenaServiceRegistry(
     }
     private val sourceMutationRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         sourceMutationRuntimeServiceProvider?.invoke() ?: AthenaSourceMutationRuntimeService()
+    }
+    private val graphCommandIntentRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
+        graphCommandIntentRuntimeServiceProvider?.invoke() ?: AthenaGraphCommandIntentRuntimeService()
     }
     private val commandRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaCommandRuntimeService() }
     private val aiProposalRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaAiProposalRuntimeService() }
@@ -91,6 +102,9 @@ class AthenaServiceRegistry(
     /** Resolves the shared semantic commit capability for the current runtime. */
     fun semanticCommits(): AthenaSemanticCommitService = semanticCommitServiceInstance
 
+    /** Resolves the shared accepted-mutation review capability for the current runtime. */
+    fun semanticMutationReviews(): AthenaSemanticMutationReviewService = semanticMutationReviewServiceInstance
+
     /** Resolves the shared semantic SCM projection capability for the current runtime. */
     fun semanticScmStates(): AthenaSemanticScmStateService = semanticScmStateServiceInstance
 
@@ -99,6 +113,9 @@ class AthenaServiceRegistry(
 
     /** Resolves the shared source-mutation evaluation capability for the current runtime. */
     fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = sourceMutationRuntimeServiceInstance
+
+    /** Resolves the shared graph command-intent capability for the current runtime. */
+    fun graphCommandIntentRuntime(): AthenaGraphCommandIntentRuntimeService = graphCommandIntentRuntimeServiceInstance
 
     /** Resolves the shared command-runtime capability for the current runtime. */
     fun commandRuntime(): AthenaCommandRuntimeService = commandRuntimeInstance

@@ -84,6 +84,27 @@ test('resolves canonical semantic selection from typed inspection payload', () =
     });
 });
 
+test('resolves the most specific semantic selection from a source-editor range', () => {
+    assert.equal(typeof semanticSelectionModel.resolveSemanticSelectionFromSourceRange, 'function');
+
+    const selection = semanticSelectionModel.resolveSemanticSelectionFromSourceRange(
+        inspection,
+        inspection.uri,
+        {
+            start: { line: 11, character: 8 },
+            end: { line: 11, character: 18 }
+        }
+    );
+
+    assert.deepEqual(selection, {
+        semanticId: 'connection:PLC1.out->M1.in',
+        label: 'PLC1.out -> M1.in',
+        kind: 'connection',
+        sourceUri: inspection.uri,
+        sourceRange: inspection.connections[0].sourceRange
+    });
+});
+
 test('matches semantic scm context through subject identity and fact-reference vocabulary', () => {
     assert.equal(typeof semanticSelectionModel.matchesSemanticScmContext, 'function');
 
@@ -118,6 +139,27 @@ test('matches semantic scm context through subject identity and fact-reference v
     );
 });
 
+test('selectable semantic scm context prefers subject identity and falls back to fact references', () => {
+    assert.equal(typeof semanticSelectionModel.selectableSemanticIdFromScmContext, 'function');
+
+    const fromSubjectIdentity = semanticSelectionModel.selectableSemanticIdFromScmContext({
+        subjectIdentity: 'component:PLC1',
+        factReferences: []
+    });
+    const fromFactReference = semanticSelectionModel.selectableSemanticIdFromScmContext({
+        factReferences: [
+            {
+                kind: 'authored-change',
+                identifier: 'change-1',
+                subjectIdentity: 'port:PLC1.out'
+            }
+        ]
+    });
+
+    assert.equal(fromSubjectIdentity, 'component:PLC1');
+    assert.equal(fromFactReference, 'port:PLC1.out');
+});
+
 test('drops transient selection when refreshed projection no longer contains the semantic id', () => {
     assert.equal(typeof semanticSelectionModel.retainSelectionIfPresent, 'function');
 
@@ -146,5 +188,13 @@ test('drops transient selection when refreshed projection no longer contains the
     assert.equal(
         semanticSelectionModel.retainSelectionIfPresent(refreshedDiagram, selected),
         undefined
+    );
+    assert.equal(
+        semanticSelectionModel.graphContainsSemanticId(visibleDiagram, 'port:PLC1.out'),
+        true
+    );
+    assert.equal(
+        semanticSelectionModel.graphContainsSemanticId(refreshedDiagram, 'port:PLC1.out'),
+        false
     );
 });

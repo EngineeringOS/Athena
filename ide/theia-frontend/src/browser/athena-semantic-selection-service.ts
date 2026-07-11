@@ -7,7 +7,8 @@ import { AthenaLspEditorBridgeService } from './athena-lsp-editor-bridge-service
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import {
     AthenaActiveSemanticSelection,
-    resolveSemanticSelectionFromInspection
+    resolveSemanticSelectionFromInspection,
+    resolveSemanticSelectionFromSourceRange
 } from './athena-semantic-selection-model';
 
 /** Frontend-only semantic-selection coordinator for cross-surface synchronization in the M7 workbench. */
@@ -29,6 +30,7 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
     protected decorationIds: string[] = [];
     protected refreshHandle: number | undefined;
     protected activeRepositoryRoot: string | undefined;
+    protected suppressEditorSelectionSync = false;
 
     get selection(): AthenaActiveSemanticSelection | undefined {
         return this.selectionValue;
@@ -77,6 +79,7 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
         }
 
         this.currentEditorListeners.push(widget.editor.onDocumentContentChanged(() => this.scheduleSelectionRefresh()));
+        this.currentEditorListeners.push(widget.editor.onSelectionChanged(() => this.scheduleSelectionRefresh()));
         this.currentEditorListeners.push(Disposable.create(() => {
             if (this.refreshHandle !== undefined) {
                 window.clearTimeout(this.refreshHandle);
@@ -86,10 +89,6 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
     }
 
     protected scheduleSelectionRefresh(): void {
-        if (!this.selectionValue) {
-            this.clearDecorations();
-            return;
-        }
         if (this.refreshHandle !== undefined) {
             window.clearTimeout(this.refreshHandle);
         }
@@ -100,19 +99,32 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
     }
 
     protected async refreshSelectionFromCurrentEditor(): Promise<void> {
-        const currentSelection = this.selectionValue;
-        if (!currentSelection) {
+        if (this.suppressEditorSelectionSync) {
+            return;
+        }
+
+        const currentEditor = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(currentEditor)) {
             this.clearDecorations();
             return;
         }
 
-        const resolved = await this.resolveSelection(currentSelection.semanticId);
-        if (resolved) {
-            this.selectionValue = resolved;
-            this.onDidChangeSelectionEmitter.fire(resolved);
+        const inspection = await this.lspEditorBridgeService.requestSemanticInspection(currentEditor);
+        const resolvedFromSource = resolveSemanticSelectionFromSourceRange(
+            inspection,
+            currentEditor.editor.uri.toString(),
+            currentEditor.editor.selection,
+        );
+        if (resolvedFromSource) {
+            this.setSelection(resolvedFromSource, false);
+            return;
         }
 
-        this.applySelectionToCurrentEditor(resolved ?? currentSelection);
+        if (this.selectionValue?.sourceUri === currentEditor.editor.uri.toString()) {
+            this.setSelection(undefined, false);
+        } else {
+            this.clearDecorations();
+        }
     }
 
     protected async resolveSelection(semanticId: string): Promise<AthenaActiveSemanticSelection | undefined> {
@@ -125,10 +137,23 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
         return resolveSemanticSelectionFromInspection(inspection, semanticId);
     }
 
-    protected setSelection(selection: AthenaActiveSemanticSelection | undefined): void {
+    protected setSelection(
+        selection: AthenaActiveSemanticSelection | undefined,
+        applyToEditor: boolean = true
+    ): void {
+        if (selectionsEqual(this.selectionValue, selection)) {
+            if (applyToEditor) {
+                this.applySelectionToCurrentEditor(selection);
+            }
+            return;
+        }
         this.selectionValue = selection;
         this.onDidChangeSelectionEmitter.fire(selection);
-        this.applySelectionToCurrentEditor(selection);
+        if (applyToEditor) {
+            this.applySelectionToCurrentEditor(selection);
+        } else if (!selection) {
+            this.clearDecorations();
+        }
     }
 
     protected applySelectionToCurrentEditor(selection: AthenaActiveSemanticSelection | undefined): void {
@@ -139,11 +164,18 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
         }
 
         const editor = currentEditor.editor;
-        editor.selection = {
-            ...selection.sourceRange,
-            direction: 'ltr'
-        };
-        editor.revealRange(selection.sourceRange, { at: 'center' });
+        this.suppressEditorSelectionSync = true;
+        try {
+            editor.selection = {
+                ...selection.sourceRange,
+                direction: 'ltr'
+            };
+            editor.revealRange(selection.sourceRange, { at: 'center' });
+        } finally {
+            window.setTimeout(() => {
+                this.suppressEditorSelectionSync = false;
+            }, 0);
+        }
         this.decoratedEditor = editor;
         this.decorationIds = editor.deltaDecorations({
             oldDecorations: this.decorationIds,
@@ -170,4 +202,37 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
     protected isAthenaEditor(widget: EditorWidget | undefined): widget is EditorWidget {
         return !!widget && widget.editor.uri.toString().toLowerCase().endsWith('.athena');
     }
+}
+
+function selectionsEqual(
+    left: AthenaActiveSemanticSelection | undefined,
+    right: AthenaActiveSemanticSelection | undefined,
+): boolean {
+    if (left === right) {
+        return true;
+    }
+    if (!left || !right) {
+        return false;
+    }
+    return left.semanticId === right.semanticId &&
+        left.label === right.label &&
+        left.kind === right.kind &&
+        left.sourceUri === right.sourceUri &&
+        rangesEqual(left.sourceRange, right.sourceRange);
+}
+
+function rangesEqual(
+    left: AthenaActiveSemanticSelection['sourceRange'],
+    right: AthenaActiveSemanticSelection['sourceRange'],
+): boolean {
+    if (left === right) {
+        return true;
+    }
+    if (!left || !right) {
+        return false;
+    }
+    return left.start.line === right.start.line &&
+        left.start.character === right.start.character &&
+        left.end.line === right.end.line &&
+        left.end.character === right.end.character;
 }

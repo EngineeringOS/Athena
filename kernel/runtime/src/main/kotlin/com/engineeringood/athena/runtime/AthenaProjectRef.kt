@@ -6,4 +6,5 @@ import java.nio.file.Path
 data class AthenaProjectRef(
     val name: String,
     val sourcePath: Path,
+    val workspaceRoot: Path,
 )

@@ -10,3 +10,7 @@ This folder preserves the active M8 implementation artifacts under the milestone
 
 1. `1-1-publish-unified-mutation-contracts-and-categories-in-runtime-owned-command-surfaces.md`
 2. `sprint-status.yaml`
+3. `milestone-summary-2026-07-11.md`
+4. `3-3-publish-the-m8-proof-corpus-and-verification-path.md`
+5. `epic-3-retro-2026-07-11.md`
+6. `m8-retrospective-2026-07-11.md`

@@ -5,6 +5,7 @@ import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
 import com.engineeringood.athena.compiler.CompilerRenderingBlocked
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.projection.ProjectionConnection
@@ -241,7 +242,11 @@ private fun AthenaExecutionContext.buildProjectionSnapshot(
             when {
                 projection != null -> AthenaRuntimeProjectionReadySnapshot(
                     viewId = viewId,
-                    scene = projection.toViewerScene(compilation.document.system.name),
+                    scene = projection.toViewerScene(
+                        systemName = compilation.document.system.name,
+                        document = compilation.document,
+                        placementOverrides = projectionPlacementOverrides(viewId),
+                    ),
                     activeRenderContributions = activeProjectionRenderContributions(
                         viewId = viewId,
                         rendererTarget = GRAPH_WORKBENCH_RENDERER_TARGET,
@@ -334,7 +339,11 @@ private fun AthenaRenderSurfaceMapping.toRuntimeProjectionSurfaceMapping(): Athe
     )
 }
 
-private fun ProjectionDocument.toViewerScene(systemName: String): AthenaRuntimeViewerScene {
+private fun ProjectionDocument.toViewerScene(
+    systemName: String,
+    document: EngineeringDocument,
+    placementOverrides: Map<String, AthenaGraphPlacement> = emptyMap(),
+): AthenaRuntimeViewerScene {
     return AthenaRuntimeViewerScene(
         systemName = systemName,
         canvasWidth = canvasWidth,
@@ -342,6 +351,9 @@ private fun ProjectionDocument.toViewerScene(systemName: String): AthenaRuntimeV
         components = nodes.map(ProjectionNode::toViewerComponent),
         connections = connections.map(ProjectionConnection::toViewerConnection),
         labels = labels.map(ProjectionLabel::toViewerLabel),
+    ).withPlacementOverrides(
+        document = document,
+        placementOverrides = placementOverrides,
     )
 }
 
@@ -378,3 +390,73 @@ private fun ProjectionLabel.toViewerLabel(): AthenaRuntimeViewerLabel {
         height = bounds.height,
     )
 }
+
+private fun AthenaRuntimeViewerScene.withPlacementOverrides(
+    document: EngineeringDocument,
+    placementOverrides: Map<String, AthenaGraphPlacement>,
+): AthenaRuntimeViewerScene {
+    if (placementOverrides.isEmpty()) {
+        return this
+    }
+
+    val componentDeltas = components.mapNotNull { component ->
+        val override = placementOverrides[component.semanticId] ?: return@mapNotNull null
+        component.semanticId to ProjectionDelta(
+            deltaX = override.x - component.x,
+            deltaY = override.y - component.y,
+        )
+    }.toMap()
+    if (componentDeltas.isEmpty()) {
+        return this
+    }
+
+    val ownerByPortSemanticId = document.ports.associate { port ->
+        port.id.value to port.ownerReference.resolvedIdentity?.value
+    }
+    val connectionsBySemanticId = document.connections.associateBy { connection -> connection.id.value }
+
+    return copy(
+        components = components.map { component ->
+            placementOverrides[component.semanticId]?.let { override ->
+                component.copy(
+                    x = override.x,
+                    y = override.y,
+                )
+            } ?: component
+        },
+        labels = labels.map { label ->
+            val ownerSemanticId = ownerByPortSemanticId[label.semanticId]
+            val delta = ownerSemanticId?.let(componentDeltas::get)
+            if (delta == null) {
+                label
+            } else {
+                label.copy(
+                    x = label.x + delta.deltaX,
+                    y = label.y + delta.deltaY,
+                )
+            }
+        },
+        connections = connections.map { connection ->
+            val engineeringConnection = connectionsBySemanticId[connection.semanticId]
+            val sourceOwnerSemanticId = engineeringConnection?.from?.resolvedIdentity?.value?.let(ownerByPortSemanticId::get)
+            val targetOwnerSemanticId = engineeringConnection?.to?.resolvedIdentity?.value?.let(ownerByPortSemanticId::get)
+            val sourceDelta = sourceOwnerSemanticId?.let(componentDeltas::get)
+            val targetDelta = targetOwnerSemanticId?.let(componentDeltas::get)
+            if (sourceDelta == null && targetDelta == null) {
+                connection
+            } else {
+                connection.copy(
+                    x1 = connection.x1 + (sourceDelta?.deltaX ?: 0),
+                    y1 = connection.y1 + (sourceDelta?.deltaY ?: 0),
+                    x2 = connection.x2 + (targetDelta?.deltaX ?: 0),
+                    y2 = connection.y2 + (targetDelta?.deltaY ?: 0),
+                )
+            }
+        },
+    )
+}
+
+private data class ProjectionDelta(
+    val deltaX: Int,
+    val deltaY: Int,
+)

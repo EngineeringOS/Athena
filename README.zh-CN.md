@@ -46,6 +46,7 @@ Athena 是 EngineeringOS 语义编译器论点的 JVM-first 实现工作区。
 - 以稳定 package identity 与 version meaning 为锚点的 package-aware semantic history 与 release relevance contract
 - 通过 runtime / LSP / Theia Semantic SCM panel 投影 review、commit preparation、package evolution 与 release relevance，同时不把语义主权移入前端
 - 第一个 `integrations/graph-glsp` translation-only 图形适配器边界，它消费 Athena-owned projection-session payload，但不会引入第二条 semantic transport
+- M8 统一 mutation 模型：source 与 graph 现在共享 runtime-owned mutation category、graph semantic mutation proof、graph projection mutation proof、共享 semantic review fact，以及跨 source / graph / semantic SCM 的 canonical reveal
 
 当前还没有进入最终 UX 阶段。
 
@@ -110,6 +111,8 @@ yarn start:smoke
 `java25` 是本机辅助命令，用来先切换到 Java 25 再执行 Gradle。
 
 当前 M6 Athena IDE shell 中，Electron 包装层会在 Windows 上自动解析 Java 25。使用 `ide/` 下的 `yarn start:smoke` 作为确定性的桌面启动证明，再使用 `yarn start` 打开交互窗口。当前工作台里的 `Semantic SCM` panel 已经可以检查 baseline-driven review、commit preparation、package evolution 与 release relevance。聚焦里程碑用法请阅读 [`docs/usages/m5-proof-usage.md`](docs/usages/m5-proof-usage.md) 与 [`docs/usages/m6-proof-usage.md`](docs/usages/m6-proof-usage.md)。
+
+针对已经完成的 M8 mutation proof，请阅读 [`docs/usages/m8-proof-usage.md`](docs/usages/m8-proof-usage.md)。当前边界需要明确：graph semantic mutation 与 graph projection mutation 已经是可接受的真实路径，但 source-originated mutation 仍然是 preview-first evaluation，加上共享 review / reveal coherence。
 
 ## 架构说明
 

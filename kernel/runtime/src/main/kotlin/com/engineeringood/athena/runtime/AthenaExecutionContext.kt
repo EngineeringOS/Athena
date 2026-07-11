@@ -20,6 +20,7 @@ class AthenaExecutionContext(
     private var activeCompilationSnapshot: CompilerCompilationResult? = null
     private var activeProjectionSessionSnapshot: AthenaRuntimeProjectionSession? = null
     private var activeProjectionViewId: String? = null
+    private var projectionMetadataState: AthenaProjectionMetadataState = AthenaProjectionMetadataState()
     private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
     private var aiProposalState: AthenaAiProposalState = AthenaAiProposalState()
     private var latestSemanticDiffInspection: AthenaSemanticDiffInspection? = null
@@ -38,6 +39,12 @@ class AthenaExecutionContext(
 
     /** Resolves the runtime-owned source-mutation evaluation capability for the active project. */
     fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = services.sourceMutationRuntime()
+
+    /** Resolves the runtime-owned graph command-intent capability for the active project. */
+    fun graphCommandIntentRuntime(): AthenaGraphCommandIntentRuntimeService = services.graphCommandIntentRuntime()
+
+    /** Resolves the runtime-owned accepted-mutation review capability for the active project. */
+    fun semanticMutationReviews(): AthenaSemanticMutationReviewService = services.semanticMutationReviews()
 
     /** Resolves the runtime-owned optional AI proposal capability for the active project. */
     fun aiProposalRuntime(): AthenaAiProposalRuntimeService = services.aiProposalRuntime()
@@ -197,6 +204,33 @@ class AthenaExecutionContext(
     }
 
     /**
+     * Returns the current runtime-owned placement overrides for one projection view.
+     */
+    internal fun projectionPlacementOverrides(viewId: String): Map<String, AthenaGraphPlacement> {
+        return projectionMetadataState.placementOverridesByView[viewId].orEmpty()
+    }
+
+    /**
+     * Replaces one runtime-owned placement override for a projection-scoped semantic subject.
+     */
+    internal fun replaceProjectionPlacementOverride(
+        viewId: String,
+        semanticId: String,
+        placement: AthenaGraphPlacement,
+    ) {
+        val currentOverrides = projectionMetadataState.placementOverridesByView[viewId].orEmpty()
+        val nextOverrides = currentOverrides.toMutableMap().apply {
+            put(semanticId, placement)
+        }.toMap()
+        projectionMetadataState = projectionMetadataState.copy(
+            placementOverridesByView = projectionMetadataState.placementOverridesByView.toMutableMap().apply {
+                put(viewId, nextOverrides)
+            }.toMap(),
+        )
+        invalidateProjectionSession()
+    }
+
+    /**
      * Clears the cached runtime-owned projection session after one canonical input transition.
      */
     internal fun invalidateProjectionSession() {
@@ -266,6 +300,16 @@ private fun EngineeringPort.includeOwnerScope(
 
 private const val COMPONENT_SEMANTIC_PREFIX = "component:"
 private const val CONNECTION_SEMANTIC_PREFIX = "connection:"
+
+/**
+ * Runtime-owned projection metadata state for the current active project.
+ *
+ * This state is intentionally separate from canonical engineering truth so projection mutations can
+ * remain governed without redefining the authored semantic document.
+ */
+private data class AthenaProjectionMetadataState(
+    val placementOverridesByView: Map<String, Map<String, AthenaGraphPlacement>> = emptyMap(),
+)
 
 /**
  * Runtime-owned view of one incremental recompute cycle after a semantic command mutation.

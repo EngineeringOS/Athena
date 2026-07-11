@@ -337,6 +337,50 @@ class AthenaLanguageServer(
         )
     }
 
+    /**
+     * Returns the runtime-owned graph command-intent evaluation for one graph-originated action.
+     */
+    @JsonRequest("athena/graphCommandIntent")
+    fun graphCommandIntent(params: AthenaGraphCommandIntentParams): CompletableFuture<AthenaGraphCommandIntentPayload?> {
+        val activation = activeSession
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        if (activation == null) {
+            return CompletableFuture.completedFuture(
+                unavailableGraphCommandIntentPayload(
+                    projectName = sessionSnapshot?.projectName ?: "Athena",
+                    semanticPath = semanticPath,
+                    params = params,
+                    reason = "Athena LSP session is inactive, so graph command intent is unavailable for `${params.viewId}`.",
+                ),
+            )
+        }
+
+        val intent = params.toRuntimeIntent()
+            ?: return CompletableFuture.completedFuture(
+                AthenaGraphCommandIntentPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                    status = "rejected",
+                    intentId = params.intentId,
+                    mutationCategory = params.defaultMutationCategory().name.lowercase().replace('_', '-'),
+                    viewId = params.viewId,
+                    source = params.source,
+                    target = params.target,
+                    requestedPlacement = params.requestedPlacement,
+                    reason = "Graph command intent `${params.intentId}` is invalid or missing required typed arguments.",
+                ),
+            )
+
+        return CompletableFuture.completedFuture(
+            activation.context.graphCommandIntentRuntime()
+                .submit(
+                    context = activation.context,
+                    intent = intent,
+                )
+                .toPayload(semanticPath = semanticPath),
+        )
+    }
+
     @Suppress("DEPRECATION")
     private fun resolveRepositoryRoot(params: InitializeParams): Path? {
         val workspaceUri = params.workspaceFolders

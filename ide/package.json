@@ -15,6 +15,7 @@
     "start": "yarn workspace @engineeringood/athena-theia-product start",
     "start:smoke": "yarn workspace @engineeringood/athena-theia-product start:smoke",
     "verify:m7": "yarn --cwd ../integrations/graph-glsp test && yarn workspace @engineeringood/athena-theia-frontend test && yarn build && yarn start:smoke",
+    "verify:m8": "yarn --cwd ../integrations/graph-glsp test && yarn workspace @engineeringood/athena-theia-frontend test && yarn build && yarn start:smoke",
     "verify:desktop": "yarn build && yarn start:smoke",
     "watch": "yarn workspace @engineeringood/athena-theia-product watch"
   },

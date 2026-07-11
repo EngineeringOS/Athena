@@ -484,7 +484,8 @@
     box-shadow: inset 2px 0 0 rgba(242, 194, 122, 0.42);
 }
 
-.athena-semantic-inspection__selectable {
+.athena-semantic-inspection__selectable,
+.athena-semantic-scm__selectable {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -498,7 +499,8 @@
     font: inherit;
 }
 
-.athena-semantic-inspection__selectable:hover {
+.athena-semantic-inspection__selectable:hover,
+.athena-semantic-scm__selectable:hover {
     color: #f3f7ff;
 }
 

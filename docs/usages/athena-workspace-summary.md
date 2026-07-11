@@ -13,6 +13,7 @@ This document summarizes the current Athena workspace as it exists today:
 - what M5 proved
 - what M6 proved
 - what M7 proved
+- what M8 proved
 - how to use the current runnable and verifiable surfaces
 - how the current implementation aligns with the EngineeringOS manifesto
 
@@ -20,7 +21,7 @@ This is the current workspace summary, not a historical story note.
 
 ## One-Line Summary
 
-Athena is the JVM-first EngineeringOS implementation workspace that now proves eight milestone layers:
+Athena is the JVM-first EngineeringOS implementation workspace that now proves nine milestone layers:
 
 1. M0: `DSL -> AST -> Engineering IR -> validation -> SVG`
 2. M1: `runtime -> graph -> commands -> history/diff -> plugin-hosted extension`
@@ -30,6 +31,7 @@ Athena is the JVM-first EngineeringOS implementation workspace that now proves e
 6. M5: `governed repository contract -> deterministic package graph -> canonical lock -> RepositoryGraphSession -> package-aware IDE operation`
 7. M6: `semantic baseline -> semantic diff -> review/commit/history -> runtime/LSP/Theia semantic SCM panel`
 8. M7: `projection model -> runtime-owned ProjectionSession -> graph adapter -> graph-first workbench -> first renderer proof`
+9. M8: `unified mutation authority -> graph semantic and projection mutation -> shared semantic review -> canonical reveal -> published proof corpus`
 
 The central architectural claim remains unchanged:
 
@@ -39,6 +41,7 @@ The central architectural claim remains unchanged:
 - plugin-hosted domains participate through governed contracts, not kernel special cases
 - runtime owns orchestration and active projection sessions
 - UI and backends consume governed downstream state
+- source and graph are clients of one Athena-owned mutation model rather than separate editing authorities
 
 ## Current Workspace Shape
 
@@ -89,6 +92,65 @@ M6 is now fully present in the workspace shape: `:kernel:semantic-scm` owns the 
 M7 is now fully present in the current workspace shape: `integrations/graph-glsp` translates runtime-owned projection sessions into disposable graph data, the Theia frontend hosts the first real `Graphical View` panel inside the existing workbench, the current workbench synchronizes graphical selection back into source reveal, semantic inspection, and semantic SCM context through canonical semantic ids, and the first inspect-first interaction slice routes active-view switching through governed runtime commands while discarding stale transient selection on projection refresh.
 
 The current M7 workspace shape is intentionally still boundary-first: `:kernel:projection-model` now freezes the compiler-derived graphical document boundary above geometry, `integrations/graph-glsp` is the first dedicated home for GLSP-class graph translation, `ide/theia-frontend` consumes that adapter through the existing Athena LSP bridge, and `ide/lsp` plus `kernel/runtime` remain the only semantic and projection authorities for the IDE path.
+
+M8 is now fully present in the current workspace shape: runtime and `ide/lsp` expose one mutation-result vocabulary above source and graph, the graph workbench emits Athena-owned semantic and projection intent requests instead of renderer-owned save behavior, accepted mutation consequences feed the same semantic review vocabulary from `:kernel:semantic-scm`, and source, graph, and semantic SCM reveal through canonical semantic identity rather than graph-local ids.
+
+## What M8 Achieved
+
+M8 is complete as the first unified semantic mutation proof.
+
+Per BMAD tracking, Epic 1, Epic 2, and Epic 3 are now `done` in [`_bmad-output/implementation-artifacts/m8/sprint-status.yaml`](../../_bmad-output/implementation-artifacts/m8/sprint-status.yaml).
+
+### Epic 1 Result: Freeze The Unified Mutation Authority
+
+Epic 1 proved that Athena can describe source and graph mutation through one runtime-owned model instead of separate editor and renderer semantics.
+
+Delivered:
+
+- explicit runtime-owned mutation contracts for accepted, rejected, validation-feedback, and unavailable outcomes
+- explicit mutation categories across semantic mutation, projection mutation, and transient interaction
+- projection ownership contracts that state what `cabinet` and `wiring` may display, edit, emit, and own
+- source-originated mutation normalization into the same governed mutation-result vocabulary used by graph interaction
+
+### Epic 2 Result: Prove The First Graph-Originated Mutation Paths
+
+Epic 2 proved that the graph workbench can become a real editing surface without becoming a second mutation authority.
+
+Delivered:
+
+- graph gestures translated into Athena-owned command intents
+- first real graph semantic mutation path through `connect-ports`
+- first real graph projection mutation path through governed cabinet placement
+- deterministic refresh from canonical semantic state or runtime-owned projection metadata after accepted graph mutation
+
+### Epic 3 Result: Unify Review And Reveal Across Source And Graph
+
+Epic 3 proved that accepted mutation meaning and reveal behavior can remain coherent across source, graph, and semantic SCM.
+
+Delivered:
+
+- one shared semantic review model for accepted source and graph mutation consequences
+- canonical reveal across source, graph, and semantic SCM through semantic identity
+- published M8 proof corpus, milestone summary, and retrospective under [`examples/m8/`](../../examples/m8/README.md) and [`_bmad-output/implementation-artifacts/m8/`](../../_bmad-output/implementation-artifacts/m8/README.md)
+- repeatable verification entry point through `yarn --cwd ide verify:m8`
+
+### M8 Proven Chain
+
+```text
+source editor or graph workbench
+        ->
+Athena-owned mutation request or command intent
+        ->
+runtime-owned mutation evaluation
+        ->
+accepted / rejected / validation feedback result
+        ->
+semantic review and projection consequences
+        ->
+Athena LSP transport
+        ->
+source, graph, and semantic SCM surfaces
+```
 
 ## What M7 Achieved
 
@@ -483,6 +545,7 @@ Athena is now:
 - a governed repository/package graph proof with package-aware IDE operation
 - a semantic SCM proof with review, commit, and package-history flows on the same JVM-owned semantic path
 - a graphical projection and visual workbench proof with runtime-owned projection authority
+- a unified mutation proof where source and graph now share one Athena-owned mutation boundary
 
 It is not yet:
 
@@ -491,6 +554,7 @@ It is not yet:
 - a production-grade web Studio
 - a cloud or collaborative platform
 - a full standalone knowledge compiler
+- full canonical write-through source editing; the current source path remains preview-first
 
 ## Current Runnable And Verifiable Usage
 
@@ -583,6 +647,43 @@ Focused guides:
 
 - [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
 - [`_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md`](../../_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md)
+
+### M8 Unified Semantic Mutation
+
+Use the published mutation proof fixture:
+
+- [`examples/m4/open-repository-proof/`](../../examples/m4/open-repository-proof/)
+- [`examples/m4/open-repository-proof/src/factory-line.athena`](../../examples/m4/open-repository-proof/src/factory-line.athena)
+
+Primary verification commands:
+
+```powershell
+cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:runtime:test --tests com.engineeringood.athena.runtime.AthenaGraphCommandIntentServiceTest --tests com.engineeringood.athena.runtime.AthenaRuntimeProjectionSessionTest"
+cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :ide:lsp:test --tests com.engineeringood.athena.ide.lsp.AthenaSourceMutationRequestTest --tests com.engineeringood.athena.ide.lsp.AthenaProjectionRequestTest"
+yarn --cwd integrations/graph-glsp test
+yarn --cwd ide/theia-frontend test
+yarn --cwd ide verify:m8
+```
+
+Current M8 interactive proof inside the Athena shell:
+
+1. Open the repository fixture at `examples/m4/open-repository-proof`.
+2. Open `src/factory-line.athena`.
+3. Reveal `Graphical View` and `Semantic SCM`.
+4. Use the cabinet graph to prove the supported `connect-ports` semantic mutation path.
+5. Drag a supported cabinet placement target to prove the governed projection mutation path.
+6. Click changed subjects from source, graph, or semantic SCM and confirm reveal coherence across all three surfaces.
+
+Important current boundary:
+
+- graph semantic mutation and graph projection mutation are real accepted paths
+- source-originated mutation remains preview-first evaluation plus shared review and reveal coherence
+
+Focused guides:
+
+- [`docs/usages/m8-proof-usage.md`](m8-proof-usage.md)
+- [`_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md)
+- [`_bmad-output/implementation-artifacts/m8/m8-retrospective-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m8/m8-retrospective-2026-07-11.md)
 
 ### M4 Theia Desktop Shell
 
@@ -786,6 +887,7 @@ Still deferred:
 - broader downstream target adapters such as `QElectroTech`, `EPLAN`, `FreeCAD`, or `OpenUSD`
 - a full governed knowledge compiler as a separate first-class subsystem
 - graphical semantic-history review and interactive semantic SCM E2E automation
+- broader source apply or persist behavior beyond the current M8 preview-first source path
 
 ## Practical Reading Order
 
@@ -803,16 +905,17 @@ If you want the current implementation in the right order, read:
 10. [`docs/usages/m5-proof-usage.md`](m5-proof-usage.md)
 11. [`docs/usages/m6-proof-usage.md`](m6-proof-usage.md)
 12. [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
-13. [`_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md`](../../_bmad-output/implementation-artifacts/m7/milestone-summary-2026-07-10.md)
-14. [`docs/roadmap/athena-milestone-roadmap.md`](../roadmap/athena-milestone-roadmap.md)
-15. [`manifesto/docs/architecture/03-ir.md`](../../manifesto/docs/architecture/03-ir.md)
-16. [`manifesto/docs/architecture/05-plugin.md`](../../manifesto/docs/architecture/05-plugin.md)
-17. [`manifesto/docs/architecture/07-studio.md`](../../manifesto/docs/architecture/07-studio.md)
-18. [`manifesto/docs/architecture/09-layout-and-geometry.md`](../../manifesto/docs/architecture/09-layout-and-geometry.md)
+13. [`docs/usages/m8-proof-usage.md`](m8-proof-usage.md)
+14. [`_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m8/milestone-summary-2026-07-11.md)
+15. [`docs/roadmap/athena-milestone-roadmap.md`](../roadmap/athena-milestone-roadmap.md)
+16. [`manifesto/docs/architecture/03-ir.md`](../../manifesto/docs/architecture/03-ir.md)
+17. [`manifesto/docs/architecture/05-plugin.md`](../../manifesto/docs/architecture/05-plugin.md)
+18. [`manifesto/docs/architecture/07-studio.md`](../../manifesto/docs/architecture/07-studio.md)
+19. [`manifesto/docs/architecture/09-layout-and-geometry.md`](../../manifesto/docs/architecture/09-layout-and-geometry.md)
 
 ## Bottom Line
 
-Athena has now completed the first eight implementation phases that matter most to EngineeringOS:
+Athena has now completed the first nine implementation phases that matter most to EngineeringOS:
 
 - M0 proved that semantic engineering can be compiled from authored DSL into canonical `Engineering IR` and deterministic downstream artifacts.
 - M1 proved that the same semantic core can be hosted by runtime, inspected as graph, changed through commands, and extended by plugins without giving up canonical ownership.
@@ -822,6 +925,7 @@ Athena has now completed the first eight implementation phases that matter most 
 - M5 proved that Athena can freeze repository/package meaning through canonical manifest and lock contracts, resolve deterministic local-first package graphs, host one runtime-owned `RepositoryGraphSession`, and surface package-aware operation inside the Athena IDE without moving semantic ownership into the frontend.
 - M6 proved that Athena can understand repository change semantically through VCS-neutral baselines, deterministic diff/review/commit/history flows, and a current professional IDE surface for review, commit preparation, package evolution, and release relevance.
 - M7 proved that Athena can keep graphical projection downstream of semantic authority through a dedicated projection model, runtime-owned projection sessions, a translation-only graph adapter, and a graph-first professional workbench inside the existing Athena shell.
+- M8 proved that Athena can unify source and graph under one runtime-owned mutation model, keep graph edits downstream of Athena command meaning, and preserve shared review and reveal coherence across source, graph, and semantic SCM.
 
 That means Athena now embodies the manifesto's central thesis more completely than before:
 

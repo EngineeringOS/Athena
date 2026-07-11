@@ -25,6 +25,10 @@ import {
     buildAthenaSourceMutationRequest,
     type AthenaSourceMutationPayload
 } from './athena-source-mutation-protocol';
+import type {
+    AthenaGraphCommandIntentParams,
+    AthenaGraphCommandIntentPayload
+} from './athena-graph-command-intent-protocol';
 import { toAthenaBackendUrl } from './athena-backend-endpoint';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 
@@ -408,6 +412,11 @@ export type {
     AthenaSourceMutationTextDocument
 } from './athena-source-mutation-protocol';
 
+export type {
+    AthenaGraphCommandIntentParams,
+    AthenaGraphCommandIntentPayload
+} from './athena-graph-command-intent-protocol';
+
 @injectable()
 export class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
     protected static readonly MARKER_OWNER = 'athena-lsp';
@@ -762,6 +771,17 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         const model = this.currentAthenaEditorModel();
         return this.sendLanguageRequest<AthenaProjectionCommandPayload>(
             'athena/projectionCommand',
+            params,
+            model,
+        );
+    }
+
+    async requestGraphCommandIntent(
+        params: AthenaGraphCommandIntentParams
+    ): Promise<AthenaGraphCommandIntentPayload | undefined> {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest<AthenaGraphCommandIntentPayload>(
+            'athena/graphCommandIntent',
             params,
             model,
         );

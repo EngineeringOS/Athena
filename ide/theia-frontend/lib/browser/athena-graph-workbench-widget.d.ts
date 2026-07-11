@@ -3,13 +3,31 @@ import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { DisposableCollection } from '@theia/core/lib/common/disposable';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { AthenaGraphAdapterService } from './athena-graph-adapter-service';
+import { type AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
 import { AthenaGraphViewportSize, AthenaGraphViewportTransform, buildAthenaGraphWorkbenchModel } from './athena-graph-workbench-model';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
+import { type AthenaActiveSemanticSelection } from './athena-semantic-selection-model';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 type AthenaGraphPanState = {
     pointerId: number;
     lastClientX: number;
     lastClientY: number;
+};
+type AthenaGraphNodeDragState = {
+    pointerId: number;
+    semanticId: string;
+    subjectKind: 'component';
+    originX: number;
+    originY: number;
+    currentX: number;
+    currentY: number;
+    startClientX: number;
+    startClientY: number;
+    moved: boolean;
+};
+type AthenaGraphPortConnectSource = {
+    semanticId: string;
+    label: string;
 };
 /** Graph-first Athena workbench surface with a pannable and zoomable renderer viewport. */
 export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
@@ -30,8 +48,14 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected viewportSize: AthenaGraphViewportSize;
     protected viewportTransform: AthenaGraphViewportTransform;
     protected panState: AthenaGraphPanState | undefined;
+    protected dragState: AthenaGraphNodeDragState | undefined;
     protected pendingAutoFit: boolean;
     protected overlayPanelExpanded: boolean;
+    protected lastGraphCommandIntent: AthenaGraphCommandIntentPayload | undefined;
+    protected connectPortsArmed: boolean;
+    protected connectPortsSource: AthenaGraphPortConnectSource | undefined;
+    protected connectPortsPending: boolean;
+    protected revealingSelectionSemanticId: string | undefined;
     protected init(): void;
     protected bindCurrentEditor(widget: EditorWidget | undefined): void;
     protected isAthenaEditor(widget: EditorWidget | undefined): widget is EditorWidget;
@@ -44,7 +68,9 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
         displayName: string;
         description: string;
     }): string;
+    protected connectPortsButtonTitle(): string;
     protected toggleOverlayPanel(): void;
+    protected toggleConnectPortsMode(): void;
     protected statusIconClass(statusTone: ReturnType<typeof buildAthenaGraphWorkbenchModel>['statusTone']): string;
     protected buildStageStyle(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.CSSProperties;
     protected bindViewportElement: (element: HTMLDivElement | null) => void;
@@ -52,6 +78,7 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected fitViewportToDiagram(): void;
     protected fitViewportToDiagramIfPossible(): void;
     protected resetZoom(): void;
+    protected graphNodeTransform(nodeId: string): string | undefined;
     protected stepZoom(multiplier: number): void;
     protected getViewportCenterPoint(): {
         x: number;
@@ -65,9 +92,17 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected handleViewportPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
     protected handleViewportPointerEnd: (event: React.PointerEvent<HTMLDivElement>) => void;
     protected isInteractiveTarget(target: EventTarget | null): boolean;
-    protected handleGraphElementKeyDown(event: React.KeyboardEvent<SVGGElement>, semanticId: string): void;
+    protected handleGraphElementKeyDown(event: React.KeyboardEvent<SVGGElement>, semanticId: string, kind: 'component' | 'label', label: string): Promise<void> | void;
+    protected handleNodeClick(event: React.MouseEvent<SVGGElement>, semanticId: string, kind: 'component' | 'label', label: string): Promise<void> | void;
+    protected handleNodeSelection(semanticId: string, kind: 'component' | 'label', label: string): Promise<void>;
+    protected isConnectablePortNode(semanticId: string, kind: 'component' | 'label'): boolean;
+    protected handleConnectablePortSelection(semanticId: string, label: string): Promise<void>;
+    protected handleComponentPointerDown(event: React.PointerEvent<SVGGElement>, semanticId: string, x: number, y: number): void;
     protected reconcileTransientSelection(diagram: Awaited<ReturnType<AthenaGraphAdapterService['requestDiagram']>>): void;
     protected switchActiveView(viewId: string): Promise<void>;
+    protected submitPlacementIntent(dragState: AthenaGraphNodeDragState): Promise<void>;
+    protected submitConnectPortsIntent(sourceSemanticId: string, targetSemanticId: string): Promise<void>;
+    protected handleSemanticSelectionChanged(selection: AthenaActiveSemanticSelection | undefined, diagramOverride?: Awaited<ReturnType<AthenaGraphAdapterService['requestDiagram']>>): Promise<void>;
 }
 export {};
 //# sourceMappingURL=athena-graph-workbench-widget.d.ts.map

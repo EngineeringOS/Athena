@@ -7,6 +7,7 @@ import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
 import { type AthenaSourceMutationPayload } from './athena-source-mutation-protocol';
+import type { AthenaGraphCommandIntentParams, AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 type AthenaTextDocumentPositionParams = {
     textDocument: {
@@ -332,6 +333,7 @@ export type AthenaProjectionCommandPayload = {
     session?: AthenaProjectionSessionPayload;
 };
 export type { AthenaMutationValidationFeedbackPayload, AthenaProjectionRefreshConsequencePayload, AthenaSemanticDiffEntryPayload, AthenaSemanticDiffInspectionPayload, AthenaSemanticHistoryConsequencePayload, AthenaSourceMutationParams, AthenaSourceMutationTextDocument } from './athena-source-mutation-protocol';
+export type { AthenaGraphCommandIntentParams, AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
 export declare class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
     protected static readonly MARKER_OWNER = "athena-lsp";
     protected readonly editorManager: EditorManager;
@@ -365,6 +367,7 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
     requestRepositoryGraphSession(): Promise<AthenaRepositoryGraphSessionPayload | undefined>;
     requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined>;
     requestProjectionCommand(params: AthenaProjectionCommandParams): Promise<AthenaProjectionCommandPayload | undefined>;
+    requestGraphCommandIntent(params: AthenaGraphCommandIntentParams): Promise<AthenaGraphCommandIntentPayload | undefined>;
     requestSemanticScmState(params: AthenaSemanticScmStateParams): Promise<AthenaSemanticScmStatePayload | undefined>;
     requestSemanticHistoryState(params: AthenaSemanticHistoryStateParams): Promise<AthenaSemanticHistoryStatePayload | undefined>;
     protected sendLanguageRequest<T>(method: string, params: unknown, model?: monaco.editor.ITextModel): Promise<T | undefined>;

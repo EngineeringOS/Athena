@@ -17,6 +17,7 @@ export declare class AthenaSemanticSelectionService implements FrontendApplicati
     protected decorationIds: string[];
     protected refreshHandle: number | undefined;
     protected activeRepositoryRoot: string | undefined;
+    protected suppressEditorSelectionSync: boolean;
     get selection(): AthenaActiveSemanticSelection | undefined;
     get onDidChangeSelection(): import("@theia/core").Event<AthenaActiveSemanticSelection>;
     onStart(_app: FrontendApplication): Promise<void>;
@@ -26,7 +27,7 @@ export declare class AthenaSemanticSelectionService implements FrontendApplicati
     protected scheduleSelectionRefresh(): void;
     protected refreshSelectionFromCurrentEditor(): Promise<void>;
     protected resolveSelection(semanticId: string): Promise<AthenaActiveSemanticSelection | undefined>;
-    protected setSelection(selection: AthenaActiveSemanticSelection | undefined): void;
+    protected setSelection(selection: AthenaActiveSemanticSelection | undefined, applyToEditor?: boolean): void;
     protected applySelectionToCurrentEditor(selection: AthenaActiveSemanticSelection | undefined): void;
     protected clearDecorations(): void;
     protected isAthenaEditor(widget: EditorWidget | undefined): widget is EditorWidget;

@@ -155,6 +155,53 @@ class AthenaRuntimeProjectionSessionTest {
     }
 
     @Test
+    fun `accepted cabinet placement mutation refreshes projection state without changing canonical semantics`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+        val baselineDocument = assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document
+        val baselineSession = context.projectProjectionSession()
+        val baselineReady = assertIs<AthenaRuntimeProjectionReadySnapshot>(baselineSession.activeProjection)
+        val plc = baselineReady.scene.components.first { component -> component.semanticId == "component:PLC1" }
+        val plcPortLabel = baselineReady.scene.labels.first { label -> label.semanticId == "port:PLC1.out" }
+        val baselineConnection = baselineReady.scene.connections.single()
+
+        val result = context.graphCommandIntentRuntime().submit(
+            context = context,
+            intent = AthenaAdjustLayoutPlacementIntent(
+                viewId = "cabinet",
+                target = AthenaGraphCommandTarget(
+                    semanticId = "component:PLC1",
+                    subjectKind = AthenaGraphCommandSubjectKind.COMPONENT,
+                ),
+                requestedPlacement = AthenaGraphPlacement(
+                    x = plc.x + 48,
+                    y = plc.y + 24,
+                ),
+            ),
+        )
+
+        assertIs<AthenaGraphCommandIntentAccepted>(result)
+        val refreshedReady = assertIs<AthenaRuntimeProjectionReadySnapshot>(context.projectProjectionSession().activeProjection)
+        val movedPlc = refreshedReady.scene.components.first { component -> component.semanticId == "component:PLC1" }
+        val movedPortLabel = refreshedReady.scene.labels.first { label -> label.semanticId == "port:PLC1.out" }
+        val movedConnection = refreshedReady.scene.connections.single()
+
+        assertEquals(plc.x + 48, movedPlc.x)
+        assertEquals(plc.y + 24, movedPlc.y)
+        assertEquals(plcPortLabel.x + 48, movedPortLabel.x)
+        assertEquals(plcPortLabel.y + 24, movedPortLabel.y)
+        assertEquals(baselineConnection.x1 + 48, movedConnection.x1)
+        assertEquals(baselineConnection.y1 + 24, movedConnection.y1)
+        assertEquals(baselineConnection.x2, movedConnection.x2)
+        assertEquals(baselineConnection.y2, movedConnection.y2)
+        assertEquals(baselineDocument, assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document)
+    }
+
+    @Test
     fun `unsupported active view ids are rejected explicitly`() {
         val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
         val runtime = AthenaRuntime()

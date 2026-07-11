@@ -95,6 +95,7 @@ data class AthenaSourceMutationPayload(
     val validationFeedback: List<AthenaMutationValidationFeedbackPayload> = emptyList(),
     val reason: String? = null,
     val inspection: AthenaSemanticDiffInspectionPayload? = null,
+    val semanticReview: AthenaSemanticMutationReviewPayload? = null,
 )
 
 internal fun AthenaSourceMutationResult.toPayload(
@@ -112,6 +113,7 @@ internal fun AthenaSourceMutationResult.toPayload(
             outcome = outcome.toTransportValue(),
             changedSemanticIds = changedSemanticIds.sorted(),
             inspection = inspection.toPayload(),
+            semanticReview = semanticReview?.toPayload(),
         )
 
         is AthenaSourceMutationRejected -> AthenaSourceMutationPayload(
@@ -166,7 +168,7 @@ internal fun unavailableSourceMutationPayload(
     )
 }
 
-private fun AthenaSemanticDiffInspection.toPayload(): AthenaSemanticDiffInspectionPayload {
+internal fun AthenaSemanticDiffInspection.toPayload(): AthenaSemanticDiffInspectionPayload {
     return AthenaSemanticDiffInspectionPayload(
         projectName = projectName,
         source = source.toTransportValue(),

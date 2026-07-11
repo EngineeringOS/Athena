@@ -331,6 +331,10 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         const model = this.currentAthenaEditorModel();
         return this.sendLanguageRequest('athena/projectionCommand', params, model);
     }
+    async requestGraphCommandIntent(params) {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest('athena/graphCommandIntent', params, model);
+    }
     async requestSemanticScmState(params) {
         return this.sendLanguageRequest('athena/semanticScmState', params);
     }
