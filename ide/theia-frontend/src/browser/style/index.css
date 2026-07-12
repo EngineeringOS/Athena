@@ -606,6 +606,128 @@
     margin-top: 12px;
 }
 
+.athena-ai-reasoning__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.athena-ai-reasoning__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--athena-workbench-border-strong);
+    border-radius: var(--athena-workbench-radius);
+    background: #242c39;
+    color: #edf2fb;
+    cursor: pointer;
+    font: inherit;
+}
+
+.athena-ai-reasoning__action:hover {
+    background: #2b3545;
+}
+
+.athena-ai-reasoning__action:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.athena-ai-reasoning__action--secondary {
+    background: #1f2632;
+}
+
+.athena-ai-reasoning__proposal-list,
+.athena-ai-reasoning__evidence-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.athena-ai-reasoning__proposal {
+    padding: 8px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.athena-ai-reasoning__proposal:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.athena-ai-reasoning__proposal-header,
+.athena-ai-reasoning__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.athena-ai-reasoning__proposal-header {
+    margin-bottom: 6px;
+}
+
+.athena-ai-reasoning__meta {
+    color: var(--athena-workbench-muted);
+    font-size: 11px;
+    margin-bottom: 6px;
+}
+
+.athena-ai-reasoning__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border: 1px solid var(--athena-workbench-border-strong);
+    border-radius: var(--athena-workbench-radius);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.athena-ai-reasoning__status--accepted {
+    color: var(--athena-workbench-success);
+}
+
+.athena-ai-reasoning__status--dismissed,
+.athena-ai-reasoning__status--unavailable {
+    color: var(--athena-workbench-warning);
+}
+
+.athena-ai-reasoning__status--unresolved {
+    color: #dfe7f7;
+}
+
+.athena-ai-reasoning__proposal p {
+    margin: 0 0 8px;
+    color: var(--athena-workbench-text);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.athena-ai-reasoning__evidence-list li {
+    min-height: var(--athena-workbench-row-min-height);
+    padding: 5px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--athena-workbench-muted);
+}
+
+.athena-ai-reasoning__evidence-list li:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.athena-ai-reasoning__evidence-list strong {
+    color: #eef3fb;
+    font-size: 11px;
+    margin-right: 6px;
+}
+
 .athena-repository-graph__item--diagnostic code {
     color: #ffe4c1;
 }

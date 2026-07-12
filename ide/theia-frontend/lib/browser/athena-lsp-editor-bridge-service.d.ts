@@ -224,6 +224,48 @@ export type AthenaSemanticHistoryStatePayload = {
     diagnostics: AthenaSemanticScmDiagnosticPayload[];
     history?: AthenaSemanticHistoryPayload;
 };
+export type AthenaAiReasoningRequestParams = {
+    requestCategory: 'diagnostic-explanation' | 'impact-summary' | 'next-check';
+    subjectSemanticIds?: string[];
+    baseline?: AthenaSemanticScmStateParams;
+};
+export type AthenaAiReasoningEvidencePayload = {
+    kind: string;
+    referenceId: string;
+    summary: string;
+};
+export type AthenaAiReasoningProposalPayload = {
+    proposalId: string;
+    proposalCategory: string;
+    providerStatus: string;
+    decisionState: string;
+    summary: string;
+    response: string;
+    providerId?: string;
+    subjectSemanticIds: string[];
+    evidence: AthenaAiReasoningEvidencePayload[];
+};
+export type AthenaAiReasoningSessionPayload = {
+    sessionId: string;
+    requestCategory: string;
+    providerStatus: string;
+    providerId?: string;
+    subjectSemanticIds: string[];
+    proposalId: string;
+    semanticPath: string;
+};
+export type AthenaAiReasoningSubmissionPayload = {
+    session: AthenaAiReasoningSessionPayload;
+    proposal: AthenaAiReasoningProposalPayload;
+};
+export type AthenaAiReasoningStatePayload = {
+    sessions: AthenaAiReasoningSessionPayload[];
+    proposals: AthenaAiReasoningProposalPayload[];
+};
+export type AthenaAiReasoningDecisionParams = {
+    proposalId: string;
+    decision: 'accepted' | 'dismissed';
+};
 export type AthenaRepositoryGraphSessionPayload = {
     repositoryRoot: string;
     manifestPath: string;
@@ -404,6 +446,9 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
     requestGraphCommandIntent(params: AthenaGraphCommandIntentParams): Promise<AthenaGraphCommandIntentPayload | undefined>;
     requestSemanticScmState(params: AthenaSemanticScmStateParams): Promise<AthenaSemanticScmStatePayload | undefined>;
     requestSemanticHistoryState(params: AthenaSemanticHistoryStateParams): Promise<AthenaSemanticHistoryStatePayload | undefined>;
+    requestAiReasoning(params: AthenaAiReasoningRequestParams): Promise<AthenaAiReasoningSubmissionPayload | undefined>;
+    requestAiReasoningState(): Promise<AthenaAiReasoningStatePayload | undefined>;
+    requestAiReasoningDecision(params: AthenaAiReasoningDecisionParams): Promise<AthenaAiReasoningProposalPayload | undefined>;
     protected sendLanguageRequest<T>(method: string, params: unknown, model?: monaco.editor.ITextModel): Promise<T | undefined>;
     protected toTextDocumentPositionParams(model: monaco.editor.ITextModel, position: monaco.Position): AthenaTextDocumentPositionParams;
     protected toMonacoCompletion(item: CompletionItem, model: monaco.editor.ITextModel, position: monaco.Position): monaco.languages.CompletionItem;

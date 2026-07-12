@@ -9,5 +9,8 @@ module.exports = Promise.resolve().then(() => {
     container.load(require('@theia/editor/lib/browser/editor-frontend-module').default);
     container.load(require('@theia/filesystem/lib/browser/filesystem-frontend-module').default);
     container.load(require('@theia/monaco/lib/browser/monaco-frontend-module').default);
+    container.load(require('@theia/ai-chat-ui/lib/browser/ai-chat-ui-frontend-module').default);
     container.load(require('@theia/terminal/lib/browser/terminal-frontend-module').default);
+    container.load(require('@theia/debug/lib/browser/debug-frontend-module').default);
+    container.load(require('@theia/ai-ide/lib/browser/frontend-module').default);
 });

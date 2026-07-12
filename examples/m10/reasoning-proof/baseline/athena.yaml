@@ -1,0 +1,4 @@
+primaryPackage:
+  name: com.engineeringood.m10-proof
+  version: 0.1.0
+  sourceRoot: src

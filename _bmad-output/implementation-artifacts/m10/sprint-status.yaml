@@ -1,0 +1,59 @@
+# generated: 2026-07-12T11:50:12.8355449+08:00
+# last_updated: 2026-07-12T14:05:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m10
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M10 milestone sequence sourced from `epics-M10-2026-07-12.md`.
+# - M10 proves AI-assisted engineering reasoning above governed M9 knowledge outputs.
+
+generated: 2026-07-12T11:50:12.8355449+08:00
+last_updated: 2026-07-12T14:05:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m10
+
+development_status:
+  epic-1: done
+  1-1-publish-governed-ai-reasoning-contracts: done
+  1-2-derive-deterministic-reasoning-contexts-from-governed-semantic-outputs: done
+  1-3-host-provider-neutral-reasoning-sessions-and-typed-outcome-states: done
+  1-4-expose-reasoning-requests-through-athena-lsp-as-sole-ide-boundary: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-generate-grounded-diagnostic-explanation-proposals: done
+  2-2-generate-engineering-impact-summary-proposals: done
+  2-3-generate-review-ready-next-check-proposals: done
+  2-4-preserve-cited-fact-audit-trails-across-reasoning-proofs: done
+  epic-2-retrospective: done
+  epic-3: done
+  3-1-integrate-theia-ai-foundation-into-athena-product-shell: done
+  3-2-surface-reasoning-actions-in-semantic-inspection-and-review-panels: done
+  3-3-preserve-explicit-proposal-decision-state-in-existing-athena-workbench-seams: done
+  epic-3-retrospective: done
+  epic-4: done
+  4-1-publish-m10-proof-corpus-and-deterministic-mock-provider-verification-path: done
+  4-2-document-provider-configuration-safety-boundaries-and-operator-usage: done
+  epic-4-retrospective: done

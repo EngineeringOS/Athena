@@ -79,6 +79,10 @@ class AthenaServiceRegistry(
     }
     private val commandRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaCommandRuntimeService() }
     private val aiProposalRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaAiProposalRuntimeService() }
+    private val aiReasoningRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaAiReasoningRuntimeService() }
+    private val aiReasoningSessionRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) {
+        AthenaAiReasoningSessionRuntimeService()
+    }
 
     /** Resolves the shared compiler capability for the current runtime. */
     fun compiler(): AthenaCompiler = compilerInstance
@@ -124,6 +128,12 @@ class AthenaServiceRegistry(
 
     /** Resolves the shared optional AI proposal capability for the current runtime. */
     fun aiProposalRuntime(): AthenaAiProposalRuntimeService = aiProposalRuntimeInstance
+
+    /** Resolves the shared optional AI reasoning capability for the current runtime. */
+    fun aiReasoningRuntime(): AthenaAiReasoningRuntimeService = aiReasoningRuntimeInstance
+
+    /** Resolves the shared optional AI reasoning session capability for the current runtime. */
+    fun aiReasoningSessions(): AthenaAiReasoningSessionRuntimeService = aiReasoningSessionRuntimeInstance
 
     /** Resolves shared plugin-related runtime services without exposing compiler-owned plugin internals. */
     fun pluginRuntimeServices(): AthenaPluginRuntimeServices = pluginRuntimeServicesInstance

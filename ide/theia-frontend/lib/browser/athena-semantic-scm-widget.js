@@ -62,9 +62,12 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
     semanticSelectionService;
     semanticScmState;
     semanticHistoryState;
+    reasoningState;
     errorMessage;
     historyErrorMessage;
+    reasoningErrorMessage;
     loading = false;
+    reasoningLoading = false;
     refreshHandle;
     baselineLabel = 'Baseline';
     baselineLocator = '../baseline';
@@ -102,8 +105,10 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
             this.loading = false;
             this.errorMessage = undefined;
             this.historyErrorMessage = undefined;
+            this.reasoningErrorMessage = undefined;
             this.semanticScmState = undefined;
             this.semanticHistoryState = undefined;
+            this.reasoningState = undefined;
             this.update();
             return;
         }
@@ -111,8 +116,10 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
             this.historyPackageName = sessionState.primaryPackageName;
         }
         this.loading = true;
+        this.reasoningLoading = true;
         this.errorMessage = undefined;
         this.historyErrorMessage = undefined;
+        this.reasoningErrorMessage = undefined;
         this.update();
         const historyPackageName = this.historyPackageName.trim();
         const historyBaselines = this.historyBaselines();
@@ -126,6 +133,7 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
                 metadata: {}
             })
         ]);
+        const reasoningRequest = this.lspEditorBridgeService.requestAiReasoningState();
         const historyRequests = historyPackageName.length > 0
             ? await Promise.allSettled([
                 this.lspEditorBridgeService.requestSemanticHistoryState({
@@ -148,6 +156,14 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
                 ? semanticScmResult.reason.message
                 : String(semanticScmResult.reason);
         }
+        try {
+            this.reasoningState = await reasoningRequest;
+            this.reasoningErrorMessage = undefined;
+        }
+        catch (error) {
+            this.reasoningState = undefined;
+            this.reasoningErrorMessage = error instanceof Error ? error.message : String(error);
+        }
         if (historyPackageName.length === 0) {
             this.semanticHistoryState = undefined;
             this.historyErrorMessage = 'No package is available yet for semantic history inspection.';
@@ -167,8 +183,78 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
         }
         if (this.repositorySessionService.state.repositoryRoot === currentRepositoryRoot) {
             this.loading = false;
+            this.reasoningLoading = false;
             this.update();
         }
+    }
+    async requestImpactSummary() {
+        await this.requestReasoning('impact-summary');
+    }
+    async requestNextCheck() {
+        await this.requestReasoning('next-check');
+    }
+    async requestReasoning(requestCategory) {
+        this.reasoningLoading = true;
+        this.reasoningErrorMessage = undefined;
+        this.update();
+        try {
+            await this.lspEditorBridgeService.requestAiReasoning({
+                requestCategory,
+                subjectSemanticIds: this.currentReasoningSubjectIds(),
+                baseline: {
+                    adapterId: AthenaSemanticScmWidget_1.DEFAULT_ADAPTER_ID,
+                    locator: this.baselineLocator,
+                    locatorLabel: this.baselineLabel,
+                    baselineId: this.baselineId(),
+                    baselineLabel: this.baselineLabel,
+                    metadata: {}
+                }
+            });
+            this.reasoningState = await this.lspEditorBridgeService.requestAiReasoningState();
+        }
+        catch (error) {
+            this.reasoningErrorMessage = error instanceof Error ? error.message : String(error);
+        }
+        finally {
+            this.reasoningLoading = false;
+            this.update();
+        }
+    }
+    async applyReasoningDecision(proposalId, decision) {
+        this.reasoningLoading = true;
+        this.reasoningErrorMessage = undefined;
+        this.update();
+        try {
+            await this.lspEditorBridgeService.requestAiReasoningDecision({
+                proposalId,
+                decision
+            });
+            this.reasoningState = await this.lspEditorBridgeService.requestAiReasoningState();
+        }
+        catch (error) {
+            this.reasoningErrorMessage = error instanceof Error ? error.message : String(error);
+        }
+        finally {
+            this.reasoningLoading = false;
+            this.update();
+        }
+    }
+    currentReasoningSubjectIds() {
+        const selectedSemanticId = this.semanticSelectionService.selection?.semanticId;
+        if (selectedSemanticId) {
+            return [selectedSemanticId];
+        }
+        const firstReviewSubject = this.semanticScmState?.review?.entries
+            .map(entry => entry.subjectIdentity)
+            .find((value) => !!value);
+        return firstReviewSubject ? [firstReviewSubject] : [];
+    }
+    reasoningProposals(...categories) {
+        const selectedSemanticId = this.semanticSelectionService.selection?.semanticId;
+        return (this.reasoningState?.proposals ?? [])
+            .filter(proposal => categories.includes(proposal.proposalCategory))
+            .filter(proposal => !selectedSemanticId || proposal.subjectSemanticIds.includes(selectedSemanticId))
+            .sort((left, right) => right.proposalId.localeCompare(left.proposalId));
     }
     baselineId() {
         const normalizedLabel = this.baselineLabel
@@ -343,6 +429,17 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
                             review.enrichments.length === 0
                                 ? React.createElement("p", null, "No hosted review enrichments were added for this semantic review.")
                                 : React.createElement("ul", { className: 'athena-semantic-scm__list' }, review.enrichments.map(enrichment => this.renderReviewEnrichment(enrichment))))),
+            React.createElement("section", { className: 'athena-semantic-scm__section' },
+                React.createElement("h3", null, "AI review guidance"),
+                React.createElement("div", { className: 'athena-ai-reasoning__actions' },
+                    React.createElement("button", { className: 'athena-ai-reasoning__action', type: 'button', onClick: () => void this.requestImpactSummary(), disabled: this.reasoningLoading || !review }, this.reasoningLoading ? 'Running...' : 'Summarize impact'),
+                    React.createElement("button", { className: 'athena-ai-reasoning__action athena-ai-reasoning__action--secondary', type: 'button', onClick: () => void this.requestNextCheck(), disabled: this.reasoningLoading || !review }, "Suggest next checks")),
+                this.reasoningErrorMessage
+                    ? React.createElement("p", null, this.reasoningErrorMessage)
+                    : undefined,
+                this.reasoningProposals('impact-summary', 'next-check').length === 0
+                    ? React.createElement("p", null, "No AI review guidance proposal has been recorded yet for the current focus.")
+                    : React.createElement("ul", { className: 'athena-ai-reasoning__proposal-list' }, this.reasoningProposals('impact-summary', 'next-check').map(proposal => this.renderReasoningProposal(proposal)))),
             React.createElement("section", { className: 'athena-semantic-scm__section' },
                 React.createElement("h3", null, "Commit preparation"),
                 !semanticScmState
@@ -536,6 +633,29 @@ let AthenaSemanticScmWidget = class AthenaSemanticScmWidget extends react_widget
     }
     isSelectedContext(carrier) {
         return (0, athena_semantic_selection_model_1.matchesSemanticScmContext)(carrier, this.semanticSelectionService.selection?.semanticId);
+    }
+    renderReasoningProposal(proposal) {
+        return React.createElement("li", { key: proposal.proposalId, className: 'athena-ai-reasoning__proposal' },
+            React.createElement("div", { className: 'athena-ai-reasoning__proposal-header' },
+                React.createElement("strong", null, proposal.summary),
+                React.createElement("span", { className: `athena-ai-reasoning__status athena-ai-reasoning__status--${proposal.decisionState}` }, proposal.decisionState)),
+            React.createElement("div", { className: 'athena-ai-reasoning__meta' },
+                React.createElement("span", null, proposal.proposalCategory),
+                React.createElement("span", null, proposal.providerStatus),
+                proposal.providerId ? React.createElement("span", null, proposal.providerId) : undefined,
+                React.createElement("code", null, proposal.proposalId)),
+            React.createElement("p", null, proposal.response),
+            React.createElement("ul", { className: 'athena-ai-reasoning__evidence-list' }, proposal.evidence.map(evidence => React.createElement("li", { key: `${proposal.proposalId}:${evidence.referenceId}` },
+                React.createElement("strong", null, evidence.kind),
+                " ",
+                React.createElement("code", null, evidence.referenceId),
+                " ",
+                evidence.summary))),
+            proposal.decisionState === 'unresolved'
+                ? React.createElement("div", { className: 'athena-ai-reasoning__actions' },
+                    React.createElement("button", { className: 'athena-ai-reasoning__action', type: 'button', onClick: () => void this.applyReasoningDecision(proposal.proposalId, 'accepted') }, "Accept"),
+                    React.createElement("button", { className: 'athena-ai-reasoning__action athena-ai-reasoning__action--secondary', type: 'button', onClick: () => void this.applyReasoningDecision(proposal.proposalId, 'dismissed') }, "Dismiss"))
+                : undefined);
     }
 };
 exports.AthenaSemanticScmWidget = AthenaSemanticScmWidget;

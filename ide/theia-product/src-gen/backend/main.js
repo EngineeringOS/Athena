@@ -59,8 +59,20 @@ globalThis.extensionInfo = [
         "version": "1.73.1"
     },
     {
-        "name": "@engineeringood/athena-theia-frontend",
-        "version": "0.0.1"
+        "name": "@theia/ai-core",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/process",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/file-search",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/ai-chat",
+        "version": "1.73.1"
     },
     {
         "name": "@theia/navigator",
@@ -79,23 +91,67 @@ globalThis.extensionInfo = [
         "version": "1.73.1"
     },
     {
+        "name": "@theia/ai-chat-ui",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/ai-mcp",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/terminal",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/ai-terminal",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/console",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/task",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/test",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/debug",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/scm",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/search-in-workspace",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/ai-ide",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@engineeringood/athena-theia-frontend",
+        "version": "0.0.1"
+    },
+    {
+        "name": "@theia/ai-ollama",
+        "version": "1.73.1"
+    },
+    {
+        "name": "@theia/ai-openai",
+        "version": "1.73.1"
+    },
+    {
         "name": "@theia/keymaps",
         "version": "1.73.1"
     },
     {
         "name": "@theia/messages",
-        "version": "1.73.1"
-    },
-    {
-        "name": "@theia/process",
-        "version": "1.73.1"
-    },
-    {
-        "name": "@theia/file-search",
-        "version": "1.73.1"
-    },
-    {
-        "name": "@theia/terminal",
         "version": "1.73.1"
     }
 ];

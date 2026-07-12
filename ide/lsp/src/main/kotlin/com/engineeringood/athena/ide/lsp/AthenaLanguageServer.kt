@@ -4,6 +4,8 @@ import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
+import com.engineeringood.athena.runtime.AthenaAiDeterministicProofProvider
+import com.engineeringood.athena.runtime.AthenaAiReasoningProvider
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
@@ -53,6 +55,7 @@ import kotlin.system.measureTimeMillis
  */
 class AthenaLanguageServer(
     private val sessionHost: AthenaLspSessionHost = AthenaLspSessionHost(),
+    private val aiReasoningProvider: AthenaAiReasoningProvider = AthenaAiDeterministicProofProvider(),
 ) : LanguageServer, LanguageClientAware {
     private var languageClient: LanguageClient? = null
     private var sessionSnapshot: AthenaLspSessionSnapshot? = null
@@ -379,6 +382,48 @@ class AthenaLanguageServer(
                     intent = intent,
                 )
                 .toPayload(semanticPath = semanticPath),
+        )
+    }
+
+    /**
+     * Routes one governed AI reasoning request through Athena LSP into runtime-owned reasoning sessions.
+     */
+    @JsonRequest("athena/aiReasoning")
+    fun aiReasoning(params: AthenaAiReasoningRequestParams): CompletableFuture<AthenaAiReasoningSubmissionPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.aiReasoningSessions()
+                .submit(
+                    context = activation.context,
+                    request = params.toRuntimeRequest(activation),
+                    provider = aiReasoningProvider,
+                )
+                .let { result -> result as com.engineeringood.athena.runtime.AthenaAiReasoningSessionSubmitted }
+                .toPayload(semanticPath = semanticPath),
+        )
+    }
+
+    /**
+     * Returns stored runtime-owned reasoning sessions and proposals through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/aiReasoningState")
+    fun aiReasoningState(): CompletableFuture<AthenaAiReasoningStatePayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.reasoningStatePayload(semanticPath),
+        )
+    }
+
+    /**
+     * Applies one explicit reasoning proposal decision through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/aiReasoningDecision")
+    fun aiReasoningDecision(params: AthenaAiReasoningDecisionParams): CompletableFuture<AthenaAiReasoningProposalPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        return CompletableFuture.completedFuture(
+            params.applyTo(activation).toPayload(),
         )
     }
 

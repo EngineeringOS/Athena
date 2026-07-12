@@ -15,9 +15,11 @@
 - 通过 Monaco provider 把 completion、document symbols、definition、references 桥接到 Athena LSP
 - 串行化文档同步，让重复编辑后的后续语言请求先等 Athena LSP 接收最新内容
 - editor-adjacent semantic inspection surfaces
+- 在 semantic inspection 与 semantic SCM panel 中增加 additive AI reasoning action 与 proposal-decision surface
 - 通过现有 Athena LSP bridge 消费 adapter-owned projection diagram 的第一个只读图形 workbench surface
 - 一条临时前端 semantic-selection seam，通过 canonical semantic id 同步 graph selection、source reveal、semantic inspection 与 semantic SCM highlighting
 - 一条受治理的 inspect-first 交互切片：active-view switching 走 Athena 自有 projection command，刷新后会丢弃陈旧的 transient selection
+- 复用 Theia AI foundation package 作为通用产品能力，但 Athena semantic truth 仍然保持在 `ide/lsp` 之后
 
 ## Boundary
 

@@ -15,9 +15,11 @@ English | [Chinese (Simplified)](README.zh-CN.md)
 - Monaco completion, document symbols, definition, and references providers bridged to Athena LSP
 - serialized document synchronization so repeated edits reach Athena LSP before follow-up language requests
 - editor-adjacent semantic inspection surfaces
+- additive AI reasoning actions and proposal-decision surfaces inside semantic inspection and semantic SCM panels
 - the first read-only graphical workbench surface that consumes adapter-owned projection diagrams through the existing Athena LSP bridge
 - one transient frontend semantic-selection seam that synchronizes graph selection, source reveal, semantic inspection, and semantic SCM highlighting through canonical semantic ids
 - one governed inspect-first interaction slice where active-view switching routes through Athena-owned projection commands and stale transient selection is discarded on refresh
+- reuse of Theia AI foundation packages for generic product capabilities while Athena semantic truth still stays behind `ide/lsp`
 
 ## Boundary
 

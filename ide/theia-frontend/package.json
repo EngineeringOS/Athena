@@ -6,6 +6,10 @@
   "license": "MIT",
   "dependencies": {
     "@engineeringood/athena-graph-glsp": "link:../../integrations/graph-glsp",
+    "@theia/ai-chat": "1.73.1",
+    "@theia/ai-chat-ui": "1.73.1",
+    "@theia/ai-core": "1.73.1",
+    "@theia/ai-ide": "1.73.1",
     "@theia/core": "1.73.1",
     "@theia/editor": "1.73.1",
     "@theia/filesystem": "1.73.1",

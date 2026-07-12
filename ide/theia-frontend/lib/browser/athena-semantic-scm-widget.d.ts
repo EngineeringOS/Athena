@@ -1,6 +1,6 @@
 import * as React from '@theia/core/shared/react';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
-import { AthenaLspEditorBridgeService, AthenaSemanticCommitEntryPayload, AthenaSemanticHistoryBaselineParams, AthenaSemanticHistoryEntryPayload, AthenaSemanticHistoryStatePayload, AthenaSemanticPackagePayload, AthenaSemanticReviewEntryPayload, AthenaSemanticReviewEnrichmentPayload, AthenaSemanticScmStatePayload, AthenaSemanticValidationMovementPayload } from './athena-lsp-editor-bridge-service';
+import { AthenaAiReasoningProposalPayload, AthenaAiReasoningStatePayload, AthenaLspEditorBridgeService, AthenaSemanticCommitEntryPayload, AthenaSemanticHistoryBaselineParams, AthenaSemanticHistoryEntryPayload, AthenaSemanticHistoryStatePayload, AthenaSemanticPackagePayload, AthenaSemanticReviewEntryPayload, AthenaSemanticReviewEnrichmentPayload, AthenaSemanticScmStatePayload, AthenaSemanticValidationMovementPayload } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 export declare class AthenaSemanticScmWidget extends ReactWidget {
@@ -12,9 +12,12 @@ export declare class AthenaSemanticScmWidget extends ReactWidget {
     protected readonly semanticSelectionService: AthenaSemanticSelectionService;
     protected semanticScmState: AthenaSemanticScmStatePayload | undefined;
     protected semanticHistoryState: AthenaSemanticHistoryStatePayload | undefined;
+    protected reasoningState: AthenaAiReasoningStatePayload | undefined;
     protected errorMessage: string | undefined;
     protected historyErrorMessage: string | undefined;
+    protected reasoningErrorMessage: string | undefined;
     protected loading: boolean;
+    protected reasoningLoading: boolean;
     protected refreshHandle: number | undefined;
     protected baselineLabel: string;
     protected baselineLocator: string;
@@ -23,6 +26,12 @@ export declare class AthenaSemanticScmWidget extends ReactWidget {
     protected init(): void;
     protected scheduleRefresh(): void;
     protected refreshSemanticScmState(): Promise<void>;
+    protected requestImpactSummary(): Promise<void>;
+    protected requestNextCheck(): Promise<void>;
+    protected requestReasoning(requestCategory: 'impact-summary' | 'next-check'): Promise<void>;
+    protected applyReasoningDecision(proposalId: string, decision: 'accepted' | 'dismissed'): Promise<void>;
+    protected currentReasoningSubjectIds(): string[];
+    protected reasoningProposals(...categories: string[]): AthenaAiReasoningProposalPayload[];
     protected baselineId(): string;
     protected historyBaselines(): AthenaSemanticHistoryBaselineParams[];
     protected historyBaselineId(label: string, locator: string, index: number): string;
@@ -44,5 +53,6 @@ export declare class AthenaSemanticScmWidget extends ReactWidget {
         subjectIdentity?: string;
         factReferences: AthenaSemanticReviewEntryPayload['factReferences'];
     }): boolean;
+    protected renderReasoningProposal(proposal: AthenaAiReasoningProposalPayload): React.ReactNode;
 }
 //# sourceMappingURL=athena-semantic-scm-widget.d.ts.map

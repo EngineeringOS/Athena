@@ -23,6 +23,8 @@ class AthenaExecutionContext(
     private var projectionMetadataState: AthenaProjectionMetadataState = AthenaProjectionMetadataState()
     private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
     private var aiProposalState: AthenaAiProposalState = AthenaAiProposalState()
+    private var aiReasoningProposalState: AthenaAiReasoningProposalState = AthenaAiReasoningProposalState()
+    private var aiReasoningSessionState: AthenaAiReasoningSessionState = AthenaAiReasoningSessionState()
     private var latestSemanticDiffInspection: AthenaSemanticDiffInspection? = null
 
     /** Resolves the runtime-owned compiler capability for the active project. */
@@ -48,6 +50,12 @@ class AthenaExecutionContext(
 
     /** Resolves the runtime-owned optional AI proposal capability for the active project. */
     fun aiProposalRuntime(): AthenaAiProposalRuntimeService = services.aiProposalRuntime()
+
+    /** Resolves the runtime-owned optional AI reasoning capability for the active project. */
+    fun aiReasoningRuntime(): AthenaAiReasoningRuntimeService = services.aiReasoningRuntime()
+
+    /** Resolves the runtime-owned AI reasoning session capability for the active project. */
+    fun aiReasoningSessions(): AthenaAiReasoningSessionRuntimeService = services.aiReasoningSessions()
 
     /** Resolves the runtime-owned hosted plugin services for the active project. */
     fun pluginRuntimeServices(): AthenaPluginRuntimeServices = services.pluginRuntimeServices()
@@ -182,6 +190,30 @@ class AthenaExecutionContext(
      */
     internal fun replaceAiProposalState(state: AthenaAiProposalState) {
         aiProposalState = state
+    }
+
+    /**
+     * Returns the current internal AI reasoning proposal state for runtime-owned reasoning services.
+     */
+    internal fun aiReasoningProposalState(): AthenaAiReasoningProposalState = aiReasoningProposalState
+
+    /**
+     * Replaces the internal AI reasoning proposal state after one runtime-owned reasoning transition.
+     */
+    internal fun replaceAiReasoningProposalState(state: AthenaAiReasoningProposalState) {
+        aiReasoningProposalState = state
+    }
+
+    /**
+     * Returns the current internal AI reasoning session state for runtime-owned reasoning orchestration.
+     */
+    internal fun aiReasoningSessionState(): AthenaAiReasoningSessionState = aiReasoningSessionState
+
+    /**
+     * Replaces the internal AI reasoning session state after one runtime-owned reasoning submission.
+     */
+    internal fun replaceAiReasoningSessionState(state: AthenaAiReasoningSessionState) {
+        aiReasoningSessionState = state
     }
 
     /**

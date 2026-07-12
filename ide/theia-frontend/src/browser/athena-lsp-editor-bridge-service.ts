@@ -280,6 +280,55 @@ export type AthenaSemanticHistoryStatePayload = {
     history?: AthenaSemanticHistoryPayload;
 };
 
+export type AthenaAiReasoningRequestParams = {
+    requestCategory: 'diagnostic-explanation' | 'impact-summary' | 'next-check';
+    subjectSemanticIds?: string[];
+    baseline?: AthenaSemanticScmStateParams;
+};
+
+export type AthenaAiReasoningEvidencePayload = {
+    kind: string;
+    referenceId: string;
+    summary: string;
+};
+
+export type AthenaAiReasoningProposalPayload = {
+    proposalId: string;
+    proposalCategory: string;
+    providerStatus: string;
+    decisionState: string;
+    summary: string;
+    response: string;
+    providerId?: string;
+    subjectSemanticIds: string[];
+    evidence: AthenaAiReasoningEvidencePayload[];
+};
+
+export type AthenaAiReasoningSessionPayload = {
+    sessionId: string;
+    requestCategory: string;
+    providerStatus: string;
+    providerId?: string;
+    subjectSemanticIds: string[];
+    proposalId: string;
+    semanticPath: string;
+};
+
+export type AthenaAiReasoningSubmissionPayload = {
+    session: AthenaAiReasoningSessionPayload;
+    proposal: AthenaAiReasoningProposalPayload;
+};
+
+export type AthenaAiReasoningStatePayload = {
+    sessions: AthenaAiReasoningSessionPayload[];
+    proposals: AthenaAiReasoningProposalPayload[];
+};
+
+export type AthenaAiReasoningDecisionParams = {
+    proposalId: string;
+    decision: 'accepted' | 'dismissed';
+};
+
 export type AthenaRepositoryGraphSessionPayload = {
     repositoryRoot: string;
     manifestPath: string;
@@ -839,6 +888,31 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     ): Promise<AthenaSemanticHistoryStatePayload | undefined> {
         return this.sendLanguageRequest<AthenaSemanticHistoryStatePayload>(
             'athena/semanticHistoryState',
+            params
+        );
+    }
+
+    async requestAiReasoning(
+        params: AthenaAiReasoningRequestParams
+    ): Promise<AthenaAiReasoningSubmissionPayload | undefined> {
+        return this.sendLanguageRequest<AthenaAiReasoningSubmissionPayload>(
+            'athena/aiReasoning',
+            params
+        );
+    }
+
+    async requestAiReasoningState(): Promise<AthenaAiReasoningStatePayload | undefined> {
+        return this.sendLanguageRequest<AthenaAiReasoningStatePayload>(
+            'athena/aiReasoningState',
+            {}
+        );
+    }
+
+    async requestAiReasoningDecision(
+        params: AthenaAiReasoningDecisionParams
+    ): Promise<AthenaAiReasoningProposalPayload | undefined> {
+        return this.sendLanguageRequest<AthenaAiReasoningProposalPayload>(
+            'athena/aiReasoningDecision',
             params
         );
     }

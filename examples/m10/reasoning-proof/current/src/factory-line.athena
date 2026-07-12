@@ -1,0 +1,12 @@
+system FactoryLine {
+  device M1 {
+    type Motor
+    power "9kw"
+    voltage "400V"
+    powerFactor "0.86"
+    efficiency "0.92"
+    breakerRatedCurrent "10A"
+    cableAllowedCurrent "12A"
+    relayRatedCurrent "13A"
+  }
+}

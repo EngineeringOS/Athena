@@ -2,7 +2,7 @@
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
-The `:kernel:runtime` module owns Athena's long-lived execution boundary. It manages workspace lifecycle, active project context, runtime service resolution, projection sessions, command execution, history, graph projection, hosted plugin lifecycle inspection and execution, and optional AI proposal review without becoming a second semantic authority.
+The `:kernel:runtime` module owns Athena's long-lived execution boundary. It manages workspace lifecycle, active project context, runtime service resolution, projection sessions, command execution, history, graph projection, hosted plugin lifecycle inspection and execution, optional AI command proposals, optional AI reasoning proposals, and provider-neutral AI reasoning sessions without becoming a second semantic authority.
 
 ## Responsibilities
 
@@ -20,9 +20,14 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 - Consume compiler-derived `:kernel:projection-model` documents as the primary graphical projection input.
 - Publish projection-family ids, sheet state, notation packs, and cross references through the same runtime-owned projection session.
 - Keep canonical runtime state aligned with `Engineering IR`.
-- Host command history, undo, redo, replay, diff inspection, and accepted AI proposal flow.
+- Host command history, undo, redo, replay, diff inspection, accepted AI command proposal flow, and stored AI reasoning proposal flow.
+- Host provider-neutral AI reasoning sessions above deterministic context assembly and below later provider transports.
 - Publish runtime-visible incremental refresh metadata after supported semantic mutations.
 - Publish additive engineering sufficiency diagnostics and impact consequences through existing runtime-owned mutation inspection surfaces.
+- Preserve typed AI reasoning context, evidence, proposal category, provider status, and decision state as runtime-owned audit data.
+- Assemble deterministic AI reasoning context packages from compiled knowledge outputs and governed review facts before any provider call occurs.
+- Submit governed AI reasoning requests through replaceable runtime-owned provider boundaries while preserving typed session outcome records.
+- Provide one deterministic proof provider for explanation, impact-summary, and next-check verification before live model dependence.
 
 ## Main Types
 
@@ -38,6 +43,13 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 - `AthenaSemanticHistoryStateService`
 - `AthenaRuntimeProjectionSession`
 - `AthenaCommandRuntimeService`
+- `AthenaAiProposalRuntimeService`
+- `AthenaAiReasoningRuntimeService`
+- `AthenaAiReasoningSessionRuntimeService`
+- `AthenaAiDeterministicProofProvider`
+- `AthenaAiReasoningContextRequest`
+- `AthenaAiReasoningSessionRequest`
+- `AthenaAiReasoningProvider`
 - `AthenaEngineeringGraphService`
 
 ## Dependencies
@@ -50,7 +62,7 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 
 ## Boundaries
 
-This module does not parse DSL source text directly, define the canonical IR schema, or own domain semantics. It owns runtime lifecycle and orchestration above those lower layers. Projection sessions remain runtime-owned state over compiler-derived `:kernel:projection-model` artifacts; switching views does not mutate canonical engineering semantics. Repeated references and cross references remain downstream projection evidence over canonical semantic ids; runtime transports them but does not become their semantic owner.
+This module does not parse DSL source text directly, define the canonical IR schema, or own domain semantics. It owns runtime lifecycle and orchestration above those lower layers. Projection sessions remain runtime-owned state over compiler-derived `:kernel:projection-model` artifacts; switching views does not mutate canonical engineering semantics. Repeated references and cross references remain downstream projection evidence over canonical semantic ids; runtime transports them but does not become their semantic owner. AI reasoning proposals remain typed runtime-owned audit records over governed semantic evidence; they do not become semantic truth or direct mutation authority. AI reasoning sessions stay runtime-owned orchestration records that sit above deterministic context assembly and below replaceable provider transports.
 
 ## Incremental Refresh Boundary
 

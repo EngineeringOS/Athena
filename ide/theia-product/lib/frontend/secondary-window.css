@@ -17417,6 +17417,2168 @@ button.secondary[disabled],
   margin-left: 0;
 }
 
+/* ../node_modules/@theia/ai-chat-ui/src/browser/style/index.css */
+.chat-view-widget {
+  display: flex;
+  flex-direction: column;
+}
+.chat-tree-view-widget {
+  flex: 1;
+}
+.chat-input-widget > .ps__rail-x,
+.chat-input-widget > .ps__rail-y {
+  display: none !important;
+}
+.theia-ChatNode {
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 6px 20px;
+  user-select: text;
+  -webkit-user-select: text;
+  border-bottom: 1px solid var(--theia-sideBarSectionHeader-border);
+  overflow-wrap: break-word;
+}
+div:last-child > .theia-ChatNode {
+  border: none;
+}
+.theia-ChatNodeHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  height: 24px;
+  gap: 8px;
+  width: 100%;
+}
+.theia-ChatNodeHeader .theia-AgentAvatar {
+  pointer-events: none;
+  user-select: none;
+  font-size: 20px;
+}
+.theia-ChatNodeHeader .theia-AgentLabel {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+}
+.theia-ChatNodeHeader .theia-ChatContentInProgress {
+  color: var(--theia-disabledForeground);
+  white-space: nowrap;
+}
+.theia-ChatNodeHeader .theia-ChatContentInProgress-Cancel {
+  position: absolute;
+  z-index: 999;
+  right: 20px;
+}
+@keyframes dots {
+  0%, 20% {
+    content: "";
+  }
+  40% {
+    content: ".";
+  }
+  60% {
+    content: "..";
+  }
+  80%, 100% {
+    content: "...";
+  }
+}
+.theia-ChatNodeHeader .theia-ChatContentInProgress::after {
+  content: "";
+  animation: dots 1s steps(1, end) infinite;
+  display: inline-block;
+  width: 3ch;
+  text-align: left;
+}
+.theia-ChatNode .codicon {
+  text-align: left;
+}
+.theia-AgentLabel {
+  font-weight: 600;
+}
+.theia-PromptVariantBadge {
+  padding: 0 calc(var(--theia-ui-padding) * 2 / 3);
+  font-size: var(--theia-ui-font-size0);
+  color: var(--theia-badge-foreground);
+  background-color: var(--theia-badge-background);
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+  white-space: nowrap;
+  user-select: none;
+}
+.theia-PromptVariantBadge.edited {
+  color: var(--theia-editorWarning-foreground);
+  background-color: var(--theia-inputValidation-warningBackground);
+  border: 1px solid var(--theia-editorWarning-foreground);
+}
+.theia-ChatNode .theia-ChatNodeToolbar {
+  margin-left: auto;
+  line-height: 18px;
+}
+.theia-ChatNodeToolbar .theia-ChatNodeToolbarAction {
+  display: none;
+  align-items: center;
+  padding: 4px;
+  border-radius: 5px;
+}
+.theia-ChatNode:hover .theia-ChatNodeToolbar .theia-ChatNodeToolbarAction {
+  display: inline-block;
+}
+.theia-ChatNodeToolbar .theia-ChatNodeToolbarAction:hover {
+  cursor: pointer;
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatNode {
+  line-height: 1.3rem;
+}
+.theia-ChatNode ul,
+.theia-ChatNode ol {
+  padding-inline-start: 1rem;
+}
+.theia-ChatNode li > p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.theia-ChatNode .theia-CodeWrapper {
+  padding: 0.5em;
+  padding-bottom: 0;
+  background-color: var(--theia-editor-background);
+  border-radius: 6px;
+  border: var(--theia-border-width) solid var(--theia-checkbox-border);
+  font-size: var(--theia-code-font-size);
+}
+.theia-RequestNode > p div {
+  display: inline;
+}
+.theia-RequestNode .theia-RequestNode-AgentLabel,
+.theia-RequestNode .theia-RequestNode-VariableLabel,
+.theia-RequestNode .theia-RequestNode-FunctionLabel {
+  padding: calc(var(--theia-ui-padding) * 2 / 3);
+  padding-top: 0px;
+  padding-bottom: 0px;
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+  background: var(--theia-badge-background);
+  color: var(--theia-badge-foreground);
+}
+.theia-RequestNode-ImagePreview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.theia-RequestNode-ImagePreview-Item {
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 100px;
+  width: 120px;
+}
+.theia-RequestNode-ImagePreview-Item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.theia-RequestNode-ImagePreview-Inline {
+  display: inline-block;
+  margin: 4px 0;
+}
+.theia-RequestNode-Footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.theia-RequestNode-Footer .item {
+  opacity: var(--theia-mod-disabled-opacity);
+  cursor: default;
+  display: flex;
+  flex-direction: row;
+  column-gap: 0px;
+  align-items: center;
+}
+.theia-RequestNode-Footer .item.enabled {
+  cursor: pointer;
+  opacity: 1;
+}
+.theia-RequestNode-Footer :not(.item.enabled) .action-label {
+  background: transparent;
+  cursor: default;
+}
+.theia-RequestNode .theia-ChatInput-Editor-Box {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+.chat-input-widget {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+}
+.theia-ChatInput {
+  margin-top: calc(var(--theia-ui-padding) * 8 / 3);
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  gap: calc(var(--theia-ui-padding) * 2 / 3);
+}
+.theia-ChatInput[data-ai-disabled=true] {
+  opacity: var(--theia-mod-disabled-opacity);
+  pointer-events: none;
+}
+.theia-ChatInput[data-ai-disabled=true] .theia-ChatInput-Editor-Placeholder {
+  color: var(--theia-input-disabledForeground);
+  font-family: var(--theia-ui-font-family);
+}
+.theia-ChatInput-ChatContext ul {
+  list-style-type: none;
+  padding: 0px 4px 8px 8px;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.theia-ChatInput-ChatContext-Element {
+  display: flex;
+  flex-direction: column;
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+  padding: 2px 4px 2px 6px;
+  line-height: 16px;
+  min-width: 0;
+  user-select: none;
+  cursor: pointer;
+}
+.theia-ChatInput-ChatContext-Element.invalid-file {
+  border-color: var(--theia-inputValidation-errorBorder, var(--theia-errorForeground));
+  background-color: var(--theia-inputValidation-errorBackground, rgba(255, 0, 0, 0.1));
+}
+.theia-ChatInput-ChatContext-Element.invalid-file .theia-ChatInput-ChatContext-title {
+  text-decoration: line-through;
+  color: var(--theia-errorForeground);
+}
+.invalid-file-icon {
+  color: var(--theia-errorForeground);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.theia-ChatInput-ChatContext-Element.warning-file {
+  border-color: var(--theia-inputValidation-warningBorder, var(--theia-editorWarning-foreground));
+  background-color: var(--theia-inputValidation-warningBackground, rgba(255, 165, 0, 0.1));
+}
+.theia-ChatInput-ChatContext-Element.warning-file .theia-ChatInput-ChatContext-title {
+  color: var(--theia-editorWarning-foreground);
+}
+.warning-file-icon {
+  color: var(--theia-editorWarning-foreground);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.theia-ChatInput-ChatContext-Row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: var(--theia-foreground);
+  font-family: var(--theia-ui-font-family);
+}
+.theia-ChatInput-ChatContext-labelParts {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theia-ChatInput-ChatContext-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theia-ChatInput-ChatContext-additionalInfo {
+  color: var(--theia-disabledForeground);
+  font-size: calc(var(--theia-content-font-size) * 0.8);
+  margin-left: 4px;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.theia-ChatInput-ChatContext-Element .action {
+  cursor: pointer;
+  margin-left: 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.theia-ChatInput-ChatContext-Element .action:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatInput-ChatContext-Icon {
+  display: inline;
+  line-height: 18px;
+  flex-shrink: 0;
+}
+.theia-ChatInput-ChatContext-Icon.codicon {
+  margin-right: 6px;
+}
+.theia-ChatInput-ChangeSet-Box {
+  margin: 0 16px -5px 16px;
+  padding: 2px;
+  padding-bottom: 12px;
+  height: auto;
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+  border-radius: 4px 4px 0 0;
+  background-color: var(--theia-activityBar-background);
+  display: flex;
+  flex-direction: column;
+}
+.theia-ChatInput-ChangeSet-Header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px;
+}
+.theia-ChatInput-ChangeSet-Header-Title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.theia-ChatInput-ChangeSet-Toggle {
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.theia-ChatInput-ChangeSet-Toggle:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatInput-ChangeSet-Toggle:focus {
+  outline: 1px solid var(--theia-focusBorder);
+  outline-offset: -1px;
+}
+.theia-ChatInput-ChangeSet-Box h3 {
+  font-size: 12px;
+  color: var(--theia-disabledForeground);
+  padding-top: 0;
+  margin: 0;
+}
+.theia-ChatInput-ChangeSet-Header-Actions .theia-button {
+  height: 100%;
+  box-sizing: border-box;
+  font-size: 12px;
+  padding: 2px 4px;
+  min-width: 40px;
+  margin: 0;
+}
+.theia-ChatInput-ChangeSet-List {
+  overflow: hidden;
+  transition: max-height 0.1s ease-in-out, opacity 0.1s ease-in-out;
+}
+.theia-ChatInput-ChangeSet-List.expanded {
+  max-height: 150px;
+  opacity: 1;
+  overflow-y: auto;
+}
+.theia-ChatInput-ChangeSet-List.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+.theia-ChatInput-ChangeSet-List ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 4px;
+}
+.theia-ChatInput-ChangeSet-List ul li {
+  display: flex;
+  flex-direction: row;
+  line-height: 18px;
+  padding: 0;
+  padding-top: 2px;
+  margin: 0 2px 2px 0px;
+  border-radius: 4px;
+  position: relative;
+}
+.theia-ChatInput-ChangeSet-List ul li:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatInput-ChangeSet-Actions {
+  display: none;
+}
+.theia-ChatInput-ChangeSet-List ul li {
+  cursor: pointer;
+}
+.theia-ChatInput-ChangeSet-List ul li:hover .theia-ChatInput-ChangeSet-Actions {
+  display: flex;
+  justify-content: flex-end;
+  flex: auto;
+  gap: 4px;
+}
+.theia-ChatInput-ChangeSet-List .theia-ChatInput-ChangeSet-Icon {
+  position: relative;
+  padding-left: 2px;
+  padding-right: 4px;
+  min-width: var(--theia-icon-size);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.theia-ChatInput-ChangeSet-List .theia-ChatInput-ChangeSet-Icon::before {
+  text-align: center;
+}
+.theia-ChatInput-ChangeSet-List .theia-ChatInput-ChangeSet-Icon.codicon::before {
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-ChatInput-ChangeSet-Actions .action {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.theia-ChatInput-ChangeSet-additionalInfo {
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  color: var(--theia-disabledForeground);
+}
+.theia-ChatInput-ChangeSet-List .theia-ChatInput-ChangeSet-AdditionalInfo-SuffixIcon {
+  font-size: var(--theia-ui-font-size0) px;
+  margin-left: 4px;
+}
+.theia-ChatInput-ChangeSet-labelParts {
+  display: flex;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theia-ChatInput-ChangeSet-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theia-ChatInput-ChangeSet-Header-Actions {
+  display: flex;
+  flex: none;
+  flex-flow: row nowrap;
+  gap: var(--theia-ui-padding);
+}
+.theia-changeSet-Action {
+  flex: none;
+}
+.theia-ChatInput-ChangeSet-Header-Actions,
+.theia-ChatInput-ChangeSet-Box h3,
+.theia-ChatInput-ChangeSet-additionalInfo {
+  display: flex;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theia-ChatInput-ChangeSet-Header-Actions .codicon.action {
+  font-size: 18px;
+  height: 20px;
+  vertical-align: middle;
+  margin-left: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.theia-ChatInput-ChangeSet-Header-Actions .codicon.action:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatInput-ChangeSet-title.rejected {
+  text-decoration: line-through;
+}
+.theia-ChatInput-ChangeSet-title.add.pending {
+  color: var(--theia-charts-green);
+}
+.theia-ChatInput-ChangeSet-title.modify.pending {
+  color: var(--theia-charts-orange);
+}
+.theia-ChatInput-ChangeSet-title.delete.pending {
+  color: var(--theia-charts-red);
+}
+.theia-ChatInput-Editor-Box {
+  margin: 0 var(--theia-ui-padding) var(--theia-ui-padding) var(--theia-ui-padding);
+  padding: calc(var(--theia-ui-padding) / 3);
+  height: auto;
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+  background-color: var(--theia-editor-background);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+.theia-ChatInput-Editor-Box:has(.monaco-editor.focused) {
+  border-color: var(--theia-focusBorder);
+}
+.theia-ChatInput-Editor-Box .monaco-editor {
+  outline-color: var(--theia-editor-background);
+}
+.theia-ChatInput-Editor {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: hidden;
+  transition: height 0.05s ease-in-out;
+  position: relative;
+}
+.theia-ChatInput-Editor-Placeholder {
+  position: absolute;
+  top: var(--theia-ui-padding);
+  left: calc(var(--theia-ui-padding) * 4 / 3);
+  right: 0;
+  display: flex;
+  align-items: center;
+  color: var(--theia-descriptionForeground);
+  pointer-events: none;
+  z-index: 10;
+  text-align: left;
+  font-family: var(--theia-ui-font-family);
+  line-height: var(--theia-content-line-height);
+}
+.theia-ChatInput-Editor-Placeholder.hidden {
+  display: none;
+}
+.theia-ChatInput-Editor .monaco-editor {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.theia-ChatInput-Editor .monaco-editor .margin,
+.theia-ChatInput-Editor .monaco-editor .monaco-editor-background,
+.theia-ChatInput-Editor .monaco-editor .inputarea.ime-input {
+  padding-left: calc(var(--theia-ui-padding) * 4 / 3) !important;
+}
+.theia-ChatInput-ImagePreview-Item {
+  position: relative;
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 100px;
+  width: 120px;
+}
+.theia-ChatInput-ChatContext-ImageRow {
+  margin-top: 4px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.theia-ChatInput-ImageContext-Element {
+  min-width: 150px;
+}
+.theia-ChatInput-ImagePreview-Item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.theia-ChatInputOptions {
+  width: 100%;
+  height: 25px;
+  padding-left: calc(var(--theia-ui-padding) / 2);
+  padding-right: var(--theia-ui-padding);
+  display: flex;
+  justify-content: space-between;
+  color: var(--theia-foreground);
+}
+.theia-ChatInputOptions .theia-ChatInputOptions-left,
+.theia-ChatInputOptions .theia-ChatInputOptions-right {
+  display: flex;
+  align-items: center;
+}
+.theia-ChatInputOptions .theia-ChatInputOptions-left {
+  order: -1;
+  gap: calc(var(--theia-ui-padding) / 3);
+}
+.theia-ChatInputOptions .theia-ChatInputOptions-right {
+  margin-right: calc(var(--theia-ui-padding) * 4 / 3);
+}
+.theia-ChatInputOptions .option {
+  min-width: calc(var(--theia-icon-size) + var(--theia-ui-padding) - 1px);
+  height: calc(var(--theia-icon-size) + var(--theia-ui-padding) - 1px);
+  padding: calc(var(--theia-ui-padding) / 3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 3);
+  box-sizing: border-box;
+  user-select: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: calc(var(--theia-ui-padding) * 5 / 6);
+  border: var(--theia-border-width) solid transparent;
+  cursor: pointer;
+  outline: none;
+}
+.theia-ChatInputOptions .option:focus-visible {
+  outline: var(--theia-border-width) solid var(--theia-focusBorder);
+  outline-offset: calc(-1 * var(--theia-border-width));
+}
+.theia-ChatInputOptions .option.disabled {
+  cursor: default;
+  opacity: var(--theia-mod-disabled-opacity);
+  pointer-events: none;
+}
+.theia-ChatInputOptions .option:hover {
+  opacity: 1;
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatInputOptions .reverse {
+  flex-direction: row-reverse;
+}
+.theia-ChatInput-ModeSelector.theia-select-component,
+.theia-ChatInput-ReasoningSelector.theia-select-component {
+  min-width: unset;
+  min-height: unset;
+  height: calc(var(--theia-icon-size) + var(--theia-ui-padding) - 1px);
+  padding: 0 calc(var(--theia-ui-padding) * 2 / 3);
+  border: var(--theia-border-width) solid transparent;
+  box-sizing: border-box;
+  background: var(--theia-editor-background);
+  font-family: var(--theia-ui-font-family);
+  font-size: var(--theia-content-font-size);
+  border-radius: calc(var(--theia-ui-padding) * 5 / 6);
+  max-width: 150px;
+  outline: none;
+}
+.theia-ChatInput-ReasoningSelector.theia-select-component {
+  position: relative;
+}
+.theia-ChatInput-ModeSelector .theia-select-component-chevron,
+.theia-ChatInput-ReasoningSelector .theia-select-component-chevron {
+  font-size: var(--theia-ui-font-size1);
+  margin-left: calc(var(--theia-ui-padding) / 3);
+}
+.theia-ChatInput-ModeSelector.theia-select-component:hover,
+.theia-ChatInput-ReasoningSelector.theia-select-component:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatInput-ModeSelector.theia-select-component:focus-visible,
+.theia-ChatInput-ReasoningSelector.theia-select-component:focus-visible {
+  outline: 1px solid var(--theia-focusBorder);
+  outline-offset: -1px;
+}
+.theia-ChatInput-ModeSelector.disabled,
+.theia-ChatInput-ReasoningSelector.disabled {
+  opacity: var(--theia-mod-disabled-opacity);
+  cursor: default;
+  pointer-events: none;
+}
+.theia-ChatInput-ReasoningSelector.theia-select-component::before {
+  font-family: codicon;
+  content: "\ea61";
+  font-size: var(--theia-icon-size);
+  line-height: 1;
+  margin-right: calc(var(--theia-ui-padding) / 3);
+  display: inline-flex;
+  align-items: center;
+}
+.theia-ChatInput-ReasoningSelector.reasoning-level-off::before {
+  content: "\ec40";
+  opacity: 0.85;
+}
+.theia-ChatInput-ReasoningSelector.reasoning-level-off::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--theia-ui-padding) * 2 / 3 + var(--theia-icon-size) / 2);
+  top: 50%;
+  width: calc(var(--theia-icon-size) * 0.95);
+  height: 1.5px;
+  background-color: currentColor;
+  border-radius: 1px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  pointer-events: none;
+  opacity: 0.85;
+}
+.theia-ChatInput-ReasoningSelector.reasoning-level-minimal::before {
+  content: "\ec40";
+  opacity: 0.5;
+}
+.theia-ChatInput-ReasoningSelector.reasoning-level-low::before {
+  opacity: 0.7;
+}
+.theia-ChatInput-ReasoningSelector.reasoning-level-medium::before {
+  opacity: 0.9;
+}
+.theia-ChatInput-ReasoningSelector.reasoning-level-high::before {
+  color: var(--theia-editorWarning-foreground);
+}
+.theia-ChatInput-ReasoningSelector.reasoning-level-auto::before {
+  content: "\ec1f";
+}
+.theia-CodePartRenderer-root {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 4px;
+}
+.theia-CodePartRenderer-root .monaco-editor {
+  outline-color: var(--theia-editor-background);
+}
+.theia-CodePartRenderer-left {
+  flex-grow: 1;
+}
+.theia-CodePartRenderer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+.theia-CodePartRenderer-right .button {
+  margin-left: 2px;
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.theia-CodePartRenderer-right .button:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-QuestionPartRenderer-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--theia-ui-padding);
+  border: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+  padding: calc(var(--theia-ui-padding) * 2);
+  border-radius: var(--theia-ui-padding);
+  margin: 0 0 var(--theia-ui-padding) 0;
+}
+.theia-QuestionPartRenderer-dismiss {
+  position: absolute;
+  top: var(--theia-ui-padding);
+  right: var(--theia-ui-padding);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size1);
+  padding: 2px;
+  line-height: 1;
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+}
+.theia-QuestionPartRenderer-dismiss:hover {
+  color: var(--theia-foreground);
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-QuestionPartRenderer-header {
+  font-weight: 700;
+  font-size: var(--theia-ui-font-size0);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--theia-descriptionForeground);
+}
+.theia-QuestionPartRenderer-question {
+  margin-bottom: calc(var(--theia-ui-padding) / 2);
+}
+.theia-QuestionPartRenderer-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--theia-ui-padding);
+}
+.theia-QuestionPartRenderer-options.has-descriptions {
+  flex-direction: column;
+}
+.theia-QuestionPartRenderer-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  min-width: 100px;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+  border-radius: var(--theia-ui-padding);
+  border: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+  background-color: var(--theia-editor-background);
+  color: var(--theia-foreground);
+  cursor: pointer;
+  line-height: 1.4;
+}
+.theia-QuestionPartRenderer-option:hover:not(:disabled) {
+  background-color: var(--theia-list-hoverBackground);
+}
+.theia-QuestionPartRenderer-option.selected {
+  background-color: var(--theia-button-background);
+  color: var(--theia-button-foreground);
+  border-color: var(--theia-button-background);
+}
+.theia-QuestionPartRenderer-option.selected:disabled:hover {
+  background-color: var(--theia-button-background);
+}
+.theia-QuestionPartRenderer-option:disabled:not(.selected) {
+  opacity: var(--theia-mod-disabled-opacity);
+  cursor: default;
+}
+.theia-QuestionPartRenderer-option-label {
+  font-weight: 600;
+}
+.theia-QuestionPartRenderer-option-description {
+  font-size: var(--theia-ui-font-size0);
+  opacity: 0.8;
+  margin-top: 2px;
+}
+.theia-QuestionPartRenderer-confirm {
+  align-self: flex-end;
+  margin-top: calc(var(--theia-ui-padding) / 2);
+}
+.theia-toolCall,
+.theia-thinking {
+  font-weight: normal;
+  color: var(--theia-descriptionForeground);
+  line-height: 20px;
+  margin-top: 13px;
+  margin-bottom: 13px;
+  cursor: pointer;
+}
+.theia-tool-confirmation {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--theia-dropdown-border);
+  border-radius: 4px;
+  background-color: var(--theia-editorWidget-background);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.14);
+  cursor: default;
+}
+.theia-tool-confirmation-intro {
+  margin: calc(var(--theia-ui-padding) * 2) 0;
+  line-height: var(--theia-content-line-height);
+}
+.theia-tool-confirmation-intro p {
+  margin: 0;
+}
+.theia-tool-confirmation-header {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--theia-foreground);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.theia-tool-confirmation-info {
+  margin-bottom: 12px;
+}
+.theia-tool-confirmation-name,
+.theia-tool-confirmation-args {
+  margin-bottom: 4px;
+}
+.theia-tool-confirmation-name .label,
+.theia-tool-confirmation-args .label {
+  font-weight: bold;
+  margin-right: 6px;
+}
+.theia-tool-confirmation-description {
+  margin: 6px 0 8px 0;
+  color: var(--theia-descriptionForeground);
+  font-weight: normal;
+  max-height: 200px;
+  overflow: auto;
+}
+details.theia-tool-confirmation-name > summary,
+details.theia-tool-confirmation-args > summary {
+  cursor: pointer;
+  user-select: none;
+}
+details.theia-tool-confirmation-name > summary::marker,
+details.theia-tool-confirmation-args > summary::marker {
+  color: var(--theia-button-background);
+}
+.theia-tool-confirmation-args-summary {
+  color: var(--theia-descriptionForeground);
+}
+.theia-tool-confirmation-args-content {
+  margin: var(--theia-ui-padding) 0;
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+  max-height: 200px;
+  overflow: auto;
+}
+.theia-tool-confirmation-args-content p {
+  margin: var(--theia-ui-padding) 0;
+}
+.theia-tool-confirmation-args-content pre {
+  margin: var(--theia-ui-padding) 0;
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+  background-color: var(--theia-textCodeBlock-background);
+  border-radius: 3px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-weight: normal;
+}
+.theia-tool-confirmation-args-content code {
+  word-break: break-word;
+  font-weight: normal;
+}
+.theia-tool-confirmation-args-content hr {
+  border-top: 1px solid var(--theia-editorHoverWidgetInternalBorder);
+  border-bottom: 0;
+  margin: var(--theia-ui-padding) 0;
+}
+.theia-tool-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.theia-tool-confirmation-split-button {
+  display: inline-flex;
+  position: relative;
+}
+.theia-tool-confirmation-main-btn {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  margin-right: 0 !important;
+}
+.theia-tool-confirmation-chevron-btn {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  padding: 0 !important;
+  margin-left: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.theia-tool-confirmation-main-btn:focus,
+.theia-tool-confirmation-chevron-btn:focus {
+  outline-offset: -2px;
+}
+.theia-tool-confirmation-deny-reason {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theia-ui-padding);
+}
+.theia-tool-confirmation-deny-reason-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.theia-tool-confirmation-deny-reason-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--theia-ui-padding);
+}
+.theia-tool-confirmation-countdown {
+  font-size: var(--theia-ui-font-size0);
+  opacity: 0.8;
+}
+.theia-tool-confirmation-status {
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid var(--theia-dropdown-border);
+  border-radius: 4px;
+  background-color: var(--theia-editorWidget-background);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.14);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.theia-tool-confirmation-status.allowed {
+  border-color: var(--theia-successBackground);
+  color: var(--theia-successBackground);
+}
+.theia-tool-confirmation-status.denied {
+  border-color: var(--theia-errorBackground);
+  color: var(--theia-errorBackground);
+}
+.theia-toolCall-denied,
+.theia-toolCall-rejected,
+.theia-toolCall-unavailable,
+.theia-toolCall-finished summary,
+.theia-toolCall-allowed,
+.theia-toolCall-waiting {
+  font-weight: bold;
+}
+.theia-toolCall-allowed .codicon-loading,
+.theia-toolCall-pending .codicon-loading {
+  font-size: 1em;
+}
+.theia-serverToolCall-badge {
+  padding: 0 calc(var(--theia-ui-padding) * 2 / 3);
+  font-size: var(--theia-ui-font-size0);
+  font-weight: normal;
+  color: var(--theia-badge-foreground);
+  background-color: var(--theia-badge-background);
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+  white-space: nowrap;
+  user-select: none;
+}
+.theia-toolCall-pending {
+  color: var(--theia-descriptionForeground);
+}
+.theia-toolCall-denied,
+.theia-toolCall-rejected {
+  color: var(--theia-errorForeground);
+  cursor: default;
+}
+.theia-toolCall-unavailable {
+  color: var(--theia-editorWarning-foreground);
+  cursor: default;
+}
+.theia-toolCall-response-result {
+  font-weight: normal;
+}
+.theia-toolCall .fa,
+.theia-toolCall details summary::marker,
+.theia-thinking .fa,
+.theia-thinking details summary::marker {
+  color: var(--theia-button-background);
+}
+.theia-toolCall details pre,
+.theia-thinking details pre {
+  cursor: text;
+  line-height: 1rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 6px;
+  background-color: var(--theia-editor-background);
+  overflow: auto;
+  text-wrap: auto;
+}
+.theia-toolCall-args-label {
+  font-weight: normal;
+  color: var(--theia-descriptionForeground);
+}
+.theia-ResponseNode-ProgressMessage {
+  font-weight: normal;
+  color: var(--theia-descriptionForeground);
+  line-height: 20px;
+  margin-bottom: 6px;
+}
+.theia-ResponseNode-ProgressMessage .inProgress {
+  color: var(--theia-progressBar-background);
+}
+.theia-ResponseNode-ProgressMessage .completed {
+  color: var(--theia-successBackground);
+}
+.theia-ResponseNode-ProgressMessage .failed {
+  color: var(--theia-errorForeground);
+}
+.spinner {
+  display: inline-block;
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.theia-ChatPart-Error {
+  margin-block: 1em;
+}
+.theia-ChatPart-Error-headline {
+  color: var(--theia-errorForeground);
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--theia-ui-padding);
+}
+.theia-ChatPart-Error-prefix {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+}
+.theia-ChatPart-Error details {
+  margin-top: var(--theia-ui-padding);
+  color: var(--theia-descriptionForeground);
+}
+.theia-ChatPart-Error details summary::marker {
+  color: var(--theia-button-background);
+}
+.theia-ChatPart-Error details pre {
+  cursor: text;
+  line-height: 1rem;
+  margin: 0;
+  padding: 6px;
+  background-color: var(--theia-editor-background);
+  overflow: auto;
+  text-wrap: auto;
+}
+.section-header {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+.section-title {
+  font-weight: bold;
+  font-size: 14px;
+  margin: 20px 0px;
+}
+.section-content p {
+  margin: 10px 0;
+}
+.section-content a {
+  cursor: pointer;
+}
+.section-content strong {
+  font-weight: bold;
+}
+.session-settings-container {
+  display: flex;
+  flex-direction: column;
+}
+.monaco-session-settings-dialog {
+  min-width: 400px;
+}
+.session-settings-error {
+  color: var(--theia-errorForeground);
+  min-height: 1em;
+  display: block;
+}
+.session-settings-container .monaco-editor {
+  outline-color: var(--theia-editor-background);
+}
+.session-settings-section-header {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: var(--theia-foreground);
+}
+.session-settings-section-note {
+  font-size: 12px;
+  color: var(--theia-descriptionForeground);
+  margin-bottom: 8px;
+}
+.session-settings-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.session-settings-checkbox-container input[type=checkbox] {
+  cursor: pointer;
+}
+.session-settings-checkbox-container label {
+  cursor: pointer;
+  user-select: none;
+}
+.session-settings-confirmation-timeout {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--theia-sideBarSectionHeader-border);
+  margin-bottom: 8px;
+}
+.session-settings-timeout-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 22px;
+}
+.session-settings-timeout-container label {
+  white-space: nowrap;
+}
+.session-settings-timeout-container label.disabled {
+  color: var(--theia-disabledForeground);
+}
+.session-settings-timeout-container input[type=number] {
+  width: 100px;
+  padding: 4px 8px;
+  border: 1px solid var(--theia-input-border);
+  border-radius: 4px;
+  background-color: var(--theia-input-background);
+  color: var(--theia-input-foreground);
+}
+.session-settings-timeout-container input[type=number]:disabled {
+  opacity: var(--theia-mod-disabled-opacity);
+  cursor: not-allowed;
+}
+.session-settings-advanced {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.session-settings-editor-container {
+  height: 150px;
+}
+.chat-agent-suggestions {
+  padding-inline: 16px;
+  padding-block-end: 8px;
+  user-select: none;
+}
+.theia-delegation-container {
+  border: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+  border-radius: var(--theia-ui-padding);
+  margin: var(--theia-ui-padding) 0;
+  background-color: var(--theia-sideBar-background);
+}
+.delegation-response-details {
+  width: 100%;
+}
+.delegation-summary {
+  cursor: pointer;
+  padding: var(--theia-ui-padding);
+  background-color: var(--theia-editorGroupHeader-tabsBackground);
+  border-radius: var(--theia-ui-padding) var(--theia-ui-padding) 0 0;
+  border-bottom: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+  list-style: none;
+  position: relative;
+}
+.delegation-summary:focus {
+  outline-offset: 0;
+}
+.delegation-summary:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.delegation-toggle-arrow::before {
+  content: "\25bc";
+  transition: transform 0.2s ease;
+  display: inline-block;
+  transform: rotate(-90deg);
+}
+.delegation-toggle-arrow.open::before {
+  transform: rotate(0deg);
+}
+.delegation-toggle-arrow {
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size1);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.delegation-response-details:not([open]) .delegation-summary {
+  border-bottom: none;
+  border-radius: var(--theia-ui-padding);
+}
+.delegation-summary::-webkit-details-marker {
+  display: none;
+}
+.delegation-summary::marker {
+  content: "";
+}
+.delegation-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--theia-ui-padding);
+}
+.delegation-agent {
+  flex: 1;
+  font-size: var(--theia-ui-font-size1);
+  color: var(--theia-foreground);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+}
+.delegation-status {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  font-size: var(--theia-ui-font-size1);
+}
+.delegation-status-icon {
+  font-size: var(--theia-icon-size);
+}
+.delegation-status-icon.codicon-loading {
+  animation: spin 2s linear infinite;
+  color: var(--theia-progressBar-background);
+}
+.delegation-status-icon.codicon-check {
+  color: var(--theia-charts-green);
+}
+.delegation-status-icon.codicon-error {
+  color: var(--theia-errorForeground);
+}
+.delegation-status-icon.codicon-close {
+  color: var(--theia-descriptionForeground);
+}
+.delegation-status-text {
+  color: var(--theia-descriptionForeground);
+  font-weight: normal;
+}
+.delegation-content {
+  padding: var(--theia-ui-padding);
+}
+.delegation-prompt-section {
+  margin-bottom: var(--theia-ui-padding);
+  padding-bottom: var(--theia-ui-padding);
+  border-bottom: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+}
+.delegation-prompt {
+  margin-top: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding);
+  background-color: var(--theia-editor-background);
+  border-radius: var(--theia-ui-padding);
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+  font-style: italic;
+  color: var(--theia-descriptionForeground);
+}
+.delegation-response-section {
+  margin-top: var(--theia-ui-padding);
+}
+.delegation-response-section > strong {
+  display: block;
+  margin-bottom: var(--theia-ui-padding);
+  color: var(--theia-foreground);
+}
+.delegation-interaction-badge {
+  color: var(--theia-editorWarning-foreground);
+  display: flex;
+  align-items: center;
+}
+.delegation-pending-confirmations {
+  margin-top: var(--theia-ui-padding);
+  padding-top: var(--theia-ui-padding);
+  border-top: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+}
+.delegation-pending-confirmations .theia-tool-confirmation {
+  margin: 0;
+  margin-bottom: var(--theia-ui-padding);
+}
+.delegation-pending-confirmations .theia-tool-confirmation:last-child {
+  margin-bottom: 0;
+}
+.delegation-response-placeholder {
+  margin-top: var(--theia-ui-padding);
+  min-height: calc(var(--theia-ui-padding) * 6);
+}
+.theia-ChatTree-ScrollToBottom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--theia-layoutColor3, #ececec);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  opacity: 0.7;
+  color: var(--theia-button-background, #007acc);
+  transition:
+    opacity 0.18s,
+    background 0.2s,
+    color 0.2s;
+}
+.theia-ChatTree-ScrollToBottom:hover {
+  opacity: 1;
+  background: var(--theia-button-background, #007acc);
+  color: var(--theia-button-foreground, #fff);
+}
+.theia-chat-unknown-content {
+  margin: 4px 0;
+}
+.theia-chat-unknown-content-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--theia-ui-padding);
+  background-color: var(--theia-warningBackground);
+  border: 1px solid var(--theia-warningBorder);
+  border-radius: 3px;
+  color: var(--theia-warningForeground);
+  font-size: 0.9em;
+  margin-bottom: 8px;
+}
+.theia-chat-unknown-content-warning i {
+  flex-shrink: 0;
+}
+.theia-chat-unknown-content-fallback {
+  color: var(--theia-foreground);
+  font-family: var(--theia-code-font-family);
+  white-space: pre-wrap;
+}
+.theia-hover.toolcall-args-hover > div {
+  max-height: 400px;
+  max-width: 600px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.theia-hover.toolcall-args-hover pre {
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: var(--theia-ui-padding) 0;
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+  border-radius: 3px;
+  background-color: var(--theia-textCodeBlock-background);
+}
+.theia-hover.toolcall-args-hover pre code {
+  background-color: transparent;
+}
+.theia-hover.toolcall-args-hover code:not(pre code) {
+  padding: 1px var(--theia-ui-padding);
+  border-radius: 3px;
+  background-color: var(--theia-textCodeBlock-background);
+  word-break: break-all;
+  font-family: var(--theia-code-font-family);
+}
+.theia-hover.toolcall-args-hover hr {
+  border-top: 1px solid var(--theia-editorHoverWidgetInternalBorder);
+  border-bottom: 0;
+  margin: var(--theia-ui-padding) 0;
+}
+.theia-ChatInput-CapabilitiesSection {
+  border-top: var(--theia-border-width) solid color-mix(in srgb, var(--theia-panel-border) 50%, transparent);
+  margin-top: var(--theia-ui-padding);
+  padding-top: calc(var(--theia-ui-padding) / 3);
+}
+.theia-ChatInput-CapabilitiesSection-heading {
+  padding: calc(var(--theia-ui-padding) / 2) calc(var(--theia-ui-padding) / 3);
+  padding-bottom: var(--theia-ui-padding);
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size1);
+  font-family: var(--theia-ui-font-family);
+  user-select: none;
+}
+.theia-ChatInput-CapabilityChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--theia-ui-padding) * 2 / 3);
+  padding: calc(var(--theia-ui-padding) * 2 / 3) calc(var(--theia-ui-padding) * 4 / 3);
+  max-height: 84px;
+  overflow-y: auto;
+}
+.theia-ChatInput-CapabilityChip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+  padding: calc(var(--theia-ui-padding) / 3) var(--theia-ui-padding);
+  line-height: var(--theia-icon-size);
+  font-size: var(--theia-ui-font-size1);
+  color: var(--theia-foreground);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  white-space: nowrap;
+  margin: 1px 0px;
+}
+.theia-ChatInput-CapabilityChip.checked {
+  border-color: var(--theia-inputOption-activeBorder);
+  background-color: var(--theia-inputOption-activeBackground);
+}
+.theia-ChatInput-CapabilityChip-icon {
+  font-size: var(--theia-statusBar-font-size);
+  margin-right: calc(var(--theia-ui-padding) / 2);
+}
+.theia-ChatInput-CapabilityChip:hover:not(.chip-disabled):not(.checked) {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-ChatInput-CapabilityChip:focus-visible {
+  outline: 1px solid var(--theia-focusBorder);
+  outline-offset: -1px;
+}
+.theia-ChatInput-CapabilityChip.checked:focus-visible {
+  outline-width: 2px;
+}
+.theia-ChatInput-CapabilityChip.chip-disabled {
+  opacity: var(--theia-mod-disabled-opacity);
+  cursor: default;
+  pointer-events: none;
+}
+.theia-ChatInputOptions .option.toggled {
+  border: var(--theia-border-width) var(--theia-inputOption-activeBorder) solid;
+  background-color: var(--theia-inputOption-activeBackground);
+}
+.theia-ChatInputOptions .option {
+  position: relative;
+}
+.theia-capabilities-badge-dot {
+  position: absolute;
+  top: var(--theia-border-width);
+  right: var(--theia-border-width);
+  width: var(--theia-ui-padding);
+  height: var(--theia-ui-padding);
+  border-radius: 50%;
+  background-color: var(--theia-activityBarBadge-background);
+  pointer-events: none;
+}
+.theia-capabilities-unsaved-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--theia-activityBarBadge-background);
+  pointer-events: none;
+}
+.theia-ChatInput-GenericCapabilitiesSection {
+  border-top: var(--theia-border-width) solid color-mix(in srgb, var(--theia-panel-border) 50%, transparent);
+  margin-top: var(--theia-ui-padding);
+  padding-top: calc(var(--theia-ui-padding) / 3);
+}
+.theia-ChatInput-GenericCapabilitiesSection-heading {
+  padding: calc(var(--theia-ui-padding) / 2) calc(var(--theia-ui-padding) / 3);
+  padding-bottom: var(--theia-ui-padding);
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size1);
+  font-family: var(--theia-ui-font-family);
+  user-select: none;
+}
+.theia-GenericCapabilities-Tree {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 250px;
+}
+.theia-GenericCapabilities-Tree.disabled {
+  opacity: var(--theia-mod-disabled-opacity);
+  pointer-events: none;
+}
+.theia-GenericCapabilities-Tree-SearchContainer {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-bottom: calc(var(--theia-ui-padding) / 2);
+  flex-shrink: 0;
+}
+.theia-GenericCapabilities-Tree-SearchInput {
+  flex: 1;
+  text-indent: calc(var(--theia-ui-padding) + 2px);
+  padding: 2px 0;
+  min-height: 22px;
+  box-sizing: border-box;
+  border: var(--theia-border-width) solid var(--theia-dropdown-border);
+}
+.theia-GenericCapabilities-Tree-SearchInput::-webkit-search-decoration,
+.theia-GenericCapabilities-Tree-SearchInput::-webkit-search-cancel-button {
+  display: none;
+}
+.theia-GenericCapabilities-Tree-SearchActions {
+  height: 20px;
+  align-items: center;
+  position: absolute;
+  z-index: 1;
+  right: calc(var(--theia-ui-padding) + 3px);
+  display: flex;
+}
+.theia-GenericCapabilities-Tree-SearchAction {
+  width: 18px;
+  height: 18px;
+  margin: 0 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  user-select: none;
+  border: var(--theia-border-width) solid transparent;
+  opacity: 0.7;
+  cursor: pointer;
+  appearance: none;
+  background-color: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.theia-GenericCapabilities-Tree-SearchAction:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+  opacity: 1;
+}
+.theia-GenericCapabilities-Tree-Content {
+  flex: 1;
+  overflow-y: auto;
+  outline: none;
+}
+.theia-GenericCapabilities-Tree-Content:focus-visible {
+  outline: 1px solid var(--theia-focusBorder);
+  outline-offset: -1px;
+}
+.theia-GenericCapabilities-Tree-Empty {
+  padding: var(--theia-ui-padding);
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+  text-align: center;
+}
+.theia-GenericCapabilities-TreeNode {
+  user-select: none;
+}
+.theia-GenericCapabilities-TreeNode.root {
+  border-bottom: var(--theia-border-width) solid var(--theia-dropdown-border);
+}
+.theia-GenericCapabilities-TreeNode.root:last-child {
+  border-bottom: none;
+}
+.theia-GenericCapabilities-TreeNodeHeader {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  padding: calc(var(--theia-ui-padding) / 2) var(--theia-ui-padding);
+  padding-left: var(--tree-indent, var(--theia-ui-padding));
+  cursor: pointer;
+  outline: none;
+}
+.theia-GenericCapabilities-TreeNode.root > .theia-GenericCapabilities-TreeNodeHeader {
+  background-color: var(--theia-sideBarSectionHeader-background);
+}
+.theia-GenericCapabilities-TreeNode.group > .theia-GenericCapabilities-TreeNodeHeader {
+  background-color: color-mix(in srgb, var(--theia-sideBarSectionHeader-background) 50%, transparent);
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-GenericCapabilities-TreeNodeHeader:hover {
+  background: var(--theia-list-hoverBackground);
+  color: var(--theia-list-hoverForeground);
+}
+.theia-GenericCapabilities-Tree-Content:focus-within .theia-GenericCapabilities-TreeNodeHeader.theia-mod-selected {
+  background: var(--theia-list-activeSelectionBackground);
+  color: var(--theia-list-activeSelectionForeground);
+  outline: 1px solid var(--theia-focusBorder);
+  outline-offset: -1px;
+}
+.theia-GenericCapabilities-TreeNodeHeader.theia-mod-selected {
+  background: var(--theia-list-inactiveSelectionBackground);
+  color: var(--theia-list-inactiveSelectionForeground);
+}
+.theia-GenericCapabilities-TreeNode-Chevron {
+  flex-shrink: 0;
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-GenericCapabilities-TreeNode-Name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-GenericCapabilities-TreeItem {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  padding: calc(var(--theia-ui-padding) / 2) var(--theia-ui-padding);
+  padding-left: var(--tree-indent, var(--theia-ui-padding));
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+.theia-GenericCapabilities-TreeItem:hover:not(.theia-mod-disabled) {
+  background: var(--theia-list-hoverBackground);
+  color: var(--theia-list-hoverForeground);
+}
+.theia-GenericCapabilities-Tree-Content:focus-within .theia-GenericCapabilities-TreeItem.theia-mod-selected {
+  background: var(--theia-list-activeSelectionBackground);
+  color: var(--theia-list-activeSelectionForeground);
+  outline: 1px solid var(--theia-focusBorder);
+  outline-offset: -1px;
+}
+.theia-GenericCapabilities-TreeItem.theia-mod-selected {
+  background: var(--theia-list-inactiveSelectionBackground);
+  color: var(--theia-list-inactiveSelectionForeground);
+}
+.theia-GenericCapabilities-TreeItem.theia-mod-disabled {
+  opacity: var(--theia-mod-disabled-opacity);
+  cursor: default;
+}
+.theia-GenericCapabilities-TreeItem-Checkbox {
+  flex-shrink: 0;
+}
+.theia-GenericCapabilities-TreeItem-Name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--theia-ui-font-size1);
+  padding-bottom: 1px;
+  margin-bottom: -1px;
+}
+.theia-GenericCapabilities-ServerTool-Warning {
+  color: var(--theia-editorWarning-foreground);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+.theia-ChatInput-CapabilitiesPanel {
+  display: flex;
+  flex-direction: row;
+  gap: var(--theia-ui-padding);
+  border-bottom: 1px solid color-mix(in srgb, var(--theia-panel-border) 50%, transparent);
+  padding: var(--theia-ui-padding);
+  position: relative;
+}
+.theia-ChatInput-CapabilitiesPanel-SaveButton {
+  position: absolute;
+  top: var(--theia-ui-padding);
+  right: var(--theia-ui-padding);
+  display: flex;
+  align-items: center;
+}
+.theia-ChatInput-CapabilitiesPanel-SaveButton .theia-button {
+  height: 100%;
+  box-sizing: border-box;
+  font-size: var(--theia-ui-font-size1);
+  padding: calc(var(--theia-ui-padding) / 3) calc(var(--theia-ui-padding) * 2 / 3);
+  min-width: 40px;
+  margin: 0;
+}
+.theia-ChatInput-CapabilitiesPanel-SaveButton .theia-button:disabled:hover {
+  background-color: var(--theia-button-disabledBackground);
+  cursor: default;
+}
+.theia-ChatInput-CapabilitiesPanel-Left {
+  flex: 0 0 auto;
+  min-width: 120px;
+  max-width: 200px;
+}
+.theia-ChatInput-CapabilitiesPanel-Divider {
+  width: 1px;
+  background-color: var(--theia-panel-border);
+  margin: 0 calc(var(--theia-ui-padding) / 2);
+}
+.theia-ChatInput-CapabilitiesPanel-Right {
+  flex: 1;
+  min-width: 0;
+}
+.theia-ChatInput-CapabilitiesPanel-Left .theia-ChatInput-CapabilitiesSection {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+.theia-ChatInput-CapabilitiesPanel-Left .theia-ChatInput-CapabilityChips {
+  flex-direction: column;
+  max-height: 280px;
+  padding: 0;
+}
+.theia-ChatInput-CapabilitiesPanel-Right .theia-ChatInput-GenericCapabilitiesSection {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+.theia-ChatInput-CapabilitiesPanel-Right .theia-GenericCapabilities-Tree {
+  height: 280px;
+}
+.theia-GenericCapabilities-TreeNode-Checkbox,
+.theia-GenericCapabilities-TreeItem-Checkbox {
+  flex-shrink: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.theia-GenericCapabilities-Tree-SearchAction:focus-visible {
+  border-color: var(--theia-focusBorder);
+  opacity: 1;
+}
+.theia-capabilities-collapsed-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: calc(var(--theia-ui-padding) / 2) calc(var(--theia-ui-padding) * 4 / 3);
+  min-width: 0;
+}
+.theia-capabilities-collapsed-scrollbar {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: calc(var(--theia-ui-padding) * 2 / 3);
+  min-width: 0;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  min-height: calc(var(--theia-content-line-height) + var(--theia-ui-padding) / 3);
+}
+.theia-capabilities-collapsed-scrollbar::-webkit-scrollbar {
+  height: calc(var(--theia-ui-padding) / 2);
+}
+.theia-capabilities-collapsed-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: calc(var(--theia-ui-padding) / 2);
+}
+.theia-capabilities-collapsed-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--theia-scrollbarSlider-background);
+}
+.theia-capabilities-collapsed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--theia-scrollbarSlider-hoverBackground);
+}
+.theia-ChatInput-Editor-Box.token-usage-border-token-usage-yellow,
+.theia-ChatInput-Editor-Box.token-usage-border-token-usage-yellow:has(.monaco-editor.focused) {
+  border-color: var(--theia-warningBackground);
+}
+.theia-ChatInput-Editor-Box.token-usage-border-token-usage-red,
+.theia-ChatInput-Editor-Box.token-usage-border-token-usage-red:has(.monaco-editor.focused) {
+  border-color: var(--theia-errorBackground);
+}
+.token-usage-badge {
+  cursor: default;
+  display: flex;
+  align-items: center;
+  margin-right: calc(var(--theia-ui-padding) / 2);
+  --token-usage-fill: var(--theia-descriptionForeground);
+  --token-usage-track: color-mix(in srgb, var(--theia-foreground) 12%, transparent);
+}
+.token-usage-badge.token-usage-yellow {
+  --token-usage-fill: var(--theia-warningBackground);
+}
+.token-usage-badge.token-usage-red {
+  --token-usage-fill: var(--theia-errorBackground);
+}
+.token-usage-ring {
+  width: var(--theia-icon-size);
+  height: var(--theia-icon-size);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.token-usage-ring-inner {
+  width: 75%;
+  height: 75%;
+  border-radius: 50%;
+  background: var(--theia-editor-background);
+}
+
+/* ../node_modules/@theia/ai-chat-ui/src/browser/style/tool-call-rendering.css */
+.tool-call.container {
+  border: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+  border-radius: var(--theia-ui-padding);
+  margin: var(--theia-ui-padding) 0;
+  background-color: var(--theia-editorWidget-background);
+  overflow: visible;
+}
+.tool-call.header {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+  border-radius: var(--theia-ui-padding);
+}
+.tool-call.container.expanded .tool-call.header {
+  border-radius: var(--theia-ui-padding) var(--theia-ui-padding) 0 0;
+}
+.tool-call.header.finished {
+  cursor: pointer;
+}
+.tool-call.header.finished:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.tool-call.header.error {
+  background-color: var(--theia-inputValidation-errorBackground);
+  cursor: pointer;
+}
+.tool-call.header.error:hover {
+  background-color: var(--theia-inputValidation-errorBackground);
+  filter: brightness(1.1);
+}
+.tool-call.header .codicon.codicon-terminal,
+.tool-call.header .codicon.codicon-comment-discussion {
+  flex-shrink: 0;
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size2);
+}
+.tool-call.command-preview,
+.tool-call.title-preview {
+  font-family: var(--theia-ui-font-family-mono);
+  font-size: var(--theia-ui-font-size1);
+  color: var(--theia-foreground);
+  background-color: var(--theia-textCodeBlock-background);
+  padding: 2px 6px;
+  border-radius: calc(var(--theia-ui-padding) / 2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.tool-call.meta-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.tool-call.duration {
+  font-size: var(--theia-ui-font-size0);
+  color: var(--theia-descriptionForeground);
+  font-family: var(--theia-ui-font-family-mono);
+}
+.tool-call.exit-code {
+  font-size: var(--theia-ui-font-size0);
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: calc(var(--theia-ui-padding) / 2);
+  font-family: var(--theia-ui-font-family-mono);
+  background-color: var(--theia-charts-red);
+  color: var(--theia-button-foreground);
+}
+.tool-call.status-icon {
+  flex-shrink: 0;
+}
+.tool-call.status-icon.success {
+  color: var(--theia-charts-green);
+}
+.tool-call.status-icon.failure {
+  color: var(--theia-charts-red);
+}
+.tool-call.status-label {
+  font-size: var(--theia-ui-font-size0);
+  font-weight: 500;
+}
+.tool-call.status-label.error {
+  color: var(--theia-errorForeground);
+}
+.tool-call.status-label.canceled {
+  color: var(--theia-errorForeground);
+}
+.tool-call.status-label.canceling {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  color: var(--theia-descriptionForeground);
+}
+.tool-call.expanded-content {
+  padding: calc(var(--theia-ui-padding) * 2);
+  border-top: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+}
+.tool-call.full-command-container {
+  position: relative;
+  margin-bottom: var(--theia-ui-padding);
+}
+.tool-call.full-command-container .tool-call.copy-button {
+  position: absolute;
+  top: var(--theia-ui-padding);
+  right: var(--theia-ui-padding);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tool-call.full-command-container:hover .tool-call.copy-button {
+  opacity: 1;
+}
+.tool-call.full-command-container .tool-call.full-command {
+  margin-bottom: 0;
+  padding-right: 32px;
+}
+.tool-call.full-command {
+  display: flex;
+  gap: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 1.5);
+  background-color: var(--theia-textCodeBlock-background);
+  border-radius: calc(var(--theia-ui-padding) / 2);
+  margin-bottom: var(--theia-ui-padding);
+}
+.tool-call.prompt {
+  font-family: var(--theia-ui-font-family-mono);
+  font-size: var(--theia-ui-font-size1);
+  color: var(--theia-descriptionForeground);
+  flex-shrink: 0;
+  user-select: none;
+}
+.tool-call.full-command code {
+  font-family: var(--theia-ui-font-family-mono);
+  font-size: var(--theia-ui-font-size1);
+  color: var(--theia-foreground);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.tool-call.meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  font-size: var(--theia-ui-font-size0);
+  color: var(--theia-descriptionForeground);
+  margin-bottom: var(--theia-ui-padding);
+}
+.tool-call.meta-row .codicon {
+  opacity: 0.7;
+}
+.tool-call.error-message {
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 1.5);
+  margin-bottom: var(--theia-ui-padding);
+  background-color: var(--theia-inputValidation-errorBackground);
+  border: var(--theia-border-width) solid var(--theia-inputValidation-errorBorder);
+  border-radius: calc(var(--theia-ui-padding) / 2);
+  color: var(--theia-errorForeground);
+  font-size: var(--theia-ui-font-size1);
+}
+.tool-call.output-box {
+  margin-top: var(--theia-ui-padding);
+  background-color: var(--theia-textCodeBlock-background);
+  border-radius: calc(var(--theia-ui-padding) / 2);
+}
+.tool-call.output-header {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  font-size: var(--theia-ui-font-size0);
+  color: var(--theia-descriptionForeground);
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 1.5);
+  border-bottom: var(--theia-border-width) solid var(--theia-sideBarSectionHeader-border);
+}
+.tool-call.output-header .codicon {
+  font-size: var(--theia-ui-font-size1);
+}
+.tool-call.output-header .tool-call.copy-button {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tool-call.output-box:hover .tool-call.output-header .tool-call.copy-button {
+  opacity: 1;
+}
+.tool-call.copy-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--theia-ui-padding) / 2);
+  background-color: transparent;
+  color: var(--theia-descriptionForeground);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.tool-call.copy-button:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+  color: var(--theia-foreground);
+}
+.tool-call.output {
+  font-family: var(--theia-ui-font-family-mono);
+  font-size: var(--theia-ui-font-size0);
+  line-height: 1.4;
+  color: var(--theia-foreground);
+  background-color: transparent;
+  border-radius: 0;
+  padding: calc(var(--theia-ui-padding) * 1.5);
+  margin: 0;
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tool-call.no-output {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+  font-size: var(--theia-ui-font-size0);
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 1.5);
+}
+.tool-call.cancel-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--theia-ui-padding) / 2);
+  background-color: transparent;
+  color: var(--theia-descriptionForeground);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.tool-call.cancel-button:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+  color: var(--theia-debugIcon-stopForeground);
+}
+.tool-call.cancel-button:active {
+  background-color: var(--theia-toolbar-activeBackground, var(--theia-toolbar-hoverBackground));
+}
+.tool-call.header.running {
+}
+.tool-call.header.canceling {
+  background-color: var(--theia-inputValidation-warningBackground);
+}
+.tool-call.header.canceled {
+  background-color: var(--theia-inputValidation-errorBackground);
+  cursor: pointer;
+}
+.tool-call.header.canceled:hover {
+  background-color: var(--theia-inputValidation-errorBackground);
+  filter: brightness(1.1);
+}
+.tool-call.header.pending {
+  color: var(--theia-descriptionForeground);
+}
+.tool-call.pending-text {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+
+/* ../node_modules/@theia/ai-chat-ui/src/browser/style/mermaid-rendering.css */
+.theia-MermaidViewer-root {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  margin: 0 0 var(--theia-ui-padding) 0;
+  background-color: var(--theia-editor-background);
+  box-shadow: 0 1px 3px var(--theia-widget-shadow);
+  overflow: hidden;
+}
+.theia-MermaidViewer-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 4px;
+  border-bottom: var(--theia-border-width) solid var(--theia-editorWidget-border);
+  cursor: pointer;
+}
+.theia-MermaidViewer-title {
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size0);
+  padding-left: 4px;
+}
+.theia-MermaidViewer-actions {
+  display: flex;
+  gap: 2px;
+}
+.theia-MermaidViewer-viewport {
+  overflow: hidden;
+  position: relative;
+  max-height: 800px;
+  min-height: 120px;
+  resize: vertical;
+  background-color: transparent;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.theia-MermaidViewer-viewport:active {
+  cursor: grabbing;
+}
+.theia-MermaidViewer-viewport.collapsed {
+  height: 120px !important;
+  min-height: 0;
+  max-height: 120px !important;
+  resize: none;
+  padding: 4px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.theia-MermaidViewer-viewport.collapsed:active {
+  cursor: pointer;
+}
+.theia-MermaidViewer-canvas {
+  transform-origin: top left;
+  display: inline-block;
+  min-width: 100%;
+}
+.theia-MermaidViewer-viewport.collapsed .theia-MermaidViewer-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
+.theia-MermaidViewer-diagram svg {
+  display: block;
+  max-width: none;
+  height: auto;
+  background-color: transparent !important;
+}
+.theia-MermaidViewer-viewport.collapsed .theia-MermaidViewer-diagram,
+.theia-MermaidViewer-viewport.collapsed .theia-MermaidViewer-diagram svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+}
+.theia-MermaidViewer-source .monaco-editor,
+.theia-MermaidViewer-source .monaco-editor .overflow-guard {
+  outline: none;
+}
+.theia-MermaidViewer-status {
+  padding: var(--theia-ui-padding);
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.theia-MermaidViewer-error {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding);
+  color: var(--theia-editorError-foreground);
+}
+
 /* ../node_modules/@theia/terminal/src/browser/style/terminal.css */
 .terminal-container {
   width: 100%;
@@ -17661,6 +19823,2507 @@ button.secondary[disabled],
 }
 .theia-search-terminal-widget-parent .theia-search-terminal-widget button:focus {
   border: var(--theia-border-width) var(--theia-focusBorder) solid;
+}
+
+/* ../node_modules/@theia/debug/src/browser/style/index.css */
+.theia-debug-container,
+.theia-session-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.theia-debug-container .theia-select {
+  margin-left: var(--theia-ui-padding);
+}
+.theia-source-breakpoint,
+.theia-debug-session,
+.theia-debug-thread,
+.theia-debug-stack-frame {
+  display: flex;
+  align-items: center;
+}
+.theia-source-breakpoint > span,
+.theia-debug-session > span,
+.theia-debug-thread > span,
+.theia-debug-stack-frame > span,
+.theia-debug-stack-frame .file > span {
+  margin-left: calc(var(--theia-ui-padding) / 2);
+}
+.theia-debug-session .label,
+.theia-debug-thread .label,
+.theia-debug-stack-frame .expression {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.theia-source-breakpoint .path {
+  font-size: var(--theia-ui-font-size0);
+}
+.theia-source-breakpoint .line-info {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  white-space: nowrap;
+}
+.theia-source-breakpoint .line,
+.theia-debug-stack-frame .line {
+  background: var(--theia-descriptionForeground);
+  color: var(--theia-editor-background);
+  padding: calc(var(--theia-ui-padding) / 3);
+  font-size: var(--theia-ui-font-size0);
+  line-height: calc(var(--theia-private-horizontal-tab-height) / 2);
+  border-radius: 2px;
+  margin-left: calc(var(--theia-ui-padding) / 2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.theia-data-breakpoint .theia-access-type {
+  margin-left: var(--theia-ui-padding);
+}
+.theia-debug-session .status,
+.theia-debug-thread .status {
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.theia-debug-stack-frame .expression {
+  white-space: pre;
+}
+.theia-debug-stack-frame.label {
+  text-align: center;
+  font-style: italic;
+}
+.theia-debug-stack-frame.subtle {
+  font-style: italic;
+}
+.theia-debug-stack-frame .file > span {
+  white-space: nowrap;
+}
+.theia-load-more-frames {
+  text-align: center;
+  font-style: italic;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+}
+.debug-toolbar {
+  display: flex;
+  align-items: center;
+  padding-top: calc(var(--theia-ui-padding) * 2);
+  padding-right: calc(var(--theia-ui-padding) * 3);
+  padding-bottom: var(--theia-ui-padding);
+  padding-left: calc(var(--theia-ui-padding) * 2);
+}
+.theia-session-container > .debug-toolbar {
+  padding-top: var(--theia-ui-padding);
+  padding-bottom: var(--theia-ui-padding);
+  border-bottom: 1px solid var(--theia-sideBarSectionHeader-border);
+}
+.debug-toolbar .theia-select-component {
+  width: 100%;
+  min-width: 40px;
+  margin: 0px 4px;
+}
+.debug-toolbar .debug-action {
+  opacity: 0.9;
+  cursor: pointer;
+  pointer-events: all;
+  padding-left: var(--theia-ui-padding);
+  padding-right: var(--theia-ui-padding);
+  min-width: var(--theia-icon-size);
+  min-height: var(--theia-icon-size);
+}
+.debug-toolbar .debug-action.theia-mod-disabled {
+  opacity: 0.5 !important;
+  user-select: none;
+  pointer-events: none;
+}
+.debug-toolbar .debug-action:not(.theia-mod-disabled):hover {
+  opacity: 1;
+}
+.debug-toolbar .debug-action > div {
+  font-family: var(--theia-ui-font-family);
+  font-size: var(--theia-ui-font-size0);
+  display: flex;
+  align-items: center;
+  align-self: center;
+  justify-content: center;
+  text-align: center;
+  min-height: inherit;
+}
+#debug-console .theia-console-info {
+  color: var(--theia-debugConsole-infoForeground) !important;
+}
+#debug-console .theia-console-warning {
+  color: var(--theia-debugConsole-warningForeground) !important;
+}
+#debug-console .theia-console-error {
+  color: var(--theia-debugConsole-errorForeground) !important;
+}
+.theia-debug-console-unavailable {
+  font-style: italic;
+}
+.theia-debug-console-expression {
+  display: flex;
+  flex-direction: column;
+  white-space: pre-wrap;
+}
+.theia-debug-console-variable {
+  display: flex;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--theia-variable-value-color);
+}
+.theia-debug-hover-title.number,
+.theia-debug-console-variable.number {
+  color: var(--theia-variable-number-variable-color);
+}
+.theia-debug-hover-title.boolean,
+.theia-debug-console-variable.boolean {
+  color: var(--theia-variable-boolean-variable-color);
+}
+.theia-debug-hover-title.string,
+.theia-debug-console-variable.string {
+  color: var(--theia-variable-string-variable-color);
+}
+.theia-debug-console-variable .name {
+  color: var(--theia-variable-name-color);
+}
+.theia-debug-console-variable .lazy-button {
+  margin-left: 3px;
+  border-radius: 5px;
+  cursor: pointer;
+  align-self: center;
+  color: var(--theia-icon-foreground);
+}
+.theia-debug-console-variable .lazy-button:hover {
+  background-color: var(--theia-toolbar-hoverBackground);
+}
+.theia-debug-console-variable .value {
+  margin-left: var(--theia-ui-padding);
+}
+.theia-TreeNode:not(:hover) .theia-debug-console-variable .action-label {
+  visibility: hidden;
+}
+.theia-debug-console-variable .action-label {
+  margin: auto;
+}
+.theia-debug-console-variable .watch-error {
+  font-style: italic;
+  color: var(--theia-debugConsole-errorForeground);
+  margin-left: var(--theia-ui-padding);
+}
+.theia-debug-console-variable .watch-not-available {
+  font-style: italic;
+  margin-left: var(--theia-ui-padding);
+}
+.theia-debug-watch-expression {
+  display: flex;
+}
+.theia-debug-breakpoint-actions {
+  display: none;
+}
+.theia-source-breakpoint:hover .theia-debug-breakpoint-actions {
+  display: flex;
+  align-items: center;
+}
+.theia-debug-breakpoint-icon {
+  font-size: 19px !important;
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
+  margin-left: 0px !important;
+}
+.codicon-debug-hint {
+  cursor: pointer;
+}
+.codicon-debug-breakpoint,
+.codicon-debug-breakpoint-conditional,
+.codicon-debug-breakpoint-log,
+.codicon-debug-breakpoint-function,
+.codicon-debug-breakpoint-data,
+.codicon-debug-breakpoint-unsupported,
+.codicon-debug-hint:not([class*=codicon-debug-breakpoint]):not([class*=codicon-debug-stackframe]),
+.codicon-debug-breakpoint.codicon-debug-stackframe-focused::after,
+.codicon-debug-breakpoint.codicon-debug-stackframe::after {
+  color: var(--theia-debugIcon-breakpointForeground) !important;
+}
+.codicon[class*=-disabled] {
+  color: var(--theia-debugIcon-breakpointDisabledForeground) !important;
+}
+.codicon[class*=-unverified] {
+  color: var(--theia-debugIcon-breakpointUnverifiedForeground) !important;
+}
+.codicon-debug-stackframe,
+.monaco-editor .theia-debug-top-stack-frame-column::before {
+  color: var( --theia-debugIcon-breakpointCurrentStackframeForeground ) !important;
+}
+.codicon-debug-stackframe-focused {
+  color: var(--theia-debugIcon-breakpointStackframeForeground) !important;
+}
+.codicon-debug-breakpoint.codicon-debug-stackframe-focused::after,
+.codicon-debug-breakpoint.codicon-debug-stackframe::after {
+  content: "\eb8a";
+  position: absolute;
+}
+.monaco-editor .theia-debug-breakpoint-column {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-top: -1px;
+}
+.monaco-editor .theia-debug-top-stack-frame-column::before {
+  content: " ";
+  width: 0.9em;
+  display: inline-flex;
+  vertical-align: middle;
+  margin-top: -1px;
+}
+.monaco-editor .theia-debug-top-stack-frame-column {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.monaco-editor .theia-debug-top-stack-frame-column::before {
+  content: "\eb8b";
+  font: normal normal normal 16px/1 codicon;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin-left: 0;
+  margin-right: 4px;
+}
+.codicon-debug-hint:not([class*=codicon-debug-breakpoint]):not([class*=codicon-debug-stackframe]) {
+  opacity: 0.4 !important;
+}
+.monaco-editor .view-overlays .theia-debug-top-stack-frame-line {
+  background: var(--theia-editor-stackFrameHighlightBackground);
+}
+.monaco-editor .view-overlays .theia-debug-focused-stack-frame-line {
+  background: var(--theia-editor-focusedStackFrameHighlightBackground);
+}
+.codicon-debug-start {
+  color: var(--theia-debugIcon-startForeground) !important;
+}
+.codicon-debug-pause {
+  color: var(--theia-debugIcon-pauseForeground) !important;
+}
+.codicon-debug-stop {
+  color: var(--theia-debugIcon-stopForeground) !important;
+}
+.codicon-debug-disconnect {
+  color: var(--theia-debugIcon-disconnectForeground) !important;
+}
+.codicon-debug-restart,
+.codicon-debug-restart-frame {
+  color: var(--theia-debugIcon-restartForeground) !important;
+}
+.codicon-debug-step-over {
+  color: var(--theia-debugIcon-stepOverForeground) !important;
+}
+.codicon-debug-step-into {
+  color: var(--theia-debugIcon-stepIntoForeground) !important;
+}
+.codicon-debug-step-out {
+  color: var(--theia-debugIcon-stepOutForeground) !important;
+}
+.codicon-debug-continue,
+.codicon-debug-reverse-continue {
+  color: var(--theia-debugIcon-continueForeground) !important;
+}
+.codicon-debug-step-back {
+  color: var(--theia-debugIcon-stepBackForeground) !important;
+}
+.theia-debug-hover {
+  display: flex !important;
+  flex-direction: column;
+  border: 1px solid var(--theia-editorHoverWidget-border);
+  background: var(--theia-editorHoverWidget-background);
+  color: var(--theia-editorHoverWidget-foreground);
+  z-index: 1000;
+}
+.theia-debug-hover.complex-value {
+  min-width: 324px;
+  min-height: 324px;
+  width: 324px;
+  height: 324px;
+}
+.theia-debug-hover .theia-source-tree {
+  height: 100%;
+  width: 100%;
+}
+.theia-debug-hover-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: var(--theia-ui-padding);
+  border-bottom: 1px solid var(--theia-editorHoverWidget-border);
+}
+.theia-debug-hover-content {
+  display: flex;
+  flex: 1;
+  overflow-y: auto;
+}
+.theia-debug-breakpoint-widget {
+  display: flex;
+}
+.theia-debug-breakpoint-select {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+.theia-debug-breakpoint-input {
+  flex: 1;
+  margin-top: var(--theia-ui-padding);
+  margin-bottom: var(--theia-ui-padding);
+}
+.theia-debug-breakpoint-input .monaco-editor {
+  outline: none;
+}
+.theia-mod-debugging #theia-statusBar {
+  background: var(--theia-statusBar-debuggingBackground);
+  border-top: var(--theia-border-width) solid var(--theia-statusBar-debuggingBorder);
+}
+.theia-mod-debugging #theia-statusBar .area .element {
+  color: var(--theia-statusBar-debuggingForeground);
+}
+.monaco-editor .zone-widget .zone-widget-container.theia-debug-exception-widget {
+  color: var(--theia-editor-foreground);
+  font-size: var(--theia-code-font-size);
+  line-height: var(--theia-code-line-height);
+  font-family: var(--theia-code-font-family);
+  border-top-color: var(--theia-debugExceptionWidget-border);
+  border-bottom-color: var(--theia-debugExceptionWidget-border);
+  background-color: var(--theia-debugExceptionWidget-background);
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 1.5);
+  white-space: pre-wrap;
+  user-select: text;
+  overflow: hidden;
+}
+.theia-debug-exception-widget .title {
+  font-family: var(--theia-ui-font-family);
+  font-weight: bold;
+}
+.theia-debug-exception-widget .stack-trace {
+  margin-top: 0.5em;
+}
+.theia-debug-exception-widget #exception-close {
+  cursor: pointer;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* ../node_modules/@theia/debug/src/browser/style/debug.css */
+#debugConsoleSeverity {
+  margin-right: 4px;
+}
+.debug-console-filter-container {
+  display: flex;
+  align-items: center;
+  background: var(--theia-input-background);
+  border: solid var(--theia-border-width) var(--theia-dropdown-border);
+  border-radius: var(--theia-search-box-radius);
+  height: var(--theia-content-line-height);
+}
+.debug-console-filter-container:focus-within {
+  border-color: var(--theia-focusBorder);
+}
+.debug-console-filter-container input.theia-input {
+  flex: 1;
+  min-width: 175px;
+  box-sizing: border-box;
+  background: none;
+  border: none !important;
+  outline: none;
+  text-overflow: ellipsis;
+}
+.debug-console-filter-btn {
+  box-sizing: border-box;
+  align-items: center;
+}
+
+/* ../node_modules/@theia/ai-ide/src/browser/style/ai-configuration-base.css */
+.ai-configuration-widget-content {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+.ai-configuration-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--theia-ui-padding);
+}
+.ai-empty-state-message {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.ai-configuration-section {
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.ai-configuration-section:last-child {
+  margin-bottom: 0;
+}
+.ai-configuration-section-content {
+  padding: var(--theia-ui-padding) 0;
+}
+.ai-configuration-section-content ul,
+.ai-configuration-section-content ol {
+  padding-left: calc(var(--theia-ui-padding) * 2);
+  margin: 0 var(--theia-ui-padding) 0;
+}
+.ai-expandable-section {
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-expandable-section-header {
+  display: flex;
+  align-items: center;
+  padding: calc(var(--theia-ui-padding) / 2) 0;
+  cursor: pointer;
+  user-select: none;
+}
+.ai-expandable-section-header:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.ai-expandable-section-icon {
+  display: flex;
+  align-items: center;
+  margin-right: calc(var(--theia-ui-padding) / 2);
+  color: var(--theia-icon-foreground);
+}
+.ai-expandable-section-title {
+  flex: 1;
+  font-weight: 500;
+}
+.ai-expandable-section-content {
+  padding-left: calc(var(--theia-ui-padding) * 2);
+  padding-top: calc(var(--theia-ui-padding) / 2);
+}
+
+/* ../node_modules/@theia/ai-ide/src/browser/style/ai-configuration-list-detail.css */
+.ai-list-detail-configuration-main {
+  display: grid;
+  grid-template-columns: minmax(150px, 280px) 1fr;
+  height: 100%;
+  overflow: hidden;
+  gap: 0;
+}
+.ai-configuration-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: var(--theia-border-width) solid var(--theia-widget-border);
+  background-color: var(--theia-editor-background);
+}
+.ai-configuration-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ai-configuration-list li {
+  padding: calc(var(--theia-ui-padding) / 2) var(--theia-ui-padding);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-configuration-list li:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.ai-configuration-list li.theia-mod-selected {
+  background-color: var(--theia-list-activeSelectionBackground);
+  color: var(--theia-list-activeSelectionForeground);
+}
+.ai-configuration-list-item-label {
+  display: inline-block;
+}
+.ai-configuration-detail {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: calc(var(--theia-ui-padding) * 2);
+  padding-left: calc(var(--theia-ui-padding) * 3);
+  background-color: var(--theia-editor-background);
+}
+@media (max-width: 600px) {
+  .ai-list-detail-configuration-main {
+    grid-template-columns: 1fr;
+  }
+  .ai-configuration-list {
+    display: none;
+  }
+}
+@media (max-width: 400px) {
+  .ai-configuration-detail {
+    padding: calc(var(--theia-ui-padding) / 2);
+  }
+}
+
+/* ../node_modules/@theia/ai-ide/src/browser/style/ai-configuration-cards.css */
+.ai-card-grid-configuration-main {
+  padding: var(--theia-ui-padding);
+  height: 100%;
+  overflow: auto;
+}
+.ai-configuration-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--theia-ui-padding);
+}
+.ai-configuration-card {
+  background-color: var(--theia-sideBar-background);
+  border: var(--theia-border-width) solid var(--theia-widget-border);
+  border-radius: 4px;
+  padding: var(--theia-ui-padding);
+  transition: box-shadow 0.2s ease;
+}
+.ai-configuration-card:hover {
+  box-shadow: 0 2px 8px var(--theia-widget-shadow);
+}
+@media (max-width: 900px) {
+  .ai-configuration-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .ai-configuration-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 400px) {
+  .ai-card-grid-configuration-main {
+    padding: calc(var(--theia-ui-padding) / 2);
+  }
+}
+
+/* ../node_modules/@theia/ai-ide/src/browser/style/ai-configuration-table.css */
+.ai-table-configuration-main {
+  padding: var(--theia-ui-padding);
+  overflow: auto;
+}
+.ai-configuration-table-container {
+  overflow-x: auto;
+}
+.ai-configuration-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--theia-editor-background);
+}
+.ai-configuration-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.ai-configuration-table th {
+  text-align: left;
+  padding: var(--theia-ui-padding) var(--theia-ui-padding);
+  font-weight: 600;
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+  color: var(--theia-foreground);
+}
+.ai-configuration-table td {
+  padding: calc(var(--theia-ui-padding) / 2) var(--theia-ui-padding);
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+  color: var(--theia-foreground);
+  vertical-align: top;
+}
+.ai-configuration-table .skill-description-column,
+.ai-configuration-table .skill-location-column {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 40em;
+}
+.ai-configuration-table .skill-location-column {
+  font-family: var(--theia-code-font-family);
+}
+.ai-configuration-table tbody tr:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.ai-configuration-table tbody tr:last-child td {
+  border-bottom: none;
+}
+@media (max-width: 600px) {
+  .ai-table-configuration-main {
+    padding: calc(var(--theia-ui-padding) / 2);
+  }
+  .ai-configuration-table th,
+  .ai-configuration-table td {
+    padding: calc(var(--theia-ui-padding) / 3) calc(var(--theia-ui-padding) / 2);
+    font-size: 0.9em;
+  }
+}
+.ai-skills-configuration-container {
+  padding: calc(var(--theia-ui-padding) * 2);
+  max-width: 1200px;
+}
+.ai-skills-section,
+.ai-slash-commands-section {
+  margin-bottom: calc(var(--theia-ui-padding) * 3);
+}
+.ai-slash-commands-section .slash-command-name-column {
+  font-family: var(--theia-code-font-family);
+  white-space: nowrap;
+}
+.ai-slash-commands-section .slash-command-prefix {
+  color: var(--theia-descriptionForeground);
+}
+.ai-slash-commands-section .slash-command-description-column {
+  color: var(--theia-descriptionForeground);
+}
+.ai-slash-commands-section .slash-command-agents-column {
+  white-space: nowrap;
+}
+.ai-slash-commands-section .slash-command-all-agents {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.ai-slash-commands-section .slash-command-agent-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--theia-ui-padding) / 2);
+}
+.ai-slash-commands-section .agent-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theia-button-background);
+  color: var(--theia-editor-background);
+  gap: calc(var(--theia-ui-padding) / 2);
+  padding: calc(var(--theia-ui-padding) / 3) calc(var(--theia-ui-padding) / 1.5);
+  border-radius: 1em;
+  font-size: var(--theia-ui-font-size0);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ../node_modules/@theia/ai-ide/src/browser/style/ai-configuration-hierarchical.css */
+.ai-hierarchical-configuration-main {
+  padding: var(--theia-ui-padding);
+  height: 100%;
+  overflow: auto;
+}
+.ai-expandable-section .ai-expandable-section {
+  margin-left: var(--theia-ui-padding);
+  border-left: var(--theia-border-width) solid var(--theia-widget-border);
+  padding-left: var(--theia-ui-padding);
+}
+.ai-expandable-section-header {
+  transition: background-color 0.15s ease;
+}
+.ai-expandable-section-content {
+  animation: expandContent 0.2s ease-out;
+}
+@keyframes expandContent {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 600px) {
+  .ai-hierarchical-configuration-main {
+    padding: calc(var(--theia-ui-padding) / 2);
+  }
+  .ai-expandable-section .ai-expandable-section {
+    margin-left: calc(var(--theia-ui-padding) / 2);
+    padding-left: calc(var(--theia-ui-padding) / 2);
+  }
+}
+
+/* ../node_modules/@theia/ai-ide/src/browser/style/widgets/model-aliases-configuration.css */
+.ai-alias-detail-description {
+  color: var(--theia-descriptionForeground);
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+  line-height: 1.5;
+}
+.ai-alias-priority-item-resolved {
+  font-weight: 600;
+  color: var(--theia-textLink-foreground);
+}
+.ai-alias-priority-item-ready {
+  color: var(--theia-foreground);
+}
+.ai-model-default-not-ready {
+  color: var(--theia-descriptionForeground);
+}
+.ai-model-status-ready {
+  color: var(--theia-successForeground, #89d185);
+  margin-left: 4px;
+}
+.ai-model-status-not-ready {
+  color: var(--theia-errorForeground);
+  margin-left: 4px;
+}
+.ai-alias-evaluates-to-value {
+  color: var(--theia-textLink-foreground);
+  font-weight: 500;
+}
+.ai-alias-evaluates-to-unresolved {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.ai-alias-agent-id {
+  color: var(--theia-descriptionForeground);
+  font-size: 0.9em;
+}
+.ai-language-model-item-ready {
+  color: var(--theia-foreground);
+}
+.ai-language-model-item-not-ready {
+  color: var(--theia-descriptionForeground);
+}
+
+/* ../node_modules/@theia/ai-ide/src/browser/style/index.css */
+.ai-configuration-widget.theia-settings-container {
+  display: block;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  grid-template-areas: none;
+  max-width: none;
+  padding: 0;
+}
+.theia-settings-container:has(.ai-configuration-widget),
+.ai-configuration-widget.theia-settings-container {
+  max-width: none;
+  width: 100%;
+}
+.ai-configuration-widget .preferences-tree-widget,
+.ai-configuration-widget .preferences-editor-widget {
+  grid-area: auto;
+  overflow: auto;
+}
+.ai-configuration-widget {
+  max-width: 1000px;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.ai-configuration-widget [role=tablist] {
+  overflow: scroll;
+  background-color: var(--theia-editor-background);
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.ai-configuration-widget [role=tablist]::-webkit-scrollbar {
+  height: 4px;
+}
+.theia-ai-settings-container {
+  padding: var(--theia-ui-padding);
+}
+.theia-settings-container .settings-section-subcategory-title.ai-settings-section-subcategory-title {
+  padding-left: 0;
+}
+.ai-templates {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--theia-ui-padding) / 2);
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.ai-templates-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--theia-border-width) solid var(--theia-widget-border);
+  border-radius: 3px;
+}
+.ai-templates-table thead th {
+  text-align: left;
+  padding: var(--theia-ui-padding);
+  background-color: var(--theia-editorWidget-background);
+  color: var(--theia-descriptionForeground);
+  font-weight: 600;
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.ai-templates-table tbody td {
+  padding: var(--theia-ui-padding);
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.ai-templates-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.template-name-cell {
+  font-weight: 500;
+}
+.template-variant-cell {
+  width: 200px;
+}
+.template-actions-cell,
+.ai-templates-table thead th.template-actions-header {
+  width: 100px;
+  text-align: right;
+}
+.template-action-icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: calc(var(--theia-ui-padding) / 2);
+  color: var(--theia-icon-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+.template-action-icon-button:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.template-renderer {
+  display: flex;
+  flex-direction: column;
+  padding: var(--theia-ui-padding);
+}
+.template-header {
+  margin-bottom: calc(var(--theia-ui-padding) / 2);
+}
+.template-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+}
+.template-select-label {
+  margin-right: calc(var(--theia-ui-padding) / 2);
+}
+.template-variant-selector {
+  min-width: 120px;
+}
+.template-variant-selector.error {
+  border-color: var(--theia-errorForeground);
+  background-color: var(--theia-errorBackground, rgba(255, 0, 0, 0.1));
+  color: var(--theia-errorForeground);
+}
+#ai-variable-configuration-container-widget,
+#ai-agent-configuration-container-widget,
+#ai-model-aliases-configuration-widget {
+  flex: 1;
+  overflow: hidden;
+}
+.settings-section-title {
+  font-size: var(--theia-ui-font-size3);
+  font-weight: 600;
+  margin: 0 0 calc(var(--theia-ui-padding) * 1.5) 0;
+  padding: 0 0 calc(var(--theia-ui-padding) / 2) 0;
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.settings-section-title pre {
+  font-size: calc(var(--theia-ui-font-size0) * 0.9);
+  color: var(--theia-descriptionForeground);
+  margin-top: calc(var(--theia-ui-padding) / 2);
+}
+.agent-title-with-toggle {
+  display: block;
+}
+.agent-title-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: calc(var(--theia-ui-padding) * 2);
+  padding-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.ai-id-label {
+  display: inline-block;
+  margin-left: var(--theia-ui-padding);
+}
+.agent-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--theia-ui-padding) * 1.5);
+  align-items: flex-end;
+}
+.agent-enable-toggle {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding));
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+.agent-enable-toggle.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: default;
+}
+.toggle-label {
+  color: var(--theia-foreground);
+  font-size: var(--theia-ui-font-size1);
+  font-weight: normal;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.toggle-switch input[type=checkbox] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--theia-radio-inactiveHoverBackground);
+  transition: 0.2s;
+  border-radius: 20px;
+  border: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: calc(var(--theia-ui-padding) / 3);
+  bottom: calc(var(--theia-ui-padding) / 3);
+  background-color: var(--theia-icon-foreground);
+  transition: 0.2s;
+  border-radius: 50%;
+}
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--theia-button-background);
+}
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+  background-color: var(--theia-button-foreground);
+}
+.toggle-switch:hover .toggle-slider {
+  opacity: 0.9;
+}
+.agent-status-indicator {
+  font-size: var(--theia-ui-font-size3);
+  margin-right: var(--theia-ui-padding);
+  display: inline-block;
+  line-height: var(--theia-content-line-height);
+  align-content: center;
+}
+.agent-status-indicator.agent-enabled {
+  color: var(--theia-charts-green);
+}
+.agent-status-indicator.agent-disabled {
+  color: var(--theia-descriptionForeground);
+  opacity: 0.5;
+}
+.ai-llm-requirement-item,
+.ai-agent-specific-variable-item {
+  border-top: var(--theia-border-width) solid var(--theia-widget-border);
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+  padding: calc(var(--theia-ui-padding) * 1.5) 0;
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.ai-llm-requirement-item:first-of-type,
+.ai-agent-specific-variable-item:first-of-type {
+  margin-top: calc(var(--theia-ui-padding));
+}
+.ai-configuration-value-row {
+  display: grid;
+  grid-template-columns: 10em 1fr;
+  gap: calc(var(--theia-ui-padding) * 2);
+  align-items: start;
+  padding: calc(var(--theia-ui-padding) / 2) 0;
+}
+.ai-configuration-value-row-label {
+  font-weight: 500;
+  color: var(--theia-foreground);
+  text-align: left;
+  padding-right: var(--theia-ui-padding);
+  line-height: 1.4;
+}
+.ai-configuration-value-row-value {
+  color: var(--theia-foreground);
+  word-break: break-word;
+}
+.ai-configuration-select {
+  max-width: 400px;
+}
+.ai-configuration-value-row-value.ai-alias-evaluates-to-unresolved {
+  color: var(--theia-descriptionForeground);
+}
+.ai-configuration-description {
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size1);
+  margin-top: calc(var(--theia-ui-padding) * 1.5);
+}
+.ai-configuration-description a {
+  color: var(--theia-textLink-foreground);
+  cursor: pointer;
+  text-decoration: none;
+}
+.ai-configuration-description a:hover {
+  text-decoration: underline;
+}
+.settings-section-subcategory-title {
+  font-size: var(--theia-ui-font-size2);
+  font-weight: 600;
+  margin: calc(var(--theia-ui-padding) * 3) 0 calc(var(--theia-ui-padding) * 1.5) 0;
+  padding: 0;
+  color: var(--theia-foreground);
+}
+.ai-configuration-detail > div {
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.ai-configuration-detail > div:last-child {
+  margin-bottom: 0;
+}
+.ai-configuration-detail label {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  cursor: pointer;
+  user-select: none;
+}
+.ai-configuration-detail label input[type=checkbox] {
+  margin: 0;
+}
+.variable-references,
+.function-references {
+  list-style: none;
+  padding: calc(var(--theia-ui-padding) * 1.5) 0;
+  margin: 0;
+  border-top: var(--theia-border-width) solid var(--theia-widget-border);
+  border-bottom: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.variable-references:has(.ai-agent-specific-variable-item) {
+  border-top: none;
+  border-bottom: none;
+  padding: 0;
+}
+.variable-reference,
+.function-reference {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  padding: calc(var(--theia-ui-padding) / 2);
+}
+.variable-agent-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background-color: var(--theia-widget-border);
+  border: var(--theia-border-width) solid var(--theia-widget-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.variable-agent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--theia-ui-padding) / 1.5) var(--theia-ui-padding);
+  background-color: var(--theia-editor-background);
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+.variable-agent-item:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.variable-agent-item i {
+  color: var(--theia-descriptionForeground);
+  opacity: 0.7;
+}
+.agent-tag {
+  padding: calc(var(--theia-ui-padding) * 2 / 3);
+  margin-left: var(--theia-ui-padding);
+  padding-top: 0px;
+  padding-bottom: 0px;
+  border-radius: calc(var(--theia-ui-padding) * 2 / 3);
+  background: hsla(0, 0%, 68%, 0.31);
+}
+.configuration-agents-add {
+  margin: calc(var(--theia-ui-padding) * 2) var(--theia-ui-padding);
+}
+.configuration-agents-add button {
+  width: 100%;
+  margin-left: 0;
+}
+.configuration-variables-list,
+.token-usage-configuration-container,
+.ai-tools-configuration-container,
+.ai-prompt-fragments-configuration {
+  padding: var(--theia-ui-padding);
+  max-width: 1200px;
+}
+.prompt-fragments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--theia-panelTitle-activeBorder);
+}
+.prompt-fragments-header h2 {
+  margin: 0;
+}
+.global-actions {
+  display: flex;
+  gap: 10px;
+}
+.global-action-button {
+  padding: 6px 12px;
+  background-color: transparent;
+  color: var(--theia-foreground);
+  border: 1px solid var(--theia-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.global-action-button:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.prompt-fragments-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.prompt-fragment-group {
+  border: 1px solid var(--theia-panelTitle-activeBorder);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  background-color: var(--theia-editorWidget-background);
+}
+.prompt-customization {
+  border: 1px solid var(--theia-panelTitle-activeBorder);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background-color: var(--theia-editor-background);
+}
+.prompt-customization.active-customization {
+  border: 3px solid var(--theia-successBackground);
+}
+.prompt-customization-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+}
+.prompt-customization-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.prompt-customization-actions {
+  display: flex;
+  gap: 8px;
+}
+.prompt-customization-description {
+  padding: 0px 15px;
+  color: var(--theia-descriptionForeground);
+  font-size: 12px;
+  margin-bottom: 5px;
+  font-style: italic;
+}
+.expansion-icon {
+  color: var(--theia-descriptionForeground);
+  font-size: 14px;
+}
+.template-action-button {
+  background-color: transparent;
+  color: var(--theia-foreground);
+  border: 1px solid var(--theia-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.template-action-button:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.template-action-button.reset-button {
+  color: var(--theia-foreground);
+  border-color: var(--theia-border);
+}
+.template-action-button.config-button {
+  color: var(--theia-foreground);
+  border-color: var(--theia-border);
+}
+.template-action-button.delete-button {
+  color: var(--theia-errorForeground);
+  border-color: var(--theia-errorForeground);
+}
+.template-action-button.delete-button:hover {
+  background-color: var(--theia-errorBackground);
+}
+.badge {
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+.default-variant {
+  background: hsla(0, 0%, 68%, 0.31);
+  color: var(--theia-foreground);
+}
+.active-indicator {
+  background-color: var(--theia-successBackground);
+  color: var(--theia-editor-background);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.selected-indicator {
+  background-color: var(--theia-button-background);
+  color: var(--theia-editor-background);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.source-uri-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--theia-foreground);
+  border: 1px solid var(--theia-border);
+  border-radius: 4px;
+  height: 22px;
+  width: 22px;
+  margin-left: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.source-uri-button:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.no-fragments {
+  text-align: center;
+  padding: 30px;
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.prompt-variant-warning {
+  color: var(--theia-warningForeground);
+  background: var(--theia-warningBackground);
+  border-left: 4px solid var(--theia-warningBorder);
+  padding: 6px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 3px;
+  font-size: 0.95em;
+}
+.prompt-variant-error {
+  color: var(--theia-errorForeground);
+  background: var(--theia-errorBackground);
+  border-left: 4px solid var(--theia-errorBorder);
+  padding: 6px 12px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 3px;
+  font-size: 0.95em;
+}
+.template-content-container {
+  padding: 10px;
+  background-color: var(--theia-list-focusBackground);
+}
+.template-toggle-button {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+.template-toggle-button:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.template-expansion-icon {
+  margin-right: 8px;
+  color: var(--theia-descriptionForeground);
+  font-size: 14px;
+}
+.template-content {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: var(--theia-editor-inactiveSelectionBackground);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+.template-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.agent-chips-container {
+  display: flex;
+  gap: 6px;
+}
+.agent-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theia-button-background);
+  color: var(--theia-editor-background);
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+.prompt-variants-container {
+  margin-bottom: 20px;
+}
+.prompt-fragment-section {
+  border: 1px solid var(--theia-panelTitle-activeBorder);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 15px;
+  background-color: var(--theia-editorWidget-background);
+}
+.prompt-fragment-section.selected-variant {
+  border: 3px solid var(--theia-button-background);
+}
+.prompt-fragment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--theia-ui-padding) var(--theia-ui-padding);
+  cursor: pointer;
+  background-color: var(--theia-editor-background);
+  transition: background-color 0.2s;
+}
+.prompt-fragment-header.expanded {
+  border-bottom: 1px solid var(--theia-panelTitle-activeBorder);
+}
+.prompt-fragment-header:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.prompt-fragment-title {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+}
+.prompt-fragment-title h2,
+.prompt-fragment-title h4 {
+  margin-right: var(--theia-ui-padding);
+  margin: 0;
+}
+.prompt-fragment-title h2 {
+  font-size: var(--theia-ui-font-size2);
+}
+.prompt-fragment-title h4 {
+  font-size: var(--theia-ui-font-size1);
+}
+.prompt-fragment-title .active-indicator {
+  margin-right: calc(var(--theia-ui-padding) / 2);
+}
+.prompt-fragment-body {
+  padding: var(--theia-ui-padding) var(--theia-ui-padding) 0 var(--theia-ui-padding);
+}
+.prompt-fragment-description p {
+  margin-top: 0;
+  margin-bottom: var(--theia-ui-padding);
+  color: var(--theia-descriptionForeground);
+}
+.section-header {
+  margin: var(--theia-ui-padding) 0;
+  color: var(--theia-foreground);
+  font-size: var(--theia-ui-font-size2);
+}
+.theia-ResponseNode-Content .disable-message {
+  font-size: var(--theia-ui-font-size1);
+  line-height: 1.6;
+  padding: calc(var(--theia-ui-padding) * 2);
+}
+.theia-WelcomeMessage-Container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  height: 100%;
+  width: 100%;
+}
+.theia-WelcomeMessage-Container-Inner {
+  margin: auto 0;
+  width: 100%;
+}
+.theia-WelcomeMessage-Divider {
+  align-self: stretch;
+  height: 0;
+  border-top: 1px solid var(--theia-dropdown-border);
+  margin: calc(var(--theia-ui-padding) * 2) calc(var(--theia-ui-padding) * 3);
+}
+.theia-WelcomeMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.theia-WelcomeMessage-Main {
+  padding-top: calc(var(--theia-ui-padding) * 8);
+}
+.theia-WelcomeMessage-Compact {
+  padding-top: calc(var(--theia-ui-padding) * 2);
+}
+.theia-WelcomeMessage-Compact .theia-WelcomeMessage-Logo {
+  margin-bottom: calc(var(--theia-ui-padding));
+}
+.theia-WelcomeMessage-Compact .theia-WelcomeMessage-Content h2 {
+  font-size: var(--theia-ui-font-size2);
+  margin-bottom: var(--theia-ui-padding);
+}
+.theia-WelcomeMessage-Compact .theia-WelcomeMessage-Content p {
+  margin-bottom: calc(var(--theia-ui-padding) * 0.75);
+}
+.theia-WelcomeMessage-Compact .theia-WelcomeMessage-Alert {
+  margin-top: calc(var(--theia-ui-padding) * 1.5);
+}
+.theia-WelcomeMessage-Content {
+  text-align: center;
+  padding: 0 calc(var(--theia-ui-padding) * 2);
+  max-width: 350px;
+}
+.theia-WelcomeMessage-Content h1 {
+  margin-top: 0;
+}
+.theia-WelcomeMessage-Content h2 {
+  margin-top: 0;
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+  font-size: var(--theia-ui-font-size3);
+}
+.theia-WelcomeMessage-Content p {
+  font-size: var(--theia-ui-font-size1);
+  line-height: 1.6;
+  margin-bottom: calc(var(--theia-ui-padding) * 1.5);
+}
+.theia-WelcomeMessage-Content p .codicon {
+  vertical-align: sub;
+}
+.theia-WelcomeMessage-Content em {
+  font-weight: bolder;
+  font-style: normal;
+}
+.theia-WelcomeMessage-Content ul,
+.theia-WelcomeMessage-Content ol {
+  text-align: left;
+  padding-left: 20px;
+  list-style-position: outside;
+  margin: calc(var(--theia-ui-padding) * 0.5) 0;
+}
+.theia-WelcomeMessage-Content ul li,
+.theia-WelcomeMessage-Content ol li {
+  margin-bottom: calc(var(--theia-ui-padding) * 0.5);
+  line-height: 1.6;
+}
+.theia-WelcomeMessage-Content ul ul {
+  margin-top: calc(var(--theia-ui-padding) * 0.5);
+  padding-left: 16px;
+}
+.theia-WelcomeMessage-Disabled .theia-WelcomeMessage-Content {
+  text-align: left;
+}
+.theia-WelcomeMessage-Disabled .theia-WelcomeMessage-Content h2 {
+  text-align: center;
+}
+.theia-WelcomeMessage-Error .theia-WelcomeMessage-ErrorIcon {
+  font-size: calc(var(--theia-ui-font-size1) * 3.7);
+  margin-bottom: calc(var(--theia-ui-padding) * 2.5);
+}
+.theia-WelcomeMessage-Actions {
+  display: flex;
+  flex-direction: row;
+  gap: var(--theia-ui-padding);
+  margin: calc(var(--theia-ui-padding) * 3) 0;
+}
+.theia-WelcomeMessage-Actions .theia-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: var(--theia-ui-font-size1);
+  border: 1px solid var(--theia-button-border);
+  transition: background-color 0.2s;
+  margin-left: 0;
+}
+.theia-WelcomeMessage-Actions .theia-button.main {
+  background-color: var(--theia-button-background);
+  color: var(--theia-button-foreground);
+}
+.theia-WelcomeMessage-Actions .theia-button.main:hover {
+  background-color: var(--theia-button-hoverBackground);
+}
+.theia-WelcomeMessage-Actions .theia-button.secondary {
+  background-color: var(--theia-button-secondaryBackground);
+  color: var(--theia-button-secondaryForeground);
+}
+.theia-WelcomeMessage-Actions .theia-button.secondary:hover {
+  background-color: var(--theia-button-secondaryHoverBackground);
+}
+.theia-WelcomeMessage-Hint {
+  display: block;
+  margin-top: calc(var(--theia-ui-padding) * 2);
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.theia-WelcomeMessage-Options {
+  margin: calc(var(--theia-ui-padding) * 3) 0;
+  text-align: left;
+}
+.theia-WelcomeMessage-GuidanceList {
+  text-align: left;
+  margin: calc(var(--theia-ui-padding) * 2) 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+.theia-WelcomeMessage-GuidanceList li {
+  margin-bottom: calc(var(--theia-ui-padding) * 1.3);
+}
+.theia-WelcomeMessage-IssuesList {
+  text-align: left;
+  margin: calc(var(--theia-ui-padding) * 0.5) 0 0 0;
+  padding-left: calc(var(--theia-ui-padding) * 2);
+  font-size: var(--theia-ui-font-size1);
+  line-height: 1.5;
+}
+.theia-WelcomeMessage-IssuesList li {
+  margin-bottom: calc(var(--theia-ui-padding) * 0.25);
+}
+.theia-WelcomeMessage-AgentButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--theia-ui-padding);
+  margin: calc(var(--theia-ui-padding) * 2) 0;
+}
+.theia-WelcomeMessage-AgentButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--theia-ui-padding) * 0.5);
+  padding: calc(var(--theia-ui-padding) * 0.75) calc(var(--theia-ui-padding) * 1.5);
+  background-color: var(--theia-button-background);
+  color: var(--theia-button-foreground);
+  border: 1px solid var(--theia-button-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: var(--theia-ui-font-size1);
+  transition: background-color 0.15s;
+}
+.theia-WelcomeMessage-AgentButton:hover {
+  background-color: var(--theia-button-hoverBackground);
+}
+.theia-WelcomeMessage-AgentButton-Icon {
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-WelcomeMessage-AgentButton-Label {
+  font-weight: 500;
+}
+.theia-WelcomeMessage-SubNote {
+  font-size: var(--theia-ui-font-size1);
+  color: var(--theia-descriptionForeground);
+  margin-top: calc(var(--theia-ui-padding) * 2);
+}
+.theia-WelcomeMessage-Alert {
+  max-width: 350px;
+  margin-top: calc(var(--theia-ui-padding) * 3);
+  text-align: left;
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-WelcomeMessage-Alert.theia-warning-alert {
+  max-width: 450px;
+}
+.theia-WelcomeMessage-Alert .theia-message-header {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  font-weight: 500;
+}
+.theia-WelcomeMessage-Alert .theia-message-content p {
+  margin: 0;
+}
+.theia-WelcomeMessage-Alert .theia-message-content ol {
+  margin: calc(var(--theia-ui-padding) * 0.5) 0;
+  padding-left: calc(var(--theia-ui-padding) * 2.5);
+}
+.theia-WelcomeMessage-Alert .theia-message-content ol li {
+  margin-bottom: calc(var(--theia-ui-padding) * 0.5);
+  line-height: 1.6;
+}
+.theia-WelcomeMessage-SessionsSection {
+  padding-left: calc(var(--theia-ui-padding) * 2);
+  padding-right: calc(var(--theia-ui-padding) * 2);
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.theia-WelcomeMessage-SessionsList {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+.theia-WelcomeMessage-SessionsGroup {
+  display: flex;
+  flex-direction: column;
+}
+.theia-WelcomeMessage-SessionsGroup + .theia-WelcomeMessage-SessionsGroup {
+  margin-top: var(--theia-ui-padding);
+}
+.theia-WelcomeMessage-SessionsHeader {
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size1);
+  font-weight: 500;
+  padding: var(--theia-ui-padding) var(--theia-ui-padding) calc(var(--theia-ui-padding) / 2);
+}
+.theia-WelcomeMessage-SessionsFooter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0 calc(var(--theia-ui-padding) / 2);
+  margin-top: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding);
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-WelcomeMessage-FooterLink {
+  color: var(--theia-textLink-foreground);
+  cursor: pointer;
+  text-decoration: none;
+}
+.theia-WelcomeMessage-FooterLink:hover,
+.theia-WelcomeMessage-FooterLink:focus {
+  color: var(--theia-textLink-activeForeground);
+}
+.theia-WelcomeMessage a {
+  text-decoration: none;
+}
+.theia-WelcomeMessage a:hover,
+.theia-WelcomeMessage a:focus {
+  text-decoration: none;
+  color: var(--theia-textLink-activeForeground);
+}
+.theia-chat-session-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+  border-radius: 3px;
+  cursor: pointer;
+  outline: none;
+  min-height: calc(var(--theia-ui-font-size1) * 2.5);
+}
+.theia-chat-session-item:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.theia-chat-session-item:focus,
+.theia-chat-session-item:focus-within {
+  background-color: var(--theia-list-activeSelectionBackground);
+  color: var(--theia-list-activeSelectionForeground);
+}
+.theia-chat-session-item-icon-col {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  flex-shrink: 0;
+}
+.theia-chat-session-item-unread-dot,
+.theia-chat-session-item-attention-dot {
+  position: absolute;
+  top: -1px;
+  left: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--theia-editor-background);
+  pointer-events: none;
+}
+.theia-chat-session-item-unread-dot {
+  background-color: var(--theia-activityBarBadge-background);
+}
+.theia-chat-session-item-attention-dot {
+  background-color: var(--theia-editorWarning-foreground);
+}
+.theia-chat-session-item-unread .theia-chat-session-item-title,
+.theia-chat-session-item-attention .theia-chat-session-item-title {
+  font-weight: 600;
+}
+.theia-chat-session-item-archive-icon {
+  color: var(--theia-descriptionForeground);
+}
+.theia-chat-session-item-agent-icon {
+  color: var(--theia-icon-foreground);
+}
+.theia-chat-session-item-working .theia-chat-session-item-agent-icon {
+  color: var(--theia-focusBorder);
+}
+.theia-chat-session-item-attention .theia-chat-session-item-agent-icon {
+  color: var(--theia-editorWarning-foreground);
+}
+.theia-chat-session-item-error .theia-chat-session-item-agent-icon,
+.theia-chat-session-item-error .theia-chat-session-item-archive-icon {
+  color: var(--theia-errorForeground);
+}
+.theia-chat-session-item:focus .theia-chat-session-item-agent-icon,
+.theia-chat-session-item:focus .theia-chat-session-item-archive-icon,
+.theia-chat-session-item:focus-within .theia-chat-session-item-agent-icon,
+.theia-chat-session-item:focus-within .theia-chat-session-item-archive-icon {
+  color: inherit;
+}
+.theia-chat-session-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.theia-chat-session-item-title-line {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  min-width: 0;
+}
+.theia-chat-session-item-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--theia-ui-font-size1);
+}
+.theia-chat-session-item-subtitle {
+  color: var(--theia-descriptionForeground);
+  font-size: var(--theia-ui-font-size0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theia-chat-session-item:focus-within .theia-chat-session-item-subtitle,
+.theia-chat-session-item:focus .theia-chat-session-item-subtitle {
+  color: inherit;
+  opacity: 0.85;
+}
+.theia-chat-session-item-actions {
+  display: none;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 4);
+  flex-shrink: 0;
+}
+.theia-chat-session-item:hover .theia-chat-session-item-actions,
+.theia-chat-session-item:focus-within .theia-chat-session-item-actions,
+.theia-chat-session-item:focus .theia-chat-session-item-actions {
+  display: inline-flex;
+}
+.theia-chat-session-item-action {
+  background: transparent;
+  border: none;
+  color: var(--theia-icon-foreground);
+  cursor: pointer;
+  padding: calc(var(--theia-ui-padding) / 4);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.theia-chat-session-item-action:hover {
+  background-color: var(--theia-toolbar-hoverBackground, var(--theia-list-hoverBackground));
+}
+.theia-chat-session-item:focus-within .theia-chat-session-item-action,
+.theia-chat-session-item:focus .theia-chat-session-item-action {
+  color: inherit;
+}
+.theia-chat-session-badge-unread-tooltip,
+.theia-chat-session-badge-running-tooltip,
+.theia-chat-session-badge-attention-tooltip,
+.theia-chat-session-badge-error-tooltip,
+.theia-chat-session-badge-restored-tooltip {
+  font-size: var(--theia-ui-font-size0);
+  font-weight: 600;
+  border-radius: calc(var(--theia-ui-padding) * 0.75);
+  padding: 1px calc(var(--theia-ui-padding) * 0.75);
+  display: inline-block;
+  margin-bottom: var(--theia-ui-padding);
+}
+.theia-chat-session-badge-unread-tooltip {
+  color: var(--theia-activityBarBadge-foreground);
+  background-color: var(--theia-activityBarBadge-background);
+}
+.theia-chat-session-badge-running-tooltip {
+  color: var(--theia-activityBarBadge-foreground);
+  background-color: var(--theia-progressBar-background);
+}
+.theia-chat-session-badge-attention-tooltip {
+  color: var(--theia-activityBarBadge-foreground);
+  background-color: var(--theia-editorWarning-foreground);
+}
+.theia-chat-session-badge-error-tooltip {
+  color: var(--theia-activityBarBadge-foreground);
+  background-color: var(--theia-errorForeground);
+}
+.theia-chat-session-badge-restored-tooltip {
+  color: var(--theia-foreground);
+  background-color: var(--theia-editorWidget-background);
+  border: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.theia-chat-session-tooltip-label {
+  font-weight: 600;
+  margin-bottom: calc(var(--theia-ui-padding) * 0.5);
+}
+.theia-chat-session-tooltip-error {
+  color: var(--theia-errorForeground);
+  word-break: break-word;
+}
+.theia-chat-session-tooltip-error-prefix {
+  font-weight: 600;
+}
+.theia-chat-session-tooltip-snippet h1,
+.theia-chat-session-tooltip-snippet h2,
+.theia-chat-session-tooltip-snippet h3,
+.theia-chat-session-tooltip-snippet h4,
+.theia-chat-session-tooltip-snippet h5,
+.theia-chat-session-tooltip-snippet h6 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0 0 0.3em 0;
+}
+.theia-chat-session-tooltip hr {
+  border: none;
+  border-top: 1px solid var(--theia-editorHoverWidgetInternalBorder);
+  margin: var(--theia-ui-padding) 0;
+}
+.theia-chat-session-tooltip dl {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: calc(var(--theia-ui-padding) * 1.5);
+  row-gap: calc(var(--theia-ui-padding) * 0.5);
+  align-items: baseline;
+}
+.theia-chat-session-tooltip dt {
+  font-weight: 600;
+  color: var(--theia-foreground);
+}
+.theia-chat-session-tooltip dd {
+  margin: 0;
+  color: var(--theia-descriptionForeground);
+  word-break: break-word;
+}
+.ai-tools-configuration-header {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+  padding: var(--theia-ui-padding);
+  background-color: var(--theia-editor-background);
+  border: var(--theia-border-width) solid var(--theia-widget-border);
+  border-radius: 3px;
+}
+.ai-tools-recommended-defaults-banner {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) * 2);
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+  padding: calc(var(--theia-ui-padding) * 1.5);
+  background-color: var(--theia-editorInfo-background, var(--theia-editor-background));
+  border: var(--theia-border-width) solid var(--theia-editorInfo-border, var(--theia-widget-border));
+  border-radius: 3px;
+}
+.ai-tools-recommended-defaults-text {
+  flex: 1;
+  line-height: var(--theia-content-line-height);
+}
+.ai-tools-configuration-default-section {
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.ai-tools-configuration-default-label {
+  font-weight: bold;
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-tools-configuration-default-select {
+  font-size: 14px;
+  padding: var(--theia-ui-padding);
+}
+.ai-tools-configuration-tools-label {
+  font-weight: bold;
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-tools-configuration-tools-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ai-tools-configuration-tool-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+  border-radius: 4px;
+  padding: var(--theia-ui-padding);
+  transition: background 0.2s, opacity 0.2s;
+}
+.ai-tools-configuration-tool-item.default {
+  opacity: 0.5;
+  background: none;
+}
+.ai-tools-configuration-tool-item.custom {
+  opacity: 1;
+  background: var(--theia-editor-inactiveSelectionBackground);
+}
+.ai-tools-configuration-tool-name {
+  flex: 1;
+}
+.ai-tools-configuration-tool-select {
+  margin-right: var(--theia-ui-padding);
+}
+.ai-tools-configuration-tool-icon {
+  font-size: 18px;
+}
+.ai-model-alias-list {
+  width: 25%;
+}
+.ai-alias-detail-title {
+  padding-left: 0;
+  padding-bottom: var(--theia-ui-padding);
+}
+.ai-alias-detail-description {
+  padding-bottom: var(--theia-ui-padding);
+}
+.ai-alias-detail-selected-model {
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.ai-language-model-item-ready {
+  font-style: normal;
+}
+.ai-language-model-item-not-ready {
+  font-style: italic;
+}
+.ai-alias-priority-item-resolved {
+  font-weight: bold;
+}
+.ai-alias-priority-item-ready {
+  font-style: inherit;
+}
+.ai-alias-priority-item-not-ready {
+  font-style: italic;
+}
+.ai-alias-detail-defaults {
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-model-default-not-ready {
+  font-style: italic;
+  color: var(--theia-descriptionForeground);
+}
+.ai-alias-defaults-hint {
+  color: var(--theia-descriptionForeground);
+  margin-top: var(--theia-ui-padding);
+}
+.ai-alias-evaluates-to-container {
+  margin-top: var(--theia-ui-padding);
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-alias-evaluates-to-label {
+  font-weight: 600;
+}
+.ai-model-status-ready {
+  color: var(--theia-ansi-green-color);
+  margin-left: var(--theia-ui-padding);
+}
+.ai-model-status-not-ready {
+  color: var(--theia-ansi-red-color);
+  margin-left: var(--theia-ui-padding);
+}
+.ai-alias-evaluates-to-unresolved {
+  margin-left: var(--theia-ui-padding);
+  color: var(--theia-descriptionForeground);
+}
+.ai-alias-detail-agents {
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-alias-agent-id {
+  color: var(--theia-descriptionForeground);
+  margin-left: var(--theia-ui-padding);
+}
+.ai-alias-no-agents {
+  color: var(--theia-descriptionForeground);
+}
+.token-usage-configuration-title {
+  margin: 0 0 calc(var(--theia-ui-padding) * 2) 0;
+  border-bottom: 1px solid var(--theia-widget-border);
+  padding-bottom: var(--theia-ui-padding);
+}
+.token-usage-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+}
+.token-usage-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--theia-button-background);
+  color: var(--theia-button-foreground);
+  border: none;
+  border-radius: 4px;
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+  font-size: var(--theia-ui-font-size1);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.token-usage-refresh-button:hover {
+  background-color: var(--theia-button-hoverBackground);
+}
+.token-usage-refresh-button i {
+  margin-right: var(--theia-ui-padding);
+}
+.token-usage-table-container {
+  overflow-x: auto;
+  border-radius: var(--theia-ui-padding);
+  background-color: var(--theia-editorWidget-background);
+}
+.token-usage-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.token-usage-header th {
+  text-align: left;
+  padding: 10px;
+  background-color: var(--theia-editor-background);
+  color: var(--theia-descriptionForeground);
+  font-weight: bold;
+}
+.token-usage-model-column {
+  width: 25%;
+}
+.token-usage-column {
+  width: 18.75%;
+}
+.token-usage-row td {
+  padding: var(--theia-ui-padding);
+}
+.token-usage-row:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.token-usage-summary-row td {
+  padding: var(--theia-ui-padding);
+  background-color: var(--theia-editor-background);
+  color: var(--theia-foreground);
+}
+.token-usage-model-cell {
+  font-weight: 500;
+}
+.token-usage-notes {
+  margin-top: calc(var(--theia-ui-padding) * 2);
+  color: var(--theia-descriptionForeground);
+}
+.token-usage-note {
+  display: flex;
+  align-items: center;
+  font-size: var(--theia-ui-font-size1);
+}
+.token-usage-note i {
+  margin-right: var(--theia-ui-padding);
+}
+.ai-empty-state-content {
+  padding: var(--theia-ui-padding);
+  text-align: center;
+  color: var(--theia-descriptionForeground);
+}
+.ai-configuration-footer-total {
+  margin-top: var(--theia-ui-padding);
+}
+.ai-configuration-footer-total-row {
+  font-weight: 600;
+  border-top: 2px solid var(--theia-widget-border);
+}
+.ai-configuration-info-box {
+  margin-top: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding);
+  background-color: var(--theia-editor-background);
+  border-radius: 3px;
+}
+.ai-configuration-info-text {
+  margin: 0;
+  color: var(--theia-descriptionForeground);
+}
+.ai-configuration-info-icon {
+  margin-right: calc(var(--theia-ui-padding) / 2);
+}
+.ai-variable-name-cell {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ai-variable-description-cell {
+  color: var(--theia-descriptionForeground);
+}
+.ai-configuration-warning-text {
+  color: var(--theia-editorWarning-foreground);
+}
+.ai-templates-table tr.capability-modified {
+  border-left: 2px solid var(--theia-settings-modifiedItemIndicator);
+}
+.capability-reset-all-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(var(--theia-ui-padding) * 1.5);
+}
+.ai-agent-description {
+  margin-bottom: calc(var(--theia-ui-padding) * 2);
+  color: var(--theia-descriptionForeground);
+  line-height: 1.5;
+}
+.todo-tool-container {
+  display: flex;
+  flex-direction: column;
+  padding: var(--theia-ui-padding);
+}
+.todo-tool-header {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  margin-bottom: var(--theia-ui-padding);
+  color: var(--theia-foreground);
+}
+.todo-tool-title {
+  font-weight: 600;
+}
+.todo-tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.todo-tool-item {
+  display: flex;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+}
+.todo-tool-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  flex-shrink: 0;
+}
+.todo-status-pending .todo-tool-icon {
+  color: var(--theia-descriptionForeground);
+}
+.todo-status-in_progress .todo-tool-icon {
+  color: var(--theia-progressBar-background);
+}
+.todo-status-completed .todo-tool-icon {
+  color: var(--theia-successBackground);
+}
+.todo-status-completed .todo-tool-text {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.todo-tool-empty {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.ai-shell-permission-list-section {
+  margin-top: calc(var(--theia-ui-padding) * 3);
+  padding-top: calc(var(--theia-ui-padding) * 2);
+  border-top: var(--theia-border-width) solid var(--theia-widget-border);
+}
+.ai-shell-permission-list-description {
+  color: var(--theia-descriptionForeground);
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-shell-permission-list-input-row {
+  display: flex;
+  gap: var(--theia-ui-padding);
+  margin-bottom: var(--theia-ui-padding);
+}
+.ai-shell-permission-list-input-row .theia-input {
+  flex: 1;
+}
+.ai-shell-permission-list-patterns {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ai-shell-permission-list-pattern-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--theia-ui-padding) / 2) var(--theia-ui-padding);
+  background-color: var(--theia-editor-background);
+  border: var(--theia-border-width) solid var(--theia-widget-border);
+  border-radius: 3px;
+  margin-bottom: calc(var(--theia-ui-padding) / 2);
+}
+.ai-shell-permission-list-pattern-item code {
+  font-family: var(--theia-code-font-family);
+  font-size: var(--theia-code-font-size);
+}
+.ai-shell-permission-list-empty {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.ai-shell-permission-list-error {
+  color: var(--theia-errorForeground);
+  margin-top: calc(var(--theia-ui-padding) / 2);
+  margin-bottom: var(--theia-ui-padding);
+}
+.user-interaction-tool.title {
+  font-weight: 600;
+  font-family: var(--theia-ui-font-family);
+  font-size: var(--theia-ui-font-size1);
+  flex: 1;
+}
+.user-interaction-tool.status {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  font-size: var(--theia-ui-font-size0);
+  margin-left: auto;
+  white-space: nowrap;
+}
+.user-interaction-tool.status.completed {
+  color: var(--theia-gitDecoration-addedResourceForeground, var(--theia-descriptionForeground));
+}
+.user-interaction-tool.status.canceled {
+  color: var(--theia-errorForeground);
+}
+.user-interaction-tool.status.waiting {
+  color: var(--theia-disabledForeground);
+}
+.user-interaction-tool.status.waiting::after {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: dots 1s steps(1, end) infinite;
+}
+.user-interaction-tool.progress {
+  display: flex;
+  gap: 4px;
+  padding: 0 calc(var(--theia-ui-padding) * 2) calc(var(--theia-ui-padding) * 2);
+}
+.user-interaction-tool.progress-dot {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background-color: var(--theia-widget-border);
+  cursor: pointer;
+}
+.user-interaction-tool.progress-dot::after {
+  content: "";
+  position: absolute;
+  inset: -8px -2px;
+}
+.user-interaction-tool.progress-dot:hover {
+  background-color: var(--theia-button-hoverBackground);
+}
+.user-interaction-tool.progress-dot:focus-visible {
+  outline: 1px solid var(--theia-focusBorder);
+  outline-offset: 2px;
+}
+.user-interaction-tool.progress-dot.done {
+  background-color: var(--theia-button-background);
+}
+.user-interaction-tool.progress-dot.active {
+  background-color: var(--theia-focusBorder);
+}
+.user-interaction-tool.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--theia-ui-padding) / 2);
+  padding: 0 calc(var(--theia-ui-padding) * 2) var(--theia-ui-padding);
+}
+.user-interaction-tool.link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  padding: calc(var(--theia-ui-padding) / 2) var(--theia-ui-padding);
+  background-color: var(--theia-button-secondaryBackground);
+  color: var(--theia-button-secondaryForeground);
+  border: 1px solid var(--theia-button-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: var(--theia-ui-font-size1);
+  transition: background-color 0.15s;
+}
+.user-interaction-tool.link-button:hover {
+  background-color: var(--theia-button-secondaryHoverBackground);
+}
+.user-interaction-tool.message {
+  padding: 0 calc(var(--theia-ui-padding) * 2);
+  color: var(--theia-foreground);
+  line-height: 1.5;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.user-interaction-tool.message p {
+  margin: 0 0 calc(var(--theia-ui-padding) / 2) 0;
+}
+.user-interaction-tool.message p:last-child {
+  margin-bottom: 0;
+}
+.user-interaction-tool.message pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.user-interaction-tool.message code {
+  word-break: break-word;
+}
+.user-interaction-tool.message pre code {
+  word-break: normal;
+}
+.user-interaction-tool.message .theia-MermaidViewer-root {
+  margin-top: var(--theia-ui-padding);
+}
+.user-interaction-tool.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--theia-ui-padding);
+  padding: var(--theia-ui-padding) calc(var(--theia-ui-padding) * 2);
+}
+.user-interaction-tool.option-button {
+  display: inline-grid;
+  place-items: center;
+  margin-left: 0;
+  padding: calc(var(--theia-ui-padding) * 1.5) calc(var(--theia-ui-padding) * 4);
+  font-size: var(--theia-ui-font-size1);
+  min-width: 100px;
+}
+.user-interaction-tool.option-button-label,
+.user-interaction-tool.option-button-bold-spacer {
+  grid-area: 1 / 1;
+}
+.user-interaction-tool.option-button-bold-spacer {
+  font-weight: bold;
+  visibility: hidden;
+  pointer-events: none;
+}
+.user-interaction-tool.option-button.selected .user-interaction-tool.option-button-label {
+  font-weight: bold;
+}
+.user-interaction-tool.option-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.user-interaction-tool.pending-text {
+  color: var(--theia-descriptionForeground);
+  font-style: italic;
+}
+.user-interaction-tool.comment-section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--theia-ui-padding) / 2);
+  padding: calc(var(--theia-ui-padding) * 2) calc(var(--theia-ui-padding) * 2) var(--theia-ui-padding);
+}
+.user-interaction-tool.comment-input-row {
+  display: flex;
+  gap: var(--theia-ui-padding);
+  align-items: center;
+}
+.user-interaction-tool.comment-input-field {
+  flex: 1;
+  box-sizing: border-box;
+}
+.user-interaction-tool.comment-submit {
+  white-space: nowrap;
+}
+.user-interaction-tool.comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--theia-ui-padding) / 2);
+}
+.user-interaction-tool.comment-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--theia-ui-padding);
+  padding: calc(var(--theia-ui-padding) / 2) var(--theia-ui-padding);
+  background-color: var(--theia-editorWidget-background);
+  border: 1px solid var(--theia-widget-border);
+  border-radius: 3px;
+}
+.user-interaction-tool.comment-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.user-interaction-tool.comment-remove {
+  background: transparent;
+  border: none;
+  color: var(--theia-icon-foreground);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 3px;
+}
+.user-interaction-tool.comment-remove:hover {
+  background-color: var(--theia-list-hoverBackground);
+}
+.user-interaction-tool.advance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--theia-ui-padding);
+  padding: calc(var(--theia-ui-padding) * 1.5) calc(var(--theia-ui-padding) * 2);
+  margin-top: calc(var(--theia-ui-padding) * 1.5);
+  background-color: var(--theia-titleBar-inactiveBackground, var(--theia-editorGroupHeader-tabsBackground));
+  border-top: 2px solid var(--theia-focusBorder);
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+.user-interaction-tool.page-counter {
+  font-family: var(--theia-code-font-family);
+  font-size: var(--theia-ui-font-size1);
+  font-weight: 500;
+  color: var(--theia-descriptionForeground);
+  letter-spacing: 0.05em;
+  flex: 1;
+  text-align: center;
+}
+.user-interaction-tool.back-button,
+.user-interaction-tool.advance-button {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--theia-ui-padding) / 2);
+  padding: calc(var(--theia-ui-padding)) calc(var(--theia-ui-padding) * 2.5);
+  font-size: var(--theia-ui-font-size1);
+  min-width: 110px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.user-interaction-tool.back-button {
+  justify-content: flex-start;
+}
+.user-interaction-tool.advance-button {
+  justify-content: flex-end;
+}
+.user-interaction-tool.back-button:disabled {
+  visibility: hidden;
+}
+.user-interaction-tool.option-button.selected {
+  outline: 2px solid var(--theia-focusBorder);
+  outline-offset: -2px;
 }
 /*! Bundled license information:
 

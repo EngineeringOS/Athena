@@ -341,6 +341,15 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
     async requestSemanticHistoryState(params) {
         return this.sendLanguageRequest('athena/semanticHistoryState', params);
     }
+    async requestAiReasoning(params) {
+        return this.sendLanguageRequest('athena/aiReasoning', params);
+    }
+    async requestAiReasoningState() {
+        return this.sendLanguageRequest('athena/aiReasoningState', {});
+    }
+    async requestAiReasoningDecision(params) {
+        return this.sendLanguageRequest('athena/aiReasoningDecision', params);
+    }
     async sendLanguageRequest(method, params, model) {
         if (this.repositorySessionService.state.lifecycle !== 'ready') {
             return undefined;

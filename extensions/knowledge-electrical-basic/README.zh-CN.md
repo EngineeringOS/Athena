@@ -1,4 +1,4 @@
-# `extensions/knowledge-electrical-basic`
+﻿# `extensions/knowledge-electrical-basic`
 
 [English](README.md) | 简体中文
 

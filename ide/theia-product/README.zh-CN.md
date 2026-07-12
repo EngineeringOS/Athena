@@ -11,6 +11,7 @@
 - 桌面启动脚本与 Theia application 配置
 - 产品身份与 branding 入口
 - 后续桌面与浏览器打包挂点
+- 对 Theia AI foundation dependency 的增量组合，用于 provider configuration 与 generic assistant chrome
 
 ## 边界
 

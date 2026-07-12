@@ -157,6 +157,8 @@ class AthenaRuntimeTest {
         assertSame(services.engineeringGraph(), services.engineeringGraph())
         assertSame(services.commandRuntime(), services.commandRuntime())
         assertSame(services.aiProposalRuntime(), services.aiProposalRuntime())
+        assertSame(services.aiReasoningRuntime(), services.aiReasoningRuntime())
+        assertSame(services.aiReasoningSessions(), services.aiReasoningSessions())
         assertSame(pluginServices, services.pluginRuntimeServices())
     }
 
@@ -172,6 +174,8 @@ class AthenaRuntimeTest {
         assertSame(runtime.serviceRegistry.engineeringGraph(), context.engineeringGraph())
         assertSame(runtime.serviceRegistry.commandRuntime(), context.commandRuntime())
         assertSame(runtime.serviceRegistry.aiProposalRuntime(), context.aiProposalRuntime())
+        assertSame(runtime.serviceRegistry.aiReasoningRuntime(), context.aiReasoningRuntime())
+        assertSame(runtime.serviceRegistry.aiReasoningSessions(), context.aiReasoningSessions())
     }
 
     @Test

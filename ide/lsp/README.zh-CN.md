@@ -18,6 +18,7 @@
 - 通过现有 runtime-backed source-mutation request 增量传输 typed engineering impact consequences
 - 通过现有 semantic review 与 semantic SCM transport 增量传输 typed engineering-impact consequence 列表，以及显式的 `engineering-impact` review / commit entry
 - 面向 baseline-driven review、commit-preparation 与 package-history state 的增量语义 SCM 请求表面
+- 面向 AI reasoning 的增量请求表面：前转 typed reasoning-session request，并返回 DTO-only 的 proposal / session payload
 - 面向 runtime-owned graphical state inspection 的增量 projection-session 请求表面
 - 面向 inspect-first graphical interaction 的显式 governed projection-command allowlist，目前仅包含 active-view switching
 - 增量传输 M11 的 projection family id、sheet state、notation pack 与 cross-reference payload
@@ -35,6 +36,7 @@ M9 保持交付规则狭窄：
 - semantic inspection 仍然是 JVM-owned 的只读快照，只是增量暴露当前 knowledge-runtime 计数
 - before/after engineering impact 继续走现有 source-mutation request 表面，而不是引入第二套 knowledge transport
 - semantic SCM 与 accepted-mutation review 现在也会投影同一套 typed engineering-impact consequence，让 direct edit 与 downstream affected subject 在 LSP 边界保持可区分
+- AI reasoning request 在这里仍然只是 transport：`athena/aiReasoning` 可以引用 semantic SCM 的 baseline 选择，但 deterministic evidence assembly、review-summary resolution、provider-neutral session orchestration 与 typed proposal recording 仍然保持 JVM-owned
 
 当前 M7 projection boundary 故意保持狭窄：
 

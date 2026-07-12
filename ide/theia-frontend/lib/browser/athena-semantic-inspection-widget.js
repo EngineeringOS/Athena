@@ -62,8 +62,11 @@ let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extend
     semanticSelectionService;
     currentEditorListeners = new disposable_1.DisposableCollection();
     inspection;
+    reasoningState;
     errorMessage;
+    reasoningErrorMessage;
     loading = false;
+    reasoningLoading = false;
     refreshHandle;
     init() {
         this.id = AthenaSemanticInspectionWidget_1.ID;
@@ -110,42 +113,112 @@ let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extend
         const currentEditor = this.editorManager.currentEditor;
         if (sessionState.lifecycle !== 'ready') {
             this.loading = false;
+            this.reasoningLoading = false;
             this.errorMessage = undefined;
+            this.reasoningErrorMessage = undefined;
             this.inspection = undefined;
+            this.reasoningState = undefined;
             this.update();
             return;
         }
         if (!this.isAthenaEditor(currentEditor)) {
             this.loading = false;
+            this.reasoningLoading = false;
             this.errorMessage = undefined;
+            this.reasoningErrorMessage = undefined;
             this.inspection = undefined;
+            this.reasoningState = undefined;
             this.update();
             return;
         }
         const currentUri = currentEditor.editor.uri.toString();
         this.loading = true;
+        this.reasoningLoading = true;
         this.errorMessage = undefined;
+        this.reasoningErrorMessage = undefined;
         this.update();
         try {
             const inspection = await this.lspEditorBridgeService.requestSemanticInspection(currentEditor);
+            const reasoningState = await this.lspEditorBridgeService.requestAiReasoningState();
             if (this.editorManager.currentEditor?.editor.uri.toString() !== currentUri) {
                 return;
             }
             this.inspection = inspection;
+            this.reasoningState = reasoningState;
         }
         catch (error) {
             if (this.editorManager.currentEditor?.editor.uri.toString() !== currentUri) {
                 return;
             }
-            this.errorMessage = error instanceof Error ? error.message : String(error);
+            const message = error instanceof Error ? error.message : String(error);
+            this.errorMessage = message;
+            this.reasoningErrorMessage = message;
             this.inspection = undefined;
+            this.reasoningState = undefined;
         }
         finally {
             if (this.editorManager.currentEditor?.editor.uri.toString() === currentUri) {
                 this.loading = false;
+                this.reasoningLoading = false;
                 this.update();
             }
         }
+    }
+    async requestDiagnosticExplanation() {
+        const currentEditor = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(currentEditor)) {
+            return;
+        }
+        this.reasoningLoading = true;
+        this.reasoningErrorMessage = undefined;
+        this.update();
+        try {
+            await this.lspEditorBridgeService.requestAiReasoning({
+                requestCategory: 'diagnostic-explanation',
+                subjectSemanticIds: this.currentReasoningSubjectIds()
+            });
+            this.reasoningState = await this.lspEditorBridgeService.requestAiReasoningState();
+        }
+        catch (error) {
+            this.reasoningErrorMessage = error instanceof Error ? error.message : String(error);
+        }
+        finally {
+            this.reasoningLoading = false;
+            this.update();
+        }
+    }
+    async applyReasoningDecision(proposalId, decision) {
+        this.reasoningLoading = true;
+        this.reasoningErrorMessage = undefined;
+        this.update();
+        try {
+            await this.lspEditorBridgeService.requestAiReasoningDecision({
+                proposalId,
+                decision
+            });
+            this.reasoningState = await this.lspEditorBridgeService.requestAiReasoningState();
+        }
+        catch (error) {
+            this.reasoningErrorMessage = error instanceof Error ? error.message : String(error);
+        }
+        finally {
+            this.reasoningLoading = false;
+            this.update();
+        }
+    }
+    currentReasoningSubjectIds() {
+        const selectedSemanticId = this.semanticSelectionService.selection?.semanticId;
+        if (selectedSemanticId) {
+            return [selectedSemanticId];
+        }
+        return this.inspection?.components.slice(0, 1).map(component => component.semanticId) ?? [];
+    }
+    diagnosticProposals() {
+        const selectedSemanticId = this.semanticSelectionService.selection?.semanticId;
+        return (this.reasoningState?.proposals ?? [])
+            .filter(proposal => proposal.proposalCategory === 'diagnostic-explanation')
+            .filter(proposal => !selectedSemanticId || proposal.subjectSemanticIds.includes(selectedSemanticId))
+            .sort((left, right) => right.proposalId.localeCompare(left.proposalId));
     }
     isAthenaEditor(widget) {
         return !!widget && widget.editor.uri.toString().toLowerCase().endsWith('.athena');
@@ -238,6 +311,16 @@ let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extend
                     ? React.createElement("p", null, "No diagnostics are currently attached to this tracked document state.")
                     : React.createElement("ul", { className: 'athena-semantic-inspection__dense-list' }, inspection.diagnosticSummaries.map(summary => React.createElement("li", { key: summary }, summary)))),
             React.createElement("section", { className: 'athena-semantic-inspection__section' },
+                React.createElement("h3", null, "AI diagnostic explanation"),
+                React.createElement("div", { className: 'athena-ai-reasoning__actions' },
+                    React.createElement("button", { className: 'athena-ai-reasoning__action', type: 'button', onClick: () => void this.requestDiagnosticExplanation(), disabled: this.reasoningLoading || inspection.diagnosticsCount === 0 }, this.reasoningLoading ? 'Explaining...' : 'Explain diagnostic')),
+                this.reasoningErrorMessage
+                    ? React.createElement("p", null, this.reasoningErrorMessage)
+                    : undefined,
+                this.diagnosticProposals().length === 0
+                    ? React.createElement("p", null, "No diagnostic explanation proposal has been recorded yet for the current focus.")
+                    : React.createElement("ul", { className: 'athena-ai-reasoning__proposal-list' }, this.diagnosticProposals().map(proposal => this.renderReasoningProposal(proposal)))),
+            React.createElement("section", { className: 'athena-semantic-inspection__section' },
                 React.createElement("h3", null, "Components"),
                 inspection.components.length === 0
                     ? React.createElement("p", null, "No canonical components were derived from the current document state.")
@@ -274,6 +357,28 @@ let AthenaSemanticInspectionWidget = class AthenaSemanticInspectionWidget extend
     }
     isSelected(semanticId) {
         return this.semanticSelectionService.selection?.semanticId === semanticId;
+    }
+    renderReasoningProposal(proposal) {
+        return React.createElement("li", { key: proposal.proposalId, className: 'athena-ai-reasoning__proposal' },
+            React.createElement("div", { className: 'athena-ai-reasoning__proposal-header' },
+                React.createElement("strong", null, proposal.summary),
+                React.createElement("span", { className: `athena-ai-reasoning__status athena-ai-reasoning__status--${proposal.decisionState}` }, proposal.decisionState)),
+            React.createElement("div", { className: 'athena-ai-reasoning__meta' },
+                React.createElement("span", null, proposal.providerStatus),
+                proposal.providerId ? React.createElement("span", null, proposal.providerId) : undefined,
+                React.createElement("code", null, proposal.proposalId)),
+            React.createElement("p", null, proposal.response),
+            React.createElement("ul", { className: 'athena-ai-reasoning__evidence-list' }, proposal.evidence.map(evidence => React.createElement("li", { key: `${proposal.proposalId}:${evidence.referenceId}` },
+                React.createElement("strong", null, evidence.kind),
+                " ",
+                React.createElement("code", null, evidence.referenceId),
+                " ",
+                evidence.summary))),
+            proposal.decisionState === 'unresolved'
+                ? React.createElement("div", { className: 'athena-ai-reasoning__actions' },
+                    React.createElement("button", { className: 'athena-ai-reasoning__action', type: 'button', onClick: () => void this.applyReasoningDecision(proposal.proposalId, 'accepted') }, "Accept"),
+                    React.createElement("button", { className: 'athena-ai-reasoning__action athena-ai-reasoning__action--secondary', type: 'button', onClick: () => void this.applyReasoningDecision(proposal.proposalId, 'dismissed') }, "Dismiss"))
+                : undefined);
     }
 };
 exports.AthenaSemanticInspectionWidget = AthenaSemanticInspectionWidget;

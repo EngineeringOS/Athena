@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-`:kernel:runtime` 模块拥有 Athena 的长生命周期运行时边界。它负责 workspace 生命周期、活动项目上下文、运行时服务解析、投影会话、命令执行、历史、工程图投影、宿主插件生命周期检查与执行，以及可选的 AI 提案审阅，同时不会变成第二语义真源。
+`:kernel:runtime` 模块拥有 Athena 的长生命周期运行时边界。它负责 workspace 生命周期、活动项目上下文、运行时服务解析、投影会话、命令执行、历史、工程图投影、宿主插件生命周期检查与执行，以及可选的 AI 命令提案、AI reasoning proposal 审阅与 provider-neutral AI reasoning session，同时不会变成第二语义真源。
 
 ## 职责
 
@@ -19,9 +19,14 @@
 - 消费编译器派生的 `:kernel:projection-model` 文档，作为图形投影的主输入。
 - 通过同一条 runtime-owned projection session 发布 projection family id、sheet state、notation pack 与 cross reference。
 - 让运行时规范状态始终与 `Engineering IR` 保持一致。
-- 托管命令历史、撤销、重做、重放、差异检查以及已接受 AI 提案流程。
+- 托管命令历史、撤销、重做、重放、差异检查、已接受 AI 命令提案流程，以及保存型 AI reasoning proposal 流程。
+- 在 deterministic context assembly 之上、后续 provider transport 之下，托管 provider-neutral AI reasoning session。
 - 在受支持的语义变更后，对外发布运行时可见的增量刷新元数据。
 - 通过现有 runtime-owned mutation inspection surface 增量发布 engineering sufficiency diagnostics 与 impact consequences。
+- 以 runtime-owned audit data 的形式保存 typed AI reasoning context、evidence、proposal category、provider status 与 decision state。
+- 在任何 provider call 之前，从 compiled knowledge output 与 governed review fact 组装 deterministic AI reasoning context package。
+- 通过可替换的 runtime-owned provider boundary 提交 governed AI reasoning request，同时保留 typed session outcome record。
+- 在依赖 live model 之前，提供一个 deterministic proof provider，用于 explanation、impact-summary 与 next-check 的验证路径。
 
 ## 主要类型
 
@@ -37,6 +42,13 @@
 - `AthenaSemanticHistoryStateService`
 - `AthenaRuntimeProjectionSession`
 - `AthenaCommandRuntimeService`
+- `AthenaAiProposalRuntimeService`
+- `AthenaAiReasoningRuntimeService`
+- `AthenaAiReasoningSessionRuntimeService`
+- `AthenaAiDeterministicProofProvider`
+- `AthenaAiReasoningContextRequest`
+- `AthenaAiReasoningSessionRequest`
+- `AthenaAiReasoningProvider`
 - `AthenaEngineeringGraphService`
 
 ## 依赖
@@ -49,7 +61,7 @@
 
 ## 边界
 
-该模块不直接解析 DSL 源文本，不定义规范 IR 结构，也不拥有领域语义。它拥有这些下层之上的运行时生命周期与编排。投影会话只是建立在编译器派生的 `:kernel:projection-model` 工件之上的运行时状态；切换视图不会修改规范工程语义。Repeated reference 与 cross reference 仍然只是锚定 canonical semantic id 的下游 projection 证据，runtime 负责传输，不负责重新定义它们的语义。
+该模块不直接解析 DSL 源文本，不定义规范 IR 结构，也不拥有领域语义。它拥有这些下层之上的运行时生命周期与编排。投影会话只是建立在编译器派生的 `:kernel:projection-model` 工件之上的运行时状态；切换视图不会修改规范工程语义。Repeated reference 与 cross reference 仍然只是锚定 canonical semantic id 的下游 projection 证据，runtime 负责传输，不负责重新定义它们的语义。AI reasoning proposal 也只是建立在治理后的 semantic evidence 之上的 typed runtime audit record，不会变成 semantic truth 或 direct mutation authority。AI reasoning session 也只是 runtime-owned orchestration record，位于 deterministic context assembly 之上、replaceable provider transport 之下。
 
 ## Review Contract
 

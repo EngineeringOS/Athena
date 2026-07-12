@@ -11,6 +11,7 @@ English | [Chinese (Simplified)](README.zh-CN.md)
 - desktop launch scripts and Theia application config
 - product identity and branding entry points
 - later desktop and browser packaging hooks
+- additive Theia AI foundation dependency composition for provider configuration and generic assistant chrome
 
 ## Boundary
 

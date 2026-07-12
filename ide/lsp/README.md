@@ -18,6 +18,7 @@ English | [Chinese (Simplified)](README.zh-CN.md)
 - additive source-mutation transport for typed engineering impact consequences over the existing runtime-backed mutation request
 - additive semantic review and semantic SCM transport for typed engineering-impact consequence lists plus explicit `engineering-impact` review and commit entries
 - additive semantic SCM request surfaces for baseline-driven review, commit-preparation, and package-history state
+- additive AI reasoning request surface that forwards typed reasoning-session requests and returns DTO-only proposal/session payloads
 - additive projection-session request surfaces for runtime-owned graphical state inspection
 - one explicit governed projection-command allowlist for inspect-first graphical interaction, currently limited to active-view switching
 - additive M11 transport for projection-family ids, sheet state, notation packs, and cross-reference payloads
@@ -35,6 +36,7 @@ M9 keeps the delivery rule narrow:
 - semantic inspection remains a read-only JVM-owned snapshot and now exposes current knowledge-runtime counts additively
 - before/after engineering impact flows through the existing source-mutation request surface instead of introducing a second knowledge transport
 - semantic SCM and accepted-mutation review now project the same typed engineering-impact consequence set so direct edits and downstream affected subjects stay distinguishable at the LSP boundary
+- AI reasoning requests stay transport-only here: `athena/aiReasoning` can reference semantic SCM baseline selection, but deterministic evidence assembly, review-summary resolution, provider-neutral session orchestration, and typed proposal recording all remain JVM-owned downstream
 
 The current M7 projection boundary is intentionally narrow:
 
