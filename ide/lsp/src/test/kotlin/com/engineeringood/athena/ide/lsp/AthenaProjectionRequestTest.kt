@@ -408,10 +408,15 @@ class AthenaProjectionRequestTest {
                 assertNotNull(payload)
                 assertEquals("ready", payload.status)
                 assertEquals("factory-line", payload.projectName)
-                assertEquals(listOf("cabinet", "wiring"), payload.supportedViews.map { view -> view.viewId })
+                assertEquals(
+                    listOf("cabinet", "wiring", "schematic", "documentation"),
+                    payload.supportedViews.map { view -> view.viewId },
+                )
                 assertEquals("cabinet", payload.activeViewId)
                 val cabinetView = payload.supportedViews.first { view -> view.viewId == "cabinet" }
                 val wiringView = payload.supportedViews.first { view -> view.viewId == "wiring" }
+                assertEquals("electrical/cabinet", cabinetView.familyId)
+                assertEquals("electrical/wiring", wiringView.familyId)
                 assertEquals(ProjectionInteractivity.INTERACTIVE.name.lowercase(), cabinetView.ownershipContract.interactivity)
                 assertEquals(
                     listOf("devices", "ports", "ownership-relationships", "connectivity-relationships", "grouped-placement"),
@@ -452,9 +457,26 @@ class AthenaProjectionRequestTest {
                 assertNull(payload.unavailableReason)
 
                 val readyProjection = assertNotNull(payload.readyProjection)
+                assertEquals("electrical/cabinet", readyProjection.familyId)
                 assertEquals("DemoCabinet", readyProjection.systemName)
                 assertEquals(480, readyProjection.canvasWidth)
                 assertEquals(172, readyProjection.canvasHeight)
+                assertEquals(
+                    "cabinet/projection/node/component_PLC1",
+                    readyProjection.components.first { component -> component.semanticId == "component:PLC1" }.projectionId,
+                )
+                assertEquals("electrical-notation/cabinet/default-v1", readyProjection.notationPack?.packId)
+                assertTrue(
+                    readyProjection.notationPack?.subjects?.any { subject ->
+                        subject.semanticId == "component:PLC1" && subject.symbolKey == "device.cabinet.default"
+                    } == true,
+                )
+                assertEquals("cabinet/sheet/01-main", readyProjection.activeSheetId)
+                assertEquals(listOf("cabinet/sheet/01-main"), readyProjection.sheets.map { sheet -> sheet.sheetId })
+                assertEquals(
+                    listOf("component:M1", "component:PLC1", "connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
+                    readyProjection.sheets.single().subjectSemanticIds,
+                )
                 assertEquals(
                     listOf("electrical-runtime.render.cabinet"),
                     readyProjection.activeRenderContributions.map { contribution -> contribution.contributionId },
@@ -518,6 +540,65 @@ class AthenaProjectionRequestTest {
 
                 assertNotNull(queriedSession)
                 assertEquals("wiring", queriedSession.activeViewId)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `projection session payload exposes documentation sheet navigation without redefining semantic identity`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-projection-documentation-sheets-",
+            sourceFileName = "demo-cabinet.athena",
+            sourceText = demoCabinetSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val commandPayload = assertNotNull(
+                    server.projectionCommand(
+                    AthenaProjectionCommandParams(
+                        commandId = "switch-active-view",
+                        viewId = "documentation",
+                    ),
+                ).get(),
+                )
+
+                val session = assertNotNull(commandPayload.session)
+                val readyProjection = assertNotNull(session.readyProjection)
+                assertEquals("documentation", session.activeViewId)
+                assertEquals("electrical/documentation", readyProjection.familyId)
+                assertEquals("documentation/sheet/01-overview", readyProjection.activeSheetId)
+                assertEquals(
+                    listOf("documentation/sheet/01-overview", "documentation/sheet/02-reference"),
+                    readyProjection.sheets.map { sheet -> sheet.sheetId },
+                )
+                assertEquals("documentation/sheet/02-reference", readyProjection.sheets.first().nextSheetId)
+                assertEquals("documentation/sheet/01-overview", readyProjection.sheets.last().previousSheetId)
+                assertTrue(readyProjection.sheets.first().subjectSemanticIds.contains("component:PLC1"))
+                assertTrue(readyProjection.sheets.last().subjectSemanticIds.contains("component:PLC1"))
+                assertEquals(2, readyProjection.components.count { component -> component.semanticId == "component:PLC1" })
+                assertEquals(
+                    2,
+                    readyProjection.components
+                        .filter { component -> component.semanticId == "component:PLC1" }
+                        .map { component -> component.projectionId }
+                        .distinct()
+                        .size,
+                )
             } finally {
                 server.shutdown().get()
             }

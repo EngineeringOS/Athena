@@ -27,8 +27,13 @@ class AthenaRuntimeProjectionSessionTest {
         val wiringView = session.supportedViews.first { view -> view.viewId == "wiring" }
 
         assertEquals("demo-cabinet", session.projectName)
-        assertEquals(listOf("cabinet", "wiring"), session.supportedViews.map { view -> view.viewId })
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            session.supportedViews.map { view -> view.viewId },
+        )
         assertEquals("cabinet", session.activeViewId)
+        assertEquals("electrical/cabinet", cabinetView.familyId)
+        assertEquals("electrical/wiring", wiringView.familyId)
         assertEquals(ProjectionInteractivity.INTERACTIVE, cabinetView.ownershipContract.interactivity)
         assertEquals(
             listOf("adjust-layout-placement", "adjust-layout-grouping"),
@@ -50,9 +55,19 @@ class AthenaRuntimeProjectionSessionTest {
         )
         val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(session.activeProjection)
         assertEquals("cabinet", ready.viewId)
+        assertEquals("electrical/cabinet", ready.familyId)
         assertEquals("DemoCabinet", ready.scene.systemName)
         assertEquals(480, ready.scene.canvasWidth)
         assertEquals(172, ready.scene.canvasHeight)
+        assertEquals("cabinet/projection/node/component_PLC1", ready.scene.components.first { component -> component.semanticId == "component:PLC1" }.projectionId)
+        assertEquals("electrical-notation/cabinet/default-v1", ready.notationPack?.packId)
+        assertTrue(ready.notationPack?.subjects?.any { subject -> subject.semanticId == "component:PLC1" && subject.symbolKey == "device.cabinet.default" } == true)
+        assertEquals("cabinet/sheet/01-main", ready.activeSheetId)
+        assertEquals(listOf("cabinet/sheet/01-main"), ready.sheets.map { sheet -> sheet.sheetId })
+        assertEquals(
+            listOf("component:M1", "component:PLC1", "connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
+            ready.sheets.single().subjectSemanticIds,
+        )
         assertEquals(listOf("electrical-runtime.render.cabinet"), ready.activeRenderContributions.map { contribution -> contribution.contributionId })
         assertEquals(2, ready.scene.components.size)
         assertEquals(1, ready.scene.connections.size)
@@ -90,6 +105,41 @@ class AthenaRuntimeProjectionSessionTest {
         val legacyProjection = assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection())
         assertEquals(490, legacyProjection.scene.canvasWidth)
         assertEquals(244, legacyProjection.scene.canvasHeight)
+    }
+
+    @Test
+    fun `documentation view exposes governed sheet navigation without redefining canonical semantics`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+
+        val switchResult = context.switchActiveProjectionView("documentation")
+
+        val success = assertIs<AthenaRuntimeProjectionSwitchSuccess>(switchResult)
+        val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(success.session.activeProjection)
+        assertEquals("documentation", ready.viewId)
+        assertEquals("electrical/documentation", ready.familyId)
+        assertEquals("documentation/sheet/01-overview", ready.activeSheetId)
+        assertEquals(
+            listOf("documentation/sheet/01-overview", "documentation/sheet/02-reference"),
+            ready.sheets.map { sheet -> sheet.sheetId },
+        )
+        assertEquals("documentation/sheet/02-reference", ready.sheets.first().nextSheetId)
+        assertEquals("documentation/sheet/01-overview", ready.sheets.last().previousSheetId)
+        assertTrue(ready.sheets.first().subjectSemanticIds.contains("component:PLC1"))
+        assertTrue(ready.sheets.last().subjectSemanticIds.contains("component:PLC1"))
+        assertEquals(2, ready.scene.components.count { component -> component.semanticId == "component:PLC1" })
+        assertEquals(
+            2,
+            ready.scene.components
+                .filter { component -> component.semanticId == "component:PLC1" }
+                .map { component -> component.projectionId }
+                .distinct()
+                .size,
+        )
     }
 
     @Test
@@ -215,7 +265,10 @@ class AthenaRuntimeProjectionSessionTest {
         val rejected = assertIs<AthenaRuntimeProjectionSwitchRejected>(switchResult)
         assertEquals("demo-cabinet", rejected.projectName)
         assertEquals("missing", rejected.requestedViewId)
-        assertEquals(listOf("cabinet", "wiring"), rejected.supportedViewIds)
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            rejected.supportedViewIds,
+        )
         assertContains(rejected.reason, "missing")
         assertEquals("cabinet", context.projectProjectionSession().activeViewId)
     }

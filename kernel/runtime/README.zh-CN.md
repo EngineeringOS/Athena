@@ -17,6 +17,7 @@
 - 对外暴露 runtime 可见的插件生命周期检查，同时不把编排所有权交给插件。
 - 托管运行时拥有的投影会话，包括受支持视图发现与活动视图切换。
 - 消费编译器派生的 `:kernel:projection-model` 文档，作为图形投影的主输入。
+- 通过同一条 runtime-owned projection session 发布 projection family id、sheet state、notation pack 与 cross reference。
 - 让运行时规范状态始终与 `Engineering IR` 保持一致。
 - 托管命令历史、撤销、重做、重放、差异检查以及已接受 AI 提案流程。
 - 在受支持的语义变更后，对外发布运行时可见的增量刷新元数据。
@@ -48,7 +49,7 @@
 
 ## 边界
 
-该模块不直接解析 DSL 源文本，不定义规范 IR 结构，也不拥有领域语义。它拥有这些下层之上的运行时生命周期与编排。投影会话只是建立在编译器派生的 `:kernel:projection-model` 工件之上的运行时状态；切换视图不会修改规范工程语义。
+该模块不直接解析 DSL 源文本，不定义规范 IR 结构，也不拥有领域语义。它拥有这些下层之上的运行时生命周期与编排。投影会话只是建立在编译器派生的 `:kernel:projection-model` 工件之上的运行时状态；切换视图不会修改规范工程语义。Repeated reference 与 cross reference 仍然只是锚定 canonical semantic id 的下游 projection 证据，runtime 负责传输，不负责重新定义它们的语义。
 
 ## Review Contract
 

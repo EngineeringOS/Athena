@@ -13,15 +13,34 @@ export type AthenaActiveSemanticSelection = {
     sourceRange?: Range;
 };
 
+export type AthenaProjectionOccurrenceResolution = {
+    semanticId: string;
+    status: 'resolved' | 'ambiguous' | 'unresolved';
+    occurrenceIds: string[];
+};
+
+export type AthenaProjectionCrossReferenceResolution = {
+    semanticId: string;
+    kind: string;
+    sheetIds: string[];
+    occurrenceIds: string[];
+};
+
 type AthenaSemanticScmContextCarrier = {
     subjectIdentity?: string;
     factReferences: AthenaSemanticFactReferencePayload[];
 };
 
 type AthenaProjectionSelectionCarrier = {
+    crossReferences?: Array<{
+        semanticId: string;
+        kind: string;
+        sheetIds: string[];
+        occurrenceIds: string[];
+    }>;
     graph: {
-        nodes: Array<{ id: string }>;
-        edges: Array<{ id: string }>;
+        nodes: Array<{ id: string; semanticId?: string }>;
+        edges: Array<{ id: string; semanticId?: string }>;
     };
 };
 
@@ -128,12 +147,57 @@ export function graphContainsSemanticId(
     diagram: AthenaProjectionSelectionCarrier | undefined,
     semanticId: string
 ): boolean {
+    return resolveProjectionOccurrence(diagram, semanticId).status !== 'unresolved';
+}
+
+/** Resolves repeated-reference status for one canonical semantic id inside current graph snapshot. */
+export function resolveProjectionOccurrence(
+    diagram: AthenaProjectionSelectionCarrier | undefined,
+    semanticId: string
+): AthenaProjectionOccurrenceResolution {
     if (!diagram) {
-        return false;
+        return {
+            semanticId,
+            status: 'unresolved',
+            occurrenceIds: []
+        };
     }
-    const existsInNodes = diagram.graph.nodes.some(node => node.id === semanticId);
-    const existsInEdges = diagram.graph.edges.some(edge => edge.id === semanticId);
-    return existsInNodes || existsInEdges;
+
+    const occurrenceIds = [
+        ...diagram.graph.nodes
+            .filter(node => (node.semanticId ?? node.id) === semanticId)
+            .map(node => node.id),
+        ...diagram.graph.edges
+            .filter(edge => (edge.semanticId ?? edge.id) === semanticId)
+            .map(edge => edge.id)
+    ];
+    const status = occurrenceIds.length === 0
+        ? 'unresolved'
+        : occurrenceIds.length === 1
+            ? 'resolved'
+            : 'ambiguous';
+    return {
+        semanticId,
+        status,
+        occurrenceIds
+    };
+}
+
+/** Returns published repeated-reference metadata for one canonical subject, if available. */
+export function resolveProjectionCrossReference(
+    diagram: AthenaProjectionSelectionCarrier | undefined,
+    semanticId: string
+): AthenaProjectionCrossReferenceResolution | undefined {
+    const crossReference = diagram?.crossReferences?.find(reference => reference.semanticId === semanticId);
+    if (!crossReference) {
+        return undefined;
+    }
+    return {
+        semanticId,
+        kind: crossReference.kind,
+        sheetIds: [...crossReference.sheetIds],
+        occurrenceIds: [...crossReference.occurrenceIds]
+    };
 }
 
 /** Keeps transient selection only while the refreshed projection still contains the same canonical semantic id. */

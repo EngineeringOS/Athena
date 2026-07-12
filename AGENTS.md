@@ -36,3 +36,26 @@ Keep repository text files in UTF-8.
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\encoding-audit.ps1
 ```
+
+## Kotlin File Organization Rule
+
+Keep Kotlin files easy to scan.
+
+- Do not default to "one public type per file" for tiny data/value/support types. Small strongly-related types may share one file.
+- Do not keep large mixed-responsibility dump files. When one file starts carrying multiple roles, split by responsibility.
+- Prefer grouping by role such as:
+  - `*Models.kt` for closely-related data classes and sealed contracts
+  - `*Protocol.kt` for transport mapping and request/response behavior
+  - `*Mapper.kt` or `*Support.kt` for conversion helpers
+  - `*Session.kt` or `*Service.kt` for orchestration logic
+- Good split:
+  - one file for a small cluster of ids/value classes
+  - one file for a small cluster of payload/data classes
+  - one file for one cohesive behavior flow
+- Bad split:
+  - every tiny DTO in its own file
+  - one 400+ line file mixing models, mappers, protocol, helpers, and orchestration
+- Heuristic:
+  - if a file is mostly one cohesive flow, keep it together even if not tiny
+  - if a file grows past roughly 200-300 lines and contains distinct roles, split it
+  - optimize first for readability and navigation, second for file count

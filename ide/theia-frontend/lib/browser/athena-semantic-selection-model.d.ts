@@ -8,17 +8,36 @@ export type AthenaActiveSemanticSelection = {
     sourceUri?: string;
     sourceRange?: Range;
 };
+export type AthenaProjectionOccurrenceResolution = {
+    semanticId: string;
+    status: 'resolved' | 'ambiguous' | 'unresolved';
+    occurrenceIds: string[];
+};
+export type AthenaProjectionCrossReferenceResolution = {
+    semanticId: string;
+    kind: string;
+    sheetIds: string[];
+    occurrenceIds: string[];
+};
 type AthenaSemanticScmContextCarrier = {
     subjectIdentity?: string;
     factReferences: AthenaSemanticFactReferencePayload[];
 };
 type AthenaProjectionSelectionCarrier = {
+    crossReferences?: Array<{
+        semanticId: string;
+        kind: string;
+        sheetIds: string[];
+        occurrenceIds: string[];
+    }>;
     graph: {
         nodes: Array<{
             id: string;
+            semanticId?: string;
         }>;
         edges: Array<{
             id: string;
+            semanticId?: string;
         }>;
     };
 };
@@ -32,6 +51,10 @@ export declare function matchesSemanticScmContext(carrier: AthenaSemanticScmCont
 export declare function selectableSemanticIdFromScmContext(carrier: AthenaSemanticScmContextCarrier): string | undefined;
 /** Returns whether the current graph snapshot already exposes the canonical semantic id. */
 export declare function graphContainsSemanticId(diagram: AthenaProjectionSelectionCarrier | undefined, semanticId: string): boolean;
+/** Resolves repeated-reference status for one canonical semantic id inside current graph snapshot. */
+export declare function resolveProjectionOccurrence(diagram: AthenaProjectionSelectionCarrier | undefined, semanticId: string): AthenaProjectionOccurrenceResolution;
+/** Returns published repeated-reference metadata for one canonical subject, if available. */
+export declare function resolveProjectionCrossReference(diagram: AthenaProjectionSelectionCarrier | undefined, semanticId: string): AthenaProjectionCrossReferenceResolution | undefined;
 /** Keeps transient selection only while the refreshed projection still contains the same canonical semantic id. */
 export declare function retainSelectionIfPresent(diagram: AthenaProjectionSelectionCarrier, selection: AthenaActiveSemanticSelection | undefined): AthenaActiveSemanticSelection | undefined;
 export {};

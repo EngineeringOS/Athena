@@ -20,6 +20,7 @@
 - 面向 baseline-driven review、commit-preparation 与 package-history state 的增量语义 SCM 请求表面
 - 面向 runtime-owned graphical state inspection 的增量 projection-session 请求表面
 - 面向 inspect-first graphical interaction 的显式 governed projection-command allowlist，目前仅包含 active-view switching
+- 增量传输 M11 的 projection family id、sheet state、notation pack 与 cross-reference payload
 - 后续故事中的 hover、rename 与更丰富的 workspace navigation
 
 ## 边界
@@ -38,6 +39,7 @@ M9 保持交付规则狭窄：
 当前 M7 projection boundary 故意保持狭窄：
 
 - `athena/projectionSession` 返回 runtime-owned supported views、active view state、可检查的 ready 或 unavailable projection payload，以及已发布的 command allowlist
+- ready projection payload 现在也可以携带 projection family id、governed sheet metadata、notation-pack mapping 与 repeated-reference cross-reference data，这些都来自 JVM-owned runtime state
 - unavailable projection payload 会保留底层 runtime diagnostic；当上游失败暴露 stable code 与 provenance 时，这些细节也会一并透出
 - `athena/projectionCommand` 只接受 Athena allowlist 中的 projection action，而不是暴露通用 runtime tunnel
 - hosted plugin commands、graph-framework commands 与任意 frontend-local actions 都不是这里的公开传输契约

@@ -20,6 +20,7 @@ English | [Chinese (Simplified)](README.zh-CN.md)
 - additive semantic SCM request surfaces for baseline-driven review, commit-preparation, and package-history state
 - additive projection-session request surfaces for runtime-owned graphical state inspection
 - one explicit governed projection-command allowlist for inspect-first graphical interaction, currently limited to active-view switching
+- additive M11 transport for projection-family ids, sheet state, notation packs, and cross-reference payloads
 - future hover, rename, and richer workspace navigation in later stories
 
 ## Boundary
@@ -38,6 +39,7 @@ M9 keeps the delivery rule narrow:
 The current M7 projection boundary is intentionally narrow:
 
 - `athena/projectionSession` returns runtime-owned supported views, active view state, inspectable ready or unavailable projection payloads, and the published command allowlist
+- ready projection payloads may now include projection-family ids, governed sheet metadata, notation-pack mappings, and repeated-reference cross-reference data sourced from JVM-owned runtime state
 - unavailable projection payloads preserve underlying runtime diagnostics, including stable codes and provenance when the upstream failure exposes them
 - `athena/projectionCommand` accepts only Athena-allowlisted projection actions instead of exposing a generic runtime tunnel
 - hosted plugin commands, graph-framework commands, and arbitrary frontend-local actions are not public transport contracts here

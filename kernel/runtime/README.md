@@ -18,6 +18,7 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 - Apply hosted semantic review enrichments after core review generation while preserving core review entries as the semantic authority.
 - Host runtime-owned projection sessions with supported-view discovery and active-view switching.
 - Consume compiler-derived `:kernel:projection-model` documents as the primary graphical projection input.
+- Publish projection-family ids, sheet state, notation packs, and cross references through the same runtime-owned projection session.
 - Keep canonical runtime state aligned with `Engineering IR`.
 - Host command history, undo, redo, replay, diff inspection, and accepted AI proposal flow.
 - Publish runtime-visible incremental refresh metadata after supported semantic mutations.
@@ -49,7 +50,7 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 
 ## Boundaries
 
-This module does not parse DSL source text directly, define the canonical IR schema, or own domain semantics. It owns runtime lifecycle and orchestration above those lower layers. Projection sessions remain runtime-owned state over compiler-derived `:kernel:projection-model` artifacts; switching views does not mutate canonical engineering semantics.
+This module does not parse DSL source text directly, define the canonical IR schema, or own domain semantics. It owns runtime lifecycle and orchestration above those lower layers. Projection sessions remain runtime-owned state over compiler-derived `:kernel:projection-model` artifacts; switching views does not mutate canonical engineering semantics. Repeated references and cross references remain downstream projection evidence over canonical semantic ids; runtime transports them but does not become their semantic owner.
 
 ## Incremental Refresh Boundary
 

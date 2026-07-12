@@ -44,6 +44,7 @@ data class AthenaRuntimeViewerScene(
  * Runtime-facing component box derived from canonical render output.
  */
 data class AthenaRuntimeViewerComponentBox(
+    val projectionId: String,
     val semanticId: String,
     val label: String,
     val x: Int,
@@ -56,6 +57,7 @@ data class AthenaRuntimeViewerComponentBox(
  * Runtime-facing connection line derived from canonical render output.
  */
 data class AthenaRuntimeViewerConnectionLine(
+    val projectionId: String,
     val semanticId: String,
     val x1: Int,
     val y1: Int,
@@ -67,6 +69,7 @@ data class AthenaRuntimeViewerConnectionLine(
  * Runtime-facing semantic label derived from canonical projection output.
  */
 data class AthenaRuntimeViewerLabel(
+    val projectionId: String,
     val semanticId: String,
     val label: String,
     val x: Int,

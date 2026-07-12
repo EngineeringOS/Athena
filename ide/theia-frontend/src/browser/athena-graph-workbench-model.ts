@@ -31,9 +31,14 @@ export type AthenaGraphViewportTransform = {
 export type AthenaGraphWorkbenchModel = {
     headerTitle: string;
     viewLabel: string;
+    viewFamilyId?: string;
     statusLabel: string;
     statusTone: 'ready' | 'warning' | 'idle';
     semanticPath: string;
+    activeSheetId?: string;
+    sheetCount: number;
+    notationPackId?: string;
+    crossReferenceCount: number;
     svgViewBox: string;
     metrics: {
         nodeCount: number;
@@ -82,9 +87,14 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
     return {
         headerTitle: diagram.projectName,
         viewLabel,
+        viewFamilyId: activeView?.familyId,
         statusLabel: diagram.status,
         statusTone: diagram.status === 'ready' ? 'ready' : 'warning',
         semanticPath: diagram.semanticPath,
+        activeSheetId: diagram.activeSheetId,
+        sheetCount: diagram.sheets?.length ?? 0,
+        notationPackId: diagram.notationPack?.packId,
+        crossReferenceCount: diagram.crossReferences?.length ?? 0,
         svgViewBox: `0 0 ${canvasWidth} ${canvasHeight}`,
         metrics: {
             nodeCount: diagram.graph.nodes.length,

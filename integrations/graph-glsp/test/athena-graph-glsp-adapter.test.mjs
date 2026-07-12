@@ -12,6 +12,7 @@ const readyProjectionSession = {
             viewId: 'cabinet',
             displayName: 'Cabinet',
             description: 'Cabinet projection',
+            familyId: 'electrical/cabinet',
             ownershipContract: {
                 interactivity: 'interactive',
                 displayScopes: ['devices', 'ports', 'ownership-relationships'],
@@ -33,9 +34,42 @@ const readyProjectionSession = {
     status: 'ready',
     readyProjection: {
         viewId: 'cabinet',
+        familyId: 'electrical/cabinet',
         systemName: 'FactoryLine',
         canvasWidth: 1440,
         canvasHeight: 900,
+        activeSheetId: 'cabinet/sheet/01-main',
+        sheets: [
+            {
+                sheetId: 'cabinet/sheet/01-main',
+                displayName: 'Cabinet Main',
+                order: 0,
+                subjectSemanticIds: ['component:PLC1', 'connection:PLC1.out->M1.in', 'port:PLC1.out']
+            }
+        ],
+        notationPack: {
+            packId: 'electrical-notation/cabinet/default-v1',
+            displayName: 'Electrical Cabinet Default',
+            subjects: [
+                {
+                    semanticId: 'component:PLC1',
+                    symbolKey: 'device.cabinet.default',
+                    labelPolicy: 'subject_label',
+                    markerKeys: ['owned-device']
+                }
+            ]
+        },
+        crossReferences: [
+            {
+                semanticId: 'component:PLC1',
+                kind: 'repeated_reference',
+                sheetIds: ['cabinet/sheet/01-main', 'cabinet/sheet/02-reference'],
+                occurrenceIds: [
+                    'cabinet/projection/node/component_PLC1',
+                    'cabinet/projection/node/component_PLC1_reference'
+                ]
+            }
+        ],
         activeRenderContributions: [
             {
                 pluginId: 'com.engineeringood.athena.domain.electrical-runtime',
@@ -55,6 +89,7 @@ const readyProjectionSession = {
         ],
         components: [
             {
+                projectionId: 'cabinet/projection/node/component_PLC1',
                 semanticId: 'component:PLC1',
                 label: 'PLC1',
                 x: 120,
@@ -65,6 +100,7 @@ const readyProjectionSession = {
         ],
         connections: [
             {
+                projectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
                 semanticId: 'connection:PLC1.out->M1.in',
                 x1: 380,
                 y1: 160,
@@ -74,6 +110,7 @@ const readyProjectionSession = {
         ],
         labels: [
             {
+                projectionId: 'cabinet/projection/label/port_PLC1_out',
                 semanticId: 'port:PLC1.out',
                 label: 'out',
                 x: 390,
@@ -113,12 +150,19 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.status, 'ready');
     assert.equal(diagram.activeRenderContributions.length, 1);
     assert.equal(diagram.activeRenderContributions[0].contributionId, 'electrical-runtime.render.cabinet');
+    assert.equal(diagram.supportedViews[0].familyId, 'electrical/cabinet');
+    assert.equal(diagram.activeSheetId, 'cabinet/sheet/01-main');
+    assert.equal(diagram.sheets.length, 1);
+    assert.equal(diagram.notationPack?.packId, 'electrical-notation/cabinet/default-v1');
+    assert.equal(diagram.crossReferences.length, 1);
+    assert.deepEqual(diagram.crossReferences[0], readyProjectionSession.readyProjection.crossReferences[0]);
     assert.deepEqual(diagram.supportedViews[0].ownershipContract, readyProjectionSession.supportedViews[0].ownershipContract);
     assert.equal(diagram.graph.type, 'graph');
     assert.equal(diagram.graph.nodes.length, 2);
     assert.equal(diagram.graph.edges.length, 1);
     assert.deepEqual(diagram.graph.nodes[0], {
-        id: 'component:PLC1',
+        id: 'cabinet/projection/node/component_PLC1',
+        semanticId: 'component:PLC1',
         type: 'node',
         kind: 'component',
         label: 'PLC1',
@@ -132,7 +176,8 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
         }
     });
     assert.deepEqual(diagram.graph.nodes[1], {
-        id: 'port:PLC1.out',
+        id: 'cabinet/projection/label/port_PLC1_out',
+        semanticId: 'port:PLC1.out',
         type: 'node',
         kind: 'label',
         label: 'out',
@@ -146,7 +191,8 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
         }
     });
     assert.deepEqual(diagram.graph.edges[0], {
-        id: 'connection:PLC1.out->M1.in',
+        id: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+        semanticId: 'connection:PLC1.out->M1.in',
         type: 'edge',
         sourcePoint: {
             x: 380,
@@ -193,6 +239,10 @@ test('normalizes omitted projection arrays from transport payloads before buildi
     assert.equal(diagram.status, 'ready');
     assert.deepEqual(diagram.supportedViews, []);
     assert.deepEqual(diagram.governedCommands, []);
+    assert.equal(diagram.activeSheetId, undefined);
+    assert.deepEqual(diagram.sheets, []);
+    assert.equal(diagram.notationPack, undefined);
+    assert.deepEqual(diagram.crossReferences, []);
     assert.deepEqual(diagram.diagnostics, []);
     assert.deepEqual(diagram.activeRenderContributions, []);
     assert.deepEqual(diagram.graph.nodes, []);
@@ -212,6 +262,7 @@ test('normalizes partial or missing ownership contracts inside supported views',
                 viewId: 'cabinet',
                 displayName: 'Cabinet',
                 description: 'Cabinet projection',
+                familyId: 'electrical/cabinet',
                 ownershipContract: {
                     interactivity: 'interactive',
                     displayScopes: ['devices'],
@@ -240,6 +291,7 @@ test('normalizes partial or missing ownership contracts inside supported views',
         transientInteractionKinds: [],
         persistedProjectionMetadataKeys: []
     });
+    assert.equal(diagram.supportedViews[0].familyId, 'electrical/cabinet');
     assert.deepEqual(diagram.supportedViews[1].ownershipContract, {
         interactivity: 'inspect_only',
         displayScopes: [],

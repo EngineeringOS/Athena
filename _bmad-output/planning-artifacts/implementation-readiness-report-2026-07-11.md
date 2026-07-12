@@ -1,210 +1,201 @@
+---
+stepsCompleted:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+inputDocuments:
+  - _bmad-output/planning-artifacts/prds/prd-Athena-2026-07-11-m11/prd.md
+  - _bmad-output/planning-artifacts/prds/prd-Athena-2026-07-11-m11/addendum.md
+  - _bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-11-m11/ARCHITECTURE-SPINE.md
+  - _bmad-output/planning-artifacts/epics-M11-2026-07-11.md
+---
+
 # Implementation Readiness Assessment Report
 
 **Date:** 2026-07-11
 **Project:** Athena
-**Scope:** M9 engineering knowledge runtime
 
 ## Document Discovery
 
-### Active Documents Used For This Assessment
+### Selected Assessment Scope
 
-- PRD: `_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-11-m9/prd.md` (21391 bytes, updated 2026-07-11 12:40)
-- PRD addendum: `_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-11-m9/addendum.md` (5206 bytes, updated 2026-07-11 12:39)
-- Architecture: `_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-11-m9/ARCHITECTURE-SPINE.md` (15791 bytes, updated 2026-07-11 12:40)
-- Epics and stories: `_bmad-output/planning-artifacts/epics-M9-2026-07-11.md` (14334 bytes, updated 2026-07-11 12:50)
+- M11-only readiness review
+- Legacy UX run excluded as a formal input for this assessment
 
-### Other Related Documents Present In Workspace
+### Selected Input Documents
 
-- Earlier milestone PRDs exist under `_bmad-output/planning-artifacts/prds/`
-- Earlier milestone architecture spines exist under `_bmad-output/planning-artifacts/architecture/`
-- Earlier milestone epics files exist:
-  - `_bmad-output/planning-artifacts/epics-M2-2026-07-06.md`
-  - `_bmad-output/planning-artifacts/epics-M3-2026-07-07.md`
-  - `_bmad-output/planning-artifacts/epics-M4-2026-07-08.md`
-  - `_bmad-output/planning-artifacts/epics-M5-2026-07-08.md`
-  - `_bmad-output/planning-artifacts/epics-M6-2026-07-09.md`
-  - `_bmad-output/planning-artifacts/epics-M7-2026-07-09.md`
-  - `_bmad-output/planning-artifacts/epics-M8-2026-07-10.md`
-- Older UX documents exist under `_bmad-output/planning-artifacts/ux-designs/ux-Athena-2026-07-04/`
+- `_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-11-m11/prd.md`
+- `_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-11-m11/addendum.md`
+- `_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-11-m11/ARCHITECTURE-SPINE.md`
+- `_bmad-output/planning-artifacts/epics-M11-2026-07-11.md`
 
-### Discovery Assessment
+### Discovery Notes
 
-- No whole-versus-sharded duplicate conflict exists for the active M9 planning set.
-- The active M9 PRD, M9 architecture spine, and M9 epics file are unambiguous.
-- No M9-specific UX contract exists; the available UX artifacts belong to earlier milestone work and are excluded from the active M9 planning set.
+- Historical milestone PRDs, architecture spines, and epics files exist in the same planning tree but were excluded from this assessment.
+- No whole-vs-sharded duplicate conflict was found for the selected M11 planning artifacts.
+- No `project-context.md` file exists in this repository, so there was no persistent project-context artifact to include during activation.
 
 ## PRD Analysis
 
 ### Functional Requirements
 
-FR-1: Athena can compute a first narrow set of derived engineering context from canonical `Engineering IR`.
+FR-1: Athena can represent the first ECAD domain through richer electrical projection families.
+FR-2: Athena can preserve one semantic identity across richer electrical workbench views.
+FR-3: Athena can support the first governed sheet or page model for electrical workbench operation.
+FR-4: Athena can support the first governed electrical symbol and notation pack boundary.
+FR-5: Athena can display repeated references and cross-reference relationships for the first ECAD domain.
+FR-6: Athena can support a denser electrical workbench under realistic information load.
+FR-7: Athena can validate the first serious electrical workbench through published larger proof fixtures.
+FR-8: Athena can keep earlier milestone guarantees intact while deepening the electrical workbench.
+FR-9: Athena can deepen electrical product behavior without shifting the architecture center into the renderer.
 
-FR-2: Athena can derive capability facts from derived engineering context through explicit domain semantics.
-
-FR-3: Athena can evaluate a first governed knowledge-pack rule slice over derived engineering context and capability facts.
-
-FR-4: Athena can surface engineering insufficiency through typed semantic diagnostics.
-
-FR-5: Athena can compute a first narrow impact consequence set when a relevant engineering value changes.
-
-FR-6: Athena can route engineering impact into the existing semantic review path.
-
-FR-7: Athena can surface the first knowledge-runtime proof through existing semantic product surfaces.
-
-FR-8: Athena can keep the knowledge-runtime proof independent from renderer and workbench depth.
-
-Total FRs: 8
+Total FRs: 9
 
 ### Non-Functional Requirements
 
-NFR-1: Engineering capability, constraint, and impact evaluation must remain upstream of renderer, IDE, and vendor adapters.
-
-NFR-2: The same canonical state yields the same derived engineering context, capability facts, constraint results, and impact consequences.
-
-NFR-3: Derived engineering context, capability facts, rule evaluations, diagnostics, and impact consequences remain inspectable for development and architecture review.
-
-NFR-4: The first M9 proof must stay small enough to validate the architecture honestly rather than hiding risk inside rule sprawl.
-
-NFR-5: The first M9 proof must ship as a fixed governed knowledge pack rather than a general rule-authoring platform.
-
-NFR-6: M9 must prefer existing semantic delivery surfaces over opening a new product-shell or renderer frontier.
+NFR-1: Canonical engineering meaning remains upstream of sheet, symbol, notation, and renderer behavior.
+NFR-2: The same engineering subject must remain stable across repeated references, sheets, views, diagnostics, and review contexts.
+NFR-3: The first serious electrical proof must remain usable at denser graph and panel loads than earlier proof cases.
+NFR-4: The boundary between engineering entity, projection rule, sheet structure, and notation pack remains inspectable for architecture and debugging.
+NFR-5: The first ECAD-depth milestone must stay focused on serious electrical workbench depth rather than turning into a full downstream product clone.
+NFR-6: M11 must preserve the existing runtime, LSP, review, and workbench seams instead of creating a second frontend-owned authority.
 
 Total NFRs: 6
 
 ### Additional Requirements
 
-- M9 must remain kernel-first and derive knowledge from canonical semantic state rather than from renderer or vendor-local state.
-- M9 must preserve the explicit layer model `Engineering IR -> Derived Engineering Context -> Capability Fact -> Constraint Result -> Impact Consequence -> Diagnostic`.
-- The first proof must remain within one narrow electrical sufficiency family and one fixed governed knowledge pack.
-- Constraint evaluation must stay distinct from syntax and structural semantic validation.
-- M9 must reuse existing runtime, LSP, Problems, inspection, review, and semantic SCM surfaces rather than opening a new IDE or renderer milestone.
-- Vendor catalog richness, standards packs, rule authoring, company-policy packs, and AI remediation remain out of scope for the first proof.
-- The milestone still contains explicit open questions around first rule-slice boundary, first authoritative inputs, user-facing sufficiency language, and naming/versioning of the first fixed knowledge pack.
+- M11 is product-depth-first for the first serious electrical ECAD target and is explicitly not another semantic-kernel, generic graph-framework, procurement, standards-platform, or unrestricted CAD milestone.
+- The milestone builds on completed M0 through M9 foundations and the planned M10 AI-assisted reasoning boundary rather than reopening kernel, mutation, review, or knowledge authority.
+- The first realistic proof should include a larger electrical repository with repeated patterns, more than 10 components, more than 20 connections, at least one explicit sheet structure, at least one repeated-reference or cross-reference behavior, and denser label and inspection load.
+- QElectroTech and EPLAN are workflow, UX, notation, and compatibility references only; they are not semantic or architectural authorities.
+- M11 must improve fit-to-view reliability, reveal and selection coherence, outline and hierarchy usefulness, and property and inspection readability on denser cases.
+- M11 must keep known scale, density, and notation limits explicit in the proof corpus and documentation.
+- The current workspace still does not prove serious sheet structure, notation depth beyond the first renderer proof, repeated-reference depth, realistic dense electrical graphs, or operator-grade density; those are the milestone gap.
+- The milestone must avoid decorative UI churn, broad skin-system redesign, and rebuilding the shell around a canvas-first approach.
 
 ### PRD Completeness Assessment
 
-The M9 PRD is strong and implementation-usable. It clearly defines the milestone boundary, the first governed proof shape, the architectural layer model, and the delivery constraints that keep M9 from drifting into standards-platform, workbench-depth, or AI scope.
-
-The main remaining uncertainties are intentional and bounded rather than accidental:
-
-- the narrowest useful first electrical knowledge-pack rule slice
-- the first authoritative governed inputs and derived-context formulas
-- the preferred user-facing distinction between structural semantic validity and engineering sufficiency
-- the external name and version boundary for the first fixed knowledge pack
-
-These are acceptable planning questions because the architecture spine and epic/story breakdown already constrain them into a narrow fixed-pack implementation shape instead of leaving the milestone open-ended.
+- The PRD is structurally complete for requirements traceability: it defines target users, explicit FRs and NFRs, non-goals, MVP scope, success metrics, guardrails, and open questions.
+- The addendum usefully tightens milestone position, risks, and proof-shape expectations, so it should remain part of readiness review context even though the primary FR/NFR source is the main PRD.
+- The main readiness limitation at the PRD layer is not missing product intent; it is the absence of an M11-specific UX contract. That is acceptable only if implementation stays kernel/workbench-depth-first and does not require a new UI redesign track.
+- The open questions are narrow enough to leave in place for planning, but they will need to be resolved story-by-story during implementation if they affect acceptance detail.
 
 ## Epic Coverage Validation
 
 ### Epic FR Coverage Extracted
 
-FR-1: Covered in Epic 1
+FR-1: Covered in Epic 1, Stories 1.1 and 1.4
+FR-2: Covered in Epic 1, Stories 1.1, 1.2, 1.3, and 1.4
+FR-3: Covered in Epic 1, Stories 1.2 and 1.4
+FR-4: Covered in Epic 1, Stories 1.3 and 1.4
+FR-5: Covered in Epic 2, Story 2.1
+FR-6: Covered in Epic 2, Stories 2.2 and 2.3
+FR-7: Covered in Epic 2, Story 2.3
+FR-8: Covered in Epic 2, Stories 2.1, 2.2, 2.4, and 2.5
+FR-9: Covered in Epic 2, Stories 2.4 and 2.5
 
-FR-2: Covered in Epic 1
-
-FR-3: Covered in Epic 1
-
-FR-4: Covered in Epic 1
-
-FR-5: Covered in Epic 2
-
-FR-6: Covered in Epic 2
-
-FR-7: Covered in Epic 2
-
-FR-8: Covered in Epic 2
-
-Total FRs in epics: 8
+Total FRs in epics: 9
 
 ### Coverage Matrix
 
 | FR Number | PRD Requirement | Epic Coverage | Status |
 | --- | --- | --- | --- |
-| FR-1 | Athena can compute a first narrow set of derived engineering context from canonical `Engineering IR`. | Epic 1, Stories 1.1-1.2 | Covered |
-| FR-2 | Athena can derive capability facts from derived engineering context through explicit domain semantics. | Epic 1, Story 1.3 | Covered |
-| FR-3 | Athena can evaluate a first governed knowledge-pack rule slice over derived engineering context and capability facts. | Epic 1, Story 1.4 | Covered |
-| FR-4 | Athena can surface engineering insufficiency through typed semantic diagnostics. | Epic 1, Story 1.4 | Covered |
-| FR-5 | Athena can compute a first narrow impact consequence set when a relevant engineering value changes. | Epic 2, Story 2.1 | Covered |
-| FR-6 | Athena can route engineering impact into the existing semantic review path. | Epic 2, Story 2.3 | Covered |
-| FR-7 | Athena can surface the first knowledge-runtime proof through existing semantic product surfaces. | Epic 2, Story 2.2 | Covered |
-| FR-8 | Athena can keep the knowledge-runtime proof independent from renderer and workbench depth. | Epic 2, Story 2.2 | Covered |
+| FR-1 | Athena can represent the first ECAD domain through richer electrical projection families. | Epic 1 Stories 1.1, 1.4 | Covered |
+| FR-2 | Athena can preserve one semantic identity across richer electrical workbench views. | Epic 1 Stories 1.1, 1.2, 1.3, 1.4 | Covered |
+| FR-3 | Athena can support the first governed sheet or page model for electrical workbench operation. | Epic 1 Stories 1.2, 1.4 | Covered |
+| FR-4 | Athena can support the first governed electrical symbol and notation pack boundary. | Epic 1 Stories 1.3, 1.4 | Covered |
+| FR-5 | Athena can display repeated references and cross-reference relationships for the first ECAD domain. | Epic 2 Story 2.1 | Covered |
+| FR-6 | Athena can support a denser electrical workbench under realistic information load. | Epic 2 Stories 2.2, 2.3 | Covered |
+| FR-7 | Athena can validate the first serious electrical workbench through published larger proof fixtures. | Epic 2 Story 2.3 | Covered |
+| FR-8 | Athena can keep earlier milestone guarantees intact while deepening the electrical workbench. | Epic 2 Stories 2.1, 2.2, 2.4, 2.5 | Covered |
+| FR-9 | Athena can deepen electrical product behavior without shifting the architecture center into the renderer. | Epic 2 Stories 2.4, 2.5 | Covered |
 
 ### Missing Requirements
 
-No missing FR coverage was found in the active M9 epics and stories document.
+No missing PRD functional requirements were found in the current M11 epics and stories package.
 
 ### Coverage Statistics
 
-- Total PRD FRs: 8
-- FRs covered in epics: 8
+- Total PRD FRs: 9
+- FRs covered in epics: 9
 - Coverage percentage: 100%
 
 ## UX Alignment Assessment
 
 ### UX Document Status
 
-UX documentation exists in the workspace under `_bmad-output/planning-artifacts/ux-designs/ux-Athena-2026-07-04/`, but no M9-specific UX contract exists and the active M9 planning set intentionally excludes that earlier UX run.
+Legacy UX documentation exists, but no M11-specific UX contract exists.
+
+Found UX artifacts:
+- `_bmad-output/planning-artifacts/ux-designs/ux-Athena-2026-07-04/DESIGN.md`
+- `_bmad-output/planning-artifacts/ux-designs/ux-Athena-2026-07-04/EXPERIENCE.md`
+
+Assessment status:
+- Historical UX pair found
+- Not suitable as the authoritative UX handoff for M11
 
 ### Alignment Issues
 
-- No direct UX-to-PRD misalignment was found for the active M9 milestone because M9 is explicitly kernel-first and knowledge-runtime-first rather than a new UI, workbench-density, or notation milestone.
-- The PRD and architecture both explicitly constrain M9 to reuse existing runtime, `ide/lsp`, Problems, inspection, review, and semantic SCM surfaces instead of opening a new renderer-first or UX-first frontier.
-- The architecture spine supports the limited user-facing delivery implied by M9 through existing semantic surfaces, so no new UX contract is required for the current milestone boundary.
+- The available UX pair is explicitly for `Athena M1`, not M11, so its scope is a runtime-proof shell rather than the first serious electrical ECAD workbench-depth milestone.
+- The legacy UX pair assumes a Compose-native owned-component shell posture, while the current product direction and architecture are desktop-first Athena Theia with existing runtime, LSP, and graph delivery seams.
+- M11 PRD requirements emphasize sheet-aware electrical views, notation depth, repeated references, cross-reference behavior, and dense electrical proof cases. Those concerns are not concretely specified in the available UX handoff.
+- The M11 architecture does support operator workbench density, richer panels, and downstream workbench delivery, so there is no architectural contradiction. The gap is missing M11-specific interaction and layout guidance, not missing technical support.
 
 ### Warnings
 
-- Athena remains a user-facing product, so later milestones that expand review presentation, authoring ergonomics, or knowledge-surface interaction depth should re-enter the UX workflow with a milestone-specific UX contract.
-- If M9 implementation starts adding new panels, workflows, or interaction models beyond existing semantic surfaces, the current no-new-UX assumption will stop being valid and should trigger a planning correction.
+- Warning: UX is clearly implied by M11 because the milestone deepens a user-facing electrical workbench, but there is no milestone-current UX contract for M11.
+- Warning: Implementation can proceed safely only if the first M11 stories remain semantic/workbench-depth-first and avoid introducing major new UX patterns that would normally require a dedicated UX run.
+- Warning: If M11 implementation expands into substantial panel choreography, dense electrical navigation patterns, or new workbench interaction models, a fresh UX artifact should be created before those stories are developed.
 
 ## Epic Quality Review
 
-### Critical Violations
+### Best Practices Compliance Summary
 
-No critical epic-structure violations were found.
+#### Epic 1 - Serious Electrical View Foundations
 
-### Major Issues
+- Delivers user value: Yes
+- Can function independently: Yes
+- Stories appropriately ordered: Yes
+- Forward dependencies found: No
+- FR traceability maintained: Yes
 
-No major story dependency or epic-independence failures were found.
+#### Epic 2 - Dense Electrical Workbench And Coherent Review
 
-### Minor Concerns
-
-- `Epic 1` and `Epic 2` are acceptable for this milestone, but both remain platform-heavy rather than strongly end-user phrased. This is tolerable because M9 is explicitly a kernel-proof milestone, but implementation should keep user-visible outcome in view when refining individual story files.
-- `Story 2.4` is a milestone-proof closure story rather than direct end-user functionality. That is acceptable in this repo's established milestone pattern, but it should remain last in sequence and should not absorb unfinished semantic-core work from earlier stories.
-- `Story 1.1` and `Story 1.3` are platform-engineer stories with indirect user value. They still fit because they establish the governed contracts required for later executable-knowledge proof, but they should be kept tightly scoped to avoid expanding into architecture-theater work.
+- Delivers user value: Yes
+- Can function independently on top of Epic 1: Yes
+- Stories appropriately ordered: Yes
+- Forward dependencies found: No
+- FR traceability maintained: Yes
 
 ### Dependency Review
 
-- `Epic 1` is sequential and forward-safe: `Story 1.1` defines governed input and context contracts, `Story 1.2` derives context, `Story 1.3` promotes capability facts through the fixed knowledge pack, and `Story 1.4` evaluates the rule slice and emits diagnostics.
-- `Epic 2` is sequential and forward-safe: `Story 2.1` computes impact consequence, `Story 2.2` publishes outputs through existing semantic surfaces, `Story 2.3` extends semantic review with engineering impact, and `Story 2.4` publishes proof artifacts after the core paths exist.
-- No story depends on a future story within the same epic.
-- `Epic 2` correctly depends on `Epic 1` outputs, and does not require any later epic to function.
+- No epic requires a future epic to function.
+- No story explicitly depends on a later story in the same epic.
+- The milestone is brownfield, not greenfield, so no starter-template or project-bootstrap story is required.
+- No database or entity-creation anti-pattern was found; the plan stays at semantic/workbench capability level rather than introducing upfront schema setup.
 
-### Story Sizing Review
+### Critical Violations
 
-- All eight stories appear small enough for a single dev agent, assuming the first M9 proof slice remains narrow and fixed as planned.
-- The highest scope-risk story is `Story 1.4`, because rule evaluation, typed sufficiency results, and diagnostics can widen quickly if the first rule slice is not tightly constrained.
-- The second highest scope-risk story is `Story 2.3`, because review-language extension can drift if it attempts to solve future knowledge-pack richness instead of the first affected-subject proof.
+No critical structural violations were found.
 
-### Special Implementation Checks
+### Major Issues
 
-- No starter-template requirement appears in the M9 architecture, so no setup story is missing on that basis.
-- This is a brownfield milestone built on M0 through M8, so the absence of greenfield bootstrap stories is correct.
-- No database or table-creation anti-pattern is present in the story set.
+No major epic-quality issues remain after the M11 story refinement.
 
-### Best-Practices Compliance Summary
+### Minor Concerns
 
-- Epic user value: acceptable for a kernel-proof milestone
-- Epic independence: passes
-- Story sizing: passes with two scope-watch stories (`1.4`, `2.3`)
-- Forward dependencies: passes
-- Clear acceptance criteria: passes
-- FR traceability: passes
+No minor epic-quality concerns remain after the M11 story refinement.
 
-### Recommendations
+### Overall Epic Quality Assessment
 
-- Keep `Story 1.4` explicitly bound to one fixed electrical knowledge-pack rule slice during implementation planning.
-- Keep `Story 2.3` explicitly bound to direct-edit versus affected-subject review vocabulary and avoid broader semantic-review redesign.
-- Preserve `Story 2.4` as a closing proof story only after the executable-knowledge and consequence-delivery stories are complete.
+- The epics are user-value-centered rather than technical-milestone-centered.
+- Story sequencing is disciplined and forward-safe.
+- Story 1.4 was successfully narrowed to runtime and LSP delivery only, with reveal and inspection coherence moved into Story 1.5.
+- Story 2.4 was successfully narrowed to mutation, review, and knowledge coherence, with AI-path concerns reduced to compatibility through existing canonical semantic contracts.
+- The proof-fixture threshold and repeated-reference failure path are now explicit in Stories 2.3 and 2.1.
 
 ## Summary and Recommendations
 
@@ -212,18 +203,25 @@ No major story dependency or epic-independence failures were found.
 
 READY
 
-The M9 planning set is implementation-ready. PRD, architecture, and epics/stories are aligned, all FRs are covered, no blocking UX dependency exists for this milestone boundary, and no critical structural defect was found in the epic/story plan.
-
 ### Critical Issues Requiring Immediate Action
 
-No critical issues require immediate action before implementation starts.
+No critical blockers were found.
+
+No immediate artifact corrections are required before implementation starts.
+
+The one remaining caution is:
+
+- M11 still has no milestone-current UX contract. This is acceptable only while the implementation remains within the current semantic/workbench-depth scope and does not branch into a broader UX redesign.
 
 ### Recommended Next Steps
 
-1. Start sprint planning from the current M9 epics and stories artifact.
-2. Carry explicit scope controls into implementation for `Story 1.4` and `Story 2.3` so the first proof stays narrow.
-3. Keep `Story 2.4` as an end-of-milestone proof/publication story and do not let it absorb unfinished kernel work.
+1. Proceed to sprint planning for M11 using the refined [epics-M11-2026-07-11.md](D:/Aaron/workspace/projects/2026/eos/Athena/_bmad-output/planning-artifacts/epics-M11-2026-07-11.md).
+2. If upcoming implementation expands into substantial new panel choreography or workbench interaction, create a small M11 UX artifact before developing those stories.
+3. Start the story cycle with story creation and validation on the first Epic 1 story.
 
 ### Final Note
 
-This assessment identified 3 minor concerns across 2 categories: milestone-proof story discipline and scope-control risk on the two highest-risk stories. No critical or major blockers were found. The current M9 artifacts are suitable to proceed into sprint planning and story execution as long as the fixed-pack, narrow-slice boundary remains enforced during implementation.
+This reassessment leaves 1 documented caution across 1 category:
+- 1 UX-readiness warning
+
+Functional-requirement traceability remains complete at 100%, the epic structure is sound, and the refined story set is ready to enter implementation planning.

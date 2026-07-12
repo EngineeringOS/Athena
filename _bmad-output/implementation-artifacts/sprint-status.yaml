@@ -1,5 +1,5 @@
 # generated: 2026-07-11
-# last_updated: 2026-07-11T19:03:18+08:00
+# last_updated: 2026-07-12T11:10:47+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -28,7 +28,7 @@
 #   - This workspace keeps one epic file per milestone, so milestone prefixes avoid collisions
 
 generated: 2026-07-11
-last_updated: 2026-07-11T21:16:22+08:00
+last_updated: 2026-07-12T11:10:47+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -169,3 +169,17 @@ development_status:
   m9-2-3-extend-semantic-review-with-engineering-impact-and-affected-subjects: done
   m9-2-4-publish-the-m9-proof-corpus-and-verification-path: done
   m9-epic-2-retrospective: done
+  m11-epic-1: done
+  m11-1-1-publish-electrical-projection-family-contracts: done
+  m11-1-2-introduce-the-first-governed-electrical-sheet-model: done
+  m11-1-3-introduce-governed-electrical-symbol-and-notation-packs: done
+  m11-1-4-deliver-multi-view-electrical-outputs-through-runtime-and-lsp: done
+  m11-1-5-preserve-reveal-and-inspection-coherence-across-delivered-electrical-views: done
+  m11-epic-1-retrospective: done
+  m11-epic-2: done
+  m11-2-1-support-repeated-references-and-cross-reference-resolution: done
+  m11-2-2-publish-a-larger-electrical-proof-repository-and-verification-path: done
+  m11-2-3-improve-dense-electrical-workbench-navigation-and-reveal: done
+  m11-2-4-preserve-mutation-review-and-knowledge-coherence-under-ecad-depth: done
+  m11-2-5-keep-the-renderer-downstream-under-serious-electrical-depth: done
+  m11-epic-2-retrospective: done

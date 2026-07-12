@@ -244,6 +244,7 @@ export type AthenaProjectionViewPayload = {
     viewId: string;
     displayName: string;
     description: string;
+    familyId?: string;
     ownershipContract: AthenaProjectionOwnershipContractPayload;
 };
 export type AthenaProjectionOwnershipContractPayload = {
@@ -261,6 +262,7 @@ export type AthenaProjectionGovernedCommandPayload = {
     requiredArguments: string[];
 };
 export type AthenaProjectionComponentPayload = {
+    projectionId: string;
     semanticId: string;
     label: string;
     x: number;
@@ -269,6 +271,7 @@ export type AthenaProjectionComponentPayload = {
     height: number;
 };
 export type AthenaProjectionConnectionPayload = {
+    projectionId: string;
     semanticId: string;
     x1: number;
     y1: number;
@@ -276,6 +279,7 @@ export type AthenaProjectionConnectionPayload = {
     y2: number;
 };
 export type AthenaProjectionLabelPayload = {
+    projectionId: string;
     semanticId: string;
     label: string;
     x: number;
@@ -283,11 +287,41 @@ export type AthenaProjectionLabelPayload = {
     width: number;
     height: number;
 };
+export type AthenaProjectionSheetPayload = {
+    sheetId: string;
+    displayName: string;
+    order: number;
+    previousSheetId?: string;
+    nextSheetId?: string;
+    subjectSemanticIds: string[];
+};
+export type AthenaProjectionNotationSubjectPayload = {
+    semanticId: string;
+    symbolKey: string;
+    labelPolicy: string;
+    markerKeys: string[];
+};
+export type AthenaProjectionNotationPackPayload = {
+    packId: string;
+    displayName: string;
+    subjects: AthenaProjectionNotationSubjectPayload[];
+};
+export type AthenaProjectionCrossReferencePayload = {
+    semanticId: string;
+    kind: string;
+    sheetIds: string[];
+    occurrenceIds: string[];
+};
 export type AthenaProjectionReadyPayload = {
     viewId: string;
+    familyId?: string;
     systemName: string;
     canvasWidth: number;
     canvasHeight: number;
+    activeSheetId?: string;
+    sheets: AthenaProjectionSheetPayload[];
+    notationPack?: AthenaProjectionNotationPackPayload;
+    crossReferences: AthenaProjectionCrossReferencePayload[];
     activeRenderContributions: AthenaProjectionRenderContributionPayload[];
     components: AthenaProjectionComponentPayload[];
     connections: AthenaProjectionConnectionPayload[];

@@ -18,6 +18,8 @@ import {
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import {
     graphContainsSemanticId,
+    resolveProjectionCrossReference,
+    resolveProjectionOccurrence,
     retainSelectionIfPresent,
     type AthenaActiveSemanticSelection
 } from './athena-semantic-selection-model';
@@ -236,6 +238,12 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const model = buildAthenaGraphWorkbenchModel(this.diagram);
         const selectedSemantic = this.semanticSelectionService.selection;
         const selectedSemanticId = selectedSemantic?.semanticId;
+        const selectionResolution = selectedSemanticId
+            ? resolveProjectionOccurrence(this.diagram, selectedSemanticId)
+            : undefined;
+        const crossReference = selectedSemanticId
+            ? resolveProjectionCrossReference(this.diagram, selectedSemanticId)
+            : undefined;
         const connectPortsSupported = this.graphAdapterService.supportsConnectPortsIntent(this.diagram);
         const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
@@ -336,6 +344,16 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                                     <strong>{selectedSemantic?.label ?? selectedSemanticId}</strong>
                                                     <span className='athena-graph-workbench__pill'>{selectedSemantic?.kind ?? 'semantic'}</span>
                                                     <code>{selectedSemanticId}</code>
+                                                    {selectionResolution
+                                                        ? <div className='athena-graph-workbench__panel-empty'>
+                                                            {selectionResolution.status} • {selectionResolution.occurrenceIds.length} occurrence(s)
+                                                        </div>
+                                                        : undefined}
+                                                    {crossReference
+                                                        ? <div className='athena-graph-workbench__panel-empty'>
+                                                            {crossReference.kind} - {crossReference.sheetIds.length} sheet(s)
+                                                        </div>
+                                                        : undefined}
                                                 </div>}
                                             {this.connectPortsArmed
                                                 ? <div className='athena-graph-workbench__panel-empty'>
@@ -370,6 +388,32 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                                 <div>
                                                     <dt>View</dt>
                                                     <dd>{this.diagram.activeViewId}</dd>
+                                                </div>
+                                                {model.viewFamilyId
+                                                    ? <div>
+                                                        <dt>Family</dt>
+                                                        <dd><code>{model.viewFamilyId}</code></dd>
+                                                    </div>
+                                                    : undefined}
+                                                {model.activeSheetId
+                                                    ? <div>
+                                                        <dt>Sheet</dt>
+                                                        <dd><code>{model.activeSheetId}</code></dd>
+                                                    </div>
+                                                    : undefined}
+                                                {model.notationPackId
+                                                    ? <div>
+                                                        <dt>Notation</dt>
+                                                        <dd><code>{model.notationPackId}</code></dd>
+                                                    </div>
+                                                    : undefined}
+                                                <div>
+                                                    <dt>Sheets</dt>
+                                                    <dd>{model.sheetCount}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt>Cross refs</dt>
+                                                    <dd>{model.crossReferenceCount}</dd>
                                                 </div>
                                                 <div>
                                                     <dt>Graph</dt>
@@ -495,17 +539,17 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                         data-athena-graph-interactive='true'
                                         role='button'
                                         tabIndex={0}
-                                        onClick={() => void this.semanticSelectionService.selectSemanticId(edge.id)}
+                                        onClick={() => void this.semanticSelectionService.selectSemanticId(edge.semanticId)}
                                         onKeyDown={event => {
                                             if (event.key !== 'Enter' && event.key !== ' ') {
                                                 return;
                                             }
                                             event.preventDefault();
-                                            void this.semanticSelectionService.selectSemanticId(edge.id);
+                                            void this.semanticSelectionService.selectSemanticId(edge.semanticId);
                                         }}
                                     >
                                         <line
-                                            className={`athena-graph-workbench__edge ${selectedSemanticId === edge.id ? 'athena-graph-workbench__edge--selected' : ''}`}
+                                            className={`athena-graph-workbench__edge ${selectedSemanticId === edge.semanticId ? 'athena-graph-workbench__edge--selected' : ''}`}
                                             x1={edge.sourcePoint.x}
                                             y1={edge.sourcePoint.y}
                                             x2={edge.targetPoint.x}
@@ -519,15 +563,15 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                         data-athena-graph-interactive='true'
                                         role='button'
                                         tabIndex={0}
-                                        transform={node.kind === 'component' ? this.graphNodeTransform(node.id) : undefined}
-                                        onClick={event => void this.handleNodeClick(event, node.id, node.kind, node.label)}
-                                        onKeyDown={event => void this.handleGraphElementKeyDown(event, node.id, node.kind, node.label)}
+                                        transform={node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined}
+                                        onClick={event => void this.handleNodeClick(event, node.semanticId, node.kind, node.label)}
+                                        onKeyDown={event => void this.handleGraphElementKeyDown(event, node.semanticId, node.kind, node.label)}
                                         onPointerDown={node.kind === 'component'
-                                            ? event => this.handleComponentPointerDown(event, node.id, node.position.x, node.position.y)
+                                            ? event => this.handleComponentPointerDown(event, node.semanticId, node.position.x, node.position.y)
                                             : undefined}
                                     >
                                         <rect
-                                            className={`athena-graph-workbench__node athena-graph-workbench__node--${node.kind} ${selectedSemanticId === node.id ? 'athena-graph-workbench__node--selected' : ''}`}
+                                            className={`athena-graph-workbench__node athena-graph-workbench__node--${node.kind} ${selectedSemanticId === node.semanticId ? 'athena-graph-workbench__node--selected' : ''}`}
                                             x={node.position.x}
                                             y={node.position.y}
                                             width={node.size.width}
@@ -549,7 +593,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                                 x={node.position.x + 20}
                                                 y={node.position.y + 58}
                                             >
-                                                {node.id}
+                                                {node.semanticId}
                                             </text>
                                             : undefined}
                                     </g>)}

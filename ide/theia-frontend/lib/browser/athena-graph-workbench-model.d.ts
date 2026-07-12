@@ -22,9 +22,14 @@ export type AthenaGraphViewportTransform = {
 export type AthenaGraphWorkbenchModel = {
     headerTitle: string;
     viewLabel: string;
+    viewFamilyId?: string;
     statusLabel: string;
     statusTone: 'ready' | 'warning' | 'idle';
     semanticPath: string;
+    activeSheetId?: string;
+    sheetCount: number;
+    notationPackId?: string;
+    crossReferenceCount: number;
     svgViewBox: string;
     metrics: {
         nodeCount: number;

@@ -30,6 +30,25 @@ export function translateProjectionSessionToGLSPDiagram(
             ...command,
             requiredArguments: [...normalizeArray(command.requiredArguments)],
         })),
+        activeSheetId: readyProjection?.activeSheetId,
+        sheets: normalizeArray(readyProjection?.sheets).map(sheet => ({
+            ...sheet,
+            subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
+        })),
+        notationPack: readyProjection?.notationPack
+            ? {
+                ...readyProjection.notationPack,
+                subjects: normalizeArray(readyProjection.notationPack.subjects).map(subject => ({
+                    ...subject,
+                    markerKeys: [...normalizeArray(subject.markerKeys)],
+                })),
+            }
+            : undefined,
+        crossReferences: normalizeArray(readyProjection?.crossReferences).map(crossReference => ({
+            ...crossReference,
+            sheetIds: [...normalizeArray(crossReference.sheetIds)],
+            occurrenceIds: [...normalizeArray(crossReference.occurrenceIds)],
+        })),
         unavailableReason: projection.unavailableReason,
         diagnostics: normalizeArray(projection.diagnostics).map(diagnostic => ({ ...diagnostic })),
         graph: toGraph(projection),
@@ -60,7 +79,8 @@ function toGraph(projection: AthenaGLSPProjectionSource): AthenaGLSPGraph {
         },
         nodes: [
             ...normalizeArray(readyProjection.components).map(component => ({
-                id: component.semanticId,
+                id: component.projectionId,
+                semanticId: component.semanticId,
                 type: 'node' as const,
                 kind: 'component' as const,
                 label: component.label,
@@ -74,7 +94,8 @@ function toGraph(projection: AthenaGLSPProjectionSource): AthenaGLSPGraph {
                 },
             })),
             ...normalizeArray(readyProjection.labels).map(label => ({
-                id: label.semanticId,
+                id: label.projectionId,
+                semanticId: label.semanticId,
                 type: 'node' as const,
                 kind: 'label' as const,
                 label: label.label,
@@ -89,7 +110,8 @@ function toGraph(projection: AthenaGLSPProjectionSource): AthenaGLSPGraph {
             })),
         ],
         edges: normalizeArray(readyProjection.connections).map(connection => ({
-            id: connection.semanticId,
+            id: connection.projectionId,
+            semanticId: connection.semanticId,
             type: 'edge',
             sourcePoint: {
                 x: connection.x1,

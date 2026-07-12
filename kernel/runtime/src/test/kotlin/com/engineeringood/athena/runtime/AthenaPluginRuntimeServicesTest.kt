@@ -1,6 +1,8 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
+import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
+import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.plugin.AthenaCoreRuntime
@@ -120,7 +122,10 @@ class AthenaPluginRuntimeServicesTest {
         assertTrue(
             AthenaHostedPluginContributionCategory.RENDER in electricalPlugin.contributionCategories,
         )
-        assertEquals(listOf("cabinet", "wiring"), electricalPlugin.viewDefinitionIds)
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            electricalPlugin.viewDefinitionIds,
+        )
         assertEquals(0, dummyPlugin.semanticReviewEnrichmentCount)
         assertEquals(1, electricalPlugin.semanticReviewEnrichmentCount)
     }
@@ -302,10 +307,24 @@ class AthenaPluginRuntimeServicesTest {
         }
         val cabinet = electricalContribution.viewDefinitions.first { definition -> definition.id == "cabinet" }
         val wiring = electricalContribution.viewDefinitions.first { definition -> definition.id == "wiring" }
+        val schematic = electricalContribution.viewDefinitions.first { definition -> definition.id == "schematic" }
+        val documentation = electricalContribution.viewDefinitions.first { definition -> definition.id == "documentation" }
 
-        assertEquals(listOf("cabinet", "wiring"), electricalContribution.viewDefinitions.map { definition -> definition.id })
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            electricalContribution.viewDefinitions.map { definition -> definition.id },
+        )
         assertEquals(LayoutIntent.STRUCTURAL, cabinet.layoutIntent)
         assertEquals(LayoutIntent.CONNECTIVITY, wiring.layoutIntent)
+        assertEquals(LayoutIntent.CONNECTIVITY, schematic.layoutIntent)
+        assertEquals(LayoutIntent.STRUCTURAL, documentation.layoutIntent)
+        assertEquals(ElectricalProjectionFamily.CABINET, assertIs<ElectricalProjectionDescriptor>(cabinet.familyContract).family)
+        assertEquals(ElectricalProjectionFamily.WIRING, assertIs<ElectricalProjectionDescriptor>(wiring.familyContract).family)
+        assertEquals(ElectricalProjectionFamily.SCHEMATIC, assertIs<ElectricalProjectionDescriptor>(schematic.familyContract).family)
+        assertEquals(
+            ElectricalProjectionFamily.DOCUMENTATION,
+            assertIs<ElectricalProjectionDescriptor>(documentation.familyContract).family,
+        )
         assertTrue(cabinet.groupingRules.isNotEmpty())
         assertTrue(wiring.groupingRules.isNotEmpty())
     }

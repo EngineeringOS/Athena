@@ -198,3 +198,60 @@ test('drops transient selection when refreshed projection no longer contains the
         false
     );
 });
+
+test('resolves repeated projection occurrences without inventing alias identities', () => {
+    assert.equal(typeof semanticSelectionModel.resolveProjectionOccurrence, 'function');
+
+    const repeatedDiagram = {
+        crossReferences: [
+            {
+                semanticId: 'component:PLC1',
+                kind: 'repeated_reference',
+                sheetIds: ['documentation/sheet/01-overview', 'documentation/sheet/02-reference'],
+                occurrenceIds: [
+                    'documentation/projection/node/component_PLC1',
+                    'documentation/projection/node/component_PLC1_reference'
+                ]
+            }
+        ],
+        graph: {
+            nodes: [
+                { id: 'documentation/projection/node/component_PLC1', semanticId: 'component:PLC1' },
+                { id: 'documentation/projection/node/component_PLC1_reference', semanticId: 'component:PLC1' }
+            ],
+            edges: []
+        }
+    };
+
+    assert.deepEqual(
+        semanticSelectionModel.resolveProjectionCrossReference(repeatedDiagram, 'component:PLC1'),
+        {
+            semanticId: 'component:PLC1',
+            kind: 'repeated_reference',
+            sheetIds: ['documentation/sheet/01-overview', 'documentation/sheet/02-reference'],
+            occurrenceIds: [
+                'documentation/projection/node/component_PLC1',
+                'documentation/projection/node/component_PLC1_reference'
+            ]
+        }
+    );
+    assert.deepEqual(
+        semanticSelectionModel.resolveProjectionOccurrence(repeatedDiagram, 'component:PLC1'),
+        {
+            semanticId: 'component:PLC1',
+            status: 'ambiguous',
+            occurrenceIds: [
+                'documentation/projection/node/component_PLC1',
+                'documentation/projection/node/component_PLC1_reference'
+            ]
+        }
+    );
+    assert.deepEqual(
+        semanticSelectionModel.resolveProjectionOccurrence(repeatedDiagram, 'component:M1'),
+        {
+            semanticId: 'component:M1',
+            status: 'unresolved',
+            occurrenceIds: []
+        }
+    );
+});

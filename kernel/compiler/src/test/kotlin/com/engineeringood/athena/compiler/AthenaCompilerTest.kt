@@ -35,6 +35,8 @@ import com.engineeringood.athena.layout.LayoutRelationshipId
 import com.engineeringood.athena.layout.LayoutPlacementRelation
 import com.engineeringood.athena.layout.LayoutRelationshipKind
 import com.engineeringood.athena.layout.LayoutRelativePlacement
+import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
+import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.ProjectionInteractivity
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.layout.ViewDefinition
@@ -54,7 +56,15 @@ import com.engineeringood.athena.projection.ProjectionLabel
 import com.engineeringood.athena.projection.ProjectionLabelId
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionNotationPack
+import com.engineeringood.athena.projection.ProjectionNotationPackId
+import com.engineeringood.athena.projection.ProjectionNotationSubject
+import com.engineeringood.athena.projection.ProjectionLabelPolicy
 import com.engineeringood.athena.projection.ProjectionPoint
+import com.engineeringood.athena.projection.ProjectionSheet
+import com.engineeringood.athena.projection.ProjectionSheetId
+import com.engineeringood.athena.projection.ProjectionSheetSubject
+import com.engineeringood.athena.projection.ProjectionSymbolKey
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -143,16 +153,40 @@ class AthenaCompilerTest {
             success.rendering,
         )
         assertEquals(
-            listOf(expectedCabinetLayout(), expectedWiringLayout()),
-            success.layouts,
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            success.layouts.map { layout -> layout.view.id },
         )
         assertEquals(
-            listOf(expectedCabinetGeometry(), expectedWiringGeometry()),
-            success.geometries,
+            expectedCabinetLayout(),
+            success.layouts.first { layout -> layout.view.id == "cabinet" },
         )
         assertEquals(
-            listOf(expectedCabinetProjection(), expectedWiringProjection()),
-            success.projections,
+            expectedWiringLayout(),
+            success.layouts.first { layout -> layout.view.id == "wiring" },
+        )
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            success.geometries.map { geometry -> geometry.viewId },
+        )
+        assertEquals(
+            expectedCabinetGeometry(),
+            success.geometries.first { geometry -> geometry.viewId == "cabinet" },
+        )
+        assertEquals(
+            expectedWiringGeometry(),
+            success.geometries.first { geometry -> geometry.viewId == "wiring" },
+        )
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            success.projections.map { projection -> projection.view.id },
+        )
+        assertEquals(
+            expectedCabinetProjection(),
+            success.projections.first { projection -> projection.view.id == "cabinet" },
+        )
+        assertEquals(
+            expectedWiringProjection(),
+            success.projections.first { projection -> projection.view.id == "wiring" },
         )
     }
 
@@ -164,7 +198,10 @@ class AthenaCompilerTest {
         val first = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
         val second = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
 
-        assertEquals(listOf("cabinet", "wiring"), compiler.supportedViewDefinitions().map { definition -> definition.id })
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            compiler.supportedViewDefinitions().map { definition -> definition.id },
+        )
         assertEquals(first.layouts, second.layouts)
         assertEquals(first.geometries, second.geometries)
         assertEquals(first.projections, second.projections)
@@ -1875,6 +1912,70 @@ class AthenaCompilerTest {
                     originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_M1_in"),
                 ),
             ),
+            sheets = listOf(
+                ProjectionSheet(
+                    sheetId = ProjectionSheetId("cabinet/sheet/01-main"),
+                    displayName = "Cabinet Main",
+                    order = 0,
+                    subjects = listOf(
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("component:M1"),
+                            nodeIds = listOf(ProjectionNodeId("cabinet/projection/node/component_M1")),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("component:PLC1"),
+                            nodeIds = listOf(ProjectionNodeId("cabinet/projection/node/component_PLC1")),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                            connectionIds = listOf(
+                                ProjectionConnectionId("cabinet/projection/connection/connection_PLC1_out_M1_in"),
+                            ),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("port:M1.in"),
+                            labelIds = listOf(ProjectionLabelId("cabinet/projection/label/port_M1_in")),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("port:PLC1.out"),
+                            labelIds = listOf(ProjectionLabelId("cabinet/projection/label/port_PLC1_out")),
+                        ),
+                    ),
+                ),
+            ),
+            notationPack = ProjectionNotationPack(
+                packId = ProjectionNotationPackId("electrical-notation/cabinet/default-v1"),
+                displayName = "Electrical Cabinet Default",
+                subjects = listOf(
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("component:M1"),
+                        symbolKey = ProjectionSymbolKey("device.cabinet.default"),
+                        labelPolicy = ProjectionLabelPolicy.SUBJECT_LABEL,
+                        markerKeys = listOf("owned-device"),
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("component:PLC1"),
+                        symbolKey = ProjectionSymbolKey("device.cabinet.default"),
+                        labelPolicy = ProjectionLabelPolicy.SUBJECT_LABEL,
+                        markerKeys = listOf("owned-device"),
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                        symbolKey = ProjectionSymbolKey("connection.cabinet.default"),
+                        labelPolicy = ProjectionLabelPolicy.HIDDEN,
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("port:M1.in"),
+                        symbolKey = ProjectionSymbolKey("port.cabinet.default"),
+                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("port:PLC1.out"),
+                        symbolKey = ProjectionSymbolKey("port.cabinet.default"),
+                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
+                    ),
+                ),
+            ),
         )
     }
 
@@ -1924,6 +2025,71 @@ class AthenaCompilerTest {
                     originGeometryElementId = GeometryElementId("wiring/geometry/label/port_M1_in"),
                 ),
             ),
+            sheets = listOf(
+                ProjectionSheet(
+                    sheetId = ProjectionSheetId("wiring/sheet/01-main"),
+                    displayName = "Wiring Main",
+                    order = 0,
+                    subjects = listOf(
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("component:M1"),
+                            nodeIds = listOf(ProjectionNodeId("wiring/projection/node/component_M1")),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("component:PLC1"),
+                            nodeIds = listOf(ProjectionNodeId("wiring/projection/node/component_PLC1")),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                            connectionIds = listOf(
+                                ProjectionConnectionId("wiring/projection/connection/connection_PLC1_out_M1_in"),
+                            ),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("port:M1.in"),
+                            labelIds = listOf(ProjectionLabelId("wiring/projection/label/port_M1_in")),
+                        ),
+                        ProjectionSheetSubject(
+                            semanticId = StableSemanticIdentity("port:PLC1.out"),
+                            labelIds = listOf(ProjectionLabelId("wiring/projection/label/port_PLC1_out")),
+                        ),
+                    ),
+                ),
+            ),
+            notationPack = ProjectionNotationPack(
+                packId = ProjectionNotationPackId("electrical-notation/wiring/default-v1"),
+                displayName = "Electrical Wiring Default",
+                subjects = listOf(
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("component:M1"),
+                        symbolKey = ProjectionSymbolKey("device.wiring.default"),
+                        labelPolicy = ProjectionLabelPolicy.SUBJECT_LABEL,
+                        markerKeys = listOf("connectivity-device"),
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("component:PLC1"),
+                        symbolKey = ProjectionSymbolKey("device.wiring.default"),
+                        labelPolicy = ProjectionLabelPolicy.SUBJECT_LABEL,
+                        markerKeys = listOf("connectivity-device"),
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                        symbolKey = ProjectionSymbolKey("connection.wiring.default"),
+                        labelPolicy = ProjectionLabelPolicy.HIDDEN,
+                        markerKeys = listOf("signal-flow"),
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("port:M1.in"),
+                        symbolKey = ProjectionSymbolKey("port.wiring.default"),
+                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
+                    ),
+                    ProjectionNotationSubject(
+                        semanticId = StableSemanticIdentity("port:PLC1.out"),
+                        symbolKey = ProjectionSymbolKey("port.wiring.default"),
+                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
+                    ),
+                ),
+            ),
         )
     }
 
@@ -1961,6 +2127,9 @@ class AthenaCompilerTest {
                     "layout-group-membership",
                 ),
             ),
+            familyContract = ElectricalProjectionDescriptor(
+                family = ElectricalProjectionFamily.CABINET,
+            ),
         )
     }
 
@@ -1985,6 +2154,9 @@ class AthenaCompilerTest {
                     "inspect-selection",
                     "preview-related-elements",
                 ),
+            ),
+            familyContract = ElectricalProjectionDescriptor(
+                family = ElectricalProjectionFamily.WIRING,
             ),
         )
     }

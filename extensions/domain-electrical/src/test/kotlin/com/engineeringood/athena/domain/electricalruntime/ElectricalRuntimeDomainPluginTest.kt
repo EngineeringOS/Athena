@@ -1,7 +1,11 @@
 package com.engineeringood.athena.domain.electricalruntime
 
+import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
+import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.ProjectionIdentityAnchor
 import com.engineeringood.athena.layout.ProjectionInteractivity
+import com.engineeringood.athena.layout.ProjectionSemanticAuthority
 import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
@@ -35,19 +39,29 @@ class ElectricalRuntimeDomainPluginTest {
     }
 
     @Test
-    fun `publishes cabinet and wiring as the first supported view-definition proof pair`() {
+    fun `publishes the first governed electrical projection family set through typed view definitions`() {
         val plugin = ElectricalRuntimeDomainPlugin()
         val contributor = assertIs<AthenaViewDefinitionContributor>(plugin)
 
         val viewDefinitions = contributor.viewDefinitions()
         val cabinet = viewDefinitions.first { definition -> definition.id == "cabinet" }
         val wiring = viewDefinitions.first { definition -> definition.id == "wiring" }
+        val schematic = viewDefinitions.first { definition -> definition.id == "schematic" }
+        val documentation = viewDefinitions.first { definition -> definition.id == "documentation" }
+        val cabinetFamily = assertIs<ElectricalProjectionDescriptor>(cabinet.familyContract)
+        val wiringFamily = assertIs<ElectricalProjectionDescriptor>(wiring.familyContract)
+        val schematicFamily = assertIs<ElectricalProjectionDescriptor>(schematic.familyContract)
+        val documentationFamily = assertIs<ElectricalProjectionDescriptor>(documentation.familyContract)
 
-        assertEquals(listOf("cabinet", "wiring"), viewDefinitions.map { definition -> definition.id })
+        assertEquals(
+            listOf("cabinet", "wiring", "schematic", "documentation"),
+            viewDefinitions.map { definition -> definition.id },
+        )
         assertEquals(LayoutIntent.STRUCTURAL, cabinet.layoutIntent)
         assertEquals(listOf("group-by-owner", "group-by-component"), cabinet.groupingRules)
         assertEquals(listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT), cabinet.viewEmphasis)
         assertEquals(ProjectionInteractivity.INTERACTIVE, cabinet.ownershipContract.interactivity)
+        assertEquals(ElectricalProjectionFamily.CABINET, cabinetFamily.family)
         assertEquals(
             listOf("adjust-layout-placement", "adjust-layout-grouping"),
             cabinet.ownershipContract.projectionCommandIds,
@@ -64,12 +78,21 @@ class ElectricalRuntimeDomainPluginTest {
         assertEquals(listOf("group-by-signal", "group-by-connection-path"), wiring.groupingRules)
         assertEquals(listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW), wiring.viewEmphasis)
         assertEquals(ProjectionInteractivity.INSPECT_ONLY, wiring.ownershipContract.interactivity)
+        assertEquals(ElectricalProjectionFamily.WIRING, wiringFamily.family)
         assertEquals(emptyList(), wiring.ownershipContract.projectionCommandIds)
         assertEquals(
             listOf("navigate-view", "inspect-selection", "preview-related-elements"),
             wiring.ownershipContract.transientInteractionKinds,
         )
         assertEquals(emptyList(), wiring.ownershipContract.persistedProjectionMetadataKeys)
+        assertEquals(LayoutIntent.CONNECTIVITY, schematic.layoutIntent)
+        assertEquals(ProjectionInteractivity.INSPECT_ONLY, schematic.ownershipContract.interactivity)
+        assertEquals(ElectricalProjectionFamily.SCHEMATIC, schematicFamily.family)
+        assertEquals(LayoutIntent.STRUCTURAL, documentation.layoutIntent)
+        assertEquals(ProjectionInteractivity.INSPECT_ONLY, documentation.ownershipContract.interactivity)
+        assertEquals(ElectricalProjectionFamily.DOCUMENTATION, documentationFamily.family)
+        assertEquals(ProjectionIdentityAnchor.CANONICAL_SUBJECT, cabinetFamily.identityAnchor)
+        assertEquals(ProjectionSemanticAuthority.CANONICAL_ENGINEERING, cabinetFamily.semanticAuthority)
     }
 
     @Test

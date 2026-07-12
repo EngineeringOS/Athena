@@ -19,6 +19,7 @@ export type AthenaGLSPProjectionViewSource = {
     viewId: string;
     displayName: string;
     description: string;
+    familyId?: string;
     ownershipContract: AthenaGLSPProjectionOwnershipContractSource;
 };
 export type AthenaGLSPProjectionOwnershipContractSource = {
@@ -37,13 +38,43 @@ export type AthenaGLSPGovernedCommandSource = {
 };
 export type AthenaGLSPReadyProjectionSource = {
     viewId: string;
+    familyId?: string;
     systemName: string;
     canvasWidth: number;
     canvasHeight: number;
+    activeSheetId?: string;
+    sheets?: AthenaGLSPSheetSource[];
+    notationPack?: AthenaGLSPNotationPackSource;
+    crossReferences?: AthenaGLSPCrossReferenceSource[];
     activeRenderContributions: AthenaGLSPRenderContributionSource[];
     components: AthenaGLSPComponentSource[];
     connections: AthenaGLSPConnectionSource[];
     labels: AthenaGLSPLabelSource[];
+};
+export type AthenaGLSPSheetSource = {
+    sheetId: string;
+    displayName: string;
+    order: number;
+    previousSheetId?: string;
+    nextSheetId?: string;
+    subjectSemanticIds: string[];
+};
+export type AthenaGLSPNotationSubjectSource = {
+    semanticId: string;
+    symbolKey: string;
+    labelPolicy: string;
+    markerKeys: string[];
+};
+export type AthenaGLSPNotationPackSource = {
+    packId: string;
+    displayName: string;
+    subjects: AthenaGLSPNotationSubjectSource[];
+};
+export type AthenaGLSPCrossReferenceSource = {
+    semanticId: string;
+    kind: string;
+    sheetIds: string[];
+    occurrenceIds: string[];
 };
 export type AthenaGLSPRenderContributionSource = {
     pluginId: string;
@@ -58,6 +89,7 @@ export type AthenaGLSPRenderSurfaceMappingSource = {
     tokens: Record<string, string>;
 };
 export type AthenaGLSPComponentSource = {
+    projectionId: string;
     semanticId: string;
     label: string;
     x: number;
@@ -66,6 +98,7 @@ export type AthenaGLSPComponentSource = {
     height: number;
 };
 export type AthenaGLSPConnectionSource = {
+    projectionId: string;
     semanticId: string;
     x1: number;
     y1: number;
@@ -73,6 +106,7 @@ export type AthenaGLSPConnectionSource = {
     y2: number;
 };
 export type AthenaGLSPLabelSource = {
+    projectionId: string;
     semanticId: string;
     label: string;
     x: number;
@@ -96,6 +130,10 @@ export type AthenaGLSPDiagram = {
     activeRenderContributions: AthenaGLSPRenderContributionSource[];
     supportedViews: AthenaGLSPProjectionViewSource[];
     governedCommands: AthenaGLSPGovernedCommandSource[];
+    activeSheetId?: string;
+    sheets: AthenaGLSPSheetSource[];
+    notationPack?: AthenaGLSPNotationPackSource;
+    crossReferences: AthenaGLSPCrossReferenceSource[];
     unavailableReason?: string;
     diagnostics: AthenaGLSPDiagnosticSource[];
     graph: AthenaGLSPGraph;
@@ -113,6 +151,7 @@ export type AthenaGLSPCanvasBounds = {
 };
 export type AthenaGLSPNode = {
     id: string;
+    semanticId: string;
     type: 'node';
     kind: 'component' | 'label';
     label: string;
@@ -121,6 +160,7 @@ export type AthenaGLSPNode = {
 };
 export type AthenaGLSPEdge = {
     id: string;
+    semanticId: string;
     type: 'edge';
     sourcePoint: AthenaGLSPPoint;
     targetPoint: AthenaGLSPPoint;

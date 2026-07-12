@@ -76,3 +76,13 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `README.md` - published proof-corpus entry for the first engineering-knowledge runtime milestone
 
 `m9/` stays kernel-first on purpose. The milestone proves derived engineering context, capability facts, fixed-rule sufficiency diagnostics, and typed engineering-impact review over one narrow electrical slice without widening into standards platforms, vendor catalogs, or new editor modes.
+
+## `m11/`
+
+- `dense-electrical-proof/` - first denser governed repository for serious electrical ECAD workbench proof
+- `dense-electrical-proof/athena.yaml` - authored repository and package intent for the M11 proof
+- `dense-electrical-proof/athena.lock` - canonical derived lock contract for the same repository
+- `dense-electrical-proof/src/assembly-line.athena` - dense electrical source with more than 10 components, more than 20 connections, repeated references, and documentation-sheet pressure
+- `README.md` - milestone-local proof corpus summary
+
+`m11/` proves serious electrical workbench depth on a governed repository instead of a toy graph. The fixture is intentionally dense enough to exercise multi-view delivery, sheet-aware documentation output, repeated-reference tracking, and downstream renderer pressure while keeping canonical semantic authority upstream.

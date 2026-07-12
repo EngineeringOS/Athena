@@ -3,8 +3,26 @@ package com.engineeringood.athena.layout
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class LayoutModelTest {
+    @Test
+    fun `view definition can attach governed electrical projection family contracts`() {
+        val view = ViewDefinition(
+            id = "schematic",
+            displayName = "Schematic",
+            familyContract = ElectricalProjectionDescriptor(
+                family = ElectricalProjectionFamily.SCHEMATIC,
+            ),
+        )
+
+        val familyContract = assertIs<ElectricalProjectionDescriptor>(view.familyContract)
+
+        assertEquals(ElectricalProjectionFamily.SCHEMATIC, familyContract.family)
+        assertEquals(ProjectionIdentityAnchor.CANONICAL_SUBJECT, familyContract.identityAnchor)
+        assertEquals(ProjectionSemanticAuthority.CANONICAL_ENGINEERING, familyContract.semanticAuthority)
+    }
+
     @Test
     fun `preserves canonical semantic identity across groups nodes and relationships`() {
         val componentSemanticId = StableSemanticIdentity("component:cabinet/main")

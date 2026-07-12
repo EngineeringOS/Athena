@@ -209,6 +209,12 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
         const model = (0, athena_graph_workbench_model_1.buildAthenaGraphWorkbenchModel)(this.diagram);
         const selectedSemantic = this.semanticSelectionService.selection;
         const selectedSemanticId = selectedSemantic?.semanticId;
+        const selectionResolution = selectedSemanticId
+            ? (0, athena_semantic_selection_model_1.resolveProjectionOccurrence)(this.diagram, selectedSemanticId)
+            : undefined;
+        const crossReference = selectedSemanticId
+            ? (0, athena_semantic_selection_model_1.resolveProjectionCrossReference)(this.diagram, selectedSemanticId)
+            : undefined;
         const connectPortsSupported = this.graphAdapterService.supportsConnectPortsIntent(this.diagram);
         const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
@@ -263,7 +269,21 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                                             : React.createElement("div", { className: 'athena-graph-workbench__selection' },
                                                 React.createElement("strong", null, selectedSemantic?.label ?? selectedSemanticId),
                                                 React.createElement("span", { className: 'athena-graph-workbench__pill' }, selectedSemantic?.kind ?? 'semantic'),
-                                                React.createElement("code", null, selectedSemanticId)),
+                                                React.createElement("code", null, selectedSemanticId),
+                                                selectionResolution
+                                                    ? React.createElement("div", { className: 'athena-graph-workbench__panel-empty' },
+                                                        selectionResolution.status,
+                                                        " \u2022 ",
+                                                        selectionResolution.occurrenceIds.length,
+                                                        " occurrence(s)")
+                                                    : undefined,
+                                                crossReference
+                                                    ? React.createElement("div", { className: 'athena-graph-workbench__panel-empty' },
+                                                        crossReference.kind,
+                                                        " - ",
+                                                        crossReference.sheetIds.length,
+                                                        " sheet(s)")
+                                                    : undefined),
                                         this.connectPortsArmed
                                             ? React.createElement("div", { className: 'athena-graph-workbench__panel-empty' }, this.connectPortsSource
                                                 ? React.createElement(React.Fragment, null,
@@ -299,6 +319,30 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                                             React.createElement("div", null,
                                                 React.createElement("dt", null, "View"),
                                                 React.createElement("dd", null, this.diagram.activeViewId)),
+                                            model.viewFamilyId
+                                                ? React.createElement("div", null,
+                                                    React.createElement("dt", null, "Family"),
+                                                    React.createElement("dd", null,
+                                                        React.createElement("code", null, model.viewFamilyId)))
+                                                : undefined,
+                                            model.activeSheetId
+                                                ? React.createElement("div", null,
+                                                    React.createElement("dt", null, "Sheet"),
+                                                    React.createElement("dd", null,
+                                                        React.createElement("code", null, model.activeSheetId)))
+                                                : undefined,
+                                            model.notationPackId
+                                                ? React.createElement("div", null,
+                                                    React.createElement("dt", null, "Notation"),
+                                                    React.createElement("dd", null,
+                                                        React.createElement("code", null, model.notationPackId)))
+                                                : undefined,
+                                            React.createElement("div", null,
+                                                React.createElement("dt", null, "Sheets"),
+                                                React.createElement("dd", null, model.sheetCount)),
+                                            React.createElement("div", null,
+                                                React.createElement("dt", null, "Cross refs"),
+                                                React.createElement("dd", null, model.crossReferenceCount)),
                                             React.createElement("div", null,
                                                 React.createElement("dt", null, "Graph"),
                                                 React.createElement("dd", null,
@@ -369,21 +413,21 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                         React.createElement("div", { className: 'athena-graph-workbench__viewport', ref: this.bindViewportElement, onClick: this.handleViewportClick, onDoubleClick: this.handleViewportDoubleClick, onWheel: this.handleViewportWheel, onPointerDown: this.handleViewportPointerDown, onPointerMove: this.handleViewportPointerMove, onPointerUp: this.handleViewportPointerEnd, onPointerCancel: this.handleViewportPointerEnd },
                             React.createElement("div", { className: 'athena-graph-workbench__grid' }),
                             React.createElement("svg", { className: 'athena-graph-workbench__canvas', viewBox: model.svgViewBox, role: 'img', "aria-label": 'Athena graphical projection', style: canvasStyle },
-                                model.edges.map(edge => React.createElement("g", { key: edge.id, className: 'athena-graph-workbench__element', "data-athena-graph-interactive": 'true', role: 'button', tabIndex: 0, onClick: () => void this.semanticSelectionService.selectSemanticId(edge.id), onKeyDown: event => {
+                                model.edges.map(edge => React.createElement("g", { key: edge.id, className: 'athena-graph-workbench__element', "data-athena-graph-interactive": 'true', role: 'button', tabIndex: 0, onClick: () => void this.semanticSelectionService.selectSemanticId(edge.semanticId), onKeyDown: event => {
                                         if (event.key !== 'Enter' && event.key !== ' ') {
                                             return;
                                         }
                                         event.preventDefault();
-                                        void this.semanticSelectionService.selectSemanticId(edge.id);
+                                        void this.semanticSelectionService.selectSemanticId(edge.semanticId);
                                     } },
-                                    React.createElement("line", { className: `athena-graph-workbench__edge ${selectedSemanticId === edge.id ? 'athena-graph-workbench__edge--selected' : ''}`, x1: edge.sourcePoint.x, y1: edge.sourcePoint.y, x2: edge.targetPoint.x, y2: edge.targetPoint.y, vectorEffect: 'non-scaling-stroke' }))),
-                                model.nodes.map(node => React.createElement("g", { key: node.id, className: 'athena-graph-workbench__element', "data-athena-graph-interactive": 'true', role: 'button', tabIndex: 0, transform: node.kind === 'component' ? this.graphNodeTransform(node.id) : undefined, onClick: event => void this.handleNodeClick(event, node.id, node.kind, node.label), onKeyDown: event => void this.handleGraphElementKeyDown(event, node.id, node.kind, node.label), onPointerDown: node.kind === 'component'
-                                        ? event => this.handleComponentPointerDown(event, node.id, node.position.x, node.position.y)
+                                    React.createElement("line", { className: `athena-graph-workbench__edge ${selectedSemanticId === edge.semanticId ? 'athena-graph-workbench__edge--selected' : ''}`, x1: edge.sourcePoint.x, y1: edge.sourcePoint.y, x2: edge.targetPoint.x, y2: edge.targetPoint.y, vectorEffect: 'non-scaling-stroke' }))),
+                                model.nodes.map(node => React.createElement("g", { key: node.id, className: 'athena-graph-workbench__element', "data-athena-graph-interactive": 'true', role: 'button', tabIndex: 0, transform: node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined, onClick: event => void this.handleNodeClick(event, node.semanticId, node.kind, node.label), onKeyDown: event => void this.handleGraphElementKeyDown(event, node.semanticId, node.kind, node.label), onPointerDown: node.kind === 'component'
+                                        ? event => this.handleComponentPointerDown(event, node.semanticId, node.position.x, node.position.y)
                                         : undefined },
-                                    React.createElement("rect", { className: `athena-graph-workbench__node athena-graph-workbench__node--${node.kind} ${selectedSemanticId === node.id ? 'athena-graph-workbench__node--selected' : ''}`, x: node.position.x, y: node.position.y, width: node.size.width, height: node.size.height, rx: node.kind === 'label' ? 10 : 18, ry: node.kind === 'label' ? 10 : 18, vectorEffect: 'non-scaling-stroke' }),
+                                    React.createElement("rect", { className: `athena-graph-workbench__node athena-graph-workbench__node--${node.kind} ${selectedSemanticId === node.semanticId ? 'athena-graph-workbench__node--selected' : ''}`, x: node.position.x, y: node.position.y, width: node.size.width, height: node.size.height, rx: node.kind === 'label' ? 10 : 18, ry: node.kind === 'label' ? 10 : 18, vectorEffect: 'non-scaling-stroke' }),
                                     React.createElement("text", { className: 'athena-graph-workbench__node-label', x: node.position.x + (node.kind === 'label' ? 12 : 20), y: node.position.y + (node.kind === 'label' ? 22 : 34) }, node.label),
                                     node.kind === 'component'
-                                        ? React.createElement("text", { className: 'athena-graph-workbench__node-meta', x: node.position.x + 20, y: node.position.y + 58 }, node.id)
+                                        ? React.createElement("text", { className: 'athena-graph-workbench__node-meta', x: node.position.x + 20, y: node.position.y + 58 }, node.semanticId)
                                         : undefined)))),
                         React.createElement("div", { className: 'athena-graph-workbench__statusline' },
                             React.createElement("span", { title: 'Canvas size' },

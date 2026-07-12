@@ -1,0 +1,4 @@
+primaryPackage:
+  name: com.engineeringood.assembly-line
+  version: 1.0.0
+  sourceRoot: src

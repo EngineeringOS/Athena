@@ -5,6 +5,8 @@ exports.resolveSemanticSelectionFromSourceRange = resolveSemanticSelectionFromSo
 exports.matchesSemanticScmContext = matchesSemanticScmContext;
 exports.selectableSemanticIdFromScmContext = selectableSemanticIdFromScmContext;
 exports.graphContainsSemanticId = graphContainsSemanticId;
+exports.resolveProjectionOccurrence = resolveProjectionOccurrence;
+exports.resolveProjectionCrossReference = resolveProjectionCrossReference;
 exports.retainSelectionIfPresent = retainSelectionIfPresent;
 /** Resolves one canonical semantic selection from the current inspection payload, if the document publishes it. */
 function resolveSemanticSelectionFromInspection(inspection, semanticId) {
@@ -77,12 +79,48 @@ function selectableSemanticIdFromScmContext(carrier) {
 }
 /** Returns whether the current graph snapshot already exposes the canonical semantic id. */
 function graphContainsSemanticId(diagram, semanticId) {
+    return resolveProjectionOccurrence(diagram, semanticId).status !== 'unresolved';
+}
+/** Resolves repeated-reference status for one canonical semantic id inside current graph snapshot. */
+function resolveProjectionOccurrence(diagram, semanticId) {
     if (!diagram) {
-        return false;
+        return {
+            semanticId,
+            status: 'unresolved',
+            occurrenceIds: []
+        };
     }
-    const existsInNodes = diagram.graph.nodes.some(node => node.id === semanticId);
-    const existsInEdges = diagram.graph.edges.some(edge => edge.id === semanticId);
-    return existsInNodes || existsInEdges;
+    const occurrenceIds = [
+        ...diagram.graph.nodes
+            .filter(node => (node.semanticId ?? node.id) === semanticId)
+            .map(node => node.id),
+        ...diagram.graph.edges
+            .filter(edge => (edge.semanticId ?? edge.id) === semanticId)
+            .map(edge => edge.id)
+    ];
+    const status = occurrenceIds.length === 0
+        ? 'unresolved'
+        : occurrenceIds.length === 1
+            ? 'resolved'
+            : 'ambiguous';
+    return {
+        semanticId,
+        status,
+        occurrenceIds
+    };
+}
+/** Returns published repeated-reference metadata for one canonical subject, if available. */
+function resolveProjectionCrossReference(diagram, semanticId) {
+    const crossReference = diagram?.crossReferences?.find(reference => reference.semanticId === semanticId);
+    if (!crossReference) {
+        return undefined;
+    }
+    return {
+        semanticId,
+        kind: crossReference.kind,
+        sheetIds: [...crossReference.sheetIds],
+        occurrenceIds: [...crossReference.occurrenceIds]
+    };
 }
 /** Keeps transient selection only while the refreshed projection still contains the same canonical semantic id. */
 function retainSelectionIfPresent(diagram, selection) {

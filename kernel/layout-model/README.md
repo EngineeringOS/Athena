@@ -7,6 +7,7 @@ The `:kernel:layout-model` module defines Athena's first explicit layout-intent 
 ## Responsibilities
 
 - Define `ViewDefinition` for supported projection contexts.
+- Define governed projection-family contracts that classify downstream presentation families without creating a second semantic authority.
 - Define the first `Layout IR` document, group, node, relative-placement, and relationship contracts.
 - Keep canonical semantic identity as a first-class field across layout artifacts.
 - Provide a durable kernel-owned home for layout intent instead of hiding it in UI or renderer code.
@@ -14,6 +15,9 @@ The `:kernel:layout-model` module defines Athena's first explicit layout-intent 
 ## Main Types
 
 - `ViewDefinition`
+- `ProjectionFamilyContract`
+- `ElectricalProjectionDescriptor`
+- `ElectricalProjectionFamily`
 - `LayoutDocument`
 - `LayoutGroup`
 - `LayoutNode`
@@ -27,7 +31,7 @@ The `:kernel:layout-model` module defines Athena's first explicit layout-intent 
 
 ## Boundaries
 
-This module does not derive layout from semantic state, does not own runtime projection sessions, does not emit geometry, and does not mutate engineering semantics. It is the durable model layer that later compiler and runtime stories consume when deriving grouping, ordering, relative placement, and emphasis from canonical semantics.
+This module does not derive layout from semantic state, does not own runtime projection sessions, does not emit geometry, and does not mutate engineering semantics. It is the durable model layer that later compiler and runtime stories consume when deriving grouping, ordering, relative placement, emphasis, and governed projection-family classification from canonical semantics.
 
 ## Verification
 

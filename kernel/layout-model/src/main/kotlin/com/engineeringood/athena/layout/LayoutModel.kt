@@ -36,6 +36,80 @@ data class ProjectionOwnershipContract(
 }
 
 /**
+ * Canonical identity anchor used by one governed projection family contract.
+ *
+ * Projection families may repeat, regroup, or summarize engineering subjects, but they must keep
+ * the same canonical subject identity as the anchor for reveal, inspection, and downstream review.
+ */
+enum class ProjectionIdentityAnchor {
+    CANONICAL_SUBJECT,
+}
+
+/**
+ * Semantic authority declared by one governed projection family contract.
+ *
+ * Family contracts classify downstream presentation families only. They do not create a second
+ * semantic authority beside canonical engineering meaning.
+ */
+enum class ProjectionSemanticAuthority {
+    CANONICAL_ENGINEERING,
+}
+
+/**
+ * Typed downstream family contract attached to one supported projection view.
+ *
+ * The contract classifies a projection family without redefining canonical engineering meaning.
+ */
+sealed interface ProjectionFamilyContract {
+    /**
+     * Stable anchor that keeps the family attached to canonical subject identity.
+     */
+    val identityAnchor: ProjectionIdentityAnchor
+
+    /**
+     * Semantic authority that remains upstream of any downstream family representation.
+     */
+    val semanticAuthority: ProjectionSemanticAuthority
+}
+
+/**
+ * First governed electrical projection-family vocabulary for the serious ECAD workbench path.
+ */
+enum class ElectricalProjectionFamily {
+    /**
+     * Connectivity-first schematic family used for canonical electrical inspection.
+     */
+    SCHEMATIC,
+
+    /**
+     * Structural cabinet family used for grouped placement and ownership inspection.
+     */
+    CABINET,
+
+    /**
+     * Connectivity-first wiring family used for signal-flow and route inspection.
+     */
+    WIRING,
+
+    /**
+     * Documentation-oriented family used for summarized downstream electrical outputs.
+     */
+    DOCUMENTATION,
+}
+
+/**
+ * Typed electrical projection-family contract attached to one supported view definition.
+ *
+ * The descriptor keeps electrical-family classification explicit while preserving canonical
+ * engineering meaning and stable subject identity outside downstream views.
+ */
+data class ElectricalProjectionDescriptor(
+    val family: ElectricalProjectionFamily,
+    override val identityAnchor: ProjectionIdentityAnchor = ProjectionIdentityAnchor.CANONICAL_SUBJECT,
+    override val semanticAuthority: ProjectionSemanticAuthority = ProjectionSemanticAuthority.CANONICAL_ENGINEERING,
+) : ProjectionFamilyContract
+
+/**
  * Typed definition of one supported human-facing projection context.
  *
  * View definitions describe presentation intent only. They do not redefine engineering meaning.
@@ -48,6 +122,7 @@ data class ViewDefinition(
     val viewEmphasis: List<ViewEmphasis> = emptyList(),
     val description: String? = null,
     val ownershipContract: ProjectionOwnershipContract = ProjectionOwnershipContract(),
+    val familyContract: ProjectionFamilyContract? = null,
 )
 
 /**

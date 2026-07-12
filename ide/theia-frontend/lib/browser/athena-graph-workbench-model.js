@@ -16,9 +16,14 @@ function buildAthenaGraphWorkbenchModel(diagram) {
     return {
         headerTitle: diagram.projectName,
         viewLabel,
+        viewFamilyId: activeView?.familyId,
         statusLabel: diagram.status,
         statusTone: diagram.status === 'ready' ? 'ready' : 'warning',
         semanticPath: diagram.semanticPath,
+        activeSheetId: diagram.activeSheetId,
+        sheetCount: diagram.sheets?.length ?? 0,
+        notationPackId: diagram.notationPack?.packId,
+        crossReferenceCount: diagram.crossReferences?.length ?? 0,
         svgViewBox: `0 0 ${canvasWidth} ${canvasHeight}`,
         metrics: {
             nodeCount: diagram.graph.nodes.length,

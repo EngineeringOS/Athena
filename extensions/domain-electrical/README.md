@@ -12,7 +12,11 @@ The `:extensions:domain-electrical` module is the reference real Athena proof-do
 - Publish inspectable validation, compiler-stage, and renderer-facing contribution metadata through the stable SPI.
 - Participate in the governed `LOWER` and `VALIDATE` compiler stages declared through the stable SPI.
 - Contribute lowering for `device`, `port`, and `connect` declarations.
-- Contribute the first supported `cabinet` and `wiring` view definitions through typed core-owned contracts.
+- Contribute the first governed electrical projection-family set through typed core-owned contracts:
+  - `cabinet`
+  - `wiring`
+  - `schematic`
+  - `documentation`
 - Contribute Electrical/Runtime-specific semantic diagnostics such as proof device type, port direction, and signal compatibility checks.
 - Publish the JVM `ServiceLoader` registration under `META-INF/services/com.engineeringood.athena.plugin.AthenaPlugin`.
 

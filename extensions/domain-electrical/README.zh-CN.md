@@ -12,7 +12,11 @@
 - 通过稳定 SPI 发布可检查的 validation、compiler-stage 与 renderer contribution 元数据。
 - 通过稳定 SPI 声明并参与受治理的 `LOWER` 与 `VALIDATE` 编译阶段。
 - 为 `device`、`port` 与 `connect` 声明贡献 lowering。
-- 通过类型化核心契约贡献首批受支持的 `cabinet` 与 `wiring` 视图定义。
+- 通过类型化核心契约贡献首批受治理的电气投影族：
+  - `cabinet`
+  - `wiring`
+  - `schematic`
+  - `documentation`
 - 贡献 Electrical/Runtime 专属语义诊断，例如证明设备类型、端口方向与信号兼容性检查。
 - 在 `META-INF/services/com.engineeringood.athena.plugin.AthenaPlugin` 下发布 JVM `ServiceLoader` 注册。
 

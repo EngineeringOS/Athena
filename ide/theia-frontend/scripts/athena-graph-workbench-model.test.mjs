@@ -37,6 +37,7 @@ const readyDiagram = {
             viewId: 'cabinet',
             displayName: 'Cabinet',
             description: 'Cabinet projection',
+            familyId: 'electrical/cabinet',
             ownershipContract: {
                 interactivity: 'interactive',
                 displayScopes: ['devices', 'ports'],
@@ -48,6 +49,38 @@ const readyDiagram = {
         }
     ],
     governedCommands: [],
+    activeSheetId: 'cabinet/sheet/01-main',
+    sheets: [
+        {
+            sheetId: 'cabinet/sheet/01-main',
+            displayName: 'Cabinet Main',
+            order: 0,
+            subjectSemanticIds: ['component:PLC1', 'connection:PLC1.out->M1.in']
+        }
+    ],
+    notationPack: {
+        packId: 'electrical-notation/cabinet/default-v1',
+        displayName: 'Electrical Cabinet Default',
+        subjects: [
+            {
+                semanticId: 'component:PLC1',
+                symbolKey: 'device.cabinet.default',
+                labelPolicy: 'subject_label',
+                markerKeys: ['owned-device']
+            }
+        ]
+    },
+    crossReferences: [
+        {
+            semanticId: 'component:PLC1',
+            kind: 'repeated_reference',
+            sheetIds: ['cabinet/sheet/01-main', 'cabinet/sheet/02-reference'],
+            occurrenceIds: [
+                'cabinet/projection/node/component_PLC1',
+                'cabinet/projection/node/component_PLC1_reference'
+            ]
+        }
+    ],
     diagnostics: [],
     graph: {
         id: 'FactoryLine:cabinet',
@@ -58,7 +91,8 @@ const readyDiagram = {
         },
         nodes: [
             {
-                id: 'component:PLC1',
+                id: 'cabinet/projection/node/component_PLC1',
+                semanticId: 'component:PLC1',
                 type: 'node',
                 label: 'PLC1',
                 position: {
@@ -73,7 +107,8 @@ const readyDiagram = {
         ],
         edges: [
             {
-                id: 'connection:PLC1.out->M1.in',
+                id: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+                semanticId: 'connection:PLC1.out->M1.in',
                 type: 'edge',
                 sourcePoint: {
                     x: 380,
@@ -97,6 +132,7 @@ const unavailableDiagram = {
     activeRenderContributions: [],
     supportedViews: [],
     governedCommands: [],
+    sheets: [],
     unavailableReason: 'No supported projection views are available.',
     diagnostics: [
         {
@@ -126,6 +162,11 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
     assert.equal(model.statusTone, 'ready');
     assert.equal(model.headerTitle, 'FactoryLine');
     assert.equal(model.viewLabel, 'Cabinet');
+    assert.equal(model.viewFamilyId, 'electrical/cabinet');
+    assert.equal(model.activeSheetId, 'cabinet/sheet/01-main');
+    assert.equal(model.sheetCount, 1);
+    assert.equal(model.notationPackId, 'electrical-notation/cabinet/default-v1');
+    assert.equal(model.crossReferenceCount, 1);
     assert.equal(model.svgViewBox, '0 0 1440 900');
     assert.equal(model.metrics.nodeCount, 1);
     assert.equal(model.metrics.edgeCount, 1);
@@ -146,6 +187,8 @@ test('builds an inspectable unavailable state without inventing fallback graph t
     assert.equal(model.statusTone, 'warning');
     assert.equal(model.headerTitle, 'FactoryLine');
     assert.equal(model.viewLabel, 'cabinet');
+    assert.equal(model.sheetCount, 0);
+    assert.equal(model.crossReferenceCount, 0);
     assert.equal(model.svgViewBox, '0 0 960 540');
     assert.equal(model.metrics.nodeCount, 0);
     assert.equal(model.metrics.edgeCount, 0);
@@ -166,6 +209,27 @@ test('fits the graph viewport around scene bounds with padding', () => {
     assert.ok(Number.isFinite(transform.offsetY));
     assert.ok(transform.zoom > 1);
     assert.ok(transform.offsetX < 200);
+});
+
+test('fits a wide dense documentation graph around the scene center', () => {
+    const transform = graphWorkbenchModel.fitAthenaGraphViewport({
+        minX: 120,
+        minY: 80,
+        maxX: 2840,
+        maxY: 1240,
+        width: 2720,
+        height: 1160,
+        centerX: 1480,
+        centerY: 660
+    }, {
+        width: 1600,
+        height: 900
+    });
+
+    assert.ok(transform.zoom > 0.2);
+    assert.ok(transform.zoom < 1);
+    assert.equal(Math.round((1480 * transform.zoom) + transform.offsetX), 800);
+    assert.equal(Math.round((660 * transform.zoom) + transform.offsetY), 450);
 });
 
 test('zooms around a screen point without losing focus anchor', () => {

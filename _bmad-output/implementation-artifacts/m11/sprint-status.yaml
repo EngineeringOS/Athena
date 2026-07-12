@@ -1,0 +1,52 @@
+# generated: 2026-07-11T23:01:44+08:00
+# last_updated: 2026-07-12T11:10:47+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m11
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M11 milestone sequence sourced from `epics-M11-2026-07-11.md`.
+# - M11 proves serious electrical ECAD workbench depth while keeping symbols, sheets, and renderer state downstream of canonical engineering meaning.
+
+generated: 2026-07-11T23:01:44+08:00
+last_updated: 2026-07-12T11:10:47+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m11
+
+development_status:
+  epic-1: done
+  1-1-publish-electrical-projection-family-contracts: done
+  1-2-introduce-the-first-governed-electrical-sheet-model: done
+  1-3-introduce-governed-electrical-symbol-and-notation-packs: done
+  1-4-deliver-multi-view-electrical-outputs-through-runtime-and-lsp: done
+  1-5-preserve-reveal-and-inspection-coherence-across-delivered-electrical-views: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-support-repeated-references-and-cross-reference-resolution: done
+  2-2-publish-a-larger-electrical-proof-repository-and-verification-path: done
+  2-3-improve-dense-electrical-workbench-navigation-and-reveal: done
+  2-4-preserve-mutation-review-and-knowledge-coherence-under-ecad-depth: done
+  2-5-keep-the-renderer-downstream-under-serious-electrical-depth: done
+  epic-2-retrospective: done

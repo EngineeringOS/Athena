@@ -25,6 +25,25 @@ function translateProjectionSessionToGLSPDiagram(projection) {
             ...command,
             requiredArguments: [...normalizeArray(command.requiredArguments)],
         })),
+        activeSheetId: readyProjection?.activeSheetId,
+        sheets: normalizeArray(readyProjection?.sheets).map(sheet => ({
+            ...sheet,
+            subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
+        })),
+        notationPack: readyProjection?.notationPack
+            ? {
+                ...readyProjection.notationPack,
+                subjects: normalizeArray(readyProjection.notationPack.subjects).map(subject => ({
+                    ...subject,
+                    markerKeys: [...normalizeArray(subject.markerKeys)],
+                })),
+            }
+            : undefined,
+        crossReferences: normalizeArray(readyProjection?.crossReferences).map(crossReference => ({
+            ...crossReference,
+            sheetIds: [...normalizeArray(crossReference.sheetIds)],
+            occurrenceIds: [...normalizeArray(crossReference.occurrenceIds)],
+        })),
         unavailableReason: projection.unavailableReason,
         diagnostics: normalizeArray(projection.diagnostics).map(diagnostic => ({ ...diagnostic })),
         graph: toGraph(projection),
@@ -53,7 +72,8 @@ function toGraph(projection) {
         },
         nodes: [
             ...normalizeArray(readyProjection.components).map(component => ({
-                id: component.semanticId,
+                id: component.projectionId,
+                semanticId: component.semanticId,
                 type: 'node',
                 kind: 'component',
                 label: component.label,
@@ -67,7 +87,8 @@ function toGraph(projection) {
                 },
             })),
             ...normalizeArray(readyProjection.labels).map(label => ({
-                id: label.semanticId,
+                id: label.projectionId,
+                semanticId: label.semanticId,
                 type: 'node',
                 kind: 'label',
                 label: label.label,
@@ -82,7 +103,8 @@ function toGraph(projection) {
             })),
         ],
         edges: normalizeArray(readyProjection.connections).map(connection => ({
-            id: connection.semanticId,
+            id: connection.projectionId,
+            semanticId: connection.semanticId,
             type: 'edge',
             sourcePoint: {
                 x: connection.x1,

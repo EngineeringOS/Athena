@@ -1,0 +1,350 @@
+system AssemblyLine {
+  device PLC1 {
+    type Switch
+    model "S7-1500"
+  }
+
+  device PLC2 {
+    type Switch
+    model "ET200SP"
+  }
+
+  device HMI1 {
+    type Lamp
+    model "Comfort"
+  }
+
+  device PWR1 {
+    type Switch
+  }
+
+  device KM1 {
+    type Switch
+  }
+
+  device KM2 {
+    type Switch
+  }
+
+  device KM3 {
+    type Switch
+  }
+
+  device KM4 {
+    type Switch
+  }
+
+  device M1 {
+    type Motor
+    power "7.5kw"
+    voltage "400V"
+    powerFactor "0.86"
+    efficiency "0.92"
+    breakerRatedCurrent "10A"
+    cableAllowedCurrent "12A"
+    relayRatedCurrent "13A"
+  }
+
+  device M2 {
+    type Motor
+  }
+
+  device M3 {
+    type Motor
+  }
+
+  device M4 {
+    type Motor
+  }
+
+  device S1 {
+    type Switch
+  }
+
+  device S2 {
+    type Switch
+  }
+
+  device S3 {
+    type Switch
+  }
+
+  device S4 {
+    type Switch
+  }
+
+  port PWR1.bus {
+    direction out
+    signal Power
+  }
+
+  port PLC1.power {
+    direction in
+    signal Power
+  }
+
+  port PLC2.power {
+    direction in
+    signal Power
+  }
+
+  port HMI1.power {
+    direction in
+    signal Power
+  }
+
+  port KM1.power {
+    direction in
+    signal Power
+  }
+
+  port KM2.power {
+    direction in
+    signal Power
+  }
+
+  port KM3.power {
+    direction in
+    signal Power
+  }
+
+  port KM4.power {
+    direction in
+    signal Power
+  }
+
+  port M1.power {
+    direction in
+    signal Power
+  }
+
+  port M2.power {
+    direction in
+    signal Power
+  }
+
+  port M3.power {
+    direction in
+    signal Power
+  }
+
+  port M4.power {
+    direction in
+    signal Power
+  }
+
+  port S1.out {
+    direction out
+    signal Digital
+  }
+
+  port S2.out {
+    direction out
+    signal Digital
+  }
+
+  port S3.out {
+    direction out
+    signal Digital
+  }
+
+  port S4.out {
+    direction out
+    signal Digital
+  }
+
+  port PLC1.in1 {
+    direction in
+    signal Digital
+  }
+
+  port PLC1.in2 {
+    direction in
+    signal Digital
+  }
+
+  port PLC1.in3 {
+    direction in
+    signal Digital
+  }
+
+  port PLC1.in4 {
+    direction in
+    signal Digital
+  }
+
+  port PLC1.out1 {
+    direction out
+    signal Digital
+  }
+
+  port PLC1.out2 {
+    direction out
+    signal Digital
+  }
+
+  port PLC1.out3 {
+    direction out
+    signal Digital
+  }
+
+  port PLC1.out4 {
+    direction out
+    signal Digital
+  }
+
+  port PLC2.in1 {
+    direction in
+    signal Digital
+  }
+
+  port PLC2.in2 {
+    direction in
+    signal Digital
+  }
+
+  port PLC2.in3 {
+    direction in
+    signal Digital
+  }
+
+  port PLC2.in4 {
+    direction in
+    signal Digital
+  }
+
+  port PLC2.bus {
+    direction out
+    signal Digital
+  }
+
+  port PLC2.ack {
+    direction in
+    signal Digital
+  }
+
+  port HMI1.data {
+    direction in
+    signal Digital
+  }
+
+  port HMI1.ack {
+    direction out
+    signal Digital
+  }
+
+  port KM1.coil {
+    direction in
+    signal Digital
+  }
+
+  port KM2.coil {
+    direction in
+    signal Digital
+  }
+
+  port KM3.coil {
+    direction in
+    signal Digital
+  }
+
+  port KM4.coil {
+    direction in
+    signal Digital
+  }
+
+  port KM1.feed {
+    direction out
+    signal Digital
+  }
+
+  port KM2.feed {
+    direction out
+    signal Digital
+  }
+
+  port KM3.feed {
+    direction out
+    signal Digital
+  }
+
+  port KM4.feed {
+    direction out
+    signal Digital
+  }
+
+  port M1.run {
+    direction in
+    signal Digital
+  }
+
+  port M2.run {
+    direction in
+    signal Digital
+  }
+
+  port M3.run {
+    direction in
+    signal Digital
+  }
+
+  port M4.run {
+    direction in
+    signal Digital
+  }
+
+  port M1.status {
+    direction out
+    signal Digital
+  }
+
+  port M2.status {
+    direction out
+    signal Digital
+  }
+
+  port M3.status {
+    direction out
+    signal Digital
+  }
+
+  port M4.status {
+    direction out
+    signal Digital
+  }
+
+  connect PWR1.bus -> PLC1.power
+  connect PWR1.bus -> PLC2.power
+  connect PWR1.bus -> HMI1.power
+  connect PWR1.bus -> KM1.power
+  connect PWR1.bus -> KM2.power
+  connect PWR1.bus -> KM3.power
+  connect PWR1.bus -> KM4.power
+  connect PWR1.bus -> M1.power
+  connect PWR1.bus -> M2.power
+  connect PWR1.bus -> M3.power
+  connect PWR1.bus -> M4.power
+
+  connect S1.out -> PLC1.in1
+  connect S2.out -> PLC1.in2
+  connect S3.out -> PLC1.in3
+  connect S4.out -> PLC1.in4
+
+  connect PLC1.out1 -> KM1.coil
+  connect PLC1.out2 -> KM2.coil
+  connect PLC1.out3 -> KM3.coil
+  connect PLC1.out4 -> KM4.coil
+
+  connect KM1.feed -> M1.run
+  connect KM2.feed -> M2.run
+  connect KM3.feed -> M3.run
+  connect KM4.feed -> M4.run
+
+  connect M1.status -> PLC2.in1
+  connect M2.status -> PLC2.in2
+  connect M3.status -> PLC2.in3
+  connect M4.status -> PLC2.in4
+
+  connect PLC2.bus -> HMI1.data
+  connect HMI1.ack -> PLC2.ack
+}
