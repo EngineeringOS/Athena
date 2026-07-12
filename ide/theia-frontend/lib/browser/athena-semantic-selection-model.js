@@ -7,6 +7,8 @@ exports.selectableSemanticIdFromScmContext = selectableSemanticIdFromScmContext;
 exports.graphContainsSemanticId = graphContainsSemanticId;
 exports.resolveProjectionOccurrence = resolveProjectionOccurrence;
 exports.resolveProjectionCrossReference = resolveProjectionCrossReference;
+exports.resolveProjectionEndpointAlias = resolveProjectionEndpointAlias;
+exports.resolveProjectionRelatedSubjects = resolveProjectionRelatedSubjects;
 exports.retainSelectionIfPresent = retainSelectionIfPresent;
 /** Resolves one canonical semantic selection from the current inspection payload, if the document publishes it. */
 function resolveSemanticSelectionFromInspection(inspection, semanticId) {
@@ -79,7 +81,8 @@ function selectableSemanticIdFromScmContext(carrier) {
 }
 /** Returns whether the current graph snapshot already exposes the canonical semantic id. */
 function graphContainsSemanticId(diagram, semanticId) {
-    return resolveProjectionOccurrence(diagram, semanticId).status !== 'unresolved';
+    return resolveProjectionOccurrence(diagram, semanticId).status !== 'unresolved' ||
+        resolveProjectionEndpointAlias(diagram, semanticId).status !== 'unresolved';
 }
 /** Resolves repeated-reference status for one canonical semantic id inside current graph snapshot. */
 function resolveProjectionOccurrence(diagram, semanticId) {
@@ -121,6 +124,87 @@ function resolveProjectionCrossReference(diagram, semanticId) {
         sheetIds: [...crossReference.sheetIds],
         occurrenceIds: [...crossReference.occurrenceIds]
     };
+}
+/** Resolves governed endpoint and anchor aliases for one canonical port selection. */
+function resolveProjectionEndpointAlias(diagram, semanticId) {
+    if (!diagram) {
+        return {
+            semanticId,
+            status: 'unresolved',
+            endpointIds: [],
+            anchorIds: [],
+            connectionIds: []
+        };
+    }
+    const endpointMatches = (diagram.electricalConnectionEndpoints ?? [])
+        .filter(endpoint => endpoint.portSemanticId === semanticId);
+    const anchorIds = Array.from(new Set([
+        ...(diagram.electricalAnchors ?? [])
+            .filter(anchor => anchor.portSemanticId === semanticId)
+            .map(anchor => anchor.anchorId),
+        ...endpointMatches.map(endpoint => endpoint.anchorId),
+    ]));
+    const endpointIds = endpointMatches.map(endpoint => endpoint.endpointId);
+    const connectionIds = Array.from(new Set(endpointMatches.map(endpoint => endpoint.connectionSemanticId)));
+    const totalAliases = endpointIds.length + anchorIds.length;
+    const status = totalAliases === 0
+        ? 'unresolved'
+        : totalAliases === 1
+            ? 'resolved'
+            : 'ambiguous';
+    return {
+        semanticId,
+        status,
+        endpointIds,
+        anchorIds,
+        connectionIds
+    };
+}
+/** Resolves governed related semantic subjects without inventing a renderer-owned navigation graph. */
+function resolveProjectionRelatedSubjects(diagram, semanticId) {
+    if (!diagram) {
+        return [];
+    }
+    const related = new Map();
+    const add = (relatedSemanticId, relation) => {
+        if (!relatedSemanticId || relatedSemanticId === semanticId) {
+            return;
+        }
+        related.set(`${relation}:${relatedSemanticId}`, {
+            semanticId,
+            relatedSemanticId,
+            relation,
+        });
+    };
+    const anchors = diagram.electricalAnchors ?? [];
+    const endpoints = diagram.electricalConnectionEndpoints ?? [];
+    if (semanticId.startsWith('component:')) {
+        for (const anchor of anchors) {
+            if (anchor.ownerSemanticId === semanticId) {
+                add(anchor.portSemanticId, 'owned-port');
+            }
+        }
+    }
+    if (semanticId.startsWith('port:')) {
+        for (const anchor of anchors) {
+            if (anchor.portSemanticId === semanticId) {
+                add(anchor.ownerSemanticId, 'owner');
+            }
+        }
+        for (const endpoint of endpoints) {
+            if (endpoint.portSemanticId === semanticId) {
+                add(endpoint.connectionSemanticId, 'connection');
+            }
+        }
+    }
+    if (semanticId.startsWith('connection:')) {
+        for (const endpoint of endpoints) {
+            if (endpoint.connectionSemanticId === semanticId) {
+                add(endpoint.portSemanticId, endpoint.endpointRole === 'target' ? 'target-port' : 'source-port');
+            }
+        }
+    }
+    return [...related.values()];
 }
 /** Keeps transient selection only while the refreshed projection still contains the same canonical semantic id. */
 function retainSelectionIfPresent(diagram, selection) {

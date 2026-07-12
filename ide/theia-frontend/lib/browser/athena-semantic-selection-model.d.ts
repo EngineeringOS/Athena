@@ -19,6 +19,18 @@ export type AthenaProjectionCrossReferenceResolution = {
     sheetIds: string[];
     occurrenceIds: string[];
 };
+export type AthenaProjectionEndpointAliasResolution = {
+    semanticId: string;
+    status: 'resolved' | 'ambiguous' | 'unresolved';
+    endpointIds: string[];
+    anchorIds: string[];
+    connectionIds: string[];
+};
+export type AthenaProjectionRelatedSubjectResolution = {
+    semanticId: string;
+    relatedSemanticId: string;
+    relation: 'owner' | 'owned-port' | 'connection' | 'source-port' | 'target-port';
+};
 type AthenaSemanticScmContextCarrier = {
     subjectIdentity?: string;
     factReferences: AthenaSemanticFactReferencePayload[];
@@ -29,6 +41,21 @@ type AthenaProjectionSelectionCarrier = {
         kind: string;
         sheetIds: string[];
         occurrenceIds: string[];
+    }>;
+    electricalAnchors?: Array<{
+        anchorId: string;
+        portSemanticId: string;
+        ownerSemanticId: string;
+        nodeId: string;
+        labelId?: string;
+    }>;
+    electricalConnectionEndpoints?: Array<{
+        endpointId: string;
+        projectionConnectionId: string;
+        connectionSemanticId: string;
+        endpointRole: string;
+        portSemanticId: string;
+        anchorId: string;
     }>;
     graph: {
         nodes: Array<{
@@ -55,6 +82,10 @@ export declare function graphContainsSemanticId(diagram: AthenaProjectionSelecti
 export declare function resolveProjectionOccurrence(diagram: AthenaProjectionSelectionCarrier | undefined, semanticId: string): AthenaProjectionOccurrenceResolution;
 /** Returns published repeated-reference metadata for one canonical subject, if available. */
 export declare function resolveProjectionCrossReference(diagram: AthenaProjectionSelectionCarrier | undefined, semanticId: string): AthenaProjectionCrossReferenceResolution | undefined;
+/** Resolves governed endpoint and anchor aliases for one canonical port selection. */
+export declare function resolveProjectionEndpointAlias(diagram: AthenaProjectionSelectionCarrier | undefined, semanticId: string): AthenaProjectionEndpointAliasResolution;
+/** Resolves governed related semantic subjects without inventing a renderer-owned navigation graph. */
+export declare function resolveProjectionRelatedSubjects(diagram: AthenaProjectionSelectionCarrier | undefined, semanticId: string): AthenaProjectionRelatedSubjectResolution[];
 /** Keeps transient selection only while the refreshed projection still contains the same canonical semantic id. */
 export declare function retainSelectionIfPresent(diagram: AthenaProjectionSelectionCarrier, selection: AthenaActiveSemanticSelection | undefined): AthenaActiveSemanticSelection | undefined;
 export {};

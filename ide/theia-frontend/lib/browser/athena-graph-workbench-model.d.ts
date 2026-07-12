@@ -1,4 +1,4 @@
-import { AthenaGLSPDiagram, AthenaGLSPEdge, AthenaGLSPNode, AthenaGLSPRenderContributionSource } from '@engineeringood/athena-graph-glsp';
+import { AthenaGLSPDiagram, AthenaGLSPEdge, AthenaGLSPNode, AthenaGLSPPoint, AthenaGLSPRenderContributionSource } from '@engineeringood/athena-graph-glsp';
 export type AthenaGraphSceneBounds = {
     minX: number;
     minY: number;
@@ -47,7 +47,7 @@ export type AthenaGraphWorkbenchModel = {
     diagnostics: AthenaGLSPDiagram['diagnostics'];
     activeRenderContributions: AthenaGLSPRenderContributionSource[];
     nodes: AthenaGLSPNode[];
-    edges: AthenaGLSPEdge[];
+    edges: AthenaGraphWorkbenchEdge[];
     canvas: {
         width: number;
         height: number;
@@ -64,6 +64,23 @@ export type AthenaGraphSurfaceTokens = {
     node: Record<string, string>;
     edge: Record<string, string>;
 };
+export type AthenaGraphWorkbenchEdge = AthenaGLSPEdge & {
+    routePoints: AthenaGLSPPoint[];
+    bendMarkerPoints: AthenaGLSPPoint[];
+    path: string;
+    conductorStyle: 'electrical' | 'generic';
+    terminals: AthenaGraphWorkbenchEdgeTerminal[];
+};
+export type AthenaGraphWorkbenchEdgeTerminal = {
+    role: 'source' | 'target';
+    point: AthenaGLSPPoint;
+    endpointId?: string;
+    anchorId?: string;
+    portSemanticId?: string;
+    ownerSemanticId?: string;
+    nodeId?: string;
+    labelId?: string;
+};
 /** Builds one deterministic workbench-facing view model from the adapter-owned graph diagram. */
 export declare function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): AthenaGraphWorkbenchModel;
 export declare function clampAthenaGraphZoom(zoom: number): number;
@@ -73,4 +90,5 @@ export declare function zoomAthenaGraphViewportAtPoint(transform: AthenaGraphVie
     x: number;
     y: number;
 }, nextZoom: number): AthenaGraphViewportTransform;
+export declare function resizeAthenaGraphViewport(transform: AthenaGraphViewportTransform, previousViewport: AthenaGraphViewportSize, nextViewport: AthenaGraphViewportSize): AthenaGraphViewportTransform;
 //# sourceMappingURL=athena-graph-workbench-model.d.ts.map

@@ -20,13 +20,13 @@ const readyDiagram = {
                 {
                     surface: 'canvas',
                     tokens: {
-                        canvasTint: 'rgba(22, 18, 12, 0.92)'
+                        canvasTint: 'rgba(208, 208, 204, 0.98)'
                     }
                 },
                 {
                     surface: 'node',
                     tokens: {
-                        fill: 'rgba(52, 38, 21, 0.88)'
+                        fill: 'rgba(248, 248, 244, 0.98)'
                     }
                 }
             ]
@@ -81,6 +81,66 @@ const readyDiagram = {
             ]
         }
     ],
+    electricalAnchors: [
+        {
+            anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+            portSemanticId: 'port:PLC1.out',
+            ownerSemanticId: 'component:PLC1',
+            nodeId: 'cabinet/projection/node/component_PLC1',
+            labelId: 'cabinet/projection/label/port_PLC1_out',
+            x: 380,
+            y: 160,
+            side: 'right'
+        },
+        {
+            anchorId: 'cabinet/projection/label/port_M1_in/anchor',
+            portSemanticId: 'port:M1.in',
+            ownerSemanticId: 'component:M1',
+            nodeId: 'cabinet/projection/node/component_M1',
+            labelId: 'cabinet/projection/label/port_M1_in',
+            x: 720,
+            y: 260,
+            side: 'left'
+        }
+    ],
+    electricalConnectionEndpoints: [
+        {
+            endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/source',
+            projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+            connectionSemanticId: 'connection:PLC1.out->M1.in',
+            endpointRole: 'source',
+            portSemanticId: 'port:PLC1.out',
+            anchorId: 'cabinet/projection/label/port_PLC1_out/anchor'
+        },
+        {
+            endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/target',
+            projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+            connectionSemanticId: 'connection:PLC1.out->M1.in',
+            endpointRole: 'target',
+            portSemanticId: 'port:M1.in',
+            anchorId: 'cabinet/projection/label/port_M1_in/anchor'
+        }
+    ],
+    electricalRoutingCorridors: [
+        {
+            corridorId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/corridor',
+            projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+            connectionSemanticId: 'connection:PLC1.out->M1.in',
+            sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+            targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
+            routingStyle: 'orthogonal',
+            preferredBendPoints: [
+                {
+                    x: 540,
+                    y: 160
+                },
+                {
+                    x: 540,
+                    y: 260
+                }
+            ]
+        }
+    ],
     diagnostics: [],
     graph: {
         id: 'FactoryLine:cabinet',
@@ -116,8 +176,23 @@ const readyDiagram = {
                 },
                 targetPoint: {
                     x: 720,
-                    y: 160
-                }
+                    y: 260
+                },
+                routingStyle: 'orthogonal',
+                bendPoints: [
+                    {
+                        x: 540,
+                        y: 160
+                    },
+                    {
+                        x: 540,
+                        y: 260
+                    }
+                ],
+                sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                sourcePortSemanticId: 'port:PLC1.out',
+                targetPortSemanticId: 'port:M1.in'
             }
         ]
     }
@@ -142,6 +217,9 @@ const unavailableDiagram = {
             provenance: 'runtime'
         }
     ],
+    electricalAnchors: [],
+    electricalConnectionEndpoints: [],
+    electricalRoutingCorridors: [],
     graph: {
         id: 'FactoryLine:cabinet',
         type: 'graph',
@@ -173,9 +251,49 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
     assert.equal(model.sceneBounds.minX, 120);
     assert.equal(model.sceneBounds.minY, 80);
     assert.equal(model.sceneBounds.maxX, 720);
-    assert.equal(model.sceneBounds.maxY, 240);
-    assert.equal(model.surfaceTokens.canvas.canvasTint, 'rgba(22, 18, 12, 0.92)');
-    assert.equal(model.surfaceTokens.node.fill, 'rgba(52, 38, 21, 0.88)');
+    assert.equal(model.sceneBounds.maxY, 260);
+    assert.equal(model.surfaceTokens.canvas.canvasTint, 'rgba(208, 208, 204, 0.98)');
+    assert.equal(model.surfaceTokens.node.fill, 'rgba(248, 248, 244, 0.98)');
+    assert.equal(model.edges[0].conductorStyle, 'electrical');
+    assert.equal(model.edges[0].path, 'M 380 160 L 540 160 L 540 260 L 720 260');
+    assert.deepEqual(model.edges[0].bendMarkerPoints, [
+        {
+            x: 540,
+            y: 160
+        },
+        {
+            x: 540,
+            y: 260
+        }
+    ]);
+    assert.deepEqual(model.edges[0].terminals, [
+        {
+            role: 'source',
+            point: {
+                x: 380,
+                y: 160
+            },
+            endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/source',
+            anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+            portSemanticId: 'port:PLC1.out',
+            ownerSemanticId: 'component:PLC1',
+            nodeId: 'cabinet/projection/node/component_PLC1',
+            labelId: 'cabinet/projection/label/port_PLC1_out'
+        },
+        {
+            role: 'target',
+            point: {
+                x: 720,
+                y: 260
+            },
+            endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/target',
+            anchorId: 'cabinet/projection/label/port_M1_in/anchor',
+            portSemanticId: 'port:M1.in',
+            ownerSemanticId: 'component:M1',
+            nodeId: 'cabinet/projection/node/component_M1',
+            labelId: 'cabinet/projection/label/port_M1_in'
+        }
+    ]);
     assert.equal(model.emptyState, undefined);
 });
 
@@ -247,4 +365,49 @@ test('zooms around a screen point without losing focus anchor', () => {
     assert.equal(transform.zoom, 2);
     assert.equal(transform.offsetX, -160);
     assert.equal(transform.offsetY, -80);
+});
+
+test('preserves the same world center when the viewport resizes in manual mode', () => {
+    const resized = graphWorkbenchModel.resizeAthenaGraphViewport({
+        zoom: 1.5,
+        offsetX: -180,
+        offsetY: -120
+    }, {
+        width: 1000,
+        height: 600
+    }, {
+        width: 1400,
+        height: 900
+    });
+
+    assert.equal(Math.round(((1000 / 2) - (-180)) / 1.5), Math.round(((1400 / 2) - resized.offsetX) / 1.5));
+    assert.equal(Math.round(((600 / 2) - (-120)) / 1.5), Math.round(((900 / 2) - resized.offsetY) / 1.5));
+});
+
+test('builds a safe model even when optional diagram arrays are missing at runtime', () => {
+    const sparseDiagram = {
+        kind: 'athena-glsp-diagram',
+        projectName: 'SparseFactory',
+        semanticPath: 'frontend -> LSP -> runtime/compiler',
+        activeViewId: 'cabinet',
+        status: 'ready',
+        graph: {
+            id: 'SparseFactory:cabinet',
+            type: 'graph',
+            canvas: {
+                width: 0,
+                height: 0
+            }
+        }
+    };
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(sparseDiagram);
+
+    assert.equal(model.canvas.width, 960);
+    assert.equal(model.canvas.height, 540);
+    assert.deepEqual(model.activeRenderContributions, []);
+    assert.deepEqual(model.supportedViews, []);
+    assert.deepEqual(model.nodes, []);
+    assert.deepEqual(model.edges, []);
+    assert.equal(model.emptyState?.title, 'Projection is empty');
 });

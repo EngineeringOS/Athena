@@ -255,3 +255,134 @@ test('resolves repeated projection occurrences without inventing alias identitie
         }
     );
 });
+
+test('keeps port selection alive through governed endpoint and anchor aliases', () => {
+    assert.equal(typeof semanticSelectionModel.resolveProjectionEndpointAlias, 'function');
+
+    const endpointOnlyDiagram = {
+        electricalAnchors: [
+            {
+                anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                portSemanticId: 'port:PLC1.out',
+                ownerSemanticId: 'component:PLC1',
+                nodeId: 'cabinet/projection/node/component_PLC1',
+                labelId: 'cabinet/projection/label/port_PLC1_out'
+            }
+        ],
+        electricalConnectionEndpoints: [
+            {
+                endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/source',
+                projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+                connectionSemanticId: 'connection:PLC1.out->M1.in',
+                endpointRole: 'source',
+                portSemanticId: 'port:PLC1.out',
+                anchorId: 'cabinet/projection/label/port_PLC1_out/anchor'
+            }
+        ],
+        graph: {
+            nodes: [{ id: 'component:PLC1' }],
+            edges: [{ id: 'connection:PLC1.out->M1.in' }]
+        }
+    };
+
+    assert.deepEqual(
+        semanticSelectionModel.resolveProjectionEndpointAlias(endpointOnlyDiagram, 'port:PLC1.out'),
+        {
+            semanticId: 'port:PLC1.out',
+            status: 'ambiguous',
+            endpointIds: ['cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/source'],
+            anchorIds: ['cabinet/projection/label/port_PLC1_out/anchor'],
+            connectionIds: ['connection:PLC1.out->M1.in']
+        }
+    );
+    assert.equal(
+        semanticSelectionModel.graphContainsSemanticId(endpointOnlyDiagram, 'port:PLC1.out'),
+        true
+    );
+    assert.deepEqual(
+        semanticSelectionModel.retainSelectionIfPresent(endpointOnlyDiagram, {
+            semanticId: 'port:PLC1.out',
+            label: 'PLC1.out',
+            kind: 'port'
+        }),
+        {
+            semanticId: 'port:PLC1.out',
+            label: 'PLC1.out',
+            kind: 'port'
+        }
+    );
+});
+
+test('resolves related subjects through governed anchors and connection endpoints', () => {
+    const relatedDiagram = {
+        electricalAnchors: [
+            {
+                anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                portSemanticId: 'port:PLC1.out',
+                ownerSemanticId: 'component:PLC1',
+                nodeId: 'cabinet/projection/node/component_PLC1',
+                labelId: 'cabinet/projection/label/port_PLC1_out'
+            },
+            {
+                anchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                portSemanticId: 'port:M1.in',
+                ownerSemanticId: 'component:M1',
+                nodeId: 'cabinet/projection/node/component_M1',
+                labelId: 'cabinet/projection/label/port_M1_in'
+            }
+        ],
+        electricalConnectionEndpoints: [
+            {
+                endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/source',
+                projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+                connectionSemanticId: 'connection:PLC1.out->M1.in',
+                endpointRole: 'source',
+                portSemanticId: 'port:PLC1.out',
+                anchorId: 'cabinet/projection/label/port_PLC1_out/anchor'
+            },
+            {
+                endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/target',
+                projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+                connectionSemanticId: 'connection:PLC1.out->M1.in',
+                endpointRole: 'target',
+                portSemanticId: 'port:M1.in',
+                anchorId: 'cabinet/projection/label/port_M1_in/anchor'
+            }
+        ],
+        graph: {
+            nodes: [],
+            edges: []
+        }
+    };
+
+    assert.deepEqual(
+        semanticSelectionModel.resolveProjectionRelatedSubjects(relatedDiagram, 'port:PLC1.out'),
+        [
+            {
+                semanticId: 'port:PLC1.out',
+                relatedSemanticId: 'component:PLC1',
+                relation: 'owner'
+            },
+            {
+                semanticId: 'port:PLC1.out',
+                relatedSemanticId: 'connection:PLC1.out->M1.in',
+                relation: 'connection'
+            }
+        ]
+    );
+    assert.deepEqual(
+        semanticSelectionModel.resolveProjectionRelatedSubjects(relatedDiagram, 'connection:PLC1.out->M1.in'),
+        [
+            {
+                semanticId: 'connection:PLC1.out->M1.in',
+                relatedSemanticId: 'port:PLC1.out',
+                relation: 'source-port'
+            },
+            {
+                semanticId: 'connection:PLC1.out->M1.in',
+                relatedSemanticId: 'port:M1.in',
+                relation: 'target-port'
+            }
+        ]
+    );
+});

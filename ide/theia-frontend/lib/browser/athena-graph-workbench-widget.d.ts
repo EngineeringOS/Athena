@@ -8,27 +8,7 @@ import { AthenaGraphViewportSize, AthenaGraphViewportTransform, buildAthenaGraph
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import { type AthenaActiveSemanticSelection } from './athena-semantic-selection-model';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
-type AthenaGraphPanState = {
-    pointerId: number;
-    lastClientX: number;
-    lastClientY: number;
-};
-type AthenaGraphNodeDragState = {
-    pointerId: number;
-    semanticId: string;
-    subjectKind: 'component';
-    originX: number;
-    originY: number;
-    currentX: number;
-    currentY: number;
-    startClientX: number;
-    startClientY: number;
-    moved: boolean;
-};
-type AthenaGraphPortConnectSource = {
-    semanticId: string;
-    label: string;
-};
+import { AthenaGraphNodeDragState, AthenaGraphPanState, AthenaGraphPortConnectSource } from './athena-graph-workbench-types';
 /** Graph-first Athena workbench surface with a pannable and zoomable renderer viewport. */
 export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     static readonly ID = "athena.graphWorkbench";
@@ -47,6 +27,7 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected viewportObserver: ResizeObserver | undefined;
     protected viewportSize: AthenaGraphViewportSize;
     protected viewportTransform: AthenaGraphViewportTransform;
+    protected viewportMode: 'auto-fit' | 'manual';
     protected panState: AthenaGraphPanState | undefined;
     protected dragState: AthenaGraphNodeDragState | undefined;
     protected pendingAutoFit: boolean;
@@ -69,6 +50,7 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
         description: string;
     }): string;
     protected connectPortsButtonTitle(): string;
+    protected relatedSubjectLabel(relation: 'owner' | 'owned-port' | 'connection' | 'source-port' | 'target-port'): string;
     protected toggleOverlayPanel(): void;
     protected toggleConnectPortsMode(): void;
     protected statusIconClass(statusTone: ReturnType<typeof buildAthenaGraphWorkbenchModel>['statusTone']): string;
@@ -104,5 +86,4 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected submitConnectPortsIntent(sourceSemanticId: string, targetSemanticId: string): Promise<void>;
     protected handleSemanticSelectionChanged(selection: AthenaActiveSemanticSelection | undefined, diagramOverride?: Awaited<ReturnType<AthenaGraphAdapterService['requestDiagram']>>): Promise<void>;
 }
-export {};
 //# sourceMappingURL=athena-graph-workbench-widget.d.ts.map

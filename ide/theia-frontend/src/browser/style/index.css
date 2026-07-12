@@ -524,6 +524,27 @@
     gap: 6px;
 }
 
+.athena-graph-workbench__inline-action {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #eef3fb;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+}
+
+.athena-graph-workbench__inline-action:hover {
+    color: #ffffff;
+}
+
+.athena-graph-workbench__related-meta {
+    margin-top: 4px;
+}
+
 .athena-repository-graph__diagnostic-header,
 .athena-semantic-scm__diagnostic-header,
 .athena-graph-workbench__diagnostic-header,
@@ -736,7 +757,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    min-height: 100%;
+    min-height: 0;
 }
 
 .athena-graph-workbench__stage {
@@ -748,10 +769,19 @@
     --athena-graph-node-label: #f4f6ff;
     --athena-graph-node-meta: rgba(222, 227, 255, 0.72);
     --athena-graph-edge-stroke: rgba(176, 188, 255, 0.84);
+    --athena-graph-edge-casing: rgba(13, 20, 33, 0.96);
+    --athena-graph-edge-casing-selected: rgba(44, 31, 12, 0.96);
+    --athena-graph-edge-selected: #ffd39d;
+    --athena-graph-terminal-fill: rgba(176, 188, 255, 0.92);
+    --athena-graph-terminal-stroke: rgba(13, 20, 33, 0.98);
+    --athena-graph-terminal-selected-fill: #ffd39d;
+    --athena-graph-terminal-selected-stroke: rgba(44, 31, 12, 0.98);
+    --athena-graph-node-selected-fill: rgba(255, 188, 84, 0.22);
+    --athena-graph-node-selected-stroke: #ffd39d;
     position: relative;
     flex: 1 1 auto;
     height: 100%;
-    min-height: 560px;
+    min-height: 0;
     overflow: hidden;
     border: 0;
     border-radius: 0;
@@ -944,44 +974,80 @@
 }
 
 .athena-graph-workbench__edge {
-    stroke: color-mix(in srgb, var(--athena-graph-edge-stroke) 82%, white 18%);
-    stroke-width: 10;
+    stroke: color-mix(in srgb, var(--athena-graph-edge-stroke) 92%, white 8%);
+    stroke-width: 3.5;
+    stroke-linejoin: round;
     stroke-linecap: round;
-    opacity: 0.98;
+    opacity: 0.96;
+}
+
+.athena-graph-workbench__edge--electrical {
+    stroke-width: 3.5;
+}
+
+.athena-graph-workbench__edge--generic {
+    stroke-width: 2.5;
+    opacity: 0.82;
 }
 
 .athena-graph-workbench__edge--selected {
-    stroke: #ffd39d;
-    stroke-width: 13;
+    stroke: var(--athena-graph-edge-selected);
+    stroke-width: 4.5;
+}
+
+.athena-graph-workbench__edge-casing {
+    stroke: var(--athena-graph-edge-casing);
+    stroke-width: 6.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    opacity: 0.95;
+}
+
+.athena-graph-workbench__edge-casing--selected {
+    stroke: var(--athena-graph-edge-casing-selected);
+    stroke-width: 7.5;
+}
+
+.athena-graph-workbench__edge-terminal,
+.athena-graph-workbench__edge-marker {
+    fill: var(--athena-graph-terminal-fill);
+    stroke: var(--athena-graph-terminal-stroke);
+    stroke-width: 1.6;
+}
+
+.athena-graph-workbench__edge-terminal--selected,
+.athena-graph-workbench__edge-marker--selected {
+    fill: var(--athena-graph-terminal-selected-fill);
+    stroke: var(--athena-graph-terminal-selected-stroke);
 }
 
 .athena-graph-workbench__node {
     fill: var(--athena-graph-node-fill);
     stroke: var(--athena-graph-node-stroke);
-    stroke-width: 4;
+    stroke-width: 2.5;
 }
 
 .athena-graph-workbench__node--label {
     fill: rgba(255, 255, 255, 0.08);
-    stroke-width: 2.5;
+    stroke-width: 1.6;
 }
 
 .athena-graph-workbench__node--selected {
-    fill: rgba(255, 188, 84, 0.22);
-    stroke: #ffd39d;
-    stroke-width: 5;
+    fill: var(--athena-graph-node-selected-fill);
+    stroke: var(--athena-graph-node-selected-stroke);
+    stroke-width: 3;
 }
 
 .athena-graph-workbench__node-label {
     fill: var(--athena-graph-node-label);
-    font-size: 28px;
+    font-size: 18px;
     font-weight: 700;
     user-select: none;
 }
 
 .athena-graph-workbench__node-meta {
     fill: var(--athena-graph-node-meta);
-    font-size: 16px;
+    font-size: 11px;
     user-select: none;
 }
 
@@ -1004,7 +1070,9 @@
 .athena-graph-workbench__statusline span {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
     font-size: 11px;
 }
 

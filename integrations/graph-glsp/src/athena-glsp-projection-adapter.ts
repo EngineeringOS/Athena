@@ -9,6 +9,12 @@ export function translateProjectionSessionToGLSPDiagram(
     projection: AthenaGLSPProjectionSource,
 ): AthenaGLSPDiagram {
     const readyProjection = projection.readyProjection;
+    const electricalAnchors = normalizeArray(readyProjection?.electricalAnchors).map(anchor => ({ ...anchor }));
+    const electricalConnectionEndpoints = normalizeArray(readyProjection?.electricalConnectionEndpoints).map(endpoint => ({ ...endpoint }));
+    const electricalRoutingCorridors = normalizeArray(readyProjection?.electricalRoutingCorridors).map(corridor => ({
+        ...corridor,
+        preferredBendPoints: normalizeArray(corridor.preferredBendPoints).map(point => ({ ...point })),
+    }));
     return {
         kind: 'athena-glsp-diagram',
         projectName: projection.projectName,
@@ -49,13 +55,25 @@ export function translateProjectionSessionToGLSPDiagram(
             sheetIds: [...normalizeArray(crossReference.sheetIds)],
             occurrenceIds: [...normalizeArray(crossReference.occurrenceIds)],
         })),
+        electricalAnchors,
+        electricalConnectionEndpoints,
+        electricalRoutingCorridors,
         unavailableReason: projection.unavailableReason,
         diagnostics: normalizeArray(projection.diagnostics).map(diagnostic => ({ ...diagnostic })),
-        graph: toGraph(projection),
+        graph: toGraph({
+            projection,
+            electricalConnectionEndpoints,
+            electricalRoutingCorridors,
+        }),
     };
 }
 
-function toGraph(projection: AthenaGLSPProjectionSource): AthenaGLSPGraph {
+function toGraph(args: {
+    projection: AthenaGLSPProjectionSource;
+    electricalConnectionEndpoints: AthenaGLSPDiagram['electricalConnectionEndpoints'];
+    electricalRoutingCorridors: AthenaGLSPDiagram['electricalRoutingCorridors'];
+}): AthenaGLSPGraph {
+    const { projection, electricalConnectionEndpoints, electricalRoutingCorridors } = args;
     const readyProjection = projection.readyProjection;
     if (projection.status !== 'ready' || !readyProjection) {
         return {
@@ -69,6 +87,23 @@ function toGraph(projection: AthenaGLSPProjectionSource): AthenaGLSPGraph {
             edges: [],
         };
     }
+
+    const endpointsByConnectionId = new Map<string, {
+        sourcePortSemanticId?: string;
+        targetPortSemanticId?: string;
+    }>();
+    for (const endpoint of electricalConnectionEndpoints) {
+        const current = endpointsByConnectionId.get(endpoint.projectionConnectionId) ?? {};
+        if (endpoint.endpointRole === 'source') {
+            current.sourcePortSemanticId = endpoint.portSemanticId;
+        } else if (endpoint.endpointRole === 'target') {
+            current.targetPortSemanticId = endpoint.portSemanticId;
+        }
+        endpointsByConnectionId.set(endpoint.projectionConnectionId, current);
+    }
+    const corridorByConnectionId = new Map(
+        electricalRoutingCorridors.map(corridor => [corridor.projectionConnectionId, corridor] as const),
+    );
 
     return {
         id: `${projection.projectName}:${readyProjection.viewId}`,
@@ -109,19 +144,32 @@ function toGraph(projection: AthenaGLSPProjectionSource): AthenaGLSPGraph {
                 },
             })),
         ],
-        edges: normalizeArray(readyProjection.connections).map(connection => ({
-            id: connection.projectionId,
-            semanticId: connection.semanticId,
-            type: 'edge',
-            sourcePoint: {
-                x: connection.x1,
-                y: connection.y1,
-            },
-            targetPoint: {
-                x: connection.x2,
-                y: connection.y2,
-            },
-        })),
+        edges: normalizeArray(readyProjection.connections).map(connection => {
+            const corridor = corridorByConnectionId.get(connection.projectionId);
+            const endpoints = endpointsByConnectionId.get(connection.projectionId);
+            return {
+                id: connection.projectionId,
+                semanticId: connection.semanticId,
+                type: 'edge' as const,
+                sourcePoint: {
+                    x: connection.x1,
+                    y: connection.y1,
+                },
+                targetPoint: {
+                    x: connection.x2,
+                    y: connection.y2,
+                },
+                routingStyle: corridor?.routingStyle,
+                bendPoints: normalizeArray(corridor?.preferredBendPoints).map(point => ({
+                    x: point.x,
+                    y: point.y,
+                })),
+                sourceAnchorId: corridor?.sourceAnchorId,
+                targetAnchorId: corridor?.targetAnchorId,
+                sourcePortSemanticId: endpoints?.sourcePortSemanticId,
+                targetPortSemanticId: endpoints?.targetPortSemanticId,
+            };
+        }),
     };
 }
 

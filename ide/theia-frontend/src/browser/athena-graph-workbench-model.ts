@@ -1,7 +1,10 @@
 import {
     AthenaGLSPDiagram,
+    AthenaGLSPElectricalAnchorSource,
+    AthenaGLSPElectricalConnectionEndpointSource,
     AthenaGLSPEdge,
     AthenaGLSPNode,
+    AthenaGLSPPoint,
     AthenaGLSPRenderContributionSource
 } from '@engineeringood/athena-graph-glsp';
 
@@ -56,7 +59,7 @@ export type AthenaGraphWorkbenchModel = {
     diagnostics: AthenaGLSPDiagram['diagnostics'];
     activeRenderContributions: AthenaGLSPRenderContributionSource[];
     nodes: AthenaGLSPNode[];
-    edges: AthenaGLSPEdge[];
+    edges: AthenaGraphWorkbenchEdge[];
     canvas: {
         width: number;
         height: number;
@@ -75,14 +78,61 @@ export type AthenaGraphSurfaceTokens = {
     edge: Record<string, string>;
 };
 
+export type AthenaGraphWorkbenchEdge = AthenaGLSPEdge & {
+    routePoints: AthenaGLSPPoint[];
+    bendMarkerPoints: AthenaGLSPPoint[];
+    path: string;
+    conductorStyle: 'electrical' | 'generic';
+    terminals: AthenaGraphWorkbenchEdgeTerminal[];
+};
+
+export type AthenaGraphWorkbenchEdgeTerminal = {
+    role: 'source' | 'target';
+    point: AthenaGLSPPoint;
+    endpointId?: string;
+    anchorId?: string;
+    portSemanticId?: string;
+    ownerSemanticId?: string;
+    nodeId?: string;
+    labelId?: string;
+};
+
 /** Builds one deterministic workbench-facing view model from the adapter-owned graph diagram. */
 export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): AthenaGraphWorkbenchModel {
     const fallbackCanvasWidth = 960;
     const fallbackCanvasHeight = 540;
-    const canvasWidth = diagram.graph.canvas.width > 0 ? diagram.graph.canvas.width : fallbackCanvasWidth;
-    const canvasHeight = diagram.graph.canvas.height > 0 ? diagram.graph.canvas.height : fallbackCanvasHeight;
-    const activeView = diagram.supportedViews.find(view => view.viewId === diagram.activeViewId);
-    const viewLabel = activeView?.displayName ?? diagram.activeViewId;
+    const graph = diagram.graph ?? {
+        id: `${diagram.projectName}:${diagram.activeViewId}`,
+        type: 'graph' as const,
+        canvas: {
+            width: 0,
+            height: 0,
+        },
+        nodes: [],
+        edges: [],
+    };
+    const graphNodes = normalizeArray(graph.nodes);
+    const graphEdges = normalizeArray(graph.edges);
+    const supportedViews = normalizeArray(diagram.supportedViews);
+    const diagnostics = normalizeArray(diagram.diagnostics);
+    const sheets = normalizeArray(diagram.sheets);
+    const crossReferences = normalizeArray(diagram.crossReferences);
+    const electricalAnchors = normalizeArray(diagram.electricalAnchors);
+    const electricalConnectionEndpoints = normalizeArray(diagram.electricalConnectionEndpoints);
+    const renderContributions = normalizeArray(diagram.activeRenderContributions);
+    const canvasWidth = graph.canvas.width > 0 ? graph.canvas.width : fallbackCanvasWidth;
+    const canvasHeight = graph.canvas.height > 0 ? graph.canvas.height : fallbackCanvasHeight;
+    const activeView = supportedViews.find(view => view.viewId === diagram.activeViewId);
+    const viewLabel = activeView?.displayName ?? diagram.activeViewId ?? 'graph';
+    const anchorById = new Map(
+        electricalAnchors.map(anchor => [anchor.anchorId, anchor] as const)
+    );
+    const endpointsByConnectionId = groupEndpointsByConnectionId(electricalConnectionEndpoints);
+    const edges = graphEdges.map(edge => buildWorkbenchEdge(
+        edge,
+        endpointsByConnectionId.get(edge.id) ?? [],
+        anchorById,
+    ));
 
     return {
         headerTitle: diagram.projectName,
@@ -92,31 +142,31 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         statusTone: diagram.status === 'ready' ? 'ready' : 'warning',
         semanticPath: diagram.semanticPath,
         activeSheetId: diagram.activeSheetId,
-        sheetCount: diagram.sheets?.length ?? 0,
+        sheetCount: sheets.length,
         notationPackId: diagram.notationPack?.packId,
-        crossReferenceCount: diagram.crossReferences?.length ?? 0,
+        crossReferenceCount: crossReferences.length,
         svgViewBox: `0 0 ${canvasWidth} ${canvasHeight}`,
         metrics: {
-            nodeCount: diagram.graph.nodes.length,
-            edgeCount: diagram.graph.edges.length,
-            supportedViewCount: diagram.supportedViews.length,
-            diagnosticCount: diagram.diagnostics.length,
+            nodeCount: graphNodes.length,
+            edgeCount: graphEdges.length,
+            supportedViewCount: supportedViews.length,
+            diagnosticCount: diagnostics.length,
         },
-        supportedViews: diagram.supportedViews.map(view => ({
+        supportedViews: supportedViews.map(view => ({
             ...view,
             isActive: view.viewId === diagram.activeViewId,
         })),
-        diagnostics: diagram.diagnostics,
-        activeRenderContributions: diagram.activeRenderContributions,
-        nodes: diagram.graph.nodes,
-        edges: diagram.graph.edges,
+        diagnostics,
+        activeRenderContributions: renderContributions,
+        nodes: graphNodes,
+        edges,
         canvas: {
             width: canvasWidth,
             height: canvasHeight,
         },
-        sceneBounds: resolveSceneBounds(diagram.graph.nodes, diagram.graph.edges, canvasWidth, canvasHeight),
-        surfaceTokens: resolveSurfaceTokens(diagram.activeRenderContributions),
-        emptyState: resolveEmptyState(diagram),
+        sceneBounds: resolveSceneBounds(graphNodes, edges, canvasWidth, canvasHeight),
+        surfaceTokens: resolveSurfaceTokens(renderContributions),
+        emptyState: resolveEmptyState(diagram, graphNodes, graphEdges),
     };
 }
 
@@ -175,7 +225,29 @@ export function zoomAthenaGraphViewportAtPoint(
     };
 }
 
-function resolveEmptyState(diagram: AthenaGLSPDiagram): AthenaGraphWorkbenchModel['emptyState'] {
+export function resizeAthenaGraphViewport(
+    transform: AthenaGraphViewportTransform,
+    previousViewport: AthenaGraphViewportSize,
+    nextViewport: AthenaGraphViewportSize,
+): AthenaGraphViewportTransform {
+    const zoom = transform.zoom <= 0 ? 1 : transform.zoom;
+    const previousCenterX = previousViewport.width > 0 ? previousViewport.width / 2 : 0;
+    const previousCenterY = previousViewport.height > 0 ? previousViewport.height / 2 : 0;
+    const worldCenterX = (previousCenterX - transform.offsetX) / zoom;
+    const worldCenterY = (previousCenterY - transform.offsetY) / zoom;
+
+    return {
+        zoom: transform.zoom,
+        offsetX: (nextViewport.width / 2) - (worldCenterX * zoom),
+        offsetY: (nextViewport.height / 2) - (worldCenterY * zoom),
+    };
+}
+
+function resolveEmptyState(
+    diagram: AthenaGLSPDiagram,
+    nodes: AthenaGLSPNode[],
+    edges: AthenaGLSPEdge[],
+): AthenaGraphWorkbenchModel['emptyState'] {
     if (diagram.status !== 'ready') {
         return {
             title: 'Projection unavailable',
@@ -183,7 +255,7 @@ function resolveEmptyState(diagram: AthenaGLSPDiagram): AthenaGraphWorkbenchMode
         };
     }
 
-    if (diagram.graph.nodes.length === 0 && diagram.graph.edges.length === 0) {
+    if (nodes.length === 0 && edges.length === 0) {
         return {
             title: 'Projection is empty',
             message: 'Athena published an active graphical view, but no nodes or relationships are currently visible in that projection.',
@@ -195,7 +267,7 @@ function resolveEmptyState(diagram: AthenaGLSPDiagram): AthenaGraphWorkbenchMode
 
 function resolveSceneBounds(
     nodes: AthenaGLSPNode[],
-    edges: AthenaGLSPEdge[],
+    edges: AthenaGraphWorkbenchEdge[],
     canvasWidth: number,
     canvasHeight: number
 ): AthenaGraphSceneBounds {
@@ -212,10 +284,12 @@ function resolveSceneBounds(
     }
 
     for (const edge of edges) {
-        minX = Math.min(minX, edge.sourcePoint.x, edge.targetPoint.x);
-        minY = Math.min(minY, edge.sourcePoint.y, edge.targetPoint.y);
-        maxX = Math.max(maxX, edge.sourcePoint.x, edge.targetPoint.x);
-        maxY = Math.max(maxY, edge.sourcePoint.y, edge.targetPoint.y);
+        for (const point of edge.routePoints) {
+            minX = Math.min(minX, point.x);
+            minY = Math.min(minY, point.y);
+            maxX = Math.max(maxX, point.x);
+            maxY = Math.max(maxY, point.y);
+        }
     }
 
     if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
@@ -262,4 +336,83 @@ function resolveSurfaceTokens(
     }
 
     return tokens;
+}
+
+function buildWorkbenchEdge(
+    edge: AthenaGLSPEdge,
+    endpoints: AthenaGLSPElectricalConnectionEndpointSource[],
+    anchorById: Map<string, AthenaGLSPElectricalAnchorSource>,
+): AthenaGraphWorkbenchEdge {
+    const bendPoints = edge.bendPoints ?? [];
+    const routePoints = [edge.sourcePoint, ...bendPoints, edge.targetPoint].map(point => ({
+        x: point.x,
+        y: point.y,
+    }));
+    return {
+        ...edge,
+        bendPoints,
+        routePoints,
+        bendMarkerPoints: bendPoints.map(point => ({ x: point.x, y: point.y })),
+        path: buildEdgePath(routePoints),
+        conductorStyle: edge.routingStyle === 'orthogonal' || bendPoints.length > 0 ? 'electrical' : 'generic',
+        terminals: [
+            buildWorkbenchTerminal('source', edge.sourcePoint, edge.sourceAnchorId, edge.sourcePortSemanticId, endpoints, anchorById),
+            buildWorkbenchTerminal('target', edge.targetPoint, edge.targetAnchorId, edge.targetPortSemanticId, endpoints, anchorById),
+        ],
+    };
+}
+
+function buildWorkbenchTerminal(
+    role: 'source' | 'target',
+    point: AthenaGLSPPoint,
+    fallbackAnchorId: string | undefined,
+    fallbackPortSemanticId: string | undefined,
+    endpoints: AthenaGLSPElectricalConnectionEndpointSource[],
+    anchorById: Map<string, AthenaGLSPElectricalAnchorSource>,
+): AthenaGraphWorkbenchEdgeTerminal {
+    const endpoint = endpoints.find(candidate => candidate.endpointRole === role);
+    const anchor = endpoint?.anchorId
+        ? anchorById.get(endpoint.anchorId)
+        : fallbackAnchorId
+            ? anchorById.get(fallbackAnchorId)
+            : undefined;
+    return {
+        role,
+        point: {
+            x: point.x,
+            y: point.y,
+        },
+        endpointId: endpoint?.endpointId,
+        anchorId: endpoint?.anchorId ?? fallbackAnchorId,
+        portSemanticId: endpoint?.portSemanticId ?? fallbackPortSemanticId ?? anchor?.portSemanticId,
+        ownerSemanticId: anchor?.ownerSemanticId,
+        nodeId: anchor?.nodeId,
+        labelId: anchor?.labelId,
+    };
+}
+
+function groupEndpointsByConnectionId(
+    endpoints: AthenaGLSPElectricalConnectionEndpointSource[],
+): Map<string, AthenaGLSPElectricalConnectionEndpointSource[]> {
+    const grouped = new Map<string, AthenaGLSPElectricalConnectionEndpointSource[]>();
+    for (const endpoint of endpoints) {
+        const current = grouped.get(endpoint.projectionConnectionId);
+        if (current) {
+            current.push(endpoint);
+        } else {
+            grouped.set(endpoint.projectionConnectionId, [endpoint]);
+        }
+    }
+    return grouped;
+}
+
+function buildEdgePath(points: AthenaGLSPPoint[]): string {
+    if (points.length === 0) {
+        return '';
+    }
+    return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+}
+
+function normalizeArray<T>(value: readonly T[] | T[] | undefined): T[] {
+    return Array.isArray(value) ? [...value] : [];
 }
