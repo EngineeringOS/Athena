@@ -74,6 +74,9 @@ class AthenaServiceRegistry(
     private val sourceMutationRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         sourceMutationRuntimeServiceProvider?.invoke() ?: AthenaSourceMutationRuntimeService()
     }
+    private val componentKnowledgeRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
+        AthenaComponentKnowledgeRuntimeService()
+    }
     private val graphCommandIntentRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         graphCommandIntentRuntimeServiceProvider?.invoke() ?: AthenaGraphCommandIntentRuntimeService()
     }
@@ -119,6 +122,9 @@ class AthenaServiceRegistry(
 
     /** Resolves the shared source-mutation evaluation capability for the current runtime. */
     fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = sourceMutationRuntimeServiceInstance
+
+    /** Resolves the shared component-knowledge inspection capability for the current runtime. */
+    fun componentKnowledgeRuntime(): AthenaComponentKnowledgeRuntimeService = componentKnowledgeRuntimeServiceInstance
 
     /** Resolves the shared graph command-intent capability for the current runtime. */
     fun graphCommandIntentRuntime(): AthenaGraphCommandIntentRuntimeService = graphCommandIntentRuntimeServiceInstance

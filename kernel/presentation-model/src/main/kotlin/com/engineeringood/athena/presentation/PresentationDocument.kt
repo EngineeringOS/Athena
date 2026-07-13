@@ -15,6 +15,7 @@ data class PresentationDocument(
     val canvasHeight: Int,
     val primitivePacks: List<PresentationPrimitivePack>,
     val compositePacks: List<PresentationCompositePack>,
+    val resolvedSubjects: List<PresentationResolvedSubject> = emptyList(),
     val occurrences: List<PresentationOccurrence>,
     val connectors: List<PresentationConnector> = emptyList(),
 )

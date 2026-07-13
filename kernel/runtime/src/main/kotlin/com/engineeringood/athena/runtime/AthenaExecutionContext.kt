@@ -42,6 +42,9 @@ class AthenaExecutionContext(
     /** Resolves the runtime-owned source-mutation evaluation capability for the active project. */
     fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = services.sourceMutationRuntime()
 
+    /** Resolves the runtime-owned component-knowledge inspection capability for the active project. */
+    fun componentKnowledgeRuntime(): AthenaComponentKnowledgeRuntimeService = services.componentKnowledgeRuntime()
+
     /** Resolves the runtime-owned graph command-intent capability for the active project. */
     fun graphCommandIntentRuntime(): AthenaGraphCommandIntentRuntimeService = services.graphCommandIntentRuntime()
 

@@ -1,6 +1,8 @@
 package com.engineeringood.athena.domain.electricalruntime
 
 import com.engineeringood.athena.plugin.AthenaCompilerPassContribution
+import com.engineeringood.athena.plugin.AthenaComponentKnowledgeContribution
+import com.engineeringood.athena.plugin.AthenaComponentKnowledgeContributor
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
@@ -24,6 +26,7 @@ import com.engineeringood.athena.scm.SemanticReviewSummary
 /** Reference Electrical/Runtime proof plugin that publishes the stable M3 hosted domain surface. */
 class ElectricalRuntimeDomainPlugin :
     AthenaDomainPlugin,
+    AthenaComponentKnowledgeContributor,
     AthenaPresentationPackContributor,
     AthenaViewDefinitionContributor,
     AthenaRuntimePluginCommandContributor,
@@ -74,6 +77,16 @@ class ElectricalRuntimeDomainPlugin :
     /** Contributes the first runtime-hosted electrical view proof through existing shell seams. */
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
         return electricalRuntimeViewContributions(context)
+    }
+
+    /** Publishes the first narrow M14 electrical component knowledge slice through the hosted plugin seam. */
+    override fun componentKnowledge(): AthenaComponentKnowledgeContribution {
+        return AthenaComponentKnowledgeContribution(
+            engineeringConcepts = electricalEngineeringConcepts(),
+            partImplementations = siemensElectricalPartImplementations(),
+            semanticPorts = plcCpuResolvedSemanticPorts(),
+            physicalTraits = siemensProofResolvedPhysicalTraits(),
+        )
     }
 
     /** Adds electrical review interpretation without mutating or replacing the core semantic review facts. */

@@ -478,4 +478,60 @@ class AthenaSourceMutationRuntimeServiceTest {
             Files.deleteIfExists(sourcePath)
         }
     }
+
+    @Test
+    fun `component knowledge preview does not create a second canonical write path`() {
+        val sourcePath = writeProject(
+            """
+                system ComponentKnowledgeAuthority {
+                  device PLC1 {
+                    type Switch
+                    model "proof.cpu.313c"
+                  }
+                }
+            """.trimIndent(),
+        )
+
+        try {
+            val runtime = AthenaRuntime()
+            val context = runtime.openWorkspace(sourcePath.parent).activateProject(
+                projectName = "component-knowledge-authority",
+                sourcePath = sourcePath,
+            )
+            val baselineKnowledge = assertIs<AthenaComponentKnowledgeReady>(
+                context.componentKnowledgeRuntime().inspect(context),
+            )
+
+            val dirtyCompilation = assertIs<CompilerCompilationSuccess>(
+                context.compiler().compile(
+                    sourcePath,
+                    """
+                        system ComponentKnowledgeAuthority {
+                          device PLC1 {
+                            type Switch
+                            model "unknown.vendor.part"
+                          }
+                        }
+                    """.trimIndent(),
+                ),
+            )
+
+            assertEquals(
+                listOf("component.definition.unresolved"),
+                dirtyCompilation.knowledgeContext.componentKnowledgeDiagnostics.map { diagnostic -> diagnostic.ruleId.value },
+            )
+
+            val result = context.sourceMutationRuntime().evaluate(
+                context = context,
+                sourcePath = sourcePath,
+                compilation = dirtyCompilation,
+            )
+
+            assertIs<AthenaSourceMutationAccepted>(result)
+            assertEquals(baselineKnowledge, context.componentKnowledgeRuntime().inspect(context))
+            assertTrue(context.commandRuntime().history(context).records.isEmpty())
+        } finally {
+            Files.deleteIfExists(sourcePath)
+        }
+    }
 }

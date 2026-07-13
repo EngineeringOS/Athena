@@ -1,0 +1,59 @@
+system SiemensProofCorpus {
+  device PS1 {
+    type Switch
+    label "24V DC power supply"
+    model "proof.power-supply.24vdc"
+  }
+
+  device PLC1 {
+    type Switch
+    label "PLC CPU 313C"
+    model "proof.cpu.313c"
+    note "Narrow Siemens-first proof controller"
+  }
+
+  device KM1 {
+    type Switch
+    label "Power contactor"
+    model "proof.contactor.3pole"
+  }
+
+  device FR1 {
+    type Switch
+    label "Overload relay"
+    model "proof.relay.overload"
+  }
+
+  device M1 {
+    type Motor
+    label "AC motor"
+    model "proof.motor.ac"
+  }
+
+  port PS1.out {
+    direction out
+    signal Power24
+  }
+
+  port PLC1.lplus {
+    direction out
+    signal Power24
+  }
+
+  port PLC1.m {
+    direction in
+    signal Common24
+  }
+
+  port PLC1.pe {
+    direction in
+    signal ProtectiveEarth
+  }
+
+  port PLC1.mpi {
+    direction out
+    signal MPIBus
+  }
+
+  connect PS1.out -> PLC1.lplus
+}

@@ -2,6 +2,8 @@ package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorResolver
 import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorSource
+import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContextBuilder
+import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContributionSource
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeResolver
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
@@ -41,6 +43,7 @@ import com.engineeringood.athena.semantics.core.SemanticValidationResult
 import com.engineeringood.athena.semantics.core.EngineeringIrValidator
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
+import com.engineeringood.athena.plugin.AthenaComponentKnowledgeContributor
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPresentationPackContributor
 import com.engineeringood.athena.plugin.AthenaRenderContributor
@@ -84,6 +87,7 @@ class AthenaCompiler(
     private val repositoryLockMaterializer: AthenaRepositoryLockMaterializer = AthenaRepositoryLockMaterializer(
         graphResolver = repositoryGraphResolver,
     ),
+    private val componentKnowledgeContextBuilder: AthenaComponentKnowledgeContextBuilder = AthenaComponentKnowledgeContextBuilder(),
     lowerer: EngineeringIrLowerer? = null,
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
@@ -136,6 +140,25 @@ class AthenaCompiler(
             (approvedPlugin.candidate.plugin as? AthenaPresentationPackContributor)
                 ?.compositePresentationPacks()
                 .orEmpty()
+        }
+    private val componentKnowledgeContributionsCache: List<AthenaComponentKnowledgeContributionSource> = pluginInventory.approvedPlugins
+        .mapNotNull { approvedPlugin ->
+            val contributor = approvedPlugin.candidate.plugin as? AthenaComponentKnowledgeContributor ?: return@mapNotNull null
+            val contribution = contributor.componentKnowledge()
+            if (
+                contribution.engineeringConcepts.isEmpty() &&
+                contribution.partImplementations.isEmpty() &&
+                contribution.semanticPorts.isEmpty() &&
+                contribution.physicalTraits.isEmpty()
+            ) {
+                null
+            } else {
+                AthenaComponentKnowledgeContributionSource(
+                    artifactId = approvedPlugin.candidate.manifest.pluginId,
+                    artifactVersion = approvedPlugin.candidate.manifest.pluginVersion,
+                    contribution = contribution,
+                )
+            }
         }
 
     /** Parses the authored source file at [path] and returns the full syntax-owned document. */
@@ -279,6 +302,7 @@ class AthenaCompiler(
     fun deriveSupportedProjections(
         document: EngineeringDocument,
         geometries: List<GeometryDocument>,
+        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
     ): List<ProjectionDocument> {
         return geometries.map { geometryDocument ->
             val viewDefinition = supportedViewDefinitionsCache.firstOrNull { definition -> definition.id == geometryDocument.viewId }
@@ -287,6 +311,7 @@ class AthenaCompiler(
                 view = viewDefinition,
                 document = document,
                 geometry = geometryDocument,
+                knowledgeContext = knowledgeContext,
             )
         }
     }
@@ -426,15 +451,18 @@ class AthenaCompiler(
             source = source,
             document = document,
         )
+        val effectiveKnowledgeContext = knowledgeContext.withResolvedComponentKnowledge(
+            componentKnowledgeContextBuilder.build(document, componentKnowledgeContributionsCache),
+        )
         val derivedContext = derivedEngineeringContextDeriver.derive(document)
         val capabilityFacts = capabilityFactPromoter.promote(
             derivedContext = derivedContext,
-            knowledgeContext = knowledgeContext,
+            knowledgeContext = effectiveKnowledgeContext,
         )
         val constraintEvaluationOutcome = constraintEvaluator.evaluate(
             derivedContext = derivedContext,
             capabilityFacts = capabilityFacts,
-            knowledgeContext = knowledgeContext,
+            knowledgeContext = effectiveKnowledgeContext,
         )
         val validationResult = validatePass(
             source = source,
@@ -464,12 +492,13 @@ class AthenaCompiler(
         val projections = deriveSupportedProjections(
             document = document,
             geometries = backendPreparation.geometries,
+            knowledgeContext = effectiveKnowledgeContext,
         )
         val presentations = deriveSupportedPresentations(
             document = document,
             projections = projections,
         )
-        val knowledgeAttributions = buildKnowledgeAttributions(knowledgeContext)
+        val knowledgeAttributions = buildKnowledgeAttributions(effectiveKnowledgeContext)
         return CompilerCompilationSuccess(
             source = source,
             document = document,
@@ -483,7 +512,7 @@ class AthenaCompiler(
             projections = projections,
             presentations = presentations,
             rendering = backendEmission.rendering,
-            knowledgeContext = knowledgeContext,
+            knowledgeContext = effectiveKnowledgeContext,
             boundaryValidation = boundaryValidation,
             knowledgeAttributions = knowledgeAttributions,
             pipeline = CompilerPipelineReport(

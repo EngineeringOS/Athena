@@ -4,6 +4,8 @@
 
 dependencies {
     implementation(project(":kernel:compiler"))
+    implementation(project(":kernel:component-model"))
+    implementation(project(":kernel:connection-model"))
     implementation(project(":kernel:plugins:plugin-api"))
     implementation(project(":kernel:plugins:plugin-host"))
     implementation(project(":kernel:repository-model"))
@@ -11,6 +13,8 @@ dependencies {
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:geometry-model"))
     implementation(project(":kernel:layout-model"))
+    implementation(project(":kernel:part-model"))
+    implementation(project(":kernel:physical-model"))
     implementation(project(":kernel:presentation-model"))
     implementation(project(":kernel:projection-model"))
     implementation(project(":kernel:svg-renderer"))

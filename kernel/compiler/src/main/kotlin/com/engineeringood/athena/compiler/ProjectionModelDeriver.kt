@@ -1,5 +1,6 @@
 package com.engineeringood.athena.compiler
 
+import com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.geometry.GeometryElement
 import com.engineeringood.athena.geometry.GeometryElementKind
@@ -22,6 +23,8 @@ import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationPackId
 import com.engineeringood.athena.projection.ProjectionNotationSubject
 import com.engineeringood.athena.projection.ProjectionPoint
+import com.engineeringood.athena.projection.ProjectionPhysicalSize
+import com.engineeringood.athena.projection.ProjectionResolvedSubject
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetId
 import com.engineeringood.athena.projection.ProjectionSheetSubject
@@ -40,6 +43,7 @@ class ProjectionModelDeriver {
         view: ViewDefinition,
         document: EngineeringDocument,
         geometry: GeometryDocument,
+        knowledgeContext: AthenaCompilationKnowledgeContext,
     ): ProjectionDocument {
         require(view.id == geometry.viewId) {
             "Projection derivation requires matching view ids but received `${view.id}` and `${geometry.viewId}`."
@@ -102,6 +106,10 @@ class ProjectionModelDeriver {
             connections = connections,
             labels = labels,
         )
+        val resolvedSubjects = deriveResolvedSubjects(
+            document = document,
+            knowledgeContext = knowledgeContext,
+        )
         val electricalContracts = deriveProjectionElectricalContracts(
             view = view,
             document = document,
@@ -124,6 +132,7 @@ class ProjectionModelDeriver {
             nodes = nodes,
             connections = connections,
             labels = labels,
+            resolvedSubjects = resolvedSubjects,
             sheets = sheets,
             notationPack = deriveNotationPack(
                 view = view,
@@ -140,6 +149,45 @@ class ProjectionModelDeriver {
             electricalRoutingCorridors = electricalContracts.routingCorridors,
         )
     }
+}
+
+private fun deriveResolvedSubjects(
+    document: EngineeringDocument,
+    knowledgeContext: AthenaCompilationKnowledgeContext,
+): List<ProjectionResolvedSubject> {
+    val implementationBySubjectId = knowledgeContext.resolvedImplementations.associateBy { resolved ->
+        resolved.semanticSubjectId.value
+    }
+    val physicalTraitBySubjectId = knowledgeContext.resolvedPhysicalTraits.associateBy { resolved ->
+        resolved.semanticSubjectId.value
+    }
+    val componentIds = document.components.map { component -> component.id.value }.toSet()
+    return knowledgeContext.resolvedComponents
+        .filter { resolved -> resolved.semanticSubjectId.value in componentIds }
+        .map { resolved ->
+            val implementation = implementationBySubjectId[resolved.semanticSubjectId.value]
+            val physicalTrait = physicalTraitBySubjectId[resolved.semanticSubjectId.value]
+            ProjectionResolvedSubject(
+                semanticId = resolved.semanticSubjectId,
+                conceptId = resolved.concept.conceptId.value,
+                classificationKeys = resolved.concept.classificationKeys.toSortedSet(),
+                implementationId = implementation?.implementation?.implementationId?.value,
+                vendorPartNumber = implementation?.implementation?.vendorPartNumber?.value,
+                physicalSize = physicalTrait?.definition?.size?.let { size ->
+                    ProjectionPhysicalSize(
+                        widthMillimeters = size.widthMillimeters,
+                        heightMillimeters = size.heightMillimeters,
+                        depthMillimeters = size.depthMillimeters,
+                    )
+                },
+                mountingTypeId = physicalTrait?.definition?.mountingTypeId?.value,
+                installationMarkerIds = physicalTrait?.definition?.installationMarkerIds
+                    ?.map { marker -> marker.value }
+                    ?.toSortedSet()
+                    .orEmpty(),
+            )
+        }
+        .sortedBy { resolved -> resolved.semanticId.value }
 }
 
 private fun deriveSheets(

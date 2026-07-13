@@ -16,6 +16,7 @@ data class ProjectionDocument(
     val nodes: List<ProjectionNode>,
     val connections: List<ProjectionConnection>,
     val labels: List<ProjectionLabel>,
+    val resolvedSubjects: List<ProjectionResolvedSubject> = emptyList(),
     val sheets: List<ProjectionSheet> = emptyList(),
     val notationPack: ProjectionNotationPack? = null,
     val crossReferences: List<ProjectionCrossReference> = emptyList(),

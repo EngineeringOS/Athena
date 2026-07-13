@@ -1,6 +1,8 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.layout.ViewDefinition
+import com.engineeringood.athena.plugin.AthenaComponentKnowledgeContribution
+import com.engineeringood.athena.plugin.AthenaComponentKnowledgeContributor
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPlugin
@@ -85,6 +87,11 @@ interface AthenaPluginRuntimeServices {
     fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution>
 
     /**
+     * Returns component-knowledge contributions exposed by the hosted plugin set.
+     */
+    fun componentKnowledgeContributions(): List<AthenaRuntimePluginComponentKnowledgeContribution>
+
+    /**
      * Returns hosted semantic review enrichers in deterministic approved-plugin order.
      */
     fun semanticReviewEnrichmentContributors(): List<AthenaRuntimePluginSemanticReviewEnrichmentContribution>
@@ -136,6 +143,15 @@ data class AthenaHostedRuntimePlugin(
 data class AthenaRuntimePluginViewDefinitionContribution(
     val pluginId: String,
     val viewDefinitions: List<ViewDefinition>,
+)
+
+/**
+ * Runtime-owned inspection record for one hosted plugin component-knowledge contribution.
+ */
+data class AthenaRuntimePluginComponentKnowledgeContribution(
+    val pluginId: String,
+    val pluginVersion: String,
+    val componentKnowledge: AthenaComponentKnowledgeContribution,
 )
 
 /**
@@ -394,6 +410,27 @@ class AthenaHostedPluginRuntimeServices(
                 AthenaRuntimePluginViewDefinitionContribution(
                     pluginId = approvedPlugin.candidate.manifest.pluginId,
                     viewDefinitions = viewDefinitions,
+                )
+            }
+        }
+    }
+
+    override fun componentKnowledgeContributions(): List<AthenaRuntimePluginComponentKnowledgeContribution> {
+        return activeApprovedPlugins().mapNotNull { approvedPlugin ->
+            val contributor = approvedPlugin.candidate.plugin as? AthenaComponentKnowledgeContributor ?: return@mapNotNull null
+            val componentKnowledge = contributor.componentKnowledge()
+            if (
+                componentKnowledge.engineeringConcepts.isEmpty() &&
+                componentKnowledge.partImplementations.isEmpty() &&
+                componentKnowledge.semanticPorts.isEmpty() &&
+                componentKnowledge.physicalTraits.isEmpty()
+            ) {
+                null
+            } else {
+                AthenaRuntimePluginComponentKnowledgeContribution(
+                    pluginId = approvedPlugin.candidate.manifest.pluginId,
+                    pluginVersion = approvedPlugin.candidate.manifest.pluginVersion,
+                    componentKnowledge = componentKnowledge,
                 )
             }
         }

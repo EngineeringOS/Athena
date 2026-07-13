@@ -121,6 +121,8 @@ class AthenaRuntimeTest {
 
             override fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution> = emptyList()
 
+            override fun componentKnowledgeContributions(): List<AthenaRuntimePluginComponentKnowledgeContribution> = emptyList()
+
             override fun semanticReviewEnrichmentContributors(): List<AthenaRuntimePluginSemanticReviewEnrichmentContribution> = emptyList()
 
             override fun enrichReview(summary: SemanticReviewSummary): List<SemanticReviewEnrichment> = emptyList()

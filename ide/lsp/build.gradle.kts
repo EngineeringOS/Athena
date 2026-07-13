@@ -6,9 +6,13 @@ plugins {
 dependencies {
     implementation(project(":integrations:scm-git"))
     implementation(project(":kernel:compiler"))
+    implementation(project(":kernel:component-model"))
+    implementation(project(":kernel:connection-model"))
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:layout-model"))
     implementation(project(":kernel:language"))
+    implementation(project(":kernel:part-model"))
+    implementation(project(":kernel:physical-model"))
     implementation(project(":kernel:presentation-model"))
     implementation(project(":kernel:repository-model"))
     implementation(project(":kernel:runtime"))

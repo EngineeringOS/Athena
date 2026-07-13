@@ -274,6 +274,20 @@ class AthenaLanguageServer(
     }
 
     /**
+     * Returns the current runtime-owned component-knowledge session through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/componentKnowledgeSession")
+    fun componentKnowledgeSession(params: AthenaComponentKnowledgeSessionParams): CompletableFuture<AthenaComponentKnowledgeSessionPayload?> {
+        @Suppress("UnusedParameter")
+        val ignored = params
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.componentKnowledgeRuntime().inspect(activation.context).toPayload(semanticPath),
+        )
+    }
+
+    /**
      * Returns baseline-driven semantic review and commit-preparation state through the Athena LSP boundary.
      */
     @JsonRequest("athena/semanticScmState")

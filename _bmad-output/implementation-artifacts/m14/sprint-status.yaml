@@ -1,0 +1,56 @@
+# generated: 2026-07-13T23:20:00+08:00
+# last_updated: 2026-07-14T19:03:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m14
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M14 milestone sequence sourced from `epics-M14-2026-07-13.md`.
+# - M14 proves the component-knowledge foundation above M13 presentation language and below later M9/M13 downstream consumers.
+
+generated: 2026-07-13T23:20:00+08:00
+last_updated: 2026-07-14T19:03:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m14
+
+development_status:
+  epic-1: done
+  1-1-define-the-core-engineering-concept-contract: done
+  1-2-define-the-vendor-implementation-mapping-contract: done
+  1-3-publish-the-first-electrical-concept-and-siemens-implementation-slice: done
+  epic-2: done
+  2-1-define-typed-semantic-port-contracts: done
+  2-2-keep-compatibility-judgement-out-of-the-port-contract: done
+  2-3-define-minimal-physical-trait-contracts: done
+  2-4-publish-the-first-electrical-semantic-port-and-physical-trait-slice: done
+  epic-3: done
+  3-1-define-the-knowledge-pack-registry-and-active-pack-set-contract: done
+  3-2-resolve-component-references-through-existing-package-governance: done
+  3-3-surface-unresolved-and-conflicting-definitions-explicitly: done
+  epic-4: done
+  4-1-publish-resolved-component-knowledge-through-runtime-and-transport-seams: done
+  4-2-integrate-resolved-component-knowledge-into-m9-inputs: done
+  4-3-integrate-resolved-component-knowledge-into-projection-and-presentation-consumers: done
+  4-4-preserve-m8-as-the-only-mutation-authority: done
+  epic-5: done
+  5-1-publish-the-first-m14-electrical-proof-corpus: done
+  5-2-record-the-product-position-for-multi-surface-authoring: done
+  5-3-publish-the-deterministic-verification-and-failure-path: done

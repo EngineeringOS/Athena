@@ -1,0 +1,11 @@
+# Derived resolution state for the Athena package graph.
+# Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
+version: 1
+primaryPackage:
+  name: com.engineeringood.examples.m14.siemens-proof-corpus
+  version: 1.0.0
+packages:
+  - name: com.engineeringood.examples.m14.siemens-proof-corpus
+    version: 1.0.0
+    sourceRoot: src
+    dependencies: []

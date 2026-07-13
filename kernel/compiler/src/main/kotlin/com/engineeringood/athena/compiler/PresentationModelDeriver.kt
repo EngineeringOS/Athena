@@ -18,9 +18,11 @@ import com.engineeringood.athena.presentation.PresentationOccurrenceId
 import com.engineeringood.athena.presentation.PresentationOrientation
 import com.engineeringood.athena.presentation.PresentationPackId
 import com.engineeringood.athena.presentation.PresentationPoint
+import com.engineeringood.athena.presentation.PresentationPhysicalSize
 import com.engineeringood.athena.presentation.PresentationPrimitiveOccurrenceReference
 import com.engineeringood.athena.presentation.PresentationPrimitivePack
 import com.engineeringood.athena.presentation.PresentationPrimitiveId
+import com.engineeringood.athena.presentation.PresentationResolvedSubject
 import com.engineeringood.athena.presentation.PresentationTextSlotId
 import com.engineeringood.athena.projection.ElectricalAnchor
 import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
@@ -100,10 +102,30 @@ class PresentationModelDeriver {
             canvasHeight = projection.canvasHeight,
             primitivePacks = activePrimitivePacks.sortedBy { pack -> pack.packId.value },
             compositePacks = activeCompositePacks.sortedBy { pack -> pack.packId.value },
+            resolvedSubjects = projection.resolvedSubjects.map { resolved -> resolved.toPresentationResolvedSubject() },
             occurrences = occurrences,
             connectors = connectors,
         )
     }
+}
+
+private fun com.engineeringood.athena.projection.ProjectionResolvedSubject.toPresentationResolvedSubject(): PresentationResolvedSubject {
+    return PresentationResolvedSubject(
+        semanticId = semanticId,
+        conceptId = conceptId,
+        classificationKeys = classificationKeys,
+        implementationId = implementationId,
+        vendorPartNumber = vendorPartNumber,
+        physicalSize = physicalSize?.let { size ->
+            PresentationPhysicalSize(
+                widthMillimeters = size.widthMillimeters,
+                heightMillimeters = size.heightMillimeters,
+                depthMillimeters = size.depthMillimeters,
+            )
+        },
+        mountingTypeId = mountingTypeId,
+        installationMarkerIds = installationMarkerIds,
+    )
 }
 
 private fun ProjectionNode.toPresentationOccurrence(

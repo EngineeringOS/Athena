@@ -44,6 +44,7 @@ class AthenaPluginRuntimeServicesTest {
         val hostedPlugins = pluginServices.hostedPlugins()
         val hostedPluginIds = hostedPlugins.map { plugin -> plugin.pluginId }
         val hostedDomainPluginIds = pluginServices.domainSemanticsContributions().map { contribution -> contribution.pluginId }
+        val componentKnowledgePluginIds = pluginServices.componentKnowledgeContributions().map { contribution -> contribution.pluginId }
         val compilerPluginIds = runtime.serviceRegistry.compiler().pluginInventory.approvedPlugins.map { plugin ->
             plugin.candidate.manifest.pluginId
         }
@@ -54,6 +55,12 @@ class AthenaPluginRuntimeServicesTest {
                 "com.engineeringood.athena.domain.electrical-runtime",
             ),
             hostedPluginIds,
+        )
+        assertEquals(
+            listOf(
+                "com.engineeringood.athena.domain.electrical-runtime",
+            ),
+            componentKnowledgePluginIds,
         )
         assertEquals(
             listOf(
@@ -519,6 +526,7 @@ class AthenaPluginRuntimeServicesTest {
         assertTrue(shutdown.inventory.approvedPluginCount > 0)
         assertTrue(shutdown.inventory.approvedPlugins.all { plugin -> plugin.lifecycleState == AthenaHostedPluginLifecycleState.SHUTDOWN })
         assertEquals(emptyList(), pluginServices.commandContributions())
+        assertEquals(emptyList(), pluginServices.componentKnowledgeContributions())
         assertEquals(emptyList(), pluginServices.domainSemanticsContributions())
         assertEquals(emptyList(), pluginServices.renderContributions())
         assertEquals(emptyList(), pluginServices.semanticReviewEnrichmentContributors())
