@@ -63,6 +63,8 @@ test('Athena shared styles define an IDE-density surface language', () => {
     assert.match(styles, /\.athena-graph-workbench\s*\{[\s\S]*height:\s*100%/);
     assert.match(styles, /\.athena-graph-workbench__overlay--top\s*\{[\s\S]*pointer-events:\s*auto/);
     assert.match(styles, /\.athena-graph-workbench__floating-panel\s*\{[\s\S]*pointer-events:\s*auto/);
-    assert.match(styles, /\.athena-graph-workbench__status\s*\{[\s\S]*background:\s*rgba\(255,\s*255,\s*255,\s*0\.08\)/);
+    assert.match(styles, /\.athena-graph-workbench__floating-bar\s*\{[\s\S]*background:\s*transparent/);
+    assert.match(styles, /\.athena-graph-workbench__tool-button\s*\{[\s\S]*background:\s*transparent/);
+    assert.match(styles, /\.athena-graph-workbench__status\s*\{[\s\S]*background:\s*transparent/);
     assert.doesNotMatch(styles, /backdrop-filter\s*:/);
 });

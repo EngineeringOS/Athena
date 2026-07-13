@@ -29,6 +29,7 @@ class ElectricalRuntimeDomainPluginTest {
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
                 AthenaExtensionPoint.VIEW_DEFINITIONS,
+                AthenaExtensionPoint.PRESENTATION_PACKS,
                 AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
                 AthenaExtensionPoint.RUNTIME_COMMANDS,
                 AthenaExtensionPoint.RUNTIME_VIEWS,
@@ -67,6 +68,18 @@ class ElectricalRuntimeDomainPluginTest {
             cabinet.ownershipContract.projectionCommandIds,
         )
         assertEquals(
+            listOf(
+                "devices",
+                "ports",
+                "ownership-relationships",
+                "connectivity-relationships",
+                "grouped-placement",
+                "electrical-anchors",
+                "electrical-routing-corridors",
+            ),
+            cabinet.ownershipContract.displayScopes,
+        )
+        assertEquals(
             listOf("navigate-view", "inspect-selection", "preview-related-elements"),
             cabinet.ownershipContract.transientInteractionKinds,
         )
@@ -80,6 +93,17 @@ class ElectricalRuntimeDomainPluginTest {
         assertEquals(ProjectionInteractivity.INSPECT_ONLY, wiring.ownershipContract.interactivity)
         assertEquals(ElectricalProjectionFamily.WIRING, wiringFamily.family)
         assertEquals(emptyList(), wiring.ownershipContract.projectionCommandIds)
+        assertEquals(
+            listOf(
+                "devices",
+                "ports",
+                "signal-groups",
+                "connectivity-relationships",
+                "electrical-anchors",
+                "electrical-routing-corridors",
+            ),
+            wiring.ownershipContract.displayScopes,
+        )
         assertEquals(
             listOf("navigate-view", "inspect-selection", "preview-related-elements"),
             wiring.ownershipContract.transientInteractionKinds,
@@ -129,12 +153,12 @@ class ElectricalRuntimeDomainPluginTest {
             listOf(AthenaRenderSurface.CANVAS, AthenaRenderSurface.NODE, AthenaRenderSurface.EDGE),
             cabinetContribution.surfaceMappings.map { mapping -> mapping.surface },
         )
-        assertEquals("rgba(22, 18, 12, 0.92)", cabinetContribution.surfaceMappings.first().tokens["canvasTint"])
+        assertEquals("var(--athena-graph-cabinet-canvas-tint)", cabinetContribution.surfaceMappings.first().tokens["canvasTint"])
         assertEquals(setOf("svg", "graph-workbench"), wiringContribution.rendererTargets)
         assertEquals(
             listOf(AthenaRenderSurface.CANVAS, AthenaRenderSurface.NODE, AthenaRenderSurface.EDGE),
             wiringContribution.surfaceMappings.map { mapping -> mapping.surface },
         )
-        assertEquals("rgba(96, 223, 255, 0.94)", wiringContribution.surfaceMappings.last().tokens["stroke"])
+        assertEquals("var(--athena-graph-wiring-edge-stroke)", wiringContribution.surfaceMappings.last().tokens["stroke"])
     }
 }

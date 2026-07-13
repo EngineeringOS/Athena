@@ -51,6 +51,7 @@ const inversify_1 = require("@theia/core/shared/inversify");
 const browser_1 = require("@theia/editor/lib/browser");
 const athena_graph_adapter_service_1 = require("./athena-graph-adapter-service");
 const athena_graph_workbench_edge_layer_1 = require("./athena-graph-workbench-edge-layer");
+const athena_graph_workbench_presentation_node_1 = require("./athena-graph-workbench-presentation-node");
 const athena_graph_workbench_model_1 = require("./athena-graph-workbench-model");
 const athena_repository_session_service_1 = require("./athena-repository-session-service");
 const athena_semantic_selection_model_1 = require("./athena-semantic-selection-model");
@@ -230,18 +231,20 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
         const connectPortsSupported = this.graphAdapterService.supportsConnectPortsIntent(this.diagram);
         const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
-        const lastIntentSummary = this.lastGraphCommandIntent
-            ? `${this.lastGraphCommandIntent.intentId} ${this.lastGraphCommandIntent.status}`
-            : undefined;
         const canvasStyle = {
             width: `${model.canvas.width}px`,
             height: `${model.canvas.height}px`,
             transform: `translate(${this.viewportTransform.offsetX}px, ${this.viewportTransform.offsetY}px) scale(${this.viewportTransform.zoom})`,
             transformOrigin: '0 0',
         };
+        const stageClassName = [
+            'athena-graph-workbench__stage',
+            this.panState ? 'athena-graph-workbench__stage--panning' : '',
+            model.isElectricalFamily ? 'athena-graph-workbench__stage--electrical' : '',
+        ].filter(Boolean).join(' ');
         return React.createElement("div", { className: 'athena-graph-workbench' },
             React.createElement("div", { className: 'athena-graph-workbench__workspace' },
-                React.createElement("section", { className: `athena-graph-workbench__stage ${this.panState ? 'athena-graph-workbench__stage--panning' : ''}`, style: stageStyle, onClick: this.handleStageClick }, model.emptyState
+                React.createElement("section", { className: stageClassName, style: stageStyle, onClick: this.handleStageClick }, model.emptyState
                     ? React.createElement("div", { className: 'athena-graph-workbench__empty athena-graph-workbench__empty--inline' },
                         React.createElement("h4", null, model.emptyState.title),
                         React.createElement("p", null, model.emptyState.message))
@@ -255,15 +258,6 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                                 React.createElement("div", { className: 'athena-graph-workbench__tool-group' },
                                     React.createElement("div", { className: 'athena-graph-workbench__view-switches' }, model.supportedViews.map(view => React.createElement("button", { key: view.viewId, className: `athena-graph-workbench__tool-button athena-graph-workbench__tool-button--view ${view.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`, title: this.viewAriaLabel(view), "aria-label": this.viewAriaLabel(view), type: 'button', disabled: view.isActive || this.switchingView, onClick: () => void this.switchActiveView(view.viewId) },
                                         React.createElement("span", { className: `codicon ${this.viewIconClass(view.viewId)}` })))),
-                                    React.createElement("button", { className: 'athena-graph-workbench__tool-button', type: 'button', onClick: () => this.stepZoom(1 / 1.15), title: 'Zoom out', "aria-label": 'Zoom out' },
-                                        React.createElement("span", { className: 'codicon codicon-zoom-out' })),
-                                    React.createElement("button", { className: 'athena-graph-workbench__tool-button athena-graph-workbench__tool-button--readout', type: 'button', onClick: () => this.resetZoom(), title: 'Reset zoom', "aria-label": 'Reset zoom' },
-                                        zoomPercent,
-                                        "%"),
-                                    React.createElement("button", { className: 'athena-graph-workbench__tool-button', type: 'button', onClick: () => this.stepZoom(1.15), title: 'Zoom in', "aria-label": 'Zoom in' },
-                                        React.createElement("span", { className: 'codicon codicon-zoom-in' })),
-                                    React.createElement("button", { className: 'athena-graph-workbench__tool-button', type: 'button', onClick: () => this.fitViewportToDiagram(), title: 'Fit graph to viewport', "aria-label": 'Fit graph to viewport' },
-                                        React.createElement("span", { className: 'codicon codicon-screen-full' })),
                                     connectPortsSupported
                                         ? React.createElement("button", { className: `athena-graph-workbench__tool-button ${this.connectPortsArmed || this.connectPortsSource ? 'athena-graph-workbench__tool-button--active' : ''}`, type: 'button', title: this.connectPortsButtonTitle(), "aria-label": this.connectPortsButtonTitle(), disabled: this.connectPortsPending, onClick: () => this.toggleConnectPortsMode() },
                                             React.createElement("span", { className: `codicon ${this.connectPortsPending ? 'codicon-loading codicon-modifier-spin' : 'codicon-link'}` }))
@@ -448,23 +442,92 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                             React.createElement("div", { className: 'athena-graph-workbench__grid' }),
                             React.createElement("svg", { className: 'athena-graph-workbench__canvas', viewBox: model.svgViewBox, role: 'img', "aria-label": 'Athena graphical projection', style: canvasStyle },
                                 React.createElement(athena_graph_workbench_edge_layer_1.AthenaGraphWorkbenchEdgeLayer, { edges: model.edges, selectedSemanticId: selectedSemanticId, onSelectSemanticId: semanticId => this.semanticSelectionService.selectSemanticId(semanticId) }),
-                                model.nodes.map(node => React.createElement("g", { key: node.id, className: 'athena-graph-workbench__element', "data-athena-graph-interactive": 'true', role: 'button', tabIndex: 0, transform: node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined, onClick: event => void this.handleNodeClick(event, node.semanticId, node.kind, node.label), onKeyDown: event => void this.handleGraphElementKeyDown(event, node.semanticId, node.kind, node.label), onPointerDown: node.kind === 'component'
-                                        ? event => this.handleComponentPointerDown(event, node.semanticId, node.position.x, node.position.y)
-                                        : undefined },
-                                    React.createElement("rect", { className: `athena-graph-workbench__node athena-graph-workbench__node--${node.kind} ${selectedSemanticId === node.semanticId ? 'athena-graph-workbench__node--selected' : ''}`, x: node.position.x, y: node.position.y, width: node.size.width, height: node.size.height, rx: node.kind === 'label' ? 3 : 4, ry: node.kind === 'label' ? 3 : 4, vectorEffect: 'non-scaling-stroke' }),
-                                    React.createElement("text", { className: 'athena-graph-workbench__node-label', x: node.position.x + (node.kind === 'label' ? 12 : 20), y: node.position.y + (node.kind === 'label' ? 22 : 34) }, node.label),
-                                    node.kind === 'component'
-                                        ? React.createElement("text", { className: 'athena-graph-workbench__node-meta', x: node.position.x + 20, y: node.position.y + 58 }, node.semanticId)
-                                        : undefined)))),
-                        React.createElement("div", { className: 'athena-graph-workbench__statusline' },
-                            React.createElement("span", { title: `Canvas size ${model.canvas.width} x ${model.canvas.height}`, "aria-label": `Canvas size ${model.canvas.width} x ${model.canvas.height}` },
-                                React.createElement("span", { className: 'codicon codicon-device-desktop' })),
-                            React.createElement("span", { title: model.semanticPath, "aria-label": `Semantic path ${model.semanticPath}` },
-                                React.createElement("span", { className: 'codicon codicon-git-branch' })),
-                            lastIntentSummary
-                                ? React.createElement("span", { title: lastIntentSummary, "aria-label": `Last Athena graph intent ${lastIntentSummary}` },
-                                    React.createElement("span", { className: 'codicon codicon-symbol-event' }))
-                                : undefined)))));
+                                model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId)))),
+                        React.createElement("div", { className: 'athena-graph-workbench__overlay athena-graph-workbench__overlay--bottom-right' },
+                            React.createElement("div", { className: 'athena-graph-workbench__zoom-dock' },
+                                React.createElement("div", { className: 'athena-graph-workbench__statusline-readout', title: `Canvas size ${model.canvas.width} x ${model.canvas.height}`, "aria-label": `Canvas size ${model.canvas.width} x ${model.canvas.height}` },
+                                    "Canvas ",
+                                    model.canvas.width,
+                                    " x ",
+                                    model.canvas.height),
+                                React.createElement("button", { className: 'athena-graph-workbench__tool-button', type: 'button', onClick: () => this.stepZoom(1 / 1.15), title: 'Zoom out', "aria-label": 'Zoom out' },
+                                    React.createElement("span", { className: 'codicon codicon-zoom-out' })),
+                                React.createElement("button", { className: 'athena-graph-workbench__tool-button athena-graph-workbench__tool-button--readout', type: 'button', onClick: () => this.resetZoom(), title: 'Reset zoom', "aria-label": 'Reset zoom' },
+                                    zoomPercent,
+                                    "%"),
+                                React.createElement("button", { className: 'athena-graph-workbench__tool-button', type: 'button', onClick: () => this.stepZoom(1.15), title: 'Zoom in', "aria-label": 'Zoom in' },
+                                    React.createElement("span", { className: 'codicon codicon-zoom-in' })),
+                                React.createElement("button", { className: 'athena-graph-workbench__tool-button', type: 'button', onClick: () => this.fitViewportToDiagram(), title: 'Fit graph to viewport', "aria-label": 'Fit graph to viewport' },
+                                    React.createElement("span", { className: 'codicon codicon-screen-full' }))))))));
+    }
+    renderGraphNode(node, selectedSemanticId) {
+        const selected = selectedSemanticId === node.semanticId
+            || node.electricalAnchors.some(anchor => anchor.portSemanticId === selectedSemanticId);
+        const labelClassName = [
+            'athena-graph-workbench__node-label',
+            `athena-graph-workbench__node-label--${node.renderVariant}`,
+            selected ? 'athena-graph-workbench__node-label--selected' : '',
+        ].filter(Boolean).join(' ');
+        const nodeClassName = [
+            'athena-graph-workbench__node',
+            `athena-graph-workbench__node--${node.kind}`,
+            `athena-graph-workbench__node--${node.renderVariant}`,
+            selected ? 'athena-graph-workbench__node--selected' : '',
+        ].filter(Boolean).join(' ');
+        return React.createElement("g", { key: node.id, className: 'athena-graph-workbench__element', "data-athena-graph-interactive": 'true', role: 'button', tabIndex: 0, transform: node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined, onClick: event => void this.handleNodeClick(event, node.semanticId, node.kind, node.label), onKeyDown: event => void this.handleGraphElementKeyDown(event, node.semanticId, node.kind, node.label), onPointerDown: node.kind === 'component'
+                ? event => this.handleComponentPointerDown(event, node.semanticId, node.position.x, node.position.y)
+                : undefined },
+            React.createElement("rect", { className: 'athena-graph-workbench__node-hitbox', x: node.position.x, y: node.position.y, width: node.size.width, height: node.size.height, rx: 0, ry: 0, vectorEffect: 'non-scaling-stroke' }),
+            this.renderGraphNodeBody(node, nodeClassName, labelClassName, selected));
+    }
+    renderGraphNodeBody(node, nodeClassName, labelClassName, selected) {
+        if (node.presentationParts.length > 0 && node.presentationOccurrence) {
+            return React.createElement(React.Fragment, null,
+                React.createElement(athena_graph_workbench_presentation_node_1.AthenaGraphWorkbenchPresentationNode, { node: node, nodeClassName: nodeClassName, labelClassName: labelClassName, selected: selected }),
+                node.renderVariant === 'electrical-device'
+                    ? node.electricalAnchors.map(anchor => this.renderElectricalNodeAnchor(anchor, selected))
+                    : undefined);
+        }
+        if (node.renderVariant === 'electrical-terminal-label') {
+            return React.createElement(React.Fragment, null,
+                node.labelLeader
+                    ? React.createElement("line", { className: `athena-graph-workbench__label-leader ${selected ? 'athena-graph-workbench__label-leader--selected' : ''}`, x1: node.labelLeader.start.x, y1: node.labelLeader.start.y, x2: node.labelLeader.end.x, y2: node.labelLeader.end.y, vectorEffect: 'non-scaling-stroke' })
+                    : undefined,
+                React.createElement("text", { className: labelClassName, x: node.position.x, y: node.position.y + Math.min(node.size.height - 4, 14) }, node.label));
+        }
+        const labelX = node.renderVariant === 'electrical-device'
+            ? node.position.x + 4
+            : node.position.x + (node.kind === 'label' ? 12 : 20);
+        const labelY = node.renderVariant === 'electrical-device'
+            ? Math.max(node.position.y - 8, 16)
+            : node.position.y + (node.kind === 'label' ? 22 : 34);
+        return React.createElement(React.Fragment, null,
+            React.createElement("rect", { className: nodeClassName, x: node.position.x, y: node.position.y, width: node.size.width, height: node.size.height, rx: node.renderVariant === 'electrical-device' ? 0 : node.kind === 'label' ? 3 : 4, ry: node.renderVariant === 'electrical-device' ? 0 : node.kind === 'label' ? 3 : 4, vectorEffect: 'non-scaling-stroke' }),
+            node.renderVariant === 'electrical-device'
+                ? node.electricalAnchors.map(anchor => this.renderElectricalNodeAnchor(anchor, selected))
+                : undefined,
+            React.createElement("text", { className: labelClassName, x: labelX, y: labelY }, node.label),
+            node.kind === 'component' && node.renderVariant !== 'electrical-device'
+                ? React.createElement("text", { className: 'athena-graph-workbench__node-meta', x: node.position.x + 20, y: node.position.y + 58 }, node.semanticId)
+                : undefined);
+    }
+    renderElectricalNodeAnchor(anchor, selected) {
+        const delta = this.electricalAnchorInset(anchor.side);
+        return React.createElement("line", { key: anchor.anchorId, className: `athena-graph-workbench__node-anchor ${selected ? 'athena-graph-workbench__node-anchor--selected' : ''}`, x1: anchor.point.x, y1: anchor.point.y, x2: anchor.point.x + delta.x, y2: anchor.point.y + delta.y, vectorEffect: 'non-scaling-stroke' });
+    }
+    electricalAnchorInset(side) {
+        switch (side.toLowerCase()) {
+            case 'left':
+                return { x: 8, y: 0 };
+            case 'right':
+                return { x: -8, y: 0 };
+            case 'top':
+                return { x: 0, y: 8 };
+            case 'bottom':
+                return { x: 0, y: -8 };
+            default:
+                return { x: 0, y: 0 };
+        }
     }
     abbreviateViewLabel(displayName) {
         const words = displayName.split(/[\s_-]+/).filter(Boolean);
@@ -555,11 +618,18 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
             '--athena-graph-edge-stroke': surfaceTokens.edge.stroke,
         };
         for (const [key, value] of Object.entries(cssVariables)) {
-            if (value) {
+            if (value && this.isThemeRelativeSurfaceToken(value)) {
                 style[key] = value;
             }
         }
         return style;
+    }
+    isThemeRelativeSurfaceToken(value) {
+        const normalized = value.trim();
+        return normalized === 'transparent'
+            || normalized === 'currentColor'
+            || normalized === 'inherit'
+            || normalized.startsWith('var(');
     }
     bindViewportElement = (element) => {
         const nextElement = element ?? undefined;

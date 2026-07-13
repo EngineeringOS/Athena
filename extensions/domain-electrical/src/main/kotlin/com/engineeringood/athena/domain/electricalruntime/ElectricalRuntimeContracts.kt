@@ -12,6 +12,7 @@ import com.engineeringood.athena.plugin.AthenaDomainSchemaSubjectKind
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPluginManifest
 import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaExtensionPoint.PRESENTATION_PACKS
 import com.engineeringood.athena.plugin.AthenaRenderContribution
 import com.engineeringood.athena.plugin.AthenaRenderSurface
 import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
@@ -33,6 +34,7 @@ internal val ELECTRICAL_RUNTIME_MANIFEST = AthenaPluginManifest(
     requiredExtensionPoints = setOf(
         AthenaExtensionPoint.DOMAIN_SEMANTICS,
         AthenaExtensionPoint.VIEW_DEFINITIONS,
+        PRESENTATION_PACKS,
         AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
         AthenaExtensionPoint.RUNTIME_COMMANDS,
         AthenaExtensionPoint.RUNTIME_VIEWS,
@@ -152,24 +154,24 @@ internal val ELECTRICAL_RENDER_CONTRIBUTIONS = listOf(
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.CANVAS,
                 tokens = mapOf(
-                    "canvasTint" to "rgba(22, 18, 12, 0.92)",
-                    "gridMajor" to "rgba(209, 151, 67, 0.16)",
-                    "gridMinor" to "rgba(209, 151, 67, 0.06)",
+                    "canvasTint" to "var(--athena-graph-cabinet-canvas-tint)",
+                    "gridMajor" to "var(--athena-graph-cabinet-grid-major)",
+                    "gridMinor" to "var(--athena-graph-cabinet-grid-minor)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.NODE,
                 tokens = mapOf(
-                    "fill" to "rgba(52, 38, 21, 0.88)",
-                    "stroke" to "rgba(224, 176, 92, 0.94)",
-                    "label" to "#fff3d9",
-                    "meta" to "rgba(235, 206, 150, 0.84)",
+                    "fill" to "var(--athena-graph-cabinet-node-fill)",
+                    "stroke" to "var(--athena-graph-cabinet-node-stroke)",
+                    "label" to "var(--athena-graph-cabinet-node-label)",
+                    "meta" to "var(--athena-graph-cabinet-node-meta)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.EDGE,
                 tokens = mapOf(
-                    "stroke" to "rgba(240, 191, 98, 0.92)",
+                    "stroke" to "var(--athena-graph-cabinet-edge-stroke)",
                 ),
             ),
         ),
@@ -184,24 +186,24 @@ internal val ELECTRICAL_RENDER_CONTRIBUTIONS = listOf(
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.CANVAS,
                 tokens = mapOf(
-                    "canvasTint" to "rgba(9, 24, 33, 0.94)",
-                    "gridMajor" to "rgba(95, 207, 240, 0.16)",
-                    "gridMinor" to "rgba(95, 207, 240, 0.06)",
+                    "canvasTint" to "var(--athena-graph-wiring-canvas-tint)",
+                    "gridMajor" to "var(--athena-graph-wiring-grid-major)",
+                    "gridMinor" to "var(--athena-graph-wiring-grid-minor)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.NODE,
                 tokens = mapOf(
-                    "fill" to "rgba(15, 42, 56, 0.9)",
-                    "stroke" to "rgba(101, 216, 247, 0.96)",
-                    "label" to "#e8fbff",
-                    "meta" to "rgba(158, 225, 240, 0.82)",
+                    "fill" to "var(--athena-graph-wiring-node-fill)",
+                    "stroke" to "var(--athena-graph-wiring-node-stroke)",
+                    "label" to "var(--athena-graph-wiring-node-label)",
+                    "meta" to "var(--athena-graph-wiring-node-meta)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.EDGE,
                 tokens = mapOf(
-                    "stroke" to "rgba(96, 223, 255, 0.94)",
+                    "stroke" to "var(--athena-graph-wiring-edge-stroke)",
                 ),
             ),
         ),

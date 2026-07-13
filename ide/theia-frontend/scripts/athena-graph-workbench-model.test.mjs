@@ -20,13 +20,13 @@ const readyDiagram = {
                 {
                     surface: 'canvas',
                     tokens: {
-                        canvasTint: 'rgba(208, 208, 204, 0.98)'
+                        canvasTint: 'var(--athena-graph-cabinet-canvas-tint)'
                     }
                 },
                 {
                     surface: 'node',
                     tokens: {
-                        fill: 'rgba(248, 248, 244, 0.98)'
+                        fill: 'var(--athena-graph-cabinet-node-fill)'
                     }
                 }
             ]
@@ -67,6 +67,18 @@ const readyDiagram = {
                 symbolKey: 'device.cabinet.default',
                 labelPolicy: 'subject_label',
                 markerKeys: ['owned-device']
+            },
+            {
+                semanticId: 'port:PLC1.out',
+                symbolKey: 'port.cabinet.default',
+                labelPolicy: 'terminal_label',
+                markerKeys: []
+            },
+            {
+                semanticId: 'port:M1.in',
+                symbolKey: 'port.cabinet.default',
+                labelPolicy: 'terminal_label',
+                markerKeys: []
             }
         ]
     },
@@ -154,6 +166,7 @@ const readyDiagram = {
                 id: 'cabinet/projection/node/component_PLC1',
                 semanticId: 'component:PLC1',
                 type: 'node',
+                kind: 'component',
                 label: 'PLC1',
                 position: {
                     x: 120,
@@ -162,6 +175,36 @@ const readyDiagram = {
                 size: {
                     width: 260,
                     height: 160
+                }
+            },
+            {
+                id: 'cabinet/projection/label/port_PLC1_out',
+                semanticId: 'port:PLC1.out',
+                type: 'node',
+                kind: 'label',
+                label: 'OUT',
+                position: {
+                    x: 402,
+                    y: 148
+                },
+                size: {
+                    width: 42,
+                    height: 20
+                }
+            },
+            {
+                id: 'cabinet/projection/label/port_M1_in',
+                semanticId: 'port:M1.in',
+                type: 'node',
+                kind: 'label',
+                label: 'IN',
+                position: {
+                    x: 628,
+                    y: 248
+                },
+                size: {
+                    width: 32,
+                    height: 20
                 }
             }
         ],
@@ -241,21 +284,43 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
     assert.equal(model.headerTitle, 'FactoryLine');
     assert.equal(model.viewLabel, 'Cabinet');
     assert.equal(model.viewFamilyId, 'electrical/cabinet');
+    assert.equal(model.isElectricalFamily, true);
     assert.equal(model.activeSheetId, 'cabinet/sheet/01-main');
     assert.equal(model.sheetCount, 1);
     assert.equal(model.notationPackId, 'electrical-notation/cabinet/default-v1');
     assert.equal(model.crossReferenceCount, 1);
     assert.equal(model.svgViewBox, '0 0 1440 900');
-    assert.equal(model.metrics.nodeCount, 1);
+    assert.equal(model.metrics.nodeCount, 3);
     assert.equal(model.metrics.edgeCount, 1);
     assert.equal(model.sceneBounds.minX, 120);
     assert.equal(model.sceneBounds.minY, 80);
     assert.equal(model.sceneBounds.maxX, 720);
-    assert.equal(model.sceneBounds.maxY, 260);
-    assert.equal(model.surfaceTokens.canvas.canvasTint, 'rgba(208, 208, 204, 0.98)');
-    assert.equal(model.surfaceTokens.node.fill, 'rgba(248, 248, 244, 0.98)');
+    assert.equal(model.sceneBounds.maxY, 268);
+    assert.equal(model.surfaceTokens.canvas.canvasTint, 'var(--athena-graph-cabinet-canvas-tint)');
+    assert.equal(model.surfaceTokens.node.fill, 'var(--athena-graph-cabinet-node-fill)');
     assert.equal(model.edges[0].conductorStyle, 'electrical');
     assert.equal(model.edges[0].path, 'M 380 160 L 540 160 L 540 260 L 720 260');
+    assert.equal(
+        model.nodes.find(node => node.semanticId === 'component:PLC1')?.renderVariant,
+        'electrical-device'
+    );
+    assert.equal(
+        model.nodes.find(node => node.semanticId === 'port:PLC1.out')?.renderVariant,
+        'electrical-terminal-label'
+    );
+    assert.deepEqual(
+        model.nodes.find(node => node.semanticId === 'port:PLC1.out')?.labelLeader,
+        {
+            start: {
+                x: 380,
+                y: 160
+            },
+            end: {
+                x: 402,
+                y: 160
+            }
+        }
+    );
     assert.deepEqual(model.edges[0].bendMarkerPoints, [
         {
             x: 540,
@@ -295,6 +360,249 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
         }
     ]);
     assert.equal(model.emptyState, undefined);
+});
+
+test('prefers Presentation IR occurrences and symbol commands when the diagram includes a governed presentation document', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 1440,
+        canvasHeight: 900,
+        primitivePacks: [
+            {
+                packId: 'electrical-primitives/default-v1',
+                displayName: 'Electrical primitives',
+                familyIds: ['electrical/cabinet'],
+                primitives: [
+                    {
+                        primitiveId: 'electrical.frame.device-box',
+                        displayName: 'Device box',
+                        viewBoxWidth: 140,
+                        viewBoxHeight: 72,
+                        commands: [
+                            {
+                                kind: 'stroke_rectangle',
+                                bounds: { x: 8, y: 12, width: 124, height: 48 },
+                                strokeTokenKey: 'stroke',
+                                strokeWidthTokenKey: 'strokeWidth'
+                            }
+                        ],
+                        textSlots: [],
+                        anchors: [],
+                        tokenDefaults: { stroke: '#202020', strokeWidth: '1.6', label: '#202020' },
+                        supportedOrientations: ['horizontal', 'vertical']
+                    },
+                    {
+                        primitiveId: 'electrical.mark.contact-open',
+                        displayName: 'Open contact mark',
+                        viewBoxWidth: 32,
+                        viewBoxHeight: 32,
+                        commands: [
+                            {
+                                kind: 'svg_path',
+                                pathData: 'M 8 8 L 8 24 M 24 8 L 24 24 M 8 20 L 24 12',
+                                strokeTokenKey: 'stroke',
+                                strokeWidthTokenKey: 'strokeWidth'
+                            }
+                        ],
+                        textSlots: [],
+                        anchors: [],
+                        tokenDefaults: { stroke: '#202020', strokeWidth: '1.6', label: '#202020' },
+                        supportedOrientations: ['horizontal', 'vertical']
+                    },
+                    {
+                        primitiveId: 'electrical.label.terminal',
+                        displayName: 'Terminal label',
+                        viewBoxWidth: 72,
+                        viewBoxHeight: 24,
+                        commands: [
+                            {
+                                kind: 'stroke_line',
+                                start: { x: 0, y: 12 },
+                                end: { x: 14, y: 12 },
+                                strokeTokenKey: 'stroke',
+                                strokeWidthTokenKey: 'strokeWidth'
+                            }
+                        ],
+                        textSlots: [
+                            {
+                                slotId: 'terminal-label',
+                                origin: { x: 20, y: 16 },
+                                tokenKey: 'label'
+                            }
+                        ],
+                        anchors: [
+                            {
+                                alias: 'terminal',
+                                point: { x: 0, y: 12 }
+                            }
+                        ],
+                        tokenDefaults: { stroke: '#202020', strokeWidth: '1.6', label: '#202020' },
+                        supportedOrientations: ['horizontal', 'vertical']
+                    },
+                    {
+                        primitiveId: 'electrical.conductor.orthogonal',
+                        displayName: 'Orthogonal conductor',
+                        viewBoxWidth: 1,
+                        viewBoxHeight: 1,
+                        commands: [],
+                        textSlots: [],
+                        anchors: [],
+                        tokenDefaults: { stroke: '#202020', strokeWidth: '1.6', label: '#202020' },
+                        supportedOrientations: ['horizontal', 'vertical']
+                    }
+                ]
+            }
+        ],
+        compositePacks: [
+            {
+                packId: 'electrical-composites/panel-v1',
+                displayName: 'Electrical panel composites',
+                familyIds: ['electrical/cabinet'],
+                composites: [
+                    {
+                        compositeId: 'electrical.device.switch-panel',
+                        displayName: 'Switch device panel',
+                        viewBoxWidth: 140,
+                        viewBoxHeight: 72,
+                        parts: [
+                            {
+                                partId: 'frame',
+                                primitiveId: 'electrical.frame.device-box',
+                                bounds: { x: 0, y: 0, width: 140, height: 72 },
+                                tokenOverrides: {},
+                                orientation: 'horizontal'
+                            },
+                            {
+                                partId: 'contact-mark',
+                                primitiveId: 'electrical.mark.contact-open',
+                                bounds: { x: 94, y: 22, width: 24, height: 24 },
+                                tokenOverrides: {},
+                                orientation: 'horizontal'
+                            }
+                        ],
+                        textSlots: [
+                            {
+                                slotId: 'subject-label',
+                                origin: { x: 12, y: 10 },
+                                tokenKey: 'label'
+                            }
+                        ],
+                        tokenDefaults: { stroke: '#202020', strokeWidth: '1.6', label: '#202020' },
+                        supportedOrientations: ['horizontal', 'vertical']
+                    }
+                ]
+            }
+        ],
+        occurrences: [
+            {
+                occurrenceId: 'cabinet/presentation/occurrence/component_PLC1',
+                semanticId: 'component:PLC1',
+                referenceKind: 'composite',
+                compositeId: 'electrical.device.switch-panel',
+                bounds: { x: 120, y: 80, width: 260, height: 160 },
+                layer: 'device',
+                displayLabel: 'PLC1',
+                orientation: 'horizontal',
+                markerKeys: ['owned-device'],
+                textValues: { 'subject-label': 'PLC1' },
+                anchorBindings: [
+                    {
+                        alias: 'right-terminal',
+                        anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                        portSemanticId: 'port:PLC1.out',
+                        ownerSemanticId: 'component:PLC1',
+                        sourceLabelId: 'cabinet/projection/label/port_PLC1_out'
+                    }
+                ],
+                tokenOverrides: {},
+                sourceProjectionIds: ['cabinet/projection/node/component_PLC1']
+            },
+            {
+                occurrenceId: 'cabinet/presentation/occurrence/port_PLC1_out',
+                semanticId: 'port:PLC1.out',
+                referenceKind: 'primitive',
+                primitiveId: 'electrical.label.terminal',
+                bounds: { x: 390, y: 142, width: 60, height: 20 },
+                layer: 'label',
+                displayLabel: 'OUT',
+                orientation: 'horizontal',
+                markerKeys: [],
+                textValues: { 'terminal-label': 'OUT' },
+                anchorBindings: [
+                    {
+                        alias: 'terminal',
+                        anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                        portSemanticId: 'port:PLC1.out',
+                        ownerSemanticId: 'component:PLC1',
+                        sourceLabelId: 'cabinet/projection/label/port_PLC1_out'
+                    }
+                ],
+                tokenOverrides: {},
+                sourceProjectionIds: ['cabinet/projection/label/port_PLC1_out']
+            },
+            {
+                occurrenceId: 'cabinet/presentation/occurrence/port_M1_in',
+                semanticId: 'port:M1.in',
+                referenceKind: 'primitive',
+                primitiveId: 'electrical.label.terminal',
+                bounds: { x: 628, y: 248, width: 32, height: 20 },
+                layer: 'label',
+                displayLabel: 'IN',
+                orientation: 'horizontal',
+                markerKeys: [],
+                textValues: { 'terminal-label': 'IN' },
+                anchorBindings: [
+                    {
+                        alias: 'terminal',
+                        anchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                        portSemanticId: 'port:M1.in',
+                        ownerSemanticId: 'component:M1',
+                        sourceLabelId: 'cabinet/projection/label/port_M1_in'
+                    }
+                ],
+                tokenOverrides: {},
+                sourceProjectionIds: ['cabinet/projection/label/port_M1_in']
+            }
+        ],
+        connectors: [
+            {
+                occurrenceId: 'cabinet/presentation/connector/connection_PLC1_out_M1_in',
+                semanticId: 'connection:PLC1.out->M1.in',
+                primitiveId: 'electrical.conductor.orthogonal',
+                routePoints: [
+                    { x: 380, y: 160 },
+                    { x: 540, y: 160 },
+                    { x: 540, y: 260 },
+                    { x: 720, y: 260 }
+                ],
+                layer: 'connection',
+                sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                sourcePortSemanticId: 'port:PLC1.out',
+                targetPortSemanticId: 'port:M1.in',
+                markerKeys: [],
+                tokenOverrides: {},
+                sourceProjectionIds: ['cabinet/projection/connection/connection_PLC1_out_M1_in']
+            }
+        ]
+    };
+    diagram.graph.nodes = [];
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.nodes.length, 3);
+    assert.equal(model.edges.length, 1);
+    assert.equal(
+        model.nodes.find(node => node.semanticId === 'component:PLC1')?.presentationParts[1].commands[0].kind,
+        'svg_path'
+    );
+    assert.equal(
+        model.nodes.find(node => node.semanticId === 'component:PLC1')?.presentationOccurrence?.sourceProjectionIds[0],
+        'cabinet/projection/node/component_PLC1'
+    );
+    assert.equal(model.edges[0].presentationConnector?.routePoints.length, 4);
+    assert.equal(model.edges[0].path, 'M 380 160 L 540 160 L 540 260 L 720 260');
 });
 
 test('builds an inspectable unavailable state without inventing fallback graph truth', () => {

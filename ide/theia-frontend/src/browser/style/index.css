@@ -2,18 +2,38 @@
     --athena-workbench-radius: 4px;
     --athena-workbench-radius-sm: 3px;
     --athena-workbench-row-min-height: 28px;
-    --athena-workbench-border: rgba(255, 255, 255, 0.1);
-    --athena-workbench-border-strong: rgba(255, 255, 255, 0.16);
-    --athena-workbench-text: #dde3ed;
-    --athena-workbench-muted: #97a2b6;
-    --athena-workbench-surface: #1a1f28;
-    --athena-workbench-surface-alt: #151922;
-    --athena-workbench-surface-elevated: #222936;
-    --athena-workbench-selection: rgba(78, 132, 218, 0.2);
-    --athena-workbench-selection-border: rgba(124, 168, 234, 0.34);
-    --athena-workbench-success: #86d19d;
-    --athena-workbench-warning: #f2c27a;
-    --athena-workbench-error: #e28b8b;
+    --athena-workbench-border: color-mix(in srgb, var(--theia-widget-border, #3f4a5a) 72%, transparent);
+    --athena-workbench-border-strong: color-mix(in srgb, var(--theia-widget-border, #566273) 100%, transparent);
+    --athena-workbench-text: var(--theia-foreground, #dde3ed);
+    --athena-workbench-muted: var(--theia-descriptionForeground, #97a2b6);
+    --athena-workbench-surface: var(--theia-editor-background, #1a1f28);
+    --athena-workbench-surface-alt: var(--theia-sideBar-background, var(--theia-editor-background, #151922));
+    --athena-workbench-surface-elevated: color-mix(in srgb, var(--theia-editor-background, #1a1f28) 84%, var(--theia-foreground, #dde3ed) 16%);
+    --athena-workbench-selection: color-mix(in srgb, var(--theia-focusBorder, #4e84da) 22%, transparent);
+    --athena-workbench-selection-border: color-mix(in srgb, var(--theia-focusBorder, #7ca8ea) 36%, transparent);
+    --athena-workbench-accent: var(--theia-button-background, var(--theia-focusBorder, #4e84da));
+    --athena-workbench-accent-hover: var(--theia-button-hoverBackground, color-mix(in srgb, var(--theia-button-background, #4e84da) 84%, white 16%));
+    --athena-workbench-accent-contrast: var(--theia-button-foreground, #ffffff);
+    --athena-workbench-input-surface: var(--theia-input-background, var(--theia-editor-background, #121721));
+    --athena-workbench-success: var(--theia-testing-iconPassed, #86d19d);
+    --athena-workbench-warning: var(--theia-testing-iconQueued, #f2c27a);
+    --athena-workbench-error: var(--theia-errorForeground, #e28b8b);
+    --athena-graph-cabinet-canvas-tint: color-mix(in srgb, var(--athena-workbench-surface) 96%, var(--athena-workbench-text) 4%);
+    --athena-graph-cabinet-grid-major: color-mix(in srgb, var(--athena-workbench-text) 13%, transparent);
+    --athena-graph-cabinet-grid-minor: color-mix(in srgb, var(--athena-workbench-text) 6%, transparent);
+    --athena-graph-cabinet-node-fill: color-mix(in srgb, var(--athena-workbench-surface-elevated) 90%, transparent);
+    --athena-graph-cabinet-node-stroke: color-mix(in srgb, var(--athena-workbench-text) 84%, transparent);
+    --athena-graph-cabinet-node-label: var(--athena-workbench-text);
+    --athena-graph-cabinet-node-meta: var(--athena-workbench-muted);
+    --athena-graph-cabinet-edge-stroke: color-mix(in srgb, var(--athena-workbench-text) 92%, transparent);
+    --athena-graph-wiring-canvas-tint: color-mix(in srgb, var(--athena-workbench-surface) 94%, var(--athena-workbench-accent) 6%);
+    --athena-graph-wiring-grid-major: color-mix(in srgb, var(--athena-workbench-accent) 22%, transparent);
+    --athena-graph-wiring-grid-minor: color-mix(in srgb, var(--athena-workbench-accent) 12%, transparent);
+    --athena-graph-wiring-node-fill: color-mix(in srgb, var(--athena-workbench-surface-elevated) 88%, var(--athena-workbench-accent) 12%);
+    --athena-graph-wiring-node-stroke: color-mix(in srgb, var(--athena-workbench-text) 72%, var(--athena-workbench-accent) 28%);
+    --athena-graph-wiring-node-label: var(--athena-workbench-text);
+    --athena-graph-wiring-node-meta: color-mix(in srgb, var(--athena-workbench-muted) 76%, var(--athena-workbench-accent) 24%);
+    --athena-graph-wiring-edge-stroke: color-mix(in srgb, var(--athena-workbench-accent) 64%, var(--athena-workbench-text) 36%);
 }
 
 .athena-home-widget,
@@ -31,8 +51,7 @@
     box-sizing: border-box;
     min-height: 100%;
     padding: 10px 12px;
-    background:
-        linear-gradient(180deg, rgba(24, 29, 38, 0.98), rgba(17, 21, 28, 0.98));
+    background: var(--athena-workbench-surface-alt);
     color: var(--athena-workbench-text);
     overflow: auto;
 }
@@ -42,8 +61,7 @@
     height: 100%;
     min-height: 100%;
     padding: 0;
-    background:
-        linear-gradient(180deg, rgba(16, 20, 28, 0.99), rgba(10, 13, 19, 0.99));
+    background: var(--athena-workbench-surface);
     color: var(--athena-workbench-text);
     overflow: hidden;
 }
@@ -55,8 +73,8 @@
 .athena-graph-workbench code {
     padding: 1px 5px;
     border-radius: var(--athena-workbench-radius-sm);
-    background: rgba(255, 255, 255, 0.06);
-    color: #d9e5ff;
+    background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 88%, transparent);
+    color: var(--athena-workbench-accent);
 }
 
 .athena-home__panel,
@@ -103,10 +121,10 @@
     justify-content: center;
     width: 22px;
     height: 22px;
-    border: 1px solid rgba(108, 165, 255, 0.35);
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-accent) 60%, transparent);
     border-radius: var(--athena-workbench-radius-sm);
-    background: rgba(47, 96, 177, 0.18);
-    color: #f1f6ff;
+    background: color-mix(in srgb, var(--athena-workbench-accent) 18%, transparent);
+    color: var(--athena-workbench-accent-contrast);
     font-size: 12px;
     font-weight: 700;
 }
@@ -118,7 +136,7 @@
 }
 
 .athena-home__brand-name {
-    color: #edf2fb;
+    color: var(--athena-workbench-text);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -158,7 +176,7 @@
     padding: 0 8px;
     border: 1px solid var(--athena-workbench-border-strong);
     border-radius: var(--athena-workbench-radius);
-    background: rgba(255, 255, 255, 0.04);
+    background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 72%, transparent);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -203,7 +221,7 @@
 
 .athena-home__intro h1 {
     margin: 0 0 6px;
-    color: #eef3fb;
+    color: var(--athena-workbench-text);
     font-size: 22px;
     line-height: 1.2;
 }
@@ -230,8 +248,8 @@
     padding: 0 10px;
     border: 1px solid var(--athena-workbench-border-strong);
     border-radius: var(--athena-workbench-radius);
-    background: #242c39;
-    color: #edf2fb;
+    background: var(--athena-workbench-accent);
+    color: var(--athena-workbench-accent-contrast);
     cursor: pointer;
     font: inherit;
 }
@@ -241,11 +259,12 @@
 .athena-graph-workbench__tool-button:hover,
 .athena-graph-workbench__overlay-toggle:hover,
 .athena-graph-workbench__overlay-toggle--active {
-    background: #2b3545;
+    background: var(--athena-workbench-accent-hover);
 }
 
 .athena-home__action-button--secondary {
-    background: #1f2632;
+    background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 88%, transparent);
+    color: var(--athena-workbench-text);
 }
 
 .athena-home__layout {
@@ -271,7 +290,7 @@
     margin: 0 0 10px;
     padding-bottom: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    color: #edf3fb;
+    color: var(--athena-workbench-text);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -283,7 +302,7 @@
 .athena-semantic-scm__header h2,
 .athena-repository-graph__header h2 {
     margin: 0;
-    color: #edf3fb;
+    color: var(--athena-workbench-text);
     font-size: 16px;
     font-weight: 700;
 }
@@ -292,7 +311,7 @@
 .athena-semantic-scm__eyebrow,
 .athena-repository-graph__eyebrow {
     margin-bottom: 4px;
-    color: #8fb4ff;
+    color: var(--athena-workbench-accent);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -424,7 +443,7 @@
 .athena-semantic-inspection__summary-list strong,
 .athena-repository-graph__summary-list strong,
 .athena-semantic-scm__summary-list strong {
-    color: #f1f5fc;
+    color: var(--athena-workbench-text);
     font-size: 14px;
     font-weight: 700;
 }
@@ -501,12 +520,12 @@
 
 .athena-semantic-inspection__selectable:hover,
 .athena-semantic-scm__selectable:hover {
-    color: #f3f7ff;
+    color: var(--athena-workbench-text);
 }
 
 .athena-semantic-inspection__item-title,
 .athena-repository-graph__item-title {
-    color: #f1f5fc;
+    color: var(--athena-workbench-text);
     font-weight: 700;
 }
 
@@ -531,14 +550,14 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: #eef3fb;
+    color: var(--athena-workbench-text);
     cursor: pointer;
     font: inherit;
     text-align: left;
 }
 
 .athena-graph-workbench__inline-action:hover {
-    color: #ffffff;
+    color: var(--athena-workbench-accent);
 }
 
 .athena-graph-workbench__related-meta {
@@ -604,7 +623,7 @@
     border: 1px solid var(--athena-workbench-border-strong);
     border-radius: var(--athena-workbench-radius);
     padding: 7px 8px;
-    background: #121721;
+    background: var(--athena-workbench-input-surface);
     color: var(--athena-workbench-text);
     font: inherit;
 }
@@ -642,14 +661,14 @@
     padding: 0 10px;
     border: 1px solid var(--athena-workbench-border-strong);
     border-radius: var(--athena-workbench-radius);
-    background: #242c39;
-    color: #edf2fb;
+    background: var(--athena-workbench-accent);
+    color: var(--athena-workbench-accent-contrast);
     cursor: pointer;
     font: inherit;
 }
 
 .athena-ai-reasoning__action:hover {
-    background: #2b3545;
+    background: var(--athena-workbench-accent-hover);
 }
 
 .athena-ai-reasoning__action:disabled {
@@ -658,7 +677,8 @@
 }
 
 .athena-ai-reasoning__action--secondary {
-    background: #1f2632;
+    background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 88%, transparent);
+    color: var(--athena-workbench-text);
 }
 
 .athena-ai-reasoning__proposal-list,
@@ -761,23 +781,23 @@
 }
 
 .athena-graph-workbench__stage {
-    --athena-graph-stage-tint: rgba(13, 20, 33, 0.96);
-    --athena-graph-grid-major: rgba(109, 128, 230, 0.08);
-    --athena-graph-grid-minor: rgba(109, 128, 230, 0.04);
-    --athena-graph-node-fill: rgba(78, 96, 195, 0.34);
-    --athena-graph-node-stroke: rgba(198, 208, 255, 0.78);
-    --athena-graph-node-label: #f4f6ff;
-    --athena-graph-node-meta: rgba(222, 227, 255, 0.72);
-    --athena-graph-edge-stroke: rgba(176, 188, 255, 0.84);
-    --athena-graph-edge-casing: rgba(13, 20, 33, 0.96);
-    --athena-graph-edge-casing-selected: rgba(44, 31, 12, 0.96);
-    --athena-graph-edge-selected: #ffd39d;
-    --athena-graph-terminal-fill: rgba(176, 188, 255, 0.92);
-    --athena-graph-terminal-stroke: rgba(13, 20, 33, 0.98);
-    --athena-graph-terminal-selected-fill: #ffd39d;
-    --athena-graph-terminal-selected-stroke: rgba(44, 31, 12, 0.98);
-    --athena-graph-node-selected-fill: rgba(255, 188, 84, 0.22);
-    --athena-graph-node-selected-stroke: #ffd39d;
+    --athena-graph-stage-tint: color-mix(in srgb, var(--athena-workbench-surface) 94%, black 6%);
+    --athena-graph-grid-major: color-mix(in srgb, var(--athena-workbench-text) 11%, transparent);
+    --athena-graph-grid-minor: color-mix(in srgb, var(--athena-workbench-text) 5%, transparent);
+    --athena-graph-node-fill: color-mix(in srgb, var(--athena-workbench-surface-elevated) 82%, transparent);
+    --athena-graph-node-stroke: color-mix(in srgb, var(--athena-workbench-text) 72%, transparent);
+    --athena-graph-node-label: var(--athena-workbench-text);
+    --athena-graph-node-meta: var(--athena-workbench-muted);
+    --athena-graph-edge-stroke: color-mix(in srgb, var(--athena-workbench-text) 76%, transparent);
+    --athena-graph-edge-casing: color-mix(in srgb, var(--athena-workbench-surface) 96%, transparent);
+    --athena-graph-edge-casing-selected: color-mix(in srgb, var(--athena-workbench-surface) 82%, var(--athena-workbench-accent) 18%);
+    --athena-graph-edge-selected: var(--athena-workbench-accent);
+    --athena-graph-terminal-fill: color-mix(in srgb, var(--athena-workbench-surface) 32%, var(--athena-workbench-text) 68%);
+    --athena-graph-terminal-stroke: var(--athena-workbench-surface);
+    --athena-graph-terminal-selected-fill: color-mix(in srgb, var(--athena-workbench-accent) 72%, white 28%);
+    --athena-graph-terminal-selected-stroke: var(--athena-workbench-accent);
+    --athena-graph-node-selected-fill: color-mix(in srgb, var(--athena-workbench-accent) 18%, transparent);
+    --athena-graph-node-selected-stroke: var(--athena-workbench-accent);
     position: relative;
     flex: 1 1 auto;
     height: 100%;
@@ -785,8 +805,27 @@
     overflow: hidden;
     border: 0;
     border-radius: 0;
-    background:
-        linear-gradient(180deg, var(--athena-graph-stage-tint), rgba(10, 14, 22, 0.98));
+    background: var(--athena-graph-stage-tint);
+}
+
+.athena-graph-workbench__stage--electrical {
+    --athena-graph-stage-tint: color-mix(in srgb, var(--athena-workbench-surface) 94%, black 6%);
+    --athena-graph-grid-major: color-mix(in srgb, var(--athena-workbench-text) 13%, transparent);
+    --athena-graph-grid-minor: color-mix(in srgb, var(--athena-workbench-text) 6%, transparent);
+    --athena-graph-node-fill: color-mix(in srgb, var(--athena-workbench-surface-elevated) 88%, transparent);
+    --athena-graph-node-stroke: color-mix(in srgb, var(--athena-workbench-text) 84%, transparent);
+    --athena-graph-node-label: var(--athena-workbench-text);
+    --athena-graph-node-meta: var(--athena-workbench-muted);
+    --athena-graph-edge-stroke: color-mix(in srgb, var(--athena-workbench-text) 92%, transparent);
+    --athena-graph-edge-casing: transparent;
+    --athena-graph-edge-casing-selected: transparent;
+    --athena-graph-edge-selected: var(--athena-workbench-accent);
+    --athena-graph-terminal-fill: color-mix(in srgb, var(--athena-workbench-surface) 24%, var(--athena-workbench-text) 76%);
+    --athena-graph-terminal-stroke: var(--athena-workbench-text);
+    --athena-graph-terminal-selected-fill: color-mix(in srgb, var(--athena-workbench-accent) 72%, white 28%);
+    --athena-graph-terminal-selected-stroke: var(--athena-workbench-accent);
+    --athena-graph-node-selected-fill: color-mix(in srgb, var(--athena-workbench-accent) 18%, transparent);
+    --athena-graph-node-selected-stroke: var(--athena-workbench-accent);
 }
 
 .athena-graph-workbench__stage--panning,
@@ -811,6 +850,16 @@
     pointer-events: auto;
 }
 
+.athena-graph-workbench__overlay--bottom-right {
+    top: auto;
+    left: auto;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    justify-content: flex-end;
+    pointer-events: auto;
+}
+
 .athena-graph-workbench__floating-bar {
     display: flex;
     align-items: center;
@@ -820,7 +869,7 @@
     padding: 4px 4px 4px 0;
     border: 0;
     border-radius: 0;
-    background: rgba(13, 18, 27, 0.72);
+    background: transparent;
     pointer-events: auto;
 }
 
@@ -833,7 +882,7 @@
 
 .athena-graph-workbench__identity h2 {
     margin: 0;
-    color: #eef3fb;
+    color: var(--athena-workbench-text);
     font-size: 13px;
     font-weight: 700;
     white-space: nowrap;
@@ -842,9 +891,10 @@
 .athena-graph-workbench__meta-chip {
     max-width: 160px;
     padding: 0 6px;
-    border: 0;
+    border-color: transparent;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
+    background: transparent;
+    color: var(--athena-workbench-muted);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -862,15 +912,16 @@
 .athena-graph-workbench__tool-button {
     min-width: 28px;
     padding: 0 8px;
-    border: 0;
+    border-color: transparent;
     border-radius: 0;
-    background: rgba(255, 255, 255, 0.06);
+    background: transparent;
+    color: var(--athena-workbench-text);
 }
 
 .athena-graph-workbench__tool-button--active {
-    background: rgba(124, 168, 234, 0.22);
-    box-shadow: inset 0 -2px 0 rgba(165, 197, 255, 0.92);
-    color: #f4f8ff;
+    background: transparent;
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--athena-workbench-accent) 92%, white 8%);
+    color: var(--athena-workbench-text);
 }
 
 .athena-graph-workbench__tool-button--readout {
@@ -888,9 +939,17 @@
 .athena-graph-workbench__overlay-toggle {
     width: 30px;
     padding: 0;
-    border: 0;
+    border-color: transparent;
     border-radius: 0;
-    background: rgba(255, 255, 255, 0.08);
+    background: transparent;
+    color: var(--athena-workbench-text);
+}
+
+.athena-graph-workbench__tool-button:hover,
+.athena-graph-workbench__overlay-toggle:hover,
+.athena-graph-workbench__overlay-toggle--active {
+    background: color-mix(in srgb, var(--athena-workbench-accent) 12%, transparent);
+    color: var(--athena-workbench-text);
 }
 
 .athena-graph-workbench__floating-panel {
@@ -899,6 +958,16 @@
     gap: 6px;
     align-self: flex-end;
     width: min(320px, calc(100% - 20px));
+    pointer-events: auto;
+}
+
+.athena-graph-workbench__zoom-dock {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 34px;
+    padding: 4px 0;
+    background: transparent;
     pointer-events: auto;
 }
 
@@ -961,6 +1030,10 @@
     background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
 }
 
+.athena-graph-workbench__stage--electrical .athena-graph-workbench__grid {
+    opacity: 1;
+}
+
 .athena-graph-workbench__canvas {
     position: absolute;
     top: 0;
@@ -1008,6 +1081,25 @@
     stroke-width: 7.5;
 }
 
+.athena-graph-workbench__stage--electrical .athena-graph-workbench__edge {
+    stroke-width: 1.8;
+    stroke-linejoin: miter;
+    stroke-linecap: square;
+    opacity: 1;
+}
+
+.athena-graph-workbench__stage--electrical .athena-graph-workbench__edge--selected {
+    stroke-width: 2.6;
+}
+
+.athena-graph-workbench__stage--electrical .athena-graph-workbench__edge-casing {
+    display: none;
+}
+
+.athena-graph-workbench__stage--electrical .athena-graph-workbench__edge-marker {
+    display: none;
+}
+
 .athena-graph-workbench__edge-terminal,
 .athena-graph-workbench__edge-marker {
     fill: var(--athena-graph-terminal-fill);
@@ -1027,9 +1119,25 @@
     stroke-width: 2.5;
 }
 
+.athena-graph-workbench__node-hitbox {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 0;
+}
+
 .athena-graph-workbench__node--label {
-    fill: rgba(255, 255, 255, 0.08);
+    fill: color-mix(in srgb, var(--athena-workbench-surface-elevated) 60%, transparent);
     stroke-width: 1.6;
+}
+
+.athena-graph-workbench__node--electrical-device {
+    fill: color-mix(in srgb, var(--athena-workbench-surface-elevated) 88%, transparent);
+    stroke-width: 1.6;
+}
+
+.athena-graph-workbench__node--electrical-terminal-label {
+    fill: transparent;
+    stroke: transparent;
 }
 
 .athena-graph-workbench__node--selected {
@@ -1045,35 +1153,47 @@
     user-select: none;
 }
 
+.athena-graph-workbench__node-label--electrical-device {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.athena-graph-workbench__node-label--electrical-terminal-label {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.athena-graph-workbench__node-label--selected {
+    fill: var(--athena-graph-node-selected-stroke);
+}
+
 .athena-graph-workbench__node-meta {
     fill: var(--athena-graph-node-meta);
     font-size: 11px;
     user-select: none;
 }
 
-.athena-graph-workbench__statusline {
-    position: absolute;
-    left: 10px;
-    bottom: 10px;
-    z-index: 2;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 28px;
-    padding: 4px 8px;
-    border: 0;
-    border-radius: 0;
-    background: rgba(19, 24, 34, 0.68);
-    color: var(--athena-workbench-muted);
+.athena-graph-workbench__label-leader,
+.athena-graph-workbench__node-anchor {
+    stroke: var(--athena-graph-node-stroke);
+    stroke-width: 1.4;
 }
 
-.athena-graph-workbench__statusline span {
+.athena-graph-workbench__label-leader--selected,
+.athena-graph-workbench__node-anchor--selected {
+    stroke: var(--athena-graph-node-selected-stroke);
+    stroke-width: 1.8;
+}
+
+.athena-graph-workbench__statusline-readout {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
+    min-height: 20px;
+    padding: 0 6px;
+    color: var(--athena-workbench-muted);
     font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .athena-graph-workbench__status {
@@ -1083,9 +1203,9 @@
     min-width: 28px;
     min-height: 30px;
     padding: 0 8px;
-    border: 0;
+    border-color: transparent;
     border-radius: 0;
-    background: rgba(255, 255, 255, 0.08);
+    background: transparent;
 }
 
 .athena-graph-workbench__status-icon {
@@ -1118,7 +1238,7 @@
 .athena-semantic-scm__empty h2,
 .athena-repository-graph__empty h2 {
     margin: 0 0 6px;
-    color: #eef3fb;
+    color: var(--athena-workbench-text);
     font-size: 16px;
     font-weight: 700;
 }
@@ -1175,5 +1295,15 @@
 
     .athena-graph-workbench__floating-panel {
         width: min(240px, calc(100vw - 28px));
+    }
+
+    .athena-graph-workbench__overlay--bottom-right {
+        left: 10px;
+        justify-content: flex-start;
+    }
+
+    .athena-graph-workbench__zoom-dock {
+        flex-wrap: wrap;
+        row-gap: 6px;
     }
 }

@@ -51,6 +51,15 @@ import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
 import com.engineeringood.athena.projection.ProjectionBounds
 import com.engineeringood.athena.projection.ProjectionConnection
 import com.engineeringood.athena.projection.ProjectionConnectionId
+import com.engineeringood.athena.projection.ElectricalAnchor
+import com.engineeringood.athena.projection.ElectricalAnchorId
+import com.engineeringood.athena.projection.ElectricalAnchorSide
+import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
+import com.engineeringood.athena.projection.ElectricalConnectionEndpointId
+import com.engineeringood.athena.projection.ElectricalConnectionEndpointRole
+import com.engineeringood.athena.projection.ElectricalRoutingCorridor
+import com.engineeringood.athena.projection.ElectricalRoutingCorridorId
+import com.engineeringood.athena.projection.ElectricalRoutingStyle
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionLabel
 import com.engineeringood.athena.projection.ProjectionLabelId
@@ -1506,24 +1515,24 @@ class AthenaCompilerTest {
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.CANVAS,
                 tokens = mapOf(
-                    "canvasTint" to "rgba(22, 18, 12, 0.92)",
-                    "gridMajor" to "rgba(209, 151, 67, 0.16)",
-                    "gridMinor" to "rgba(209, 151, 67, 0.06)",
+                    "canvasTint" to "var(--athena-graph-cabinet-canvas-tint)",
+                    "gridMajor" to "var(--athena-graph-cabinet-grid-major)",
+                    "gridMinor" to "var(--athena-graph-cabinet-grid-minor)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.NODE,
                 tokens = mapOf(
-                    "fill" to "rgba(52, 38, 21, 0.88)",
-                    "stroke" to "rgba(224, 176, 92, 0.94)",
-                    "label" to "#fff3d9",
-                    "meta" to "rgba(235, 206, 150, 0.84)",
+                    "fill" to "var(--athena-graph-cabinet-node-fill)",
+                    "stroke" to "var(--athena-graph-cabinet-node-stroke)",
+                    "label" to "var(--athena-graph-cabinet-node-label)",
+                    "meta" to "var(--athena-graph-cabinet-node-meta)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.EDGE,
                 tokens = mapOf(
-                    "stroke" to "rgba(240, 191, 98, 0.92)",
+                    "stroke" to "var(--athena-graph-cabinet-edge-stroke)",
                 ),
             ),
         )
@@ -1534,24 +1543,24 @@ class AthenaCompilerTest {
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.CANVAS,
                 tokens = mapOf(
-                    "canvasTint" to "rgba(9, 24, 33, 0.94)",
-                    "gridMajor" to "rgba(95, 207, 240, 0.16)",
-                    "gridMinor" to "rgba(95, 207, 240, 0.06)",
+                    "canvasTint" to "var(--athena-graph-wiring-canvas-tint)",
+                    "gridMajor" to "var(--athena-graph-wiring-grid-major)",
+                    "gridMinor" to "var(--athena-graph-wiring-grid-minor)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.NODE,
                 tokens = mapOf(
-                    "fill" to "rgba(15, 42, 56, 0.9)",
-                    "stroke" to "rgba(101, 216, 247, 0.96)",
-                    "label" to "#e8fbff",
-                    "meta" to "rgba(158, 225, 240, 0.82)",
+                    "fill" to "var(--athena-graph-wiring-node-fill)",
+                    "stroke" to "var(--athena-graph-wiring-node-stroke)",
+                    "label" to "var(--athena-graph-wiring-node-label)",
+                    "meta" to "var(--athena-graph-wiring-node-meta)",
                 ),
             ),
             AthenaRenderSurfaceMapping(
                 surface = AthenaRenderSurface.EDGE,
                 tokens = mapOf(
-                    "stroke" to "rgba(96, 223, 255, 0.94)",
+                    "stroke" to "var(--athena-graph-wiring-edge-stroke)",
                 ),
             ),
         )
@@ -1976,6 +1985,66 @@ class AthenaCompilerTest {
                     ),
                 ),
             ),
+            electricalAnchors = listOf(
+                ElectricalAnchor(
+                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_PLC1_out/anchor"),
+                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
+                    ownerSemanticId = StableSemanticIdentity("component:PLC1"),
+                    nodeId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
+                    labelId = ProjectionLabelId("cabinet/projection/label/port_PLC1_out"),
+                    position = ProjectionPoint(x = 80, y = 60),
+                    side = ElectricalAnchorSide.TOP,
+                ),
+                ElectricalAnchor(
+                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_M1_in/anchor"),
+                    portSemanticId = StableSemanticIdentity("port:M1.in"),
+                    ownerSemanticId = StableSemanticIdentity("component:M1"),
+                    nodeId = ProjectionNodeId("cabinet/projection/node/component_M1"),
+                    labelId = ProjectionLabelId("cabinet/projection/label/port_M1_in"),
+                    position = ProjectionPoint(x = 340, y = 60),
+                    side = ElectricalAnchorSide.TOP,
+                ),
+            ),
+            electricalConnectionEndpoints = listOf(
+                ElectricalConnectionEndpoint(
+                    endpointId = ElectricalConnectionEndpointId(
+                        "cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/source",
+                    ),
+                    projectionConnectionId = ProjectionConnectionId(
+                        "cabinet/projection/connection/connection_PLC1_out_M1_in",
+                    ),
+                    connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    endpointRole = ElectricalConnectionEndpointRole.SOURCE,
+                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
+                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_PLC1_out/anchor"),
+                ),
+                ElectricalConnectionEndpoint(
+                    endpointId = ElectricalConnectionEndpointId(
+                        "cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/target",
+                    ),
+                    projectionConnectionId = ProjectionConnectionId(
+                        "cabinet/projection/connection/connection_PLC1_out_M1_in",
+                    ),
+                    connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    endpointRole = ElectricalConnectionEndpointRole.TARGET,
+                    portSemanticId = StableSemanticIdentity("port:M1.in"),
+                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_M1_in/anchor"),
+                ),
+            ),
+            electricalRoutingCorridors = listOf(
+                ElectricalRoutingCorridor(
+                    corridorId = ElectricalRoutingCorridorId(
+                        "cabinet/projection/connection/connection_PLC1_out_M1_in/corridor",
+                    ),
+                    projectionConnectionId = ProjectionConnectionId(
+                        "cabinet/projection/connection/connection_PLC1_out_M1_in",
+                    ),
+                    connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    sourceAnchorId = ElectricalAnchorId("cabinet/projection/label/port_PLC1_out/anchor"),
+                    targetAnchorId = ElectricalAnchorId("cabinet/projection/label/port_M1_in/anchor"),
+                    routingStyle = ElectricalRoutingStyle.ORTHOGONAL,
+                ),
+            ),
         )
     }
 
@@ -2090,6 +2159,66 @@ class AthenaCompilerTest {
                     ),
                 ),
             ),
+            electricalAnchors = listOf(
+                ElectricalAnchor(
+                    anchorId = ElectricalAnchorId("wiring/projection/label/port_PLC1_out/anchor"),
+                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
+                    ownerSemanticId = StableSemanticIdentity("component:PLC1"),
+                    nodeId = ProjectionNodeId("wiring/projection/node/component_PLC1"),
+                    labelId = ProjectionLabelId("wiring/projection/label/port_PLC1_out"),
+                    position = ProjectionPoint(x = 150, y = 81),
+                    side = ElectricalAnchorSide.RIGHT,
+                ),
+                ElectricalAnchor(
+                    anchorId = ElectricalAnchorId("wiring/projection/label/port_M1_in/anchor"),
+                    portSemanticId = StableSemanticIdentity("port:M1.in"),
+                    ownerSemanticId = StableSemanticIdentity("component:M1"),
+                    nodeId = ProjectionNodeId("wiring/projection/node/component_M1"),
+                    labelId = ProjectionLabelId("wiring/projection/label/port_M1_in"),
+                    position = ProjectionPoint(x = 150, y = 160),
+                    side = ElectricalAnchorSide.RIGHT,
+                ),
+            ),
+            electricalConnectionEndpoints = listOf(
+                ElectricalConnectionEndpoint(
+                    endpointId = ElectricalConnectionEndpointId(
+                        "wiring/projection/connection/connection_PLC1_out_M1_in/endpoint/source",
+                    ),
+                    projectionConnectionId = ProjectionConnectionId(
+                        "wiring/projection/connection/connection_PLC1_out_M1_in",
+                    ),
+                    connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    endpointRole = ElectricalConnectionEndpointRole.SOURCE,
+                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
+                    anchorId = ElectricalAnchorId("wiring/projection/label/port_PLC1_out/anchor"),
+                ),
+                ElectricalConnectionEndpoint(
+                    endpointId = ElectricalConnectionEndpointId(
+                        "wiring/projection/connection/connection_PLC1_out_M1_in/endpoint/target",
+                    ),
+                    projectionConnectionId = ProjectionConnectionId(
+                        "wiring/projection/connection/connection_PLC1_out_M1_in",
+                    ),
+                    connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    endpointRole = ElectricalConnectionEndpointRole.TARGET,
+                    portSemanticId = StableSemanticIdentity("port:M1.in"),
+                    anchorId = ElectricalAnchorId("wiring/projection/label/port_M1_in/anchor"),
+                ),
+            ),
+            electricalRoutingCorridors = listOf(
+                ElectricalRoutingCorridor(
+                    corridorId = ElectricalRoutingCorridorId(
+                        "wiring/projection/connection/connection_PLC1_out_M1_in/corridor",
+                    ),
+                    projectionConnectionId = ProjectionConnectionId(
+                        "wiring/projection/connection/connection_PLC1_out_M1_in",
+                    ),
+                    connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    sourceAnchorId = ElectricalAnchorId("wiring/projection/label/port_PLC1_out/anchor"),
+                    targetAnchorId = ElectricalAnchorId("wiring/projection/label/port_M1_in/anchor"),
+                    routingStyle = ElectricalRoutingStyle.ORTHOGONAL,
+                ),
+            ),
         )
     }
 
@@ -2109,6 +2238,8 @@ class AthenaCompilerTest {
                     "ownership-relationships",
                     "connectivity-relationships",
                     "grouped-placement",
+                    "electrical-anchors",
+                    "electrical-routing-corridors",
                 ),
                 semanticCommandIds = listOf(
                     "connect-ports",
@@ -2148,6 +2279,8 @@ class AthenaCompilerTest {
                     "ports",
                     "signal-groups",
                     "connectivity-relationships",
+                    "electrical-anchors",
+                    "electrical-routing-corridors",
                 ),
                 transientInteractionKinds = listOf(
                     "navigate-view",

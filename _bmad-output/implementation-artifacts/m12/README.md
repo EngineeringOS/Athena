@@ -23,7 +23,7 @@ M12 is the renderer-trust milestone: electrical readability, routing ownership, 
 
 ## Current Status
 
-- Active story: milestone closeout and usage publication
+- Milestone state: closed
 - Milestone tracking: `sprint-status.yaml`
 - Planning inputs:
   - `_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-12-m12/prd.md`
@@ -37,3 +37,20 @@ M12 is the renderer-trust milestone: electrical readability, routing ownership, 
 - Epic 3: dense Athena-owned panel language aligned to the IDE surface
 - Epic 4: larger renderer benchmark fixture, compiler proof, and explicit visual validation path
 - Epic 5: repeated-reference reveal plus related-subject navigation without renderer-owned identities
+
+## Usage And Recap
+
+- Usage guide: `docs/usages/m12-proof-usage.md`
+- Milestone summary: `milestone-summary-2026-07-12.md`
+- Milestone retrospective: `m12-retrospective-2026-07-12.md`
+
+## Verification Snapshot
+
+M12 closeout was verified with sequential Java 25 and Node runs:
+
+- `yarn test` in `integrations/graph-glsp`
+- `yarn test` in `ide/theia-frontend`
+- `yarn build` in `ide/theia-product`
+- `:extensions:domain-electrical:test --tests com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPluginTest`
+- `:kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest`
+- `:kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerM12RendererBenchmarkTest`

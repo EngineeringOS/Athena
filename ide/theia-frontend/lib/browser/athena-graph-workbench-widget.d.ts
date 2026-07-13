@@ -4,7 +4,7 @@ import { DisposableCollection } from '@theia/core/lib/common/disposable';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { AthenaGraphAdapterService } from './athena-graph-adapter-service';
 import { type AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
-import { AthenaGraphViewportSize, AthenaGraphViewportTransform, buildAthenaGraphWorkbenchModel } from './athena-graph-workbench-model';
+import { AthenaGraphWorkbenchNode, AthenaGraphViewportSize, AthenaGraphViewportTransform, buildAthenaGraphWorkbenchModel } from './athena-graph-workbench-model';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import { type AthenaActiveSemanticSelection } from './athena-semantic-selection-model';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
@@ -43,6 +43,13 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected scheduleRefresh(): void;
     protected refreshDiagram(): Promise<void>;
     protected render(): React.ReactNode;
+    protected renderGraphNode(node: AthenaGraphWorkbenchNode, selectedSemanticId: string | undefined): React.ReactNode;
+    protected renderGraphNodeBody(node: AthenaGraphWorkbenchNode, nodeClassName: string, labelClassName: string, selected: boolean): React.ReactNode;
+    protected renderElectricalNodeAnchor(anchor: AthenaGraphWorkbenchNode['electricalAnchors'][number], selected: boolean): React.ReactNode;
+    protected electricalAnchorInset(side: string): {
+        x: number;
+        y: number;
+    };
     protected abbreviateViewLabel(displayName: string): string;
     protected viewIconClass(viewId: string): string;
     protected viewAriaLabel(view: {
@@ -55,6 +62,7 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected toggleConnectPortsMode(): void;
     protected statusIconClass(statusTone: ReturnType<typeof buildAthenaGraphWorkbenchModel>['statusTone']): string;
     protected buildStageStyle(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.CSSProperties;
+    protected isThemeRelativeSurfaceToken(value: string): boolean;
     protected bindViewportElement: (element: HTMLDivElement | null) => void;
     protected syncViewportSize(): void;
     protected fitViewportToDiagram(): void;

@@ -7,7 +7,9 @@ import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { AthenaGraphAdapterService } from './athena-graph-adapter-service';
 import { type AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
 import { AthenaGraphWorkbenchEdgeLayer } from './athena-graph-workbench-edge-layer';
+import { AthenaGraphWorkbenchPresentationNode } from './athena-graph-workbench-presentation-node';
 import {
+    AthenaGraphWorkbenchNode,
     AthenaGraphViewportSize,
     AthenaGraphViewportTransform,
     buildAthenaGraphWorkbenchModel,
@@ -239,9 +241,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const connectPortsSupported = this.graphAdapterService.supportsConnectPortsIntent(this.diagram);
         const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
-        const lastIntentSummary = this.lastGraphCommandIntent
-            ? `${this.lastGraphCommandIntent.intentId} ${this.lastGraphCommandIntent.status}`
-            : undefined;
         const canvasStyle: React.CSSProperties = {
             width: `${model.canvas.width}px`,
             height: `${model.canvas.height}px`,
@@ -249,10 +248,16 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             transformOrigin: '0 0',
         };
 
+        const stageClassName = [
+            'athena-graph-workbench__stage',
+            this.panState ? 'athena-graph-workbench__stage--panning' : '',
+            model.isElectricalFamily ? 'athena-graph-workbench__stage--electrical' : '',
+        ].filter(Boolean).join(' ');
+
         return <div className='athena-graph-workbench'>
             <div className='athena-graph-workbench__workspace'>
                 <section
-                    className={`athena-graph-workbench__stage ${this.panState ? 'athena-graph-workbench__stage--panning' : ''}`}
+                    className={stageClassName}
                     style={stageStyle}
                     onClick={this.handleStageClick}
                 >
@@ -284,18 +289,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                                 <span className={`codicon ${this.viewIconClass(view.viewId)}`} />
                                             </button>)}
                                         </div>
-                                        <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1 / 1.15)} title='Zoom out' aria-label='Zoom out'>
-                                            <span className='codicon codicon-zoom-out' />
-                                        </button>
-                                        <button className='athena-graph-workbench__tool-button athena-graph-workbench__tool-button--readout' type='button' onClick={() => this.resetZoom()} title='Reset zoom' aria-label='Reset zoom'>
-                                            {zoomPercent}%
-                                        </button>
-                                        <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1.15)} title='Zoom in' aria-label='Zoom in'>
-                                            <span className='codicon codicon-zoom-in' />
-                                        </button>
-                                        <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.fitViewportToDiagram()} title='Fit graph to viewport' aria-label='Fit graph to viewport'>
-                                            <span className='codicon codicon-screen-full' />
-                                        </button>
                                         {connectPortsSupported
                                             ? <button
                                                 className={`athena-graph-workbench__tool-button ${this.connectPortsArmed || this.connectPortsSource ? 'athena-graph-workbench__tool-button--active' : ''}`}
@@ -571,66 +564,195 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                         selectedSemanticId={selectedSemanticId}
                                         onSelectSemanticId={semanticId => this.semanticSelectionService.selectSemanticId(semanticId)}
                                     />
-                                    {model.nodes.map(node => <g
-                                        key={node.id}
-                                        className='athena-graph-workbench__element'
-                                        data-athena-graph-interactive='true'
-                                        role='button'
-                                        tabIndex={0}
-                                        transform={node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined}
-                                        onClick={event => void this.handleNodeClick(event, node.semanticId, node.kind, node.label)}
-                                        onKeyDown={event => void this.handleGraphElementKeyDown(event, node.semanticId, node.kind, node.label)}
-                                        onPointerDown={node.kind === 'component'
-                                            ? event => this.handleComponentPointerDown(event, node.semanticId, node.position.x, node.position.y)
-                                            : undefined}
-                                    >
-                                        <rect
-                                            className={`athena-graph-workbench__node athena-graph-workbench__node--${node.kind} ${selectedSemanticId === node.semanticId ? 'athena-graph-workbench__node--selected' : ''}`}
-                                            x={node.position.x}
-                                            y={node.position.y}
-                                            width={node.size.width}
-                                            height={node.size.height}
-                                            rx={node.kind === 'label' ? 3 : 4}
-                                            ry={node.kind === 'label' ? 3 : 4}
-                                            vectorEffect='non-scaling-stroke'
-                                        />
-                                        <text
-                                            className='athena-graph-workbench__node-label'
-                                            x={node.position.x + (node.kind === 'label' ? 12 : 20)}
-                                            y={node.position.y + (node.kind === 'label' ? 22 : 34)}
-                                        >
-                                            {node.label}
-                                        </text>
-                                        {node.kind === 'component'
-                                            ? <text
-                                                className='athena-graph-workbench__node-meta'
-                                                x={node.position.x + 20}
-                                                y={node.position.y + 58}
-                                            >
-                                                {node.semanticId}
-                                            </text>
-                                            : undefined}
-                                    </g>)}
+                                    {model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId))}
                                 </svg>
                             </div>
 
-                            <div className='athena-graph-workbench__statusline'>
-                                <span title={`Canvas size ${model.canvas.width} x ${model.canvas.height}`} aria-label={`Canvas size ${model.canvas.width} x ${model.canvas.height}`}>
-                                    <span className='codicon codicon-device-desktop' />
-                                </span>
-                                <span title={model.semanticPath} aria-label={`Semantic path ${model.semanticPath}`}>
-                                    <span className='codicon codicon-git-branch' />
-                                </span>
-                                {lastIntentSummary
-                                    ? <span title={lastIntentSummary} aria-label={`Last Athena graph intent ${lastIntentSummary}`}>
-                                        <span className='codicon codicon-symbol-event' />
-                                    </span>
-                                    : undefined}
+                            <div className='athena-graph-workbench__overlay athena-graph-workbench__overlay--bottom-right'>
+                                <div className='athena-graph-workbench__zoom-dock'>
+                                    <div
+                                        className='athena-graph-workbench__statusline-readout'
+                                        title={`Canvas size ${model.canvas.width} x ${model.canvas.height}`}
+                                        aria-label={`Canvas size ${model.canvas.width} x ${model.canvas.height}`}
+                                    >
+                                        Canvas {model.canvas.width} x {model.canvas.height}
+                                    </div>
+                                    <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1 / 1.15)} title='Zoom out' aria-label='Zoom out'>
+                                        <span className='codicon codicon-zoom-out' />
+                                    </button>
+                                    <button className='athena-graph-workbench__tool-button athena-graph-workbench__tool-button--readout' type='button' onClick={() => this.resetZoom()} title='Reset zoom' aria-label='Reset zoom'>
+                                        {zoomPercent}%
+                                    </button>
+                                    <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1.15)} title='Zoom in' aria-label='Zoom in'>
+                                        <span className='codicon codicon-zoom-in' />
+                                    </button>
+                                    <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.fitViewportToDiagram()} title='Fit graph to viewport' aria-label='Fit graph to viewport'>
+                                        <span className='codicon codicon-screen-full' />
+                                    </button>
+                                </div>
                             </div>
                         </>}
                 </section>
             </div>
         </div>;
+    }
+
+    protected renderGraphNode(
+        node: AthenaGraphWorkbenchNode,
+        selectedSemanticId: string | undefined,
+    ): React.ReactNode {
+        const selected = selectedSemanticId === node.semanticId
+            || node.electricalAnchors.some(anchor => anchor.portSemanticId === selectedSemanticId);
+        const labelClassName = [
+            'athena-graph-workbench__node-label',
+            `athena-graph-workbench__node-label--${node.renderVariant}`,
+            selected ? 'athena-graph-workbench__node-label--selected' : '',
+        ].filter(Boolean).join(' ');
+        const nodeClassName = [
+            'athena-graph-workbench__node',
+            `athena-graph-workbench__node--${node.kind}`,
+            `athena-graph-workbench__node--${node.renderVariant}`,
+            selected ? 'athena-graph-workbench__node--selected' : '',
+        ].filter(Boolean).join(' ');
+
+        return <g
+            key={node.id}
+            className='athena-graph-workbench__element'
+            data-athena-graph-interactive='true'
+            role='button'
+            tabIndex={0}
+            transform={node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined}
+            onClick={event => void this.handleNodeClick(event, node.semanticId, node.kind, node.label)}
+            onKeyDown={event => void this.handleGraphElementKeyDown(event, node.semanticId, node.kind, node.label)}
+            onPointerDown={node.kind === 'component'
+                ? event => this.handleComponentPointerDown(event, node.semanticId, node.position.x, node.position.y)
+                : undefined}
+        >
+            <rect
+                className='athena-graph-workbench__node-hitbox'
+                x={node.position.x}
+                y={node.position.y}
+                width={node.size.width}
+                height={node.size.height}
+                rx={0}
+                ry={0}
+                vectorEffect='non-scaling-stroke'
+            />
+            {this.renderGraphNodeBody(node, nodeClassName, labelClassName, selected)}
+        </g>;
+    }
+
+    protected renderGraphNodeBody(
+        node: AthenaGraphWorkbenchNode,
+        nodeClassName: string,
+        labelClassName: string,
+        selected: boolean,
+    ): React.ReactNode {
+        if (node.presentationParts.length > 0 && node.presentationOccurrence) {
+            return <>
+                <AthenaGraphWorkbenchPresentationNode
+                    node={node}
+                    nodeClassName={nodeClassName}
+                    labelClassName={labelClassName}
+                    selected={selected}
+                />
+                {node.renderVariant === 'electrical-device'
+                    ? node.electricalAnchors.map(anchor => this.renderElectricalNodeAnchor(anchor, selected))
+                    : undefined}
+            </>;
+        }
+
+        if (node.renderVariant === 'electrical-terminal-label') {
+            return <>
+                {node.labelLeader
+                    ? <line
+                        className={`athena-graph-workbench__label-leader ${selected ? 'athena-graph-workbench__label-leader--selected' : ''}`}
+                        x1={node.labelLeader.start.x}
+                        y1={node.labelLeader.start.y}
+                        x2={node.labelLeader.end.x}
+                        y2={node.labelLeader.end.y}
+                        vectorEffect='non-scaling-stroke'
+                    />
+                    : undefined}
+                <text
+                    className={labelClassName}
+                    x={node.position.x}
+                    y={node.position.y + Math.min(node.size.height - 4, 14)}
+                >
+                    {node.label}
+                </text>
+            </>;
+        }
+
+        const labelX = node.renderVariant === 'electrical-device'
+            ? node.position.x + 4
+            : node.position.x + (node.kind === 'label' ? 12 : 20);
+        const labelY = node.renderVariant === 'electrical-device'
+            ? Math.max(node.position.y - 8, 16)
+            : node.position.y + (node.kind === 'label' ? 22 : 34);
+
+        return <>
+            <rect
+                className={nodeClassName}
+                x={node.position.x}
+                y={node.position.y}
+                width={node.size.width}
+                height={node.size.height}
+                rx={node.renderVariant === 'electrical-device' ? 0 : node.kind === 'label' ? 3 : 4}
+                ry={node.renderVariant === 'electrical-device' ? 0 : node.kind === 'label' ? 3 : 4}
+                vectorEffect='non-scaling-stroke'
+            />
+            {node.renderVariant === 'electrical-device'
+                ? node.electricalAnchors.map(anchor => this.renderElectricalNodeAnchor(anchor, selected))
+                : undefined}
+            <text
+                className={labelClassName}
+                x={labelX}
+                y={labelY}
+            >
+                {node.label}
+            </text>
+            {node.kind === 'component' && node.renderVariant !== 'electrical-device'
+                ? <text
+                    className='athena-graph-workbench__node-meta'
+                    x={node.position.x + 20}
+                    y={node.position.y + 58}
+                >
+                    {node.semanticId}
+                </text>
+                : undefined}
+        </>;
+    }
+
+    protected renderElectricalNodeAnchor(
+        anchor: AthenaGraphWorkbenchNode['electricalAnchors'][number],
+        selected: boolean,
+    ): React.ReactNode {
+        const delta = this.electricalAnchorInset(anchor.side);
+        return <line
+            key={anchor.anchorId}
+            className={`athena-graph-workbench__node-anchor ${selected ? 'athena-graph-workbench__node-anchor--selected' : ''}`}
+            x1={anchor.point.x}
+            y1={anchor.point.y}
+            x2={anchor.point.x + delta.x}
+            y2={anchor.point.y + delta.y}
+            vectorEffect='non-scaling-stroke'
+        />;
+    }
+
+    protected electricalAnchorInset(side: string): { x: number; y: number } {
+        switch (side.toLowerCase()) {
+            case 'left':
+                return { x: 8, y: 0 };
+            case 'right':
+                return { x: -8, y: 0 };
+            case 'top':
+                return { x: 0, y: 8 };
+            case 'bottom':
+                return { x: 0, y: -8 };
+            default:
+                return { x: 0, y: 0 };
+        }
     }
 
     protected abbreviateViewLabel(displayName: string): string {
@@ -733,12 +855,20 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         };
 
         for (const [key, value] of Object.entries(cssVariables)) {
-            if (value) {
+            if (value && this.isThemeRelativeSurfaceToken(value)) {
                 style[key] = value;
             }
         }
 
         return style;
+    }
+
+    protected isThemeRelativeSurfaceToken(value: string): boolean {
+        const normalized = value.trim();
+        return normalized === 'transparent'
+            || normalized === 'currentColor'
+            || normalized === 'inherit'
+            || normalized.startsWith('var(');
     }
 
     protected bindViewportElement = (element: HTMLDivElement | null): void => {

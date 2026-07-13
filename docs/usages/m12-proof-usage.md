@@ -1,5 +1,7 @@
 # Athena M12 Proof Usage
 
+Updated: 2026-07-13
+
 ## Purpose
 
 This guide shows how to exercise the finished M12 proof surfaces:
@@ -8,6 +10,7 @@ This guide shows how to exercise the finished M12 proof surfaces:
 - stable endpoint anchoring and canonical selection coherence
 - reliable fit, pan, zoom, and resize behavior on a larger benchmark scene
 - compact graph-side controls and dense Athena-owned support panels
+- IDE-theme-relative cabinet and wiring surfaces instead of hardcoded graph skin colors
 - first repeated-reference reveal and related-subject navigation in the workbench
 
 It assumes the workspace is already checked out locally, `java25` is available on this workstation, and Node plus Yarn are already usable for the Theia workspace.
@@ -41,6 +44,8 @@ The central M12 claim is:
 - electrical connections can render with clearer conductor intent while staying downstream of governed anchors and routing corridors
 - endpoint selection can still resolve through canonical ports and connections rather than line-center guesswork
 - larger scenes can keep reliable fit and resize behavior through runtime-owned projection state
+- graph-side controls can stay compact, canvas-first, and less distracting without becoming shell chrome
+- cabinet and wiring views can follow the IDE theme instead of taking hardcoded product colors as truth
 - repeated-reference reveal and related-subject navigation can remain canonical-selection driven
 - denser workbench styling can become more IDE-like without becoming a second product shell
 
@@ -101,6 +106,7 @@ What this proves:
 - fit-to-viewport uses actual normalized scene bounds
 - manual viewport sessions preserve focus when the workbench resizes
 - graph-surface controls stay compact and subordinate to the canvas
+- theme-relative cabinet and wiring surfaces remain consistent with the active IDE shell
 - the desktop shell still starts cleanly after the M12 frontend hardening
 
 ## Proof Surface 3: Larger Renderer Benchmark Fixture
@@ -138,10 +144,11 @@ What this proves:
 The following commands were confirmed during the M12 closeout pass:
 
 ```powershell
-yarn --cwd ide/theia-frontend test
 yarn --cwd integrations/graph-glsp test
-yarn --cwd ide build
-yarn --cwd ide start:smoke
+yarn --cwd ide/theia-frontend test
+yarn --cwd ide/theia-product build
+cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :extensions:domain-electrical:test --tests com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPluginTest"
+cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerTest"
 cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaCompilerM12RendererBenchmarkTest"
 ```
 
@@ -153,6 +160,7 @@ M12 does prove:
 - canonical endpoint selection and related-subject reveal
 - larger benchmark validation beyond the M11 dense baseline
 - resize-safe viewport behavior and compact graph-side controls
+- IDE-theme-relative cabinet and wiring surfaces for the current desktop shell
 - repeated-reference reveal through the current governed view-switch path
 
 M12 does not yet prove:
