@@ -32,6 +32,9 @@ function translateProjectionSessionToGLSPDiagram(projection) {
             requiredArguments: [...normalizeArray(command.requiredArguments)],
         })),
         activeSheetId: readyProjection?.activeSheetId,
+        presentation: readyProjection?.presentation
+            ? normalizePresentationDocument(readyProjection.presentation)
+            : undefined,
         sheets: normalizeArray(readyProjection?.sheets).map(sheet => ({
             ...sheet,
             subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
@@ -167,6 +170,110 @@ function normalizeOwnershipContract(ownershipContract) {
         projectionCommandIds: [...normalizeArray(ownershipContract?.projectionCommandIds)],
         transientInteractionKinds: [...normalizeArray(ownershipContract?.transientInteractionKinds)],
         persistedProjectionMetadataKeys: [...normalizeArray(ownershipContract?.persistedProjectionMetadataKeys)],
+    };
+}
+function normalizePresentationDocument(document) {
+    if (!document) {
+        return undefined;
+    }
+    return {
+        canvasWidth: document.canvasWidth,
+        canvasHeight: document.canvasHeight,
+        primitivePacks: normalizeArray(document.primitivePacks).map(pack => ({
+            packId: pack.packId,
+            displayName: pack.displayName,
+            familyIds: [...normalizeArray(pack.familyIds)],
+            primitives: normalizeArray(pack.primitives).map(primitive => ({
+                primitiveId: primitive.primitiveId,
+                displayName: primitive.displayName,
+                viewBoxWidth: primitive.viewBoxWidth,
+                viewBoxHeight: primitive.viewBoxHeight,
+                commands: normalizeArray(primitive.commands).map(command => ({
+                    kind: command.kind,
+                    bounds: command.bounds ? { ...command.bounds } : undefined,
+                    start: command.start ? { ...command.start } : undefined,
+                    end: command.end ? { ...command.end } : undefined,
+                    center: command.center ? { ...command.center } : undefined,
+                    radius: command.radius,
+                    pathData: command.pathData,
+                    strokeTokenKey: command.strokeTokenKey,
+                    strokeWidthTokenKey: command.strokeWidthTokenKey,
+                    fillTokenKey: command.fillTokenKey,
+                })),
+                textSlots: normalizeArray(primitive.textSlots).map(slot => ({
+                    slotId: slot.slotId,
+                    origin: { ...slot.origin },
+                    tokenKey: slot.tokenKey,
+                })),
+                anchors: normalizeArray(primitive.anchors).map(anchor => ({
+                    alias: anchor.alias,
+                    point: { ...anchor.point },
+                })),
+                tokenDefaults: { ...primitive.tokenDefaults },
+                supportedOrientations: [...normalizeArray(primitive.supportedOrientations)],
+            })),
+        })),
+        compositePacks: normalizeArray(document.compositePacks).map(pack => ({
+            packId: pack.packId,
+            displayName: pack.displayName,
+            familyIds: [...normalizeArray(pack.familyIds)],
+            composites: normalizeArray(pack.composites).map(composite => ({
+                compositeId: composite.compositeId,
+                displayName: composite.displayName,
+                viewBoxWidth: composite.viewBoxWidth,
+                viewBoxHeight: composite.viewBoxHeight,
+                parts: normalizeArray(composite.parts).map(part => ({
+                    partId: part.partId,
+                    primitiveId: part.primitiveId,
+                    bounds: { ...part.bounds },
+                    tokenOverrides: { ...part.tokenOverrides },
+                    orientation: part.orientation,
+                })),
+                textSlots: normalizeArray(composite.textSlots).map(slot => ({
+                    slotId: slot.slotId,
+                    origin: { ...slot.origin },
+                    tokenKey: slot.tokenKey,
+                })),
+                tokenDefaults: { ...composite.tokenDefaults },
+                supportedOrientations: [...normalizeArray(composite.supportedOrientations)],
+            })),
+        })),
+        occurrences: normalizeArray(document.occurrences).map(occurrence => ({
+            occurrenceId: occurrence.occurrenceId,
+            semanticId: occurrence.semanticId,
+            referenceKind: occurrence.referenceKind,
+            primitiveId: occurrence.primitiveId,
+            compositeId: occurrence.compositeId,
+            bounds: { ...occurrence.bounds },
+            layer: occurrence.layer,
+            displayLabel: occurrence.displayLabel,
+            orientation: occurrence.orientation,
+            markerKeys: [...normalizeArray(occurrence.markerKeys)],
+            textValues: { ...occurrence.textValues },
+            anchorBindings: normalizeArray(occurrence.anchorBindings).map(binding => ({
+                alias: binding.alias,
+                anchorId: binding.anchorId,
+                portSemanticId: binding.portSemanticId,
+                ownerSemanticId: binding.ownerSemanticId,
+                sourceLabelId: binding.sourceLabelId,
+            })),
+            tokenOverrides: { ...occurrence.tokenOverrides },
+            sourceProjectionIds: [...normalizeArray(occurrence.sourceProjectionIds)],
+        })),
+        connectors: normalizeArray(document.connectors).map(connector => ({
+            occurrenceId: connector.occurrenceId,
+            semanticId: connector.semanticId,
+            primitiveId: connector.primitiveId,
+            routePoints: normalizeArray(connector.routePoints).map(point => ({ ...point })),
+            layer: connector.layer,
+            sourceAnchorId: connector.sourceAnchorId,
+            targetAnchorId: connector.targetAnchorId,
+            sourcePortSemanticId: connector.sourcePortSemanticId,
+            targetPortSemanticId: connector.targetPortSemanticId,
+            markerKeys: [...normalizeArray(connector.markerKeys)],
+            tokenOverrides: { ...connector.tokenOverrides },
+            sourceProjectionIds: [...normalizeArray(connector.sourceProjectionIds)],
+        })),
     };
 }
 //# sourceMappingURL=athena-glsp-projection-adapter.js.map

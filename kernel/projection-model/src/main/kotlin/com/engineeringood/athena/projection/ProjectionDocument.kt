@@ -19,4 +19,7 @@ data class ProjectionDocument(
     val sheets: List<ProjectionSheet> = emptyList(),
     val notationPack: ProjectionNotationPack? = null,
     val crossReferences: List<ProjectionCrossReference> = emptyList(),
+    val electricalAnchors: List<ElectricalAnchor> = emptyList(),
+    val electricalConnectionEndpoints: List<ElectricalConnectionEndpoint> = emptyList(),
+    val electricalRoutingCorridors: List<ElectricalRoutingCorridor> = emptyList(),
 )

@@ -65,10 +65,14 @@ data class AthenaProjectionReadyPayload(
     val systemName: String,
     val canvasWidth: Int,
     val canvasHeight: Int,
+    val presentation: AthenaPresentationDocumentPayload? = null,
     val activeSheetId: String? = null,
     val sheets: List<AthenaProjectionSheetPayload> = emptyList(),
     val notationPack: AthenaProjectionNotationPackPayload? = null,
     val crossReferences: List<AthenaProjectionCrossReferencePayload> = emptyList(),
+    val electricalAnchors: List<AthenaProjectionElectricalAnchorPayload> = emptyList(),
+    val electricalConnectionEndpoints: List<AthenaProjectionElectricalConnectionEndpointPayload> = emptyList(),
+    val electricalRoutingCorridors: List<AthenaProjectionElectricalRoutingCorridorPayload> = emptyList(),
     val activeRenderContributions: List<AthenaProjectionRenderContributionPayload>,
     val components: List<AthenaProjectionComponentPayload>,
     val connections: List<AthenaProjectionConnectionPayload>,
@@ -114,6 +118,55 @@ data class AthenaProjectionCrossReferencePayload(
     val kind: String,
     val sheetIds: List<String> = emptyList(),
     val occurrenceIds: List<String> = emptyList(),
+)
+
+/**
+ * One typed projection point exposed through the Athena LSP boundary.
+ */
+data class AthenaProjectionPointPayload(
+    val x: Int,
+    val y: Int,
+)
+
+/**
+ * One typed electrical anchor occurrence exposed through the Athena LSP boundary.
+ */
+data class AthenaProjectionElectricalAnchorPayload(
+    val anchorId: String,
+    val portSemanticId: String,
+    val ownerSemanticId: String,
+    val nodeId: String,
+    val labelId: String? = null,
+    val x: Int,
+    val y: Int,
+    val side: String,
+)
+
+/**
+ * One typed electrical connection endpoint occurrence exposed through the Athena LSP boundary.
+ */
+data class AthenaProjectionElectricalConnectionEndpointPayload(
+    val endpointId: String,
+    val projectionConnectionId: String,
+    val connectionSemanticId: String,
+    val endpointRole: String,
+    val portSemanticId: String,
+    val anchorId: String,
+)
+
+/**
+ * One preferred electrical routing corridor exposed through the Athena LSP boundary.
+ *
+ * The corridor is guidance for downstream renderers only and does not become engineering truth.
+ */
+data class AthenaProjectionElectricalRoutingCorridorPayload(
+    val corridorId: String,
+    val projectionConnectionId: String,
+    val connectionSemanticId: String,
+    val sourceAnchorId: String,
+    val targetAnchorId: String,
+    val routingStyle: String,
+    val preferredBendPoints: List<AthenaProjectionPointPayload> = emptyList(),
 )
 
 /**

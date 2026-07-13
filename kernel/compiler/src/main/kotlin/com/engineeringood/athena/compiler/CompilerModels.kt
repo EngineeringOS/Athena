@@ -12,6 +12,7 @@ import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.plugin.AthenaDomainValidationAttribution
+import com.engineeringood.athena.presentation.PresentationDocument
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
@@ -152,6 +153,7 @@ data class CompilerCompilationSuccess(
     val layouts: List<LayoutDocument> = emptyList(),
     val geometries: List<GeometryDocument> = emptyList(),
     val projections: List<ProjectionDocument> = emptyList(),
+    val presentations: List<PresentationDocument> = emptyList(),
     val rendering: CompilerRenderingResult,
     val knowledgeContext: AthenaCompilationKnowledgeContext,
     val boundaryValidation: AthenaBoundaryValidationReport,

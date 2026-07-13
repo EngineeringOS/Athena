@@ -11,6 +11,7 @@ enum class AthenaPluginType {
 enum class AthenaExtensionPoint {
     DOMAIN_SEMANTICS,
     VIEW_DEFINITIONS,
+    PRESENTATION_PACKS,
     RULE_EVALUATION,
     RENDERING,
     SEMANTIC_REVIEW_ENRICHMENT,

@@ -24,6 +24,8 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
                 "ownership-relationships",
                 "connectivity-relationships",
                 "grouped-placement",
+                "electrical-anchors",
+                "electrical-routing-corridors",
             ),
             semanticCommandIds = listOf("connect-ports"),
             projectionCommandIds = listOf(
@@ -58,6 +60,8 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
                 "ports",
                 "signal-groups",
                 "connectivity-relationships",
+                "electrical-anchors",
+                "electrical-routing-corridors",
             ),
             transientInteractionKinds = listOf(
                 "navigate-view",
@@ -84,6 +88,8 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
                 "connectivity-relationships",
                 "signal-groups",
                 "canonical-connectivity",
+                "electrical-anchors",
+                "electrical-routing-corridors",
             ),
             transientInteractionKinds = listOf(
                 "navigate-view",
@@ -110,6 +116,8 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
                 "ownership-relationships",
                 "connectivity-relationships",
                 "documentation-summary",
+                "electrical-anchors",
+                "electrical-routing-corridors",
             ),
             transientInteractionKinds = listOf(
                 "navigate-view",

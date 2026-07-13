@@ -54,7 +54,7 @@ The final sequential verification sweep completed successfully across:
 ## Key Lessons
 
 1. Canonical identity must stay stronger than view depth.
-   - The real M11 win is not “more views.” It is that more views, sheets, symbols, and repeated references still resolve through one semantic identity model.
+   - The real M11 win is not "more views." It is that more views, sheets, symbols, and repeated references still resolve through one semantic identity model.
 2. Dense proof fixtures are architecture tools.
    - Once the repository exceeded toy scale, the real contract gaps became obvious. Future milestones should keep using realistic governed fixtures.
 3. Transport seams should carry meaning, not invent it.
@@ -68,12 +68,15 @@ The final sequential verification sweep completed successfully across:
 - No automated desktop E2E flow yet proves the complete product-facing dense-workbench loop.
 - The current electrical domain vocabulary remains intentionally narrow compared with a full EPLAN-class model.
 - Larger scene performance, richer renderer architecture, and broader symbol-library behavior remain later than M11.
+- Dense-view renderer trust is still incomplete: connections, viewport behavior, and operator-surface feel can still read too much like a graph demo under scrutiny.
+- Cross-reference state exists, but full operator-grade navigation across related electrical representations remains later than M11.
 
 ## Recommended Follow-Through
 
 1. Keep future ECAD milestones explicit about whether they extend kernel semantics, workbench workflows, or renderer capability.
 2. Preserve canonical `semanticId` as the only cross-surface truth anchor even if more renderer or web technology paths are introduced later.
 3. Add product-level automated proof coverage once later milestones depend on the dense electrical repository for regression protection.
+4. Treat renderer correctness and electrical navigation trust as M12 scope, not as a reason to reopen the completed M11 contract layer.
 
 ## Bottom Line
 

@@ -419,7 +419,15 @@ class AthenaProjectionRequestTest {
                 assertEquals("electrical/wiring", wiringView.familyId)
                 assertEquals(ProjectionInteractivity.INTERACTIVE.name.lowercase(), cabinetView.ownershipContract.interactivity)
                 assertEquals(
-                    listOf("devices", "ports", "ownership-relationships", "connectivity-relationships", "grouped-placement"),
+                    listOf(
+                        "devices",
+                        "ports",
+                        "ownership-relationships",
+                        "connectivity-relationships",
+                        "grouped-placement",
+                        "electrical-anchors",
+                        "electrical-routing-corridors",
+                    ),
                     cabinetView.ownershipContract.displayScopes,
                 )
                 assertEquals(
@@ -440,7 +448,14 @@ class AthenaProjectionRequestTest {
                 )
                 assertEquals(ProjectionInteractivity.INSPECT_ONLY.name.lowercase(), wiringView.ownershipContract.interactivity)
                 assertEquals(
-                    listOf("devices", "ports", "signal-groups", "connectivity-relationships"),
+                    listOf(
+                        "devices",
+                        "ports",
+                        "signal-groups",
+                        "connectivity-relationships",
+                        "electrical-anchors",
+                        "electrical-routing-corridors",
+                    ),
                     wiringView.ownershipContract.displayScopes,
                 )
                 assertTrue(wiringView.ownershipContract.projectionCommandIds.isEmpty())
@@ -480,6 +495,17 @@ class AthenaProjectionRequestTest {
                 assertEquals(
                     listOf("electrical-runtime.render.cabinet"),
                     readyProjection.activeRenderContributions.map { contribution -> contribution.contributionId },
+                )
+                val presentation = assertNotNull(readyProjection.presentation)
+                assertEquals(1, presentation.compositePacks.count { pack -> "electrical/cabinet" in pack.familyIds })
+                assertEquals(
+                    "svg_path",
+                    presentation.primitivePacks
+                        .flatMap { pack -> pack.primitives }
+                        .first { primitive -> primitive.primitiveId == "electrical.mark.contact-open" }
+                        .commands
+                        .first()
+                        .kind,
                 )
                 assertEquals(2, readyProjection.components.size)
                 assertEquals(1, readyProjection.connections.size)

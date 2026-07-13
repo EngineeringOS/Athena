@@ -7,6 +7,7 @@ import {
     AthenaGLSPGovernedCommandSource,
     AthenaGLSPNotationPackSource,
     AthenaGLSPPoint,
+    AthenaGLSPPresentationDocumentSource,
     AthenaGLSPProjectionViewSource,
     AthenaGLSPRenderContributionSource,
     AthenaGLSPSheetSource,
@@ -23,6 +24,7 @@ export type AthenaGLSPDiagram = {
     supportedViews: AthenaGLSPProjectionViewSource[];
     governedCommands: AthenaGLSPGovernedCommandSource[];
     activeSheetId?: string;
+    presentation?: AthenaGLSPPresentationDocumentSource;
     sheets: AthenaGLSPSheetSource[];
     notationPack?: AthenaGLSPNotationPackSource;
     crossReferences: AthenaGLSPCrossReferenceSource[];

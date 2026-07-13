@@ -2,12 +2,14 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.layout.ProjectionInteractivity
+import com.engineeringood.athena.presentation.PresentationSvgPath
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -69,6 +71,25 @@ class AthenaRuntimeProjectionSessionTest {
             ready.sheets.single().subjectSemanticIds,
         )
         assertEquals(listOf("electrical-runtime.render.cabinet"), ready.activeRenderContributions.map { contribution -> contribution.contributionId })
+        assertEquals(2, ready.electricalAnchors.size)
+        assertEquals(2, ready.electricalConnectionEndpoints.size)
+        assertEquals(1, ready.electricalRoutingCorridors.size)
+        val presentation = assertNotNull(ready.presentation)
+        assertEquals(1, presentation.primitivePacks.count { pack -> "electrical/cabinet" in pack.familyIds })
+        assertIs<PresentationSvgPath>(
+            presentation.primitivePacks
+                .flatMap { pack -> pack.primitives }
+                .first { primitive -> primitive.primitiveId.value == "electrical.mark.contact-open" }
+                .commands
+                .first()
+        )
+        assertTrue(ready.electricalAnchors.any { anchor -> anchor.portSemanticId == "port:PLC1.out" && anchor.ownerSemanticId == "component:PLC1" })
+        assertTrue(ready.electricalConnectionEndpoints.any { endpoint -> endpoint.endpointRole == "source" && endpoint.portSemanticId == "port:PLC1.out" })
+        assertEquals(
+            ready.scene.connections.single().projectionId,
+            ready.electricalRoutingCorridors.single().projectionConnectionId,
+        )
+        assertEquals("orthogonal", ready.electricalRoutingCorridors.single().routingStyle)
         assertEquals(2, ready.scene.components.size)
         assertEquals(1, ready.scene.connections.size)
         assertEquals(2, ready.scene.labels.size)

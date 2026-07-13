@@ -118,6 +118,7 @@ private fun AthenaExecutionContext.buildProjectionSnapshot(
 
         is CompilerCompilationSuccess -> {
             val projection = compilation.projections.firstOrNull { document -> document.view.id == viewId }
+            val presentation = compilation.presentations.firstOrNull { document -> document.view.id == viewId }
             val rendering = compilation.rendering
             when {
                 projection != null -> AthenaRuntimeProjectionReadySnapshot(
@@ -128,11 +129,21 @@ private fun AthenaExecutionContext.buildProjectionSnapshot(
                         document = compilation.document,
                         placementOverrides = projectionPlacementOverrides(viewId),
                     ),
+                    presentation = presentation,
                     activeSheetId = projection.sheets.firstOrNull()?.sheetId?.value,
                     sheets = projection.sheets.map { sheet -> sheet.toRuntimeProjectionSheet() },
                     notationPack = projection.notationPack?.toRuntimeProjectionNotationPack(),
                     crossReferences = projection.crossReferences.map { crossReference ->
                         crossReference.toRuntimeProjectionCrossReference()
+                    },
+                    electricalAnchors = projection.electricalAnchors.map { anchor ->
+                        anchor.toRuntimeProjectionElectricalAnchor()
+                    },
+                    electricalConnectionEndpoints = projection.electricalConnectionEndpoints.map { endpoint ->
+                        endpoint.toRuntimeProjectionElectricalConnectionEndpoint()
+                    },
+                    electricalRoutingCorridors = projection.electricalRoutingCorridors.map { corridor ->
+                        corridor.toRuntimeProjectionElectricalRoutingCorridor()
                     },
                     activeRenderContributions = activeProjectionRenderContributions(
                         viewId = viewId,

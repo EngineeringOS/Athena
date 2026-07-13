@@ -1,6 +1,7 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
+import com.engineeringood.athena.presentation.PresentationDocument
 
 /**
  * Runtime-owned view descriptor hosted inside one active projection session.
@@ -95,6 +96,56 @@ data class AthenaRuntimeProjectionCrossReference(
 )
 
 /**
+ * Runtime-owned projection point used by electrical anchor and corridor payloads.
+ */
+data class AthenaRuntimeProjectionPoint(
+    val x: Int,
+    val y: Int,
+)
+
+/**
+ * Runtime-owned typed electrical anchor occurrence for one canonical port in active projection.
+ */
+data class AthenaRuntimeProjectionElectricalAnchor(
+    val anchorId: String,
+    val portSemanticId: String,
+    val ownerSemanticId: String,
+    val nodeId: String,
+    val labelId: String? = null,
+    val x: Int,
+    val y: Int,
+    val side: String,
+)
+
+/**
+ * Runtime-owned typed electrical connection endpoint occurrence in active projection.
+ */
+data class AthenaRuntimeProjectionElectricalConnectionEndpoint(
+    val endpointId: String,
+    val projectionConnectionId: String,
+    val connectionSemanticId: String,
+    val endpointRole: String,
+    val portSemanticId: String,
+    val anchorId: String,
+)
+
+/**
+ * Runtime-owned preferred routing corridor guidance for one electrical connection occurrence.
+ *
+ * The corridor remains renderer guidance only. It does not replace canonical endpoint truth or
+ * claim ownership over the final rendered path.
+ */
+data class AthenaRuntimeProjectionElectricalRoutingCorridor(
+    val corridorId: String,
+    val projectionConnectionId: String,
+    val connectionSemanticId: String,
+    val sourceAnchorId: String,
+    val targetAnchorId: String,
+    val routingStyle: String,
+    val preferredBendPoints: List<AthenaRuntimeProjectionPoint> = emptyList(),
+)
+
+/**
  * Runtime-owned projection snapshot for one active view.
  */
 sealed interface AthenaRuntimeProjectionSnapshot {
@@ -111,10 +162,14 @@ data class AthenaRuntimeProjectionReadySnapshot(
     override val viewId: String,
     val familyId: String? = null,
     val scene: AthenaRuntimeViewerScene,
+    val presentation: PresentationDocument? = null,
     val activeSheetId: String? = null,
     val sheets: List<AthenaRuntimeProjectionSheet> = emptyList(),
     val notationPack: AthenaRuntimeProjectionNotationPack? = null,
     val crossReferences: List<AthenaRuntimeProjectionCrossReference> = emptyList(),
+    val electricalAnchors: List<AthenaRuntimeProjectionElectricalAnchor> = emptyList(),
+    val electricalConnectionEndpoints: List<AthenaRuntimeProjectionElectricalConnectionEndpoint> = emptyList(),
+    val electricalRoutingCorridors: List<AthenaRuntimeProjectionElectricalRoutingCorridor> = emptyList(),
     val activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution> = emptyList(),
 ) : AthenaRuntimeProjectionSnapshot
 

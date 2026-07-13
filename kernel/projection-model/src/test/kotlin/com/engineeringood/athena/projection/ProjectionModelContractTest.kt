@@ -11,6 +11,7 @@ import com.engineeringood.athena.layout.ViewDefinition
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class ProjectionModelContractTest {
     @Test
@@ -270,5 +271,137 @@ class ProjectionModelContractTest {
         assertEquals("device.schematic.default", document.notationPack?.subjects?.single()?.symbolKey?.value)
         assertEquals(ProjectionLabelPolicy.SUBJECT_LABEL, document.notationPack?.subjects?.single()?.labelPolicy)
         assertEquals(listOf("canonical-device"), document.notationPack?.subjects?.single()?.markerKeys)
+    }
+
+    @Test
+    fun `projection electrical anchors and routing corridors stay downstream of canonical identity`() {
+        val plcSemanticId = StableSemanticIdentity("component:PLC1")
+        val motorSemanticId = StableSemanticIdentity("component:M1")
+        val sourcePortSemanticId = StableSemanticIdentity("port:PLC1.out")
+        val targetPortSemanticId = StableSemanticIdentity("port:M1.in")
+        val connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in")
+        val sourceNodeId = ProjectionNodeId("wiring/node/component_PLC1")
+        val targetNodeId = ProjectionNodeId("wiring/node/component_M1")
+        val sourceLabelId = ProjectionLabelId("wiring/label/port_PLC1_out")
+        val targetLabelId = ProjectionLabelId("wiring/label/port_M1_in")
+        val connectionId = ProjectionConnectionId("wiring/connection/PLC1_out_M1_in")
+        val sourceAnchorId = ElectricalAnchorId("wiring/label/port_PLC1_out/anchor")
+        val targetAnchorId = ElectricalAnchorId("wiring/label/port_M1_in/anchor")
+        val document = ProjectionDocument(
+            view = ViewDefinition(
+                id = "wiring",
+                displayName = "Wiring",
+                layoutIntent = LayoutIntent.CONNECTIVITY,
+                familyContract = ElectricalProjectionDescriptor(
+                    family = ElectricalProjectionFamily.WIRING,
+                ),
+            ),
+            canvasWidth = 640,
+            canvasHeight = 320,
+            nodes = listOf(
+                ProjectionNode(
+                    projectionId = sourceNodeId,
+                    semanticId = plcSemanticId,
+                    label = "PLC1",
+                    bounds = ProjectionBounds(x = 40, y = 60, width = 120, height = 48),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/box/component_PLC1"),
+                ),
+                ProjectionNode(
+                    projectionId = targetNodeId,
+                    semanticId = motorSemanticId,
+                    label = "M1",
+                    bounds = ProjectionBounds(x = 320, y = 172, width = 120, height = 48),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/box/component_M1"),
+                ),
+            ),
+            connections = listOf(
+                ProjectionConnection(
+                    projectionId = connectionId,
+                    semanticId = connectionSemanticId,
+                    start = ProjectionPoint(x = 160, y = 84),
+                    end = ProjectionPoint(x = 320, y = 196),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/path/connection_PLC1_out_M1_in"),
+                ),
+            ),
+            labels = listOf(
+                ProjectionLabel(
+                    projectionId = sourceLabelId,
+                    semanticId = sourcePortSemanticId,
+                    label = "out",
+                    bounds = ProjectionBounds(x = 168, y = 76, width = 40, height = 16),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_PLC1_out"),
+                ),
+                ProjectionLabel(
+                    projectionId = targetLabelId,
+                    semanticId = targetPortSemanticId,
+                    label = "in",
+                    bounds = ProjectionBounds(x = 272, y = 188, width = 32, height = 16),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_M1_in"),
+                ),
+            ),
+            electricalAnchors = listOf(
+                ElectricalAnchor(
+                    anchorId = sourceAnchorId,
+                    portSemanticId = sourcePortSemanticId,
+                    ownerSemanticId = plcSemanticId,
+                    nodeId = sourceNodeId,
+                    labelId = sourceLabelId,
+                    position = ProjectionPoint(x = 160, y = 84),
+                    side = ElectricalAnchorSide.RIGHT,
+                ),
+                ElectricalAnchor(
+                    anchorId = targetAnchorId,
+                    portSemanticId = targetPortSemanticId,
+                    ownerSemanticId = motorSemanticId,
+                    nodeId = targetNodeId,
+                    labelId = targetLabelId,
+                    position = ProjectionPoint(x = 320, y = 196),
+                    side = ElectricalAnchorSide.LEFT,
+                ),
+            ),
+            electricalConnectionEndpoints = listOf(
+                ElectricalConnectionEndpoint(
+                    endpointId = ElectricalConnectionEndpointId("wiring/connection/PLC1_out_M1_in/endpoint/source"),
+                    projectionConnectionId = connectionId,
+                    connectionSemanticId = connectionSemanticId,
+                    endpointRole = ElectricalConnectionEndpointRole.SOURCE,
+                    portSemanticId = sourcePortSemanticId,
+                    anchorId = sourceAnchorId,
+                ),
+                ElectricalConnectionEndpoint(
+                    endpointId = ElectricalConnectionEndpointId("wiring/connection/PLC1_out_M1_in/endpoint/target"),
+                    projectionConnectionId = connectionId,
+                    connectionSemanticId = connectionSemanticId,
+                    endpointRole = ElectricalConnectionEndpointRole.TARGET,
+                    portSemanticId = targetPortSemanticId,
+                    anchorId = targetAnchorId,
+                ),
+            ),
+            electricalRoutingCorridors = listOf(
+                ElectricalRoutingCorridor(
+                    corridorId = ElectricalRoutingCorridorId("wiring/connection/PLC1_out_M1_in/corridor"),
+                    projectionConnectionId = connectionId,
+                    connectionSemanticId = connectionSemanticId,
+                    sourceAnchorId = sourceAnchorId,
+                    targetAnchorId = targetAnchorId,
+                    routingStyle = ElectricalRoutingStyle.ORTHOGONAL,
+                    preferredBendPoints = listOf(
+                        ProjectionPoint(x = 240, y = 84),
+                        ProjectionPoint(x = 240, y = 196),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(sourcePortSemanticId, document.electricalAnchors.first().portSemanticId)
+        assertEquals(plcSemanticId, document.electricalAnchors.first().ownerSemanticId)
+        assertEquals(connectionSemanticId, document.electricalConnectionEndpoints.first().connectionSemanticId)
+        assertEquals(ElectricalConnectionEndpointRole.SOURCE, document.electricalConnectionEndpoints.first().endpointRole)
+        assertEquals(ElectricalRoutingStyle.ORTHOGONAL, document.electricalRoutingCorridors.single().routingStyle)
+        assertEquals(
+            listOf(ProjectionPoint(x = 240, y = 84), ProjectionPoint(x = 240, y = 196)),
+            document.electricalRoutingCorridors.single().preferredBendPoints,
+        )
+        assertTrue(document.electricalConnectionEndpoints.all { endpoint -> endpoint.connectionSemanticId == connectionSemanticId })
     }
 }

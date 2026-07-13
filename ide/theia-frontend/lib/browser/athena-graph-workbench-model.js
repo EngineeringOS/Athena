@@ -6,6 +6,7 @@ exports.fitAthenaGraphViewport = fitAthenaGraphViewport;
 exports.panAthenaGraphViewport = panAthenaGraphViewport;
 exports.zoomAthenaGraphViewportAtPoint = zoomAthenaGraphViewportAtPoint;
 exports.resizeAthenaGraphViewport = resizeAthenaGraphViewport;
+const athena_graph_presentation_model_1 = require("./athena-graph-presentation-model");
 /** Builds one deterministic workbench-facing view model from the adapter-owned graph diagram. */
 function buildAthenaGraphWorkbenchModel(diagram) {
     const fallbackCanvasWidth = 960;
@@ -22,10 +23,13 @@ function buildAthenaGraphWorkbenchModel(diagram) {
     };
     const graphNodes = normalizeArray(graph.nodes);
     const graphEdges = normalizeArray(graph.edges);
+    const presentationOccurrences = (0, athena_graph_presentation_model_1.resolvePresentationOccurrences)(diagram);
+    const presentationConnectors = (0, athena_graph_presentation_model_1.resolvePresentationConnectors)(diagram);
     const supportedViews = normalizeArray(diagram.supportedViews);
     const diagnostics = normalizeArray(diagram.diagnostics);
     const sheets = normalizeArray(diagram.sheets);
     const crossReferences = normalizeArray(diagram.crossReferences);
+    const notationSubjects = normalizeArray(diagram.notationPack?.subjects);
     const electricalAnchors = normalizeArray(diagram.electricalAnchors);
     const electricalConnectionEndpoints = normalizeArray(diagram.electricalConnectionEndpoints);
     const renderContributions = normalizeArray(diagram.activeRenderContributions);
@@ -33,13 +37,24 @@ function buildAthenaGraphWorkbenchModel(diagram) {
     const canvasHeight = graph.canvas.height > 0 ? graph.canvas.height : fallbackCanvasHeight;
     const activeView = supportedViews.find(view => view.viewId === diagram.activeViewId);
     const viewLabel = activeView?.displayName ?? diagram.activeViewId ?? 'graph';
+    const isElectricalFamily = !!activeView?.familyId?.startsWith('electrical/')
+        || !!diagram.notationPack?.packId?.startsWith('electrical-notation/');
+    const notationBySemanticId = new Map(notationSubjects.map(subject => [subject.semanticId, subject]));
     const anchorById = new Map(electricalAnchors.map(anchor => [anchor.anchorId, anchor]));
+    const anchorsByNodeId = groupAnchorsByNodeId(electricalAnchors);
+    const anchorByLabelId = new Map(electricalAnchors.flatMap(anchor => anchor.labelId ? [[anchor.labelId, anchor]] : []));
     const endpointsByConnectionId = groupEndpointsByConnectionId(electricalConnectionEndpoints);
-    const edges = graphEdges.map(edge => buildWorkbenchEdge(edge, endpointsByConnectionId.get(edge.id) ?? [], anchorById));
+    const nodes = presentationOccurrences.length > 0
+        ? presentationOccurrences.map(occurrence => buildWorkbenchNodeFromPresentation(occurrence, notationBySemanticId, anchorsByNodeId, anchorByLabelId, isElectricalFamily))
+        : graphNodes.map(node => buildWorkbenchNode(node, notationBySemanticId, anchorsByNodeId, anchorByLabelId, isElectricalFamily));
+    const edges = presentationConnectors.length > 0
+        ? presentationConnectors.map(connector => buildWorkbenchEdgeFromPresentation(connector, endpointsByConnectionId, anchorById))
+        : graphEdges.map(edge => buildWorkbenchEdge(edge, endpointsByConnectionId.get(edge.id) ?? [], anchorById));
     return {
         headerTitle: diagram.projectName,
         viewLabel,
         viewFamilyId: activeView?.familyId,
+        isElectricalFamily,
         statusLabel: diagram.status,
         statusTone: diagram.status === 'ready' ? 'ready' : 'warning',
         semanticPath: diagram.semanticPath,
@@ -49,8 +64,8 @@ function buildAthenaGraphWorkbenchModel(diagram) {
         crossReferenceCount: crossReferences.length,
         svgViewBox: `0 0 ${canvasWidth} ${canvasHeight}`,
         metrics: {
-            nodeCount: graphNodes.length,
-            edgeCount: graphEdges.length,
+            nodeCount: nodes.length,
+            edgeCount: edges.length,
             supportedViewCount: supportedViews.length,
             diagnosticCount: diagnostics.length,
         },
@@ -60,15 +75,15 @@ function buildAthenaGraphWorkbenchModel(diagram) {
         })),
         diagnostics,
         activeRenderContributions: renderContributions,
-        nodes: graphNodes,
+        nodes,
         edges,
         canvas: {
             width: canvasWidth,
             height: canvasHeight,
         },
-        sceneBounds: resolveSceneBounds(graphNodes, edges, canvasWidth, canvasHeight),
+        sceneBounds: resolveSceneBounds(nodes, edges, canvasWidth, canvasHeight),
         surfaceTokens: resolveSurfaceTokens(renderContributions),
-        emptyState: resolveEmptyState(diagram, graphNodes, graphEdges),
+        emptyState: resolveEmptyState(diagram, nodes, edges),
     };
 }
 function clampAthenaGraphZoom(zoom) {
@@ -174,6 +189,115 @@ function resolveSceneBounds(nodes, edges, canvasWidth, canvasHeight) {
         centerY: minY + (height / 2),
     };
 }
+function buildWorkbenchNode(node, notationBySemanticId, anchorsByNodeId, anchorByLabelId, isElectricalFamily) {
+    const notation = notationBySemanticId.get(node.semanticId);
+    const nodeAnchors = normalizeArray(anchorsByNodeId.get(node.id)).map(anchor => ({
+        anchorId: anchor.anchorId,
+        point: { x: anchor.x, y: anchor.y },
+        side: anchor.side,
+        portSemanticId: anchor.portSemanticId,
+        labelId: anchor.labelId,
+    }));
+    const labelAnchor = node.kind === 'label' ? anchorByLabelId.get(node.id) : undefined;
+    const renderVariant = resolveNodeRenderVariant(node, notation?.symbolKey, labelAnchor, isElectricalFamily);
+    return {
+        ...node,
+        renderVariant,
+        notationSymbolKey: notation?.symbolKey,
+        labelPolicy: notation?.labelPolicy,
+        markerKeys: normalizeArray(notation?.markerKeys),
+        labelLeader: renderVariant === 'electrical-terminal-label' && labelAnchor
+            ? buildLabelLeader(node, labelAnchor)
+            : undefined,
+        electricalAnchors: nodeAnchors,
+        presentationOccurrence: undefined,
+        presentationParts: [],
+    };
+}
+function buildWorkbenchNodeFromPresentation(occurrence, notationBySemanticId, anchorsByNodeId, anchorByLabelId, isElectricalFamily) {
+    const notation = notationBySemanticId.get(occurrence.semanticId);
+    const sourceProjectionIds = normalizeArray(occurrence.sourceProjectionIds);
+    const nodeAnchors = sourceProjectionIds
+        .flatMap(sourceProjectionId => normalizeArray(anchorsByNodeId.get(sourceProjectionId)))
+        .map(anchor => ({
+        anchorId: anchor.anchorId,
+        point: { x: anchor.x, y: anchor.y },
+        side: anchor.side,
+        portSemanticId: anchor.portSemanticId,
+        labelId: anchor.labelId,
+    }));
+    const labelAnchor = sourceProjectionIds
+        .map(sourceProjectionId => anchorByLabelId.get(sourceProjectionId))
+        .find(Boolean);
+    const kind = occurrence.layer === 'label' ? 'label' : 'component';
+    const baseNode = {
+        id: occurrence.occurrenceId,
+        semanticId: occurrence.semanticId,
+        type: 'node',
+        kind,
+        label: occurrence.displayLabel ?? occurrence.semanticId,
+        position: {
+            x: occurrence.bounds.x,
+            y: occurrence.bounds.y,
+        },
+        size: {
+            width: occurrence.bounds.width,
+            height: occurrence.bounds.height,
+        },
+    };
+    const renderVariant = resolveNodeRenderVariant(baseNode, notation?.symbolKey, labelAnchor, isElectricalFamily);
+    return {
+        ...baseNode,
+        renderVariant,
+        notationSymbolKey: notation?.symbolKey,
+        labelPolicy: notation?.labelPolicy,
+        markerKeys: normalizeArray(notation?.markerKeys.length ? notation.markerKeys : occurrence.markerKeys),
+        labelLeader: renderVariant === 'electrical-terminal-label' && labelAnchor
+            ? buildLabelLeader(baseNode, labelAnchor)
+            : undefined,
+        electricalAnchors: nodeAnchors,
+        presentationOccurrence: occurrence,
+        presentationParts: normalizeArray(occurrence.parts),
+    };
+}
+function resolveNodeRenderVariant(node, symbolKey, labelAnchor, isElectricalFamily) {
+    if (!isElectricalFamily) {
+        return node.kind === 'component' ? 'generic-component' : 'generic-label';
+    }
+    if (node.kind === 'component' && symbolKey?.startsWith('device.')) {
+        return 'electrical-device';
+    }
+    if (node.kind === 'label' && labelAnchor && symbolKey?.startsWith('port.')) {
+        return 'electrical-terminal-label';
+    }
+    return node.kind === 'component' ? 'generic-component' : 'generic-label';
+}
+function buildLabelLeader(node, anchor) {
+    return {
+        start: {
+            x: anchor.x,
+            y: anchor.y,
+        },
+        end: clampPointToNodeBounds({
+            x: anchor.x,
+            y: anchor.y,
+        }, node),
+    };
+}
+function clampPointToNodeBounds(point, node) {
+    return {
+        x: point.x < node.position.x
+            ? node.position.x
+            : point.x > node.position.x + node.size.width
+                ? node.position.x + node.size.width
+                : point.x,
+        y: point.y < node.position.y
+            ? node.position.y
+            : point.y > node.position.y + node.size.height
+                ? node.position.y + node.size.height
+                : point.y,
+    };
+}
 function resolveSurfaceTokens(contributions) {
     const tokens = {
         canvas: {},
@@ -212,6 +336,36 @@ function buildWorkbenchEdge(edge, endpoints, anchorById) {
             buildWorkbenchTerminal('source', edge.sourcePoint, edge.sourceAnchorId, edge.sourcePortSemanticId, endpoints, anchorById),
             buildWorkbenchTerminal('target', edge.targetPoint, edge.targetAnchorId, edge.targetPortSemanticId, endpoints, anchorById),
         ],
+        presentationConnector: undefined,
+    };
+}
+function buildWorkbenchEdgeFromPresentation(connector, endpointsByConnectionId, anchorById) {
+    const routePoints = normalizeArray(connector.routePoints).map(point => ({ x: point.x, y: point.y }));
+    const sourcePoint = routePoints[0] ?? { x: 0, y: 0 };
+    const targetPoint = routePoints[routePoints.length - 1] ?? sourcePoint;
+    const anchorScopedEndpoints = [...endpointsByConnectionId.values()]
+        .flat()
+        .filter(endpoint => endpoint.connectionSemanticId === connector.semanticId);
+    const edge = {
+        id: connector.occurrenceId,
+        semanticId: connector.semanticId,
+        type: 'edge',
+        sourcePoint,
+        targetPoint,
+        routingStyle: 'orthogonal',
+        bendPoints: routePoints.slice(1, Math.max(routePoints.length - 1, 1)),
+        sourceAnchorId: connector.sourceAnchorId,
+        targetAnchorId: connector.targetAnchorId,
+        sourcePortSemanticId: connector.sourcePortSemanticId,
+        targetPortSemanticId: connector.targetPortSemanticId,
+    };
+    const built = buildWorkbenchEdge(edge, anchorScopedEndpoints, anchorById);
+    return {
+        ...built,
+        routePoints,
+        bendMarkerPoints: routePoints.slice(1, Math.max(routePoints.length - 1, 1)),
+        path: buildEdgePath(routePoints),
+        presentationConnector: connector,
     };
 }
 function buildWorkbenchTerminal(role, point, fallbackAnchorId, fallbackPortSemanticId, endpoints, anchorById) {
@@ -244,6 +398,19 @@ function groupEndpointsByConnectionId(endpoints) {
         }
         else {
             grouped.set(endpoint.projectionConnectionId, [endpoint]);
+        }
+    }
+    return grouped;
+}
+function groupAnchorsByNodeId(anchors) {
+    const grouped = new Map();
+    for (const anchor of anchors) {
+        const current = grouped.get(anchor.nodeId);
+        if (current) {
+            current.push(anchor);
+        }
+        else {
+            grouped.set(anchor.nodeId, [anchor]);
         }
     }
     return grouped;

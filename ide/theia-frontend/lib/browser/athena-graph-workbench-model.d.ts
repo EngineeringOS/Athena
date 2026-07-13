@@ -1,4 +1,5 @@
 import { AthenaGLSPDiagram, AthenaGLSPEdge, AthenaGLSPNode, AthenaGLSPPoint, AthenaGLSPRenderContributionSource } from '@engineeringood/athena-graph-glsp';
+import { AthenaGraphResolvedPresentationConnector, AthenaGraphResolvedPresentationOccurrence, AthenaGraphResolvedPresentationPart } from './athena-graph-presentation-model';
 export type AthenaGraphSceneBounds = {
     minX: number;
     minY: number;
@@ -23,6 +24,7 @@ export type AthenaGraphWorkbenchModel = {
     headerTitle: string;
     viewLabel: string;
     viewFamilyId?: string;
+    isElectricalFamily: boolean;
     statusLabel: string;
     statusTone: 'ready' | 'warning' | 'idle';
     semanticPath: string;
@@ -46,7 +48,7 @@ export type AthenaGraphWorkbenchModel = {
     }>;
     diagnostics: AthenaGLSPDiagram['diagnostics'];
     activeRenderContributions: AthenaGLSPRenderContributionSource[];
-    nodes: AthenaGLSPNode[];
+    nodes: AthenaGraphWorkbenchNode[];
     edges: AthenaGraphWorkbenchEdge[];
     canvas: {
         width: number;
@@ -70,6 +72,7 @@ export type AthenaGraphWorkbenchEdge = AthenaGLSPEdge & {
     path: string;
     conductorStyle: 'electrical' | 'generic';
     terminals: AthenaGraphWorkbenchEdgeTerminal[];
+    presentationConnector?: AthenaGraphResolvedPresentationConnector;
 };
 export type AthenaGraphWorkbenchEdgeTerminal = {
     role: 'source' | 'target';
@@ -80,6 +83,27 @@ export type AthenaGraphWorkbenchEdgeTerminal = {
     ownerSemanticId?: string;
     nodeId?: string;
     labelId?: string;
+};
+export type AthenaGraphWorkbenchLeaderSegment = {
+    start: AthenaGLSPPoint;
+    end: AthenaGLSPPoint;
+};
+export type AthenaGraphWorkbenchNodeAnchor = {
+    anchorId: string;
+    point: AthenaGLSPPoint;
+    side: string;
+    portSemanticId: string;
+    labelId?: string;
+};
+export type AthenaGraphWorkbenchNode = AthenaGLSPNode & {
+    renderVariant: 'generic-component' | 'electrical-device' | 'generic-label' | 'electrical-terminal-label';
+    notationSymbolKey?: string;
+    labelPolicy?: string;
+    markerKeys: string[];
+    labelLeader?: AthenaGraphWorkbenchLeaderSegment;
+    electricalAnchors: AthenaGraphWorkbenchNodeAnchor[];
+    presentationOccurrence?: AthenaGraphResolvedPresentationOccurrence;
+    presentationParts: AthenaGraphResolvedPresentationPart[];
 };
 /** Builds one deterministic workbench-facing view model from the adapter-owned graph diagram. */
 export declare function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): AthenaGraphWorkbenchModel;

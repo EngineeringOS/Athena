@@ -26,6 +26,7 @@ import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetId
 import com.engineeringood.athena.projection.ProjectionSheetSubject
 import com.engineeringood.athena.projection.ProjectionSymbolKey
+import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.StableSemanticIdentity
 
 /**
@@ -37,6 +38,7 @@ class ProjectionModelDeriver {
      */
     fun derive(
         view: ViewDefinition,
+        document: EngineeringDocument,
         geometry: GeometryDocument,
     ): ProjectionDocument {
         require(view.id == geometry.viewId) {
@@ -100,6 +102,13 @@ class ProjectionModelDeriver {
             connections = connections,
             labels = labels,
         )
+        val electricalContracts = deriveProjectionElectricalContracts(
+            view = view,
+            document = document,
+            nodes = nodes,
+            connections = connections,
+            labels = labels,
+        )
         return ProjectionDocument(
             view = view,
             canvasWidth = documentationCanvasWidth(
@@ -126,6 +135,9 @@ class ProjectionModelDeriver {
                 view = view,
                 sheets = sheets,
             ),
+            electricalAnchors = electricalContracts.anchors,
+            electricalConnectionEndpoints = electricalContracts.connectionEndpoints,
+            electricalRoutingCorridors = electricalContracts.routingCorridors,
         )
     }
 }

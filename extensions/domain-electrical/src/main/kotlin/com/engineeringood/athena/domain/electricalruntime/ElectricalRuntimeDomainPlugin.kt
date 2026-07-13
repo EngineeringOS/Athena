@@ -6,6 +6,7 @@ import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaDomainSchema
 import com.engineeringood.athena.plugin.AthenaPluginManifest
+import com.engineeringood.athena.plugin.AthenaPresentationPackContributor
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.plugin.AthenaPluginValidationResult
 import com.engineeringood.athena.plugin.AthenaRenderContribution
@@ -23,6 +24,7 @@ import com.engineeringood.athena.scm.SemanticReviewSummary
 /** Reference Electrical/Runtime proof plugin that publishes the stable M3 hosted domain surface. */
 class ElectricalRuntimeDomainPlugin :
     AthenaDomainPlugin,
+    AthenaPresentationPackContributor,
     AthenaViewDefinitionContributor,
     AthenaRuntimePluginCommandContributor,
     AthenaRuntimePluginViewContributor,
@@ -44,6 +46,12 @@ class ElectricalRuntimeDomainPlugin :
 
     /** Inspectable renderer-facing contribution declarations exposed by the electrical proof plugin. */
     override val renderContributions: List<AthenaRenderContribution> = ELECTRICAL_RENDER_CONTRIBUTIONS
+
+    /** Publishes the first governed electrical primitive presentation packs through the stable SPI. */
+    override fun primitivePresentationPacks() = ELECTRICAL_PRIMITIVE_PRESENTATION_PACKS
+
+    /** Publishes the first governed electrical composite presentation packs through the stable SPI. */
+    override fun compositePresentationPacks() = ELECTRICAL_COMPOSITE_PRESENTATION_PACKS
 
     /** Lowers authored Electrical/Runtime proof declarations into compiler-owned semantic blueprints. */
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {

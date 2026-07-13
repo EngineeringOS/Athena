@@ -41,6 +41,29 @@ class AthenaProjectionM11DepthRequestTest {
             assertEquals(16, cabinet.components.size)
             assertEquals(29, cabinet.connections.size)
             assertTrue(cabinet.crossReferences.isEmpty())
+            assertTrue(cabinet.electricalAnchors.isNotEmpty())
+            assertEquals(cabinet.connections.size * 2, cabinet.electricalConnectionEndpoints.size)
+            assertEquals(cabinet.connections.size, cabinet.electricalRoutingCorridors.size)
+            assertTrue(cabinet.electricalConnectionEndpoints.any { endpoint -> endpoint.endpointRole == "source" })
+            assertTrue(cabinet.electricalAnchors.all { anchor ->
+                anchor.side in setOf("left", "right", "top", "bottom")
+            })
+
+            val wiringCommandPayload = assertNotNull(
+                server.projectionCommand(
+                    AthenaProjectionCommandParams(
+                        commandId = "switch-active-view",
+                        viewId = "wiring",
+                    ),
+                ).get(),
+            )
+            val wiring = assertNotNull(wiringCommandPayload.session?.readyProjection)
+            assertEquals("electrical/wiring", wiring.familyId)
+            assertTrue(wiring.electricalRoutingCorridors.all { corridor ->
+                corridor.routingStyle == "orthogonal" &&
+                    corridor.sourceAnchorId.isNotBlank() &&
+                    corridor.targetAnchorId.isNotBlank()
+            })
 
             val commandPayload = assertNotNull(
                 server.projectionCommand(

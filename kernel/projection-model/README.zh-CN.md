@@ -10,6 +10,12 @@
 - 第一版受治理的电气 notation pack 模型
 - 第一版重复引用与 cross-reference 合约
 
+到 M12 为止，它还承载：
+
+- 第一版类型化 electrical anchor 合约
+- 第一版类型化 electrical connection-endpoint 合约
+- 第一版首选 electrical routing-corridor guidance 合约
+
 这些层都保持为 projection-owned，并且始终位于 canonical engineering meaning 的下游。
 
 它位于以下边界之后：
@@ -38,6 +44,9 @@
 - projection sheet subject 始终指回 canonical semantic identity，而不是把 sheet 变成真相
 - projection notation pack 让 symbol 选择、label 策略与 marker token 保持可检查，而不是把 notation 变成真相
 - projection cross reference 让重复引用保持可检查，同时仍然锚定 canonical semantic identity
+- electrical anchor 让 canonical port identity 绑定到某个 projection occurrence，而不是让 renderer-local node id 变成真相
+- electrical connection endpoint 把 canonical connection endpoint 映射到 projection anchor occurrence，而不会创建第二套 semantic authority
+- electrical routing corridor 只发布 renderer guidance，最终 route geometry 仍然由 renderer 持有
 - projection node 与 connection 保留可检查的 geometry 来源引用
 - 这里不出现 Theia、GLSP、canvas 或前端 DTO
 
@@ -53,6 +62,9 @@
 - `ProjectionNotationPack`
 - `ProjectionNotationSubject`
 - `ProjectionCrossReference`
+- `ElectricalAnchor`
+- `ElectricalConnectionEndpoint`
+- `ElectricalRoutingCorridor`
 - projection 本地 id 与简单的坐标类型
 - `ProjectionModelMarker`
 
@@ -72,3 +84,5 @@
 如果下游界面需要 symbol 选择、label 行为或展示 marker，应当消费这里的受治理 notation-pack 合约，而不是硬编码 renderer-local notation。
 
 如果下游界面需要 repeated reference 或 cross-reference 信息，应当消费这里的 canonical-identity-first 合约，而不是创建 view-local alias identity。
+
+如果下游界面需要稳定的 electrical endpoint 或首选 routing guidance，应当消费这里的类型化 anchor 与 corridor 合约，而不是从渲染后的 line geometry 反推语义。

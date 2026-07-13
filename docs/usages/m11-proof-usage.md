@@ -188,6 +188,11 @@ M11 does not yet prove:
 
 - unrestricted graphical authoring
 - full EPLAN-class symbol or catalog depth
+- renderer-correct electrical readability on the level needed to make dense scenes feel like a trusted electrical CAD surface
+- operator-grade cross-reference navigation flows such as coil-to-contact, source-to-destination, or related-diagnostic jumps
+- larger readability benchmarks beyond the published dense proof repository
 - desktop E2E automation of the full human-facing proof path
 - huge-scene performance beyond the published dense proof
 - final renderer architecture for future web or WASM product depth
+
+Those concerns are intentionally carried forward into M12 instead of being treated as failed M11 scope.

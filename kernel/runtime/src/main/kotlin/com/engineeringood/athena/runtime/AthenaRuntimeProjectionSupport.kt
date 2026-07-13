@@ -3,9 +3,13 @@ package com.engineeringood.athena.runtime
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
 import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
+import com.engineeringood.athena.projection.ElectricalAnchor
+import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
+import com.engineeringood.athena.projection.ElectricalRoutingCorridor
 import com.engineeringood.athena.projection.ProjectionCrossReference
 import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationSubject
+import com.engineeringood.athena.projection.ProjectionPoint
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 
@@ -88,11 +92,46 @@ internal fun ProjectionCrossReference.toRuntimeProjectionCrossReference(): Athen
     )
 }
 
+internal fun ElectricalAnchor.toRuntimeProjectionElectricalAnchor(): AthenaRuntimeProjectionElectricalAnchor {
+    return AthenaRuntimeProjectionElectricalAnchor(
+        anchorId = anchorId.value,
+        portSemanticId = portSemanticId.value,
+        ownerSemanticId = ownerSemanticId.value,
+        nodeId = nodeId.value,
+        labelId = labelId?.value,
+        x = position.x,
+        y = position.y,
+        side = side.name.lowercase(),
+    )
+}
+
+internal fun ElectricalConnectionEndpoint.toRuntimeProjectionElectricalConnectionEndpoint(): AthenaRuntimeProjectionElectricalConnectionEndpoint {
+    return AthenaRuntimeProjectionElectricalConnectionEndpoint(
+        endpointId = endpointId.value,
+        projectionConnectionId = projectionConnectionId.value,
+        connectionSemanticId = connectionSemanticId.value,
+        endpointRole = endpointRole.name.lowercase(),
+        portSemanticId = portSemanticId.value,
+        anchorId = anchorId.value,
+    )
+}
+
+internal fun ElectricalRoutingCorridor.toRuntimeProjectionElectricalRoutingCorridor(): AthenaRuntimeProjectionElectricalRoutingCorridor {
+    return AthenaRuntimeProjectionElectricalRoutingCorridor(
+        corridorId = corridorId.value,
+        projectionConnectionId = projectionConnectionId.value,
+        connectionSemanticId = connectionSemanticId.value,
+        sourceAnchorId = sourceAnchorId.value,
+        targetAnchorId = targetAnchorId.value,
+        routingStyle = routingStyle.name.lowercase(),
+        preferredBendPoints = preferredBendPoints.map(ProjectionPoint::toRuntimeProjectionPoint),
+    )
+}
+
 internal fun com.engineeringood.athena.layout.ProjectionFamilyContract?.toRuntimeProjectionFamilyId(): String? {
     return when (this) {
         is ElectricalProjectionDescriptor -> "electrical/${family.name.lowercase()}"
         null -> null
-        else -> this::class.simpleName?.lowercase()
     }
 }
 
@@ -102,5 +141,12 @@ private fun ProjectionNotationSubject.toRuntimeProjectionNotationSubject(): Athe
         symbolKey = symbolKey.value,
         labelPolicy = labelPolicy.name.lowercase(),
         markerKeys = markerKeys,
+    )
+}
+
+private fun ProjectionPoint.toRuntimeProjectionPoint(): AthenaRuntimeProjectionPoint {
+    return AthenaRuntimeProjectionPoint(
+        x = x,
+        y = y,
     )
 }

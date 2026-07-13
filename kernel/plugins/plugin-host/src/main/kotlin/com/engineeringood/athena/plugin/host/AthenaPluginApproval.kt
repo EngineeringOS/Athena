@@ -21,6 +21,7 @@ class AthenaPluginValidator {
         AthenaPluginType.DOMAIN to setOf(
             AthenaExtensionPoint.DOMAIN_SEMANTICS,
             AthenaExtensionPoint.VIEW_DEFINITIONS,
+            AthenaExtensionPoint.PRESENTATION_PACKS,
         ) + runtimeHostedExtensionPoints,
         AthenaPluginType.RULE to setOf(AthenaExtensionPoint.RULE_EVALUATION) + runtimeHostedExtensionPoints,
         AthenaPluginType.RENDERER to setOf(AthenaExtensionPoint.RENDERING) + runtimeHostedExtensionPoints,

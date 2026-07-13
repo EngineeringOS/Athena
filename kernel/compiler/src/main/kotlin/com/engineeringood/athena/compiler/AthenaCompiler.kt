@@ -27,6 +27,9 @@ import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.renderer.svg.SvgRenderer
 import com.engineeringood.athena.renderer.svg.SvgRenderModel
+import com.engineeringood.athena.presentation.PresentationCompositePack
+import com.engineeringood.athena.presentation.PresentationPrimitivePack
+import com.engineeringood.athena.presentation.PresentationDocument
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.semantics.core.EngineeringIrValidationScope
 import com.engineeringood.athena.semantics.core.SemanticContinuationDecision
@@ -39,6 +42,7 @@ import com.engineeringood.athena.semantics.core.EngineeringIrValidator
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
+import com.engineeringood.athena.plugin.AthenaPresentationPackContributor
 import com.engineeringood.athena.plugin.AthenaRenderContributor
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.plugin.AthenaSemanticEnrichmentContext
@@ -57,6 +61,7 @@ class AthenaCompiler(
     private val geometryIrDeriver: GeometryIrDeriver = GeometryIrDeriver(),
     private val layoutIrDeriver: LayoutIrDeriver = LayoutIrDeriver(),
     private val projectionModelDeriver: ProjectionModelDeriver = ProjectionModelDeriver(),
+    private val presentationModelDeriver: PresentationModelDeriver = PresentationModelDeriver(),
     private val renderModelDeriver: SvgRenderModelDeriver = SvgRenderModelDeriver(),
     private val svgRenderer: SvgRenderer = SvgRenderer(),
     private val pluginDiscovery: AthenaPluginDiscovery = AthenaPluginDiscovery(),
@@ -117,6 +122,20 @@ class AthenaCompiler(
                         surfaceMappings = contribution.surfaceMappings,
                     )
                 }
+        }
+    private val supportedPrimitivePresentationPacksCache: List<PresentationPrimitivePack> = pluginInventory
+        .attachedPlugins(AthenaExtensionPoint.PRESENTATION_PACKS)
+        .flatMap { approvedPlugin ->
+            (approvedPlugin.candidate.plugin as? AthenaPresentationPackContributor)
+                ?.primitivePresentationPacks()
+                .orEmpty()
+        }
+    private val supportedCompositePresentationPacksCache: List<PresentationCompositePack> = pluginInventory
+        .attachedPlugins(AthenaExtensionPoint.PRESENTATION_PACKS)
+        .flatMap { approvedPlugin ->
+            (approvedPlugin.candidate.plugin as? AthenaPresentationPackContributor)
+                ?.compositePresentationPacks()
+                .orEmpty()
         }
 
     /** Parses the authored source file at [path] and returns the full syntax-owned document. */
@@ -257,13 +276,32 @@ class AthenaCompiler(
     }
 
     /** Derives renderer-neutral projection documents for all supported views in deterministic order. */
-    fun deriveSupportedProjections(geometries: List<GeometryDocument>): List<ProjectionDocument> {
+    fun deriveSupportedProjections(
+        document: EngineeringDocument,
+        geometries: List<GeometryDocument>,
+    ): List<ProjectionDocument> {
         return geometries.map { geometryDocument ->
             val viewDefinition = supportedViewDefinitionsCache.firstOrNull { definition -> definition.id == geometryDocument.viewId }
                 ?: error("Unsupported view definition `${geometryDocument.viewId}` for projection derivation.")
             projectionModelDeriver.derive(
                 view = viewDefinition,
+                document = document,
                 geometry = geometryDocument,
+            )
+        }
+    }
+
+    /** Derives rebuildable presentation documents for all supported projections in deterministic order. */
+    fun deriveSupportedPresentations(
+        document: EngineeringDocument,
+        projections: List<ProjectionDocument>,
+    ): List<PresentationDocument> {
+        return projections.map { projection ->
+            presentationModelDeriver.derive(
+                document = document,
+                projection = projection,
+                primitivePacks = supportedPrimitivePresentationPacksCache,
+                compositePacks = supportedCompositePresentationPacksCache,
             )
         }
     }
@@ -423,7 +461,14 @@ class AthenaCompiler(
             blockedReason = backendPreparation.blockedReason,
             blockedByPass = backendPreparation.blockedByPass,
         )
-        val projections = deriveSupportedProjections(backendPreparation.geometries)
+        val projections = deriveSupportedProjections(
+            document = document,
+            geometries = backendPreparation.geometries,
+        )
+        val presentations = deriveSupportedPresentations(
+            document = document,
+            projections = projections,
+        )
         val knowledgeAttributions = buildKnowledgeAttributions(knowledgeContext)
         return CompilerCompilationSuccess(
             source = source,
@@ -436,6 +481,7 @@ class AthenaCompiler(
             layouts = backendPreparation.layouts,
             geometries = backendPreparation.geometries,
             projections = projections,
+            presentations = presentations,
             rendering = backendEmission.rendering,
             knowledgeContext = knowledgeContext,
             boundaryValidation = boundaryValidation,

@@ -3,8 +3,12 @@ package com.engineeringood.athena.ide.lsp
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionCrossReference
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionDiagnostic
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalAnchor
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalConnectionEndpoint
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalRoutingCorridor
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionNotationPack
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionNotationSubject
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionPoint
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionReadySnapshot
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionRenderContribution
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSession
@@ -16,6 +20,7 @@ import com.engineeringood.athena.runtime.AthenaRuntimeViewerComponentBox
 import com.engineeringood.athena.runtime.AthenaRuntimeViewerConnectionLine
 import com.engineeringood.athena.runtime.AthenaRuntimeViewerLabel
 import com.engineeringood.athena.runtime.AthenaRuntimeViewerScene
+import com.engineeringood.athena.presentation.PresentationDocument
 
 internal fun AthenaLspSessionHostReady.toProjectionSessionPayload(
     snapshot: AthenaLspSessionSnapshot?,
@@ -96,10 +101,14 @@ private fun AthenaRuntimeProjectionSnapshot.toReadyPayload(): AthenaProjectionRe
         is AthenaRuntimeProjectionReadySnapshot -> scene.toPayload(
             viewId = viewId,
             familyId = familyId,
+            presentation = presentation,
             activeSheetId = activeSheetId,
             sheets = sheets,
             notationPack = notationPack,
             crossReferences = crossReferences,
+            electricalAnchors = electricalAnchors,
+            electricalConnectionEndpoints = electricalConnectionEndpoints,
+            electricalRoutingCorridors = electricalRoutingCorridors,
             activeRenderContributions = activeRenderContributions,
         )
 
@@ -133,10 +142,14 @@ private fun AthenaRuntimeProjectionDiagnostic.toPayload(): AthenaProjectionDiagn
 private fun AthenaRuntimeViewerScene.toPayload(
     viewId: String,
     familyId: String?,
+    presentation: PresentationDocument?,
     activeSheetId: String?,
     sheets: List<AthenaRuntimeProjectionSheet>,
     notationPack: AthenaRuntimeProjectionNotationPack?,
     crossReferences: List<AthenaRuntimeProjectionCrossReference>,
+    electricalAnchors: List<AthenaRuntimeProjectionElectricalAnchor>,
+    electricalConnectionEndpoints: List<AthenaRuntimeProjectionElectricalConnectionEndpoint>,
+    electricalRoutingCorridors: List<AthenaRuntimeProjectionElectricalRoutingCorridor>,
     activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution>,
 ): AthenaProjectionReadyPayload {
     return AthenaProjectionReadyPayload(
@@ -145,10 +158,14 @@ private fun AthenaRuntimeViewerScene.toPayload(
         systemName = systemName,
         canvasWidth = canvasWidth,
         canvasHeight = canvasHeight,
+        presentation = presentation?.toPayload(),
         activeSheetId = activeSheetId,
         sheets = sheets.map(AthenaRuntimeProjectionSheet::toPayload),
         notationPack = notationPack?.toPayload(),
         crossReferences = crossReferences.map(AthenaRuntimeProjectionCrossReference::toPayload),
+        electricalAnchors = electricalAnchors.map(AthenaRuntimeProjectionElectricalAnchor::toPayload),
+        electricalConnectionEndpoints = electricalConnectionEndpoints.map(AthenaRuntimeProjectionElectricalConnectionEndpoint::toPayload),
+        electricalRoutingCorridors = electricalRoutingCorridors.map(AthenaRuntimeProjectionElectricalRoutingCorridor::toPayload),
         activeRenderContributions = activeRenderContributions.map(AthenaRuntimeProjectionRenderContribution::toPayload),
         components = components.map(AthenaRuntimeViewerComponentBox::toPayload),
         connections = connections.map(AthenaRuntimeViewerConnectionLine::toPayload),
@@ -193,6 +210,42 @@ private fun AthenaRuntimeProjectionCrossReference.toPayload(): AthenaProjectionC
     )
 }
 
+private fun AthenaRuntimeProjectionElectricalAnchor.toPayload(): AthenaProjectionElectricalAnchorPayload {
+    return AthenaProjectionElectricalAnchorPayload(
+        anchorId = anchorId,
+        portSemanticId = portSemanticId,
+        ownerSemanticId = ownerSemanticId,
+        nodeId = nodeId,
+        labelId = labelId,
+        x = x,
+        y = y,
+        side = side,
+    )
+}
+
+private fun AthenaRuntimeProjectionElectricalConnectionEndpoint.toPayload(): AthenaProjectionElectricalConnectionEndpointPayload {
+    return AthenaProjectionElectricalConnectionEndpointPayload(
+        endpointId = endpointId,
+        projectionConnectionId = projectionConnectionId,
+        connectionSemanticId = connectionSemanticId,
+        endpointRole = endpointRole,
+        portSemanticId = portSemanticId,
+        anchorId = anchorId,
+    )
+}
+
+private fun AthenaRuntimeProjectionElectricalRoutingCorridor.toPayload(): AthenaProjectionElectricalRoutingCorridorPayload {
+    return AthenaProjectionElectricalRoutingCorridorPayload(
+        corridorId = corridorId,
+        projectionConnectionId = projectionConnectionId,
+        connectionSemanticId = connectionSemanticId,
+        sourceAnchorId = sourceAnchorId,
+        targetAnchorId = targetAnchorId,
+        routingStyle = routingStyle,
+        preferredBendPoints = preferredBendPoints.map(AthenaRuntimeProjectionPoint::toPayload),
+    )
+}
+
 private fun AthenaRuntimeProjectionRenderContribution.toPayload(): AthenaProjectionRenderContributionPayload {
     return AthenaProjectionRenderContributionPayload(
         pluginId = pluginId,
@@ -208,6 +261,13 @@ private fun AthenaRuntimeProjectionSurfaceMapping.toPayload(): AthenaProjectionS
     return AthenaProjectionSurfaceMappingPayload(
         surface = surface,
         tokens = tokens.toSortedMap(),
+    )
+}
+
+private fun AthenaRuntimeProjectionPoint.toPayload(): AthenaProjectionPointPayload {
+    return AthenaProjectionPointPayload(
+        x = x,
+        y = y,
     )
 }
 

@@ -121,9 +121,15 @@ class AthenaCommandRuntimeTest {
             )
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.validationMode)
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.layoutMode)
-            assertEquals(listOf("cabinet", "wiring"), incrementalReport.layoutScopedViewIds)
+            assertEquals(
+                listOf("cabinet", "documentation", "schematic", "wiring"),
+                incrementalReport.layoutScopedViewIds.sorted(),
+            )
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.geometryMode)
-            assertEquals(listOf("cabinet", "wiring"), incrementalReport.geometryScopedViewIds)
+            assertEquals(
+                listOf("cabinet", "documentation", "schematic", "wiring"),
+                incrementalReport.geometryScopedViewIds.sorted(),
+            )
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.renderingMode)
             assertEquals(listOf("cabinet"), incrementalReport.renderingViewIds)
             assertContains(

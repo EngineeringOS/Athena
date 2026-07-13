@@ -49,7 +49,10 @@ class AthenaSemanticDiffInspectionTest {
                 consequence.layer == AthenaProjectionRefreshConsequenceLayer.LAYOUT
             }
             assertEquals("scoped", latestLayoutConsequence.mode)
-            assertEquals(listOf("cabinet", "wiring"), latestLayoutConsequence.affectedViewIds)
+            assertEquals(
+                listOf("cabinet", "documentation", "schematic", "wiring"),
+                latestLayoutConsequence.affectedViewIds.sorted(),
+            )
             assertEquals(
                 listOf("connection:PLC1.out1->M1.in", "port:M1.in", "port:PLC1.out1"),
                 latestLayoutConsequence.affectedSemanticIds.sorted(),
@@ -103,10 +106,10 @@ class AthenaSemanticDiffInspectionTest {
                 entry.semanticId == "connection:PLC1.out2->M2.in"
             }.changeKind)
             assertEquals(
-                listOf("cabinet", "wiring"),
+                listOf("cabinet", "documentation", "schematic", "wiring"),
                 latestAfterUndo.projectionConsequences.first { consequence ->
                     consequence.layer == AthenaProjectionRefreshConsequenceLayer.LAYOUT
-                }.affectedViewIds,
+                }.affectedViewIds.sorted(),
             )
             assertEquals(
                 listOf("cabinet"),
@@ -138,7 +141,7 @@ class AthenaSemanticDiffInspectionTest {
             )
             assertTrue(latestAfterReplay.projectionConsequences.any { consequence ->
                 consequence.layer == AthenaProjectionRefreshConsequenceLayer.GEOMETRY &&
-                    consequence.affectedViewIds == listOf("cabinet", "wiring")
+                    consequence.affectedViewIds.sorted() == listOf("cabinet", "documentation", "schematic", "wiring")
             })
         } finally {
             Files.deleteIfExists(sourcePath)

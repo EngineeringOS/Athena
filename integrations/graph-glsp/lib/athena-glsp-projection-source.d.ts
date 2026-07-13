@@ -42,6 +42,7 @@ export type AthenaGLSPReadyProjectionSource = {
     systemName: string;
     canvasWidth: number;
     canvasHeight: number;
+    presentation?: AthenaGLSPPresentationDocumentSource;
     activeSheetId?: string;
     sheets?: AthenaGLSPSheetSource[];
     notationPack?: AthenaGLSPNotationPackSource;
@@ -153,5 +154,117 @@ export type AthenaGLSPDiagnosticSource = {
     code: string;
     message: string;
     provenance?: string;
+};
+export type AthenaGLSPPresentationDocumentSource = {
+    canvasWidth: number;
+    canvasHeight: number;
+    primitivePacks: AthenaGLSPPresentationPrimitivePackSource[];
+    compositePacks: AthenaGLSPPresentationCompositePackSource[];
+    occurrences: AthenaGLSPPresentationOccurrenceSource[];
+    connectors: AthenaGLSPPresentationConnectorSource[];
+};
+export type AthenaGLSPPresentationPrimitivePackSource = {
+    packId: string;
+    displayName: string;
+    familyIds: string[];
+    primitives: AthenaGLSPPresentationPrimitiveDefinitionSource[];
+};
+export type AthenaGLSPPresentationCompositePackSource = {
+    packId: string;
+    displayName: string;
+    familyIds: string[];
+    composites: AthenaGLSPPresentationCompositeDefinitionSource[];
+};
+export type AthenaGLSPPresentationPrimitiveDefinitionSource = {
+    primitiveId: string;
+    displayName: string;
+    viewBoxWidth: number;
+    viewBoxHeight: number;
+    commands: AthenaGLSPPresentationShapeCommandSource[];
+    textSlots: AthenaGLSPPresentationTextSlotSource[];
+    anchors: AthenaGLSPPresentationAnchorDefinitionSource[];
+    tokenDefaults: Record<string, string>;
+    supportedOrientations: string[];
+};
+export type AthenaGLSPPresentationCompositeDefinitionSource = {
+    compositeId: string;
+    displayName: string;
+    viewBoxWidth: number;
+    viewBoxHeight: number;
+    parts: AthenaGLSPPresentationCompositePartSource[];
+    textSlots: AthenaGLSPPresentationTextSlotSource[];
+    tokenDefaults: Record<string, string>;
+    supportedOrientations: string[];
+};
+export type AthenaGLSPPresentationCompositePartSource = {
+    partId: string;
+    primitiveId: string;
+    bounds: AthenaGLSPPresentationBoundsSource;
+    tokenOverrides: Record<string, string>;
+    orientation: string;
+};
+export type AthenaGLSPPresentationShapeCommandSource = {
+    kind: string;
+    bounds?: AthenaGLSPPresentationBoundsSource;
+    start?: AthenaGLSPPoint;
+    end?: AthenaGLSPPoint;
+    center?: AthenaGLSPPoint;
+    radius?: number;
+    pathData?: string;
+    strokeTokenKey?: string;
+    strokeWidthTokenKey?: string;
+    fillTokenKey?: string;
+};
+export type AthenaGLSPPresentationOccurrenceSource = {
+    occurrenceId: string;
+    semanticId: string;
+    referenceKind: string;
+    primitiveId?: string;
+    compositeId?: string;
+    bounds: AthenaGLSPPresentationBoundsSource;
+    layer: string;
+    displayLabel?: string;
+    orientation: string;
+    markerKeys: string[];
+    textValues: Record<string, string>;
+    anchorBindings: AthenaGLSPPresentationAnchorBindingSource[];
+    tokenOverrides: Record<string, string>;
+    sourceProjectionIds: string[];
+};
+export type AthenaGLSPPresentationConnectorSource = {
+    occurrenceId: string;
+    semanticId: string;
+    primitiveId: string;
+    routePoints: AthenaGLSPPoint[];
+    layer: string;
+    sourceAnchorId?: string;
+    targetAnchorId?: string;
+    sourcePortSemanticId?: string;
+    targetPortSemanticId?: string;
+    markerKeys: string[];
+    tokenOverrides: Record<string, string>;
+    sourceProjectionIds: string[];
+};
+export type AthenaGLSPPresentationBoundsSource = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+export type AthenaGLSPPresentationTextSlotSource = {
+    slotId: string;
+    origin: AthenaGLSPPoint;
+    tokenKey: string;
+};
+export type AthenaGLSPPresentationAnchorDefinitionSource = {
+    alias: string;
+    point: AthenaGLSPPoint;
+};
+export type AthenaGLSPPresentationAnchorBindingSource = {
+    alias: string;
+    anchorId: string;
+    portSemanticId?: string;
+    ownerSemanticId?: string;
+    sourceLabelId?: string;
 };
 //# sourceMappingURL=athena-glsp-projection-source.d.ts.map

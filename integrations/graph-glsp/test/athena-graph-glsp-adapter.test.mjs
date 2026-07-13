@@ -38,6 +38,58 @@ const readyProjectionSession = {
         systemName: 'FactoryLine',
         canvasWidth: 1440,
         canvasHeight: 900,
+        presentation: {
+            canvasWidth: 1440,
+            canvasHeight: 900,
+            primitivePacks: [
+                {
+                    packId: 'electrical-primitives/default-v1',
+                    displayName: 'Electrical primitives',
+                    familyIds: ['electrical/cabinet'],
+                    primitives: [
+                        {
+                            primitiveId: 'electrical.frame.device-box',
+                            displayName: 'Device box',
+                            viewBoxWidth: 140,
+                            viewBoxHeight: 72,
+                            commands: [
+                                {
+                                    kind: 'stroke_rectangle',
+                                    bounds: { x: 8, y: 12, width: 124, height: 48 },
+                                    strokeTokenKey: 'stroke',
+                                    strokeWidthTokenKey: 'strokeWidth'
+                                }
+                            ],
+                            textSlots: [],
+                            anchors: [],
+                            tokenDefaults: { stroke: '#202020', strokeWidth: '1.6', label: '#202020' },
+                            supportedOrientations: ['horizontal', 'vertical']
+                        },
+                        {
+                            primitiveId: 'electrical.mark.contact-open',
+                            displayName: 'Open contact mark',
+                            viewBoxWidth: 32,
+                            viewBoxHeight: 32,
+                            commands: [
+                                {
+                                    kind: 'svg_path',
+                                    pathData: 'M 8 8 L 8 24 M 24 8 L 24 24 M 8 20 L 24 12',
+                                    strokeTokenKey: 'stroke',
+                                    strokeWidthTokenKey: 'strokeWidth'
+                                }
+                            ],
+                            textSlots: [],
+                            anchors: [],
+                            tokenDefaults: { stroke: '#202020', strokeWidth: '1.6', label: '#202020' },
+                            supportedOrientations: ['horizontal', 'vertical']
+                        }
+                    ]
+                }
+            ],
+            compositePacks: [],
+            occurrences: [],
+            connectors: []
+        },
         activeSheetId: 'cabinet/sheet/01-main',
         sheets: [
             {
@@ -70,6 +122,66 @@ const readyProjectionSession = {
                 ]
             }
         ],
+        electricalAnchors: [
+            {
+                anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                portSemanticId: 'port:PLC1.out',
+                ownerSemanticId: 'component:PLC1',
+                nodeId: 'cabinet/projection/node/component_PLC1',
+                labelId: 'cabinet/projection/label/port_PLC1_out',
+                x: 380,
+                y: 160,
+                side: 'right'
+            },
+            {
+                anchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                portSemanticId: 'port:M1.in',
+                ownerSemanticId: 'component:M1',
+                nodeId: 'cabinet/projection/node/component_M1',
+                labelId: 'cabinet/projection/label/port_M1_in',
+                x: 720,
+                y: 160,
+                side: 'left'
+            }
+        ],
+        electricalConnectionEndpoints: [
+            {
+                endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/source',
+                projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+                connectionSemanticId: 'connection:PLC1.out->M1.in',
+                endpointRole: 'source',
+                portSemanticId: 'port:PLC1.out',
+                anchorId: 'cabinet/projection/label/port_PLC1_out/anchor'
+            },
+            {
+                endpointId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/endpoint/target',
+                projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+                connectionSemanticId: 'connection:PLC1.out->M1.in',
+                endpointRole: 'target',
+                portSemanticId: 'port:M1.in',
+                anchorId: 'cabinet/projection/label/port_M1_in/anchor'
+            }
+        ],
+        electricalRoutingCorridors: [
+            {
+                corridorId: 'cabinet/projection/connection/connection_PLC1_out_M1_in/corridor',
+                projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in',
+                connectionSemanticId: 'connection:PLC1.out->M1.in',
+                sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                routingStyle: 'orthogonal',
+                preferredBendPoints: [
+                    {
+                        x: 540,
+                        y: 160
+                    },
+                    {
+                        x: 540,
+                        y: 220
+                    }
+                ]
+            }
+        ],
         activeRenderContributions: [
             {
                 pluginId: 'com.engineeringood.athena.domain.electrical-runtime',
@@ -81,7 +193,7 @@ const readyProjectionSession = {
                     {
                         surface: 'canvas',
                         tokens: {
-                            canvasTint: 'rgba(22, 18, 12, 0.92)'
+                            canvasTint: 'rgba(208, 208, 204, 0.98)'
                         }
                     }
                 ]
@@ -155,6 +267,14 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.sheets.length, 1);
     assert.equal(diagram.notationPack?.packId, 'electrical-notation/cabinet/default-v1');
     assert.equal(diagram.crossReferences.length, 1);
+    assert.equal(diagram.electricalAnchors.length, 2);
+    assert.equal(diagram.electricalConnectionEndpoints.length, 2);
+    assert.equal(diagram.electricalRoutingCorridors.length, 1);
+    assert.equal(diagram.presentation?.primitivePacks[0].primitives[1].commands[0].kind, 'svg_path');
+    assert.equal(
+        diagram.presentation?.primitivePacks[0].primitives[1].commands[0].pathData,
+        'M 8 8 L 8 24 M 24 8 L 24 24 M 8 20 L 24 12'
+    );
     assert.deepEqual(diagram.crossReferences[0], readyProjectionSession.readyProjection.crossReferences[0]);
     assert.deepEqual(diagram.supportedViews[0].ownershipContract, readyProjectionSession.supportedViews[0].ownershipContract);
     assert.equal(diagram.graph.type, 'graph');
@@ -201,7 +321,22 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
         targetPoint: {
             x: 720,
             y: 160
-        }
+        },
+        routingStyle: 'orthogonal',
+        bendPoints: [
+            {
+                x: 540,
+                y: 160
+            },
+            {
+                x: 540,
+                y: 220
+            }
+        ],
+        sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+        targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
+        sourcePortSemanticId: 'port:PLC1.out',
+        targetPortSemanticId: 'port:M1.in'
     });
 });
 
@@ -243,6 +378,9 @@ test('normalizes omitted projection arrays from transport payloads before buildi
     assert.deepEqual(diagram.sheets, []);
     assert.equal(diagram.notationPack, undefined);
     assert.deepEqual(diagram.crossReferences, []);
+    assert.deepEqual(diagram.electricalAnchors, []);
+    assert.deepEqual(diagram.electricalConnectionEndpoints, []);
+    assert.deepEqual(diagram.electricalRoutingCorridors, []);
     assert.deepEqual(diagram.diagnostics, []);
     assert.deepEqual(diagram.activeRenderContributions, []);
     assert.deepEqual(diagram.graph.nodes, []);
