@@ -26,6 +26,12 @@ src/ant/.ant-targets-upload-dist.xml
 node
 node_modules
 package-lock.json
+**/*.tsbuildinfo
+
+# Generated Theia and TypeScript build outputs
+ide/theia-backend/lib/
+ide/theia-frontend/lib/
+ide/theia-product/lib/
 
 .kotlin/
 .codegraph/

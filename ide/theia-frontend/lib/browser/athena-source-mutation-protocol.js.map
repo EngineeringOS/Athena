@@ -1,1 +1,0 @@
-{"version":3,"file":"athena-source-mutation-protocol.js","sourceRoot":"","sources":["../../src/browser/athena-source-mutation-protocol.ts"],"names":[],"mappings":";;AAkEA,4EAaC;AAbD,SAAgB,gCAAgC,CAC5C,WAAmB,EACnB,KAAc;IAEd,OAAO;QACH,MAAM,EAAE,iCAAiC;QACzC,MAAM,EAAE;YACJ,YAAY,EAAE;gBACV,GAAG,EAAE,WAAW;aACnB;SACJ;QACD,KAAK;KACR,CAAC;AACN,CAAC"}
