@@ -7,6 +7,7 @@ import { OutputWidget } from '@theia/output/lib/browser/output-widget';
 import { AthenaComponentPanelWidget } from './athena-component-panel-widget';
 import { AthenaGraphWorkbenchWidget } from './athena-graph-workbench-widget';
 import { AthenaRepositoryGraphWidget } from './athena-repository-graph-widget';
+import { AthenaSemanticMacroCatalogWidget } from './athena-semantic-macro-catalog-widget';
 import { AthenaSemanticScmWidget } from './athena-semantic-scm-widget';
 import { AthenaSemanticInspectionWidget } from './athena-semantic-inspection-widget';
 
@@ -73,6 +74,12 @@ export namespace AthenaCommands {
         label: 'Reveal Repository Graph'
     };
 
+    export const REVEAL_REUSE_CATALOG: Command = {
+        id: 'athena.revealReuseCatalog',
+        category: 'Athena',
+        label: 'Reveal Reuse Catalog'
+    };
+
     export const REVEAL_GRAPHICAL_VIEW: Command = {
         id: 'athena.revealGraphicalView',
         category: 'Athena',
@@ -128,6 +135,14 @@ export const ATHENA_WORKBENCH_EXTENSIONS: readonly AthenaWorkbenchExtension[] = 
         area: 'main',
         menuOrder: '5',
         quickActionLabel: 'Graphical View'
+    },
+    {
+        command: AthenaCommands.REVEAL_REUSE_CATALOG,
+        widgetId: AthenaSemanticMacroCatalogWidget.ID,
+        area: 'right',
+        menuOrder: '6.5',
+        quickActionLabel: 'Reuse Catalog',
+        startupRank: 325
     },
     {
         command: AthenaCommands.REVEAL_REPOSITORY_GRAPH,

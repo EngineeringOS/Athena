@@ -67,6 +67,7 @@
     "rebuild": "theia rebuild:electron",
     "start": "electron scripts/athena-electron-main.js",
     "start:smoke": "node scripts/verify-athena-start.js",
+    "start:smoke:reuse-catalog": "node scripts/verify-athena-reuse-catalog.js",
     "watch": "theia build --watch --mode development"
   }
 }

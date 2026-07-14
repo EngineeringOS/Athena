@@ -10,6 +10,7 @@ class AthenaServiceRegistry(
     rendererProvider: () -> SvgRenderer = { SvgRenderer() },
     pluginRuntimeServicesProvider: (() -> AthenaPluginRuntimeServices)? = null,
     authoringSessionRuntimeServiceProvider: (() -> AthenaAuthoringSessionRuntimeService)? = null,
+    semanticMacroRuntimeServiceProvider: (() -> AthenaSemanticMacroRuntimeService)? = null,
     sourceMutationRuntimeServiceProvider: (() -> AthenaSourceMutationRuntimeService)? = null,
     graphCommandIntentRuntimeServiceProvider: (() -> AthenaGraphCommandIntentRuntimeService)? = null,
     semanticBaselineServiceProvider: (() -> AthenaSemanticBaselineService)? = null,
@@ -78,6 +79,9 @@ class AthenaServiceRegistry(
     private val authoringSessionRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         authoringSessionRuntimeServiceProvider?.invoke() ?: AthenaAuthoringSessionRuntimeService()
     }
+    private val semanticMacroRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
+        semanticMacroRuntimeServiceProvider?.invoke() ?: AthenaSemanticMacroRuntimeService()
+    }
     private val componentKnowledgeRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         AthenaComponentKnowledgeRuntimeService()
     }
@@ -129,6 +133,9 @@ class AthenaServiceRegistry(
 
     /** Resolves the shared authoring-preview session capability for the current runtime. */
     fun authoringSessions(): AthenaAuthoringSessionRuntimeService = authoringSessionRuntimeServiceInstance
+
+    /** Resolves the shared Semantic Macro seam capability for the current runtime. */
+    fun reuseRuntime(): AthenaSemanticMacroRuntimeService = semanticMacroRuntimeServiceInstance
 
     /** Resolves the shared component-knowledge inspection capability for the current runtime. */
     fun componentKnowledgeRuntime(): AthenaComponentKnowledgeRuntimeService = componentKnowledgeRuntimeServiceInstance

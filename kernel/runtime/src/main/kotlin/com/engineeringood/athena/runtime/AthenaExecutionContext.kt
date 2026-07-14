@@ -23,6 +23,7 @@ class AthenaExecutionContext(
     private var projectionMetadataState: AthenaProjectionMetadataState = AthenaProjectionMetadataState()
     private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
     private var authoringSessionState: AthenaAuthoringSessionState = AthenaAuthoringSessionState()
+    private var semanticMacroPreviewSessionState: AthenaSemanticMacroPreviewSessionState = AthenaSemanticMacroPreviewSessionState()
     private var aiProposalState: AthenaAiProposalState = AthenaAiProposalState()
     private var aiReasoningProposalState: AthenaAiReasoningProposalState = AthenaAiReasoningProposalState()
     private var aiReasoningSessionState: AthenaAiReasoningSessionState = AthenaAiReasoningSessionState()
@@ -45,6 +46,9 @@ class AthenaExecutionContext(
 
     /** Resolves the runtime-owned guided authoring session capability for the active project. */
     fun authoringSessions(): AthenaAuthoringSessionRuntimeService = services.authoringSessions()
+
+    /** Resolves the runtime-owned Semantic Macro seam capability for the active project. */
+    fun reuseRuntime(): AthenaSemanticMacroRuntimeService = services.reuseRuntime()
 
     /** Resolves the runtime-owned component-knowledge inspection capability for the active project. */
     fun componentKnowledgeRuntime(): AthenaComponentKnowledgeRuntimeService = services.componentKnowledgeRuntime()
@@ -197,6 +201,18 @@ class AthenaExecutionContext(
      */
     internal fun replaceAuthoringSessionState(state: AthenaAuthoringSessionState) {
         authoringSessionState = state
+    }
+
+    /**
+     * Returns the current internal Semantic Macro preview state for runtime-owned acceptance handoff.
+     */
+    internal fun semanticMacroPreviewSessionState(): AthenaSemanticMacroPreviewSessionState = semanticMacroPreviewSessionState
+
+    /**
+     * Replaces the internal Semantic Macro preview state after one preview refresh or acceptance decision.
+     */
+    internal fun replaceSemanticMacroPreviewSessionState(state: AthenaSemanticMacroPreviewSessionState) {
+        semanticMacroPreviewSessionState = state
     }
 
     /**

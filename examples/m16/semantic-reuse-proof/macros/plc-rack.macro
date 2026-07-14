@@ -1,0 +1,15 @@
+template.format.version=1
+component.cpu.id=template:plc-rack.cpu
+component.cpu.conceptId=electrical.plc.cpu
+component.cpu.implementationId=impl/electrical/plc-cpu/siemens-proof-cpu313c
+component.cpu.displayName=PLC CPU 313C
+component.cpu.summary=Governed PLC CPU from the M14 Siemens-first proof slice
+component.cpu.tags=plc,rack,control
+component.cpu.property.tag=param:rackTag
+component.cpu.property.vendorFamily=param:vendorFamily
+component.cpu.presentation.symbol.type=preferred-symbol-family
+component.cpu.presentation.symbol.attribute.family=iec-plc
+presentation.surface.type=preview-surface
+presentation.surface.attribute.panel=reuse-catalog
+documentation.review.type=review-note
+documentation.review.attribute.audience=engineer

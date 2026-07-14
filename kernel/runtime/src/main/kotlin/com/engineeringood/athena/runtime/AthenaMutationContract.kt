@@ -72,6 +72,7 @@ sealed interface AthenaMutationResult {
 internal fun AthenaCommandKind.defaultMutationCategory(): AthenaMutationCategory {
     return when (this) {
         AthenaCommandKind.CONNECT_PORTS -> AthenaMutationCategory.SEMANTIC_MUTATION
+        AthenaCommandKind.APPLY_SEMANTIC_MACRO_BUNDLE -> AthenaMutationCategory.SEMANTIC_MUTATION
     }
 }
 

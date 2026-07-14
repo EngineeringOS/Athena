@@ -1,0 +1,16 @@
+template.format.version=1
+component.supply.id=template:dc24.supply
+component.supply.conceptId=electrical.power-supply.dc24
+component.supply.implementationId=impl/electrical/power-supply/siemens-proof-24vdc
+component.supply.displayName=24V DC power supply
+component.supply.summary=Governed 24V DC supply from the M14 Siemens-first proof slice
+component.supply.tags=power,supply,24vdc
+component.supply.property.tag=param:supplyTag
+component.supply.property.outputVoltage=symbol:24VDC
+component.supply.property.vendorFamily=param:vendorFamily
+component.supply.presentation.symbol.type=preferred-symbol-family
+component.supply.presentation.symbol.attribute.family=iec-power-supply
+presentation.surface.type=preview-surface
+presentation.surface.attribute.panel=reuse-catalog
+documentation.review.type=review-note
+documentation.review.attribute.audience=engineer

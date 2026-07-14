@@ -289,6 +289,106 @@ class AthenaLanguageServer(
     }
 
     /**
+     * Returns the runtime-owned Semantic Macro catalog seam through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/semanticMacroCatalog")
+    fun semanticMacroCatalog(params: AthenaSemanticMacroCatalogParams): CompletableFuture<AthenaSemanticMacroCatalogPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.reuseRuntime()
+                .catalog(
+                    context = activation.context,
+                    request = params.toRuntimeRequest(),
+                )
+                .toPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                ),
+        )
+    }
+
+    /**
+     * Returns the runtime-owned Semantic Macro validation seam through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/semanticMacroValidation")
+    fun semanticMacroValidation(params: AthenaSemanticMacroValidationParams): CompletableFuture<AthenaSemanticMacroValidationPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.reuseRuntime()
+                .validate(
+                    context = activation.context,
+                    request = params.toRuntimeRequest(),
+                )
+                .toPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                ),
+        )
+    }
+
+    /**
+     * Returns the runtime-owned Semantic Macro preview seam through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/semanticMacroPreview")
+    fun semanticMacroPreview(params: AthenaSemanticMacroPreviewParams): CompletableFuture<AthenaSemanticMacroPreviewPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.reuseRuntime()
+                .preview(
+                    context = activation.context,
+                    request = params.toRuntimeRequest(),
+                )
+                .toPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                ),
+        )
+    }
+
+    /**
+     * Returns the runtime-owned Semantic Macro acceptance seam through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/semanticMacroAccept")
+    fun semanticMacroAccept(params: AthenaSemanticMacroAcceptanceParams): CompletableFuture<AthenaSemanticMacroAcceptancePayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.reuseRuntime()
+                .accept(
+                    context = activation.context,
+                    request = params.toRuntimeRequest(),
+                )
+                .toPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                ),
+        )
+    }
+
+    /**
+     * Returns the runtime-owned Semantic Macro origin-inspection seam through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/semanticMacroOriginInspection")
+    fun semanticMacroOriginInspection(params: AthenaSemanticMacroOriginInspectionParams): CompletableFuture<AthenaSemanticMacroOriginInspectionPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.reuseRuntime()
+                .inspectOrigin(
+                    context = activation.context,
+                    request = params.toRuntimeRequest(),
+                )
+                .toPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                ),
+        )
+    }
+
+    /**
      * Returns baseline-driven semantic review and commit-preparation state through the Athena LSP boundary.
      */
     @JsonRequest("athena/semanticScmState")

@@ -3,18 +3,22 @@ package com.engineeringood.athena.runtime
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.ir.EngineeringConnection
+import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
+import com.engineeringood.athena.reuse.SemanticMacroParameterValue
 
 /**
  * Runtime-owned semantic command categories supported by the current M1 mutation slice.
  */
 enum class AthenaCommandKind {
     CONNECT_PORTS,
+    APPLY_SEMANTIC_MACRO_BUNDLE,
 }
 
 /**
@@ -41,6 +45,15 @@ data class AthenaConnectPortsCommand(
     val targetPortSemanticId: String,
 ) : AthenaCommand {
     override val commandKind: AthenaCommandKind = AthenaCommandKind.CONNECT_PORTS
+}
+
+/**
+ * Command that commits one prepared Semantic Macro mutation bundle through the sole runtime mutation authority.
+ */
+data class AthenaApplySemanticMacroBundleCommand(
+    val bundle: AthenaSemanticMacroMutationBundle,
+) : AthenaCommand {
+    override val commandKind: AthenaCommandKind = AthenaCommandKind.APPLY_SEMANTIC_MACRO_BUNDLE
 }
 
 /**
@@ -520,6 +533,11 @@ class AthenaCommandRuntimeService internal constructor() {
                 document = document,
                 command = command,
             )
+            is AthenaApplySemanticMacroBundleCommand -> applySemanticMacroBundle(
+                context = context,
+                document = document,
+                command = command,
+            )
         }
     }
 
@@ -569,6 +587,109 @@ class AthenaCommandRuntimeService internal constructor() {
                 sourcePort.id.value,
                 targetPort.id.value,
             ),
+        )
+    }
+
+    private fun applySemanticMacroBundle(
+        context: AthenaExecutionContext,
+        document: EngineeringDocument,
+        command: AthenaApplySemanticMacroBundleCommand,
+    ): AthenaCommandApplicationResult {
+        val bundle = command.bundle
+        val componentIds = document.components.map { component -> component.id.value }.toSet()
+        val portIds = document.ports.map { port -> port.id.value }.toSet()
+        val connectionIds = document.connections.map { connection -> connection.id.value }.toSet()
+
+        val createComponents = bundle.operations.filterIsInstance<AthenaSemanticMacroCreateComponentOperation>()
+        val createPorts = bundle.operations.filterIsInstance<AthenaSemanticMacroCreatePortOperation>()
+        val createConnections = bundle.operations.filterIsInstance<AthenaSemanticMacroCreateConnectionOperation>()
+
+        val duplicateComponentId = createComponents
+            .map { operation -> operation.subjectId.value }
+            .firstOrNull { semanticId -> semanticId in componentIds }
+        if (duplicateComponentId != null) {
+            return AthenaCommandApplicationRejected("Component `${duplicateComponentId}` already exists.")
+        }
+
+        val duplicatePortId = createPorts
+            .map { operation -> operation.subjectId.value }
+            .firstOrNull { semanticId -> semanticId in portIds }
+        if (duplicatePortId != null) {
+            return AthenaCommandApplicationRejected("Port `${duplicatePortId}` already exists.")
+        }
+
+        val duplicateConnectionId = createConnections
+            .map { operation -> operation.subjectId.value }
+            .firstOrNull { semanticId -> semanticId in connectionIds }
+        if (duplicateConnectionId != null) {
+            return AthenaCommandApplicationRejected("Connection `${duplicateConnectionId}` already exists.")
+        }
+
+        val provenance = runtimeCommandProvenance(context, command)
+        val componentById = document.components.associateBy { component -> component.id.value }.toMutableMap()
+        val nextComponents = document.components.toMutableList()
+        createComponents.sortedBy { operation -> operation.subjectId.value }.forEach { operation ->
+            val component = EngineeringComponent(
+                id = operation.subjectId,
+                name = operation.summary ?: operation.templateId,
+                kind = operation.conceptId,
+                properties = operation.toEngineeringProperties(),
+                provenance = provenance,
+            )
+            componentById[component.id.value] = component
+            nextComponents += component
+        }
+
+        val portById = document.ports.associateBy { port -> port.id.value }.toMutableMap()
+        val nextPorts = document.ports.toMutableList()
+        createPorts.sortedBy { operation -> operation.subjectId.value }.forEach { operation ->
+            val owner = componentById[operation.componentSubjectId.value]
+                ?: return AthenaCommandApplicationRejected(
+                    "Semantic Macro port `${operation.subjectId.value}` references missing component `${operation.componentSubjectId.value}`.",
+                )
+            val port = EngineeringPort(
+                id = operation.subjectId,
+                ownerReference = EngineeringReference(
+                    authoredPath = listOf(owner.name),
+                    resolvedIdentity = owner.id,
+                    provenance = provenance,
+                ),
+                name = operation.portRoleId,
+                properties = listOf(
+                    EngineeringProperty("role", EngineeringPropertyValue.Symbol(operation.portRoleId)),
+                    EngineeringProperty("templateId", EngineeringPropertyValue.Symbol(operation.componentTemplateId)),
+                ),
+                provenance = provenance,
+            )
+            portById[port.id.value] = port
+            nextPorts += port
+        }
+
+        val nextConnections = document.connections.toMutableList()
+        createConnections.sortedBy { operation -> operation.subjectId.value }.forEach { operation ->
+            val fromPort = portById[operation.fromPortSubjectId.value]
+                ?: return AthenaCommandApplicationRejected(
+                    "Semantic Macro connection `${operation.subjectId.value}` references missing source port `${operation.fromPortSubjectId.value}`.",
+                )
+            val toPort = portById[operation.toPortSubjectId.value]
+                ?: return AthenaCommandApplicationRejected(
+                    "Semantic Macro connection `${operation.subjectId.value}` references missing target port `${operation.toPortSubjectId.value}`.",
+                )
+            nextConnections += EngineeringConnection(
+                id = operation.subjectId,
+                from = fromPort.asResolvedReference(provenance),
+                to = toPort.asResolvedReference(provenance),
+                provenance = provenance,
+            )
+        }
+
+        return AthenaCommandApplicationSuccess(
+            afterDocument = document.copy(
+                components = nextComponents.toList(),
+                ports = nextPorts.toList(),
+                connections = nextConnections.toList(),
+            ),
+            changedSemanticIds = bundle.affectedSemanticIds.map { identity -> identity.value }.sorted(),
         )
     }
 
@@ -785,5 +906,32 @@ private fun AthenaCommand.serializedPayloadJson(): String {
         is AthenaConnectPortsCommand -> {
             "{\"sourcePortSemanticId\":\"${sourcePortSemanticId.jsonEscaped()}\",\"targetPortSemanticId\":\"${targetPortSemanticId.jsonEscaped()}\"}"
         }
+        is AthenaApplySemanticMacroBundleCommand -> {
+            "{\"bundleId\":\"${bundle.bundleId.jsonEscaped()}\",\"previewId\":\"${bundle.previewId.value.jsonEscaped()}\",\"expansionId\":\"${bundle.acceptedExpansion.expansionId.value.jsonEscaped()}\",\"macroId\":\"${bundle.acceptedExpansion.origin.macroId.value.jsonEscaped()}\",\"instantiationId\":\"${bundle.acceptedExpansion.origin.instantiationId.value.jsonEscaped()}\",\"operationCount\":${bundle.operations.size}}"
+        }
+    }
+}
+
+private fun AthenaSemanticMacroCreateComponentOperation.toEngineeringProperties(): List<EngineeringProperty> {
+    val properties = linkedMapOf<String, EngineeringPropertyValue>()
+    properties["templateId"] = EngineeringPropertyValue.Symbol(templateId)
+    implementationId?.let { implementation ->
+        properties["implementationId"] = EngineeringPropertyValue.Symbol(implementation)
+    }
+    if (tags.isNotEmpty()) {
+        properties["tags"] = EngineeringPropertyValue.Text(tags.toList().sorted().joinToString(","))
+    }
+    this.properties.toSortedMap().forEach { (name, value) ->
+        properties[name] = value.toEngineeringPropertyValue()
+    }
+    return properties.entries.map { (name, value) -> EngineeringProperty(name, value) }
+}
+
+private fun SemanticMacroParameterValue.toEngineeringPropertyValue(): EngineeringPropertyValue {
+    return when (this) {
+        is SemanticMacroParameterValue.Text -> EngineeringPropertyValue.Text(text)
+        is SemanticMacroParameterValue.Symbol -> EngineeringPropertyValue.Symbol(text)
+        is SemanticMacroParameterValue.BooleanValue -> EngineeringPropertyValue.Symbol(value.toString())
+        is SemanticMacroParameterValue.IntegerValue -> EngineeringPropertyValue.Text(value.toString())
     }
 }

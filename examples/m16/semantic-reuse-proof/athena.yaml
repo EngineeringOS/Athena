@@ -1,0 +1,4 @@
+primaryPackage:
+  name: com.engineeringood.examples.m16.semantic-reuse-proof
+  version: 1.0.0
+  sourceRoot: src

@@ -33,6 +33,22 @@ import {
     buildAthenaSourceMutationRequest,
     type AthenaSourceMutationPayload
 } from './athena-source-mutation-protocol';
+import {
+    buildAthenaSemanticMacroAcceptanceRequest,
+    buildAthenaSemanticMacroCatalogRequest,
+    buildAthenaSemanticMacroOriginInspectionRequest,
+    buildAthenaSemanticMacroPreviewRequest,
+    buildAthenaSemanticMacroValidationRequest,
+    type AthenaSemanticMacroAcceptanceParams,
+    type AthenaSemanticMacroAcceptancePayload,
+    type AthenaSemanticMacroCatalogPayload,
+    type AthenaSemanticMacroOriginInspectionParams,
+    type AthenaSemanticMacroOriginInspectionPayload,
+    type AthenaSemanticMacroPreviewParams,
+    type AthenaSemanticMacroPreviewPayload,
+    type AthenaSemanticMacroValidationParams,
+    type AthenaSemanticMacroValidationPayload
+} from './athena-semantic-macro-protocol';
 import type {
     AthenaGraphCommandIntentParams,
     AthenaGraphCommandIntentPayload
@@ -902,6 +918,54 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             'athena/componentKnowledgeSession',
             { marker: 'm15' },
             model,
+        );
+    }
+
+    async requestSemanticMacroCatalog(): Promise<AthenaSemanticMacroCatalogPayload | undefined> {
+        const request = buildAthenaSemanticMacroCatalogRequest();
+        return this.sendLanguageRequest<AthenaSemanticMacroCatalogPayload>(
+            request.method,
+            request.params,
+        );
+    }
+
+    async requestSemanticMacroValidation(
+        params: AthenaSemanticMacroValidationParams
+    ): Promise<AthenaSemanticMacroValidationPayload | undefined> {
+        const request = buildAthenaSemanticMacroValidationRequest(params);
+        return this.sendLanguageRequest<AthenaSemanticMacroValidationPayload>(
+            request.method,
+            request.params,
+        );
+    }
+
+    async requestSemanticMacroPreview(
+        params: AthenaSemanticMacroPreviewParams
+    ): Promise<AthenaSemanticMacroPreviewPayload | undefined> {
+        const request = buildAthenaSemanticMacroPreviewRequest(params);
+        return this.sendLanguageRequest<AthenaSemanticMacroPreviewPayload>(
+            request.method,
+            request.params,
+        );
+    }
+
+    async requestSemanticMacroAcceptance(
+        params: AthenaSemanticMacroAcceptanceParams
+    ): Promise<AthenaSemanticMacroAcceptancePayload | undefined> {
+        const request = buildAthenaSemanticMacroAcceptanceRequest(params);
+        return this.sendLanguageRequest<AthenaSemanticMacroAcceptancePayload>(
+            request.method,
+            request.params,
+        );
+    }
+
+    async requestSemanticMacroOriginInspection(
+        params: AthenaSemanticMacroOriginInspectionParams
+    ): Promise<AthenaSemanticMacroOriginInspectionPayload | undefined> {
+        const request = buildAthenaSemanticMacroOriginInspectionRequest(params);
+        return this.sendLanguageRequest<AthenaSemanticMacroOriginInspectionPayload>(
+            request.method,
+            request.params,
         );
     }
 

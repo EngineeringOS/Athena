@@ -8,6 +8,7 @@ import com.engineeringood.athena.ir.EngineeringDocument
 enum class AthenaCommandOrigin {
     STANDARD,
     AI_ACCEPTED,
+    SEMANTIC_MACRO_ACCEPTED,
 }
 
 /**

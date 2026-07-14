@@ -50,6 +50,8 @@ include(
     ":kernel:connection-model",
     ":kernel:physical-model",
     ":kernel:authoring-model",
+    ":kernel:reuse-model",
+    ":kernel:template-model",
     ":kernel:layout-model",
     ":kernel:geometry-model",
     ":kernel:projection-model",

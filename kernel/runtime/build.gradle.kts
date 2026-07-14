@@ -7,6 +7,8 @@ dependencies {
     implementation(project(":kernel:compiler"))
     implementation(project(":kernel:component-model"))
     implementation(project(":kernel:connection-model"))
+    implementation(project(":kernel:reuse-model"))
+    implementation(project(":kernel:template-model"))
     implementation(project(":kernel:plugins:plugin-api"))
     implementation(project(":kernel:plugins:plugin-host"))
     implementation(project(":kernel:repository-model"))

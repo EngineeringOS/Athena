@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":kernel:physical-model"))
     implementation(project(":kernel:presentation-model"))
     implementation(project(":kernel:repository-model"))
+    implementation(project(":kernel:reuse-model"))
     implementation(project(":kernel:runtime"))
     implementation(project(":kernel:semantic-scm"))
     implementation(project(":kernel:validation"))

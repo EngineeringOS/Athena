@@ -12,6 +12,7 @@ import { AthenaProductContribution } from './athena-product-contribution';
 import { AthenaRepositoryGraphWidget } from './athena-repository-graph-widget';
 import { AthenaRepositoryCreationService } from './athena-repository-creation-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
+import { AthenaSemanticMacroCatalogWidget } from './athena-semantic-macro-catalog-widget';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 import { AthenaSemanticScmWidget } from './athena-semantic-scm-widget';
 import { AthenaSemanticInspectionWidget } from './athena-semantic-inspection-widget';
@@ -30,6 +31,7 @@ export default new ContainerModule(bind => {
     bind(AthenaComponentPanelWidget).toSelf();
     bind(AthenaGraphWorkbenchWidget).toSelf();
     bind(AthenaRepositoryGraphWidget).toSelf();
+    bind(AthenaSemanticMacroCatalogWidget).toSelf();
     bind(AthenaSemanticScmWidget).toSelf();
     bind(AthenaSemanticInspectionWidget).toSelf();
     bind(WidgetFactory).toDynamicValue(context => ({
@@ -47,6 +49,10 @@ export default new ContainerModule(bind => {
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaRepositoryGraphWidget.ID,
         createWidget: () => context.container.get<AthenaRepositoryGraphWidget>(AthenaRepositoryGraphWidget)
+    })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(context => ({
+        id: AthenaSemanticMacroCatalogWidget.ID,
+        createWidget: () => context.container.get<AthenaSemanticMacroCatalogWidget>(AthenaSemanticMacroCatalogWidget)
     })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaSemanticScmWidget.ID,
