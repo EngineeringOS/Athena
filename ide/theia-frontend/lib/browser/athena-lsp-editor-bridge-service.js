@@ -69,10 +69,11 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
     repositorySessionService;
     openedDocumentVersions = new Map();
     documentSyncOperations = new Map();
+    documentSymbolProviderDidChangeEmitter = new monaco.Emitter();
     activeEditorListeners = new disposable_1.DisposableCollection();
     languageProviderListeners = new disposable_1.DisposableCollection();
     semanticBoundaryMessageShown = false;
-    async onStart(_app) {
+    onStart(_app) {
         this.registerAthenaLanguage();
         this.outputChannel.appendLine('Athena semantic path ready: frontend -> LSP -> runtime/compiler');
         this.editorManager.onCurrentEditorChanged(widget => {
@@ -80,6 +81,7 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
             void this.forwardDidOpen(widget).catch(error => this.reportBridgeFailure(error));
         });
         this.repositorySessionService.onDidChangeState(state => {
+            this.notifyDocumentSymbolProviderChanged();
             if (state.lifecycle === 'ready') {
                 void this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
                 return;
@@ -89,7 +91,7 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
             this.documentSyncOperations.clear();
         });
         this.bindCurrentEditor(this.editorManager.currentEditor);
-        await this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
+        void this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
     }
     registerAthenaLanguage() {
         const alreadyRegistered = monaco.languages.getLanguages().some(language => language.id === athena_language_definition_1.ATHENA_LANGUAGE_ID);
@@ -101,6 +103,12 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
             });
         }
         monaco.languages.setLanguageConfiguration(athena_language_definition_1.ATHENA_LANGUAGE_ID, athena_language_definition_1.athenaLanguageConfiguration);
+        this.languageProviderListeners.push(monaco.editor.onDidCreateModel(model => {
+            this.ensureAthenaModelLanguage(model);
+        }));
+        monaco.editor.getModels().forEach(model => {
+            this.ensureAthenaModelLanguage(model);
+        });
         this.registerAthenaLanguageProviders();
     }
     registerAthenaLanguageProviders() {
@@ -117,7 +125,8 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
                 };
             }
         }));
-        this.languageProviderListeners.push(monaco.languages.registerDocumentSymbolProvider(athena_language_definition_1.ATHENA_LANGUAGE_ID, {
+        const documentSymbolProvider = {
+            onDidChange: this.documentSymbolProviderDidChangeEmitter.event,
             provideDocumentSymbols: async (model) => {
                 const payload = await this.sendLanguageRequest('textDocument/documentSymbol', {
                     textDocument: {
@@ -126,7 +135,8 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
                 }, model);
                 return (payload ?? []).map(symbol => this.toMonacoDocumentSymbol(symbol));
             }
-        }));
+        };
+        this.languageProviderListeners.push(monaco.languages.registerDocumentSymbolProvider(athena_language_definition_1.ATHENA_LANGUAGE_ID, documentSymbolProvider));
         this.languageProviderListeners.push(monaco.languages.registerDefinitionProvider(athena_language_definition_1.ATHENA_LANGUAGE_ID, {
             provideDefinition: async (model, position) => {
                 const payload = await this.sendLanguageRequest('textDocument/definition', this.toTextDocumentPositionParams(model, position), model);
@@ -158,6 +168,7 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         await this.synchronizeDocumentSnapshot(this.toWidgetSnapshot(widget));
     }
     async ensureDocumentSynchronized(model) {
+        this.ensureAthenaModelLanguage(model);
         const snapshot = await this.resolveDocumentSnapshot(model);
         if (!snapshot || !this.isAthenaDocumentUri(snapshot.uri)) {
             return;
@@ -186,6 +197,7 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         };
     }
     async synchronizeDocumentSnapshot(snapshot) {
+        await this.repositorySessionService.ensureSessionForDocument(snapshot.uri);
         const sessionState = this.repositorySessionService.state;
         if (sessionState.lifecycle !== 'ready') {
             this.outputChannel.appendLine(`Skipped document synchronization for ${snapshot.uri} because the repository session is ${sessionState.lifecycle}.`);
@@ -234,7 +246,7 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
             if (method === 'textDocument/didOpen') {
                 this.outputChannel.appendLine(`frontend -> textDocument/didOpen -> Athena LSP -> runtime/compiler :: ${snapshot.uri}`);
                 this.outputChannel.show({ preserveFocus: true });
-                await this.repositorySessionService.refreshSessionState();
+                void this.repositorySessionService.refreshSessionState().catch(error => this.reportBridgeFailure(error));
                 if (!this.semanticBoundaryMessageShown) {
                     this.semanticBoundaryMessageShown = true;
                     void this.messageService.info('Athena .athena files now flow through Athena LSP as the sole semantic boundary.');
@@ -243,7 +255,8 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
             else {
                 this.outputChannel.appendLine(`frontend -> textDocument/didChange -> Athena LSP diagnostics :: ${snapshot.uri} @ v${snapshot.version}`);
             }
-            await this.syncPublishedDiagnostics(snapshot.uri);
+            this.notifyDocumentSymbolProviderChanged();
+            void this.syncPublishedDiagnosticsEventually(snapshot.uri).catch(error => this.reportBridgeFailure(error));
         });
     }
     enqueueDocumentSync(uri, task) {
@@ -265,6 +278,8 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         if (!this.isAthenaEditor(widget)) {
             return;
         }
+        const model = monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString()));
+        this.ensureAthenaModelLanguage(model);
         this.activeEditorListeners.push(widget.editor.onDocumentContentChanged(() => {
             void this.forwardDidChange(widget).catch(error => this.reportBridgeFailure(error));
         }));
@@ -283,7 +298,16 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         if (!this.isAthenaEditor(widget)) {
             return undefined;
         }
-        return monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString())) ?? undefined;
+        const model = monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString())) ?? undefined;
+        this.ensureAthenaModelLanguage(model);
+        return model;
+    }
+    ensureAthenaModelLanguage(model) {
+        if (!model || !this.isAthenaDocumentUri(model.uri.toString()) || model.getLanguageId() === athena_language_definition_1.ATHENA_LANGUAGE_ID) {
+            return;
+        }
+        monaco.editor.setModelLanguage(model, athena_language_definition_1.ATHENA_LANGUAGE_ID);
+        this.notifyDocumentSymbolProviderChanged();
     }
     async syncPublishedDiagnostics(uri) {
         const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/lsp/diagnostics', {
@@ -297,6 +321,16 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         const diagnostics = payload[0]?.diagnostics ?? [];
         this.problemManager.setMarkers(new uri_1.default(uri), AthenaLspEditorBridgeService_1.MARKER_OWNER, diagnostics);
         this.outputChannel.appendLine(`Athena diagnostics synced to editor and Problems: ${diagnostics.length} item(s) for ${uri}`);
+        return diagnostics.length;
+    }
+    async syncPublishedDiagnosticsEventually(uri) {
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            const diagnosticCount = await this.syncPublishedDiagnostics(uri);
+            if (diagnosticCount > 0 || attempt === 4) {
+                return;
+            }
+            await new Promise(resolve => window.setTimeout(resolve, 100));
+        }
     }
     get outputChannel() {
         return this.outputChannelManager.getChannel('Athena LSP');
@@ -322,6 +356,38 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
     }
     async requestRepositoryGraphSession() {
         return this.sendLanguageRequest('athena/repositoryGraphSession', {});
+    }
+    async requestComponentKnowledgeSession() {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest('athena/componentKnowledgeSession', { marker: 'm15' }, model);
+    }
+    async requestAuthoringPreview(params) {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest('athena/authoringPreview', params, model);
+    }
+    async requestAuthoringDecision(params) {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest('athena/authoringDecision', params, model);
+    }
+    applyAuthoringSourceEdit(edit) {
+        const model = monaco.editor.getModel(monaco.Uri.parse(edit.uri)) ?? this.currentAthenaEditorModel();
+        if (!model || model.uri.toString() !== edit.uri) {
+            throw new Error(`Athena authoring source edit target is not open: ${edit.uri}`);
+        }
+        model.pushEditOperations([], [{
+                range: new monaco.Range(edit.range.start.line + 1, edit.range.start.character + 1, edit.range.end.line + 1, edit.range.end.character + 1),
+                text: edit.newText,
+                forceMoveMarkers: true,
+            }], () => null);
+        const currentEditor = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(currentEditor) || currentEditor.editor.uri.toString() !== edit.uri || !edit.selectionRange) {
+            return;
+        }
+        currentEditor.editor.selection = {
+            ...edit.selectionRange,
+            direction: 'ltr',
+        };
+        currentEditor.editor.revealRange(edit.selectionRange, { at: 'center' });
     }
     async requestProjectionSession() {
         const model = this.currentAthenaEditorModel();
@@ -351,11 +417,11 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         return this.sendLanguageRequest('athena/aiReasoningDecision', params);
     }
     async sendLanguageRequest(method, params, model) {
-        if (this.repositorySessionService.state.lifecycle !== 'ready') {
-            return undefined;
-        }
         if (model) {
             await this.ensureDocumentSynchronized(model);
+        }
+        if (this.repositorySessionService.state.lifecycle !== 'ready') {
+            return undefined;
         }
         const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/lsp/request'), {
             method: 'POST',
@@ -477,6 +543,9 @@ let AthenaLspEditorBridgeService = class AthenaLspEditorBridgeService {
         const message = error instanceof Error ? error.message : String(error);
         this.outputChannel.appendLine(`Athena LSP bridge failure: ${message}`);
         void this.messageService.warn(`Athena LSP bridge failure: ${message}`);
+    }
+    notifyDocumentSymbolProviderChanged() {
+        this.documentSymbolProviderDidChangeEmitter.fire();
     }
 };
 exports.AthenaLspEditorBridgeService = AthenaLspEditorBridgeService;

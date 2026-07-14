@@ -79,7 +79,17 @@ data class AthenaSemanticInspectionComponent(
     val name: String,
     val kind: String,
     val properties: String,
+    val authoredProperties: List<AthenaSemanticInspectionProperty>,
     val sourceRange: Range,
+)
+
+/**
+ * One structured authored component property published for guided inspector flows.
+ */
+data class AthenaSemanticInspectionProperty(
+    val name: String,
+    val valueKind: String,
+    val valueText: String,
 )
 
 /**
@@ -89,6 +99,7 @@ data class AthenaSemanticInspectionPort(
     val semanticId: String,
     val path: String,
     val properties: String,
+    val authoredProperties: List<AthenaSemanticInspectionProperty>,
     val sourceRange: Range,
 )
 
@@ -353,6 +364,7 @@ class AthenaLanguageFeatures(
                                 name = component.name,
                                 kind = component.kind,
                                 properties = component.properties.summaryText(),
+                                authoredProperties = component.properties.map { property -> property.toInspectionProperty() },
                                 sourceRange = requireSourceRange(
                                     semanticId = component.id.value,
                                     kind = "component",
@@ -367,6 +379,7 @@ class AthenaLanguageFeatures(
                                 semanticId = port.id.value,
                                 path = port.summaryPath(),
                                 properties = port.properties.summaryText(),
+                                authoredProperties = port.properties.map { property -> property.toInspectionProperty() },
                                 sourceRange = requireSourceRange(
                                     semanticId = port.id.value,
                                     kind = "port",
@@ -658,6 +671,20 @@ private fun EngineeringPropertyValue.summaryText(): String {
         is EngineeringPropertyValue.Symbol -> text
         is EngineeringPropertyValue.Text -> "\"$text\""
     }
+}
+
+private fun com.engineeringood.athena.ir.EngineeringProperty.toInspectionProperty(): AthenaSemanticInspectionProperty {
+    return AthenaSemanticInspectionProperty(
+        name = name,
+        valueKind = when (value) {
+            is EngineeringPropertyValue.Symbol -> "symbol"
+            is EngineeringPropertyValue.Text -> "text"
+        },
+        valueText = when (val propertyValue = value) {
+            is EngineeringPropertyValue.Symbol -> propertyValue.text
+            is EngineeringPropertyValue.Text -> propertyValue.text
+        },
+    )
 }
 
 private fun com.engineeringood.athena.ir.EngineeringReference.authoredPath(): String = authoredPath.joinToString(".")

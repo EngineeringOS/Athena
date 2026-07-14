@@ -2,6 +2,7 @@ package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeDiagnostic
 import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeSeverity
+import com.engineeringood.athena.runtime.AthenaAvailableAuthoringComponent
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeRuntimeResult
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeUnavailable
@@ -53,14 +54,34 @@ data class AthenaResolvedPhysicalTraitPayload(
     val installationMarkerIds: List<String>,
 )
 
+/** One available vendor implementation for guided authoring transported through Athena LSP. */
+data class AthenaAvailableComponentImplementationPayload(
+    val implementationId: String,
+    val vendorId: String,
+    val vendorPartNumber: String,
+    val displayName: String,
+    val summary: String? = null,
+)
+
+/** One available authoring component concept transported through Athena LSP. */
+data class AthenaAvailableComponentPayload(
+    val conceptId: String,
+    val displayName: String,
+    val classificationKeys: List<String>,
+    val summary: String? = null,
+    val implementations: List<AthenaAvailableComponentImplementationPayload>,
+)
+
 /** Runtime-owned component-knowledge session payload transported through Athena LSP. */
 data class AthenaComponentKnowledgeSessionPayload(
     val projectName: String,
+    val systemSemanticId: String,
     val semanticPath: String,
     val status: String,
     val contributingPluginIds: List<String>,
     val activeConceptCount: Int,
     val activeImplementationCount: Int,
+    val availableComponents: List<AthenaAvailableComponentPayload>,
     val components: List<AthenaResolvedComponentKnowledgePayload>,
     val semanticPorts: List<AthenaResolvedSemanticPortPayload>,
     val physicalTraits: List<AthenaResolvedPhysicalTraitPayload>,
@@ -72,11 +93,13 @@ internal fun AthenaComponentKnowledgeRuntimeResult.toPayload(semanticPath: Strin
     return when (this) {
         is AthenaComponentKnowledgeReady -> AthenaComponentKnowledgeSessionPayload(
             projectName = projectName,
+            systemSemanticId = systemSemanticId,
             semanticPath = semanticPath,
             status = "ready",
             contributingPluginIds = contributingPluginIds,
             activeConceptCount = activeConceptCount,
             activeImplementationCount = activeImplementationCount,
+            availableComponents = availableComponents.map(AthenaAvailableAuthoringComponent::toPayload),
             components = components.map(AthenaResolvedComponentKnowledgeEntry::toPayload),
             semanticPorts = semanticPorts.map { resolvedPort ->
                 AthenaResolvedSemanticPortPayload(
@@ -105,11 +128,13 @@ internal fun AthenaComponentKnowledgeRuntimeResult.toPayload(semanticPath: Strin
 
         is AthenaComponentKnowledgeUnavailable -> AthenaComponentKnowledgeSessionPayload(
             projectName = projectName,
+            systemSemanticId = "",
             semanticPath = semanticPath,
             status = "unavailable",
             contributingPluginIds = emptyList(),
             activeConceptCount = 0,
             activeImplementationCount = 0,
+            availableComponents = emptyList(),
             components = emptyList(),
             semanticPorts = emptyList(),
             physicalTraits = emptyList(),
@@ -117,6 +142,24 @@ internal fun AthenaComponentKnowledgeRuntimeResult.toPayload(semanticPath: Strin
             unavailableReason = reason,
         )
     }
+}
+
+private fun AthenaAvailableAuthoringComponent.toPayload(): AthenaAvailableComponentPayload {
+    return AthenaAvailableComponentPayload(
+        conceptId = concept.conceptId.value,
+        displayName = concept.displayName,
+        classificationKeys = concept.classificationKeys.toList().sorted(),
+        summary = concept.summary,
+        implementations = implementations.map { implementation ->
+            AthenaAvailableComponentImplementationPayload(
+                implementationId = implementation.implementationId.value,
+                vendorId = implementation.vendorId.value,
+                vendorPartNumber = implementation.vendorPartNumber.value,
+                displayName = implementation.displayName,
+                summary = implementation.summary,
+            )
+        },
+    )
 }
 
 private fun AthenaResolvedComponentKnowledgeEntry.toPayload(): AthenaResolvedComponentKnowledgePayload {

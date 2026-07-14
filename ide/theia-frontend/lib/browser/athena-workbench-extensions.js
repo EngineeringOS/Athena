@@ -5,6 +5,7 @@ const common_frontend_contribution_1 = require("@theia/core/lib/browser/common-f
 const problem_widget_1 = require("@theia/markers/lib/browser/problem/problem-widget");
 const navigator_widget_1 = require("@theia/navigator/lib/browser/navigator-widget");
 const output_widget_1 = require("@theia/output/lib/browser/output-widget");
+const athena_component_panel_widget_1 = require("./athena-component-panel-widget");
 const athena_graph_workbench_widget_1 = require("./athena-graph-workbench-widget");
 const athena_repository_graph_widget_1 = require("./athena-repository-graph-widget");
 const athena_semantic_scm_widget_1 = require("./athena-semantic-scm-widget");
@@ -31,6 +32,11 @@ var AthenaCommands;
         id: 'athena.revealRepositoryNavigator',
         category: 'Athena',
         label: 'Reveal Repository Navigator'
+    };
+    AthenaCommands.REVEAL_COMPONENT_PANEL = {
+        id: 'athena.revealComponentPanel',
+        category: 'Athena',
+        label: 'Reveal Components'
     };
     AthenaCommands.REVEAL_PROBLEMS = {
         id: 'athena.revealProblems',
@@ -71,6 +77,14 @@ exports.ATHENA_WORKBENCH_EXTENSIONS = [
         menuOrder: '2',
         quickActionLabel: 'Repository Navigator',
         startupRank: 100
+    },
+    {
+        command: AthenaCommands.REVEAL_COMPONENT_PANEL,
+        widgetId: athena_component_panel_widget_1.AthenaComponentPanelWidget.ID,
+        area: 'left',
+        menuOrder: '2.5',
+        quickActionLabel: 'Components',
+        startupRank: 150
     },
     {
         command: AthenaCommands.REVEAL_PROBLEMS,

@@ -3,6 +3,7 @@ import { FrontendApplication, FrontendApplicationContribution } from '@theia/cor
 import { inject, injectable } from '@theia/core/shared/inversify';
 import { WorkspaceService } from '@theia/workspace/lib/browser/workspace-service';
 import { toAthenaBackendUrl } from './athena-backend-endpoint';
+import { isAthenaDocumentCoveredBySession } from './athena-repository-session-model';
 
 export type AthenaRepositorySessionState = {
     lifecycle: 'idle' | 'activating' | 'ready' | 'unavailable';
@@ -28,6 +29,7 @@ export class AthenaRepositorySessionService implements FrontendApplicationContri
     protected readonly messageService: MessageService;
 
     protected readonly onDidChangeStateEmitter = new Emitter<AthenaRepositorySessionState>();
+    protected bootstrapOperation: Promise<void> | undefined;
     protected stateValue: AthenaRepositorySessionState = {
         lifecycle: 'idle',
         lspLifecycle: 'idle',
@@ -42,13 +44,23 @@ export class AthenaRepositorySessionService implements FrontendApplicationContri
         return this.onDidChangeStateEmitter.event;
     }
 
-    async onStart(_app: FrontendApplication): Promise<void> {
-        await this.workspaceService.ready;
-        if (!this.workspaceService.opened) {
-            await this.refreshSessionState();
-            return;
+    onStart(_app: FrontendApplication): void {
+        if (!this.bootstrapOperation) {
+            this.bootstrapOperation = this.bootstrapInitialState();
         }
-        await this.activateCurrentWorkspaceSession();
+    }
+
+    protected async bootstrapInitialState(): Promise<void> {
+        try {
+            await this.workspaceService.ready;
+            if (!this.workspaceService.opened) {
+                await this.refreshSessionState();
+                return;
+            }
+            await this.activateCurrentWorkspaceSession();
+        } finally {
+            this.bootstrapOperation = undefined;
+        }
     }
 
     async activateCurrentWorkspaceSession(): Promise<void> {
@@ -107,6 +119,38 @@ export class AthenaRepositorySessionService implements FrontendApplicationContri
                 lifecycle: 'unavailable',
                 message: `Failed to query Athena repository-session state: ${error instanceof Error ? error.message : String(error)}`
             });
+        }
+    }
+
+    async ensureSessionForDocument(documentUri: string): Promise<AthenaRepositorySessionState> {
+        if (!documentUri.toLowerCase().endsWith('.athena')) {
+            return this.stateValue;
+        }
+        if (isAthenaDocumentCoveredBySession(this.stateValue, documentUri)) {
+            return this.stateValue;
+        }
+        if (this.stateValue.lifecycle === 'activating') {
+            return this.stateValue;
+        }
+
+        try {
+            const response = await fetch(toAthenaBackendUrl('athena/repository-session/ensure', {
+                documentUri,
+            }), {
+                method: 'POST'
+            });
+            const nextState = await response.json() as AthenaRepositorySessionState;
+            this.setState(nextState);
+            return nextState;
+        } catch (error) {
+            const nextState: AthenaRepositorySessionState = {
+                ...this.stateValue,
+                lifecycle: 'unavailable',
+                lspLifecycle: 'unavailable',
+                message: `Failed to ensure the Athena repository session for ${documentUri}: ${error instanceof Error ? error.message : String(error)}`
+            };
+            this.setState(nextState);
+            return nextState;
         }
     }
 

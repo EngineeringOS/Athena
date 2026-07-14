@@ -49,6 +49,7 @@ include(
     ":kernel:part-model",
     ":kernel:connection-model",
     ":kernel:physical-model",
+    ":kernel:authoring-model",
     ":kernel:layout-model",
     ":kernel:geometry-model",
     ":kernel:projection-model",

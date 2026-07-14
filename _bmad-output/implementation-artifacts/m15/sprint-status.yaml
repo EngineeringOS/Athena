@@ -1,0 +1,54 @@
+# generated: 2026-07-13T18:41:06.4834627+08:00
+# last_updated: 2026-07-13T19:10:23.6048690+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m15
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks only the M15 milestone sequence sourced from `epics-M15-2026-07-13.md`.
+# - M15 proves guided semantic authoring above the completed M14 component-knowledge foundation and through the completed M8 mutation authority.
+
+generated: 2026-07-13T18:41:06.4834627+08:00
+last_updated: 2026-07-13T23:59:00.0000000+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m15
+
+development_status:
+  epic-1: done
+  1-1-publish-the-core-authoring-intent-contract: done
+  1-2-define-preview-and-acceptance-contracts-for-guided-authoring: done
+  1-3-publish-shared-authoring-runtime-and-transport-seams: done
+  epic-2: done
+  2-1-publish-the-first-governed-component-panel: done
+  2-2-insert-components-through-guided-placement-intents: done
+  2-3-keep-placement-synchronized-across-source-and-graph: done
+  epic-3: done
+  3-1-publish-a-canonical-inspector-snapshot: done
+  3-2-update-editable-properties-through-governed-intents: done
+  3-3-keep-implementation-port-and-trait-details-coherent: done
+  epic-4: done
+  4-1-publish-allowed-connection-targets-from-semantic-ports: done
+  4-2-create-connections-through-governed-connect-intents: done
+  4-3-reflect-connection-state-across-graph-and-inspector: done
+  epic-5: done
+  5-1-preserve-one-identity-everywhere: done
+  5-2-reuse-review-first-mutation-preview-for-guided-authoring: done
+  5-3-publish-the-first-guided-authoring-proof-corpus-and-verification-path: done

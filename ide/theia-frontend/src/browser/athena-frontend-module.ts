@@ -3,6 +3,7 @@ import '../../src/browser/style/index.css';
 import { FrontendApplicationContribution, WidgetFactory } from '@theia/core/lib/browser';
 import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
 import { ContainerModule } from '@theia/core/shared/inversify';
+import { AthenaComponentPanelWidget } from './athena-component-panel-widget';
 import { AthenaGraphAdapterService } from './athena-graph-adapter-service';
 import { AthenaGraphWorkbenchWidget } from './athena-graph-workbench-widget';
 import { AthenaHomeWidget } from './athena-home-widget';
@@ -26,6 +27,7 @@ export default new ContainerModule(bind => {
     bind(FrontendApplicationContribution).toService(AthenaSemanticSelectionService);
 
     bind(AthenaHomeWidget).toSelf();
+    bind(AthenaComponentPanelWidget).toSelf();
     bind(AthenaGraphWorkbenchWidget).toSelf();
     bind(AthenaRepositoryGraphWidget).toSelf();
     bind(AthenaSemanticScmWidget).toSelf();
@@ -33,6 +35,10 @@ export default new ContainerModule(bind => {
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaHomeWidget.ID,
         createWidget: () => context.container.get<AthenaHomeWidget>(AthenaHomeWidget)
+    })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(context => ({
+        id: AthenaComponentPanelWidget.ID,
+        createWidget: () => context.container.get<AthenaComponentPanelWidget>(AthenaComponentPanelWidget)
     })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaGraphWorkbenchWidget.ID,

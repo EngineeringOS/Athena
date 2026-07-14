@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":integrations:scm-git"))
+    implementation(project(":kernel:authoring-model"))
     implementation(project(":kernel:compiler"))
     implementation(project(":kernel:component-model"))
     implementation(project(":kernel:connection-model"))

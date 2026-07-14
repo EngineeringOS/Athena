@@ -6,6 +6,7 @@ export declare namespace AthenaCommands {
     const OPEN_ENGINEERING_REPOSITORY: Command;
     const OPEN_HOME: Command;
     const REVEAL_REPOSITORY_NAVIGATOR: Command;
+    const REVEAL_COMPONENT_PANEL: Command;
     const REVEAL_PROBLEMS: Command;
     const REVEAL_OUTPUT: Command;
     const REVEAL_SEMANTIC_INSPECTION: Command;

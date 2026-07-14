@@ -22,6 +22,7 @@ class AthenaExecutionContext(
     private var activeProjectionViewId: String? = null
     private var projectionMetadataState: AthenaProjectionMetadataState = AthenaProjectionMetadataState()
     private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
+    private var authoringSessionState: AthenaAuthoringSessionState = AthenaAuthoringSessionState()
     private var aiProposalState: AthenaAiProposalState = AthenaAiProposalState()
     private var aiReasoningProposalState: AthenaAiReasoningProposalState = AthenaAiReasoningProposalState()
     private var aiReasoningSessionState: AthenaAiReasoningSessionState = AthenaAiReasoningSessionState()
@@ -41,6 +42,9 @@ class AthenaExecutionContext(
 
     /** Resolves the runtime-owned source-mutation evaluation capability for the active project. */
     fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = services.sourceMutationRuntime()
+
+    /** Resolves the runtime-owned guided authoring session capability for the active project. */
+    fun authoringSessions(): AthenaAuthoringSessionRuntimeService = services.authoringSessions()
 
     /** Resolves the runtime-owned component-knowledge inspection capability for the active project. */
     fun componentKnowledgeRuntime(): AthenaComponentKnowledgeRuntimeService = services.componentKnowledgeRuntime()
@@ -181,6 +185,18 @@ class AthenaExecutionContext(
      */
     internal fun replaceCommandHistoryState(historyState: AthenaCommandHistoryState) {
         commandHistoryState = historyState
+    }
+
+    /**
+     * Returns the current internal guided authoring preview state for runtime-owned authoring services.
+     */
+    internal fun authoringSessionState(): AthenaAuthoringSessionState = authoringSessionState
+
+    /**
+     * Replaces the internal guided authoring preview state after one preview submission or decision.
+     */
+    internal fun replaceAuthoringSessionState(state: AthenaAuthoringSessionState) {
+        authoringSessionState = state
     }
 
     /**

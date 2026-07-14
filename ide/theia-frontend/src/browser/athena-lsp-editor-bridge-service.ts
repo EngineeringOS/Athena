@@ -16,6 +16,14 @@ import {
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
+import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
+import type {
+    AthenaAuthoringDecisionParams,
+    AthenaAuthoringPreviewDecisionPayload,
+    AthenaAuthoringPreviewParams,
+    AthenaAuthoringPreviewSubmissionPayload,
+    AthenaAuthoringSourceEditPayload
+} from './athena-authoring-protocol';
 import {
     ATHENA_LANGUAGE_ID,
     athenaLanguageConfiguration,
@@ -59,13 +67,21 @@ export type AthenaSemanticInspectionComponent = {
     name: string;
     kind: string;
     properties: string;
+    authoredProperties: AthenaSemanticInspectionProperty[];
     sourceRange: Range;
+};
+
+export type AthenaSemanticInspectionProperty = {
+    name: string;
+    valueKind: string;
+    valueText: string;
 };
 
 export type AthenaSemanticInspectionPort = {
     semanticId: string;
     path: string;
     properties: string;
+    authoredProperties: AthenaSemanticInspectionProperty[];
     sourceRange: Range;
 };
 
@@ -525,11 +541,12 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
 
     protected readonly openedDocumentVersions = new Map<string, number>();
     protected readonly documentSyncOperations = new Map<string, Promise<void>>();
+    protected readonly documentSymbolProviderDidChangeEmitter = new monaco.Emitter<void>();
     protected activeEditorListeners = new DisposableCollection();
     protected languageProviderListeners = new DisposableCollection();
     protected semanticBoundaryMessageShown = false;
 
-    async onStart(_app: FrontendApplication): Promise<void> {
+    onStart(_app: FrontendApplication): void {
         this.registerAthenaLanguage();
         this.outputChannel.appendLine('Athena semantic path ready: frontend -> LSP -> runtime/compiler');
 
@@ -538,6 +555,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             void this.forwardDidOpen(widget).catch(error => this.reportBridgeFailure(error));
         });
         this.repositorySessionService.onDidChangeState(state => {
+            this.notifyDocumentSymbolProviderChanged();
             if (state.lifecycle === 'ready') {
                 void this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
                 return;
@@ -548,7 +566,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         });
 
         this.bindCurrentEditor(this.editorManager.currentEditor);
-        await this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
+        void this.forwardDidOpen(this.editorManager.currentEditor).catch(error => this.reportBridgeFailure(error));
     }
 
     protected registerAthenaLanguage(): void {
@@ -561,6 +579,12 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             });
         }
         monaco.languages.setLanguageConfiguration(ATHENA_LANGUAGE_ID, athenaLanguageConfiguration);
+        this.languageProviderListeners.push(monaco.editor.onDidCreateModel(model => {
+            this.ensureAthenaModelLanguage(model);
+        }));
+        monaco.editor.getModels().forEach(model => {
+            this.ensureAthenaModelLanguage(model);
+        });
         this.registerAthenaLanguageProviders();
     }
 
@@ -587,7 +611,8 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             }
         }));
 
-        this.languageProviderListeners.push(monaco.languages.registerDocumentSymbolProvider(ATHENA_LANGUAGE_ID, {
+        const documentSymbolProvider = {
+            onDidChange: this.documentSymbolProviderDidChangeEmitter.event,
             provideDocumentSymbols: async model => {
                 const payload = await this.sendLanguageRequest<DocumentSymbol[]>(
                     'textDocument/documentSymbol',
@@ -600,7 +625,8 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
                 );
                 return (payload ?? []).map(symbol => this.toMonacoDocumentSymbol(symbol));
             }
-        }));
+        };
+        this.languageProviderListeners.push(monaco.languages.registerDocumentSymbolProvider(ATHENA_LANGUAGE_ID, documentSymbolProvider));
 
         this.languageProviderListeners.push(monaco.languages.registerDefinitionProvider(ATHENA_LANGUAGE_ID, {
             provideDefinition: async (model, position) => {
@@ -645,6 +671,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     }
 
     protected async ensureDocumentSynchronized(model: monaco.editor.ITextModel): Promise<void> {
+        this.ensureAthenaModelLanguage(model);
         const snapshot = await this.resolveDocumentSnapshot(model);
         if (!snapshot || !this.isAthenaDocumentUri(snapshot.uri)) {
             return;
@@ -676,6 +703,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     }
 
     protected async synchronizeDocumentSnapshot(snapshot: AthenaDocumentSnapshot): Promise<void> {
+        await this.repositorySessionService.ensureSessionForDocument(snapshot.uri);
         const sessionState = this.repositorySessionService.state;
         if (sessionState.lifecycle !== 'ready') {
             this.outputChannel.appendLine(
@@ -730,7 +758,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             if (method === 'textDocument/didOpen') {
                 this.outputChannel.appendLine(`frontend -> textDocument/didOpen -> Athena LSP -> runtime/compiler :: ${snapshot.uri}`);
                 this.outputChannel.show({ preserveFocus: true });
-                await this.repositorySessionService.refreshSessionState();
+                void this.repositorySessionService.refreshSessionState().catch(error => this.reportBridgeFailure(error));
                 if (!this.semanticBoundaryMessageShown) {
                     this.semanticBoundaryMessageShown = true;
                     void this.messageService.info('Athena .athena files now flow through Athena LSP as the sole semantic boundary.');
@@ -738,7 +766,8 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             } else {
                 this.outputChannel.appendLine(`frontend -> textDocument/didChange -> Athena LSP diagnostics :: ${snapshot.uri} @ v${snapshot.version}`);
             }
-            await this.syncPublishedDiagnostics(snapshot.uri);
+            this.notifyDocumentSymbolProviderChanged();
+            void this.syncPublishedDiagnosticsEventually(snapshot.uri).catch(error => this.reportBridgeFailure(error));
         });
     }
 
@@ -763,6 +792,9 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             return;
         }
 
+        const model = monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString()));
+        this.ensureAthenaModelLanguage(model);
+
         this.activeEditorListeners.push(widget.editor.onDocumentContentChanged(() => {
             void this.forwardDidChange(widget).catch(error => this.reportBridgeFailure(error));
         }));
@@ -784,10 +816,20 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         if (!this.isAthenaEditor(widget)) {
             return undefined;
         }
-        return monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString())) ?? undefined;
+        const model = monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString())) ?? undefined;
+        this.ensureAthenaModelLanguage(model);
+        return model;
     }
 
-    protected async syncPublishedDiagnostics(uri: string): Promise<void> {
+    protected ensureAthenaModelLanguage(model: monaco.editor.ITextModel | undefined): void {
+        if (!model || !this.isAthenaDocumentUri(model.uri.toString()) || model.getLanguageId() === ATHENA_LANGUAGE_ID) {
+            return;
+        }
+        monaco.editor.setModelLanguage(model, ATHENA_LANGUAGE_ID);
+        this.notifyDocumentSymbolProviderChanged();
+    }
+
+    protected async syncPublishedDiagnostics(uri: string): Promise<number> {
         const response = await fetch(toAthenaBackendUrl('athena/lsp/diagnostics', {
             uri,
         }));
@@ -800,6 +842,17 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         const diagnostics = payload[0]?.diagnostics ?? [];
         this.problemManager.setMarkers(new URI(uri), AthenaLspEditorBridgeService.MARKER_OWNER, diagnostics);
         this.outputChannel.appendLine(`Athena diagnostics synced to editor and Problems: ${diagnostics.length} item(s) for ${uri}`);
+        return diagnostics.length;
+    }
+
+    protected async syncPublishedDiagnosticsEventually(uri: string): Promise<void> {
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            const diagnosticCount = await this.syncPublishedDiagnostics(uri);
+            if (diagnosticCount > 0 || attempt === 4) {
+                return;
+            }
+            await new Promise(resolve => window.setTimeout(resolve, 100));
+        }
     }
 
     protected get outputChannel() {
@@ -841,6 +894,67 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             'athena/repositoryGraphSession',
             {}
         );
+    }
+
+    async requestComponentKnowledgeSession(): Promise<AthenaComponentKnowledgeSessionPayload | undefined> {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest<AthenaComponentKnowledgeSessionPayload>(
+            'athena/componentKnowledgeSession',
+            { marker: 'm15' },
+            model,
+        );
+    }
+
+    async requestAuthoringPreview(
+        params: AthenaAuthoringPreviewParams
+    ): Promise<AthenaAuthoringPreviewSubmissionPayload | undefined> {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest<AthenaAuthoringPreviewSubmissionPayload>(
+            'athena/authoringPreview',
+            params,
+            model,
+        );
+    }
+
+    async requestAuthoringDecision(
+        params: AthenaAuthoringDecisionParams
+    ): Promise<AthenaAuthoringPreviewDecisionPayload | undefined> {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest<AthenaAuthoringPreviewDecisionPayload>(
+            'athena/authoringDecision',
+            params,
+            model,
+        );
+    }
+
+    applyAuthoringSourceEdit(edit: AthenaAuthoringSourceEditPayload): void {
+        const model = monaco.editor.getModel(monaco.Uri.parse(edit.uri)) ?? this.currentAthenaEditorModel();
+        if (!model || model.uri.toString() !== edit.uri) {
+            throw new Error(`Athena authoring source edit target is not open: ${edit.uri}`);
+        }
+        model.pushEditOperations(
+            [],
+            [{
+                range: new monaco.Range(
+                    edit.range.start.line + 1,
+                    edit.range.start.character + 1,
+                    edit.range.end.line + 1,
+                    edit.range.end.character + 1,
+                ),
+                text: edit.newText,
+                forceMoveMarkers: true,
+            }],
+            () => null,
+        );
+        const currentEditor = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(currentEditor) || currentEditor.editor.uri.toString() !== edit.uri || !edit.selectionRange) {
+            return;
+        }
+        currentEditor.editor.selection = {
+            ...edit.selectionRange,
+            direction: 'ltr',
+        };
+        currentEditor.editor.revealRange(edit.selectionRange, { at: 'center' });
     }
 
     async requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined> {
@@ -922,11 +1036,11 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         params: unknown,
         model?: monaco.editor.ITextModel
     ): Promise<T | undefined> {
-        if (this.repositorySessionService.state.lifecycle !== 'ready') {
-            return undefined;
-        }
         if (model) {
             await this.ensureDocumentSynchronized(model);
+        }
+        if (this.repositorySessionService.state.lifecycle !== 'ready') {
+            return undefined;
         }
 
         const response = await fetch(toAthenaBackendUrl('athena/lsp/request'), {
@@ -1070,5 +1184,9 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         const message = error instanceof Error ? error.message : String(error);
         this.outputChannel.appendLine(`Athena LSP bridge failure: ${message}`);
         void this.messageService.warn(`Athena LSP bridge failure: ${message}`);
+    }
+
+    protected notifyDocumentSymbolProviderChanged(): void {
+        this.documentSymbolProviderDidChangeEmitter.fire();
     }
 }

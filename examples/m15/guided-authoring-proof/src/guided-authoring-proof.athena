@@ -1,0 +1,20 @@
+system GuidedAuthoringProof {
+
+
+  device ContactorPower {
+    type Switch
+    componentRef "electrical.contactor.power"
+    vendorPartNumber "proof.contactor.3pole"
+    label "ContactorPower"
+  }
+
+
+
+
+  device ContactorPower2 {
+    type Switch
+    componentRef "electrical.contactor.power"
+    vendorPartNumber "proof.contactor.3pole"
+    label "ContactorPower2"
+  }
+}

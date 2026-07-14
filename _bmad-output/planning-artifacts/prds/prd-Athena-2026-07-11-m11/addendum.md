@@ -119,16 +119,22 @@ But it should avoid:
 - cross-reference depth can become confusing if semantic identity is not kept explicit
 - parity pressure with EPLAN can bloat the milestone far beyond an honest first proof
 
-## 9. Recommended Carry-Forward Split
+## 9. Post-Closeout Carry-Forward Note
 
-If M11 succeeds, the recommended next ownership split is:
+M11 closed successfully on its actual architectural target:
 
-- **M11** - serious first electrical workbench depth
-- **M12** - broader knowledge-pack ecosystem or standards depth, depending on product priority
-- **M13** - deeper electrical domain workflows, compatibility adapters, or richer downstream targets
+- first serious electrical projection and workbench-depth foundation
+
+Post-closeout review clarified that the next real product gap is not broader knowledge or standards depth first.
+
+The next ownership split is now:
+
+- **M11** - serious first electrical projection, sheet, notation, repeated-reference, and dense-workbench foundation
+- **M12** - electrical renderer correctness, operator trust, viewport hardening, and professional electrical navigation density
+- **M13** - deeper electrical workflow breadth, compatibility expansion, or larger-corpus product depth
 
 That keeps the roadmap honest:
 
-- first prove serious electrical workbench depth
-- then widen governed engineering knowledge and product breadth
-- then decide how far compatibility and domain-product richness should go
+- first prove serious electrical downstream contracts and dense governed delivery
+- then make the electrical surface visually and operationally trustworthy
+- then widen deeper workflow and compatibility scope

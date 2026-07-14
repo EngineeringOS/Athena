@@ -6,6 +6,8 @@ import { CompletionItem, DocumentSymbol, Location, Range } from '@theia/core/sha
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
+import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
+import type { AthenaAuthoringDecisionParams, AthenaAuthoringPreviewDecisionPayload, AthenaAuthoringPreviewParams, AthenaAuthoringPreviewSubmissionPayload, AthenaAuthoringSourceEditPayload } from './athena-authoring-protocol';
 import { type AthenaSourceMutationPayload } from './athena-source-mutation-protocol';
 import type { AthenaGraphCommandIntentParams, AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
@@ -29,12 +31,19 @@ export type AthenaSemanticInspectionComponent = {
     name: string;
     kind: string;
     properties: string;
+    authoredProperties: AthenaSemanticInspectionProperty[];
     sourceRange: Range;
+};
+export type AthenaSemanticInspectionProperty = {
+    name: string;
+    valueKind: string;
+    valueText: string;
 };
 export type AthenaSemanticInspectionPort = {
     semanticId: string;
     path: string;
     properties: string;
+    authoredProperties: AthenaSemanticInspectionProperty[];
     sourceRange: Range;
 };
 export type AthenaSemanticInspectionConnection = {
@@ -419,10 +428,11 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
     protected readonly repositorySessionService: AthenaRepositorySessionService;
     protected readonly openedDocumentVersions: Map<string, number>;
     protected readonly documentSyncOperations: Map<string, Promise<void>>;
+    protected readonly documentSymbolProviderDidChangeEmitter: monaco.Emitter<void>;
     protected activeEditorListeners: DisposableCollection;
     protected languageProviderListeners: DisposableCollection;
     protected semanticBoundaryMessageShown: boolean;
-    onStart(_app: FrontendApplication): Promise<void>;
+    onStart(_app: FrontendApplication): void;
     protected registerAthenaLanguage(): void;
     protected registerAthenaLanguageProviders(): void;
     protected forwardDidOpen(widget: EditorWidget | undefined): Promise<void>;
@@ -436,11 +446,17 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
     protected isAthenaEditor(widget: EditorWidget | undefined): widget is EditorWidget;
     protected isAthenaDocumentUri(uri: string): boolean;
     protected currentAthenaEditorModel(): monaco.editor.ITextModel | undefined;
-    protected syncPublishedDiagnostics(uri: string): Promise<void>;
+    protected ensureAthenaModelLanguage(model: monaco.editor.ITextModel | undefined): void;
+    protected syncPublishedDiagnostics(uri: string): Promise<number>;
+    protected syncPublishedDiagnosticsEventually(uri: string): Promise<void>;
     protected get outputChannel(): import("@theia/output/lib/browser/output-channel").OutputChannel;
     requestSemanticInspection(widget: EditorWidget | undefined): Promise<AthenaSemanticInspectionPayload | undefined>;
     requestSourceMutationEvaluation(widget: EditorWidget | undefined): Promise<AthenaSourceMutationPayload | undefined>;
     requestRepositoryGraphSession(): Promise<AthenaRepositoryGraphSessionPayload | undefined>;
+    requestComponentKnowledgeSession(): Promise<AthenaComponentKnowledgeSessionPayload | undefined>;
+    requestAuthoringPreview(params: AthenaAuthoringPreviewParams): Promise<AthenaAuthoringPreviewSubmissionPayload | undefined>;
+    requestAuthoringDecision(params: AthenaAuthoringDecisionParams): Promise<AthenaAuthoringPreviewDecisionPayload | undefined>;
+    applyAuthoringSourceEdit(edit: AthenaAuthoringSourceEditPayload): void;
     requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined>;
     requestProjectionCommand(params: AthenaProjectionCommandParams): Promise<AthenaProjectionCommandPayload | undefined>;
     requestGraphCommandIntent(params: AthenaGraphCommandIntentParams): Promise<AthenaGraphCommandIntentPayload | undefined>;
@@ -468,5 +484,6 @@ export declare class AthenaLspEditorBridgeService implements FrontendApplication
         };
     }): monaco.IRange;
     protected reportBridgeFailure(error: unknown): void;
+    protected notifyDocumentSymbolProviderChanged(): void;
 }
 //# sourceMappingURL=athena-lsp-editor-bridge-service.d.ts.map

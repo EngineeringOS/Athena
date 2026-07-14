@@ -32,6 +32,7 @@ sources:
 companions:
   - '_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-12-m12/prd.md'
   - '_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-11-m11/ARCHITECTURE-SPINE.md'
+  - '_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-12-m12/RENDERER-FOUNDATION.md'
 ---
 
 # Architecture Spine - Athena M12

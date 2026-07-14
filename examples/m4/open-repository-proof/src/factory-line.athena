@@ -1,20 +1,113 @@
-system FactoryLine {
-  device PLC1 {
+system MachineNo000OpCpu {
+  device Rail302 {
     type Switch
-    model "S7-1200"
+    label "302"
+    sheetRef "12-A17"
+    role "24V DC supply"
   }
 
-  device M1 {
-    type Motor
+  device Rail301 {
+    type Switch
+    label "301"
+    sheetRef "14-H17"
+    role "0V common"
   }
 
-  port PLC1.out {
+  device RailPE {
+    type Switch
+    label "PE"
+    sheetRef "6-B17"
+    role "protective earth"
+  }
+
+  device CPU313C {
+    type Switch
+    label "CPU 313C"
+    model "6ES7 313-5BF03-0AB0"
+    part "part 1 of 8"
+    note "Machine no 000 - OP, CPU."
+  }
+
+  device OP77B {
+    type Switch
+    label "OP77B"
+    model "6AV6641-0CA01-0AX0"
+    note "Operator panel"
+  }
+
+  port Rail302.out {
     direction out
-    signal Digital
+    signal Power24
   }
 
-  port M1.in {
-    direction in
-    signal Digital
+  port Rail301.out {
+    direction out
+    signal Common24
   }
+
+  port RailPE.out {
+    direction out
+    signal ProtectiveEarth
+  }
+
+  port CPU313C.lplus {
+    direction in
+    signal Power24
+  }
+
+  port CPU313C.m {
+    direction in
+    signal Common24
+  }
+
+  port CPU313C.pe {
+    direction in
+    signal ProtectiveEarth
+  }
+
+  port CPU313C.mpi {
+    direction out
+    signal MPIBus
+  }
+
+  port OP77B.lplus {
+    direction in
+    signal Power24
+  }
+
+  port OP77B.m {
+    direction in
+    signal Common24
+  }
+
+  port OP77B.pe {
+    direction in
+    signal ProtectiveEarth
+  }
+
+  port OP77B.usb {
+    direction in
+    signal UsbService
+  }
+
+  port OP77B.if1a {
+    direction in
+    signal MPIBus
+  }
+
+  port OP77B.if1b {
+    direction in
+    signal MPIBus
+  }
+
+  connect Rail302.out -> CPU313C.lplus
+  connect Rail301.out -> CPU313C.m
+  connect RailPE.out -> CPU313C.pe
+
+  connect Rail302.out -> OP77B.lplus
+  connect Rail301.out -> OP77B.m
+  connect RailPE.out -> OP77B.pe
+
+  connect CPU313C.mpi -> OP77B.if1a
+  connect CPU313C.mpi -> OP77B.if1b
 }

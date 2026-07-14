@@ -5,6 +5,7 @@ import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
@@ -532,6 +533,19 @@ class AthenaCommandRuntimeService internal constructor() {
             ?: return AthenaCommandApplicationRejected("Source port `${command.sourcePortSemanticId}` does not exist.")
         val targetPort = portsBySemanticId[command.targetPortSemanticId]
             ?: return AthenaCommandApplicationRejected("Target port `${command.targetPortSemanticId}` does not exist.")
+        (
+            validateCompatiblePortConnection(
+                context = context,
+                sourcePortSemanticId = sourcePort.id.value,
+                targetPortSemanticId = targetPort.id.value,
+            )
+                ?: validateCompatiblePortConnection(
+                    sourcePort = sourcePort,
+                    targetPort = targetPort,
+                )
+            )?.let { reason ->
+            return AthenaCommandApplicationRejected(reason)
+        }
 
         val connectionIdentity = StableSemanticIdentity(
             "connection:${sourcePort.authoredPath()}->${targetPort.authoredPath()}",
@@ -626,6 +640,77 @@ private fun projectionConsequencesFor(
  * Returns the authored semantic path for one canonical port.
  */
 private fun EngineeringPort.authoredPath(): String = (ownerReference.authoredPath + name).joinToString(".")
+
+/**
+ * Applies the first narrow semantic-port compatibility guard for guided connection authoring.
+ *
+ * The guard stays downstream of active component knowledge and keeps the command runtime from
+ * accepting obviously incompatible graph-originated connects when semantic-port metadata is
+ * available for both endpoints.
+ */
+private fun validateCompatiblePortConnection(
+    context: AthenaExecutionContext,
+    sourcePortSemanticId: String,
+    targetPortSemanticId: String,
+): String? {
+    val componentKnowledge = context.componentKnowledgeRuntime().inspect(context) as? AthenaComponentKnowledgeReady ?: return null
+    val portsBySemanticId = componentKnowledge.semanticPorts.associateBy { port -> port.portSemanticId.value }
+    val sourcePort = portsBySemanticId[sourcePortSemanticId] ?: return null
+    val targetPort = portsBySemanticId[targetPortSemanticId] ?: return null
+
+    if (sourcePort.definition.signalFamilyId != targetPort.definition.signalFamilyId) {
+        return "Port `${sourcePortSemanticId}` cannot connect to `${targetPortSemanticId}` because their signal families differ."
+    }
+    if (!directionsAreCompatible(sourcePort.definition.direction.name, targetPort.definition.direction.name)) {
+        return "Port `${sourcePortSemanticId}` cannot connect to `${targetPortSemanticId}` because their semantic directions are incompatible."
+    }
+    if (sourcePort.definition.protocolIds.isNotEmpty() || targetPort.definition.protocolIds.isNotEmpty()) {
+        val sharedProtocols = sourcePort.definition.protocolIds.intersect(targetPort.definition.protocolIds)
+        if (sharedProtocols.isEmpty()) {
+            return "Port `${sourcePortSemanticId}` cannot connect to `${targetPortSemanticId}` because they do not share a compatible protocol."
+        }
+    }
+    return null
+}
+
+private fun validateCompatiblePortConnection(
+    sourcePort: EngineeringPort,
+    targetPort: EngineeringPort,
+): String? {
+    val sourceSignal = sourcePort.symbolProperty("signal") ?: return null
+    val targetSignal = targetPort.symbolProperty("signal") ?: return null
+    if (sourceSignal != targetSignal) {
+        return "Port `${sourcePort.id.value}` cannot connect to `${targetPort.id.value}` because their signal families differ."
+    }
+    val sourceDirection = sourcePort.symbolProperty("direction") ?: return null
+    val targetDirection = targetPort.symbolProperty("direction") ?: return null
+    if (!directionsAreCompatible(sourceDirection, targetDirection)) {
+        return "Port `${sourcePort.id.value}` cannot connect to `${targetPort.id.value}` because their semantic directions are incompatible."
+    }
+    return null
+}
+
+private fun directionsAreCompatible(sourceDirection: String, targetDirection: String): Boolean {
+    return when (sourceDirection.lowercase()) {
+        "output", "out" -> targetDirection.lowercase() in setOf("input", "in", "passive", "bidirectional")
+        "input", "in" -> targetDirection.lowercase() in setOf("output", "out", "passive", "bidirectional")
+        "bidirectional" -> targetDirection.lowercase() in setOf("output", "out", "input", "in", "bidirectional")
+        "passive" -> true
+        else -> false
+    }
+}
+
+private fun EngineeringPort.symbolProperty(name: String): String? {
+    return properties
+        .firstOrNull { property -> property.name == name }
+        ?.value
+        ?.let { value ->
+            when (value) {
+                is EngineeringPropertyValue.Symbol -> value.text
+                is EngineeringPropertyValue.Text -> value.text
+            }
+        }
+}
 
 /**
  * Converts one canonical port into a resolved reference suitable for command-created connections.

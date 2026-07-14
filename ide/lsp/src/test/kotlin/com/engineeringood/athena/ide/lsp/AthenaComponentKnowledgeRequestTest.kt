@@ -34,8 +34,19 @@ class AthenaComponentKnowledgeRequestTest {
 
                 assertEquals("ready", payload.status)
                 assertEquals("factory-line", payload.projectName)
+                assertEquals("system:ComponentKnowledge", payload.systemSemanticId)
                 assertEquals("frontend -> LSP -> runtime/compiler", payload.semanticPath)
                 assertEquals(listOf("com.engineeringood.athena.domain.electrical-runtime"), payload.contributingPluginIds)
+                assertEquals(
+                    listOf(
+                        "electrical.contactor.power",
+                        "electrical.motor.ac",
+                        "electrical.plc.cpu",
+                        "electrical.power-supply.dc24",
+                        "electrical.relay.overload",
+                    ),
+                    payload.availableComponents.map { component -> component.conceptId },
+                )
                 assertEquals(
                     listOf("component:M1", "component:PLC1"),
                     payload.components.map { component -> component.semanticSubjectId },
@@ -87,6 +98,8 @@ class AthenaComponentKnowledgeRequestTest {
                 )
 
                 assertEquals("ready", payload.status)
+                assertEquals("system:ComponentKnowledgeUnresolved", payload.systemSemanticId)
+                assertEquals(5, payload.availableComponents.size)
                 assertTrue(payload.components.isEmpty())
                 assertEquals(
                     listOf("component.definition.unresolved"),

@@ -5,6 +5,19 @@ import { Disposable, DisposableCollection } from '@theia/core/lib/common/disposa
 import { inject, injectable, postConstruct } from '@theia/core/shared/inversify';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import {
+    buildAuthoringDecisionRequest,
+    buildUpdateComponentPropertiesPreviewRequest,
+    AthenaAuthoringPreviewPayload,
+} from './athena-authoring-protocol';
+import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
+import {
+    AthenaInspectorComponentSnapshot,
+    AthenaInspectorEditDraft,
+    buildAthenaInspectorComponentSnapshot,
+    buildAthenaInspectorDraftChanges,
+    createAthenaInspectorEditDraft,
+} from './athena-inspector-model';
+import {
     AthenaAiReasoningProposalPayload,
     AthenaAiReasoningStatePayload,
     AthenaLspEditorBridgeService,
@@ -32,11 +45,17 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
 
     protected currentEditorListeners = new DisposableCollection();
     protected inspection: AthenaSemanticInspectionPayload | undefined;
+    protected componentKnowledge: AthenaComponentKnowledgeSessionPayload | undefined;
     protected reasoningState: AthenaAiReasoningStatePayload | undefined;
     protected errorMessage: string | undefined;
     protected reasoningErrorMessage: string | undefined;
+    protected authoringMessage: string | undefined;
+    protected authoringPreview: AthenaAuthoringPreviewPayload | undefined;
+    protected inspectorDraft: AthenaInspectorEditDraft | undefined;
     protected loading = false;
     protected reasoningLoading = false;
+    protected authoringPreviewing = false;
+    protected authoringApplyingDecision = false;
     protected refreshHandle: number | undefined;
 
     @postConstruct()
@@ -96,7 +115,11 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
             this.reasoningLoading = false;
             this.errorMessage = undefined;
             this.reasoningErrorMessage = undefined;
+            this.authoringMessage = undefined;
+            this.authoringPreview = undefined;
+            this.inspectorDraft = undefined;
             this.inspection = undefined;
+            this.componentKnowledge = undefined;
             this.reasoningState = undefined;
             this.update();
             return;
@@ -107,7 +130,11 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
             this.reasoningLoading = false;
             this.errorMessage = undefined;
             this.reasoningErrorMessage = undefined;
+            this.authoringMessage = undefined;
+            this.authoringPreview = undefined;
+            this.inspectorDraft = undefined;
             this.inspection = undefined;
+            this.componentKnowledge = undefined;
             this.reasoningState = undefined;
             this.update();
             return;
@@ -122,11 +149,13 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
 
         try {
             const inspection = await this.lspEditorBridgeService.requestSemanticInspection(currentEditor);
+            const componentKnowledge = await this.lspEditorBridgeService.requestComponentKnowledgeSession();
             const reasoningState = await this.lspEditorBridgeService.requestAiReasoningState();
             if (this.editorManager.currentEditor?.editor.uri.toString() !== currentUri) {
                 return;
             }
             this.inspection = inspection;
+            this.componentKnowledge = componentKnowledge;
             this.reasoningState = reasoningState;
         } catch (error) {
             if (this.editorManager.currentEditor?.editor.uri.toString() !== currentUri) {
@@ -135,7 +164,11 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
             const message = error instanceof Error ? error.message : String(error);
             this.errorMessage = message;
             this.reasoningErrorMessage = message;
+            this.authoringMessage = undefined;
+            this.authoringPreview = undefined;
+            this.inspectorDraft = undefined;
             this.inspection = undefined;
+            this.componentKnowledge = undefined;
             this.reasoningState = undefined;
         } finally {
             if (this.editorManager.currentEditor?.editor.uri.toString() === currentUri) {
@@ -209,6 +242,164 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
         return !!widget && widget.editor.uri.toString().toLowerCase().endsWith('.athena');
     }
 
+    protected currentSelectedComponentSnapshot(): AthenaInspectorComponentSnapshot | undefined {
+        return buildAthenaInspectorComponentSnapshot({
+            inspection: this.inspection,
+            knowledge: this.componentKnowledge,
+            selection: this.semanticSelectionService.selection,
+        });
+    }
+
+    protected ensureInspectorDraft(
+        snapshot: AthenaInspectorComponentSnapshot | undefined,
+    ): AthenaInspectorEditDraft | undefined {
+        if (!snapshot) {
+            this.inspectorDraft = undefined;
+            this.authoringPreview = undefined;
+            return undefined;
+        }
+        if (!this.inspectorDraft || this.inspectorDraft.semanticId !== snapshot.semanticId) {
+            this.inspectorDraft = createAthenaInspectorEditDraft(snapshot);
+            this.authoringPreview = undefined;
+            this.authoringMessage = undefined;
+        }
+        return this.inspectorDraft;
+    }
+
+    protected updateInspectorDraft(
+        patch: Partial<Omit<AthenaInspectorEditDraft, 'semanticId'>>,
+    ): void {
+        if (!this.inspectorDraft) {
+            return;
+        }
+        this.inspectorDraft = {
+            ...this.inspectorDraft,
+            ...patch,
+        };
+        this.authoringPreview = undefined;
+        this.authoringMessage = undefined;
+        this.update();
+    }
+
+    protected resetInspectorDraft(snapshot: AthenaInspectorComponentSnapshot): void {
+        this.inspectorDraft = createAthenaInspectorEditDraft(snapshot);
+        this.authoringPreview = undefined;
+        this.authoringMessage = undefined;
+        this.update();
+    }
+
+    protected async previewInspectorUpdate(
+        snapshot: AthenaInspectorComponentSnapshot,
+    ): Promise<void> {
+        const draft = this.ensureInspectorDraft(snapshot);
+        if (!draft) {
+            return;
+        }
+        const changes = buildAthenaInspectorDraftChanges({
+            snapshot,
+            draft,
+        });
+        if (Object.keys(changes).length === 0) {
+            this.authoringPreview = undefined;
+            this.authoringMessage = 'No governed property changes are pending for the selected component.';
+            this.update();
+            return;
+        }
+
+        this.authoringPreviewing = true;
+        this.authoringMessage = undefined;
+        this.update();
+        try {
+            const submission = await this.lspEditorBridgeService.requestAuthoringPreview(
+                buildUpdateComponentPropertiesPreviewRequest({
+                    componentId: snapshot.semanticId,
+                    name: changes.name,
+                    label: changes.label,
+                    description: changes.description,
+                    preferredImplementationId: changes.preferredImplementationId,
+                    originDetail: `semantic-inspection:${snapshot.semanticId}`,
+                }),
+            );
+            this.authoringPreview = submission?.preview;
+            if (!submission?.preview) {
+                this.authoringMessage = 'Athena could not create a governed inspector update preview for the selected component.';
+            }
+        } catch (error) {
+            this.authoringMessage = error instanceof Error ? error.message : String(error);
+            this.authoringPreview = undefined;
+        } finally {
+            this.authoringPreviewing = false;
+            this.update();
+        }
+    }
+
+    protected async acceptAuthoringPreview(): Promise<void> {
+        const preview = this.authoringPreview;
+        if (!preview) {
+            return;
+        }
+        this.authoringApplyingDecision = true;
+        this.authoringMessage = undefined;
+        this.update();
+
+        try {
+            const decision = await this.lspEditorBridgeService.requestAuthoringDecision(
+                buildAuthoringDecisionRequest({
+                    previewId: preview.previewId,
+                    intentId: preview.intentId,
+                    decision: 'accepted',
+                    note: 'Semantic inspection update accepted.',
+                }),
+            );
+            if (!decision?.sourceEdit) {
+                throw new Error('Athena accepted the inspector preview but did not return a governed source edit.');
+            }
+            this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
+            if (decision.sourceEdit.suggestedSemanticId) {
+                window.setTimeout(() => {
+                    void this.semanticSelectionService.selectSemanticId(decision.sourceEdit!.suggestedSemanticId!).catch(error => {
+                        this.authoringMessage = error instanceof Error ? error.message : String(error);
+                        this.update();
+                    });
+                }, 180);
+            }
+            this.authoringPreview = undefined;
+            this.scheduleRefresh();
+        } catch (error) {
+            this.authoringMessage = error instanceof Error ? error.message : String(error);
+        } finally {
+            this.authoringApplyingDecision = false;
+            this.update();
+        }
+    }
+
+    protected async rejectAuthoringPreview(): Promise<void> {
+        const preview = this.authoringPreview;
+        if (!preview) {
+            return;
+        }
+        this.authoringApplyingDecision = true;
+        this.authoringMessage = undefined;
+        this.update();
+
+        try {
+            await this.lspEditorBridgeService.requestAuthoringDecision(
+                buildAuthoringDecisionRequest({
+                    previewId: preview.previewId,
+                    intentId: preview.intentId,
+                    decision: 'rejected',
+                    note: 'Semantic inspection update rejected.',
+                }),
+            );
+            this.authoringPreview = undefined;
+        } catch (error) {
+            this.authoringMessage = error instanceof Error ? error.message : String(error);
+        } finally {
+            this.authoringApplyingDecision = false;
+            this.update();
+        }
+    }
+
     protected render(): React.ReactNode {
         const sessionState = this.repositorySessionService.state;
         const currentEditor = this.editorManager.currentEditor;
@@ -258,6 +449,15 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
                 </section>
             </div>;
         }
+        const selectedComponentSnapshot = this.currentSelectedComponentSnapshot();
+        const inspectorDraft = this.ensureInspectorDraft(selectedComponentSnapshot);
+        const draftChanges = selectedComponentSnapshot && inspectorDraft
+            ? buildAthenaInspectorDraftChanges({
+                snapshot: selectedComponentSnapshot,
+                draft: inspectorDraft,
+            })
+            : {};
+        const hasDraftChanges = Object.keys(draftChanges).length > 0;
 
         return <div className='athena-semantic-inspection'>
             <header className='athena-semantic-inspection__header'>
@@ -288,6 +488,178 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
                         <code>{this.semanticSelectionService.selection.semanticId}</code>
                     </div>
                     : <p>No synchronized semantic selection is active yet.</p>}
+            </section>
+
+            <section className='athena-semantic-inspection__section'>
+                <h3>Selected component</h3>
+                {!selectedComponentSnapshot
+                    ? <p>Select one component or one of its ports to inspect governed concept, implementation, port, and physical-trait details.</p>
+                    : <>
+                        <div className='athena-semantic-inspection__selection'>
+                            <strong>{selectedComponentSnapshot.name}</strong><br />
+                            <code>{selectedComponentSnapshot.semanticId}</code>
+                        </div>
+                        {inspectorDraft
+                            ? <>
+                                <h4 className='athena-semantic-inspection__subheading'>Editable properties</h4>
+                                <div className='athena-semantic-inspection__control-grid'>
+                                    <div className='athena-semantic-inspection__control'>
+                                        <label htmlFor='athena-inspector-name'>Name</label>
+                                        <input
+                                            id='athena-inspector-name'
+                                            type='text'
+                                            value={inspectorDraft.name}
+                                            onChange={event => this.updateInspectorDraft({ name: event.target.value })}
+                                        />
+                                    </div>
+                                    <div className='athena-semantic-inspection__control'>
+                                        <label htmlFor='athena-inspector-label'>Label</label>
+                                        <input
+                                            id='athena-inspector-label'
+                                            type='text'
+                                            value={inspectorDraft.label}
+                                            onChange={event => this.updateInspectorDraft({ label: event.target.value })}
+                                        />
+                                    </div>
+                                    <div className='athena-semantic-inspection__control athena-semantic-inspection__control--wide'>
+                                        <label htmlFor='athena-inspector-description'>Description</label>
+                                        <textarea
+                                            id='athena-inspector-description'
+                                            value={inspectorDraft.description}
+                                            onChange={event => this.updateInspectorDraft({ description: event.target.value })}
+                                        />
+                                    </div>
+                                    <div className='athena-semantic-inspection__control athena-semantic-inspection__control--wide'>
+                                        <label htmlFor='athena-inspector-implementation'>Implementation</label>
+                                        <select
+                                            id='athena-inspector-implementation'
+                                            value={inspectorDraft.preferredImplementationId ?? ''}
+                                            onChange={event => this.updateInspectorDraft({
+                                                preferredImplementationId: event.target.value || undefined,
+                                            })}
+                                            disabled={selectedComponentSnapshot.implementationOptions.length === 0}
+                                        >
+                                            {selectedComponentSnapshot.implementationOptions.length === 0
+                                                ? <option value=''>No governed implementation choices</option>
+                                                : selectedComponentSnapshot.implementationOptions.map(option => <option
+                                                    key={option.implementationId}
+                                                    value={option.implementationId}
+                                                >
+                                                    {option.displayName} | {option.vendorId} | {option.vendorPartNumber}
+                                                </option>)}
+                                        </select>
+                                        {selectedComponentSnapshot.implementationOptions.length > 0
+                                            ? <div className='athena-semantic-inspection__hint'>
+                                                Governed implementation choices come from the active component knowledge catalog.
+                                            </div>
+                                            : undefined}
+                                    </div>
+                                </div>
+                                <div className='athena-semantic-inspection__actions'>
+                                    <button
+                                        className='athena-semantic-inspection__action'
+                                        type='button'
+                                        disabled={!hasDraftChanges || this.authoringPreviewing || this.authoringApplyingDecision}
+                                        onClick={() => void this.previewInspectorUpdate(selectedComponentSnapshot)}
+                                    >
+                                        {this.authoringPreviewing ? 'Previewing...' : 'Preview update'}
+                                    </button>
+                                    <button
+                                        className='athena-semantic-inspection__action athena-semantic-inspection__action--secondary'
+                                        type='button'
+                                        disabled={this.authoringPreviewing || this.authoringApplyingDecision}
+                                        onClick={() => this.resetInspectorDraft(selectedComponentSnapshot)}
+                                    >
+                                        Reset
+                                    </button>
+                                </div>
+                                {this.authoringPreview || this.authoringMessage
+                                    ? <div className='athena-semantic-inspection__preview'>
+                                        <div className='athena-semantic-inspection__preview-header'>
+                                            <strong>{this.authoringPreview?.title ?? 'Pending update'}</strong>
+                                            {this.authoringPreview
+                                                ? <span className={`athena-semantic-inspection__status athena-semantic-inspection__status--${this.authoringPreview.status}`}>
+                                                    {this.authoringPreview.status}
+                                                </span>
+                                                : undefined}
+                                        </div>
+                                        {this.authoringMessage
+                                            ? <p>{this.authoringMessage}</p>
+                                            : undefined}
+                                        {this.authoringPreview
+                                            ? <>
+                                                <ul className='athena-semantic-inspection__list'>
+                                                    {this.authoringPreview.changes.map(change => <li
+                                                        key={`${change.kind}:${change.title}`}
+                                                        className='athena-semantic-inspection__item'
+                                                    >
+                                                        <div className='athena-semantic-inspection__item-title'>{change.title}</div>
+                                                        {change.summary
+                                                            ? <div className='athena-semantic-inspection__item-meta'>{change.summary}</div>
+                                                            : undefined}
+                                                    </li>)}
+                                                </ul>
+                                                <div className='athena-semantic-inspection__actions'>
+                                                    <button
+                                                        className='athena-semantic-inspection__action'
+                                                        type='button'
+                                                        disabled={this.authoringApplyingDecision}
+                                                        onClick={() => void this.acceptAuthoringPreview()}
+                                                    >
+                                                        {this.authoringApplyingDecision ? 'Applying...' : 'Accept'}
+                                                    </button>
+                                                    <button
+                                                        className='athena-semantic-inspection__action athena-semantic-inspection__action--secondary'
+                                                        type='button'
+                                                        disabled={this.authoringApplyingDecision}
+                                                        onClick={() => void this.rejectAuthoringPreview()}
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            </>
+                                            : undefined}
+                                    </div>
+                                    : undefined}
+                            </>
+                            : undefined}
+                        <ul className='athena-semantic-inspection__detail-list'>
+                            <li><span>Kind</span><strong>{selectedComponentSnapshot.kind}</strong></li>
+                            <li><span>Concept</span><strong>{selectedComponentSnapshot.conceptDisplayName} <code>{selectedComponentSnapshot.conceptId}</code></strong></li>
+                            <li><span>Reference</span><strong><code>{selectedComponentSnapshot.authoredComponentReference}</code></strong></li>
+                            <li><span>Implementation</span><strong>{selectedComponentSnapshot.vendorPartNumber ? `${selectedComponentSnapshot.vendorId ?? 'vendor'} / ${selectedComponentSnapshot.vendorPartNumber}` : 'Concept only'}</strong></li>
+                            <li><span>Knowledge source</span><strong>Active component knowledge session</strong></li>
+                        </ul>
+                        <h4 className='athena-semantic-inspection__subheading'>Semantic ports</h4>
+                        {selectedComponentSnapshot.ports.length === 0
+                            ? <p>No governed semantic ports were resolved for this selected component.</p>
+                            : <ul className='athena-semantic-inspection__list'>
+                                {selectedComponentSnapshot.ports.map(port => <li
+                                    key={port.semanticId}
+                                    className={`athena-semantic-inspection__item ${port.selected ? 'athena-semantic-inspection__item--selected' : ''}`}
+                                >
+                                    <button
+                                        className='athena-semantic-inspection__selectable'
+                                        type='button'
+                                        onClick={() => void this.semanticSelectionService.selectSemanticId(port.semanticId)}
+                                    >
+                                        <span className='athena-semantic-inspection__item-title'>{port.label}</span>
+                                        <span className='athena-semantic-inspection__item-meta'>
+                                            {port.direction} | {port.signalFamilyId} | {port.roleId}
+                                            {port.connectedPaths.length > 0 ? ` | connected to ${port.connectedPaths.join(', ')}` : ''}
+                                        </span>
+                                    </button>
+                                </li>)}
+                            </ul>}
+                        <h4 className='athena-semantic-inspection__subheading'>Physical traits</h4>
+                        {selectedComponentSnapshot.physicalTraits.length === 0
+                            ? <p>No governed physical traits were resolved for this selected component.</p>
+                            : <ul className='athena-semantic-inspection__dense-list'>
+                                {selectedComponentSnapshot.physicalTraits.map(trait => <li key={`${selectedComponentSnapshot.semanticId}:${trait.displayName}`}>
+                                    <strong>{trait.displayName}</strong> {trait.widthMillimeters}x{trait.heightMillimeters}x{trait.depthMillimeters} mm | {trait.mountingTypeId}
+                                </li>)}
+                            </ul>}
+                    </>}
             </section>
 
             <section className='athena-semantic-inspection__section'>

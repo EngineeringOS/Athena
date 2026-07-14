@@ -33,15 +33,20 @@ class ElectricalRuntimeComponentKnowledgeTest {
     }
 
     @Test
-    fun `publishes one siemens first implementation for each targeted proof family`() {
+    fun `publishes Siemens first implementations for each targeted proof family and preserves governed alternatives`() {
         val concepts = electricalEngineeringConcepts()
         val implementations = siemensElectricalPartImplementations()
 
-        assertEquals(5, implementations.size)
+        assertEquals(6, implementations.size)
         assertEquals(setOf("siemens"), implementations.map { implementation -> implementation.vendorId.value }.toSet())
+        assertTrue(
+            concepts.all { concept ->
+                implementations.any { implementation -> implementation.conceptId == concept.conceptId }
+            },
+        )
         assertEquals(
-            concepts.map { concept -> concept.conceptId }.toSet(),
-            implementations.map { implementation -> implementation.conceptId }.toSet(),
+            2,
+            implementations.count { implementation -> implementation.conceptId.value == "electrical.plc.cpu" },
         )
         assertTrue(
             implementations.none { implementation ->

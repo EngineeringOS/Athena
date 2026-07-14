@@ -25703,6 +25703,7 @@ details.theia-tool-confirmation-args > summary::marker {
 }
 .athena-home__panel-header,
 .athena-semantic-inspection__section h3,
+.athena-semantic-inspection__subheading,
 .athena-repository-graph__section h3,
 .athena-semantic-scm__section h3,
 .athena-semantic-scm__subsection h4,
@@ -25715,6 +25716,9 @@ details.theia-tool-confirmation-args > summary::marker {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+.athena-semantic-inspection__subheading {
+  margin-top: 12px;
 }
 .athena-home__panel-header h2,
 .athena-semantic-inspection__header h2,
@@ -25976,20 +25980,24 @@ details.theia-tool-confirmation-args > summary::marker {
   border-radius: 0;
   background: transparent;
 }
-.athena-semantic-scm__control-grid {
+.athena-semantic-scm__control-grid,
+.athena-semantic-inspection__control-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
-.athena-semantic-scm__control {
+.athena-semantic-scm__control,
+.athena-semantic-inspection__control {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.athena-semantic-scm__control--wide {
+.athena-semantic-scm__control--wide,
+.athena-semantic-inspection__control--wide {
   grid-column: 1 / -1;
 }
-.athena-semantic-scm__control label {
+.athena-semantic-scm__control label,
+.athena-semantic-inspection__control label {
   color: var(--athena-workbench-muted);
   font-size: 11px;
   font-weight: 700;
@@ -25997,7 +26005,11 @@ details.theia-tool-confirmation-args > summary::marker {
   text-transform: uppercase;
 }
 .athena-semantic-scm__control input,
-.athena-semantic-scm__control textarea {
+.athena-semantic-scm__control textarea,
+.athena-semantic-scm__control select,
+.athena-semantic-inspection__control input,
+.athena-semantic-inspection__control textarea,
+.athena-semantic-inspection__control select {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--athena-workbench-border-strong);
@@ -26007,11 +26019,13 @@ details.theia-tool-confirmation-args > summary::marker {
   color: var(--athena-workbench-text);
   font: inherit;
 }
-.athena-semantic-scm__control textarea {
+.athena-semantic-scm__control textarea,
+.athena-semantic-inspection__control textarea {
   min-height: 76px;
   resize: vertical;
 }
-.athena-semantic-scm__hint {
+.athena-semantic-scm__hint,
+.athena-semantic-inspection__hint {
   color: var(--athena-workbench-muted);
   font-size: 11px;
 }
@@ -26548,18 +26562,247 @@ details.theia-tool-confirmation-args > summary::marker {
   font-size: 16px;
   font-weight: 700;
 }
+.athena-component-panel-widget {
+  height: 100%;
+}
+.athena-component-panel {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 10px 12px;
+  background: var(--athena-workbench-surface-alt);
+  color: var(--athena-workbench-text);
+  overflow: auto;
+}
+.athena-component-panel code {
+  padding: 1px 5px;
+  border-radius: var(--athena-workbench-radius-sm);
+  background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 88%, transparent);
+  color: var(--athena-workbench-accent);
+}
+.athena-component-panel__empty {
+  padding: 12px;
+  border: 1px solid var(--athena-workbench-border);
+  border-radius: var(--athena-workbench-radius);
+  background: var(--athena-workbench-surface);
+}
+.athena-component-panel__empty--error {
+  border-color: rgba(226, 139, 139, 0.28);
+}
+.athena-component-panel__empty h2 {
+  margin: 0 0 6px;
+  color: var(--athena-workbench-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+.athena-component-panel__empty p,
+.athena-component-panel__section p,
+.athena-component-panel__header p,
+.athena-component-panel__item-summary {
+  color: var(--athena-workbench-muted);
+  line-height: 1.5;
+}
+.athena-component-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.athena-component-panel__header h2 {
+  margin: 0;
+  color: var(--athena-workbench-text);
+  font-size: 16px;
+  font-weight: 700;
+}
+.athena-component-panel__eyebrow {
+  margin-bottom: 4px;
+  color: var(--athena-workbench-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.athena-component-panel__status,
+.athena-component-panel__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--athena-workbench-border-strong);
+  border-radius: var(--athena-workbench-radius);
+  background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 72%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.athena-component-panel__status--ready {
+  color: var(--athena-workbench-success);
+}
+.athena-component-panel__status--unavailable {
+  color: var(--athena-workbench-error);
+}
+.athena-component-panel__summary {
+  margin: 0;
+  padding: 0 0 8px;
+}
+.athena-component-panel__summary-list,
+.athena-component-panel__detail-list,
+.athena-component-panel__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.athena-component-panel__summary-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: var(--athena-workbench-row-min-height);
+  padding: 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.athena-component-panel__summary-list li:first-child {
+  border-top: 0;
+}
+.athena-component-panel__summary-list span,
+.athena-component-panel__detail-list span {
+  color: var(--athena-workbench-muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.athena-component-panel__summary-list strong {
+  color: var(--athena-workbench-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.athena-component-panel__section {
+  margin: 0;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.athena-component-panel__section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.athena-component-panel__section h3 {
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--athena-workbench-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.athena-component-panel__detail-list li {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) 1fr;
+  gap: 10px;
+  min-height: var(--athena-workbench-row-min-height);
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.athena-component-panel__detail-list li:first-child,
+.athena-component-panel__item:first-child {
+  border-top: 0;
+}
+.athena-component-panel__detail-list strong {
+  color: var(--athena-workbench-text);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.athena-component-panel__item {
+  padding: 7px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.athena-component-panel__item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.athena-component-panel__item-title {
+  color: var(--athena-workbench-text);
+  font-weight: 700;
+}
+.athena-component-panel__item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--athena-workbench-muted);
+  line-height: 1.4;
+}
+.athena-component-panel__item-summary {
+  margin: 6px 0 0;
+}
+.athena-component-panel__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.athena-semantic-inspection__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.athena-component-panel__preview-header,
+.athena-semantic-inspection__preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.athena-component-panel__actions,
+.athena-semantic-inspection__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.athena-component-panel__action,
+.athena-semantic-inspection__action {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--athena-workbench-border-strong);
+  border-radius: var(--athena-workbench-radius-sm);
+  background: color-mix(in srgb, var(--athena-workbench-accent) 18%, var(--athena-workbench-surface-elevated));
+  color: var(--athena-workbench-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.athena-component-panel__action:hover:enabled,
+.athena-semantic-inspection__action:hover:enabled {
+  border-color: var(--athena-workbench-accent);
+}
+.athena-component-panel__action:disabled,
+.athena-semantic-inspection__action:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.athena-component-panel__action--secondary,
+.athena-semantic-inspection__action--secondary {
+  background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 92%, transparent);
+}
 .athena-source-selection-decoration {
   background: rgba(100, 150, 235, 0.18);
   border: 1px solid rgba(124, 168, 234, 0.38);
   border-radius: var(--athena-workbench-radius-sm);
 }
 @media (max-width: 720px) {
+  .athena-component-panel,
   .athena-home,
   .athena-semantic-inspection,
   .athena-semantic-scm,
   .athena-repository-graph {
     padding: 10px;
   }
+  .athena-component-panel__header,
   .athena-home__masthead,
   .athena-semantic-inspection__header,
   .athena-semantic-scm__header,
@@ -26568,6 +26811,7 @@ details.theia-tool-confirmation-args > summary::marker {
   }
   .athena-home__layout,
   .athena-semantic-scm__control-grid,
+  .athena-semantic-inspection__control-grid,
   .athena-semantic-inspection__summary-list,
   .athena-repository-graph__summary-list,
   .athena-semantic-scm__summary-list {
@@ -26576,6 +26820,7 @@ details.theia-tool-confirmation-args > summary::marker {
   .athena-home__panel--wide {
     grid-column: auto;
   }
+  .athena-component-panel__detail-list li,
   .athena-home__kv-list li,
   .athena-semantic-inspection__detail-list li,
   .athena-repository-graph__detail-list li,

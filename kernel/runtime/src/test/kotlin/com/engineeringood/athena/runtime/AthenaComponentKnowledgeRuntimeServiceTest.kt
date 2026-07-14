@@ -58,9 +58,20 @@ class AthenaComponentKnowledgeRuntimeServiceTest {
 
             assertEquals(first, second)
             val ready = assertIs<AthenaComponentKnowledgeReady>(first)
+            assertEquals("system:ComponentKnowledgeDemo", ready.systemSemanticId)
             assertEquals(listOf("com.engineeringood.athena.domain.electrical-runtime"), ready.contributingPluginIds)
             assertEquals(5, ready.activeConceptCount)
-            assertEquals(5, ready.activeImplementationCount)
+            assertEquals(6, ready.activeImplementationCount)
+            assertEquals(
+                listOf(
+                    "electrical.contactor.power",
+                    "electrical.motor.ac",
+                    "electrical.plc.cpu",
+                    "electrical.power-supply.dc24",
+                    "electrical.relay.overload",
+                ),
+                ready.availableComponents.map { entry -> entry.concept.conceptId.value },
+            )
             assertEquals(
                 listOf("component:M1", "component:PLC1"),
                 ready.components.map { entry -> entry.resolvedComponent.semanticSubjectId.value },
@@ -100,6 +111,8 @@ class AthenaComponentKnowledgeRuntimeServiceTest {
             val result = context.componentKnowledgeRuntime().inspect(context)
 
             val ready = assertIs<AthenaComponentKnowledgeReady>(result)
+            assertEquals("system:ComponentKnowledgeFailure", ready.systemSemanticId)
+            assertEquals(5, ready.availableComponents.size)
             assertTrue(ready.components.isEmpty())
             assertEquals(
                 listOf("component.definition.unresolved"),

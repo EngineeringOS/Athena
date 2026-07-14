@@ -4,6 +4,7 @@ import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
+import com.engineeringood.athena.runtime.AthenaAuthoringPreviewSubmitted
 import com.engineeringood.athena.runtime.AthenaAiDeterministicProofProvider
 import com.engineeringood.athena.runtime.AthenaAiReasoningProvider
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -396,6 +397,99 @@ class AthenaLanguageServer(
                     intent = intent,
                 )
                 .toPayload(semanticPath = semanticPath),
+        )
+    }
+
+    /**
+     * Routes one guided authoring intent through Athena LSP into runtime-owned preview state.
+     */
+    @JsonRequest("athena/authoringPreview")
+    fun authoringPreview(params: AthenaAuthoringPreviewParams): CompletableFuture<AthenaAuthoringPreviewSubmissionPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.context.authoringSessions()
+                .submit(
+                    context = activation.context,
+                    intent = params.toRuntimeIntent(),
+                )
+                .let { result -> result as AthenaAuthoringPreviewSubmitted }
+                .toPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                ),
+        )
+    }
+
+    /**
+     * Returns the current runtime-owned guided authoring state through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/authoringState")
+    fun authoringState(params: AthenaAuthoringStateParams): CompletableFuture<AthenaAuthoringStatePayload?> {
+        @Suppress("UnusedParameter")
+        val ignored = params
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        return CompletableFuture.completedFuture(
+            activation.authoringStatePayload(semanticPath),
+        )
+    }
+
+    /**
+     * Applies one explicit guided authoring preview decision through the Athena LSP boundary.
+     */
+    @JsonRequest("athena/authoringDecision")
+    fun authoringDecision(params: AthenaAuthoringDecisionParams): CompletableFuture<AthenaAuthoringPreviewDecisionPayload?> {
+        val activation = activeSession ?: return CompletableFuture.completedFuture(null)
+        val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        val result = activation.context.authoringSessions()
+            .applyDecision(
+                context = activation.context,
+                decision = params.toRuntimeDecision(),
+            )
+        val trackedDocument = sessionSnapshot
+            ?.sourcePath
+            ?.let { sourcePath -> languageFeatures?.trackedDocumentByPath(sourcePath) }
+        val componentKnowledge = activation.context.componentKnowledgeRuntime()
+            .inspect(activation.context) as? com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
+        val sourceEdit = when (result) {
+            is com.engineeringood.athena.runtime.AthenaAuthoringPreviewDecisionUpdated -> {
+                val currentTrackedDocument = trackedDocument ?: return CompletableFuture.completedFuture(
+                    result.toPayload(
+                        projectName = activation.context.project.name,
+                        semanticPath = semanticPath,
+                    ),
+                )
+                when (result.record.intent) {
+                    is com.engineeringood.athena.authoring.CreateComponentIntent -> acceptedCreateComponentSourceEdit(
+                        trackedDocument = currentTrackedDocument,
+                        record = result.record,
+                        componentKnowledge = componentKnowledge,
+                    )
+
+                    is com.engineeringood.athena.authoring.UpdateComponentPropertiesIntent -> acceptedUpdateComponentPropertiesSourceEdit(
+                        trackedDocument = currentTrackedDocument,
+                        record = result.record,
+                        componentKnowledge = componentKnowledge,
+                    )
+
+                    is com.engineeringood.athena.authoring.ConnectPortsIntent -> acceptedConnectPortsSourceEdit(
+                        trackedDocument = currentTrackedDocument,
+                        record = result.record,
+                    )
+
+                    else -> null
+                }
+            }
+
+            else -> null
+        }
+        return CompletableFuture.completedFuture(
+            result.toPayload(
+                projectName = activation.context.project.name,
+                semanticPath = semanticPath,
+                sourceEdit = sourceEdit,
+            ),
         )
     }
 

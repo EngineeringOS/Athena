@@ -14,10 +14,12 @@ const core_1 = require("@theia/core");
 const inversify_1 = require("@theia/core/shared/inversify");
 const workspace_service_1 = require("@theia/workspace/lib/browser/workspace-service");
 const athena_backend_endpoint_1 = require("./athena-backend-endpoint");
+const athena_repository_session_model_1 = require("./athena-repository-session-model");
 let AthenaRepositorySessionService = class AthenaRepositorySessionService {
     workspaceService;
     messageService;
     onDidChangeStateEmitter = new core_1.Emitter();
+    bootstrapOperation;
     stateValue = {
         lifecycle: 'idle',
         lspLifecycle: 'idle',
@@ -29,13 +31,23 @@ let AthenaRepositorySessionService = class AthenaRepositorySessionService {
     get onDidChangeState() {
         return this.onDidChangeStateEmitter.event;
     }
-    async onStart(_app) {
-        await this.workspaceService.ready;
-        if (!this.workspaceService.opened) {
-            await this.refreshSessionState();
-            return;
+    onStart(_app) {
+        if (!this.bootstrapOperation) {
+            this.bootstrapOperation = this.bootstrapInitialState();
         }
-        await this.activateCurrentWorkspaceSession();
+    }
+    async bootstrapInitialState() {
+        try {
+            await this.workspaceService.ready;
+            if (!this.workspaceService.opened) {
+                await this.refreshSessionState();
+                return;
+            }
+            await this.activateCurrentWorkspaceSession();
+        }
+        finally {
+            this.bootstrapOperation = undefined;
+        }
     }
     async activateCurrentWorkspaceSession() {
         const roots = await this.workspaceService.roots;
@@ -92,6 +104,37 @@ let AthenaRepositorySessionService = class AthenaRepositorySessionService {
                 lifecycle: 'unavailable',
                 message: `Failed to query Athena repository-session state: ${error instanceof Error ? error.message : String(error)}`
             });
+        }
+    }
+    async ensureSessionForDocument(documentUri) {
+        if (!documentUri.toLowerCase().endsWith('.athena')) {
+            return this.stateValue;
+        }
+        if ((0, athena_repository_session_model_1.isAthenaDocumentCoveredBySession)(this.stateValue, documentUri)) {
+            return this.stateValue;
+        }
+        if (this.stateValue.lifecycle === 'activating') {
+            return this.stateValue;
+        }
+        try {
+            const response = await fetch((0, athena_backend_endpoint_1.toAthenaBackendUrl)('athena/repository-session/ensure', {
+                documentUri,
+            }), {
+                method: 'POST'
+            });
+            const nextState = await response.json();
+            this.setState(nextState);
+            return nextState;
+        }
+        catch (error) {
+            const nextState = {
+                ...this.stateValue,
+                lifecycle: 'unavailable',
+                lspLifecycle: 'unavailable',
+                message: `Failed to ensure the Athena repository session for ${documentUri}: ${error instanceof Error ? error.message : String(error)}`
+            };
+            this.setState(nextState);
+            return nextState;
         }
     }
     setState(state) {

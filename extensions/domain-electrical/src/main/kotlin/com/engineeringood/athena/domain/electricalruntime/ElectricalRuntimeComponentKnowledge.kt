@@ -65,6 +65,14 @@ fun siemensElectricalPartImplementations(): List<PartImplementationDefinition> {
             summary = "Narrow Siemens-first proof implementation for the PLC CPU concept.",
         ),
         PartImplementationDefinition(
+            implementationId = PartImplementationId("impl/electrical/plc-cpu/siemens-proof-cpu314c"),
+            conceptId = EngineeringConceptId("electrical.plc.cpu"),
+            vendorId = VendorId("siemens"),
+            vendorPartNumber = VendorPartNumber("proof.cpu.314c"),
+            displayName = "Siemens proof PLC CPU 314C",
+            summary = "Alternate Siemens-first proof implementation for governed PLC CPU selection flows.",
+        ),
+        PartImplementationDefinition(
             implementationId = PartImplementationId("impl/electrical/contactor/siemens-proof-3pole"),
             conceptId = EngineeringConceptId("electrical.contactor.power"),
             vendorId = VendorId("siemens"),

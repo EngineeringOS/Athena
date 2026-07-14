@@ -49,10 +49,13 @@ const react_widget_1 = require("@theia/core/lib/browser/widgets/react-widget");
 const disposable_1 = require("@theia/core/lib/common/disposable");
 const inversify_1 = require("@theia/core/shared/inversify");
 const browser_1 = require("@theia/editor/lib/browser");
+const athena_authoring_protocol_1 = require("./athena-authoring-protocol");
 const athena_graph_adapter_service_1 = require("./athena-graph-adapter-service");
+const athena_guided_connection_model_1 = require("./athena-guided-connection-model");
 const athena_graph_workbench_edge_layer_1 = require("./athena-graph-workbench-edge-layer");
 const athena_graph_workbench_presentation_node_1 = require("./athena-graph-workbench-presentation-node");
 const athena_graph_workbench_model_1 = require("./athena-graph-workbench-model");
+const athena_lsp_editor_bridge_service_1 = require("./athena-lsp-editor-bridge-service");
 const athena_repository_session_service_1 = require("./athena-repository-session-service");
 const athena_semantic_selection_model_1 = require("./athena-semantic-selection-model");
 const athena_semantic_selection_service_1 = require("./athena-semantic-selection-service");
@@ -64,9 +67,12 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
     editorManager;
     repositorySessionService;
     graphAdapterService;
+    lspEditorBridgeService;
     semanticSelectionService;
     currentEditorListeners = new disposable_1.DisposableCollection();
     diagram = undefined;
+    componentKnowledge = undefined;
+    semanticInspection = undefined;
     errorMessage;
     loading = false;
     switchingView = false;
@@ -84,6 +90,9 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
     connectPortsArmed = false;
     connectPortsSource;
     connectPortsPending = false;
+    connectPreview = undefined;
+    connectPreviewMessage;
+    connectApplyingDecision = false;
     revealingSelectionSemanticId;
     init() {
         this.id = AthenaGraphWorkbenchWidget_1.ID;
@@ -113,6 +122,9 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
             this.connectPortsArmed = false;
             this.connectPortsSource = undefined;
             this.connectPortsPending = false;
+            this.connectPreview = undefined;
+            this.connectPreviewMessage = undefined;
+            this.connectApplyingDecision = false;
             this.revealingSelectionSemanticId = undefined;
         }));
         this.bindCurrentEditor(this.editorManager.currentEditor);
@@ -154,16 +166,25 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
         this.errorMessage = undefined;
         this.update();
         try {
-            const diagram = await this.graphAdapterService.requestDiagram();
+            const currentEditor = this.isAthenaEditor(this.editorManager.currentEditor) ? this.editorManager.currentEditor : undefined;
+            const [diagram, componentKnowledge, semanticInspection] = await Promise.all([
+                this.graphAdapterService.requestDiagram(),
+                this.lspEditorBridgeService.requestComponentKnowledgeSession(),
+                currentEditor ? this.lspEditorBridgeService.requestSemanticInspection(currentEditor) : Promise.resolve(undefined),
+            ]);
             if (this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
                 return;
             }
             this.diagram = diagram;
+            this.componentKnowledge = componentKnowledge;
+            this.semanticInspection = semanticInspection;
             this.lastGraphCommandIntent = undefined;
             this.dragState = undefined;
             this.connectPortsArmed = false;
             this.connectPortsSource = undefined;
             this.connectPortsPending = false;
+            this.connectPreview = undefined;
+            this.connectPreviewMessage = undefined;
             this.reconcileTransientSelection(diagram);
             void this.handleSemanticSelectionChanged(this.semanticSelectionService.selection, diagram);
             this.pendingAutoFit = true;
@@ -176,6 +197,8 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
             }
             this.errorMessage = error instanceof Error ? error.message : String(error);
             this.diagram = undefined;
+            this.componentKnowledge = undefined;
+            this.semanticInspection = undefined;
         }
         finally {
             if (this.repositorySessionService.state.repositoryRoot === currentRepositoryRoot) {
@@ -229,6 +252,12 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
             this.diagram.activeViewId !== 'documentation' &&
             this.diagram.supportedViews.some(view => view.viewId === 'documentation');
         const connectPortsSupported = this.graphAdapterService.supportsConnectPortsIntent(this.diagram);
+        const compatibleConnectTargets = (0, athena_guided_connection_model_1.buildAthenaCompatibleConnectionTargets)({
+            knowledge: this.componentKnowledge,
+            inspection: this.semanticInspection,
+            sourcePortSemanticId: this.connectPortsSource?.semanticId,
+        });
+        const compatibleConnectTargetIds = new Set(compatibleConnectTargets.map(target => target.semanticId));
         const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
         const canvasStyle = {
@@ -259,7 +288,7 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                                     React.createElement("div", { className: 'athena-graph-workbench__view-switches' }, model.supportedViews.map(view => React.createElement("button", { key: view.viewId, className: `athena-graph-workbench__tool-button athena-graph-workbench__tool-button--view ${view.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`, title: this.viewAriaLabel(view), "aria-label": this.viewAriaLabel(view), type: 'button', disabled: view.isActive || this.switchingView, onClick: () => void this.switchActiveView(view.viewId) },
                                         React.createElement("span", { className: `codicon ${this.viewIconClass(view.viewId)}` })))),
                                     connectPortsSupported
-                                        ? React.createElement("button", { className: `athena-graph-workbench__tool-button ${this.connectPortsArmed || this.connectPortsSource ? 'athena-graph-workbench__tool-button--active' : ''}`, type: 'button', title: this.connectPortsButtonTitle(), "aria-label": this.connectPortsButtonTitle(), disabled: this.connectPortsPending, onClick: () => this.toggleConnectPortsMode() },
+                                        ? React.createElement("button", { className: `athena-graph-workbench__tool-button ${this.connectPortsArmed || this.connectPortsSource || this.connectPreview ? 'athena-graph-workbench__tool-button--active' : ''}`, type: 'button', title: this.connectPortsButtonTitle(), "aria-label": this.connectPortsButtonTitle(), disabled: this.connectPortsPending || this.connectApplyingDecision, onClick: () => this.toggleConnectPortsMode() },
                                             React.createElement("span", { className: `codicon ${this.connectPortsPending ? 'codicon-loading codicon-modifier-spin' : 'codicon-link'}` }))
                                         : undefined,
                                     React.createElement("button", { className: `athena-graph-workbench__overlay-toggle ${this.overlayPanelExpanded ? 'athena-graph-workbench__overlay-toggle--active' : ''}`, type: 'button', title: this.overlayPanelExpanded ? 'Collapse information panel' : 'Expand information panel', "aria-label": this.overlayPanelExpanded ? 'Collapse information panel' : 'Expand information panel', onClick: () => this.toggleOverlayPanel() },
@@ -305,6 +334,30 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                                                     React.createElement("code", null, this.connectPortsSource.semanticId),
                                                     ".")
                                                 : 'Connect ports is armed. Select a source port label, then a target port label.')
+                                            : undefined,
+                                        this.connectPortsSource && compatibleConnectTargets.length > 0
+                                            ? React.createElement("ul", { className: 'athena-graph-workbench__list' }, compatibleConnectTargets.slice(0, 8).map(target => React.createElement("li", { key: target.semanticId, className: 'athena-graph-workbench__item' },
+                                                React.createElement("button", { className: 'athena-graph-workbench__inline-action', type: 'button', onClick: () => void this.handleConnectablePortSelection(target.semanticId, target.label) }, target.label),
+                                                React.createElement("div", { className: 'athena-graph-workbench__related-meta' },
+                                                    React.createElement("code", null, target.semanticId)))))
+                                            : undefined,
+                                        this.connectPreview || this.connectPreviewMessage
+                                            ? React.createElement("div", { className: 'athena-graph-workbench__panel-empty' },
+                                                this.connectPreviewMessage
+                                                    ? React.createElement("div", null, this.connectPreviewMessage)
+                                                    : undefined,
+                                                this.connectPreview
+                                                    ? React.createElement(React.Fragment, null,
+                                                        React.createElement("strong", null, this.connectPreview.title),
+                                                        React.createElement("ul", { className: 'athena-graph-workbench__list' }, this.connectPreview.changes.map(change => React.createElement("li", { key: `${change.kind}:${change.title}`, className: 'athena-graph-workbench__item' },
+                                                            React.createElement("div", { className: 'athena-graph-workbench__diagnostic-header' },
+                                                                React.createElement("span", { className: 'athena-graph-workbench__pill' }, change.kind),
+                                                                React.createElement("code", null, change.title)),
+                                                            change.summary ? React.createElement("div", null, change.summary) : undefined))),
+                                                        React.createElement("div", { className: 'athena-semantic-inspection__actions' },
+                                                            React.createElement("button", { className: 'athena-semantic-inspection__action', type: 'button', disabled: this.connectApplyingDecision, onClick: () => void this.acceptConnectPreview() }, this.connectApplyingDecision ? 'Applying...' : 'Accept'),
+                                                            React.createElement("button", { className: 'athena-semantic-inspection__action athena-semantic-inspection__action--secondary', type: 'button', disabled: this.connectApplyingDecision, onClick: () => void this.rejectConnectPreview() }, "Reject")))
+                                                    : undefined)
                                             : undefined),
                                     React.createElement("section", { className: 'athena-graph-workbench__overlay-section' },
                                         React.createElement("div", { className: 'athena-graph-workbench__panel-title' }, "Related"),
@@ -442,7 +495,7 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                             React.createElement("div", { className: 'athena-graph-workbench__grid' }),
                             React.createElement("svg", { className: 'athena-graph-workbench__canvas', viewBox: model.svgViewBox, role: 'img', "aria-label": 'Athena graphical projection', style: canvasStyle },
                                 React.createElement(athena_graph_workbench_edge_layer_1.AthenaGraphWorkbenchEdgeLayer, { edges: model.edges, selectedSemanticId: selectedSemanticId, onSelectSemanticId: semanticId => this.semanticSelectionService.selectSemanticId(semanticId) }),
-                                model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId)))),
+                                model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId, compatibleConnectTargetIds)))),
                         React.createElement("div", { className: 'athena-graph-workbench__overlay athena-graph-workbench__overlay--bottom-right' },
                             React.createElement("div", { className: 'athena-graph-workbench__zoom-dock' },
                                 React.createElement("div", { className: 'athena-graph-workbench__statusline-readout', title: `Canvas size ${model.canvas.width} x ${model.canvas.height}`, "aria-label": `Canvas size ${model.canvas.width} x ${model.canvas.height}` },
@@ -460,19 +513,26 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
                                 React.createElement("button", { className: 'athena-graph-workbench__tool-button', type: 'button', onClick: () => this.fitViewportToDiagram(), title: 'Fit graph to viewport', "aria-label": 'Fit graph to viewport' },
                                     React.createElement("span", { className: 'codicon codicon-screen-full' }))))))));
     }
-    renderGraphNode(node, selectedSemanticId) {
+    renderGraphNode(node, selectedSemanticId, compatibleConnectTargetIds) {
         const selected = selectedSemanticId === node.semanticId
             || node.electricalAnchors.some(anchor => anchor.portSemanticId === selectedSemanticId);
+        const isConnectablePort = this.isConnectablePortNode(node.semanticId, node.kind);
+        const isCompatibleConnectTarget = isConnectablePort && compatibleConnectTargetIds.has(node.semanticId);
+        const isBlockedConnectTarget = !!this.connectPortsSource && isConnectablePort && !isCompatibleConnectTarget && node.semanticId !== this.connectPortsSource.semanticId;
         const labelClassName = [
             'athena-graph-workbench__node-label',
             `athena-graph-workbench__node-label--${node.renderVariant}`,
             selected ? 'athena-graph-workbench__node-label--selected' : '',
+            isCompatibleConnectTarget ? 'athena-graph-workbench__node-label--connect-target' : '',
+            isBlockedConnectTarget ? 'athena-graph-workbench__node-label--connect-blocked' : '',
         ].filter(Boolean).join(' ');
         const nodeClassName = [
             'athena-graph-workbench__node',
             `athena-graph-workbench__node--${node.kind}`,
             `athena-graph-workbench__node--${node.renderVariant}`,
             selected ? 'athena-graph-workbench__node--selected' : '',
+            isCompatibleConnectTarget ? 'athena-graph-workbench__node--connect-target' : '',
+            isBlockedConnectTarget ? 'athena-graph-workbench__node--connect-blocked' : '',
         ].filter(Boolean).join(' ');
         return React.createElement("g", { key: node.id, className: 'athena-graph-workbench__element', "data-athena-graph-interactive": 'true', role: 'button', tabIndex: 0, transform: node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined, onClick: event => void this.handleNodeClick(event, node.semanticId, node.kind, node.label), onKeyDown: event => void this.handleGraphElementKeyDown(event, node.semanticId, node.kind, node.label), onPointerDown: node.kind === 'component'
                 ? event => this.handleComponentPointerDown(event, node.semanticId, node.position.x, node.position.y)
@@ -550,8 +610,14 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
         return view.description ? `${view.displayName}: ${view.description}` : view.displayName;
     }
     connectPortsButtonTitle() {
+        if (this.connectApplyingDecision) {
+            return 'Applying connect preview decision';
+        }
         if (this.connectPortsPending) {
             return 'Submitting connect ports request';
+        }
+        if (this.connectPreview) {
+            return 'Review guided connect preview';
         }
         if (!this.connectPortsArmed) {
             return 'Connect ports';
@@ -581,19 +647,133 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
         this.overlayPanelExpanded = !this.overlayPanelExpanded;
         this.update();
     }
+    currentCompatibleConnectTargets() {
+        return (0, athena_guided_connection_model_1.buildAthenaCompatibleConnectionTargets)({
+            knowledge: this.componentKnowledge,
+            inspection: this.semanticInspection,
+            sourcePortSemanticId: this.connectPortsSource?.semanticId,
+        });
+    }
+    isCompatibleConnectTarget(semanticId) {
+        return this.currentCompatibleConnectTargets().some(target => target.semanticId === semanticId);
+    }
     toggleConnectPortsMode() {
-        if (this.connectPortsPending) {
+        if (this.connectPortsPending || this.connectApplyingDecision) {
+            return;
+        }
+        if (this.connectPreview) {
+            void this.rejectConnectPreview();
             return;
         }
         if (this.connectPortsArmed || this.connectPortsSource) {
             this.connectPortsArmed = false;
             this.connectPortsSource = undefined;
+            this.connectPreviewMessage = undefined;
             this.update();
             return;
         }
         this.connectPortsArmed = true;
         this.connectPortsSource = undefined;
+        this.connectPreviewMessage = undefined;
         this.update();
+    }
+    async previewConnectPortsIntent(sourceSemanticId, targetSemanticId) {
+        this.connectPortsPending = true;
+        this.connectPreview = undefined;
+        this.connectPreviewMessage = undefined;
+        this.update();
+        try {
+            const submission = await this.lspEditorBridgeService.requestAuthoringPreview((0, athena_authoring_protocol_1.buildConnectPortsPreviewRequest)({
+                sourcePortId: sourceSemanticId,
+                targetPortId: targetSemanticId,
+                originDetail: `graph:${this.diagram?.activeViewId ?? 'unknown-view'}`,
+            }));
+            this.connectPreview = submission?.preview;
+            this.overlayPanelExpanded = true;
+            if (!submission?.preview) {
+                this.connectPreviewMessage = 'Athena could not create a guided connection preview for the selected ports.';
+            }
+        }
+        catch (error) {
+            this.connectPreview = undefined;
+            this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
+            this.overlayPanelExpanded = true;
+        }
+        finally {
+            this.connectPortsPending = false;
+            this.update();
+        }
+    }
+    async acceptConnectPreview() {
+        const preview = this.connectPreview;
+        if (!preview) {
+            return;
+        }
+        this.connectApplyingDecision = true;
+        this.connectPreviewMessage = undefined;
+        this.update();
+        try {
+            const decision = await this.lspEditorBridgeService.requestAuthoringDecision((0, athena_authoring_protocol_1.buildAuthoringDecisionRequest)({
+                previewId: preview.previewId,
+                intentId: preview.intentId,
+                decision: 'accepted',
+                note: 'Graph connect preview accepted.',
+            }));
+            if (!decision?.sourceEdit) {
+                throw new Error('Athena accepted the connect preview but did not return a governed source edit.');
+            }
+            this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
+            this.connectPreview = undefined;
+            this.connectPortsArmed = false;
+            this.connectPortsSource = undefined;
+            this.scheduleRefresh();
+            if (decision.sourceEdit.suggestedSemanticId) {
+                window.setTimeout(() => {
+                    void this.semanticSelectionService.selectSemanticId(decision.sourceEdit.suggestedSemanticId).catch(error => {
+                        this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
+                        this.update();
+                    });
+                }, 180);
+            }
+        }
+        catch (error) {
+            this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
+        }
+        finally {
+            this.connectApplyingDecision = false;
+            this.update();
+        }
+    }
+    async rejectConnectPreview() {
+        const preview = this.connectPreview;
+        if (!preview) {
+            this.connectPreviewMessage = undefined;
+            this.connectPortsArmed = false;
+            this.connectPortsSource = undefined;
+            this.update();
+            return;
+        }
+        this.connectApplyingDecision = true;
+        this.connectPreviewMessage = undefined;
+        this.update();
+        try {
+            await this.lspEditorBridgeService.requestAuthoringDecision((0, athena_authoring_protocol_1.buildAuthoringDecisionRequest)({
+                previewId: preview.previewId,
+                intentId: preview.intentId,
+                decision: 'rejected',
+                note: 'Graph connect preview rejected.',
+            }));
+            this.connectPreview = undefined;
+            this.connectPortsArmed = false;
+            this.connectPortsSource = undefined;
+        }
+        catch (error) {
+            this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
+        }
+        finally {
+            this.connectApplyingDecision = false;
+            this.update();
+        }
     }
     statusIconClass(statusTone) {
         if (statusTone === 'ready') {
@@ -845,19 +1025,27 @@ let AthenaGraphWorkbenchWidget = class AthenaGraphWorkbenchWidget extends react_
     }
     async handleConnectablePortSelection(semanticId, label) {
         await this.semanticSelectionService.selectSemanticId(semanticId);
+        this.connectPreviewMessage = undefined;
         if (!this.connectPortsSource) {
             this.connectPortsSource = {
                 semanticId,
                 label,
             };
+            this.overlayPanelExpanded = true;
             this.update();
             return;
         }
         const source = this.connectPortsSource;
+        if (!this.isCompatibleConnectTarget(semanticId)) {
+            this.connectPreviewMessage = `Port \`${label}\` is not a compatible target for \`${source.label}\`.`;
+            this.overlayPanelExpanded = true;
+            this.update();
+            return;
+        }
         this.connectPortsSource = undefined;
         this.connectPortsArmed = false;
         this.update();
-        await this.submitConnectPortsIntent(source.semanticId, semanticId);
+        await this.previewConnectPortsIntent(source.semanticId, semanticId);
     }
     handleComponentPointerDown(event, semanticId, x, y) {
         if (event.button !== 0 || !this.diagram || !this.graphAdapterService.supportsAdjustLayoutPlacementIntent(this.diagram)) {
@@ -1034,6 +1222,10 @@ __decorate([
     (0, inversify_1.inject)(athena_graph_adapter_service_1.AthenaGraphAdapterService),
     __metadata("design:type", athena_graph_adapter_service_1.AthenaGraphAdapterService)
 ], AthenaGraphWorkbenchWidget.prototype, "graphAdapterService", void 0);
+__decorate([
+    (0, inversify_1.inject)(athena_lsp_editor_bridge_service_1.AthenaLspEditorBridgeService),
+    __metadata("design:type", athena_lsp_editor_bridge_service_1.AthenaLspEditorBridgeService)
+], AthenaGraphWorkbenchWidget.prototype, "lspEditorBridgeService", void 0);
 __decorate([
     (0, inversify_1.inject)(athena_semantic_selection_service_1.AthenaSemanticSelectionService),
     __metadata("design:type", athena_semantic_selection_service_1.AthenaSemanticSelectionService)

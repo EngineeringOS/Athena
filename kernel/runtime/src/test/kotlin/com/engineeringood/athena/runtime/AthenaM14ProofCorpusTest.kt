@@ -41,7 +41,7 @@ class AthenaM14ProofCorpusTest {
         assertEquals(first, second)
         assertEquals(listOf("com.engineeringood.athena.domain.electrical-runtime"), first.contributingPluginIds)
         assertEquals(5, first.activeConceptCount)
-        assertEquals(5, first.activeImplementationCount)
+        assertEquals(6, first.activeImplementationCount)
         assertEquals(
             listOf("component:FR1", "component:KM1", "component:M1", "component:PLC1", "component:PS1"),
             first.components.map { entry -> entry.resolvedComponent.semanticSubjectId.value },

@@ -19,12 +19,15 @@ export declare class AthenaRepositorySessionService implements FrontendApplicati
     protected readonly workspaceService: WorkspaceService;
     protected readonly messageService: MessageService;
     protected readonly onDidChangeStateEmitter: Emitter<AthenaRepositorySessionState>;
+    protected bootstrapOperation: Promise<void> | undefined;
     protected stateValue: AthenaRepositorySessionState;
     get state(): AthenaRepositorySessionState;
     get onDidChangeState(): import("@theia/core").Event<AthenaRepositorySessionState>;
-    onStart(_app: FrontendApplication): Promise<void>;
+    onStart(_app: FrontendApplication): void;
+    protected bootstrapInitialState(): Promise<void>;
     activateCurrentWorkspaceSession(): Promise<void>;
     refreshSessionState(): Promise<void>;
+    ensureSessionForDocument(documentUri: string): Promise<AthenaRepositorySessionState>;
     protected setState(state: AthenaRepositorySessionState): void;
 }
 //# sourceMappingURL=athena-repository-session-service.d.ts.map

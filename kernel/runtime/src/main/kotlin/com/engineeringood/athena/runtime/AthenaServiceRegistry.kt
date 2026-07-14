@@ -9,6 +9,7 @@ class AthenaServiceRegistry(
     compilerProvider: (() -> AthenaCompiler)? = null,
     rendererProvider: () -> SvgRenderer = { SvgRenderer() },
     pluginRuntimeServicesProvider: (() -> AthenaPluginRuntimeServices)? = null,
+    authoringSessionRuntimeServiceProvider: (() -> AthenaAuthoringSessionRuntimeService)? = null,
     sourceMutationRuntimeServiceProvider: (() -> AthenaSourceMutationRuntimeService)? = null,
     graphCommandIntentRuntimeServiceProvider: (() -> AthenaGraphCommandIntentRuntimeService)? = null,
     semanticBaselineServiceProvider: (() -> AthenaSemanticBaselineService)? = null,
@@ -74,6 +75,9 @@ class AthenaServiceRegistry(
     private val sourceMutationRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         sourceMutationRuntimeServiceProvider?.invoke() ?: AthenaSourceMutationRuntimeService()
     }
+    private val authoringSessionRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
+        authoringSessionRuntimeServiceProvider?.invoke() ?: AthenaAuthoringSessionRuntimeService()
+    }
     private val componentKnowledgeRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         AthenaComponentKnowledgeRuntimeService()
     }
@@ -122,6 +126,9 @@ class AthenaServiceRegistry(
 
     /** Resolves the shared source-mutation evaluation capability for the current runtime. */
     fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = sourceMutationRuntimeServiceInstance
+
+    /** Resolves the shared authoring-preview session capability for the current runtime. */
+    fun authoringSessions(): AthenaAuthoringSessionRuntimeService = authoringSessionRuntimeServiceInstance
 
     /** Resolves the shared component-knowledge inspection capability for the current runtime. */
     fun componentKnowledgeRuntime(): AthenaComponentKnowledgeRuntimeService = componentKnowledgeRuntimeServiceInstance

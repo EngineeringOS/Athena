@@ -284,6 +284,58 @@ class AthenaCommandRuntimeTest {
     }
 
     @Test
+    fun `command runtime rejects semantically incompatible port connections when active component knowledge is available`() {
+        val sourcePath = writeProject(
+            """
+                system Connectable {
+                  device PLC1 {
+                    type Switch
+                    vendorPartNumber "proof.cpu.313c"
+                  }
+
+                  port PLC1.lplus {
+                    direction out
+                    signal Digital
+                  }
+
+                  port PLC1.mpi {
+                    direction inout
+                    signal Digital
+                  }
+                }
+            """.trimIndent(),
+        )
+
+        try {
+            val runtime = AthenaRuntime()
+            val context = runtime.openWorkspace(sourcePath.parent).activateProject(
+                projectName = "connectable",
+                sourcePath = sourcePath,
+            )
+
+            val result = context.commandRuntime().execute(
+                context = context,
+                command = AthenaConnectPortsCommand(
+                    sourcePortSemanticId = "port:PLC1.lplus",
+                    targetPortSemanticId = "port:PLC1.mpi",
+                ),
+            )
+
+            val rejected = assertIs<AthenaCommandExecutionRejected>(result)
+            assertEquals("connectable", rejected.projectName)
+            assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, rejected.mutationCategory)
+            assertEquals(AthenaCommandKind.CONNECT_PORTS, rejected.commandKind)
+            assertEquals(AthenaMutationOutcome.REJECTED, rejected.outcome)
+            assertContains(rejected.reason, "signal families differ")
+            assertTrue(rejected.changedSemanticIds.isEmpty())
+            assertTrue(rejected.validationFeedback.isEmpty())
+            assertTrue(assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document.connections.isEmpty())
+        } finally {
+            Files.deleteIfExists(sourcePath)
+        }
+    }
+
+    @Test
     fun `runtime-owned mutation contracts publish explicit category and validation feedback vocabulary`() {
         val feedback = AthenaMutationValidationFeedback(
             code = "validation.connection.missing-target",

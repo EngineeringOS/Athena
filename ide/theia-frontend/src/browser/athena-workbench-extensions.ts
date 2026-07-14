@@ -4,6 +4,7 @@ import type { Command } from '@theia/core/lib/common/command';
 import { PROBLEMS_WIDGET_ID } from '@theia/markers/lib/browser/problem/problem-widget';
 import { FILE_NAVIGATOR_ID } from '@theia/navigator/lib/browser/navigator-widget';
 import { OutputWidget } from '@theia/output/lib/browser/output-widget';
+import { AthenaComponentPanelWidget } from './athena-component-panel-widget';
 import { AthenaGraphWorkbenchWidget } from './athena-graph-workbench-widget';
 import { AthenaRepositoryGraphWidget } from './athena-repository-graph-widget';
 import { AthenaSemanticScmWidget } from './athena-semantic-scm-widget';
@@ -34,6 +35,12 @@ export namespace AthenaCommands {
         id: 'athena.revealRepositoryNavigator',
         category: 'Athena',
         label: 'Reveal Repository Navigator'
+    };
+
+    export const REVEAL_COMPONENT_PANEL: Command = {
+        id: 'athena.revealComponentPanel',
+        category: 'Athena',
+        label: 'Reveal Components'
     };
 
     export const REVEAL_PROBLEMS: Command = {
@@ -90,6 +97,14 @@ export const ATHENA_WORKBENCH_EXTENSIONS: readonly AthenaWorkbenchExtension[] = 
         menuOrder: '2',
         quickActionLabel: 'Repository Navigator',
         startupRank: 100
+    },
+    {
+        command: AthenaCommands.REVEAL_COMPONENT_PANEL,
+        widgetId: AthenaComponentPanelWidget.ID,
+        area: 'left',
+        menuOrder: '2.5',
+        quickActionLabel: 'Components',
+        startupRank: 150
     },
     {
         command: AthenaCommands.REVEAL_PROBLEMS,

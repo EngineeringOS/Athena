@@ -1,5 +1,8 @@
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { pathToFileURL } = require('node:url');
+const { AthenaRepositorySessionManager } = require('@engineeringood/athena-theia-backend/lib/node/athena-repository-session-manager.js');
+const { AthenaJvmRuntimeResolver } = require('@engineeringood/athena-theia-backend/lib/node/athena-jvm-runtime-resolver.js');
 
 const ATHENA_READY_SENTINEL = 'ATHENA_DESKTOP_READY';
 const ATHENA_WINDOW_CREATED_SENTINEL = 'ATHENA_DESKTOP_WINDOW_CREATED';
@@ -83,7 +86,33 @@ async function main() {
         throw new Error(`Athena desktop smoke start did not resolve Java 25: ${unresolvedJavaSignal}`);
     }
 
+    await verifyRepositorySession();
     console.log(`Athena desktop smoke start passed. ready=${sawReady} javaHome=${resolvedJavaHome || 'n/a'}`);
+}
+
+async function verifyRepositorySession() {
+    const repositoryRoot = path.resolve(__dirname, '..', '..', '..', 'examples', 'm4', 'open-repository-proof');
+    const documentPath = path.join(repositoryRoot, 'src', 'factory-line.athena');
+    const documentUri = pathToFileURL(documentPath).toString();
+    const manager = new AthenaRepositorySessionManager();
+
+    manager.logger = {
+        info: () => undefined,
+        warn: () => undefined,
+        error: () => undefined,
+        debug: () => undefined,
+        trace: () => undefined,
+        log: () => undefined
+    };
+    manager.jvmRuntimeResolver = new AthenaJvmRuntimeResolver();
+
+    const activation = await manager.ensureRepositorySessionForDocument(documentUri);
+    if (activation.lifecycle !== 'ready') {
+        await manager.dispose();
+        throw new Error(`Athena repository session smoke check failed: ${activation.message}`);
+    }
+
+    await manager.dispose();
 }
 
 main().catch(error => {

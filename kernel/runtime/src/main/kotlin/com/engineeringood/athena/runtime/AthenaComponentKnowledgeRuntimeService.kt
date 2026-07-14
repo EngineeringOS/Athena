@@ -30,12 +30,53 @@ class AthenaComponentKnowledgeRuntimeService {
         val implementationsBySubjectId = compilation.knowledgeContext.resolvedImplementations.associateBy { resolved ->
             resolved.semanticSubjectId.value
         }
+        val availableComponents = context.pluginRuntimeServices()
+            .componentKnowledgeContributions()
+            .flatMap { contribution ->
+                contribution.componentKnowledge.engineeringConcepts.map { concept ->
+                    concept to contribution.componentKnowledge.partImplementations.filter { implementation ->
+                        implementation.conceptId == concept.conceptId
+                    }
+                }
+            }
+            .groupBy(
+                keySelector = { (concept, _) -> concept.conceptId.value },
+                valueTransform = { (concept, implementations) -> concept to implementations },
+            )
+            .values
+            .map { entries ->
+                val concept = entries.map { (candidate, _) -> candidate }
+                    .distinctBy { candidate -> candidate.conceptId.value }
+                    .sortedWith(compareBy(
+                        { candidate -> candidate.conceptId.value },
+                        { candidate -> candidate.displayName },
+                    ))
+                    .first()
+                val implementations = entries
+                    .flatMap { (_, implementations) -> implementations }
+                    .distinctBy { implementation -> implementation.implementationId.value }
+                    .sortedWith(compareBy(
+                        { implementation -> implementation.vendorId.value },
+                        { implementation -> implementation.vendorPartNumber.value },
+                        { implementation -> implementation.implementationId.value },
+                    ))
+                AthenaAvailableAuthoringComponent(
+                    concept = concept,
+                    implementations = implementations,
+                )
+            }
+            .sortedWith(compareBy(
+                { entry -> entry.concept.conceptId.value },
+                { entry -> entry.concept.displayName },
+            ))
 
         return AthenaComponentKnowledgeReady(
             projectName = context.project.name,
+            systemSemanticId = compilation.document.system.id.value,
             contributingPluginIds = compilation.knowledgeContext.componentKnowledgeContributors,
             activeConceptCount = compilation.knowledgeContext.activeComponentConceptCount,
             activeImplementationCount = compilation.knowledgeContext.activeComponentImplementationCount,
+            availableComponents = availableComponents,
             components = compilation.knowledgeContext.resolvedComponents.map { resolvedComponent ->
                 AthenaResolvedComponentKnowledgeEntry(
                     resolvedComponent = resolvedComponent,

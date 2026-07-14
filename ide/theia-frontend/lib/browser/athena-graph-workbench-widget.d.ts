@@ -2,9 +2,13 @@ import * as React from '@theia/core/shared/react';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { DisposableCollection } from '@theia/core/lib/common/disposable';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
+import type { AthenaAuthoringPreviewPayload } from './athena-authoring-protocol';
+import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
 import { AthenaGraphAdapterService } from './athena-graph-adapter-service';
 import { type AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
+import { AthenaCompatibleConnectionTarget } from './athena-guided-connection-model';
 import { AthenaGraphWorkbenchNode, AthenaGraphViewportSize, AthenaGraphViewportTransform, buildAthenaGraphWorkbenchModel } from './athena-graph-workbench-model';
+import { AthenaLspEditorBridgeService, AthenaSemanticInspectionPayload } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import { type AthenaActiveSemanticSelection } from './athena-semantic-selection-model';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
@@ -16,9 +20,12 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected readonly editorManager: EditorManager;
     protected readonly repositorySessionService: AthenaRepositorySessionService;
     protected readonly graphAdapterService: AthenaGraphAdapterService;
+    protected readonly lspEditorBridgeService: AthenaLspEditorBridgeService;
     protected readonly semanticSelectionService: AthenaSemanticSelectionService;
     protected currentEditorListeners: DisposableCollection;
     protected diagram: Awaited<ReturnType<AthenaGraphAdapterService["requestDiagram"]>>;
+    protected componentKnowledge: AthenaComponentKnowledgeSessionPayload | undefined;
+    protected semanticInspection: AthenaSemanticInspectionPayload | undefined;
     protected errorMessage: string | undefined;
     protected loading: boolean;
     protected switchingView: boolean;
@@ -36,6 +43,9 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected connectPortsArmed: boolean;
     protected connectPortsSource: AthenaGraphPortConnectSource | undefined;
     protected connectPortsPending: boolean;
+    protected connectPreview: AthenaAuthoringPreviewPayload | undefined;
+    protected connectPreviewMessage: string | undefined;
+    protected connectApplyingDecision: boolean;
     protected revealingSelectionSemanticId: string | undefined;
     protected init(): void;
     protected bindCurrentEditor(widget: EditorWidget | undefined): void;
@@ -43,7 +53,7 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected scheduleRefresh(): void;
     protected refreshDiagram(): Promise<void>;
     protected render(): React.ReactNode;
-    protected renderGraphNode(node: AthenaGraphWorkbenchNode, selectedSemanticId: string | undefined): React.ReactNode;
+    protected renderGraphNode(node: AthenaGraphWorkbenchNode, selectedSemanticId: string | undefined, compatibleConnectTargetIds: Set<string>): React.ReactNode;
     protected renderGraphNodeBody(node: AthenaGraphWorkbenchNode, nodeClassName: string, labelClassName: string, selected: boolean): React.ReactNode;
     protected renderElectricalNodeAnchor(anchor: AthenaGraphWorkbenchNode['electricalAnchors'][number], selected: boolean): React.ReactNode;
     protected electricalAnchorInset(side: string): {
@@ -59,7 +69,12 @@ export declare class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected connectPortsButtonTitle(): string;
     protected relatedSubjectLabel(relation: 'owner' | 'owned-port' | 'connection' | 'source-port' | 'target-port'): string;
     protected toggleOverlayPanel(): void;
+    protected currentCompatibleConnectTargets(): AthenaCompatibleConnectionTarget[];
+    protected isCompatibleConnectTarget(semanticId: string): boolean;
     protected toggleConnectPortsMode(): void;
+    protected previewConnectPortsIntent(sourceSemanticId: string, targetSemanticId: string): Promise<void>;
+    protected acceptConnectPreview(): Promise<void>;
+    protected rejectConnectPreview(): Promise<void>;
     protected statusIconClass(statusTone: ReturnType<typeof buildAthenaGraphWorkbenchModel>['statusTone']): string;
     protected buildStageStyle(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.CSSProperties;
     protected isThemeRelativeSurfaceToken(value: string): boolean;
