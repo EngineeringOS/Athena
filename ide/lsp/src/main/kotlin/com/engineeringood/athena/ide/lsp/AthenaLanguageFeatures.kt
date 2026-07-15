@@ -514,6 +514,20 @@ class AthenaLanguageFeatures(
             selectionRange = ast.system.span.toLspRange()
             this.children = children
         }
+        ast.packageDeclaration?.let { packageDeclaration ->
+            if (tracked.projectSemanticNavigation != null) {
+                val packageRange = packageDeclaration.span.toLspRange()
+                val packageSymbol = DocumentSymbol().apply {
+                    name = packageDeclaration.name.parts.joinToString(".")
+                    kind = SymbolKind.Package
+                    detail = "package"
+                    range = packageRange
+                    selectionRange = packageRange
+                    this.children = listOf(systemSymbol)
+                }
+                return listOf(Either.forRight(packageSymbol))
+            }
+        }
         return listOf(Either.forRight(systemSymbol))
     }
 
