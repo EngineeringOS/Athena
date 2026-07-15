@@ -75,6 +75,48 @@
     }
   },
   {
+    "type": "import_declaration",
+    "named": true,
+    "fields": {
+      "target": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "package_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "incomplete_import_declaration",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "incomplete_package_declaration",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "package_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "package_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "port_declaration",
     "named": true,
     "fields": {},
@@ -137,9 +179,25 @@
     "root": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "import_declaration",
+          "named": true
+        },
+        {
+          "type": "incomplete_import_declaration",
+          "named": true
+        },
+        {
+          "type": "incomplete_package_declaration",
+          "named": true
+        },
+        {
+          "type": "package_declaration",
+          "named": true
+        },
         {
           "type": "system_declaration",
           "named": true
@@ -213,7 +271,19 @@
     "named": true
   },
   {
+    "type": "import",
+    "named": false
+  },
+  {
     "type": "name",
+    "named": true
+  },
+  {
+    "type": "package",
+    "named": false
+  },
+  {
+    "type": "package_name",
     "named": true
   },
   {

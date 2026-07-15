@@ -12,7 +12,7 @@ Athena Tree-sitter grammar for **syntax UX only** (AD-107).
 
 ## Contents
 
-- `grammar.js` - AD-110 parity subset (`system` / `device` / `port` / `connect` / qualified names / strings / properties)
+- `grammar.js` - AD-110 parity subset (`package` / `import` headers plus existing system/declaration syntax)
 - `src/` - generated parser sources (`tree-sitter generate`)
 - `queries/highlights.scm` - highlight queries for Story 3.2
 - `test/corpus/` - Tree-sitter corpus proofs

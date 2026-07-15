@@ -1,0 +1,5 @@
+import
+system Demo {
+  device PLC1 {
+  }
+}

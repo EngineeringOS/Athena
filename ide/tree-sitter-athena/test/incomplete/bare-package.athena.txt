@@ -1,0 +1,6 @@
+package
+import com.controls
+system Demo {
+  device PLC1 {
+  }
+}

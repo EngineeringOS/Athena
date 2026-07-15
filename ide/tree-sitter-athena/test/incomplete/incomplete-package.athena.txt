@@ -1,0 +1,6 @@
+package com.engineeringood.
+import com.controls
+system Demo {
+  device PLC1 {
+  }
+}

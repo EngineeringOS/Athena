@@ -16,7 +16,7 @@ type WebTreeSitterModule = typeof import('web-tree-sitter');
 type TreeSitterLanguage = import('web-tree-sitter').Language;
 type TreeSitterQuery = import('web-tree-sitter').Query;
 
-const ATHENA_SEMANTIC_TOKEN_TYPES = ['keyword', 'operator', 'variable', 'property', 'string'] as const;
+const ATHENA_SEMANTIC_TOKEN_TYPES = ['keyword', 'namespace', 'operator', 'variable', 'property', 'string'] as const;
 export type AthenaSemanticTokenType = typeof ATHENA_SEMANTIC_TOKEN_TYPES[number];
 
 export const athenaSemanticTokensLegend: monaco.languages.SemanticTokensLegend = {
@@ -26,6 +26,7 @@ export const athenaSemanticTokensLegend: monaco.languages.SemanticTokensLegend =
 
 const CAPTURE_NAME_TO_TOKEN_TYPE: Readonly<Record<string, AthenaSemanticTokenType>> = {
     keyword: 'keyword',
+    namespace: 'namespace',
     operator: 'operator',
     variable: 'variable',
     property: 'property',

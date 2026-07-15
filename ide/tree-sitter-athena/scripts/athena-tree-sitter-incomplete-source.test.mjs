@@ -29,6 +29,10 @@ const INCOMPLETE_FIXTURES = [
     'unclosed-device-block.athena.txt',
     'dangling-connect.athena.txt',
     'unterminated-string.athena.txt',
+    'incomplete-package.athena.txt',
+    'incomplete-import.athena.txt',
+    'bare-package.athena.txt',
+    'bare-import.athena.txt',
 ];
 
 let language;
@@ -61,6 +65,41 @@ for (const fixtureName of INCOMPLETE_FIXTURES) {
         const nameField = systemDeclaration.childForFieldName('name');
         assert.ok(nameField, `expected the system name to remain a real (name) node for ${fixtureName}`);
         assert.equal(nameField.type, 'name');
+
+        if (fixtureName === 'incomplete-package.athena.txt') {
+            const packageDeclaration = tree.rootNode.namedChildren.find(node => node?.type === 'package_declaration');
+            assert.ok(packageDeclaration, `expected recoverable package_declaration structure, got:\n${tree.rootNode.toString()}`);
+            const packageName = packageDeclaration.childForFieldName('name');
+            assert.ok(packageName && !packageName.isMissing, 'expected a real recovered package name');
+            assert.equal(packageName.text, 'com.engineeringood');
+            assert.ok(
+                tree.rootNode.namedChildren.some(node => node?.type === 'import_declaration'),
+                'expected the following import declaration to survive package recovery'
+            );
+        }
+        if (fixtureName === 'incomplete-import.athena.txt') {
+            const importDeclaration = tree.rootNode.namedChildren.find(node => node?.type === 'import_declaration');
+            assert.ok(importDeclaration, `expected recoverable import_declaration structure, got:\n${tree.rootNode.toString()}`);
+            const importTarget = importDeclaration.childForFieldName('target');
+            assert.ok(importTarget && !importTarget.isMissing, 'expected a real recovered import target');
+            assert.equal(importTarget.text, 'com.controls');
+        }
+        if (fixtureName === 'bare-package.athena.txt') {
+            assert.ok(
+                tree.rootNode.namedChildren.some(node => node?.type === 'incomplete_package_declaration'),
+                'expected explicit incomplete package structure'
+            );
+            assert.ok(
+                tree.rootNode.namedChildren.some(node => node?.type === 'import_declaration'),
+                'expected import declaration after bare package to survive recovery'
+            );
+        }
+        if (fixtureName === 'bare-import.athena.txt') {
+            assert.ok(
+                tree.rootNode.namedChildren.some(node => node?.type === 'incomplete_import_declaration'),
+                'expected explicit incomplete import structure'
+            );
+        }
     });
 }
 

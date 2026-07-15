@@ -1,0 +1,43 @@
+===================================
+Package and ordered import headers
+===================================
+
+package com.engineeringood.m18-root
+import com.engineeringood.controls
+import com.engineeringood.controls.Switch2
+system Demo {
+}
+
+---
+
+(source_file
+  (package_declaration
+    name: (package_name))
+  (import_declaration
+    target: (package_name))
+  (import_declaration
+    target: (package_name))
+  (system_declaration
+    name: (name)))
+
+=========================================
+Package and import remain contextual names
+=========================================
+
+system import {
+  device package {
+    import import
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))))))

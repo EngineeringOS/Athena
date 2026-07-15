@@ -1,15 +1,14 @@
 // Athena Tree-sitter grammar — SYNTAX UX ONLY.
 //
 // AD-107: Tree-sitter owns syntax UX only (highlighting/structure), never semantic truth.
-// AD-110: this grammar is frozen to the current M17 supported syntax subset and must mirror
+// AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset.
 // `kernel/language/src/main/kotlin/com/engineeringood/athena/language/AthenaLanguageModel.kt` /
-// `AthenaLanguageParser.kt` exactly: one top-level `system <name> { ... }` block, `device`,
-// `port`, and `connect` declarations, dotted qualified names (`owner.port`), string literals,
-// bare identifiers, and `name value` property assignments — no more, no less.
+// `AthenaLanguageParser.kt`: optional package, repeated imports, one system block, and the
+// existing device/port/connect, qualified-name, string, identifier, and property syntax.
 //
-// Do NOT add comments, numeric literals, expressions, or `import` syntax here. Widening this
+// Do NOT add aliases, wildcards, visibility, comments, numeric literals, or expressions. Widening this
 // grammar beyond the frozen subset (AD-104) is an explicit future-story decision, not an
-// incidental addition. See Story 5.3 / `kernel/language/docs/future-syntax-landing-zone.md`.
+// incidental addition.
 //
 // This grammar relies on Tree-sitter's built-in error recovery (no hand-rolled error
 // productions) so that partial/incomplete input still yields a best-effort, usable tree —
@@ -32,7 +31,42 @@ module.exports = grammar({
   ],
 
   rules: {
-    source_file: $ => $.system_declaration,
+    source_file: $ => seq(
+      optional(choice($.package_declaration, $.incomplete_package_declaration)),
+      repeat(choice($.import_declaration, $.incomplete_import_declaration)),
+      $.system_declaration,
+    ),
+
+    package_declaration: $ => seq(
+      'package',
+      $._header_space,
+      field('name', $.package_name),
+    ),
+
+    import_declaration: $ => seq(
+      'import',
+      $._header_space,
+      field('target', $.package_name),
+    ),
+
+    // Explicit low-precedence nodes keep following declarations usable while the author types.
+    // They are syntax recovery only and never produce compiler/LSP diagnostics or package meaning.
+    incomplete_package_declaration: _ => prec(-1, 'package'),
+
+    incomplete_import_declaration: _ => prec(-1, 'import'),
+
+    // One contiguous token rejects skipped trivia around dots and hyphens, matching the compiler.
+    package_name: _ => token.immediate(seq(
+      /[A-Za-z_][A-Za-z0-9_]*/,
+      repeat(seq('-', /[A-Za-z_][A-Za-z0-9_]*/)),
+      repeat(seq(
+        '.',
+        /[A-Za-z_][A-Za-z0-9_]*/,
+        repeat(seq('-', /[A-Za-z_][A-Za-z0-9_]*/)),
+      )),
+    )),
+
+    _header_space: _ => token.immediate(/[ \t]+/),
 
     system_declaration: $ => seq(
       'system',
