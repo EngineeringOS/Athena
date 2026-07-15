@@ -25,6 +25,7 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnosticProj
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphBuildResult
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticImportResolver
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticReferenceLinker
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.language.AthenaLanguageParser
@@ -88,6 +89,7 @@ class AthenaCompiler(
     private val projectSemanticImportResolver: ProjectSemanticImportResolver = ProjectSemanticImportResolver(),
     private val projectSemanticDiagnosticProjector: ProjectSemanticDiagnosticProjector = ProjectSemanticDiagnosticProjector(),
     private val projectSemanticDeclarationIndexer: ProjectSemanticDeclarationIndexer = ProjectSemanticDeclarationIndexer(),
+    private val projectSemanticReferenceLinker: ProjectSemanticReferenceLinker = ProjectSemanticReferenceLinker(),
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
     val pluginDiscoveryReport: AthenaPluginDiscoveryReport = hostedPluginDiscoveryReport ?: pluginDiscovery.discover()
@@ -324,6 +326,11 @@ class AthenaCompiler(
     /** Indexes authored declarations into compiler-owned semantic namespaces. */
     fun indexProjectSemanticDeclarations(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
         return projectSemanticDeclarationIndexer.index(snapshot)
+    }
+
+    /** Links supported authored references against compiler-owned semantic declarations. */
+    fun linkProjectSemanticReferences(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
+        return projectSemanticReferenceLinker.link(snapshot)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */
