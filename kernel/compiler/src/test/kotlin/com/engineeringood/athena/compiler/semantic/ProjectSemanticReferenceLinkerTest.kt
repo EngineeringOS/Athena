@@ -3,6 +3,7 @@ package com.engineeringood.athena.compiler.semantic
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.Declaration
+import com.engineeringood.athena.language.ImportDeclaration
 import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.repository.PackageIdentifier
 import kotlin.test.Test
@@ -157,6 +158,110 @@ class ProjectSemanticReferenceLinkerTest {
         }
     }
 
+    @Test
+    fun `links connection endpoint references through resolved governed package imports`() {
+        val fixture = crossPackageFixture(importVendor = true)
+
+        val linked = ProjectSemanticReferenceLinker().link(fixture.importResolvedSnapshot)
+        val vendorDeclaration = linked.declarations.single { it.sourceUnitId == fixture.vendorSourceUnitId }
+
+        assertEquals(2, linked.bindings.size)
+        assertEquals(vendorDeclaration.declarationId, linked.bindings.first().resolvedDeclarationId)
+        assertEquals(emptyList(), linked.diagnostics)
+    }
+
+    @Test
+    fun `does not link dependency declarations without a resolved authored import`() {
+        val fixture = crossPackageFixture(importVendor = false)
+
+        val linked = ProjectSemanticReferenceLinker().link(fixture.importResolvedSnapshot)
+
+        assertEquals(1, linked.bindings.size)
+        assertEquals(
+            listOf("semantic.reference.unresolved"),
+            linked.diagnostics.map { it.code.value },
+        )
+        assertEquals(fixture.consumerSourceUnitId, linked.diagnostics.single().sourceUnitId)
+        assertEquals(fixture.consumerEndpointSpans.first(), linked.diagnostics.single().sourceSpan)
+    }
+
+    @Test
+    fun `reports ambiguous references across resolved governed package imports`() {
+        val rootId = PackageIdentifier("com.root", "1")
+        val leftId = PackageIdentifier("com.vendor.left", "1")
+        val rightId = PackageIdentifier("com.vendor.right", "1")
+        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
+        val leftKey = CanonicalSemanticIdentityBuilder.packageKey(leftId)
+        val rightKey = CanonicalSemanticIdentityBuilder.packageKey(rightId)
+        val leftAst = parse("left.athena", "package com.vendor.left\nsystem Left {\n  port Shared.out {}\n}")
+        val rightAst = parse("right.athena", "package com.vendor.right\nsystem Right {\n  port Shared.out {}\n}")
+        val consumerAst = parse(
+            "consumer.athena",
+            """
+            package com.root
+            import com.vendor.left
+            import com.vendor.right
+            system Consumer {
+              connect Shared.out -> Local.out
+              port Local.out {}
+            }
+            """.trimIndent(),
+        )
+        val leftSource = sourceUnit(leftKey, "left.athena", "left", leftAst.declarations)
+        val rightSource = sourceUnit(rightKey, "right.athena", "right", rightAst.declarations)
+        val consumer = sourceUnit(
+            rootKey,
+            "consumer.athena",
+            "consumer",
+            consumerAst.declarations,
+            consumerAst.imports,
+        )
+        val packages = listOf(
+            ProjectSemanticPackage(rootId, rootKey, "src", listOf(leftKey, rightKey)),
+            ProjectSemanticPackage(leftId, leftKey, "vendor/left", emptyList()),
+            ProjectSemanticPackage(rightId, rightKey, "vendor/right", emptyList()),
+        )
+        val namespaces = listOf(
+            namespace(rootKey, listOf("com", "root"), listOf(consumer.sourceUnitId)),
+            namespace(leftKey, listOf("com", "vendor", "left"), listOf(leftSource.sourceUnitId)),
+            namespace(rightKey, listOf("com", "vendor", "right"), listOf(rightSource.sourceUnitId)),
+        )
+
+        val linked = ProjectSemanticReferenceLinker().link(
+            importResolvedSnapshot(rootKey, packages, listOf(consumer, rightSource, leftSource), namespaces),
+        )
+
+        assertEquals(1, linked.bindings.size)
+        assertEquals(
+            listOf("semantic.reference.ambiguous"),
+            linked.diagnostics.map { it.code.value },
+        )
+        assertEquals(consumer.sourceUnitId, linked.diagnostics.single().sourceUnitId)
+        assertEquals(consumerEndpointSpans(consumerAst.declarations).first(), linked.diagnostics.single().sourceSpan)
+    }
+
+    @Test
+    fun `keeps cross package bindings deterministic from reversed raw collections`() {
+        val fixture = crossPackageFixture(importVendor = true)
+        val reversed = ProjectSemanticGraphSnapshot.canonical(
+            fixture.importResolvedSnapshot.graphId,
+            fixture.importResolvedSnapshot.rootPackageId,
+            fixture.importResolvedSnapshot.packages.reversed(),
+            fixture.importResolvedSnapshot.sourceUnits.reversed(),
+            fixture.importResolvedSnapshot.namespaces.reversed(),
+            fixture.importResolvedSnapshot.declarations.reversed(),
+            emptyList(),
+            emptyList(),
+        )
+        val importResolvedReversed = ProjectSemanticImportResolver().resolve(reversed)
+
+        val forwardLinked = ProjectSemanticReferenceLinker().link(fixture.importResolvedSnapshot)
+        val reversedLinked = ProjectSemanticReferenceLinker().link(importResolvedReversed)
+
+        assertEquals(forwardLinked.bindings, reversedLinked.bindings)
+        assertEquals(forwardLinked.diagnostics, reversedLinked.diagnostics)
+    }
+
     private fun referenceFixture(): ReferenceFixture {
         val rootId = PackageIdentifier("com.root", "1")
         val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
@@ -196,6 +301,62 @@ class ProjectSemanticReferenceLinkerTest {
         )
     }
 
+    private fun crossPackageFixture(importVendor: Boolean): CrossPackageFixture {
+        val rootId = PackageIdentifier("com.root", "1")
+        val vendorId = PackageIdentifier("com.vendor", "1")
+        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
+        val vendorKey = CanonicalSemanticIdentityBuilder.packageKey(vendorId)
+        val vendorAst = parse("vendor.athena", "package com.vendor\nsystem Vendor {\n  port Vendor.out {}\n}")
+        val consumerAst = parse(
+            "consumer.athena",
+            buildString {
+                appendLine("package com.root")
+                if (importVendor) {
+                    appendLine("import com.vendor")
+                }
+                appendLine("system Consumer {")
+                appendLine("  connect Vendor.out -> Local.out")
+                appendLine("  port Local.out {}")
+                appendLine("}")
+            }.trimEnd(),
+        )
+        val vendorSource = sourceUnit(vendorKey, "vendor.athena", "vendor", vendorAst.declarations)
+        val consumer = sourceUnit(
+            rootKey,
+            "consumer.athena",
+            "consumer",
+            consumerAst.declarations,
+            consumerAst.imports,
+        )
+        val packages = listOf(
+            ProjectSemanticPackage(rootId, rootKey, "src", listOf(vendorKey)),
+            ProjectSemanticPackage(vendorId, vendorKey, "vendor", emptyList()),
+        )
+        val namespaces = listOf(
+            namespace(rootKey, listOf("com", "root"), listOf(consumer.sourceUnitId)),
+            namespace(vendorKey, listOf("com", "vendor"), listOf(vendorSource.sourceUnitId)),
+        )
+        return CrossPackageFixture(
+            importResolvedSnapshot(rootKey, packages, listOf(consumer, vendorSource), namespaces),
+            consumer.sourceUnitId,
+            vendorSource.sourceUnitId,
+            consumerEndpointSpans(consumerAst.declarations),
+        )
+    }
+
+    private fun importResolvedSnapshot(
+        rootKey: PackageKey,
+        packages: List<ProjectSemanticPackage>,
+        sourceUnits: List<ProjectSemanticSourceUnit>,
+        namespaces: List<ProjectSemanticNamespace>,
+    ): ProjectSemanticGraphSnapshot {
+        return ProjectSemanticImportResolver().resolve(indexedSnapshot(rootKey, packages, sourceUnits, namespaces))
+    }
+
+    private fun parse(path: String, content: String): com.engineeringood.athena.language.SourceFileAst {
+        return assertIs<ParseSuccess>(AthenaLanguageParser().parse(path, content)).ast
+    }
+
     private fun indexedSnapshot(
         rootKey: PackageKey,
         packages: List<ProjectSemanticPackage>,
@@ -214,6 +375,7 @@ class ProjectSemanticReferenceLinkerTest {
         path: String,
         content: String,
         declarations: List<Declaration>,
+        imports: List<ImportDeclaration> = emptyList(),
     ): ProjectSemanticSourceUnit {
         val sourceUnitId = CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, path)
         return ProjectSemanticSourceUnit(
@@ -221,6 +383,7 @@ class ProjectSemanticReferenceLinkerTest {
             packageKey,
             path,
             CanonicalSemanticIdentityBuilder.sourceContentIdentity(sourceUnitId, content),
+            authoredImports = imports,
             authoredDeclarations = declarations,
         )
     }
@@ -271,5 +434,12 @@ class ProjectSemanticReferenceLinkerTest {
 private data class ReferenceFixture(
     val indexedSnapshot: ProjectSemanticGraphSnapshot,
     val consumerSourceUnitId: SourceUnitId,
+    val consumerEndpointSpans: List<com.engineeringood.athena.language.SourceSpan>,
+)
+
+private data class CrossPackageFixture(
+    val importResolvedSnapshot: ProjectSemanticGraphSnapshot,
+    val consumerSourceUnitId: SourceUnitId,
+    val vendorSourceUnitId: SourceUnitId,
     val consumerEndpointSpans: List<com.engineeringood.athena.language.SourceSpan>,
 )

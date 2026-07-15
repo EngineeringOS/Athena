@@ -8,11 +8,23 @@ class ProjectSemanticReferenceLinker {
         val namespacesBySourceUnit = snapshot.namespaces
             .flatMap { namespace -> namespace.sourceUnitIds.map { it to namespace } }
             .toMap()
+        val namespacesById = snapshot.namespaces.associateBy { it.namespaceId }
         val declarationsById = snapshot.declarations.associateBy { it.declarationId }
         val diagnostics = mutableListOf<ProjectSemanticDiagnostic>()
         val bindings = snapshot.sourceUnits.flatMap { sourceUnit ->
             val namespace = namespacesBySourceUnit[sourceUnit.sourceUnitId] ?: return@flatMap emptyList()
-            val availableDeclarations = namespace.declarationIds
+            val availableNamespaceIds = (
+                listOf(namespace.namespaceId) +
+                    sourceUnit.resolvedImports.mapNotNull { resolution ->
+                        resolution.explanation.selectedNamespaceId
+                            ?.takeIf { resolution.status == ProjectSemanticImportResolutionStatus.RESOLVED }
+                    }
+                )
+                .distinct()
+                .sortedBy { it.value }
+            val availableDeclarations = availableNamespaceIds
+                .flatMap { namespaceId -> namespacesById[namespaceId]?.declarationIds.orEmpty() }
+                .distinct()
                 .mapNotNull(declarationsById::get)
                 .filter { it.kind == PORT_DECLARATION_KIND }
             sourceUnit.authoredDeclarations
