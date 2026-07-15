@@ -56,6 +56,10 @@ class ProjectSemanticGraphSnapshot private constructor(
                         sourceRootRelativePath = CanonicalSemanticIdentityBuilder.normalizeSourceRootRelativePath(
                             sourceUnit.sourceRootRelativePath,
                         ),
+                        authoredImports = sourceUnit.authoredImports
+                            .distinct()
+                            .sortedWith(importComparator)
+                            .toImmutableList(),
                     )
                 }
                 .sortedBy { it.sourceUnitId.value }
@@ -72,6 +76,15 @@ class ProjectSemanticGraphSnapshot private constructor(
                         sourceUnit.sourceRootRelativePath,
                     ) == sourceUnit.sourceUnitId,
                 ) { "Semantic source unit id must match its package and normalized path" }
+                sourceUnit.authoredImports.forEach { importDeclaration ->
+                    requireQualifiedName(importDeclaration.target.parts, "import")
+                    requireValidSpan(importDeclaration.target.span, "Semantic import target span")
+                    requireValidSpan(importDeclaration.span, "Semantic import declaration span")
+                    require(
+                        importDeclaration.target.span.start.offset >= importDeclaration.span.start.offset &&
+                            importDeclaration.target.span.end.offset <= importDeclaration.span.end.offset,
+                    ) { "Semantic import target span must be contained by its declaration span" }
+                }
             }
             require(
                 CanonicalSemanticIdentityBuilder.graphId(
@@ -179,28 +192,13 @@ class ProjectSemanticGraphSnapshot private constructor(
                 ) { "Semantic binding id must match its reference and resolution components" }
             }
 
-            val canonicalDiagnostics = diagnostics
-                .map { diagnostic ->
-                    diagnostic.copy(
-                        relatedLocations = diagnostic.relatedLocations
-                            .map { location -> location.copy(message = location.message?.takeIf { it.isNotBlank() }) }
-                            .distinct()
-                            .sortedWith(relatedLocationComparator)
-                            .toImmutableList(),
-                    )
-                }
-                .sortedWith(diagnosticComparator)
-                .toImmutableList()
+            val canonicalDiagnostics = canonicalizeDiagnostics(diagnostics)
             canonicalDiagnostics.forEach { diagnostic ->
-                diagnostic.sourceSpan?.let { requireValidSpan(it, "Semantic diagnostic source span") }
                 require(diagnostic.sourceUnitId == null || diagnostic.sourceUnitId in sourceUnitsById) {
                     "Semantic diagnostics must reference known source units"
                 }
                 require(diagnostic.relatedLocations.all { it.sourceUnitId in sourceUnitsById }) {
                     "Semantic diagnostic related locations must reference known source units"
-                }
-                diagnostic.relatedLocations.forEach { location ->
-                    requireValidSpan(location.sourceSpan, "Semantic diagnostic related-location span")
                 }
             }
 
@@ -216,6 +214,30 @@ class ProjectSemanticGraphSnapshot private constructor(
             )
         }
 
+        internal fun canonicalizeDiagnostics(
+            diagnostics: List<ProjectSemanticDiagnostic>,
+        ): List<ProjectSemanticDiagnostic> {
+            val canonical = diagnostics
+                .map { diagnostic ->
+                    diagnostic.copy(
+                        relatedLocations = diagnostic.relatedLocations
+                            .map { location -> location.copy(message = location.message?.takeIf { it.isNotBlank() }) }
+                            .distinct()
+                            .sortedWith(relatedLocationComparator)
+                            .toImmutableList(),
+                    )
+                }
+                .sortedWith(diagnosticComparator)
+                .toImmutableList()
+            canonical.forEach { diagnostic ->
+                diagnostic.sourceSpan?.let { requireValidSpan(it, "Semantic diagnostic source span") }
+                diagnostic.relatedLocations.forEach { location ->
+                    requireValidSpan(location.sourceSpan, "Semantic diagnostic related-location span")
+                }
+            }
+            return canonical
+        }
+
         private val relatedLocationComparator = compareBy<ProjectSemanticRelatedLocation>(
             { it.sourceUnitId.value },
             { it.sourceSpan.start.offset },
@@ -225,6 +247,22 @@ class ProjectSemanticGraphSnapshot private constructor(
             { it.sourceSpan.end.line },
             { it.sourceSpan.end.column },
             { it.message.orEmpty() },
+        )
+
+        private val importComparator = compareBy<com.engineeringood.athena.language.ImportDeclaration>(
+            { it.target.parts.joinToString(".") },
+            { it.target.span.start.offset },
+            { it.target.span.start.line },
+            { it.target.span.start.column },
+            { it.target.span.end.offset },
+            { it.target.span.end.line },
+            { it.target.span.end.column },
+            { it.span.start.offset },
+            { it.span.start.line },
+            { it.span.start.column },
+            { it.span.end.offset },
+            { it.span.end.line },
+            { it.span.end.column },
         )
 
         private val diagnosticComparator = Comparator<ProjectSemanticDiagnostic> { left, right ->

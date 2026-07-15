@@ -1,5 +1,7 @@
 package com.engineeringood.athena.compiler.semantic
 
+import com.engineeringood.athena.language.ImportDeclaration
+import com.engineeringood.athena.language.QualifiedName
 import com.engineeringood.athena.language.SourcePosition
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.repository.PackageIdentifier
@@ -205,6 +207,52 @@ class ProjectSemanticGraphSnapshotTest {
         assertEquals(listOf(ProjectSemanticDiagnosticSeverity.ERROR, ProjectSemanticDiagnosticSeverity.WARNING), first.map { it.severity })
         assertEquals(listOf(firstLocation, secondLocation), first.first().relatedLocations)
         assertEquals(null, first.last().relatedLocations.single().message)
+    }
+
+    @Test
+    fun `canonical snapshot fully orders imports and rejects targets outside their declaration span`() {
+        val fixture = semanticGraphFixture()
+        val sourceUnit = fixture.sourceUnits.first()
+        val declarationSpan = SourceSpan(SourcePosition(0, 1, 1), SourcePosition(20, 2, 10))
+        val firstImport = ImportDeclaration(
+            QualifiedName(listOf("com", "controls"), SourceSpan(SourcePosition(7, 1, 8), SourcePosition(19, 1, 20))),
+            declarationSpan,
+        )
+        val secondImport = ImportDeclaration(
+            QualifiedName(listOf("com", "controls"), SourceSpan(SourcePosition(7, 2, 1), SourcePosition(19, 2, 13))),
+            declarationSpan,
+        )
+        val first = fixture.snapshot(
+            sourceUnits = fixture.sourceUnits.map {
+                if (it.sourceUnitId == sourceUnit.sourceUnitId) it.copy(authoredImports = listOf(secondImport, firstImport)) else it
+            },
+        )
+        val second = fixture.snapshot(
+            sourceUnits = fixture.sourceUnits.map {
+                if (it.sourceUnitId == sourceUnit.sourceUnitId) it.copy(authoredImports = listOf(firstImport, secondImport)) else it
+            },
+        )
+
+        assertEquals(first.sourceUnits, second.sourceUnits)
+        assertFailsWith<IllegalArgumentException> {
+            fixture.snapshot(
+                sourceUnits = fixture.sourceUnits.map {
+                    if (it.sourceUnitId == sourceUnit.sourceUnitId) {
+                        it.copy(
+                            authoredImports = listOf(
+                                firstImport.copy(
+                                    target = firstImport.target.copy(
+                                        span = SourceSpan(SourcePosition(21, 3, 1), SourcePosition(30, 3, 10)),
+                                    ),
+                                ),
+                            ),
+                        )
+                    } else {
+                        it
+                    }
+                },
+            )
+        }
     }
 
     private fun semanticGraphFixture(): SemanticGraphFixture {

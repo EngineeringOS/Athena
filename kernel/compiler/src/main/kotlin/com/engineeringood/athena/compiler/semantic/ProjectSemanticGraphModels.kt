@@ -1,6 +1,7 @@
 package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.language.SourceSpan
+import com.engineeringood.athena.language.ImportDeclaration
 import com.engineeringood.athena.repository.PackageIdentifier
 
 data class ProjectSemanticPackage(
@@ -15,6 +16,7 @@ data class ProjectSemanticSourceUnit(
     val packageKey: PackageKey,
     val sourceRootRelativePath: String,
     val contentIdentity: SourceUnitContentIdentity,
+    val authoredImports: List<ImportDeclaration> = emptyList(),
 )
 
 data class ProjectSemanticNamespace(

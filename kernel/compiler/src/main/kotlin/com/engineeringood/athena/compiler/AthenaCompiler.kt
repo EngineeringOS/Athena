@@ -19,6 +19,9 @@ import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPubli
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPublisher
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputBuilder
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputResult
+import com.engineeringood.athena.compiler.semantic.GovernedProjectSemanticGraphBuilder
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphBuildResult
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.ParseFailure
@@ -77,6 +80,7 @@ class AthenaCompiler(
     ),
     private val componentKnowledgeContextBuilder: AthenaComponentKnowledgeContextBuilder = AthenaComponentKnowledgeContextBuilder(),
     lowerer: EngineeringIrLowerer? = null,
+    private val projectSemanticGraphBuilder: GovernedProjectSemanticGraphBuilder = GovernedProjectSemanticGraphBuilder(parser),
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
     val pluginDiscoveryReport: AthenaPluginDiscoveryReport = hostedPluginDiscoveryReport ?: pluginDiscovery.discover()
@@ -290,6 +294,14 @@ class AthenaCompiler(
      */
     fun publishRepositoryGraphReport(repositoryRoot: Path): AthenaRepositoryReportPublicationResult {
         return repositoryReportPublisher.publish(repositoryRoot)
+    }
+
+    /** Builds one compiler-owned semantic workspace from governed repository publication state and admitted source inputs. */
+    fun buildProjectSemanticGraph(
+        publication: AthenaRepositoryReportPublicationResult,
+        sources: List<ProjectSemanticSourceInput>,
+    ): ProjectSemanticGraphBuildResult {
+        return projectSemanticGraphBuilder.build(publication, sources)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */
