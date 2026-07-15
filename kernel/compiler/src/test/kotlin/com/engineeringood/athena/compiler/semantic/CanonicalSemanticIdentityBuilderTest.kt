@@ -32,6 +32,9 @@ class CanonicalSemanticIdentityBuilderTest {
         assertFailsWith<IllegalArgumentException> { CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "C:\\outside.athena") }
         assertFailsWith<IllegalArgumentException> { CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "C:outside.athena") }
         assertFailsWith<IllegalArgumentException> { CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "/outside.athena") }
+        assertFailsWith<IllegalArgumentException> { CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "panels/") }
+        assertFailsWith<IllegalArgumentException> { CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "panels/.") }
+        assertFailsWith<IllegalArgumentException> { CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "panels/main.athena/..") }
     }
 
     @Test

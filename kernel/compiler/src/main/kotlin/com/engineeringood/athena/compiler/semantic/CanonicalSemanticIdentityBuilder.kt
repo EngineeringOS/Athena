@@ -15,9 +15,13 @@ object CanonicalSemanticIdentityBuilder {
     }
 
     fun sourceUnitId(packageKey: PackageKey, sourceRootRelativePath: String): SourceUnitId {
-        val normalizedPath = normalizeRelativePath(sourceRootRelativePath, allowRoot = false)
+        val normalizedPath = normalizeSourceRootRelativePath(sourceRootRelativePath)
         return SourceUnitId(canonicalValue("source", listOf(packageKey.value, normalizedPath)))
     }
+
+    fun normalizeSourceRootRelativePath(path: String): String = normalizeRelativePath(path, allowRoot = false)
+
+    fun normalizePackageSourceRoot(path: String): String = normalizeRelativePath(path, allowRoot = true)
 
     fun declarationId(
         sourceUnitId: SourceUnitId,
@@ -86,7 +90,7 @@ object CanonicalSemanticIdentityBuilder {
                 canonicalSequence(
                     listOf(
                         packageIdentity.packageKey.value,
-                        normalizeRelativePath(packageIdentity.sourceRoot, allowRoot = true),
+                        normalizePackageSourceRoot(packageIdentity.sourceRoot),
                         canonicalSequence(dependencies),
                     ),
                 )
@@ -116,6 +120,11 @@ object CanonicalSemanticIdentityBuilder {
         val portable = path.replace('\\', '/')
         require(!portable.startsWith('/') && !WINDOWS_DRIVE_PATH.matches(portable)) {
             "Path must be source-root-relative: $path"
+        }
+        if (!allowRoot) {
+            require(portable.substringAfterLast('/') !in NON_FILE_TERMINAL_SEGMENTS) {
+                "Source unit path must end with a file segment: $path"
+            }
         }
 
         val segments = mutableListOf<String>()
@@ -151,4 +160,5 @@ object CanonicalSemanticIdentityBuilder {
     }
 
     private val WINDOWS_DRIVE_PATH = Regex("^[A-Za-z]:.*")
+    private val NON_FILE_TERMINAL_SEGMENTS = setOf("", ".", "..")
 }
