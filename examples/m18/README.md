@@ -8,3 +8,8 @@ This directory accumulates executable M18 evidence by implementation slice.
 
 The corpus uses only local governed repository and source fixtures. It does not imply remote
 registry, marketplace, publish, multi-root, or frontend-owned semantic resolution behavior.
+
+Milestone scope boundaries are documented in
+`../../_bmad-output/implementation-artifacts/m18/m18-closeout-boundaries.md`.
+Run `powershell -ExecutionPolicy Bypass -File .\tools\m18-scope-boundary-audit.ps1` from the
+repository root to verify the corpus and M18 artifacts keep those boundaries explicit.
