@@ -12,11 +12,109 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * Story 2.1 smoke coverage for the generated ANTLR4 grammar only.
- * Does not exercise `AthenaLanguageParser` (still handwritten until Story 2.2).
- */
+/** Grammar-level smoke coverage; the public ANTLR-backed parser is exercised separately. */
 class AthenaGrammarSmokeTest {
+    @Test
+    fun `parses ordered import declarations before the system block`() {
+        val source =
+            """
+            package com.engineeringood.root
+            import com.engineeringood.controls
+            import com.engineeringood.controls.Switch
+            system Demo {}
+            """.trimIndent()
+
+        val parse = parseSource(source)
+
+        assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
+        assertEquals(
+            listOf("com.engineeringood.controls", "com.engineeringood.controls.Switch"),
+            parse.tree.importDecl().map { it.packageName().text },
+        )
+    }
+
+    @Test
+    fun `keeps import contextual in existing identifier positions`() {
+        val source =
+            """
+            system import {
+              device import {
+                import import
+              }
+            }
+            """.trimIndent()
+
+        val parse = parseSource(source)
+
+        assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
+        val system = parse.tree.systemDecl()
+        assertEquals("import", system.ident().text)
+        val device = system.declaration().single().deviceDecl()
+        assertEquals("import", device.ident().text)
+        val property = device.propertyAssignment().single()
+        assertEquals("import", property.ident().text)
+        assertEquals("import", property.scalarValue().ident().text)
+    }
+
+    @Test
+    fun `accepts valid and rejects malformed hyphenated import targets`() {
+        val valid = parseSource("import com.m18-controls.Switch2\nsystem Demo {}")
+        assertTrue(valid.errors.isEmpty(), "Unexpected syntax errors: ${valid.errors}")
+        assertEquals(listOf("com", "m18-controls", "Switch2"), valid.tree.importDecl().single().packageName().packageNameSegment().map { it.text })
+
+        listOf(
+            "import com.-controls\nsystem Demo {}",
+            "import com.controls-\nsystem Demo {}",
+            "import com.controls--switch\nsystem Demo {}",
+        ).forEach { source ->
+            assertTrue(parseSource(source).errors.isNotEmpty(), "Expected malformed import to fail: $source")
+        }
+    }
+
+    @Test
+    fun `parses a governed package declaration before the system block`() {
+        val source =
+            """
+            package com.engineeringood.factory-line
+            system Demo {
+              connect plc.out -> plc.input
+            }
+            """.trimIndent()
+
+        val parse = parseSource(source)
+
+        assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
+        assertTrue(parse.tree.exception == null)
+        assertEquals(
+            listOf("com", "engineeringood", "factory-line"),
+            parse.tree.packageDecl().packageName().packageNameSegment().map { it.text },
+        )
+    }
+
+    @Test
+    fun `keeps package contextual without breaking arrow or dotted reference parsing`() {
+        val source =
+            """
+            system Demo {
+              device package {
+                package package
+              }
+              port plc.out {
+                package package
+              }
+              connect plc.out -> plc.input
+            }
+            """.trimIndent()
+
+        val parse = parseSource(source)
+
+        assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
+        assertEquals(3, parse.tree.systemDecl().declaration().size)
+        val connect = parse.tree.systemDecl().declaration(2).connectDecl()
+        assertEquals("->", connect.ARROW().text)
+        assertEquals(listOf("plc.out", "plc.input"), connect.twoPartName().map { it.text })
+    }
+
     @Test
     fun `parses the demo cabinet fixture without syntax errors`() {
         val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")

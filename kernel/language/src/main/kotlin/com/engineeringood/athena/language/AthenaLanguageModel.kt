@@ -41,6 +41,30 @@ data class SourceFileAst(
     val system: SystemDeclaration,
     val declarations: List<Declaration>,
     val span: SourceSpan,
+    val packageDeclaration: PackageDeclaration? = null,
+    val imports: List<ImportDeclaration> = emptyList(),
+)
+
+/**
+ * Declares one file-level qualified target for later semantic graph resolution.
+ *
+ * This syntax-only node preserves authored package-or-symbol intent without classifying or
+ * resolving the target.
+ */
+data class ImportDeclaration(
+    val target: QualifiedName,
+    val span: SourceSpan,
+)
+
+/**
+ * Declares the governed package namespace authored for one source file.
+ *
+ * This is syntax-only package intent. Repository admission, package identity validation, and
+ * semantic binding remain downstream compiler responsibilities.
+ */
+data class PackageDeclaration(
+    val name: QualifiedName,
+    val span: SourceSpan,
 )
 
 /**
@@ -61,12 +85,12 @@ data class SystemDeclaration(
  * future parser implementation changes. Future declaration kinds land as additional sealed
  * variants rather than as parser-generator-specific types.
  *
- * ## Future syntax landing zone (documentation only; not implemented in M17)
+ * ## Future system-body syntax landing zone
  *
- * Constructs such as `import` would be added as a new sealed variant on this hierarchy —
- * for example a hypothetical `ImportDeclaration(module: QualifiedName, override val span: SourceSpan)` —
+ * New constructs authored inside a system block are added as sealed variants on this hierarchy
  * without widening [DeviceDeclaration], [PortDeclaration], or [ConnectionDeclaration], and without
- * making Engineering IR lowering depend on parser-tree types.
+ * making Engineering IR lowering depend on parser-tree types. File-header metadata such as
+ * [PackageDeclaration] and [ImportDeclaration] remains on [SourceFileAst].
  *
  * Required landing pattern for a future contributor:
  * 1. Add the new sealed variant here (authored AST only).
@@ -75,9 +99,7 @@ data class SystemDeclaration(
  * 3. Handle the new variant through an **exhaustive** `when` at every consumer that lowers
  *    or classifies [Declaration] values (compile-time failure on unhandled variants is intentional).
  *
- * M17 does **not** implement `ImportDeclaration`, import keyword parsing, import resolution,
- * or package-aware authored semantics. See also Epic 5 Story `5.3` for the milestone-level
- * future-syntax landing-zone closeout note, and `kernel/language/docs/future-syntax-landing-zone.md`.
+ * Import resolution and package-aware authored semantics remain downstream compiler concerns.
  */
 sealed interface Declaration {
     val span: SourceSpan
@@ -147,8 +169,8 @@ data class PropertyAssignment(
  *
  * Part of the frozen Athena-owned authored syntax contract; syntax-only and stable across
  * future parser implementation changes. New literal kinds land as additional sealed variants
- * (field-level extensibility). Top-level authored constructs such as a future `import` extend
- * [Declaration], not this hierarchy.
+ * (field-level extensibility). Top-level authored constructs extend neither this hierarchy nor
+ * system-body [Declaration].
  */
 sealed interface ScalarValue {
     val span: SourceSpan

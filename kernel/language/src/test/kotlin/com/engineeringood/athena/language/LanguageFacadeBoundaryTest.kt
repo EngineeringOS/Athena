@@ -25,6 +25,8 @@ class LanguageFacadeBoundaryTest {
             "SourcePosition",
             "SourceSpan",
             "SourceFileAst",
+            "ImportDeclaration",
+            "PackageDeclaration",
             "SystemDeclaration",
             "Declaration",
             "DeviceDeclaration",

@@ -62,7 +62,7 @@ class AthenaCompilerComponentKnowledgeIntegrationTest {
             knowledgeContext.componentKnowledgeContributors,
         )
         assertEquals(5, knowledgeContext.activeComponentConceptCount)
-        assertEquals(5, knowledgeContext.activeComponentImplementationCount)
+        assertEquals(6, knowledgeContext.activeComponentImplementationCount)
         assertEquals(
             listOf("component:M1", "component:PLC1"),
             knowledgeContext.resolvedComponents.map { resolved -> resolved.semanticSubjectId.value },

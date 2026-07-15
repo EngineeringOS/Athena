@@ -5,9 +5,9 @@
  * :kernel:compiler, :kernel:runtime, :ide:*, or any other downstream module.
  * Downstream code must use only com.engineeringood.athena.language contracts.
  *
- * Scope is M17 parity-first (AD-110): system, device, port, connect,
- * qualified names, string literals, and property assignments only.
- * No import / expression / macro-use forms.
+ * Scope includes M17 syntax plus M18 file-level package and import declarations:
+ * system, package, import, device, port, connect, qualified names, string literals,
+ * and property assignments only. No expression / macro-use forms.
  */
 grammar Athena;
 
@@ -16,7 +16,23 @@ package com.engineeringood.athena.language.antlr;
 }
 
 sourceFile
-    : systemDecl EOF
+    : packageDecl? importDecl* systemDecl EOF
+    ;
+
+packageDecl
+    : PACKAGE packageName
+    ;
+
+importDecl
+    : IMPORT packageName
+    ;
+
+packageName
+    : packageNameSegment (DOT packageNameSegment)*
+    ;
+
+packageNameSegment
+    : ident (MINUS ident)*
     ;
 
 systemDecl
@@ -72,16 +88,21 @@ ident
     | DEVICE
     | PORT
     | CONNECT
+    | PACKAGE
+    | IMPORT
     ;
 
 SYSTEM : 'system' ;
 DEVICE : 'device' ;
 PORT : 'port' ;
 CONNECT : 'connect' ;
+PACKAGE : 'package' ;
+IMPORT : 'import' ;
 LBRACE : '{' ;
 RBRACE : '}' ;
 DOT : '.' ;
 ARROW : '->' ;
+MINUS : '-' ;
 
 STRING
     : '"' (~["\r\n])* '"'

@@ -3,6 +3,8 @@ package com.engineeringood.athena.language.antlr
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.ImportDeclaration
+import com.engineeringood.athena.language.PackageDeclaration
 import com.engineeringood.athena.language.ParseFailure
 import com.engineeringood.athena.language.ParseResult
 import com.engineeringood.athena.language.ParseSuccess
@@ -21,6 +23,8 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.Token
+import org.antlr.v4.runtime.tree.ParseTree
+import org.antlr.v4.runtime.tree.TerminalNode
 
 /*
  * INTERNAL IMPLEMENTATION DETAIL — not part of Athena's public syntax contract.
@@ -56,13 +60,15 @@ internal object AthenaAntlrParseEngine {
     }
 
     private fun parseInternal(file: String, source: String): ParseResult {
-        val errorListener = AthenaAntlrSyntaxErrorListener(file)
+        val errorListener = AthenaAntlrSyntaxErrorListener(file, source)
 
         val lexer = AthenaLexer(CharStreams.fromString(source))
         lexer.removeErrorListeners()
         lexer.addErrorListener(errorListener)
 
         val tokens = CommonTokenStream(lexer)
+        tokens.fill()
+        splitImportTargetDiagnostic(file, tokens.tokens)?.let { return ParseFailure(listOf(it)) }
         val parser = AthenaParser(tokens)
         parser.removeErrorListeners()
         parser.addErrorListener(errorListener)
@@ -108,8 +114,27 @@ internal object AthenaAntlrParseEngine {
     }
 }
 
+private fun splitImportTargetDiagnostic(file: String, tokens: List<Token>): SyntaxDiagnostic? {
+    tokens.forEachIndexed { index, token ->
+        if (token.type != AthenaLexer.IMPORT) return@forEachIndexed
+        val target = tokens.drop(index + 1).firstOrNull { it.type != Token.EOF } ?: tokens.last()
+        if (target.line == token.line) return@forEachIndexed
+        return SyntaxDiagnostic(
+            file = file,
+            line = target.line,
+            column = target.charPositionInLine + 1,
+            message = "Expected import target after 'import'",
+            span = spanOfToken(target),
+        )
+    }
+    return null
+}
+
 /** Records ANTLR syntax errors as Athena-owned diagnostics instead of writing to stderr. */
-internal class AthenaAntlrSyntaxErrorListener(private val file: String) : BaseErrorListener() {
+internal class AthenaAntlrSyntaxErrorListener(
+    private val file: String,
+    private val source: String,
+) : BaseErrorListener() {
     val diagnostics: MutableList<SyntaxDiagnostic> = mutableListOf()
 
     override fun syntaxError(
@@ -124,8 +149,15 @@ internal class AthenaAntlrSyntaxErrorListener(private val file: String) : BaseEr
         val span = if (offendingSymbol is Token) {
             spanOfToken(offendingSymbol)
         } else {
-            val position = SourcePosition(offset = -1, line = line, column = column)
-            SourceSpan(position, position)
+            val offset = sourceOffset(source, line, column)
+            SourceSpan(
+                SourcePosition(offset = offset, line = line, column = column),
+                SourcePosition(
+                    offset = (offset + 1).coerceAtMost(source.length),
+                    line = line,
+                    column = column + if (offset < source.length) 1 else 0,
+                ),
+            )
         }
         diagnostics += SyntaxDiagnostic(
             file = file,
@@ -137,18 +169,100 @@ internal class AthenaAntlrSyntaxErrorListener(private val file: String) : BaseEr
     }
 }
 
+private fun sourceOffset(source: String, line: Int, column: Int): Int {
+    var lineStart = 0
+    repeat((line - 1).coerceAtLeast(0)) {
+        val newline = source.indexOf('\n', lineStart)
+        if (newline < 0) return source.length
+        lineStart = newline + 1
+    }
+    return (lineStart + column - 1).coerceIn(0, source.length)
+}
+
 /** Walks the generated ANTLR parse tree and constructs the authored AST. */
 internal class AthenaAntlrAstAdapter(private val file: String) {
     fun adapt(tree: AthenaParser.SourceFileContext): SourceFileAst {
         val systemContext = tree.systemDecl()
         val systemSpan = spanOfContext(systemContext.start, systemContext.stop)
+        val packageDeclaration = tree.packageDecl()?.let { adaptPackage(it) }
+        val imports = adaptImports(tree.importDecl())
+        val fileStart = packageDeclaration?.span?.start ?: imports.firstOrNull()?.span?.start ?: systemSpan.start
         return SourceFileAst(
             system = SystemDeclaration(
                 name = systemContext.ident().text,
                 span = systemSpan,
             ),
             declarations = systemContext.declaration().map { adaptDeclaration(it) },
-            span = systemSpan,
+            span = SourceSpan(fileStart, systemSpan.end),
+            packageDeclaration = packageDeclaration,
+            imports = imports,
+        )
+    }
+
+    private fun adaptPackage(context: AthenaParser.PackageDeclContext): PackageDeclaration {
+        val nameContext = context.packageName()
+        return PackageDeclaration(
+            name = adaptHeaderQualifiedName(nameContext, "package name"),
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptImport(context: AthenaParser.ImportDeclContext): ImportDeclaration {
+        val targetContext = context.packageName()
+        return ImportDeclaration(
+            target = adaptHeaderQualifiedName(targetContext, "import target"),
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptImports(contexts: List<AthenaParser.ImportDeclContext>): List<ImportDeclaration> {
+        val seenTargets = mutableSetOf<List<String>>()
+        return contexts.map { context ->
+            val declaration = adaptImport(context)
+            if (!seenTargets.add(declaration.target.parts)) {
+                val importToken = context.IMPORT().symbol
+                throw AthenaAntlrAdapterFailure(
+                    SyntaxDiagnostic(
+                        file = file,
+                        line = importToken.line,
+                        column = importToken.charPositionInLine + 1,
+                        message = "Duplicate import target '${declaration.target.parts.joinToString(".")}'",
+                        span = spanOfToken(importToken),
+                    ),
+                )
+            }
+            declaration
+        }
+    }
+
+    private fun adaptHeaderQualifiedName(
+        context: AthenaParser.PackageNameContext,
+        description: String,
+    ): QualifiedName {
+        rejectQualifiedNameTrivia(context, description)
+        return QualifiedName(
+            parts = context.packageNameSegment().map { it.text },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun rejectQualifiedNameTrivia(
+        context: AthenaParser.PackageNameContext,
+        description: String,
+    ) {
+        val gap = terminalTokens(context).zipWithNext().firstOrNull { (left, right) ->
+            left.stopIndex + 1 != right.startIndex
+        } ?: return
+        val gapStart = endPosition(gap.first)
+        val gapEnd = startPosition(gap.second)
+        throw AthenaAntlrAdapterFailure(
+            SyntaxDiagnostic(
+                file = file,
+                line = gapStart.line,
+                column = gapStart.column,
+                message = "Whitespace is not allowed inside the $description",
+                span = SourceSpan(gapStart, gapEnd),
+            ),
         )
     }
 
@@ -251,6 +365,17 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         }
         return QualifiedName(parts, spanOfContext(context.start, context.stop))
     }
+}
+
+private fun terminalTokens(tree: ParseTree): List<Token> = buildList {
+    fun collect(node: ParseTree) {
+        if (node is TerminalNode) {
+            add(node.symbol)
+            return
+        }
+        repeat(node.childCount) { index -> collect(node.getChild(index)) }
+    }
+    collect(tree)
 }
 
 /** Athena start position for [token]: 0-based ANTLR column becomes a 1-based Athena column. */

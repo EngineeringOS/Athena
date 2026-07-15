@@ -1,0 +1,85 @@
+# generated: 2026-07-15T16:31:02.3518176+08:00
+# last_updated: 2026-07-15T18:53:49.7963349+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m18
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Preserve implementation order: syntax -> semantic graph -> linking/lowering -> IDE/proof closeout
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity and dependencies allow
+# - Proof fixtures are accumulated throughout the milestone, not deferred to final closeout
+# - Workspace symbols in Story 4.3 remain deferred unless explicitly promoted during execution
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-07-15T16:31:02.3518176+08:00
+last_updated: 2026-07-15T18:53:49.7963349+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m18
+
+development_status:
+  epic-1: in-progress
+  1-1-parse-package-declarations-into-authored-ast: done
+  1-2-parse-import-declarations-into-authored-ast: done
+  1-3-preserve-narrow-syntax-scope: backlog
+  1-4-mirror-package-and-import-syntax-in-tree-sitter: backlog
+  1-5-add-syntax-proof-fixtures: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-add-canonical-identity-builders: backlog
+  2-2-define-project-semantic-graph-snapshot-contracts: backlog
+  2-3-build-semantic-graph-from-governed-repository-state: backlog
+  2-4-resolve-imports-against-the-semantic-graph: backlog
+  2-5-emit-typed-package-aware-diagnostics: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-index-declarations-into-semantic-namespaces: backlog
+  3-2-link-references-across-source-units: backlog
+  3-3-link-references-across-governed-packages: backlog
+  3-4-preserve-governed-capability-provenance: backlog
+  3-5-lower-linked-meaning-into-engineering-ir: backlog
+  3-6-add-linking-and-lowering-proof-fixtures: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-project-package-aware-diagnostics-through-lsp: backlog
+  4-2-add-package-aware-definition-and-references: backlog
+  4-3-add-snapshot-derived-symbol-behavior: backlog
+  4-4-use-existing-canvas-reveal-from-package-aware-navigation: backlog
+  4-5-complete-repository-backed-m18-proof-corpus: backlog
+  4-6-document-m18-scope-boundaries-and-deferred-growth: backlog
+  epic-4-retrospective: optional
