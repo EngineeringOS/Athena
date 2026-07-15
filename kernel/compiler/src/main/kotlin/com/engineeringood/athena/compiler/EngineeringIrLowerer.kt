@@ -13,13 +13,29 @@ import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
 
-/** Lowers the syntax-only AST into the first canonical Engineering IR document. */
+/** Lowers the syntax-only AST into the first canonical Engineering IR document.
+ *
+ * Declaration classification itself is performed by domain plugins via exhaustive `when`
+ * over Athena's sealed [com.engineeringood.athena.language.Declaration] hierarchy (not by
+ * parse-tree types). Adding a future sealed variant must break those plugin `when` sites
+ * and the Story `1.3` extensibility tests at compile time.
+ */
 class EngineeringIrLowerer(
     private val domainSemantics: AthenaDomainSemanticsCoordinator = AthenaDomainSemanticsCoordinator(
         AthenaApprovedPluginInventory.EMPTY,
     ),
 ) {
-    /** Lowers [source] deterministically into the canonical semantic document used by later compiler passes. */
+    /** Lowers [source] deterministically into the canonical semantic document used by later compiler passes.
+     *
+     * M17 lowering-continuity guardrail (AD-106): the only legal input is the authored `SourceFileAst`
+     * carried by [CompilerSourceDocument] (read directly as `source.ast.system` and, through
+     * [AthenaDomainSemanticsCoordinator], as `SourceFileAst.declarations`). This function must never be
+     * changed to accept or read an ANTLR4 parse-tree/visitor result (Epic 2) or a Tree-sitter CST node
+     * (Epic 3) directly. Parser migration must preserve the same canonical `EngineeringDocument` shape
+     * (identity scheme `system:`/`component:`/`port:`/`connection:` and `SourceProvenance` mapping) for
+     * the current supported syntax subset, as pinned by `AthenaCompilerTest` and
+     * `AthenaM17ParserParityProofTest`.
+     */
     fun lower(source: CompilerSourceDocument): EngineeringDocument {
         val contribution = domainSemantics.lower(source)
 

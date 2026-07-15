@@ -67,6 +67,21 @@ Story `1.2` adds the first narrow M9 derivation proof:
 - This still stays below SCM review, LSP delivery, and renderer metadata.
 - The parser grammar does not widen in this story; quantity parsing is a narrow compiler-owned normalization step.
 
+## M17 Parser Migration Continuity Baseline
+
+M17 hardens the language architecture beneath the compiler so Epic 2's ANTLR4 compiler path cannot cause accidental semantic drift on supported source (AD-106 / AD-110). The continuity contract pinned by `AthenaCompilerTest` and `AthenaParserContinuityTest` is:
+
+- `EngineeringIrLowerer.lower(CompilerSourceDocument)` reads only the authored `SourceFileAst` (via `source.ast` and `AthenaDomainSemanticsCoordinator`), never a generated parse-tree/visitor or Tree-sitter CST type.
+- The canonical `EngineeringDocument` identity scheme stays fixed: `system:<name>`, `component:<name>` (with `#<n>` duplicate ordinals), `port:<owner>.<port>`, `connection:<from>-><to>`, plus `SourceProvenance` derived from `SourceSpan`.
+- `CompilerPipelineReport.passes` always reports the same six named passes, in order, with the same `CompilerPassExecutionStatus` semantics:
+
+  `PARSE -> LOWER -> SEMANTIC_ENRICHMENT -> VALIDATE -> BACKEND_PREPARATION -> BACKEND_EMISSION`
+
+- The published conformance artifacts (`examples/m0/demo-cabinet.engineering-ir.txt`, `examples/m0/demo-cabinet.svg`) keep matching byte-for-byte.
+- The full valid `examples/m0` corpus (`demo-cabinet`, `dual-drive-cabinet`) lowers to the recorded component/port/connection counts and identity scheme, and re-lowers deterministically.
+
+Story 5.1's `AthenaM17ParserParityProofTest` extends the same guarantee to the checked-in `examples/m17` corpus, reusing this identity/provenance definition rather than inventing a divergent one.
+
 ## Dependencies
 
 - `:kernel:language`

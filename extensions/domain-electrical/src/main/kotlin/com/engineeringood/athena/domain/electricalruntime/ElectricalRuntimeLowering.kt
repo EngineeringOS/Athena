@@ -9,7 +9,19 @@ import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 
 internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
-    val deviceDeclarations = context.source.ast.declarations.filterIsInstance<DeviceDeclaration>()
+    // Exhaustive partition over Declaration: a future sealed variant (e.g. ImportDeclaration)
+    // must break this when at compile time rather than being silently dropped.
+    val deviceDeclarations = mutableListOf<DeviceDeclaration>()
+    val portDeclarations = mutableListOf<PortDeclaration>()
+    val connectionDeclarations = mutableListOf<ConnectionDeclaration>()
+    for (declaration in context.source.ast.declarations) {
+        when (declaration) {
+            is DeviceDeclaration -> deviceDeclarations += declaration
+            is PortDeclaration -> portDeclarations += declaration
+            is ConnectionDeclaration -> connectionDeclarations += declaration
+        }
+    }
+
     val explicitForeignDeviceNames = deviceDeclarations
         .filter { declaration -> declaration.isExplicitForeignDomain() }
         .map { declaration -> declaration.name }
@@ -28,8 +40,7 @@ internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): Athen
                 provenance = context.provenance(declaration.span),
             )
         }
-    val ports = context.source.ast.declarations
-        .filterIsInstance<PortDeclaration>()
+    val ports = portDeclarations
         .filter { declaration -> declaration.qualifiedName.parts.firstOrNull() !in explicitForeignDeviceNames }
         .map { declaration ->
             context.port(
@@ -40,8 +51,7 @@ internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): Athen
                 provenance = context.provenance(declaration.span),
             )
         }
-    val connections = context.source.ast.declarations
-        .filterIsInstance<ConnectionDeclaration>()
+    val connections = connectionDeclarations
         .filter { declaration ->
             declaration.from.parts.firstOrNull() !in explicitForeignDeviceNames &&
                 declaration.to.parts.firstOrNull() !in explicitForeignDeviceNames

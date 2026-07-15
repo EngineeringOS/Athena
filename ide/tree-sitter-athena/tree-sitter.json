@@ -1,0 +1,28 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "athena",
+      "camelcase": "Athena",
+      "scope": "source.athena",
+      "path": ".",
+      "file-types": ["athena"],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "^athena$"
+    }
+  ],
+  "metadata": {
+    "version": "0.0.1",
+    "license": "MIT",
+    "description": "Athena Tree-sitter grammar for syntax UX only.",
+    "authors": [
+      {
+        "name": "Engineering OOD"
+      }
+    ]
+  },
+  "bindings": {
+    "c": true,
+    "node": true
+  }
+}

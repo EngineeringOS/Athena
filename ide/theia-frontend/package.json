@@ -6,6 +6,8 @@
   "license": "MIT",
   "dependencies": {
     "@engineeringood/athena-graph-glsp": "link:../../integrations/graph-glsp",
+    "@engineeringood/athena-tree-sitter-grammar": "link:../tree-sitter-athena",
+    "web-tree-sitter": "^0.26.0",
     "@theia/ai-chat": "1.73.1",
     "@theia/ai-chat-ui": "1.73.1",
     "@theia/ai-core": "1.73.1",

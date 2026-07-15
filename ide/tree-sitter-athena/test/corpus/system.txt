@@ -1,0 +1,21 @@
+============================
+Valid system with device
+============================
+
+system Demo {
+  device PLC1 {
+    type Switch
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))))))

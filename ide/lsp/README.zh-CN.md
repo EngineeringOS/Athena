@@ -45,3 +45,33 @@ M9 保持交付规则狭窄：
 - unavailable projection payload 会保留底层 runtime diagnostic；当上游失败暴露 stable code 与 provenance 时，这些细节也会一并透出
 - `athena/projectionCommand` 只接受 Athena allowlist 中的 projection action，而不是暴露通用 runtime tunnel
 - hosted plugin commands、graph-framework commands 与任意 frontend-local actions 都不是这里的公开传输契约
+
+## M17 Parser 迁移边界
+
+M17 加固了 `ide/lsp` 之下的语言架构，使得 Epic 2 的 ANTLR4 编译器路径与 Epic 3 的 Tree-sitter 语法 UX 都无法悄悄改变 IDE 语义。以下两条不变量由代码 KDoc 与回归测试（`AthenaSemanticAuthorityBoundaryTest`、`AthenaSourceNavigationParityTest`）锁定。
+
+### 语义诊断路径（Story 4.1，AD-108 / AD-107）
+
+诊断必须始终只经由编译器 parser 路径产生，绝不来自 Tree-sitter 语法树或查询结果。不可回归的链路为：
+
+- `AthenaTextDocumentService.didOpen`/`didChange` → `AthenaLanguageServer.publishDiagnostics`
+- `publishDiagnostics` → `AthenaLanguageFeatures.trackDocument(uri, path, version, text)`（唯一产生文档已编译状态的位置）
+- `trackDocument` → `AthenaCompiler.compile(path, text)` → `CompilerCompilationResult`，保存在 `AthenaTrackedDocument.compilation`
+- `CompilerCompilationResult.toLspDiagnostics()` 将 `CompilerSyntaxDiagnostic`（`CompilerCompilationParseFailure.diagnostics`）与 `SemanticDiagnostic`（`CompilerCompilationSuccess.semanticResult.diagnostics` 以及 `validationBreakdown.engineeringSufficiencyDiagnostics`）转换为 LSP `Diagnostic`
+- `languageClient.publishDiagnostics(...)`
+
+`AthenaLanguageFeatures.semanticInspection(uri)` 同样只从 `CompilerCompilationParseFailure`/`CompilerCompilationSuccess` 字段以及 `AthenaNavigationIndex` 的 source range 构建。绝不允许出现 `TreeSitterDiagnostic`/`TreeSitterSemanticResult` 之类的类型；诊断始终只来源于 `com.engineeringood.athena.compiler` 与 `com.engineeringood.athena.semantics.core`。
+
+### 依赖 AST 的工具清单（Story 4.2，AD-109 / AD-106）
+
+以下工具仅读取 authored `SourceFileAst`（`DeviceDeclaration`、`PortDeclaration`、`ConnectionDeclaration`、`QualifiedName`）及其 `SourceSpan`/`SourcePosition`。当底层 parser 实现更换时，它们必须保持不变；Tree-sitter 也绝不能成为其中任何一项的替代实现：
+
+| 工具 | 文件 | AST 依赖 |
+| --- | --- | --- |
+| `documentSymbols`、`definition`、`references` | `AthenaLanguageFeatures.kt` | `SourceFileAst.declarations`、`SourceSpan` |
+| `AthenaNavigationIndex`（`deviceDeclarations`、`portDeclarations`、`ownerReferences`、`portReferences`、`targetAt`） | `AthenaLanguageFeatures.kt` | `SourceFileAst.declarations`、`SourceSpan` |
+| `componentSourceRange`、`portSourceRange`、`connectionSourceRange` | `AthenaLanguageFeatures.kt` | `Declaration.span` / `QualifiedName.span`（经 `SourceSpan.toLspRange()` 1:1 转换） |
+| `acceptedUpdateComponentPropertiesSourceEdit`、`acceptedConnectPortsSourceEdit`、`acceptedCreateComponentSourceEdit` | `Athena*SourceEditProtocol.kt` | 基于原始 tracked 文本的 `DeviceDeclaration.span`、`PortDeclaration.qualifiedName.span`、`ConnectionDeclaration.from`/`to` span |
+| `revealSemanticId`（前端消费方） | `ide/theia-frontend/src/browser/athena-graph-adapter-service.ts` | 仅使用 server 端的 `definition`/`references` 结果；不在本地重新解析 Athena 源码 |
+
+Source-edit 锚定由 `AthenaAuthoringRequestTest` 覆盖；navigation/symbol/source-range parity 由 `AthenaSourceNavigationParityTest` 覆盖。

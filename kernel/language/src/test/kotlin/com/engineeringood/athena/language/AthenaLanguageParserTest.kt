@@ -29,7 +29,7 @@ class AthenaLanguageParserTest {
                     DeviceDeclaration(
                         name = "PLC1",
                         fields = listOf(
-                            PropertyAssignment("type", ScalarValue.Identifier("PLC", deviceOne.fields[0].value.span), deviceOne.fields[0].span),
+                            PropertyAssignment("type", ScalarValue.Identifier("Switch", deviceOne.fields[0].value.span), deviceOne.fields[0].span),
                             PropertyAssignment("model", ScalarValue.StringLiteral("S7-1200", deviceOne.fields[1].value.span), deviceOne.fields[1].span),
                         ),
                         span = deviceOne.span,
@@ -115,6 +115,63 @@ class AthenaLanguageParserTest {
         assertEquals(6, failure.diagnostics.single().line)
         assertTrue(failure.diagnostics.single().column > 0)
         assertTrue(failure.diagnostics.single().message.contains("->"))
+    }
+
+    @Test
+    fun `reports a typed diagnostic for an unterminated string literal without crashing`() {
+        val source = """
+            system DemoCabinet {
+              device PLC1 {
+                model "S7-1200
+              }
+            }
+        """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("unterminated-string.athena", source)
+
+        val failure = assertIs<ParseFailure>(result)
+        assertTrue(failure.diagnostics.isNotEmpty())
+        val diagnostic = failure.diagnostics.first()
+        assertEquals("unterminated-string.athena", diagnostic.file)
+        assertTrue(diagnostic.line > 0, "Expected a real line, got ${diagnostic.line}")
+        assertTrue(diagnostic.column > 0, "Expected a real column, got ${diagnostic.column}")
+        assertTrue(diagnostic.message.isNotBlank())
+    }
+
+    @Test
+    fun `reports a typed diagnostic for a missing closing brace without crashing`() {
+        val source = """
+            system DemoCabinet {
+              device PLC1 {
+                type Switch
+        """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("missing-brace.athena", source)
+
+        val failure = assertIs<ParseFailure>(result)
+        assertTrue(failure.diagnostics.isNotEmpty())
+        val diagnostic = failure.diagnostics.first()
+        assertEquals("missing-brace.athena", diagnostic.file)
+        assertTrue(diagnostic.line > 0, "Expected a real line, got ${diagnostic.line}")
+        assertTrue(diagnostic.column > 0, "Expected a real column, got ${diagnostic.column}")
+        assertTrue(diagnostic.message.isNotBlank())
+    }
+
+    @Test
+    fun `reports failures deterministically for identical malformed source input`() {
+        val source = """
+            system DemoCabinet {
+              connect PLC1.out M1.in
+            }
+        """.trimIndent()
+
+        val parser = AthenaLanguageParser()
+
+        val first = parser.parse("broken.athena", source)
+        val second = parser.parse("broken.athena", source)
+
+        assertIs<ParseFailure>(first)
+        assertEquals(first, second)
     }
 
     private fun resolveRepoRoot(): Path {

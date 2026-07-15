@@ -45,3 +45,33 @@ The current M7 projection boundary is intentionally narrow:
 - unavailable projection payloads preserve underlying runtime diagnostics, including stable codes and provenance when the upstream failure exposes them
 - `athena/projectionCommand` accepts only Athena-allowlisted projection actions instead of exposing a generic runtime tunnel
 - hosted plugin commands, graph-framework commands, and arbitrary frontend-local actions are not public transport contracts here
+
+## M17 Parser Migration Boundary
+
+M17 hardens the language architecture beneath `ide/lsp` so Epic 2's ANTLR4 compiler path and Epic 3's Tree-sitter syntax UX cannot silently change IDE semantics. Two invariants are locked in by code KDoc and regression tests (`AthenaSemanticAuthorityBoundaryTest`, `AthenaSourceNavigationParityTest`).
+
+### Semantic Diagnostics Path (Story 4.1, AD-108 / AD-107)
+
+Diagnostics must always flow only through the compiler parser path, never from a Tree-sitter tree or query. The must-not-regress chain is:
+
+- `AthenaTextDocumentService.didOpen`/`didChange` → `AthenaLanguageServer.publishDiagnostics`
+- `publishDiagnostics` → `AthenaLanguageFeatures.trackDocument(uri, path, version, text)` (the only place a document's compiled state is produced)
+- `trackDocument` → `AthenaCompiler.compile(path, text)` → `CompilerCompilationResult` stored on `AthenaTrackedDocument.compilation`
+- `CompilerCompilationResult.toLspDiagnostics()` converts `CompilerSyntaxDiagnostic` (`CompilerCompilationParseFailure.diagnostics`) and `SemanticDiagnostic` (`CompilerCompilationSuccess.semanticResult.diagnostics` plus `validationBreakdown.engineeringSufficiencyDiagnostics`) into LSP `Diagnostic`
+- `languageClient.publishDiagnostics(...)`
+
+`AthenaLanguageFeatures.semanticInspection(uri)` is likewise built only from `CompilerCompilationParseFailure`/`CompilerCompilationSuccess` fields plus `AthenaNavigationIndex` source ranges. No `TreeSitterDiagnostic`/`TreeSitterSemanticResult`-style type may ever appear; diagnostics stay derived exclusively from `com.engineeringood.athena.compiler` and `com.engineeringood.athena.semantics.core`.
+
+### AST-Dependent Utility Inventory (Story 4.2, AD-109 / AD-106)
+
+The following utilities read only the authored `SourceFileAst` (`DeviceDeclaration`, `PortDeclaration`, `ConnectionDeclaration`, `QualifiedName`) and its `SourceSpan`/`SourcePosition` values. They must keep working unchanged once the parser implementation changes underneath, and Tree-sitter must never become an alternative implementation of any of them:
+
+| Utility | File | AST dependency |
+| --- | --- | --- |
+| `documentSymbols`, `definition`, `references` | `AthenaLanguageFeatures.kt` | `SourceFileAst.declarations`, `SourceSpan` |
+| `AthenaNavigationIndex` (`deviceDeclarations`, `portDeclarations`, `ownerReferences`, `portReferences`, `targetAt`) | `AthenaLanguageFeatures.kt` | `SourceFileAst.declarations`, `SourceSpan` |
+| `componentSourceRange`, `portSourceRange`, `connectionSourceRange` | `AthenaLanguageFeatures.kt` | `Declaration.span` / `QualifiedName.span` (1:1 via `SourceSpan.toLspRange()`) |
+| `acceptedUpdateComponentPropertiesSourceEdit`, `acceptedConnectPortsSourceEdit`, `acceptedCreateComponentSourceEdit` | `Athena*SourceEditProtocol.kt` | `DeviceDeclaration.span`, `PortDeclaration.qualifiedName.span`, `ConnectionDeclaration.from`/`to` spans over raw tracked text |
+| `revealSemanticId` (frontend consumer) | `ide/theia-frontend/src/browser/athena-graph-adapter-service.ts` | server-owned `definition`/`references` results only; no local Athena re-parse |
+
+Source-edit anchoring is covered by `AthenaAuthoringRequestTest`; navigation/symbol/source-range parity is covered by `AthenaSourceNavigationParityTest`.

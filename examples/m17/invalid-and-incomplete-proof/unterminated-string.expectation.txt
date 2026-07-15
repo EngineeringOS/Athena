@@ -1,0 +1,4 @@
+status=syntax-failure
+syntaxErrorLine=3
+syntaxErrorColumn=11
+syntaxErrorMessageContains=token recognition error

@@ -1,0 +1,24 @@
+system DenseQualifiedNames {
+  device ControllerA {
+    type Switch
+    model "CPU-313C"
+    note "primary controller"
+  }
+
+  device DriveB {
+    type Motor
+    rating "7.5kW"
+  }
+
+  port ControllerA.out {
+    direction out
+    signal Digital
+  }
+
+  port DriveB.in {
+    direction in
+    signal Digital
+  }
+
+  connect ControllerA.out -> DriveB.in
+}

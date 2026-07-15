@@ -1,0 +1,61 @@
+==============================
+Port declaration with qualified name and fields
+==============================
+
+system Demo {
+  device PLC1 {
+    type Switch
+  }
+  port PLC1.out {
+    direction out
+    signal Digital
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))))
+    (declaration
+      (port_declaration
+        (qualified_name
+          (identifier)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (identifier))))))
+
+==============================
+Port declaration with quoted property value
+==============================
+
+system Demo {
+  port PLC1.out {
+    direction "out"
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (port_declaration
+        (qualified_name
+          (identifier)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (string
+            (string_content)))))))

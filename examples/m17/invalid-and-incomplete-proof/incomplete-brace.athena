@@ -1,0 +1,3 @@
+system IncompleteBrace {
+  device PLC1 {
+    type Switch

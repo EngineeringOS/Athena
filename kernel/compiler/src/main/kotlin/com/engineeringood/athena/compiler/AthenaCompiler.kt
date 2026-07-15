@@ -1038,7 +1038,12 @@ class AthenaCompiler(
     }
 
     private fun selectRenderingGeometry(geometries: List<GeometryDocument>): GeometryDocument? {
-        return geometries.firstOrNull { geometry -> geometry.viewId == DEFAULT_RENDER_VIEW_ID }
+        return geometries.firstOrNull { geometry ->
+            activeRenderContributionsFor(
+                viewId = geometry.viewId,
+                rendererTarget = SVG_RENDERER_TARGET,
+            ).isNotEmpty()
+        }
             ?: geometries.firstOrNull()
     }
 
@@ -1192,5 +1197,4 @@ private val BACKEND_EMISSION_PASS = CompilerPassDescriptor(
     outputState = "backend emission result",
 )
 
-private const val DEFAULT_RENDER_VIEW_ID = "cabinet"
 private const val SVG_RENDERER_TARGET = "svg"

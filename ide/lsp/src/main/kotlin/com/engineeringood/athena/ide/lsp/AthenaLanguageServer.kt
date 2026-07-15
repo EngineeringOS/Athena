@@ -668,6 +668,22 @@ class AthenaLanguageServer(
         sessionSnapshot = sessionSnapshot?.copy(lastOpenedDocumentUri = documentUri)
     }
 
+    /**
+     * M17 semantic-authority guardrail (AD-108 / AD-107).
+     *
+     * This is the single diagnostics-publishing path for the Athena IDE. Every published
+     * [Diagnostic] must originate from compiler-owned parsing and later compiler/runtime stages,
+     * threaded through `languageFeatures.trackDocument(...) -> CompilerCompilationResult ->
+     * toLspDiagnostics()`. `trackDocument` is the only place a document's compiled state is produced.
+     *
+     * When Epic 2 swaps the parser implementation to ANTLR4 and Epic 3 adds Tree-sitter for editor
+     * syntax UX, this contract must not change: Tree-sitter trees, queries, or CST nodes must never
+     * be read to build a `Diagnostic`. Diagnostics stay derived exclusively from
+     * `CompilerCompilationResult` (`CompilerCompilationParseFailure.diagnostics`, or
+     * `CompilerCompilationSuccess.semanticResult.diagnostics` plus
+     * `validationBreakdown.engineeringSufficiencyDiagnostics`). `AthenaSemanticAuthorityBoundaryTest`
+     * mechanically enforces this boundary.
+     */
     private fun publishDiagnostics(
         documentUri: String,
         documentText: String,
@@ -833,6 +849,16 @@ private fun String.toDocumentPath(): Path? {
     }.getOrNull()
 }
 
+/**
+ * Converts one compiler-owned [CompilerCompilationResult] into published LSP diagnostics.
+ *
+ * M17 semantic-authority guardrail (AD-108 / AD-107): this function may only ever pattern-match on
+ * the compiler-owned result cases and read `CompilerSyntaxDiagnostic` / `SemanticDiagnostic` (from
+ * `com.engineeringood.athena.compiler` and `com.engineeringood.athena.semantics.core`). It must never
+ * be changed to accept, read, or merge a Tree-sitter tree/query result (Epic 3) or any ANTLR4
+ * parse-tree/visitor type (Epic 2) as a diagnostics source. Tree-sitter owns syntax UX only and must
+ * never become a second semantic-truth source.
+ */
 private fun CompilerCompilationResult.toLspDiagnostics(): List<Diagnostic> {
     return when (this) {
         is CompilerCompilationParseFailure -> diagnostics.map { diagnostic -> diagnostic.toLspDiagnostic() }

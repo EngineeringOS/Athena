@@ -305,6 +305,14 @@ class AthenaLanguageFeatures(
 
     /**
      * Builds a read-only semantic inspection snapshot for the latest tracked document at [uri].
+     *
+     * M17 semantic-authority guardrail (AD-108 / AD-107): this payload is built purely from
+     * `CompilerCompilationParseFailure` / `CompilerCompilationSuccess` fields
+     * (`semanticResult.diagnostics`, `validationBreakdown.engineeringSufficiencyDiagnostics`,
+     * `derivedContext`, `capabilityFacts`, `constraintEvaluations`) plus `AthenaNavigationIndex`
+     * source ranges derived from the authored `SourceFileAst`. It must never grow a second,
+     * Tree-sitter-backed code path (Epic 3) or read an ANTLR4 parse-tree/visitor type (Epic 2) as a
+     * semantic-truth or diagnostics source; semantic meaning stays compiler-owned.
      */
     fun semanticInspection(uri: String): AthenaSemanticInspectionPayload? {
         val tracked = trackedDocument(uri) ?: return null
@@ -434,6 +442,16 @@ class AthenaLanguageFeatures(
 
 /**
  * Small server-owned navigation index derived from the current source AST.
+ *
+ * M17 migration-continuity guardrail (AD-109 / AD-106): every lookup here depends only on the
+ * authored `SourceFileAst` (`DeviceDeclaration`, `PortDeclaration`, `ConnectionDeclaration`,
+ * `QualifiedName`) and its `SourceSpan`/`SourcePosition` values. Now that Epic 2 has replaced the
+ * handwritten parser with ANTLR4-backed parsing, `documentSymbols`, `definition`, `references`,
+ * and the `componentSourceRange`/`portSourceRange`/`connectionSourceRange` helpers must keep
+ * working unchanged as long as the resulting `SourceFileAst` and its spans are populated
+ * correctly, because they read the authored AST contract, never parser internals. After Epic 3's
+ * Tree-sitter integration, these utilities stay LSP-served and AST-backed; Tree-sitter must not
+ * become an alternative implementation of navigation, symbols, or source-range computation.
  */
 class AthenaNavigationIndex(
     private val documentUri: String,

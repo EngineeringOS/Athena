@@ -1,0 +1,5 @@
+system UnterminatedString {
+  device PLC1 {
+    model "unterminated
+  }
+}

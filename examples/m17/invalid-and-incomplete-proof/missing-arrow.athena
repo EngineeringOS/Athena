@@ -1,0 +1,11 @@
+system MissingArrow {
+  device PLC1 {
+    type Switch
+  }
+
+  port PLC1.out {
+    direction out
+  }
+
+  connect PLC1.out M1.in
+}

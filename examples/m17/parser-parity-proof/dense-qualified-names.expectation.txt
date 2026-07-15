@@ -1,0 +1,6 @@
+status=valid
+components=2
+ports=2
+connections=1
+svg=emitted
+diagnostics=0

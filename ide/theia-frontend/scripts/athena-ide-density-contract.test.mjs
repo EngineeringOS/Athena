@@ -41,7 +41,7 @@ test('Athena graph overlay uses dense detail sections instead of floating cards'
     assert.match(source, /athena-graph-workbench__floating-panel/);
     assert.match(source, /athena-graph-workbench__status-icon/);
     assert.match(source, /title=\{model\.statusLabel\}/);
-    assert.match(source, /viewIconClass\(view\.viewId\)/);
+    assert.match(source, /viewIconClass\(view\)/);
     assert.match(source, /viewAriaLabel\(view\)/);
     assert.match(source, /handleStageClick/);
     assert.match(source, /this\.overlayPanelExpanded = false;/);

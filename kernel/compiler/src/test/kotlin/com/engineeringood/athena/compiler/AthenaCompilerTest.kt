@@ -270,6 +270,34 @@ class AthenaCompilerTest {
     }
 
     @Test
+    fun `compile selects the first svg-renderable plugin view without a cabinet fallback`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val compiler = AthenaCompiler(
+            pluginDiscovery = AthenaPluginDiscovery(
+                runtime = AthenaCoreRuntime(version = "0.0.1-SNAPSHOT"),
+                source = FixedAthenaPluginSource(listOf(SingleViewRenderTestPlugin())),
+            ),
+        )
+
+        val result = assertIs<CompilerCompilationSuccess>(compiler.compile(examplePath))
+        val rendering = assertIs<CompilerRenderingSuccess>(result.rendering)
+
+        assertEquals(
+            listOf("operator-console"),
+            compiler.supportedViewDefinitions().map { definition -> definition.id },
+        )
+        assertEquals(
+            listOf("operator-console"),
+            result.geometries.map { geometry -> geometry.viewId },
+        )
+        assertEquals("operator-console", rendering.viewId)
+        assertEquals(
+            listOf("single-view-render.render.operator-console"),
+            rendering.activeRenderContributions.map { contribution -> contribution.contributionId },
+        )
+    }
+
+    @Test
     fun `deriveLayout exposes one supported layout by view id without changing semantic authority`() {
         val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
         val compiler = AthenaCompiler()

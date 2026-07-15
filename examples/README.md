@@ -86,3 +86,14 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `README.md` - milestone-local proof corpus summary
 
 `m11/` proves serious electrical workbench depth on a governed repository instead of a toy graph. The fixture is intentionally dense enough to exercise multi-view delivery, sheet-aware documentation output, repeated-reference tracking, and downstream renderer pressure while keeping canonical semantic authority upstream.
+
+## `m17/`
+
+- `parser-parity-proof/` - valid standalone `.athena` fixtures with `.expectation.txt` sidecars covering the supported syntax subset (`system`, `device`, `port`, `connect`, qualified names, string literals, property assignments)
+- `parser-parity-proof/parity-cabinet.athena` - system/device/port/connect/property coverage mirroring `m0/demo-cabinet`
+- `parser-parity-proof/dense-qualified-names.athena` - denser qualified-name and string-literal-property coverage
+- `repository-parity-proof/` - governed repository fixture (`athena.yaml` / `athena.lock` / `src/parity-repo.athena`) exercised through real package resolution
+- `invalid-and-incomplete-proof/` - syntax-level malformed/incomplete fixtures (unterminated string, incomplete brace, missing connect arrow, over-qualified port) with extended `.expectation.txt` sidecars carrying `syntaxErrorLine=`/`syntaxErrorMessageContains=`
+- `README.md` - milestone-local proof corpus summary and two-track verification rule
+
+`m17/` is the checked-in parser-parity and failure-quality evidence for the milestone. Per AD-113 it supersedes any inline-only parser demo as the primary parity proof. Valid fixtures are exercised by `AthenaM17ParserParityProofTest` (`:kernel:compiler`); malformed fixtures are exercised by `AthenaM17InvalidSourceProofTest` (`:kernel:language`). Compiler-diagnostic verification and Tree-sitter-UX verification stay two distinct, separately-run checks.

@@ -1,0 +1,4 @@
+system DemoCabinet {
+  device PLC1 {
+    type Switch
+  }

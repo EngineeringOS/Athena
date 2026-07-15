@@ -328,7 +328,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                                 disabled={view.isActive || this.switchingView}
                                                 onClick={() => void this.switchActiveView(view.viewId)}
                                             >
-                                                <span className={`codicon ${this.viewIconClass(view.viewId)}`} />
+                                                <span className={`codicon ${this.viewIconClass(view)}`} />
                                             </button>)}
                                         </div>
                                         {connectPortsSupported
@@ -874,15 +874,15 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         return displayName.slice(0, 2).toUpperCase();
     }
 
-    protected viewIconClass(viewId: string): string {
-        switch (viewId.toLowerCase()) {
-            case 'cabinet':
-                return 'codicon-package';
-            case 'wiring':
-                return 'codicon-git-commit';
-            default:
-                return 'codicon-symbol-misc';
+    protected viewIconClass(view: { viewId: string; familyId?: string }): string {
+        const normalizedFamilyId = view.familyId?.toLowerCase();
+        if (normalizedFamilyId?.endsWith('/cabinet')) {
+            return 'codicon-package';
         }
+        if (normalizedFamilyId?.endsWith('/wiring')) {
+            return 'codicon-git-commit';
+        }
+        return 'codicon-symbol-misc';
     }
 
     protected viewAriaLabel(view: { displayName: string; description: string }): string {

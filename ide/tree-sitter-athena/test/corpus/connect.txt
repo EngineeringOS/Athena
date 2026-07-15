@@ -1,0 +1,41 @@
+============================
+Port connect forms
+============================
+
+system Demo {
+  device PLC1 {
+    type Switch
+  }
+  port PLC1.out {
+    direction out
+  }
+  connect PLC1.out -> PLC1.out
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))))
+    (declaration
+      (port_declaration
+        (qualified_name
+          (identifier)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (identifier))))
+    (declaration
+      (connect_declaration
+        from: (qualified_name
+          (identifier)
+          (identifier))
+        to: (qualified_name
+          (identifier)
+          (identifier))))))

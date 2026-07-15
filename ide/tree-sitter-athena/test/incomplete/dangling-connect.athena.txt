@@ -1,0 +1,11 @@
+system DemoCabinet {
+  device PLC1 {
+    type Switch
+  }
+
+  device M1 {
+    type Motor
+  }
+
+  connect PLC1.out
+}

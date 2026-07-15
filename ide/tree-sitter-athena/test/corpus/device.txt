@@ -1,0 +1,44 @@
+==============================
+Device declaration with fields
+==============================
+
+system Demo {
+  device PLC1 {
+    type Switch
+    model "S7-1200"
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (string
+            (string_content)))))))
+
+==============================
+Device declaration with no fields
+==============================
+
+system Demo {
+  device PLC1 {
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)))))

@@ -5,6 +5,7 @@ import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
@@ -15,11 +16,13 @@ import com.engineeringood.athena.plugin.AthenaPlugin
 import com.engineeringood.athena.plugin.AthenaPluginManifest
 import com.engineeringood.athena.plugin.AthenaPluginOwnershipClaim
 import com.engineeringood.athena.plugin.AthenaPluginType
+import com.engineeringood.athena.plugin.AthenaRenderContribution
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.plugin.AthenaPluginValidationResult
 import com.engineeringood.athena.plugin.AthenaSemanticEnrichmentContext
 import com.engineeringood.athena.plugin.AthenaDomainSemanticEnrichmentContribution
 import com.engineeringood.athena.plugin.AthenaValidationContribution
+import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.CoreVersionRange
 import com.engineeringood.athena.plugin.host.AthenaPluginSource
 import com.engineeringood.athena.runtime.AthenaExecutionContext
@@ -359,7 +362,19 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
     )
 
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
-        val components = context.source.ast.declarations.filterIsInstance<DeviceDeclaration>().map { declaration ->
+        // Exhaustive partition over Declaration so future sealed variants fail at compile time.
+        val deviceDeclarations = mutableListOf<DeviceDeclaration>()
+        val portDeclarations = mutableListOf<PortDeclaration>()
+        val connectionDeclarations = mutableListOf<ConnectionDeclaration>()
+        for (declaration in context.source.ast.declarations) {
+            when (declaration) {
+                is DeviceDeclaration -> deviceDeclarations += declaration
+                is PortDeclaration -> portDeclarations += declaration
+                is ConnectionDeclaration -> connectionDeclarations += declaration
+            }
+        }
+
+        val components = deviceDeclarations.map { declaration ->
             context.component(
                 name = declaration.name,
                 kind = "device",
@@ -367,7 +382,7 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
                 provenance = context.provenance(declaration.span),
             )
         }
-        val ports = context.source.ast.declarations.filterIsInstance<PortDeclaration>().map { declaration ->
+        val ports = portDeclarations.map { declaration ->
             context.port(
                 ownerPath = declaration.qualifiedName.parts.dropLast(1),
                 ownerProvenance = context.provenance(declaration.qualifiedName.span),
@@ -376,7 +391,7 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
                 provenance = context.provenance(declaration.span),
             )
         }
-        val connections = context.source.ast.declarations.filterIsInstance<ConnectionDeclaration>().map { declaration ->
+        val connections = connectionDeclarations.map { declaration ->
             context.connection(
                 fromPath = declaration.from.parts,
                 fromProvenance = context.provenance(declaration.from.span),
@@ -407,6 +422,54 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
                 ),
             ),
         )
+    }
+}
+
+internal class SingleViewRenderTestPlugin(
+    private val viewId: String = "operator-console",
+) : AthenaDomainPlugin, AthenaViewDefinitionContributor {
+    private val loweringDelegate = GenericLoweringOnlyTestPlugin()
+
+    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
+        pluginId = "com.engineeringood.athena.domain.single-view-render",
+        pluginVersion = "0.0.1-SNAPSHOT",
+        pluginType = AthenaPluginType.DOMAIN,
+        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
+        requiredExtensionPoints = setOf(
+            AthenaExtensionPoint.DOMAIN_SEMANTICS,
+            AthenaExtensionPoint.VIEW_DEFINITIONS,
+        ),
+    )
+
+    override val compilerPassContributions: List<AthenaCompilerPassContribution> =
+        loweringDelegate.compilerPassContributions
+
+    override val renderContributions: List<AthenaRenderContribution> = listOf(
+        AthenaRenderContribution(
+            contributionId = "single-view-render.render.$viewId",
+            displayName = "Single view render intent",
+            description = "Publishes one non-electrical renderable view to prove backend selection stays plugin-owned.",
+            viewIds = setOf(viewId),
+            rendererTargets = setOf("svg"),
+        ),
+    )
+
+    override fun viewDefinitions(): List<ViewDefinition> {
+        return listOf(
+            ViewDefinition(
+                id = viewId,
+                displayName = "Operator Console",
+                description = "Synthetic plugin-owned view used to prove compiler render selection stays extensible.",
+            ),
+        )
+    }
+
+    override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
+        return loweringDelegate.lower(context)
+    }
+
+    override fun validate(context: AthenaPluginValidationContext): AthenaPluginValidationResult {
+        return loweringDelegate.validate(context)
     }
 }
 

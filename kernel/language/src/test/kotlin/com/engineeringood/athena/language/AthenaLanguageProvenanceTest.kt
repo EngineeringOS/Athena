@@ -24,6 +24,31 @@ class AthenaLanguageProvenanceTest {
     }
 
     @Test
+    fun `preserves exact device and string-literal spans on the antlr path`() {
+        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val source = Files.readString(examplePath)
+
+        val result = AthenaLanguageParser().parse(examplePath.toString(), source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val firstDevice = success.ast.declarations[0] as DeviceDeclaration
+        assertEquals("PLC1", firstDevice.name)
+        // `device` keyword through the device's closing brace (half-open, 1-based columns).
+        assertEquals(2, firstDevice.span.start.line)
+        assertEquals(3, firstDevice.span.start.column)
+        assertEquals(5, firstDevice.span.end.line)
+        assertEquals(4, firstDevice.span.end.column)
+
+        val modelValue = firstDevice.fields[1].value as ScalarValue.StringLiteral
+        assertEquals("S7-1200", modelValue.text)
+        // The span covers the surrounding quotes; `end` points immediately after the closing quote.
+        assertEquals(4, modelValue.span.start.line)
+        assertEquals(11, modelValue.span.start.column)
+        assertEquals(4, modelValue.span.end.line)
+        assertEquals(20, modelValue.span.end.column)
+    }
+
+    @Test
     fun `rejects over-qualified port declarations`() {
         val source = """
             system InvalidQualifiedPort {

@@ -16,10 +16,12 @@ import { AthenaSemanticMacroCatalogWidget } from './athena-semantic-macro-catalo
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 import { AthenaSemanticScmWidget } from './athena-semantic-scm-widget';
 import { AthenaSemanticInspectionWidget } from './athena-semantic-inspection-widget';
+import { AthenaTreeSitterHighlightingService } from './athena-tree-sitter-highlighting-service';
 
 export default new ContainerModule(bind => {
     bind(AthenaRepositoryCreationService).toSelf().inSingletonScope();
     bind(AthenaRepositorySessionService).toSelf().inSingletonScope();
+    bind(AthenaTreeSitterHighlightingService).toSelf().inSingletonScope();
     bind(AthenaLspEditorBridgeService).toSelf().inSingletonScope();
     bind(AthenaGraphAdapterService).toSelf().inSingletonScope();
     bind(AthenaSemanticSelectionService).toSelf().inSingletonScope();

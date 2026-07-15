@@ -1,0 +1,28 @@
+{
+  "private": true,
+  "name": "@engineeringood/athena-tree-sitter-grammar",
+  "version": "0.0.1",
+  "description": "Tree-sitter grammar for Athena source syntax UX (syntax-only; not a semantic authority).",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "src/grammar.json",
+  "files": [
+    "grammar.js",
+    "tree-sitter.json",
+    "src",
+    "queries",
+    "tree-sitter-athena.wasm",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"const fs = require('node:fs'); fs.rmSync('build', { recursive: true, force: true });\"",
+    "generate": "tree-sitter generate",
+    "build": "node scripts/build-tree-sitter-wasm.mjs",
+    "test": "tree-sitter generate && tree-sitter test && node --test scripts/*.test.mjs"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": ">=0.26.1",
+    "web-tree-sitter": "^0.26.0"
+  }
+}

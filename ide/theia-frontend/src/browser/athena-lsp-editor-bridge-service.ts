@@ -29,6 +29,7 @@ import {
     athenaLanguageConfiguration,
     athenaMonarchLanguage
 } from './athena-language-definition';
+import { AthenaTreeSitterHighlightingService } from './athena-tree-sitter-highlighting-service';
 import {
     buildAthenaSourceMutationRequest,
     type AthenaSourceMutationPayload
@@ -555,6 +556,9 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     @inject(AthenaRepositorySessionService)
     protected readonly repositorySessionService: AthenaRepositorySessionService;
 
+    @inject(AthenaTreeSitterHighlightingService)
+    protected readonly treeSitterHighlightingService: AthenaTreeSitterHighlightingService;
+
     protected readonly openedDocumentVersions = new Map<string, number>();
     protected readonly documentSyncOperations = new Map<string, Promise<void>>();
     protected readonly documentSymbolProviderDidChangeEmitter = new monaco.Emitter<void>();
@@ -611,6 +615,18 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         this.languageProviderListeners.push(
             monaco.languages.setMonarchTokensProvider(ATHENA_LANGUAGE_ID, athenaMonarchLanguage)
         );
+
+        // Tree-sitter-backed syntax highlighting (Story 3.2, AD-107): layers on top of the
+        // Monarch tokenizer above; it is a syntax-classification aid only and must never emit
+        // diagnostics/markers (AD-108 stays owned by the sendLanguageRequest(...) path below).
+        this.languageProviderListeners.push(monaco.languages.registerDocumentSemanticTokensProvider(ATHENA_LANGUAGE_ID, {
+            getLegend: () => this.treeSitterHighlightingService.getLegend(),
+            provideDocumentSemanticTokens: async model => {
+                const tokens = await this.treeSitterHighlightingService.provideDocumentSemanticTokens(model);
+                return tokens ?? null;
+            },
+            releaseDocumentSemanticTokens: () => undefined
+        }));
 
         this.languageProviderListeners.push(monaco.languages.registerCompletionItemProvider(ATHENA_LANGUAGE_ID, {
             triggerCharacters: ['.', ' '],

@@ -16,6 +16,18 @@ import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.runtime.AthenaAuthoringSessionRecord
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
 
+/**
+ * Computes the accepted "update component properties" source edit anchored to authored AST spans.
+ *
+ * M17 migration-continuity guardrail (AD-109 / AD-106): this edit is computed from
+ * `DeviceDeclaration.span`, `PortDeclaration.qualifiedName.span`, and `ConnectionDeclaration.from`/`to`
+ * spans on `compilation.source.ast`, then rewritten over the tracked document's raw text. It must
+ * keep depending only on the authored `SourceFileAst` and its `SourceSpan`s, never on a
+ * parser-generator's internal offset representation. Now that Epic 2 has replaced the handwritten
+ * parser with ANTLR4-backed parsing, this function must keep working unchanged as long as the AST
+ * spans are populated correctly; Epic 3's Tree-sitter integration must not become an alternative
+ * source-edit range computation path.
+ */
 internal fun acceptedUpdateComponentPropertiesSourceEdit(
     trackedDocument: AthenaTrackedDocument,
     record: AthenaAuthoringSessionRecord,

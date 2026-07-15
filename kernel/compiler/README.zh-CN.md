@@ -67,6 +67,21 @@ Story `1.2` 引入了第一条窄范围 M9 派生证明：
 - 这一层仍然位于 SCM review、LSP delivery 与 renderer metadata 之下。
 - 本 story 不扩大 parser grammar；数量值解析仍然是 compiler 自己拥有的窄规范化步骤。
 
+## M17 Parser 迁移连续性基线
+
+M17 加固了编译器之下的语言架构，使 Epic 2 的 ANTLR4 编译器路径不会在受支持源码上造成意外的语义漂移（AD-106 / AD-110）。由 `AthenaCompilerTest` 与 `AthenaParserContinuityTest` 锁定的连续性契约为：
+
+- `EngineeringIrLowerer.lower(CompilerSourceDocument)` 仅读取 authored `SourceFileAst`（通过 `source.ast` 与 `AthenaDomainSemanticsCoordinator`），绝不读取生成的 parse-tree/visitor 或 Tree-sitter CST 类型。
+- 规范 `EngineeringDocument` 的 identity 方案保持固定：`system:<name>`、`component:<name>`（重复项带 `#<n>` 序号）、`port:<owner>.<port>`、`connection:<from>-><to>`，以及由 `SourceSpan` 推导的 `SourceProvenance`。
+- `CompilerPipelineReport.passes` 始终按同一顺序报告同样的六个具名 pass，且 `CompilerPassExecutionStatus` 语义不变：
+
+  `PARSE -> LOWER -> SEMANTIC_ENRICHMENT -> VALIDATE -> BACKEND_PREPARATION -> BACKEND_EMISSION`
+
+- 已发布的 conformance artifact（`examples/m0/demo-cabinet.engineering-ir.txt`、`examples/m0/demo-cabinet.svg`）继续逐字节匹配。
+- 完整的有效 `examples/m0` 语料（`demo-cabinet`、`dual-drive-cabinet`）会 lowering 为已记录的 component/port/connection 计数与 identity 方案，并可确定性地重复 lowering。
+
+Story 5.1 的 `AthenaM17ParserParityProofTest` 把同一保证扩展到已签入的 `examples/m17` 语料，复用此处的 identity/provenance 定义，而非另立一套。
+
 ## 依赖
 
 - `:kernel:language`

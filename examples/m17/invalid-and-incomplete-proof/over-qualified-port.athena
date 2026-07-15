@@ -1,0 +1,5 @@
+system OverQualifiedPort {
+  port Cabinet.PLC1.out {
+    direction out
+  }
+}

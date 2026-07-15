@@ -74,7 +74,18 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
 
     /** Lowers only explicitly dummy-owned authored declarations into canonical plugin blueprints. */
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
-        val deviceDeclarations = context.source.ast.declarations.filterIsInstance<DeviceDeclaration>()
+        // Exhaustive partition over Declaration so future sealed variants fail at compile time.
+        val deviceDeclarations = mutableListOf<DeviceDeclaration>()
+        val portDeclarations = mutableListOf<PortDeclaration>()
+        val connectionDeclarations = mutableListOf<ConnectionDeclaration>()
+        for (declaration in context.source.ast.declarations) {
+            when (declaration) {
+                is DeviceDeclaration -> deviceDeclarations += declaration
+                is PortDeclaration -> portDeclarations += declaration
+                is ConnectionDeclaration -> connectionDeclarations += declaration
+            }
+        }
+
         val ownedDeviceNames = deviceDeclarations
             .filter { declaration -> declaration.domainMarker() == DUMMY_DOMAIN_ID }
             .map { declaration -> declaration.name }
@@ -90,8 +101,7 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                     provenance = context.provenance(declaration.span),
                 )
             }
-        val ports = context.source.ast.declarations
-            .filterIsInstance<PortDeclaration>()
+        val ports = portDeclarations
             .filter { declaration -> declaration.qualifiedName.parts.firstOrNull() in ownedDeviceNames }
             .map { declaration ->
                 context.port(
@@ -102,8 +112,7 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                     provenance = context.provenance(declaration.span),
                 )
             }
-        val connections = context.source.ast.declarations
-            .filterIsInstance<ConnectionDeclaration>()
+        val connections = connectionDeclarations
             .filter { declaration ->
                 declaration.from.parts.firstOrNull() in ownedDeviceNames &&
                     declaration.to.parts.firstOrNull() in ownedDeviceNames
