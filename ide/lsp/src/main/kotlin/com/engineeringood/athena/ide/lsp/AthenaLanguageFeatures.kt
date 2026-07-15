@@ -3,6 +3,8 @@ package com.engineeringood.athena.ide.lsp
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticBinding
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclaration
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnostic
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.compiler.semantic.SourceUnitId
@@ -49,6 +51,7 @@ data class AthenaTrackedDocument(
     val projectSemanticSourceUnitId: SourceUnitId? = null,
     val projectSemanticSourceUnitUris: Map<SourceUnitId, String> = emptyMap(),
     val projectSemanticDiagnostics: List<ProjectSemanticDiagnostic> = emptyList(),
+    val projectSemanticNavigation: AthenaProjectSemanticNavigationSnapshot? = null,
 )
 
 data class AthenaProjectSemanticDiagnosticsSnapshot(
@@ -56,6 +59,15 @@ data class AthenaProjectSemanticDiagnosticsSnapshot(
     val sourceUnitId: SourceUnitId?,
     val sourceUnitUris: Map<SourceUnitId, String>,
     val diagnostics: List<ProjectSemanticDiagnostic>,
+    val navigation: AthenaProjectSemanticNavigationSnapshot? = null,
+)
+
+data class AthenaProjectSemanticNavigationSnapshot(
+    val graphId: String,
+    val currentSourceUnitId: SourceUnitId?,
+    val sourceUnitUris: Map<SourceUnitId, String>,
+    val declarations: List<ProjectSemanticDeclaration>,
+    val bindings: List<ProjectSemanticBinding>,
 )
 
 /**
@@ -184,6 +196,7 @@ class AthenaLanguageFeatures(
             projectSemanticSourceUnitId = projectSemanticSnapshot?.sourceUnitId,
             projectSemanticSourceUnitUris = projectSemanticSnapshot?.sourceUnitUris.orEmpty(),
             projectSemanticDiagnostics = projectSemanticSnapshot?.diagnostics.orEmpty(),
+            projectSemanticNavigation = projectSemanticSnapshot?.navigation,
         )
         documentsByUri[uri] = tracked
         return tracked
@@ -250,14 +263,22 @@ class AthenaLanguageFeatures(
             val packageRoot = packageRoots(publication)[semanticPackage.packageId] ?: publication.repositoryRoot
             semanticPackage.packageKey to packageRoot.resolve(semanticPackage.sourceRoot).toAbsolutePath().normalize()
         }
+        val sourceUnitUris = linkedSnapshot.sourceUnits.mapNotNull { sourceUnit ->
+            val packageSourceRoot = packageSourceRoots[sourceUnit.packageKey] ?: return@mapNotNull null
+            sourceUnit.sourceUnitId to packageSourceRoot.resolveSourceUnitUri(sourceUnit.sourceRootRelativePath)
+        }.toMap()
         return AthenaProjectSemanticDiagnosticsSnapshot(
             graphId = linkedSnapshot.graphId.value,
             sourceUnitId = sourceUnitId,
-            sourceUnitUris = linkedSnapshot.sourceUnits.mapNotNull { sourceUnit ->
-                val packageSourceRoot = packageSourceRoots[sourceUnit.packageKey] ?: return@mapNotNull null
-                sourceUnit.sourceUnitId to packageSourceRoot.resolveSourceUnitUri(sourceUnit.sourceRootRelativePath)
-            }.toMap(),
+            sourceUnitUris = sourceUnitUris,
             diagnostics = linkedSnapshot.diagnostics,
+            navigation = AthenaProjectSemanticNavigationSnapshot(
+                graphId = linkedSnapshot.graphId.value,
+                currentSourceUnitId = sourceUnitId,
+                sourceUnitUris = sourceUnitUris,
+                declarations = linkedSnapshot.declarations,
+                bindings = linkedSnapshot.bindings,
+            ),
         )
     }
 
@@ -502,6 +523,10 @@ class AthenaLanguageFeatures(
     fun definition(uri: String, position: Position): List<Location> {
         val tracked = trackedDocument(uri) ?: return emptyList()
         val offset = tracked.text.offsetAt(position)
+        tracked.projectSemanticNavigation
+            ?.let { navigation -> AthenaProjectSemanticNavigationIndex(navigation).definition(offset) }
+            ?.takeIf { locations -> locations.isNotEmpty() }
+            ?.let { locations -> return locations }
         val index = tracked.navigationIndex ?: return emptyList()
         return index.definition(offset)
     }
@@ -512,10 +537,15 @@ class AthenaLanguageFeatures(
     fun references(params: ReferenceParams): List<Location> {
         val tracked = trackedDocument(params.textDocument.uri) ?: return emptyList()
         val offset = tracked.text.offsetAt(params.position)
+        val includeDeclaration = params.context?.isIncludeDeclaration ?: false
+        tracked.projectSemanticNavigation
+            ?.let { navigation -> AthenaProjectSemanticNavigationIndex(navigation).references(offset, includeDeclaration) }
+            ?.takeIf { locations -> locations.isNotEmpty() }
+            ?.let { locations -> return locations }
         val index = tracked.navigationIndex ?: return emptyList()
         return index.references(
             offset = offset,
-            includeDeclaration = params.context?.isIncludeDeclaration ?: false,
+            includeDeclaration = includeDeclaration,
         )
     }
 
@@ -653,6 +683,54 @@ class AthenaLanguageFeatures(
                 insertText = label
             }
         }
+    }
+}
+
+/**
+ * Projects compiler-owned project semantic declarations and bindings into LSP navigation locations.
+ */
+class AthenaProjectSemanticNavigationIndex(
+    private val snapshot: AthenaProjectSemanticNavigationSnapshot,
+) {
+    private val declarationsById = snapshot.declarations.associateBy { declaration -> declaration.declarationId }
+    private val currentBindings = snapshot.bindings.filter { binding ->
+        binding.sourceUnitId == snapshot.currentSourceUnitId
+    }
+    private val currentDeclarations = snapshot.declarations.filter { declaration ->
+        declaration.sourceUnitId == snapshot.currentSourceUnitId
+    }
+
+    fun definition(offset: Int): List<Location> {
+        val binding = currentBindings.firstOrNull { candidate -> candidate.referenceSpan.contains(offset) }
+            ?: return emptyList()
+        val declaration = declarationsById[binding.resolvedDeclarationId] ?: return emptyList()
+        return location(declaration.sourceUnitId, declaration.authoredSpan)
+            ?.let(::listOf)
+            .orEmpty()
+    }
+
+    fun references(offset: Int, includeDeclaration: Boolean): List<Location> {
+        val declarationId = currentBindings
+            .firstOrNull { binding -> binding.referenceSpan.contains(offset) }
+            ?.resolvedDeclarationId
+            ?: currentDeclarations
+                .firstOrNull { declaration -> declaration.authoredSpan.contains(offset) }
+                ?.declarationId
+            ?: return emptyList()
+        val declaration = declarationsById[declarationId]
+        return buildList {
+            if (includeDeclaration && declaration != null) {
+                location(declaration.sourceUnitId, declaration.authoredSpan)?.let(::add)
+            }
+            snapshot.bindings
+                .filter { binding -> binding.resolvedDeclarationId == declarationId }
+                .mapNotNullTo(this) { binding -> location(binding.sourceUnitId, binding.referenceSpan) }
+        }
+    }
+
+    private fun location(sourceUnitId: SourceUnitId, span: SourceSpan): Location? {
+        val uri = snapshot.sourceUnitUris[sourceUnitId] ?: return null
+        return Location(uri, span.toLspRange())
     }
 }
 
