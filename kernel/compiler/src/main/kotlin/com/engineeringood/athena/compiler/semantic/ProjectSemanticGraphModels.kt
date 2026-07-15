@@ -1,6 +1,7 @@
 package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.language.SourceSpan
+import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.ImportDeclaration
 import com.engineeringood.athena.repository.PackageIdentifier
 
@@ -17,6 +18,7 @@ data class ProjectSemanticSourceUnit(
     val sourceRootRelativePath: String,
     val contentIdentity: SourceUnitContentIdentity,
     val authoredImports: List<ImportDeclaration> = emptyList(),
+    val authoredDeclarations: List<Declaration> = emptyList(),
     val resolvedImports: List<ProjectSemanticImportResolution> = emptyList(),
 )
 

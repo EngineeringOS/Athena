@@ -60,6 +60,7 @@ class ProjectSemanticGraphSnapshot private constructor(
                             .distinct()
                             .sortedWith(importComparator)
                             .toImmutableList(),
+                        authoredDeclarations = sourceUnit.authoredDeclarations.toImmutableList(),
                         resolvedImports = sourceUnit.resolvedImports
                             .map { resolution ->
                                 resolution.copy(
@@ -107,6 +108,9 @@ class ProjectSemanticGraphSnapshot private constructor(
                         importDeclaration.target.span.start.offset >= importDeclaration.span.start.offset &&
                             importDeclaration.target.span.end.offset <= importDeclaration.span.end.offset,
                     ) { "Semantic import target span must be contained by its declaration span" }
+                }
+                sourceUnit.authoredDeclarations.forEach { declaration ->
+                    requireValidSpan(declaration.span, "Semantic authored declaration span")
                 }
             }
             require(

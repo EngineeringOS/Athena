@@ -87,6 +87,7 @@ class GovernedProjectSemanticGraphBuilder(
 
         val namespaceSources = linkedMapOf<NamespaceKey, MutableList<SourceUnitId>>()
         val semanticSources = admittedCandidates.map { candidate ->
+            var declarations = emptyList<com.engineeringood.athena.language.Declaration>()
             val imports = when (val parseResult = parser.parse(candidate.sourceRootRelativePath, candidate.sourceContent)) {
                 is ParseFailure -> {
                     diagnostics += parseResult.diagnostics.map { syntaxDiagnostic ->
@@ -103,6 +104,7 @@ class GovernedProjectSemanticGraphBuilder(
 
                 is ParseSuccess -> {
                     val packageDeclaration = parseResult.ast.packageDeclaration
+                    declarations = parseResult.ast.declarations
                     when {
                         packageDeclaration == null -> diagnostics += diagnostic(
                             code = "semantic.source.package.missing",
@@ -133,6 +135,7 @@ class GovernedProjectSemanticGraphBuilder(
                 sourceRootRelativePath = candidate.sourceRootRelativePath,
                 contentIdentity = candidate.contentIdentity,
                 authoredImports = imports,
+                authoredDeclarations = declarations,
             )
         }
         val namespaces = namespaceSources.map { (key, sourceUnitIds) ->

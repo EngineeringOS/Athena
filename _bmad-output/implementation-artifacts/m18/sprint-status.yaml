@@ -1,5 +1,5 @@
 # generated: 2026-07-15T16:31:02.3518176+08:00
-# last_updated: 2026-07-15T23:59:28.6709367+08:00
+# last_updated: 2026-07-16T00:31:32.6601608+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -43,7 +43,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-15T16:31:02.3518176+08:00
-last_updated: 2026-07-15T23:59:28.6709367+08:00
+last_updated: 2026-07-16T00:31:32.6601608+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -66,8 +66,8 @@ development_status:
   2-5-emit-typed-package-aware-diagnostics: done
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-index-declarations-into-semantic-namespaces: backlog
+  epic-3: in-progress
+  3-1-index-declarations-into-semantic-namespaces: done
   3-2-link-references-across-source-units: backlog
   3-3-link-references-across-governed-packages: backlog
   3-4-preserve-governed-capability-provenance: backlog

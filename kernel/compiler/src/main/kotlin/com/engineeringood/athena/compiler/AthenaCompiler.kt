@@ -20,6 +20,7 @@ import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPubli
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputBuilder
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputResult
 import com.engineeringood.athena.compiler.semantic.GovernedProjectSemanticGraphBuilder
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclarationIndexer
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnosticProjector
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphBuildResult
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
@@ -86,6 +87,7 @@ class AthenaCompiler(
     private val projectSemanticGraphBuilder: GovernedProjectSemanticGraphBuilder = GovernedProjectSemanticGraphBuilder(parser),
     private val projectSemanticImportResolver: ProjectSemanticImportResolver = ProjectSemanticImportResolver(),
     private val projectSemanticDiagnosticProjector: ProjectSemanticDiagnosticProjector = ProjectSemanticDiagnosticProjector(),
+    private val projectSemanticDeclarationIndexer: ProjectSemanticDeclarationIndexer = ProjectSemanticDeclarationIndexer(),
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
     val pluginDiscoveryReport: AthenaPluginDiscoveryReport = hostedPluginDiscoveryReport ?: pluginDiscovery.discover()
@@ -317,6 +319,11 @@ class AthenaCompiler(
     /** Emits compiler-owned diagnostics derived from one project semantic graph snapshot. */
     fun emitProjectSemanticDiagnostics(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
         return projectSemanticDiagnosticProjector.project(snapshot)
+    }
+
+    /** Indexes authored declarations into compiler-owned semantic namespaces. */
+    fun indexProjectSemanticDeclarations(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
+        return projectSemanticDeclarationIndexer.index(snapshot)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */
