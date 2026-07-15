@@ -1,5 +1,6 @@
 package com.engineeringood.athena.compiler.repository
 
+import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
 import com.engineeringood.athena.repository.PackageIdentifier
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
@@ -314,7 +315,7 @@ private fun stablePathKey(path: Path): String {
 }
 
 private fun packageKey(packageId: PackageIdentifier): String {
-    return listOf(packageId.name, packageId.version.orEmpty()).joinToString("|")
+    return CanonicalSemanticIdentityBuilder.packageKey(packageId).value
 }
 
 private fun declaredPackageMatches(
