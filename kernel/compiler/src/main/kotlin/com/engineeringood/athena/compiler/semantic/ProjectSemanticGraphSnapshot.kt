@@ -60,6 +60,29 @@ class ProjectSemanticGraphSnapshot private constructor(
                             .distinct()
                             .sortedWith(importComparator)
                             .toImmutableList(),
+                        resolvedImports = sourceUnit.resolvedImports
+                            .map { resolution ->
+                                resolution.copy(
+                                    explanation = resolution.explanation.copy(
+                                        directDependencyKeys = immutableSortedDistinct(
+                                            resolution.explanation.directDependencyKeys,
+                                        ) { it.value },
+                                        availablePackageKeys = immutableSortedDistinct(
+                                            resolution.explanation.availablePackageKeys,
+                                        ) { it.value },
+                                        availableSourceUnitIds = immutableSortedDistinct(
+                                            resolution.explanation.availableSourceUnitIds,
+                                        ) { it.value },
+                                        candidateNamespaceIds = immutableSortedDistinct(
+                                            resolution.explanation.candidateNamespaceIds,
+                                        ) { it.value },
+                                        unresolvedTargetSuffix = resolution.explanation.unresolvedTargetSuffix.toImmutableList(),
+                                    ),
+                                )
+                            }
+                            .distinct()
+                            .sortedWith(importResolutionComparator)
+                            .toImmutableList(),
                     )
                 }
                 .sortedBy { it.sourceUnitId.value }
@@ -126,6 +149,119 @@ class ProjectSemanticGraphSnapshot private constructor(
                 }
                 require(namespace.sourceUnitIds.all { sourceUnitsById.getValue(it).packageKey == namespace.packageKey }) {
                     "Semantic namespace source units must belong to its package"
+                }
+            }
+
+            canonicalSourceUnits.forEach { sourceUnit ->
+                val semanticPackage = canonicalPackages.single { it.packageKey == sourceUnit.packageKey }
+                val expectedAvailablePackageKeys = (listOf(sourceUnit.packageKey) + semanticPackage.directDependencies)
+                    .distinct()
+                    .sortedBy { it.value }
+                val expectedAvailableSourceUnitIds = canonicalSourceUnits
+                    .filter { it.packageKey in expectedAvailablePackageKeys }
+                    .map { it.sourceUnitId }
+                    .sortedBy { it.value }
+                require(
+                    sourceUnit.resolvedImports.isEmpty() ||
+                        sourceUnit.resolvedImports.size == sourceUnit.authoredImports.size,
+                ) {
+                    "Semantic source units must publish either zero import resolutions or one resolution per authored import"
+                }
+                require(sourceUnit.resolvedImports.map { it.importDeclaration }.distinct().size == sourceUnit.resolvedImports.size) {
+                    "Semantic source units may publish only one resolution per authored import"
+                }
+                sourceUnit.resolvedImports.forEach { resolution ->
+                    val explanation = resolution.explanation
+                    require(resolution.sourceUnitId == sourceUnit.sourceUnitId) {
+                        "Semantic import resolutions must belong to their source unit"
+                    }
+                    require(resolution.importDeclaration in sourceUnit.authoredImports) {
+                        "Semantic import resolutions must reference an authored import"
+                    }
+                    require(explanation.sourcePackageKey == sourceUnit.packageKey) {
+                        "Semantic import explanations must identify their source package"
+                    }
+                    require(explanation.directDependencyKeys == semanticPackage.directDependencies) {
+                        "Semantic import explanations must use canonical direct dependencies"
+                    }
+                    require(explanation.availablePackageKeys == expectedAvailablePackageKeys) {
+                        "Semantic import explanations must use source and direct-dependency package availability"
+                    }
+                    require(explanation.availableSourceUnitIds == expectedAvailableSourceUnitIds) {
+                        "Semantic import explanations must list every available source unit"
+                    }
+                    val candidates = explanation.candidateNamespaceIds.map { namespaceId ->
+                        namespacesById[namespaceId]
+                            ?: throw IllegalArgumentException("Semantic import explanations must reference known namespaces")
+                    }
+                    val target = resolution.importDeclaration.target.parts
+                    val packageMatches = canonicalPackages
+                        .map { semanticPackage ->
+                            semanticPackage.packageKey to semanticPackage.packageId.name.split('.')
+                        }
+                        .filter { (_, packageParts) -> target.startsWith(packageParts) }
+                    val longestPackagePrefixLength = packageMatches.maxOfOrNull { (_, packageParts) -> packageParts.size } ?: 0
+                    val longestPackageKeys = packageMatches
+                        .filter { (_, packageParts) -> packageParts.size == longestPackagePrefixLength }
+                        .map { (packageKey, _) -> packageKey }
+                        .toSet()
+                    val longestPackageHasAvailableKey = longestPackageKeys.any { it in expectedAvailablePackageKeys }
+                    require(candidates.all { resolution.importDeclaration.target.parts.startsWith(it.qualifiedName) }) {
+                        "Semantic import candidates must prefix the authored target"
+                    }
+                    require(candidates.map { it.qualifiedName.size }.distinct().size <= 1) {
+                        "Semantic import candidates must use the same longest prefix length"
+                    }
+                    require(longestPackageKeys.isEmpty() || candidates.all { it.packageKey in longestPackageKeys }) {
+                        "Semantic import candidates must belong to the longest matching package prefix group"
+                    }
+                    val namespacePrefixLength = candidates.firstOrNull()?.qualifiedName?.size ?: 0
+                    val expectedSuffixPrefixLength = namespacePrefixLength.takeIf { it > 0 }
+                        ?: longestPackagePrefixLength
+                    val expectedSuffix = resolution.importDeclaration.target.parts.drop(expectedSuffixPrefixLength)
+                    require(explanation.unresolvedTargetSuffix == expectedSuffix) {
+                        "Semantic import explanation suffix must follow the selected namespace prefix"
+                    }
+                    when (resolution.status) {
+                        ProjectSemanticImportResolutionStatus.RESOLVED -> {
+                            require(candidates.all { it.packageKey in expectedAvailablePackageKeys }) {
+                                "Resolved import candidates must belong to available packages"
+                            }
+                            require(candidates.size == 1 && explanation.selectedNamespaceId == candidates.single().namespaceId) {
+                                "Resolved imports require one selected namespace"
+                            }
+                        }
+
+                        ProjectSemanticImportResolutionStatus.AMBIGUOUS_NAMESPACE -> {
+                            require(candidates.all { it.packageKey in expectedAvailablePackageKeys }) {
+                                "Ambiguous import candidates must belong to available packages"
+                            }
+                            require(candidates.size > 1 && explanation.selectedNamespaceId == null) {
+                                "Ambiguous imports require multiple namespace candidates and no selection"
+                            }
+                        }
+
+                        ProjectSemanticImportResolutionStatus.UNAVAILABLE_PACKAGE -> {
+                            require(longestPackageKeys.isNotEmpty() && !longestPackageHasAvailableKey) {
+                                "Unavailable-package imports require a known unavailable longest package prefix"
+                            }
+                            require(candidates.all { it.packageKey !in expectedAvailablePackageKeys }) {
+                                "Unavailable-package candidates must not belong to available packages"
+                            }
+                            require(explanation.selectedNamespaceId == null) {
+                                "Unavailable-package imports must not select a namespace"
+                            }
+                        }
+
+                        ProjectSemanticImportResolutionStatus.UNAVAILABLE_NAMESPACE -> {
+                            require(longestPackageKeys.isEmpty() || longestPackageHasAvailableKey) {
+                                "Unavailable-namespace imports must not hide an unavailable package"
+                            }
+                            require(candidates.isEmpty() && explanation.selectedNamespaceId == null) {
+                                "Unavailable-namespace imports must not select namespace candidates"
+                            }
+                        }
+                    }
                 }
             }
 
@@ -265,6 +401,24 @@ class ProjectSemanticGraphSnapshot private constructor(
             { it.span.end.column },
         )
 
+        private val importResolutionComparator = compareBy<ProjectSemanticImportResolution>(
+            { it.sourceUnitId.value },
+            { it.importDeclaration.target.parts.joinToString(".") },
+            { it.importDeclaration.target.span.start.offset },
+            { it.importDeclaration.target.span.start.line },
+            { it.importDeclaration.target.span.start.column },
+            { it.importDeclaration.target.span.end.offset },
+            { it.importDeclaration.target.span.end.line },
+            { it.importDeclaration.target.span.end.column },
+            { it.importDeclaration.span.start.offset },
+            { it.importDeclaration.span.start.line },
+            { it.importDeclaration.span.start.column },
+            { it.importDeclaration.span.end.offset },
+            { it.importDeclaration.span.end.line },
+            { it.importDeclaration.span.end.column },
+            { it.status.ordinal },
+        )
+
         private val diagnosticComparator = Comparator<ProjectSemanticDiagnostic> { left, right ->
             compareValuesBy(
                 left,
@@ -329,5 +483,9 @@ class ProjectSemanticGraphSnapshot private constructor(
         }
 
         private fun <T> List<T>.toImmutableList(): List<T> = java.util.List.copyOf(this)
+
+        private fun List<String>.startsWith(prefix: List<String>): Boolean {
+            return size >= prefix.size && subList(0, prefix.size) == prefix
+        }
     }
 }

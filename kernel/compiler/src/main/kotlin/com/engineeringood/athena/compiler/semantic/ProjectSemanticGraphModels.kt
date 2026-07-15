@@ -17,6 +17,7 @@ data class ProjectSemanticSourceUnit(
     val sourceRootRelativePath: String,
     val contentIdentity: SourceUnitContentIdentity,
     val authoredImports: List<ImportDeclaration> = emptyList(),
+    val resolvedImports: List<ProjectSemanticImportResolution> = emptyList(),
 )
 
 data class ProjectSemanticNamespace(

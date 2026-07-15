@@ -21,6 +21,8 @@ import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionI
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputResult
 import com.engineeringood.athena.compiler.semantic.GovernedProjectSemanticGraphBuilder
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphBuildResult
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticImportResolver
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.language.AthenaLanguageParser
@@ -81,6 +83,7 @@ class AthenaCompiler(
     private val componentKnowledgeContextBuilder: AthenaComponentKnowledgeContextBuilder = AthenaComponentKnowledgeContextBuilder(),
     lowerer: EngineeringIrLowerer? = null,
     private val projectSemanticGraphBuilder: GovernedProjectSemanticGraphBuilder = GovernedProjectSemanticGraphBuilder(parser),
+    private val projectSemanticImportResolver: ProjectSemanticImportResolver = ProjectSemanticImportResolver(),
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
     val pluginDiscoveryReport: AthenaPluginDiscoveryReport = hostedPluginDiscoveryReport ?: pluginDiscovery.discover()
@@ -302,6 +305,11 @@ class AthenaCompiler(
         sources: List<ProjectSemanticSourceInput>,
     ): ProjectSemanticGraphBuildResult {
         return projectSemanticGraphBuilder.build(publication, sources)
+    }
+
+    /** Resolves authored imports strictly against one compiler-owned project semantic graph snapshot. */
+    fun resolveProjectSemanticImports(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
+        return projectSemanticImportResolver.resolve(snapshot)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */

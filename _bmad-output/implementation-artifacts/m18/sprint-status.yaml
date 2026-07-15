@@ -1,5 +1,5 @@
 # generated: 2026-07-15T16:31:02.3518176+08:00
-# last_updated: 2026-07-15T22:09:22.7168766+08:00
+# last_updated: 2026-07-15T22:57:22.2316906+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -43,7 +43,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-15T16:31:02.3518176+08:00
-last_updated: 2026-07-15T22:09:22.7168766+08:00
+last_updated: 2026-07-15T22:57:22.2316906+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -62,7 +62,7 @@ development_status:
   2-1-add-canonical-identity-builders: done
   2-2-define-project-semantic-graph-snapshot-contracts: done
   2-3-build-semantic-graph-from-governed-repository-state: done
-  2-4-resolve-imports-against-the-semantic-graph: backlog
+  2-4-resolve-imports-against-the-semantic-graph: done
   2-5-emit-typed-package-aware-diagnostics: backlog
   epic-2-retrospective: optional
 
