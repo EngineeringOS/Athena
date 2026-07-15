@@ -199,6 +199,68 @@ test('drops transient selection when refreshed projection no longer contains the
     );
 });
 
+test('keeps package-aware navigation selection when an existing workbench sheet publishes the canonical subject id', () => {
+    const selected = {
+        semanticId: 'component:VendorPump',
+        label: 'VendorPump',
+        kind: 'component',
+        sourceUri: 'file:///workspace/vendor/pump.athena',
+        sourceRange: {
+            start: { line: 4, character: 0 },
+            end: { line: 8, character: 1 }
+        }
+    };
+    const sheetPublishedDiagram = {
+        activeSheetId: 'vendor/sheet/01-pump',
+        sheets: [
+            {
+                sheetId: 'vendor/sheet/01-pump',
+                displayName: 'Vendor Pump',
+                order: 0,
+                subjectSemanticIds: ['component:VendorPump']
+            }
+        ],
+        graph: {
+            nodes: [],
+            edges: []
+        }
+    };
+
+    assert.equal(
+        semanticSelectionModel.graphContainsSemanticId(sheetPublishedDiagram, 'component:VendorPump'),
+        true
+    );
+    assert.deepEqual(
+        semanticSelectionModel.retainSelectionIfPresent(sheetPublishedDiagram, selected),
+        selected
+    );
+});
+
+test('does not treat inactive sheet subject metadata as already revealed', () => {
+    const inactiveSheetDiagram = {
+        activeSheetId: 'vendor/sheet/01-overview',
+        sheets: [
+            {
+                sheetId: 'vendor/sheet/01-overview',
+                subjectSemanticIds: ['component:OverviewOnly']
+            },
+            {
+                sheetId: 'vendor/sheet/02-pump',
+                subjectSemanticIds: ['component:VendorPump']
+            }
+        ],
+        graph: {
+            nodes: [],
+            edges: []
+        }
+    };
+
+    assert.equal(
+        semanticSelectionModel.graphContainsSemanticId(inactiveSheetDiagram, 'component:VendorPump'),
+        false
+    );
+});
+
 test('resolves repeated projection occurrences without inventing alias identities', () => {
     assert.equal(typeof semanticSelectionModel.resolveProjectionOccurrence, 'function');
 

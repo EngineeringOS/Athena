@@ -46,11 +46,16 @@ type AthenaSemanticScmContextCarrier = {
 };
 
 type AthenaProjectionSelectionCarrier = {
+    activeSheetId?: string;
     crossReferences?: Array<{
         semanticId: string;
         kind: string;
         sheetIds: string[];
         occurrenceIds: string[];
+    }>;
+    sheets?: Array<{
+        sheetId: string;
+        subjectSemanticIds?: string[];
     }>;
     electricalAnchors?: Array<{
         anchorId: string;
@@ -177,6 +182,7 @@ export function graphContainsSemanticId(
     semanticId: string
 ): boolean {
     return resolveProjectionOccurrence(diagram, semanticId).status !== 'unresolved' ||
+        projectionSheetsContainSemanticId(diagram, semanticId) ||
         resolveProjectionEndpointAlias(diagram, semanticId).status !== 'unresolved';
 }
 
@@ -362,6 +368,19 @@ function inspectionEntries(inspection: AthenaSemanticInspectionPayload): AthenaS
             sourceRange: connection.sourceRange
         }))
     ];
+}
+
+function projectionSheetsContainSemanticId(
+    diagram: AthenaProjectionSelectionCarrier | undefined,
+    semanticId: string
+): boolean {
+    if (!diagram?.sheets?.length) {
+        return false;
+    }
+    const sheets = diagram.activeSheetId
+        ? diagram.sheets.filter(sheet => sheet.sheetId === diagram.activeSheetId)
+        : diagram.sheets;
+    return sheets.some(sheet => sheet.subjectSemanticIds?.includes(semanticId));
 }
 
 function rangeContainsRange(container: Range, candidate: Range): boolean {
