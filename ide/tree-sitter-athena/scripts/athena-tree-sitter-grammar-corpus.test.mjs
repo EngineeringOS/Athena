@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
@@ -12,6 +12,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(packageRoot, '..', '..');
 const wasmPath = path.join(packageRoot, 'tree-sitter-athena.wasm');
+const m18SyntaxProofDir = path.join(repoRoot, 'examples', 'm18', 'syntax-proof');
+const M18_SYNTAX_FIXTURE_NAMES = [
+    'invalid-alias',
+    'invalid-missing-target',
+    'invalid-visibility',
+    'invalid-wildcard',
+    'valid-package-import',
+    'valid-package-only',
+];
 
 const PARITY_FIXTURES = [
     path.join(repoRoot, 'examples', 'm0', 'demo-cabinet.athena'),
@@ -77,3 +86,59 @@ for (const [name, source] of Object.entries(INVALID_M18_HEADERS)) {
         assert.equal(tree.rootNode.hasError, true, `expected syntax error for ${name}:\n${tree.rootNode.toString()}`);
     });
 }
+
+const VALID_M18_SYNTAX_FIXTURES = {
+    'valid-package-import': { packageCount: 1, importTargets: ['com.engineeringood.controls', 'com.engineeringood.controls.Switch2'] },
+    'valid-package-only': { packageCount: 1, importTargets: [] },
+};
+
+for (const [name, expectation] of Object.entries(VALID_M18_SYNTAX_FIXTURES)) {
+    test(`M18 syntax fixture ${name} parses without ERROR/MISSING nodes`, () => {
+        const source = readFileSync(path.join(m18SyntaxProofDir, `${name}.athena`), 'utf8');
+        const parser = new Parser();
+        parser.setLanguage(language);
+        const tree = parser.parse(source);
+        assert.equal(tree.rootNode.hasError, false);
+        const packages = tree.rootNode.namedChildren.filter(node => node?.type === 'package_declaration');
+        const imports = tree.rootNode.namedChildren.filter(node => node?.type === 'import_declaration');
+        assert.equal(packages.length, expectation.packageCount);
+        assert.deepEqual(imports.map(node => node.childForFieldName('target')?.text), expectation.importTargets);
+    });
+}
+
+const INVALID_M18_SYNTAX_FIXTURES = {
+    'invalid-alias': 'as controls',
+    'invalid-visibility': 'public',
+    'invalid-wildcard': '.*',
+};
+
+for (const [name, forbiddenText] of Object.entries(INVALID_M18_SYNTAX_FIXTURES)) {
+    test(`M18 syntax fixture ${name} retains an error node`, () => {
+        const source = readFileSync(path.join(m18SyntaxProofDir, `${name}.athena`), 'utf8');
+        const parser = new Parser();
+        parser.setLanguage(language);
+        const tree = parser.parse(source);
+        assert.equal(tree.rootNode.hasError, true);
+        assert.ok(
+            tree.rootNode.descendantsOfType('ERROR').some(node => node.text.includes(forbiddenText)),
+            `expected ERROR node containing '${forbiddenText}':\n${tree.rootNode.toString()}`
+        );
+    });
+}
+
+test('M18 missing-target fixture preserves incomplete import and system structure', () => {
+    const source = readFileSync(path.join(m18SyntaxProofDir, 'invalid-missing-target.athena'), 'utf8');
+    const parser = new Parser();
+    parser.setLanguage(language);
+    const tree = parser.parse(source);
+    assert.ok(tree.rootNode.namedChildren.some(node => node?.type === 'incomplete_import_declaration'));
+    assert.ok(tree.rootNode.namedChildren.some(node => node?.type === 'system_declaration'));
+});
+
+test('M18 Tree-sitter fixture coverage matches the checked-in syntax inventory', () => {
+    const discovered = readdirSync(m18SyntaxProofDir)
+        .filter(name => name.endsWith('.athena'))
+        .map(name => name.slice(0, -'.athena'.length))
+        .sort();
+    assert.deepEqual(discovered, M18_SYNTAX_FIXTURE_NAMES);
+});

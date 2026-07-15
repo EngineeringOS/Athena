@@ -1,0 +1,6 @@
+package com.engineeringood.standalone
+system StandaloneProof {
+  device PLC1 {
+    type Switch
+  }
+}

@@ -1,0 +1,4 @@
+status=syntax-failure
+syntaxErrorLine=1
+syntaxErrorColumn=36
+syntaxErrorMessageContains=*
