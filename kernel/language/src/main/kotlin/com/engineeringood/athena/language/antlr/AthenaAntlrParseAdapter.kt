@@ -67,8 +67,6 @@ internal object AthenaAntlrParseEngine {
         lexer.addErrorListener(errorListener)
 
         val tokens = CommonTokenStream(lexer)
-        tokens.fill()
-        splitImportTargetDiagnostic(file, tokens.tokens)?.let { return ParseFailure(listOf(it)) }
         val parser = AthenaParser(tokens)
         parser.removeErrorListeners()
         parser.addErrorListener(errorListener)
@@ -82,7 +80,11 @@ internal object AthenaAntlrParseEngine {
 
         // The handwritten parser failed fast on the first syntax error; preserve that single-diagnostic
         // contract by reporting the first error ANTLR recovered from (its message/position are richest).
-        errorListener.diagnostics.firstOrNull()?.let { return ParseFailure(listOf(it)) }
+        val firstDiagnostic = listOfNotNull(
+            errorListener.diagnostics.firstOrNull(),
+            splitImportTargetDiagnostic(file, tree.importDecl()),
+        ).minByOrNull { it.span.start.offset }
+        firstDiagnostic?.let { return ParseFailure(listOf(it)) }
 
         return ParseSuccess(AthenaAntlrAstAdapter(file).adapt(tree))
     }
@@ -114,11 +116,14 @@ internal object AthenaAntlrParseEngine {
     }
 }
 
-private fun splitImportTargetDiagnostic(file: String, tokens: List<Token>): SyntaxDiagnostic? {
-    tokens.forEachIndexed { index, token ->
-        if (token.type != AthenaLexer.IMPORT) return@forEachIndexed
-        val target = tokens.drop(index + 1).firstOrNull { it.type != Token.EOF } ?: tokens.last()
-        if (target.line == token.line) return@forEachIndexed
+private fun splitImportTargetDiagnostic(
+    file: String,
+    imports: List<AthenaParser.ImportDeclContext>,
+): SyntaxDiagnostic? {
+    imports.forEach { context ->
+        val importToken = context.IMPORT()?.symbol ?: return@forEach
+        val target = context.packageName()?.start ?: return@forEach
+        if (target.line == importToken.line) return@forEach
         return SyntaxDiagnostic(
             file = file,
             line = target.line,

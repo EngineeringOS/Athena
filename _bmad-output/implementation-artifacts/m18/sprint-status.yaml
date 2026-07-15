@@ -1,5 +1,5 @@
 # generated: 2026-07-15T16:31:02.3518176+08:00
-# last_updated: 2026-07-15T18:53:49.7963349+08:00
+# last_updated: 2026-07-15T19:19:31.9947015+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -43,7 +43,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-15T16:31:02.3518176+08:00
-last_updated: 2026-07-15T18:53:49.7963349+08:00
+last_updated: 2026-07-15T19:19:31.9947015+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -53,7 +53,7 @@ development_status:
   epic-1: in-progress
   1-1-parse-package-declarations-into-authored-ast: done
   1-2-parse-import-declarations-into-authored-ast: done
-  1-3-preserve-narrow-syntax-scope: backlog
+  1-3-preserve-narrow-syntax-scope: done
   1-4-mirror-package-and-import-syntax-in-tree-sitter: backlog
   1-5-add-syntax-proof-fixtures: backlog
   epic-1-retrospective: optional
