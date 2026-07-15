@@ -363,6 +363,7 @@ class ProjectSemanticGraphSnapshot private constructor(
                             .toImmutableList(),
                     )
                 }
+                .distinct()
                 .sortedWith(diagnosticComparator)
                 .toImmutableList()
             canonical.forEach { diagnostic ->
