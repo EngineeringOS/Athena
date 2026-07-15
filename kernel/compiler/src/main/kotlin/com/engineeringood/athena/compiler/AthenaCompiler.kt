@@ -27,6 +27,8 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnosticProj
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphBuildResult
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticImportResolver
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticLinkedLowerer
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticLinkedLoweringResult
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticReferenceLinker
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.geometry.GeometryDocument
@@ -343,6 +345,14 @@ class AthenaCompiler(
         capabilitiesByPackage: Map<PackageKey, List<String>>,
     ): ProjectSemanticGraphSnapshot {
         return projectSemanticCapabilityProvenanceProjector.project(snapshot, capabilitiesByPackage)
+    }
+
+    /** Lowers linked project semantic source units through the canonical Engineering IR lowerer. */
+    fun lowerLinkedProjectSemanticSources(
+        snapshot: ProjectSemanticGraphSnapshot,
+        documentsBySourceUnit: Map<com.engineeringood.athena.compiler.semantic.SourceUnitId, CompilerSourceDocument>,
+    ): ProjectSemanticLinkedLoweringResult {
+        return ProjectSemanticLinkedLowerer(lowerer).lower(snapshot, documentsBySourceUnit)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */
