@@ -20,6 +20,8 @@ import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPubli
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputBuilder
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryResolutionInputResult
 import com.engineeringood.athena.compiler.semantic.GovernedProjectSemanticGraphBuilder
+import com.engineeringood.athena.compiler.semantic.PackageKey
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticCapabilityProvenanceProjector
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclarationIndexer
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnosticProjector
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphBuildResult
@@ -90,6 +92,8 @@ class AthenaCompiler(
     private val projectSemanticDiagnosticProjector: ProjectSemanticDiagnosticProjector = ProjectSemanticDiagnosticProjector(),
     private val projectSemanticDeclarationIndexer: ProjectSemanticDeclarationIndexer = ProjectSemanticDeclarationIndexer(),
     private val projectSemanticReferenceLinker: ProjectSemanticReferenceLinker = ProjectSemanticReferenceLinker(),
+    private val projectSemanticCapabilityProvenanceProjector: ProjectSemanticCapabilityProvenanceProjector =
+        ProjectSemanticCapabilityProvenanceProjector(),
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
     val pluginDiscoveryReport: AthenaPluginDiscoveryReport = hostedPluginDiscoveryReport ?: pluginDiscovery.discover()
@@ -331,6 +335,14 @@ class AthenaCompiler(
     /** Links supported authored references against compiler-owned semantic declarations. */
     fun linkProjectSemanticReferences(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
         return projectSemanticReferenceLinker.link(snapshot)
+    }
+
+    /** Preserves governed package capability markers on semantic namespaces. */
+    fun preserveProjectSemanticCapabilities(
+        snapshot: ProjectSemanticGraphSnapshot,
+        capabilitiesByPackage: Map<PackageKey, List<String>>,
+    ): ProjectSemanticGraphSnapshot {
+        return projectSemanticCapabilityProvenanceProjector.project(snapshot, capabilitiesByPackage)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */
