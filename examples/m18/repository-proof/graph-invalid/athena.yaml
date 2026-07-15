@@ -1,0 +1,9 @@
+primaryPackage:
+  name: com.engineeringood.m18.graph-invalid
+  version: 1.0.0
+  sourceRoot: src
+dependencies:
+  - name: com.engineeringood.m18.missing-local
+    version: 1.0.0
+    source: local-path
+    locator: vendor/missing-local

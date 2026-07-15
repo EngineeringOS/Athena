@@ -1,0 +1,8 @@
+package com.engineeringood.m18.root
+import com.engineeringood.m18.vendor.controls
+
+system CrossPackageConsumer {
+  device Consumer {}
+  port Consumer.in {}
+  connect Vendor.out -> Consumer.in
+}

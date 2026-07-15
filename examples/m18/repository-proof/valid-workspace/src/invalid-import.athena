@@ -1,0 +1,7 @@
+package com.engineeringood.m18.root
+import com.engineeringood.m18.missing
+
+system InvalidImport {
+  device Local {}
+  port Local.out {}
+}

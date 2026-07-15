@@ -1,0 +1,12 @@
+# Lock intentionally records only the root package; the manifest points at a missing local package.
+version: 1
+primaryPackage:
+  name: com.engineeringood.m18.graph-invalid
+  version: 1.0.0
+packages:
+  - name: com.engineeringood.m18.graph-invalid
+    version: 1.0.0
+    sourceRoot: src
+    dependencies:
+      - name: com.engineeringood.m18.missing-local
+        version: 1.0.0

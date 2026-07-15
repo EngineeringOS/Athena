@@ -1,0 +1,4 @@
+package com.engineeringood.m18.graph-invalid
+
+system GraphInvalid {
+}

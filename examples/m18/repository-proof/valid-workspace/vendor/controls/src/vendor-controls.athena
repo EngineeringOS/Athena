@@ -1,0 +1,6 @@
+package com.engineeringood.m18.vendor.controls
+
+system VendorControls {
+  device Vendor {}
+  port Vendor.out {}
+}
