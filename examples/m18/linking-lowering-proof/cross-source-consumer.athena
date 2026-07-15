@@ -1,0 +1,5 @@
+package com.root
+
+system Consumer {
+  connect PLC1.out -> PLC1.out
+}

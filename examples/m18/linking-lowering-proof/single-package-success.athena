@@ -1,0 +1,6 @@
+package com.root
+
+system Root {
+  port PLC1.out {}
+  connect PLC1.out -> PLC1.out
+}

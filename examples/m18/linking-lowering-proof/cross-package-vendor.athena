@@ -1,0 +1,5 @@
+package com.vendor
+
+system Vendor {
+  port Vendor.out {}
+}

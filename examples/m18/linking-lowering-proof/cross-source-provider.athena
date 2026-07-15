@@ -1,0 +1,5 @@
+package com.root
+
+system Provider {
+  port PLC1.out {}
+}

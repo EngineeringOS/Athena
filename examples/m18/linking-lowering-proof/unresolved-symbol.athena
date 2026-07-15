@@ -1,0 +1,6 @@
+package com.root
+
+system Unresolved {
+  port Local.out {}
+  connect Missing.out -> Local.out
+}

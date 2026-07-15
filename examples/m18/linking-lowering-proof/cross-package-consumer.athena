@@ -1,0 +1,7 @@
+package com.root
+import com.vendor
+
+system Consumer {
+  port Local.out {}
+  connect Vendor.out -> Local.out
+}
