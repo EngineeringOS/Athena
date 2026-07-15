@@ -4,7 +4,12 @@ import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnostic
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnosticSeverity
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticRelatedLocation
+import com.engineeringood.athena.compiler.semantic.SourceUnitId
 import com.engineeringood.athena.runtime.AthenaAuthoringPreviewSubmitted
+import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.runtime.AthenaAiDeterministicProofProvider
 import com.engineeringood.athena.runtime.AthenaAiReasoningProvider
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -12,6 +17,7 @@ import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.Diagnostic
+import org.eclipse.lsp4j.DiagnosticRelatedInformation
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -135,7 +141,11 @@ class AthenaLanguageServer(
                     val languageFeatureInitializationMs: Long
                     activeSession = activation
                     languageFeatureInitializationMs = measureTimeMillis {
-                        languageFeatures = AthenaLanguageFeatures(activation.context.compiler())
+                        languageFeatures = AthenaLanguageFeatures(
+                            compiler = activation.context.compiler(),
+                            repositoryRoot = activation.repositoryRoot,
+                            sourceRootPath = activation.sourceRootPath,
+                        )
                     }
                     sessionSnapshot = AthenaLspSessionSnapshot(
                         repositoryRoot = activation.repositoryRoot,
@@ -698,7 +708,12 @@ class AthenaLanguageServer(
             version = version,
             text = documentText,
         )
-        val diagnostics = trackedDocument.compilation.toLspDiagnostics()
+        val diagnostics = trackedDocument.compilation.toLspDiagnostics() +
+            trackedDocument.projectSemanticDiagnostics.toLspDiagnostics(
+                documentUri = documentUri,
+                currentSourceUnitId = trackedDocument.projectSemanticSourceUnitId,
+                sourceUnitUris = trackedDocument.projectSemanticSourceUnitUris,
+            )
         languageClient?.publishDiagnostics(
             PublishDiagnosticsParams().apply {
                 uri = documentUri
@@ -900,4 +915,78 @@ private fun SemanticDiagnostic.toLspDiagnostic(): Diagnostic {
             Position((provenance.endLine - 1).coerceAtLeast(0), (provenance.endColumn - 1).coerceAtLeast(0)),
         )
     }
+}
+
+internal fun List<ProjectSemanticDiagnostic>.toLspDiagnostics(
+    documentUri: String,
+    currentSourceUnitId: SourceUnitId?,
+    sourceUnitUris: Map<SourceUnitId, String>,
+): List<Diagnostic> {
+    return mapNotNull { diagnostic ->
+        diagnostic.toLspDiagnostic(
+            documentUri = documentUri,
+            currentSourceUnitId = currentSourceUnitId,
+            sourceUnitUris = sourceUnitUris,
+        )
+    }.distinctBy { diagnostic ->
+        listOf(
+            diagnostic.code?.left,
+            diagnostic.message,
+            diagnostic.range.start.line,
+            diagnostic.range.start.character,
+            diagnostic.range.end.line,
+            diagnostic.range.end.character,
+        )
+    }
+}
+
+private fun ProjectSemanticDiagnostic.toLspDiagnostic(
+    documentUri: String,
+    currentSourceUnitId: SourceUnitId?,
+    sourceUnitUris: Map<SourceUnitId, String>,
+): Diagnostic? {
+    val diagnosticSourceUnitId = sourceUnitId
+    if (diagnosticSourceUnitId != null && diagnosticSourceUnitId != currentSourceUnitId) {
+        return null
+    }
+    return Diagnostic().apply {
+        severity = when (this@toLspDiagnostic.severity) {
+            ProjectSemanticDiagnosticSeverity.ERROR -> DiagnosticSeverity.Error
+            ProjectSemanticDiagnosticSeverity.WARNING -> DiagnosticSeverity.Warning
+            ProjectSemanticDiagnosticSeverity.INFO -> DiagnosticSeverity.Information
+        }
+        source = "Athena package semantic"
+        code = Either.forLeft(this@toLspDiagnostic.code.value)
+        message = this@toLspDiagnostic.message
+        range = sourceSpan?.toLspRange() ?: Range(Position(0, 0), Position(0, 0))
+        relatedInformation = this@toLspDiagnostic.relatedLocations
+            .mapNotNull { relatedLocation ->
+                relatedLocation.toLspRelatedInformation(
+                    documentUri = documentUri,
+                    currentSourceUnitId = currentSourceUnitId,
+                    sourceUnitUris = sourceUnitUris,
+                )
+            }
+    }
+}
+
+private fun ProjectSemanticRelatedLocation.toLspRelatedInformation(
+    documentUri: String,
+    currentSourceUnitId: SourceUnitId?,
+    sourceUnitUris: Map<SourceUnitId, String>,
+): DiagnosticRelatedInformation? {
+    val uri = sourceUnitUris[sourceUnitId]
+        ?: documentUri.takeIf { sourceUnitId == currentSourceUnitId }
+        ?: return null
+    return DiagnosticRelatedInformation(
+        Location(uri, sourceSpan.toLspRange()),
+        message ?: "Related Athena package semantic location",
+    )
+}
+
+private fun SourceSpan.toLspRange(): Range {
+    return Range(
+        Position((start.line - 1).coerceAtLeast(0), (start.column - 1).coerceAtLeast(0)),
+        Position((end.line - 1).coerceAtLeast(0), (end.column - 1).coerceAtLeast(0)),
+    )
 }
