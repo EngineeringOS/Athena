@@ -98,4 +98,87 @@ class AthenaPackageAwareNavigationTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `definition uses unsaved sibling buffers when building the project semantic snapshot`() {
+        val consumerText = """
+            package com.root
+
+            system Consumer {
+              device Local {}
+              port Local.in {}
+              connect Shared.out -> Local.in
+            }
+        """.trimIndent()
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-dirty-sibling-navigation-",
+            packageName = "com.root",
+            sourceFileName = "consumer.athena",
+            sourceText = consumerText,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        val consumerPath = repository.seedSourcePath
+        val providerPath = repository.sourceRoot.resolve("provider.athena")
+        providerPath.writeText(
+            """
+                package com.root
+
+                system Provider {
+                  device Shared {}
+                }
+            """.trimIndent(),
+        )
+        val dirtyProviderText = """
+            package com.root
+
+            system Provider {
+              device Shared {}
+              port Shared.out {}
+            }
+        """.trimIndent()
+        AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+        val server = AthenaLanguageServer()
+        try {
+            server.initialize(
+                org.eclipse.lsp4j.InitializeParams().apply {
+                    rootUri = repositoryRoot.toUri().toString()
+                },
+            ).get()
+
+            val consumerUri = consumerPath.toUri().toString()
+            val providerUri = providerPath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        providerUri,
+                        "athena",
+                        1,
+                        dirtyProviderText,
+                    ),
+                ),
+            )
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        consumerUri,
+                        "athena",
+                        1,
+                        consumerText,
+                    ),
+                ),
+            )
+
+            val definition = server.textDocumentService.definition(
+                DefinitionParams(TextDocumentIdentifier(consumerUri), Position(5, 12)),
+            ).get().left
+
+            assertEquals(listOf(providerUri), definition.map { location -> location.uri })
+            assertEquals(4, definition.single().range.start.line)
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
 }

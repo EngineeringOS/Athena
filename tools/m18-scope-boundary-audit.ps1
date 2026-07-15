@@ -20,7 +20,7 @@ $scanFiles = Get-ChildItem -LiteralPath $m18Artifacts, $m18Examples -Recurse -Fi
     Where-Object { $scanExtensions -contains $_.Extension.ToLowerInvariant() }
 
 $absolutePathMatches = foreach ($file in $scanFiles) {
-    Select-String -LiteralPath $file.FullName -Pattern '\b[A-Za-z]:\\|file://' -AllMatches |
+    Select-String -LiteralPath $file.FullName -Pattern '\b[A-Za-z]:\\|file://|\\\\(?:\?\\)?' -AllMatches |
         ForEach-Object { "$($file.FullName):$($_.LineNumber): $($_.Line.Trim())" }
 }
 

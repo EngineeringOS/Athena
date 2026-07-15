@@ -80,6 +80,11 @@ GPT-5 Codex
 
 - `powershell -ExecutionPolicy Bypass -File .\tools\m18-scope-boundary-audit.ps1` passed.
 - `powershell -ExecutionPolicy Bypass -File .\tools\encoding-audit.ps1` passed.
+- `.\gradlew.bat --no-daemon --console=plain :ide:lsp:test --tests com.engineeringood.athena.ide.lsp.AthenaPackageAwareNavigationTest` failed before unsaved sibling buffers participated in package-aware navigation snapshots.
+- `.\gradlew.bat --no-daemon --console=plain :ide:lsp:test --tests com.engineeringood.athena.ide.lsp.AthenaPackageAwareNavigationTest` passed after code-review follow-up fixes.
+- `powershell -ExecutionPolicy Bypass -File .\tools\m18-scope-boundary-audit.ps1` passed after UNC/extended Windows path audit hardening.
+- `.\gradlew.bat --no-daemon --console=plain :ide:lsp:test` passed after code-review follow-up fixes.
+- `powershell -ExecutionPolicy Bypass -File .\tools\encoding-audit.ps1` passed after code-review follow-up fixes.
 
 ### Completion Notes List
 
@@ -87,6 +92,7 @@ GPT-5 Codex
 - Added closeout documentation that separates proven M18 behavior from deferred package ecosystem, language breadth, frontend semantic ownership, desktop-viewer, and Kotlin Compose work.
 - Added a repeatable M18 boundary audit for absolute path discipline and required scope-boundary language.
 - Marked Epic 4 done after all six stories reached done.
+- Resolved final M18 code-review follow-ups by letting package-aware LSP project snapshots use tracked dirty sibling buffers, deriving source roots from resolved package graph state, tolerating unreadable sibling source races, and hardening the M18 boundary audit for UNC/extended Windows absolute paths.
 
 ### File List
 
@@ -95,8 +101,24 @@ GPT-5 Codex
 - `_bmad-output/implementation-artifacts/m18/m18-closeout-boundaries.md`
 - `_bmad-output/implementation-artifacts/m18/sprint-status.yaml`
 - `examples/m18/README.md`
+- `ide/lsp/src/main/kotlin/com/engineeringood/athena/ide/lsp/AthenaLanguageFeatures.kt`
+- `ide/lsp/src/test/kotlin/com/engineeringood/athena/ide/lsp/AthenaPackageAwareNavigationTest.kt`
 - `tools/m18-scope-boundary-audit.ps1`
 
 ## Change Log
 
 - 2026-07-15: Created and completed Story 4.6 with M18 boundary documentation, deferred-growth notes, and scope-boundary validation.
+- 2026-07-15: Addressed final M18 code-review follow-ups for dirty-buffer LSP package snapshots and absolute-path boundary auditing.
+
+## Senior Developer Review (AI)
+
+Review Date: 2026-07-15
+
+Outcome: Approve after fixes
+
+Findings:
+
+- Fixed: package-aware LSP snapshots read stale disk content for opened sibling source units instead of tracked dirty buffers.
+- Fixed: M18 scope-boundary audit did not detect UNC or extended Windows absolute path prefixes.
+- Dismissed: direct LSP initialization against nested local dependency manifests remains outside current IDE repository resolver scope; compiler-level repository proof covers the checked-in nested governed corpus.
+- Dismissed: document-symbol package wrapping remains within Story 4.3's implemented package-aware document-symbol scope; no frontend/local semantic symbol authority was introduced.

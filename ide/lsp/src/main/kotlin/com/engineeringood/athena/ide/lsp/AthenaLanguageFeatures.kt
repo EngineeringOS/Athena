@@ -20,7 +20,6 @@ import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.language.SourcePosition
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.ir.EngineeringPropertyValue
-import com.engineeringood.athena.repository.PackageDependencySource
 import com.engineeringood.athena.repository.PackageIdentifier
 import java.io.File
 import java.nio.file.Files
@@ -68,6 +67,12 @@ data class AthenaProjectSemanticNavigationSnapshot(
     val sourceUnitUris: Map<SourceUnitId, String>,
     val declarations: List<ProjectSemanticDeclaration>,
     val bindings: List<ProjectSemanticBinding>,
+)
+
+private data class ProjectSemanticSourceLocation(
+    val packageId: PackageIdentifier,
+    val sourceRoot: Path,
+    val sourceRootRelativePath: String,
 )
 
 /**
@@ -211,8 +216,6 @@ class AthenaLanguageFeatures(
             return null
         }
         val root = repositoryRoot ?: return null
-        val sourceRoot = sourceRootPath ?: return null
-        val sourceRootRelativePath = path.sourceRootRelativePath(sourceRoot) ?: return null
         val publication = compiler.publishRepositoryGraphReport(root)
         val graph = publication.graph ?: return AthenaProjectSemanticDiagnosticsSnapshot(
             graphId = null,
@@ -220,10 +223,21 @@ class AthenaLanguageFeatures(
             sourceUnitUris = emptyMap(),
             diagnostics = compiler.buildProjectSemanticGraph(publication, emptyList()).diagnostics,
         )
+        val sourceRoot = sourceRootPath ?: return null
+        val currentSourceLocation = path.projectSemanticSourceLocation(publication)
+            ?: path.sourceRootRelativePath(sourceRoot)?.let { relativePath ->
+                ProjectSemanticSourceLocation(
+                    packageId = graph.rootPackage,
+                    sourceRoot = sourceRoot.toAbsolutePath().normalize(),
+                    sourceRootRelativePath = relativePath,
+                )
+            }
+            ?: return null
+        val sourceRootRelativePath = currentSourceLocation.sourceRootRelativePath
         val rootPackageId = graph.rootPackage
         val inputPackageId = sourcePackageId(success, graph.packages.map { resolvedPackage ->
             resolvedPackage.packageId
-        }) ?: rootPackageId
+        }) ?: currentSourceLocation.packageId
         val sourceInputs = projectSemanticSourceInputs(
             publication = publication,
             currentPath = path,
@@ -259,10 +273,7 @@ class AthenaLanguageFeatures(
         val diagnosticSnapshot = compiler.emitProjectSemanticDiagnostics(resolvedSnapshot)
         val indexedSnapshot = compiler.indexProjectSemanticDeclarations(diagnosticSnapshot)
         val linkedSnapshot = compiler.linkProjectSemanticReferences(indexedSnapshot)
-        val packageSourceRoots = builtSnapshot.packages.associate { semanticPackage ->
-            val packageRoot = packageRoots(publication)[semanticPackage.packageId] ?: publication.repositoryRoot
-            semanticPackage.packageKey to packageRoot.resolve(semanticPackage.sourceRoot).toAbsolutePath().normalize()
-        }
+        val packageSourceRoots = packageSourceRoots(publication)
         val sourceUnitUris = linkedSnapshot.sourceUnits.mapNotNull { sourceUnit ->
             val packageSourceRoot = packageSourceRoots[sourceUnit.packageKey] ?: return@mapNotNull null
             sourceUnit.sourceUnitId to packageSourceRoot.resolveSourceUnitUri(sourceUnit.sourceRootRelativePath)
@@ -291,11 +302,13 @@ class AthenaLanguageFeatures(
     ): List<ProjectSemanticSourceInput> {
         val graph = publication.graph ?: return emptyList()
         val normalizedCurrentPath = currentPath.toAbsolutePath().normalize()
-        val packageRoots = packageRoots(publication)
+        val packageSourceRoots = packageSourceRoots(publication)
         val packageIds = graph.packages.map { resolvedPackage -> resolvedPackage.packageId }
         val discovered = graph.packages.flatMap { resolvedPackage ->
-            val packageRoot = packageRoots[resolvedPackage.packageId] ?: return@flatMap emptyList()
-            val packageSourceRoot = packageRoot.resolve(resolvedPackage.sourceRoot).toAbsolutePath().normalize()
+            val packageKey = runCatching {
+                CanonicalSemanticIdentityBuilder.packageKey(resolvedPackage.packageId)
+            }.getOrNull() ?: return@flatMap emptyList()
+            val packageSourceRoot = packageSourceRoots[packageKey] ?: return@flatMap emptyList()
             if (!Files.isDirectory(packageSourceRoot)) {
                 return@flatMap emptyList()
             }
@@ -303,13 +316,15 @@ class AthenaLanguageFeatures(
                 stream
                     .filter { candidate -> Files.isRegularFile(candidate) }
                     .filter { candidate -> candidate.fileName.toString().endsWith(".athena") }
-                    .map { candidate ->
+                    .toList()
+                    .mapNotNull { candidate ->
                         val normalizedCandidate = candidate.toAbsolutePath().normalize()
-                        val sourceText = if (normalizedCandidate == normalizedCurrentPath) {
-                            currentText
-                        } else {
-                            Files.readString(normalizedCandidate)
-                        }
+                        val tracked = trackedDocumentByPath(normalizedCandidate)
+                        val sourceText = when {
+                            normalizedCandidate == normalizedCurrentPath -> currentText
+                            tracked != null -> tracked.text
+                            else -> runCatching { Files.readString(normalizedCandidate) }.getOrNull()
+                        } ?: return@mapNotNull null
                         val parsedPackageId = sourcePackageId(
                             success = compiler.parse(normalizedCandidate, sourceText) as? com.engineeringood.athena.compiler.CompilerParseSuccess,
                             packageIds = packageIds,
@@ -339,30 +354,41 @@ class AthenaLanguageFeatures(
         )
     }
 
-    private fun packageRoots(
+    private fun packageSourceRoots(
         publication: AthenaRepositoryReportPublicationResult,
-    ): Map<PackageIdentifier, Path> {
+    ): Map<com.engineeringood.athena.compiler.semantic.PackageKey, Path> {
         val graph = publication.graph ?: return emptyMap()
-        val dependencyRoots = publication.resolutionInput
-            ?.dependencies
-            .orEmpty()
-            .mapNotNull { dependency ->
-                val locator = dependency.locator ?: return@mapNotNull null
-                if (dependency.source != PackageDependencySource.LOCAL_PATH) {
-                    return@mapNotNull null
-                }
-                dependency.packageId to publication.repositoryRoot.resolve(locator).normalize()
-            }
-            .toMap()
         return graph.packages.associate { resolvedPackage ->
-            resolvedPackage.packageId to (
-                if (resolvedPackage.packageId == graph.rootPackage) {
-                    publication.repositoryRoot
-                } else {
-                    dependencyRoots[resolvedPackage.packageId] ?: publication.repositoryRoot
-                }
-                )
+            CanonicalSemanticIdentityBuilder.packageKey(resolvedPackage.packageId) to
+                publication.repositoryRoot.resolve(resolvedPackage.sourceRoot).toAbsolutePath().normalize()
         }
+    }
+
+    private fun Path.projectSemanticSourceLocation(
+        publication: AthenaRepositoryReportPublicationResult,
+    ): ProjectSemanticSourceLocation? {
+        val graph = publication.graph ?: return null
+        val normalizedPath = toAbsolutePath().normalize()
+        return graph.packages
+            .map { resolvedPackage ->
+                ProjectSemanticSourceLocation(
+                    packageId = resolvedPackage.packageId,
+                    sourceRoot = publication.repositoryRoot
+                        .resolve(resolvedPackage.sourceRoot)
+                        .toAbsolutePath()
+                        .normalize(),
+                    sourceRootRelativePath = "",
+                )
+            }
+            .filter { candidate -> normalizedPath.startsWith(candidate.sourceRoot) }
+            .maxByOrNull { candidate -> candidate.sourceRoot.nameCount }
+            ?.let { candidate ->
+                val relativePath = candidate.sourceRoot.relativize(normalizedPath)
+                    .toString()
+                    .replace(File.separatorChar, '/')
+                candidate.copy(sourceRootRelativePath = relativePath)
+            }
+            ?.takeIf { candidate -> candidate.sourceRootRelativePath.isNotBlank() && !candidate.sourceRootRelativePath.startsWith("..") }
     }
 
     private fun sourcePackageId(
