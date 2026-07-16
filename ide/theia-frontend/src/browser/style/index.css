@@ -803,6 +803,8 @@
     --athena-graph-stage-tint: color-mix(in srgb, var(--athena-workbench-surface) 94%, black 6%);
     --athena-graph-grid-major: color-mix(in srgb, var(--athena-workbench-text) 11%, transparent);
     --athena-graph-grid-minor: color-mix(in srgb, var(--athena-workbench-text) 5%, transparent);
+    --athena-graph-sheet-grid-major-step: 120px;
+    --athena-graph-sheet-grid-minor-step: 24px;
     --athena-graph-node-fill: color-mix(in srgb, var(--athena-workbench-surface-elevated) 82%, transparent);
     --athena-graph-node-stroke: color-mix(in srgb, var(--athena-workbench-text) 72%, transparent);
     --athena-graph-node-label: var(--athena-workbench-text);
@@ -1037,6 +1039,154 @@
     touch-action: none;
 }
 
+.athena-graph-workbench__sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 58%, transparent);
+    border-radius: 0;
+    background: color-mix(in srgb, var(--athena-workbench-surface) 98%, white 2%);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--athena-workbench-surface) 86%, transparent),
+        0 18px 44px color-mix(in srgb, black 36%, transparent);
+}
+
+.athena-graph-workbench__sheet-grid {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(var(--athena-graph-grid-major) 1px, transparent 1px),
+        linear-gradient(90deg, var(--athena-graph-grid-major) 1px, transparent 1px),
+        linear-gradient(var(--athena-graph-grid-minor) 1px, transparent 1px),
+        linear-gradient(90deg, var(--athena-graph-grid-minor) 1px, transparent 1px);
+    background-size:
+        var(--athena-graph-sheet-grid-major-step) var(--athena-graph-sheet-grid-major-step),
+        var(--athena-graph-sheet-grid-major-step) var(--athena-graph-sheet-grid-major-step),
+        var(--athena-graph-sheet-grid-minor-step) var(--athena-graph-sheet-grid-minor-step),
+        var(--athena-graph-sheet-grid-minor-step) var(--athena-graph-sheet-grid-minor-step);
+    background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+}
+
+.athena-graph-workbench__sheet-frame {
+    position: absolute;
+    inset: 16px;
+    z-index: 1;
+    pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 72%, transparent);
+    box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--athena-workbench-surface) 76%, transparent),
+        inset 0 -52px 0 color-mix(in srgb, var(--athena-workbench-text) 3%, transparent);
+}
+
+.athena-graph-workbench__sheet-title-block {
+    position: absolute;
+    right: 24px;
+    bottom: 24px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: min(360px, calc(100% - 48px));
+    padding: 8px 10px;
+    pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 64%, transparent);
+    border-radius: 0;
+    background: color-mix(in srgb, var(--athena-workbench-surface) 94%, transparent);
+    color: var(--athena-workbench-text);
+}
+
+.athena-graph-workbench__sheet-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 22px;
+}
+
+.athena-graph-workbench__sheet-title-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--athena-workbench-text);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.athena-graph-workbench__sheet-title-index {
+    color: var(--athena-workbench-muted);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.athena-graph-workbench__sheet-title-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) 72px 64px;
+    gap: 0;
+    margin: 0;
+    border-top: 1px solid color-mix(in srgb, var(--athena-workbench-text) 34%, transparent);
+    border-left: 1px solid color-mix(in srgb, var(--athena-workbench-text) 34%, transparent);
+}
+
+.athena-graph-workbench__sheet-title-grid div {
+    min-width: 0;
+    border-right: 1px solid color-mix(in srgb, var(--athena-workbench-text) 34%, transparent);
+}
+
+.athena-graph-workbench__sheet-title-grid dt,
+.athena-graph-workbench__sheet-title-grid dd {
+    min-width: 0;
+    margin: 0;
+    padding: 3px 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.athena-graph-workbench__sheet-title-grid dt {
+    border-bottom: 1px solid color-mix(in srgb, var(--athena-workbench-text) 28%, transparent);
+    color: var(--athena-workbench-muted);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.athena-graph-workbench__sheet-title-grid dd {
+    color: var(--athena-workbench-text);
+    font-size: 11px;
+}
+
+.athena-graph-workbench__sheet-cross-reference-markers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.athena-graph-workbench__sheet-cross-reference-marker {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 20px;
+    padding: 0 5px;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-accent) 46%, transparent);
+    border-radius: 0;
+    color: var(--athena-workbench-text);
+    font-size: 10px;
+    gap: 5px;
+}
+
+.athena-graph-workbench__sheet-cross-reference-marker span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .athena-graph-workbench__grid {
     position: absolute;
     inset: 0;
@@ -1057,6 +1207,9 @@
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
     overflow: visible;
 }
 

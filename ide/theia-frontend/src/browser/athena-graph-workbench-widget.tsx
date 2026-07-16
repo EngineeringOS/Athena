@@ -283,9 +283,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const compatibleConnectTargetIds = new Set(compatibleConnectTargets.map(target => target.semanticId));
         const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
-        const canvasStyle: React.CSSProperties = {
-            width: `${model.canvas.width}px`,
-            height: `${model.canvas.height}px`,
+        const sheetSurfaceStyle: React.CSSProperties = {
+            width: `${model.sheetChrome.frame.width}px`,
+            height: `${model.sheetChrome.frame.height}px`,
             transform: `translate(${this.viewportTransform.offsetX}px, ${this.viewportTransform.offsetY}px) scale(${this.viewportTransform.zoom})`,
             transformOrigin: '0 0',
         };
@@ -654,21 +654,22 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                 onPointerUp={this.handleViewportPointerEnd}
                                 onPointerCancel={this.handleViewportPointerEnd}
                             >
-                                <div className='athena-graph-workbench__grid' />
-                                <svg
-                                    className='athena-graph-workbench__canvas'
-                                    viewBox={model.svgViewBox}
-                                    role='img'
-                                    aria-label='Athena graphical projection'
-                                    style={canvasStyle}
-                                >
-                                    <AthenaGraphWorkbenchEdgeLayer
-                                        edges={model.edges}
-                                        selectedSemanticId={selectedSemanticId}
-                                        onSelectSemanticId={semanticId => this.semanticSelectionService.selectSemanticId(semanticId)}
-                                    />
-                                    {model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId, compatibleConnectTargetIds))}
-                                </svg>
+                                <div className='athena-graph-workbench__sheet' style={sheetSurfaceStyle}>
+                                    {this.renderSheetChrome(model)}
+                                    <svg
+                                        className='athena-graph-workbench__canvas'
+                                        viewBox={model.svgViewBox}
+                                        role='img'
+                                        aria-label='Athena graphical projection'
+                                    >
+                                        <AthenaGraphWorkbenchEdgeLayer
+                                            edges={model.edges}
+                                            selectedSemanticId={selectedSemanticId}
+                                            onSelectSemanticId={semanticId => this.semanticSelectionService.selectSemanticId(semanticId)}
+                                        />
+                                        {model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId, compatibleConnectTargetIds))}
+                                    </svg>
+                                </div>
                             </div>
 
                             <div className='athena-graph-workbench__overlay athena-graph-workbench__overlay--bottom-right'>
@@ -698,6 +699,50 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 </section>
             </div>
         </div>;
+    }
+
+    protected renderSheetChrome(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
+        const titleBlock = model.sheetChrome.titleBlock;
+        const crossReferenceMarkers = model.sheetChrome.crossReferenceMarkers.filter(marker => marker.isActiveSheetLinked);
+
+        return <>
+            <div className='athena-graph-workbench__sheet-grid' aria-hidden='true' />
+            <div className='athena-graph-workbench__sheet-frame' aria-hidden='true' />
+            {titleBlock
+                ? <section className='athena-graph-workbench__sheet-title-block' aria-label={`Sheet ${titleBlock.displayName}`}>
+                    <div className='athena-graph-workbench__sheet-title-row'>
+                        <strong className='athena-graph-workbench__sheet-title-name'>{titleBlock.displayName}</strong>
+                        <span className='athena-graph-workbench__sheet-title-index'>S{String(titleBlock.order + 1).padStart(2, '0')}</span>
+                    </div>
+                    <dl className='athena-graph-workbench__sheet-title-grid'>
+                        <div>
+                            <dt>Sheet</dt>
+                            <dd><code>{titleBlock.sheetId}</code></dd>
+                        </div>
+                        <div>
+                            <dt>Subjects</dt>
+                            <dd>{titleBlock.subjectCount}</dd>
+                        </div>
+                        <div>
+                            <dt>Refs</dt>
+                            <dd>{titleBlock.crossReferenceCount}</dd>
+                        </div>
+                    </dl>
+                    {crossReferenceMarkers.length > 0
+                        ? <ul className='athena-graph-workbench__sheet-cross-reference-markers'>
+                            {crossReferenceMarkers.slice(0, 4).map(marker => <li
+                                key={`${marker.kind}:${marker.semanticId}`}
+                                className='athena-graph-workbench__sheet-cross-reference-marker'
+                                title={`${marker.semanticId} references ${marker.sheetIds.length} sheet(s)`}
+                            >
+                                <span>{marker.markerLabel}</span>
+                                <code>{marker.sheetIds.length} sheets</code>
+                            </li>)}
+                        </ul>
+                        : undefined}
+                </section>
+                : undefined}
+        </>;
     }
 
     protected renderGraphNode(
@@ -1079,6 +1124,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected buildStageStyle(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.CSSProperties {
         const style = {} as React.CSSProperties & Record<string, string>;
         const surfaceTokens = model.surfaceTokens;
+        style['--athena-graph-sheet-grid-major-step'] = `${model.sheetChrome.grid.majorStep}px`;
+        style['--athena-graph-sheet-grid-minor-step'] = `${model.sheetChrome.grid.minorStep}px`;
         const cssVariables: Record<string, string | undefined> = {
             '--athena-graph-stage-tint': surfaceTokens.canvas.canvasTint,
             '--athena-graph-grid-major': surfaceTokens.canvas.gridMajor,

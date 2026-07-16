@@ -67,6 +67,7 @@ export type AthenaGraphWorkbenchModel = {
     }>;
     diagnostics: AthenaGLSPDiagram['diagnostics'];
     activeRenderContributions: AthenaGLSPRenderContributionSource[];
+    sheetChrome: AthenaGraphWorkbenchSheetChrome;
     nodes: AthenaGraphWorkbenchNode[];
     edges: AthenaGraphWorkbenchEdge[];
     canvas: {
@@ -85,6 +86,54 @@ export type AthenaGraphSurfaceTokens = {
     canvas: Record<string, string>;
     node: Record<string, string>;
     edge: Record<string, string>;
+};
+
+export type AthenaGraphWorkbenchSheetChrome = {
+    frame: AthenaGraphWorkbenchSheetFrame;
+    grid: AthenaGraphWorkbenchSheetGrid;
+    activeSheet?: AthenaGraphWorkbenchSheetSummary;
+    titleBlock?: AthenaGraphWorkbenchSheetTitleBlock;
+    crossReferenceMarkers: AthenaGraphWorkbenchCrossReferenceMarker[];
+};
+
+export type AthenaGraphWorkbenchSheetFrame = {
+    width: number;
+    height: number;
+};
+
+export type AthenaGraphWorkbenchSheetGrid = {
+    majorStep: number;
+    minorStep: number;
+};
+
+export type AthenaGraphWorkbenchSheetSummary = {
+    sheetId: string;
+    displayName: string;
+    order: number;
+    previousSheetId?: string;
+    nextSheetId?: string;
+    subjectSemanticIds: string[];
+    subjectCount: number;
+    isActive: boolean;
+};
+
+export type AthenaGraphWorkbenchSheetTitleBlock = {
+    sheetId: string;
+    displayName: string;
+    order: number;
+    previousSheetId?: string;
+    nextSheetId?: string;
+    subjectCount: number;
+    crossReferenceCount: number;
+};
+
+export type AthenaGraphWorkbenchCrossReferenceMarker = {
+    semanticId: string;
+    kind: string;
+    markerLabel: string;
+    sheetIds: string[];
+    occurrenceIds: string[];
+    isActiveSheetLinked: boolean;
 };
 
 export type AthenaGraphWorkbenchEdge = AthenaGLSPEdge & {
@@ -200,6 +249,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             endpointsByConnectionId.get(edge.id) ?? [],
             anchorById,
         ));
+    const sheetChrome = resolveSheetChrome(diagram, canvasWidth, canvasHeight);
 
     return {
         headerTitle: diagram.projectName,
@@ -226,6 +276,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         })),
         diagnostics,
         activeRenderContributions: renderContributions,
+        sheetChrome,
         nodes,
         edges,
         canvas: {
@@ -331,6 +382,88 @@ function resolveEmptyState(
     }
 
     return undefined;
+}
+
+function resolveSheetChrome(
+    diagram: AthenaGLSPDiagram,
+    canvasWidth: number,
+    canvasHeight: number,
+): AthenaGraphWorkbenchSheetChrome {
+    const sheetSummaries = normalizeArray(diagram.sheets)
+        .map(sheet => buildSheetSummary(sheet, diagram.activeSheetId))
+        .sort(compareSheetSummaries);
+    const activeSheet = sheetSummaries.find(sheet => sheet.isActive) ?? sheetSummaries[0];
+    const crossReferenceMarkers = normalizeArray(diagram.crossReferences)
+        .map(reference => ({
+            semanticId: reference.semanticId,
+            kind: reference.kind,
+            markerLabel: humanizeMarkerKind(reference.kind),
+            sheetIds: [...reference.sheetIds],
+            occurrenceIds: [...reference.occurrenceIds],
+            isActiveSheetLinked: activeSheet ? reference.sheetIds.includes(activeSheet.sheetId) : false,
+        }))
+        .sort(compareCrossReferenceMarkers);
+
+    return {
+        frame: {
+            width: canvasWidth,
+            height: canvasHeight,
+        },
+        grid: {
+            majorStep: 120,
+            minorStep: 24,
+        },
+        activeSheet,
+        titleBlock: activeSheet ? {
+            sheetId: activeSheet.sheetId,
+            displayName: activeSheet.displayName,
+            order: activeSheet.order,
+            subjectCount: activeSheet.subjectCount,
+            crossReferenceCount: crossReferenceMarkers.filter(marker => marker.isActiveSheetLinked).length,
+            ...(activeSheet.previousSheetId ? { previousSheetId: activeSheet.previousSheetId } : {}),
+            ...(activeSheet.nextSheetId ? { nextSheetId: activeSheet.nextSheetId } : {}),
+        } : undefined,
+        crossReferenceMarkers,
+    };
+}
+
+function buildSheetSummary(
+    sheet: AthenaGLSPDiagram['sheets'][number],
+    activeSheetId: string | undefined,
+): AthenaGraphWorkbenchSheetSummary {
+    const subjectSemanticIds = normalizeArray(sheet.subjectSemanticIds);
+    return {
+        sheetId: sheet.sheetId,
+        displayName: sheet.displayName,
+        order: sheet.order,
+        subjectSemanticIds,
+        subjectCount: subjectSemanticIds.length,
+        isActive: sheet.sheetId === activeSheetId,
+        ...(sheet.previousSheetId ? { previousSheetId: sheet.previousSheetId } : {}),
+        ...(sheet.nextSheetId ? { nextSheetId: sheet.nextSheetId } : {}),
+    };
+}
+
+function compareSheetSummaries(
+    left: AthenaGraphWorkbenchSheetSummary,
+    right: AthenaGraphWorkbenchSheetSummary,
+): number {
+    return (left.order - right.order) || compareStrings(left.sheetId, right.sheetId);
+}
+
+function compareCrossReferenceMarkers(
+    left: AthenaGraphWorkbenchCrossReferenceMarker,
+    right: AthenaGraphWorkbenchCrossReferenceMarker,
+): number {
+    return compareStrings(left.kind, right.kind) || compareStrings(left.semanticId, right.semanticId);
+}
+
+function compareStrings(left: string, right: string): number {
+    return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function humanizeMarkerKind(kind: string): string {
+    return kind.replace(/[_-]+/g, ' ');
 }
 
 function resolveSceneBounds(

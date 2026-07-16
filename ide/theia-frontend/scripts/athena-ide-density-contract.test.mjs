@@ -45,8 +45,12 @@ test('Athena graph overlay uses dense detail sections instead of floating cards'
     assert.match(source, /viewAriaLabel\(view\)/);
     assert.match(source, /handleStageClick/);
     assert.match(source, /this\.overlayPanelExpanded = false;/);
-    assert.match(source, /width:\s*`\$\{model\.canvas\.width\}px`/);
-    assert.match(source, /height:\s*`\$\{model\.canvas\.height\}px`/);
+    assert.match(source, /athena-graph-workbench__sheet/);
+    assert.match(source, /athena-graph-workbench__sheet-frame/);
+    assert.match(source, /athena-graph-workbench__sheet-title-block/);
+    assert.match(source, /athena-graph-workbench__sheet-cross-reference-marker/);
+    assert.match(source, /width:\s*`\$\{model\.sheetChrome\.frame\.width\}px`/);
+    assert.match(source, /height:\s*`\$\{model\.sheetChrome\.frame\.height\}px`/);
     assert.doesNotMatch(source, />\{model\.statusLabel\}<\/div>/);
     assert.doesNotMatch(source, />\{this\.abbreviateViewLabel\(view\.displayName\)\}<\/button>/);
     assert.doesNotMatch(source, /athena-graph-workbench__hud-chip/);
@@ -58,6 +62,9 @@ test('Athena shared styles define an IDE-density surface language', () => {
     assert.match(styles, /--athena-workbench-radius:\s*4px/);
     assert.match(styles, /--athena-workbench-row-min-height:\s*28px/);
     assert.match(styles, /\.athena-graph-workbench__floating-bar\s*\{/);
+    assert.match(styles, /\.athena-graph-workbench__sheet-frame\s*\{/);
+    assert.match(styles, /\.athena-graph-workbench__sheet-title-block\s*\{/);
+    assert.match(styles, /\.athena-graph-workbench__sheet-cross-reference-marker\s*\{/);
     assert.match(styles, /\.athena-semantic-inspection__section,\s*\n\.athena-repository-graph__section,\s*\n\.athena-semantic-scm__section\s*\{/);
     assert.match(styles, /border:\s*0;/);
     assert.match(styles, /\.athena-graph-workbench\s*\{[\s\S]*height:\s*100%/);

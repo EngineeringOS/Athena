@@ -289,6 +289,42 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
     assert.equal(model.sheetCount, 1);
     assert.equal(model.notationPackId, 'electrical-notation/cabinet/default-v1');
     assert.equal(model.crossReferenceCount, 1);
+    assert.deepEqual(model.sheetChrome.frame, {
+        width: 1440,
+        height: 900
+    });
+    assert.deepEqual(model.sheetChrome.grid, {
+        majorStep: 120,
+        minorStep: 24
+    });
+    assert.deepEqual(model.sheetChrome.activeSheet, {
+        sheetId: 'cabinet/sheet/01-main',
+        displayName: 'Cabinet Main',
+        order: 0,
+        subjectSemanticIds: ['component:PLC1', 'connection:PLC1.out->M1.in'],
+        subjectCount: 2,
+        isActive: true
+    });
+    assert.deepEqual(model.sheetChrome.titleBlock, {
+        sheetId: 'cabinet/sheet/01-main',
+        displayName: 'Cabinet Main',
+        order: 0,
+        subjectCount: 2,
+        crossReferenceCount: 1
+    });
+    assert.deepEqual(model.sheetChrome.crossReferenceMarkers, [
+        {
+            semanticId: 'component:PLC1',
+            kind: 'repeated_reference',
+            markerLabel: 'repeated reference',
+            sheetIds: ['cabinet/sheet/01-main', 'cabinet/sheet/02-reference'],
+            occurrenceIds: [
+                'cabinet/projection/node/component_PLC1',
+                'cabinet/projection/node/component_PLC1_reference'
+            ],
+            isActiveSheetLinked: true
+        }
+    ]);
     assert.equal(model.svgViewBox, '0 0 1440 900');
     assert.equal(model.metrics.nodeCount, 3);
     assert.equal(model.metrics.edgeCount, 1);
@@ -603,6 +639,41 @@ test('prefers Presentation IR occurrences and symbol commands when the diagram i
     );
     assert.equal(model.edges[0].presentationConnector?.routePoints.length, 4);
     assert.equal(model.edges[0].path, 'M 380 160 L 540 160 L 540 260 L 720 260');
+});
+
+test('keeps schematic sheet chrome and identity mapping deterministic across repeated builds', () => {
+    const first = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(readyDiagram);
+    const second = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(readyDiagram);
+
+    assert.deepEqual(second.sheetChrome, first.sheetChrome);
+    assert.deepEqual(
+        second.nodes.map(node => ({
+            id: node.id,
+            semanticId: node.semanticId,
+            renderVariant: node.renderVariant,
+            anchorIds: node.electricalAnchors.map(anchor => anchor.anchorId)
+        })),
+        first.nodes.map(node => ({
+            id: node.id,
+            semanticId: node.semanticId,
+            renderVariant: node.renderVariant,
+            anchorIds: node.electricalAnchors.map(anchor => anchor.anchorId)
+        }))
+    );
+    assert.deepEqual(
+        second.edges.map(edge => ({
+            id: edge.id,
+            semanticId: edge.semanticId,
+            path: edge.path,
+            terminalAnchorIds: edge.terminals.map(terminal => terminal.anchorId)
+        })),
+        first.edges.map(edge => ({
+            id: edge.id,
+            semanticId: edge.semanticId,
+            path: edge.path,
+            terminalAnchorIds: edge.terminals.map(terminal => terminal.anchorId)
+        }))
+    );
 });
 
 test('builds an inspectable unavailable state without inventing fallback graph truth', () => {
