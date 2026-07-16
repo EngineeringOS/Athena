@@ -4,7 +4,7 @@ baseline_commit: 8a634d4e3362446f2bcb196f6d8216212f047a09
 
 # Story 3.2: Keep ecosystem expansion out of M19
 
-Status: review
+Status: done
 
 ## Story
 

@@ -4,7 +4,7 @@ baseline_commit: 80a790cb5e7b6733055a529e4f6f6de5b03ff857
 
 # Story 1.3: Render credible schematic elements
 
-Status: review
+Status: done
 
 ## Story
 

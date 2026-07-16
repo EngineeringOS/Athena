@@ -4,7 +4,7 @@ baseline_commit: d9716be133ac72af2bf5d505d20fde4d1d5a6c7a
 
 # Story 2.2: Reveal sheet subjects from source and Problems
 
-Status: review
+Status: done
 
 ## Story
 

@@ -4,7 +4,7 @@ baseline_commit: 6761b4ac8978b39b17d767e86a18ebd952e45444
 
 # Story 3.1: Make cabinet preview a deferred boundary
 
-Status: review
+Status: done
 
 ## Story
 

@@ -4,7 +4,7 @@ baseline_commit: 93e83289929feb7c391b676bb666c5beed0ebaf4
 
 # Story 2.1: Round-trip selection through canonical identity
 
-Status: review
+Status: done
 
 ## Story
 

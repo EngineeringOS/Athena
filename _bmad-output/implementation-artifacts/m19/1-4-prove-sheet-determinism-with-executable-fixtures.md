@@ -4,7 +4,7 @@ baseline_commit: 5f65bab3ff7c3f1d5e3452b9fb2bcf30cfad0006
 
 # Story 1.4: Prove sheet determinism with executable fixtures
 
-Status: review
+Status: done
 
 ## Story
 
