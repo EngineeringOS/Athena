@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const { buildAthenaGraphWorkbenchModel } = await import('../lib/browser/athena-graph-workbench-model.js');
+const { resolveRenderedSelectionTarget } = await import('../lib/browser/athena-semantic-selection-model.js');
 const { default: readyDiagram } = await import('../../../examples/m19/schematic-sheet-proof/ready-sheet.diagram.mjs');
 
 test('M19 schematic proof corpus stays deterministic from local fixtures', () => {
@@ -43,6 +44,34 @@ test('M19 schematic proof corpus stays deterministic from local fixtures', () =>
             path: edge.path,
             terminalAnchorIds: edge.terminals.map(terminal => terminal.anchorId),
         })),
+    );
+    assert.deepEqual(
+        resolveRenderedSelectionTarget(first.nodes.find(node => node.semanticId === 'component:PSU1')),
+        {
+            semanticId: 'component:PSU1',
+            occurrenceId: 'schematic/projection/node/component_PSU1',
+            subjectKind: 'component',
+            source: 'node'
+        }
+    );
+    assert.deepEqual(
+        resolveRenderedSelectionTarget(first.edges[0]),
+        {
+            semanticId: 'connection:PSU1.plus->PLC1.power',
+            occurrenceId: 'schematic/projection/connection/connection_PSU1_plus_PLC1_power',
+            subjectKind: 'connection',
+            source: 'edge'
+        }
+    );
+    assert.deepEqual(
+        resolveRenderedSelectionTarget(first.edges[0].terminals[0]),
+        {
+            semanticId: 'port:PSU1.plus',
+            endpointId: 'schematic/projection/connection/connection_PSU1_plus_PLC1_power/endpoint/source',
+            anchorId: 'schematic/projection/label/port_PSU1_plus/anchor',
+            subjectKind: 'port',
+            source: 'terminal'
+        }
     );
     assert.equal(first.sheetChrome.activeSheet?.sheetId, 'schematic/sheet/01-main');
     assert.equal(first.sheetChrome.crossReferenceMarkers[0]?.isActiveSheetLinked, true);

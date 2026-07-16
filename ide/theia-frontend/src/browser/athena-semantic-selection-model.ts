@@ -40,6 +40,26 @@ export type AthenaProjectionRelatedSubjectResolution = {
     relation: 'owner' | 'owned-port' | 'connection' | 'source-port' | 'target-port';
 };
 
+export type AthenaRenderedSelectionSubject = {
+    id?: string;
+    type?: 'node' | 'edge';
+    kind?: 'component' | 'label';
+    semanticId?: string;
+    endpointId?: string;
+    anchorId?: string;
+    portSemanticId?: string;
+    role?: 'source' | 'target';
+};
+
+export type AthenaRenderedSelectionTarget = {
+    semanticId: string;
+    occurrenceId?: string;
+    endpointId?: string;
+    anchorId?: string;
+    subjectKind: 'component' | 'port' | 'connection';
+    source: 'node' | 'edge' | 'terminal';
+};
+
 type AthenaSemanticScmContextCarrier = {
     subjectIdentity?: string;
     factReferences: AthenaSemanticFactReferencePayload[];
@@ -153,6 +173,26 @@ export function resolveSemanticSelectionFromSourceRange(
             sourceRange: matchingEntry.sourceRange
         }
         : undefined;
+}
+
+/** Converts a rendered projection subject into the canonical id consumed by cross-surface selection. */
+export function resolveRenderedSelectionTarget(
+    subject: AthenaRenderedSelectionSubject,
+): AthenaRenderedSelectionTarget | undefined {
+    const semanticId = subject.portSemanticId ?? subject.semanticId;
+    const subjectKind = semanticId ? subjectKindFromSemanticId(semanticId) : undefined;
+    if (!semanticId || !subjectKind) {
+        return undefined;
+    }
+
+    return {
+        semanticId,
+        subjectKind,
+        source: subject.portSemanticId ? 'terminal' : subject.type === 'edge' ? 'edge' : 'node',
+        ...(subject.id ? { occurrenceId: subject.id } : {}),
+        ...(subject.endpointId ? { endpointId: subject.endpointId } : {}),
+        ...(subject.anchorId ? { anchorId: subject.anchorId } : {}),
+    };
 }
 
 /** Reuses M6 semantic SCM subject-identity vocabulary to determine whether one SCM context matches the active selection. */
@@ -381,6 +421,21 @@ function projectionSheetsContainSemanticId(
         ? diagram.sheets.filter(sheet => sheet.sheetId === diagram.activeSheetId)
         : diagram.sheets;
     return sheets.some(sheet => sheet.subjectSemanticIds?.includes(semanticId));
+}
+
+function subjectKindFromSemanticId(
+    semanticId: string,
+): AthenaRenderedSelectionTarget['subjectKind'] | undefined {
+    if (semanticId.startsWith('component:')) {
+        return 'component';
+    }
+    if (semanticId.startsWith('port:')) {
+        return 'port';
+    }
+    if (semanticId.startsWith('connection:')) {
+        return 'connection';
+    }
+    return undefined;
 }
 
 function rangeContainsRange(container: Range, candidate: Range): boolean {

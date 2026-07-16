@@ -84,6 +84,59 @@ test('resolves canonical semantic selection from typed inspection payload', () =
     });
 });
 
+test('resolves rendered sheet subjects to canonical selection targets without DOM inference', () => {
+    assert.equal(typeof semanticSelectionModel.resolveRenderedSelectionTarget, 'function');
+
+    assert.deepEqual(
+        semanticSelectionModel.resolveRenderedSelectionTarget({
+            id: 'schematic/projection/node/component_PSU1',
+            type: 'node',
+            kind: 'component',
+            semanticId: 'component:PSU1'
+        }),
+        {
+            semanticId: 'component:PSU1',
+            occurrenceId: 'schematic/projection/node/component_PSU1',
+            subjectKind: 'component',
+            source: 'node'
+        }
+    );
+    assert.deepEqual(
+        semanticSelectionModel.resolveRenderedSelectionTarget({
+            id: 'schematic/projection/connection/connection_PSU1_plus_PLC1_power',
+            type: 'edge',
+            semanticId: 'connection:PSU1.plus->PLC1.power'
+        }),
+        {
+            semanticId: 'connection:PSU1.plus->PLC1.power',
+            occurrenceId: 'schematic/projection/connection/connection_PSU1_plus_PLC1_power',
+            subjectKind: 'connection',
+            source: 'edge'
+        }
+    );
+    assert.deepEqual(
+        semanticSelectionModel.resolveRenderedSelectionTarget({
+            endpointId: 'schematic/projection/connection/connection_PSU1_plus_PLC1_power/endpoint/source',
+            anchorId: 'schematic/projection/label/port_PSU1_plus/anchor',
+            portSemanticId: 'port:PSU1.plus',
+            role: 'source'
+        }),
+        {
+            semanticId: 'port:PSU1.plus',
+            endpointId: 'schematic/projection/connection/connection_PSU1_plus_PLC1_power/endpoint/source',
+            anchorId: 'schematic/projection/label/port_PSU1_plus/anchor',
+            subjectKind: 'port',
+            source: 'terminal'
+        }
+    );
+    assert.equal(
+        semanticSelectionModel.resolveRenderedSelectionTarget({
+            id: 'dom-node-without-governed-semantic'
+        }),
+        undefined
+    );
+});
+
 test('resolves the most specific semantic selection from a source-editor range', () => {
     assert.equal(typeof semanticSelectionModel.resolveSemanticSelectionFromSourceRange, 'function');
 
