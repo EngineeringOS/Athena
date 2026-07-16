@@ -158,6 +158,175 @@ test('resolves the most specific semantic selection from a source-editor range',
     });
 });
 
+test('resolves source range reveal targets through governed sheet projection facts', () => {
+    assert.equal(typeof semanticSelectionModel.resolveSemanticRevealTargetFromSourceRange, 'function');
+
+    const diagram = {
+        activeSheetId: 'schematic/sheet/01-main',
+        sheets: [
+            {
+                sheetId: 'schematic/sheet/01-main',
+                subjectSemanticIds: ['connection:PLC1.out->M1.in']
+            }
+        ],
+        graph: {
+            nodes: [],
+            edges: [
+                {
+                    id: 'schematic/projection/connection/connection_PLC1_out_M1_in',
+                    semanticId: 'connection:PLC1.out->M1.in'
+                }
+            ]
+        }
+    };
+
+    assert.deepEqual(
+        semanticSelectionModel.resolveSemanticRevealTargetFromSourceRange(
+            inspection,
+            diagram,
+            inspection.uri,
+            {
+                start: { line: 11, character: 8 },
+                end: { line: 11, character: 18 }
+            }
+        ),
+        {
+            semanticId: 'connection:PLC1.out->M1.in',
+            label: 'PLC1.out -> M1.in',
+            kind: 'connection',
+            sourceUri: inspection.uri,
+            sourceRange: inspection.connections[0].sourceRange,
+            revealSource: 'source',
+            occurrenceIds: ['schematic/projection/connection/connection_PLC1_out_M1_in'],
+            endpointIds: [],
+            anchorIds: [],
+            connectionIds: []
+        }
+    );
+});
+
+test('resolves Problem diagnostics through canonical ids or governed source ranges without parsing message text', () => {
+    assert.equal(typeof semanticSelectionModel.resolveSemanticRevealTargetFromDiagnostic, 'function');
+
+    const diagram = {
+        electricalAnchors: [
+            {
+                anchorId: 'schematic/projection/label/port_PLC1_out/anchor',
+                portSemanticId: 'port:PLC1.out',
+                ownerSemanticId: 'component:PLC1',
+                nodeId: 'schematic/projection/node/component_PLC1'
+            }
+        ],
+        electricalConnectionEndpoints: [
+            {
+                endpointId: 'schematic/projection/connection/connection_PLC1_out_M1_in/endpoint/source',
+                projectionConnectionId: 'schematic/projection/connection/connection_PLC1_out_M1_in',
+                connectionSemanticId: 'connection:PLC1.out->M1.in',
+                endpointRole: 'source',
+                portSemanticId: 'port:PLC1.out',
+                anchorId: 'schematic/projection/label/port_PLC1_out/anchor'
+            }
+        ],
+        graph: {
+            nodes: [
+                {
+                    id: 'schematic/projection/node/component_PLC1',
+                    semanticId: 'component:PLC1'
+                }
+            ],
+            edges: []
+        }
+    };
+
+    assert.deepEqual(
+        semanticSelectionModel.resolveSemanticRevealTargetFromDiagnostic(
+            inspection,
+            diagram,
+            inspection.uri,
+            {
+                message: 'Breaker current is below required threshold',
+                range: {
+                    start: { line: 0, character: 0 },
+                    end: { line: 0, character: 1 }
+                },
+                data: {
+                    semanticId: 'port:PLC1.out'
+                }
+            }
+        ),
+        {
+            semanticId: 'port:PLC1.out',
+            label: 'PLC1.out',
+            kind: 'port',
+            sourceUri: inspection.uri,
+            sourceRange: inspection.ports[0].sourceRange,
+            revealSource: 'diagnostic',
+            occurrenceIds: [],
+            endpointIds: ['schematic/projection/connection/connection_PLC1_out_M1_in/endpoint/source'],
+            anchorIds: ['schematic/projection/label/port_PLC1_out/anchor'],
+            connectionIds: ['connection:PLC1.out->M1.in']
+        }
+    );
+
+    assert.deepEqual(
+        semanticSelectionModel.resolveSemanticRevealTargetFromDiagnostic(
+            inspection,
+            diagram,
+            inspection.uri,
+            {
+                message: 'Range-owned problem',
+                range: {
+                    start: { line: 6, character: 4 },
+                    end: { line: 6, character: 8 }
+                }
+            }
+        )?.semanticId,
+        'port:PLC1.out'
+    );
+
+    assert.equal(
+        semanticSelectionModel.resolveSemanticRevealTargetFromDiagnostic(
+            inspection,
+            diagram,
+            inspection.uri,
+            {
+                message: 'component:PLC1 appears only in diagnostic text',
+                range: {
+                    start: { line: 20, character: 0 },
+                    end: { line: 20, character: 1 }
+                }
+            }
+        ),
+        undefined
+    );
+});
+
+test('chooses governed reveal views deterministically and stops after supported views are exhausted', () => {
+    assert.equal(typeof semanticSelectionModel.nextRevealViewId, 'function');
+
+    const diagram = {
+        activeViewId: 'overview',
+        supportedViews: [
+            { viewId: 'overview' },
+            { viewId: 'schematic-sheet' },
+            { viewId: 'diagnostics-sheet' }
+        ]
+    };
+
+    assert.equal(
+        semanticSelectionModel.nextRevealViewId(diagram),
+        'schematic-sheet'
+    );
+    assert.equal(
+        semanticSelectionModel.nextRevealViewId(diagram, ['overview', 'schematic-sheet']),
+        'diagnostics-sheet'
+    );
+    assert.equal(
+        semanticSelectionModel.nextRevealViewId(diagram, ['overview', 'schematic-sheet', 'diagnostics-sheet']),
+        undefined
+    );
+});
+
 test('matches semantic scm context through subject identity and fact-reference vocabulary', () => {
     assert.equal(typeof semanticSelectionModel.matchesSemanticScmContext, 'function');
 

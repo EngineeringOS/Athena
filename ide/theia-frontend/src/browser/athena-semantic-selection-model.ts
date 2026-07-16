@@ -60,6 +60,26 @@ export type AthenaRenderedSelectionTarget = {
     source: 'node' | 'edge' | 'terminal';
 };
 
+export type AthenaSemanticRevealSource = 'source' | 'diagnostic';
+
+export type AthenaSemanticRevealTarget = AthenaActiveSemanticSelection & {
+    revealSource: AthenaSemanticRevealSource;
+    occurrenceIds: string[];
+    endpointIds: string[];
+    anchorIds: string[];
+    connectionIds: string[];
+};
+
+export type AthenaDiagnosticRevealCarrier = {
+    range: Range;
+    data?: unknown;
+};
+
+export type AthenaProjectionViewCarrier = {
+    activeViewId?: string;
+    supportedViews?: Array<{ viewId: string }>;
+};
+
 type AthenaSemanticScmContextCarrier = {
     subjectIdentity?: string;
     factReferences: AthenaSemanticFactReferencePayload[];
@@ -195,6 +215,35 @@ export function resolveRenderedSelectionTarget(
     };
 }
 
+/** Resolves a source selection to the rendered sheet target already published by projection facts. */
+export function resolveSemanticRevealTargetFromSourceRange(
+    inspection: AthenaSemanticInspectionPayload | undefined,
+    diagram: AthenaProjectionSelectionCarrier | undefined,
+    sourceUri: string,
+    selectionRange: Range,
+): AthenaSemanticRevealTarget | undefined {
+    const selection = resolveSemanticSelectionFromSourceRange(inspection, sourceUri, selectionRange);
+    return selection ? buildSemanticRevealTarget(selection, diagram, 'source') : undefined;
+}
+
+/** Resolves a Problem diagnostic to a rendered sheet target without parsing diagnostic text. */
+export function resolveSemanticRevealTargetFromDiagnostic(
+    inspection: AthenaSemanticInspectionPayload | undefined,
+    diagram: AthenaProjectionSelectionCarrier | undefined,
+    sourceUri: string,
+    diagnostic: AthenaDiagnosticRevealCarrier,
+): AthenaSemanticRevealTarget | undefined {
+    const semanticId = semanticIdFromDiagnosticData(diagnostic.data);
+    const selection = semanticId
+        ? resolveSemanticSelectionFromInspection(inspection, semanticId) ?? {
+            semanticId,
+            sourceUri,
+            sourceRange: diagnostic.range,
+        }
+        : resolveSemanticSelectionFromSourceRange(inspection, sourceUri, diagnostic.range);
+    return selection ? buildSemanticRevealTarget(selection, diagram, 'diagnostic') : undefined;
+}
+
 /** Reuses M6 semantic SCM subject-identity vocabulary to determine whether one SCM context matches the active selection. */
 export function matchesSemanticScmContext(
     carrier: AthenaSemanticScmContextCarrier,
@@ -224,6 +273,21 @@ export function graphContainsSemanticId(
     return resolveProjectionOccurrence(diagram, semanticId).status !== 'unresolved' ||
         projectionSheetsContainSemanticId(diagram, semanticId) ||
         resolveProjectionEndpointAlias(diagram, semanticId).status !== 'unresolved';
+}
+
+/** Returns the next governed view to try for a reveal request, skipping the active view. */
+export function nextRevealViewId(
+    diagram: AthenaProjectionViewCarrier | undefined,
+    attemptedViewIds: readonly string[] = [],
+): string | undefined {
+    if (!diagram?.supportedViews?.length) {
+        return undefined;
+    }
+    const attempted = new Set(attemptedViewIds);
+    if (diagram.activeViewId) {
+        attempted.add(diagram.activeViewId);
+    }
+    return diagram.supportedViews.find(view => !attempted.has(view.viewId))?.viewId;
 }
 
 /** Resolves repeated-reference status for one canonical semantic id inside current graph snapshot. */
@@ -434,6 +498,40 @@ function subjectKindFromSemanticId(
     }
     if (semanticId.startsWith('connection:')) {
         return 'connection';
+    }
+    return undefined;
+}
+
+function buildSemanticRevealTarget(
+    selection: AthenaActiveSemanticSelection,
+    diagram: AthenaProjectionSelectionCarrier | undefined,
+    revealSource: AthenaSemanticRevealSource,
+): AthenaSemanticRevealTarget | undefined {
+    if (!graphContainsSemanticId(diagram, selection.semanticId)) {
+        return undefined;
+    }
+    const occurrence = resolveProjectionOccurrence(diagram, selection.semanticId);
+    const alias = resolveProjectionEndpointAlias(diagram, selection.semanticId);
+    return {
+        ...selection,
+        revealSource,
+        occurrenceIds: occurrence.occurrenceIds,
+        endpointIds: alias.endpointIds,
+        anchorIds: alias.anchorIds,
+        connectionIds: alias.connectionIds,
+    };
+}
+
+function semanticIdFromDiagnosticData(data: unknown): string | undefined {
+    if (!data || typeof data !== 'object') {
+        return undefined;
+    }
+    const carrier = data as { semanticId?: unknown; subjectIdentity?: unknown };
+    if (typeof carrier.semanticId === 'string' && subjectKindFromSemanticId(carrier.semanticId)) {
+        return carrier.semanticId;
+    }
+    if (typeof carrier.subjectIdentity === 'string' && subjectKindFromSemanticId(carrier.subjectIdentity)) {
+        return carrier.subjectIdentity;
     }
     return undefined;
 }

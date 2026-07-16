@@ -9,7 +9,7 @@ import {
     type AthenaGraphCommandSubjectKind
 } from './athena-graph-command-intent-protocol';
 import { AthenaLspEditorBridgeService } from './athena-lsp-editor-bridge-service';
-import { graphContainsSemanticId } from './athena-semantic-selection-model';
+import { graphContainsSemanticId, nextRevealViewId } from './athena-semantic-selection-model';
 
 /** Thin Theia-side host that keeps graph adapter consumption downstream of the Athena LSP bridge. */
 @injectable()
@@ -54,20 +54,21 @@ export class AthenaGraphAdapterService {
         }
 
         let activeDiagram = initialDiagram;
-        for (const view of initialDiagram.supportedViews) {
-            if (view.viewId === activeDiagram.activeViewId) {
-                continue;
-            }
-            activeDiagram = await this.switchActiveView(view.viewId) ?? activeDiagram;
+        const attemptedViewIds = initialDiagram.activeViewId ? [initialDiagram.activeViewId] : [];
+        let viewId = nextRevealViewId(activeDiagram, attemptedViewIds);
+        while (viewId) {
+            attemptedViewIds.push(viewId);
+            activeDiagram = await this.switchActiveView(viewId) ?? activeDiagram;
             if (graphContainsSemanticId(activeDiagram, semanticId)) {
                 return activeDiagram;
             }
+            viewId = nextRevealViewId(activeDiagram, attemptedViewIds);
         }
 
         if (activeDiagram.activeViewId !== initialDiagram.activeViewId) {
-            return await this.switchActiveView(initialDiagram.activeViewId) ?? initialDiagram;
+            await this.switchActiveView(initialDiagram.activeViewId);
         }
-        return initialDiagram;
+        return undefined;
     }
 
     supportsAdjustLayoutPlacementIntent(diagram: AthenaGLSPDiagram | undefined): boolean {

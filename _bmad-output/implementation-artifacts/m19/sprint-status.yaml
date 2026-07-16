@@ -1,5 +1,5 @@
 # generated: 2026-07-16T13:48:28.4162698+08:00
-# last_updated: 2026-07-16T19:20:00+08:00
+# last_updated: 2026-07-16T20:08:00+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-16T13:48:28.4162698+08:00
-last_updated: 2026-07-16T19:20:00+08:00
+last_updated: 2026-07-16T20:08:00+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -56,7 +56,7 @@ development_status:
   epic-1-retrospective: optional
   epic-2: in-progress
   2-1-round-trip-selection-through-canonical-identity: review
-  2-2-reveal-sheet-subjects-from-source-and-problems: backlog
+  2-2-reveal-sheet-subjects-from-source-and-problems: review
   epic-2-retrospective: optional
   epic-3: backlog
   3-1-make-cabinet-preview-a-deferred-boundary: backlog
