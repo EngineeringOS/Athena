@@ -439,6 +439,49 @@ export type AthenaProjectionSheetPayload = {
     previousSheetId?: string;
     nextSheetId?: string;
     subjectSemanticIds: string[];
+    publication: AthenaProjectionSheetPublicationPayload;
+};
+
+export type AthenaProjectionSheetPublicationPayload = {
+    pageSize: AthenaProjectionSheetPageSizePayload;
+    frame: AthenaProjectionSheetFramePayload;
+    coordinateZones: AthenaProjectionSheetCoordinateZonePayload[];
+    titleBlock: AthenaProjectionSheetTitleBlockPayload;
+    revisionMetadata: AthenaProjectionSheetRevisionMetadataPayload;
+    viewComposition: AthenaProjectionSheetViewCompositionPayload;
+};
+
+export type AthenaProjectionSheetPageSizePayload = {
+    format: string;
+    orientation: string;
+};
+
+export type AthenaProjectionSheetFramePayload = {
+    frameId: string;
+    style: string;
+};
+
+export type AthenaProjectionSheetCoordinateZonePayload = {
+    zoneId: string;
+    label: string;
+    order: number;
+};
+
+export type AthenaProjectionSheetTitleBlockPayload = {
+    sheetTitle: string;
+    sheetFamily: string;
+    sheetNumber: string;
+};
+
+export type AthenaProjectionSheetRevisionMetadataPayload = {
+    revisionCode: string;
+    revisionNote: string;
+};
+
+export type AthenaProjectionSheetViewCompositionPayload = {
+    primaryViewId: string;
+    primarySheetOrder: number;
+    subjectSemanticIds: string[];
 };
 
 export type AthenaProjectionNotationSubjectPayload = {
@@ -461,6 +504,58 @@ export type AthenaProjectionCrossReferencePayload = {
     occurrenceIds: string[];
 };
 
+export type AthenaProjectionPointPayload = {
+    x: number;
+    y: number;
+};
+
+export type AthenaProjectionSheetLayoutPayload = {
+    sheetId: string;
+    displayName: string;
+    order: number;
+    subjectSemanticIds: string[];
+    representationFamilyId: string;
+    frame: AthenaProjectionSheetLayoutFramePayload;
+    placements: AthenaProjectionSheetLayoutPlacementPayload[];
+    routingGuidance: AthenaProjectionSheetLayoutRoutingGuidancePayload[];
+    labelLayouts: AthenaProjectionSheetLayoutLabelLayoutPayload[];
+};
+
+export type AthenaProjectionSheetLayoutFramePayload = {
+    canvasWidth: number;
+    canvasHeight: number;
+    gridMajorStep: number;
+    gridMinorStep: number;
+};
+
+export type AthenaProjectionSheetLayoutPlacementPayload = {
+    projectionId: string;
+    semanticId: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+export type AthenaProjectionSheetLayoutRoutingGuidancePayload = {
+    projectionConnectionId: string;
+    connectionSemanticId: string;
+    sourcePoint: AthenaProjectionPointPayload;
+    targetPoint: AthenaProjectionPointPayload;
+    routingStyle: string;
+    bendPoints: AthenaProjectionPointPayload[];
+};
+
+export type AthenaProjectionSheetLayoutLabelLayoutPayload = {
+    projectionId: string;
+    semanticId: string;
+    label: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
 export type AthenaProjectionReadyPayload = {
     viewId: string;
     familyId?: string;
@@ -469,6 +564,7 @@ export type AthenaProjectionReadyPayload = {
     canvasHeight: number;
     activeSheetId?: string;
     sheets: AthenaProjectionSheetPayload[];
+    sheetLayout?: AthenaProjectionSheetLayoutPayload;
     notationPack?: AthenaProjectionNotationPackPayload;
     crossReferences: AthenaProjectionCrossReferencePayload[];
     activeRenderContributions: AthenaProjectionRenderContributionPayload[];

@@ -25,6 +25,7 @@ import com.engineeringood.athena.projection.ProjectionNotationSubject
 import com.engineeringood.athena.projection.ProjectionPoint
 import com.engineeringood.athena.projection.ProjectionPhysicalSize
 import com.engineeringood.athena.projection.ProjectionResolvedSubject
+import com.engineeringood.athena.projection.ProjectionSheetPublication
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetId
 import com.engineeringood.athena.projection.ProjectionSheetSubject
@@ -216,6 +217,12 @@ private fun deriveSheets(
                 displayName = "${view.displayName} Main",
                 order = 0,
                 subjects = allSubjects,
+                publication = ProjectionSheetPublication.fromProjectionState(
+                    sheetId = ProjectionSheetId("${view.id}/sheet/01-main"),
+                    displayName = "${view.displayName} Main",
+                    order = 0,
+                    subjects = allSubjects,
+                ),
             ),
         )
     }
@@ -253,6 +260,12 @@ private fun documentationSheets(
             order = 0,
             nextSheetId = referenceId,
             subjects = overviewSubjects,
+            publication = ProjectionSheetPublication.fromProjectionState(
+                sheetId = overviewId,
+                displayName = "Overview",
+                order = 0,
+                subjects = overviewSubjects,
+            ),
         ),
         ProjectionSheet(
             sheetId = referenceId,
@@ -260,6 +273,12 @@ private fun documentationSheets(
             order = 1,
             previousSheetId = overviewId,
             subjects = referenceSubjects,
+            publication = ProjectionSheetPublication.fromProjectionState(
+                sheetId = referenceId,
+                displayName = "Reference",
+                order = 1,
+                subjects = referenceSubjects,
+            ),
         ),
     )
 }

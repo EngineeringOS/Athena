@@ -57,6 +57,219 @@ data class AthenaRuntimeProjectionRenderContribution(
 /**
  * Runtime-owned governed sheet summary for the active projection snapshot.
  */
+data class AthenaRuntimeProjectionSheetPublication(
+    val pageSize: AthenaRuntimeProjectionSheetPageSize,
+    val frame: AthenaRuntimeProjectionSheetFrame,
+    val coordinateZones: List<AthenaRuntimeProjectionSheetCoordinateZone> = emptyList(),
+    val titleBlock: AthenaRuntimeProjectionSheetTitleBlock,
+    val revisionMetadata: AthenaRuntimeProjectionSheetRevisionMetadata,
+    val viewComposition: AthenaRuntimeProjectionSheetViewComposition,
+) {
+    companion object {
+        fun fromProjectionState(
+            sheetId: String,
+            displayName: String,
+            order: Int,
+            subjectSemanticIds: List<String>,
+        ): AthenaRuntimeProjectionSheetPublication {
+            val viewId = sheetId.substringBefore("/sheet/").ifBlank { sheetId }
+            return AthenaRuntimeProjectionSheetPublication(
+                pageSize = AthenaRuntimeProjectionSheetPageSize(format = "A3", orientation = "landscape"),
+                frame = AthenaRuntimeProjectionSheetFrame(
+                    frameId = "engineering-sheet-frame",
+                    style = "schematic",
+                ),
+                coordinateZones = listOf(
+                    AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "header", label = "Header", order = 0),
+                    AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "body", label = "Body", order = 1),
+                    AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "title-block", label = "Title Block", order = 2),
+                ),
+                titleBlock = AthenaRuntimeProjectionSheetTitleBlock(
+                    sheetTitle = displayName,
+                    sheetFamily = viewId,
+                    sheetNumber = sheetId.substringAfterLast("/"),
+                ),
+                revisionMetadata = AthenaRuntimeProjectionSheetRevisionMetadata(
+                    revisionCode = "A",
+                    revisionNote = "Initial governed sheet publication",
+                ),
+                viewComposition = AthenaRuntimeProjectionSheetViewComposition(
+                    primaryViewId = viewId,
+                    primarySheetOrder = order,
+                    subjectSemanticIds = subjectSemanticIds,
+                ),
+            )
+        }
+
+        fun defaultFor(
+            sheetId: String,
+            displayName: String,
+            order: Int,
+            subjectSemanticIds: List<String>,
+        ): AthenaRuntimeProjectionSheetPublication {
+            return fromProjectionState(
+                sheetId = sheetId,
+                displayName = displayName,
+                order = order,
+                subjectSemanticIds = subjectSemanticIds,
+            )
+        }
+    }
+}
+
+/**
+ * Runtime-owned governed sheet composition for the active projection snapshot.
+ */
+data class AthenaRuntimeProjectionSheetComposition(
+    val sheetId: String,
+    val displayName: String,
+    val order: Int,
+    val subjectSemanticIds: List<String> = emptyList(),
+    val representationFamilyId: String = "schematic-sheet",
+    val publication: AthenaRuntimeProjectionSheetPublication,
+) {
+    companion object {
+        fun fromProjectionState(
+            sheetId: String,
+            displayName: String,
+            order: Int,
+            subjectSemanticIds: List<String>,
+            representationFamilyId: String = "schematic-sheet",
+            publication: AthenaRuntimeProjectionSheetPublication = AthenaRuntimeProjectionSheetPublication.fromProjectionState(
+                sheetId = sheetId,
+                displayName = displayName,
+                order = order,
+                subjectSemanticIds = subjectSemanticIds,
+            ),
+        ): AthenaRuntimeProjectionSheetComposition {
+            return AthenaRuntimeProjectionSheetComposition(
+                sheetId = sheetId,
+                displayName = displayName,
+                order = order,
+                subjectSemanticIds = subjectSemanticIds,
+                representationFamilyId = representationFamilyId,
+                publication = publication,
+            )
+        }
+    }
+}
+
+/**
+ * Runtime-owned governed layout facts for the active sheet.
+ */
+data class AthenaRuntimeProjectionSheetLayout(
+    val sheetId: String,
+    val displayName: String,
+    val order: Int,
+    val subjectSemanticIds: List<String> = emptyList(),
+    val representationFamilyId: String = "schematic-sheet",
+    val frame: AthenaRuntimeProjectionSheetLayoutFrame,
+    val placements: List<AthenaRuntimeProjectionSheetLayoutPlacement> = emptyList(),
+    val routingGuidance: List<AthenaRuntimeProjectionSheetLayoutRoutingGuidance> = emptyList(),
+    val labelLayouts: List<AthenaRuntimeProjectionSheetLayoutLabelLayout> = emptyList(),
+)
+
+/**
+ * Runtime-owned governed frame facts for the active sheet layout.
+ */
+data class AthenaRuntimeProjectionSheetLayoutFrame(
+    val canvasWidth: Int,
+    val canvasHeight: Int,
+    val gridMajorStep: Int = 120,
+    val gridMinorStep: Int = 24,
+)
+
+/**
+ * Runtime-owned governed placement facts for the active sheet layout.
+ */
+data class AthenaRuntimeProjectionSheetLayoutPlacement(
+    val projectionId: String,
+    val semanticId: String,
+    val x: Int,
+    val y: Int,
+    val width: Int,
+    val height: Int,
+)
+
+/**
+ * Runtime-owned governed routing guidance for the active sheet layout.
+ */
+data class AthenaRuntimeProjectionSheetLayoutRoutingGuidance(
+    val projectionConnectionId: String,
+    val connectionSemanticId: String,
+    val sourcePoint: AthenaRuntimeProjectionPoint,
+    val targetPoint: AthenaRuntimeProjectionPoint,
+    val routingStyle: String,
+    val bendPoints: List<AthenaRuntimeProjectionPoint> = emptyList(),
+)
+
+/**
+ * Runtime-owned governed label layout for the active sheet layout.
+ */
+data class AthenaRuntimeProjectionSheetLayoutLabelLayout(
+    val projectionId: String,
+    val semanticId: String,
+    val label: String,
+    val x: Int,
+    val y: Int,
+    val width: Int,
+    val height: Int,
+)
+
+/**
+ * Runtime-owned governed page size for one sheet in active projection.
+ */
+data class AthenaRuntimeProjectionSheetPageSize(
+    val format: String,
+    val orientation: String,
+)
+
+/**
+ * Runtime-owned governed frame semantics for one sheet in active projection.
+ */
+data class AthenaRuntimeProjectionSheetFrame(
+    val frameId: String,
+    val style: String,
+)
+
+/**
+ * Runtime-owned governed coordinate zone on one sheet in active projection.
+ */
+data class AthenaRuntimeProjectionSheetCoordinateZone(
+    val zoneId: String,
+    val label: String,
+    val order: Int,
+)
+
+/**
+ * Runtime-owned governed title block semantics for one sheet in active projection.
+ */
+data class AthenaRuntimeProjectionSheetTitleBlock(
+    val sheetTitle: String,
+    val sheetFamily: String,
+    val sheetNumber: String,
+)
+
+/**
+ * Runtime-owned governed revision metadata for one sheet in active projection.
+ */
+data class AthenaRuntimeProjectionSheetRevisionMetadata(
+    val revisionCode: String,
+    val revisionNote: String,
+)
+
+/**
+ * Runtime-owned governed view composition for one sheet in active projection.
+ */
+data class AthenaRuntimeProjectionSheetViewComposition(
+    val primaryViewId: String,
+    val primarySheetOrder: Int,
+    val subjectSemanticIds: List<String> = emptyList(),
+)
+
+/**
+ * Runtime-owned governed sheet summary for the active projection snapshot.
+ */
 data class AthenaRuntimeProjectionSheet(
     val sheetId: String,
     val displayName: String,
@@ -64,6 +277,19 @@ data class AthenaRuntimeProjectionSheet(
     val previousSheetId: String? = null,
     val nextSheetId: String? = null,
     val subjectSemanticIds: List<String> = emptyList(),
+    val publication: AthenaRuntimeProjectionSheetPublication = AthenaRuntimeProjectionSheetPublication.fromProjectionState(
+        sheetId = sheetId,
+        displayName = displayName,
+        order = order,
+        subjectSemanticIds = subjectSemanticIds,
+    ),
+    val composition: AthenaRuntimeProjectionSheetComposition = AthenaRuntimeProjectionSheetComposition.fromProjectionState(
+        sheetId = sheetId,
+        displayName = displayName,
+        order = order,
+        subjectSemanticIds = subjectSemanticIds,
+        publication = publication,
+    ),
 )
 
 /**
@@ -171,6 +397,7 @@ data class AthenaRuntimeProjectionReadySnapshot(
     val electricalConnectionEndpoints: List<AthenaRuntimeProjectionElectricalConnectionEndpoint> = emptyList(),
     val electricalRoutingCorridors: List<AthenaRuntimeProjectionElectricalRoutingCorridor> = emptyList(),
     val activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution> = emptyList(),
+    val sheetLayout: AthenaRuntimeProjectionSheetLayout? = null,
 ) : AthenaRuntimeProjectionSnapshot
 
 /**

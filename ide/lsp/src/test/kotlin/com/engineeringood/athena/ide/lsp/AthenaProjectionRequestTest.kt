@@ -131,6 +131,163 @@ class AthenaProjectionRequestTest {
     }
 
     @Test
+    fun `projection session payload preserves governed sheet publication facts`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-projection-session-publication-",
+            sourceFileName = "demo-cabinet.athena",
+            sourceText = demoCabinetSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val payload = server.projectionSession(AthenaProjectionSessionParams()).get()
+                val ready = assertNotNull(payload?.readyProjection)
+                val sheet = ready.sheets.single()
+
+                assertEquals("cabinet/sheet/01-main", sheet.sheetId)
+                assertEquals(
+                    AthenaProjectionSheetPublicationPayload(
+                        pageSize = AthenaProjectionSheetPageSizePayload(
+                            format = "A3",
+                            orientation = "landscape",
+                        ),
+                        frame = AthenaProjectionSheetFramePayload(
+                            frameId = "engineering-sheet-frame",
+                            style = "schematic",
+                        ),
+                        coordinateZones = listOf(
+                            AthenaProjectionSheetCoordinateZonePayload(
+                                zoneId = "header",
+                                label = "Header",
+                                order = 0,
+                            ),
+                            AthenaProjectionSheetCoordinateZonePayload(
+                                zoneId = "body",
+                                label = "Body",
+                                order = 1,
+                            ),
+                            AthenaProjectionSheetCoordinateZonePayload(
+                                zoneId = "title-block",
+                                label = "Title Block",
+                                order = 2,
+                            ),
+                        ),
+                        titleBlock = AthenaProjectionSheetTitleBlockPayload(
+                            sheetTitle = "Cabinet Main",
+                            sheetFamily = "cabinet",
+                            sheetNumber = "01-main",
+                        ),
+                        revisionMetadata = AthenaProjectionSheetRevisionMetadataPayload(
+                            revisionCode = "A",
+                            revisionNote = "Initial governed sheet publication",
+                        ),
+                        viewComposition = AthenaProjectionSheetViewCompositionPayload(
+                            primaryViewId = "cabinet",
+                            primarySheetOrder = 0,
+                            subjectSemanticIds = listOf(
+                                "component:M1",
+                                "component:PLC1",
+                                "connection:PLC1.out->M1.in",
+                                "port:M1.in",
+                                "port:PLC1.out",
+                            ),
+                        ),
+                    ),
+                    sheet.publication,
+                )
+                assertEquals(
+                    AthenaProjectionSheetCompositionPayload(
+                        sheetId = "cabinet/sheet/01-main",
+                        displayName = "Cabinet Main",
+                        order = 0,
+                        representationFamilyId = "schematic-sheet",
+                        publication = AthenaProjectionSheetPublicationPayload(
+                            pageSize = AthenaProjectionSheetPageSizePayload(
+                                format = "A3",
+                                orientation = "landscape",
+                            ),
+                            frame = AthenaProjectionSheetFramePayload(
+                                frameId = "engineering-sheet-frame",
+                                style = "schematic",
+                            ),
+                            coordinateZones = listOf(
+                                AthenaProjectionSheetCoordinateZonePayload(
+                                    zoneId = "header",
+                                    label = "Header",
+                                    order = 0,
+                                ),
+                                AthenaProjectionSheetCoordinateZonePayload(
+                                    zoneId = "body",
+                                    label = "Body",
+                                    order = 1,
+                                ),
+                                AthenaProjectionSheetCoordinateZonePayload(
+                                    zoneId = "title-block",
+                                    label = "Title Block",
+                                    order = 2,
+                                ),
+                            ),
+                            titleBlock = AthenaProjectionSheetTitleBlockPayload(
+                                sheetTitle = "Cabinet Main",
+                                sheetFamily = "cabinet",
+                                sheetNumber = "01-main",
+                            ),
+                            revisionMetadata = AthenaProjectionSheetRevisionMetadataPayload(
+                                revisionCode = "A",
+                                revisionNote = "Initial governed sheet publication",
+                            ),
+                            viewComposition = AthenaProjectionSheetViewCompositionPayload(
+                                primaryViewId = "cabinet",
+                                primarySheetOrder = 0,
+                                subjectSemanticIds = listOf(
+                                    "component:M1",
+                                    "component:PLC1",
+                                    "connection:PLC1.out->M1.in",
+                                    "port:M1.in",
+                                    "port:PLC1.out",
+                                ),
+                            ),
+                        ),
+                        subjectSemanticIds = listOf(
+                            "component:M1",
+                            "component:PLC1",
+                            "connection:PLC1.out->M1.in",
+                            "port:M1.in",
+                            "port:PLC1.out",
+                        ),
+                    ),
+                    sheet.composition,
+                )
+                assertEquals("schematic-sheet", sheet.composition.representationFamilyId)
+                val sheetLayout = assertNotNull(ready.sheetLayout)
+                assertEquals("cabinet/sheet/01-main", sheetLayout.sheetId)
+                assertEquals("Cabinet Main", sheetLayout.displayName)
+                assertEquals(0, sheetLayout.order)
+                assertEquals("schematic-sheet", sheetLayout.representationFamilyId)
+                assertEquals(sheet.subjectSemanticIds, sheetLayout.subjectSemanticIds)
+                assertEquals(ready.canvasWidth, sheetLayout.frame.canvasWidth)
+                assertEquals(ready.canvasHeight, sheetLayout.frame.canvasHeight)
+                assertEquals(ready.components.size, sheetLayout.placements.size)
+                assertEquals(ready.labels.size, sheetLayout.labelLayouts.size)
+                assertEquals(ready.electricalRoutingCorridors.size, sheetLayout.routingGuidance.size)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     @Suppress("DEPRECATION")
     fun `graph command intent request executes semantic connect ports through runtime and refreshes projection state`() {
         val repository = createGovernedTestRepository(

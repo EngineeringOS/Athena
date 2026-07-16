@@ -121,35 +121,39 @@ private fun AthenaExecutionContext.buildProjectionSnapshot(
             val presentation = compilation.presentations.firstOrNull { document -> document.view.id == viewId }
             val rendering = compilation.rendering
             when {
-                projection != null -> AthenaRuntimeProjectionReadySnapshot(
-                    viewId = viewId,
-                    familyId = projection.view.familyContract.toRuntimeProjectionFamilyId(),
-                    scene = projection.toViewerScene(
+                projection != null -> {
+                    val scene = projection.toViewerScene(
                         systemName = compilation.document.system.name,
                         document = compilation.document,
                         placementOverrides = projectionPlacementOverrides(viewId),
-                    ),
-                    presentation = presentation,
-                    activeSheetId = projection.sheets.firstOrNull()?.sheetId?.value,
-                    sheets = projection.sheets.map { sheet -> sheet.toRuntimeProjectionSheet() },
-                    notationPack = projection.notationPack?.toRuntimeProjectionNotationPack(),
-                    crossReferences = projection.crossReferences.map { crossReference ->
-                        crossReference.toRuntimeProjectionCrossReference()
-                    },
-                    electricalAnchors = projection.electricalAnchors.map { anchor ->
-                        anchor.toRuntimeProjectionElectricalAnchor()
-                    },
-                    electricalConnectionEndpoints = projection.electricalConnectionEndpoints.map { endpoint ->
-                        endpoint.toRuntimeProjectionElectricalConnectionEndpoint()
-                    },
-                    electricalRoutingCorridors = projection.electricalRoutingCorridors.map { corridor ->
-                        corridor.toRuntimeProjectionElectricalRoutingCorridor()
-                    },
-                    activeRenderContributions = activeProjectionRenderContributions(
+                    )
+                    AthenaRuntimeProjectionReadySnapshot(
                         viewId = viewId,
-                        rendererTarget = GRAPH_WORKBENCH_RENDERER_TARGET,
-                    ),
-                )
+                        familyId = projection.view.familyContract.toRuntimeProjectionFamilyId(),
+                        scene = scene,
+                        presentation = presentation,
+                        activeSheetId = projection.sheets.firstOrNull()?.sheetId?.value,
+                        sheets = projection.sheets.map { sheet -> sheet.toRuntimeProjectionSheet() },
+                        notationPack = projection.notationPack?.toRuntimeProjectionNotationPack(),
+                        crossReferences = projection.crossReferences.map { crossReference ->
+                            crossReference.toRuntimeProjectionCrossReference()
+                        },
+                        electricalAnchors = projection.electricalAnchors.map { anchor ->
+                            anchor.toRuntimeProjectionElectricalAnchor()
+                        },
+                        electricalConnectionEndpoints = projection.electricalConnectionEndpoints.map { endpoint ->
+                            endpoint.toRuntimeProjectionElectricalConnectionEndpoint()
+                        },
+                        electricalRoutingCorridors = projection.electricalRoutingCorridors.map { corridor ->
+                            corridor.toRuntimeProjectionElectricalRoutingCorridor()
+                        },
+                        activeRenderContributions = activeProjectionRenderContributions(
+                            viewId = viewId,
+                            rendererTarget = GRAPH_WORKBENCH_RENDERER_TARGET,
+                        ),
+                        sheetLayout = projection.toRuntimeProjectionSheetLayout(scene),
+                    )
+                }
 
                 rendering is CompilerRenderingBlocked -> {
                     val diagnostics = compilation.semanticResult.diagnostics.map(SemanticDiagnostic::toProjectionDiagnostic)
