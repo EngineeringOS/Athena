@@ -32,3 +32,29 @@ test('M19 keeps cabinet preview deferred from the schematic-first milestone', ()
         .filter(line => !/3-1-make-cabinet-preview-a-deferred-boundary/.test(line));
     assert.deepEqual(activeCabinetStories, []);
 });
+
+test('M19 keeps ecosystem expansion out of the schematic-first milestone', () => {
+    const prd = readRepoFile('_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-16-m19/prd.md');
+    const addendum = readRepoFile('_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-16-m19/addendum.md');
+    const architecture = readRepoFile('_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-16-m19/ARCHITECTURE-SPINE.md');
+    const epics = readRepoFile('_bmad-output/implementation-artifacts/m19/epics.md');
+    const sprintStatus = readRepoFile('_bmad-output/implementation-artifacts/m19/sprint-status.yaml');
+
+    assert.match(prd, /public package repository/i);
+    assert.match(prd, /full IEC symbol library/i);
+    assert.match(prd, /Non-Users \(v1\)/i);
+    assert.match(addendum, /public package repository/i);
+    assert.match(addendum, /full IEC element catalog/i);
+    assert.match(architecture, /AD-7 - M19 Excludes Ecosystem Expansion/);
+    assert.match(architecture, /public repository\/import ecosystem work/i);
+    assert.match(epics, /Story 3\.2: Keep ecosystem expansion out of M19/);
+    assert.match(epics, /full IEC breadth/i);
+    assert.match(sprintStatus, /3-2-keep-ecosystem-expansion-out-of-m19:\s*in-progress/);
+
+    assert.doesNotMatch(epics, /Story\s+\d+\.\d+:\s*(Implement|Render|Ship|Support|Build)\b.*repository\/import/i);
+    const activeEcosystemStories = sprintStatus
+        .split(/\r?\n/)
+        .filter(line => /repository|import|IEC/i.test(line))
+        .filter(line => !/3-2-keep-ecosystem-expansion-out-of-m19/.test(line));
+    assert.deepEqual(activeEcosystemStories, []);
+});
