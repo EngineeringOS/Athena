@@ -17,7 +17,9 @@
         "applicationName": "Athena",
         "reloadOnReconnect": true,
         "preferences": {
-          "toolbar.showToolbar": true
+          "toolbar.showToolbar": true,
+          "editor.enablePreview": false,
+          "workbench.editor.revealIfOpen": true
         }
       }
     },
@@ -40,7 +42,6 @@
     "@theia/ai-openai": "1.73.1",
     "@theia/core": "1.73.1",
     "@theia/editor": "1.73.1",
-    "@theia/editor-preview": "1.73.1",
     "@theia/electron": "1.73.1",
     "@theia/filesystem": "1.73.1",
     "@theia/keymaps": "1.73.1",

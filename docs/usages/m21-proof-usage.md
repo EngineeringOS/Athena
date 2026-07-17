@@ -50,6 +50,12 @@ In the IDE:
 - use outline navigation in the same editor tab for `.athena` files
 - use the top information icon to open the `Cabinet Main` popover
 - use the floating bottom controls for zoom and canvas navigation
+- whitespace click closes the info popover
+- bottom controls remain icon-only and transparent
+
+The smoke proof opens the same sample project, uses the home `Graphical View` action, and validates
+the rendered graph workbench DOM for the stage grid, transparent overlays, sheet frame, info
+popover, and whitespace-close behavior.
 
 ## Verification Path
 
@@ -57,6 +63,8 @@ Run checks sequentially on Windows:
 
 ```powershell
 node --test ide/theia-frontend/scripts/athena-m21-sample-project.test.mjs
+node --test ide/theia-frontend/scripts/athena-m21-graph-workbench-visual-proof.test.mjs
+node --test ide/theia-frontend/scripts/athena-m21-canvas-contract.test.mjs
 Set-Location ide
 yarn workspace @engineeringood/athena-theia-product start:smoke:m21
 Set-Location ..

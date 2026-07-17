@@ -6,6 +6,7 @@ const ATHENA_READY_SENTINEL = 'ATHENA_DESKTOP_READY';
 const ATHENA_WINDOW_CREATED_SENTINEL = 'ATHENA_DESKTOP_WINDOW_CREATED';
 const ATHENA_WORKSPACE_OPENED_SENTINEL = 'ATHENA_WORKSPACE_OPENED=';
 const ATHENA_WORKSPACE_OPEN_FAILURE_SENTINEL = 'ATHENA_WORKSPACE_OPEN_FAILURE=';
+const ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_PROOF=';
 const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME=';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED=';
 const STARTUP_TIMEOUT_MS = 90000;
@@ -23,6 +24,7 @@ async function main() {
             env: {
                 ...process.env,
                 ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN: '1',
+                ATHENA_ELECTRON_TEMP_USER_DATA: '1',
                 ELECTRON_ENABLE_LOGGING: '1'
             },
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -33,6 +35,7 @@ async function main() {
     let sawWindowCreated = false;
     let sawReady = false;
     let openedWorkspace;
+    let graphWorkbenchProof;
     let resolvedJavaHome;
     let unresolvedJavaSignal;
     const outputLines = [];
@@ -51,6 +54,10 @@ async function main() {
         }
         if (trimmedLine.startsWith(ATHENA_WORKSPACE_OPENED_SENTINEL)) {
             openedWorkspace = trimmedLine.substring(ATHENA_WORKSPACE_OPENED_SENTINEL.length);
+        }
+        if (trimmedLine.startsWith(ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL)) {
+            const proofPayload = trimmedLine.substring(ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL.length);
+            graphWorkbenchProof = JSON.parse(proofPayload);
         }
         if (trimmedLine.startsWith(ATHENA_JAVA_SENTINEL)) {
             resolvedJavaHome = trimmedLine.substring(ATHENA_JAVA_SENTINEL.length);
@@ -93,7 +100,32 @@ async function main() {
             `Athena M21 sample project smoke opened '${openedWorkspace || 'n/a'}' instead of '${repositoryRoot}'.${failureLine ? `\n${failureLine}` : ''}`
         );
     }
+    if (!graphWorkbenchProof) {
+        throw new Error(`Athena M21 sample project smoke did not report graph workbench DOM proof.\n${outputLines.join('\n')}`);
+    }
+    const missingGraphProof = [
+        'root',
+        'stage',
+        'viewport',
+        'sheet',
+        'canvas',
+        'floatingBarTransparent',
+        'bottomDockTransparent',
+        'zoomDockTransparent',
+        'sheetTransparent',
+        'sheetFrame',
+        'stageHasGrid',
+        'infoPopoverOpened',
+        'infoPopoverClosedOnWhitespace'
+    ].filter(key => graphWorkbenchProof[key] !== true);
+    if (missingGraphProof.length > 0) {
+        throw new Error(
+            `Athena M21 graph-workbench DOM proof failed: ${missingGraphProof.join(', ')}\n${JSON.stringify(graphWorkbenchProof)}`
+        );
+    }
 
+    console.log(`${ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL}${JSON.stringify(graphWorkbenchProof)}`);
+    console.log('Athena M21 graph-workbench DOM proof passed.');
     console.log(`Athena M21 sample project smoke passed. workspace=${openedWorkspace} javaHome=${resolvedJavaHome || 'n/a'}`);
 }
 

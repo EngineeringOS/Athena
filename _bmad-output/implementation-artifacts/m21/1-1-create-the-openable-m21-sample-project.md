@@ -4,7 +4,7 @@ baseline_commit: 3433765
 
 # Story 1.1: Create the openable M21 sample project
 
-Status: review
+Status: done
 
 ## Story
 
@@ -161,6 +161,7 @@ GPT-5 Codex
 - `.\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests com.engineeringood.athena.compiler.AthenaM21SampleProjectCompilerTest` passed.
 - `yarn workspace @engineeringood/athena-theia-product build` passed.
 - `yarn workspace @engineeringood/athena-theia-product start:smoke:m21` initially failed because the opener assumed a frontend `require` bridge; final run passed with `workspace=D:\Aaron\workspace\projects\2026\eos\Athena\examples\m21\sample-project` and Java 25 resolved.
+- `yarn workspace @engineeringood/athena-theia-product start:smoke:m21` passed after the review hardening and returned graph-workbench DOM proof for the M21 sample project.
 - `powershell -ExecutionPolicy Bypass -File .\tools\encoding-audit.ps1` passed.
 
 ### Completion Notes List
@@ -195,3 +196,16 @@ GPT-5 Codex
 
 - 2026-07-17: Created M21 Story 1.1 with visible IDE sample-project and truthful launch-path requirements.
 - 2026-07-17: Implemented the openable M21 sample project, truthful Theia launch/smoke path, usage documentation, and validation coverage.
+- 2026-07-17: Review passed after M21 smoke was hardened to prove the runtime graph-workbench DOM contract.
+
+## Senior Developer Review (AI)
+
+### Outcome
+
+Approved after patch.
+
+### Action Items
+
+- [x] Replaced the self-fulfilling graph-workbench proof marker with runtime DOM proof emitted from the Electron-rendered IDE.
+- [x] Isolated the smoke run with temporary Electron user data so stale workspace state cannot satisfy the proof.
+- [x] Removed the accidental `start:m20` alias from the M21 change set.
