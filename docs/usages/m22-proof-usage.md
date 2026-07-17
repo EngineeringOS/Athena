@@ -117,3 +117,10 @@ M22 deliberately leaves deferred domains for future milestones: public repositor
 full IEC/QElectroTech library ingestion, cabinet authoring, physical routing, AI layout, final
 solver-stack decision, and full EPLAN parity. No hidden canvas state persists layout truth; approved
 adjustments must become reviewable `.athena` layout intent.
+
+## Retrospective Record
+
+The milestone retrospective and achievement summary is recorded at
+`../../_bmad-output/implementation-artifacts/m22/m22-achievement-usage-retrospective-2026-07-18.md`.
+It captures delivered epics, IDE usage, verification evidence, lessons learned, deferred scope, and
+future operating rules.
