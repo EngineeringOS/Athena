@@ -174,6 +174,100 @@ value class LayoutRelationshipId(val value: String) {
 }
 
 /**
+ * Stable identifier for one immutable layout-intent snapshot.
+ *
+ * Snapshot ids are owned by the governed projection/layout pipeline. They are not renderer, DOM, or
+ * canvas session identifiers.
+ */
+@JvmInline
+value class LayoutSnapshotId(val value: String) {
+    override fun toString(): String = value
+}
+
+/**
+ * Stable identifier for one explainable layout-intent item inside a snapshot.
+ */
+@JvmInline
+value class LayoutIntentId(val value: String) {
+    override fun toString(): String = value
+}
+
+/**
+ * Canonical occurrence identity for one subject representation inside a layout-intent snapshot.
+ */
+@JvmInline
+value class LayoutOccurrenceId(val value: String) {
+    override fun toString(): String = value
+}
+
+/**
+ * Source span carried with layout intent so IDE reveal and audit paths stay tied to authored input.
+ */
+data class LayoutSourceSpan(
+    val sourceUnitId: String,
+    val startLine: Int,
+    val startColumn: Int,
+    val endLine: Int,
+    val endColumn: Int,
+) {
+    init {
+        require(sourceUnitId.isNotBlank()) { "Layout source span requires a source unit id." }
+        require(startLine > 0) { "Layout source span start line must be positive." }
+        require(startColumn > 0) { "Layout source span start column must be positive." }
+        require(endLine >= startLine) { "Layout source span end line must not precede start line." }
+        require(endColumn > 0) { "Layout source span end column must be positive." }
+        require(endLine > startLine || endColumn >= startColumn) {
+            "Layout source span end column must not precede start column on the same line."
+        }
+    }
+}
+
+/**
+ * First schematic-role vocabulary used by M21 layout intent before solved placement exists.
+ */
+enum class SchematicLayoutRole {
+    POWER_SOURCE,
+    PROTECTION,
+    CONTROLLER,
+    HMI,
+    TERMINAL,
+    LOAD,
+    CONDUCTOR,
+    ANNOTATION,
+}
+
+/**
+ * Preferred schematic sheet zone for one layout-intent item.
+ */
+enum class SchematicLayoutZone {
+    POWER,
+    CONTROL,
+    TERMINAL,
+    LOAD,
+    ANNOTATION,
+}
+
+/**
+ * Explainable alignment preference before a layout strategy solves coordinates.
+ */
+enum class LayoutAlignment {
+    LEFT_TO_RIGHT,
+    TOP_TO_BOTTOM,
+    ROW,
+    COLUMN,
+}
+
+/**
+ * Stable priority vocabulary for deterministic layout-intent ordering and later strategy decisions.
+ */
+enum class LayoutPriority {
+    CRITICAL,
+    HIGH,
+    NORMAL,
+    LOW,
+}
+
+/**
  * Relative orientation vocabulary used by layout intent before geometry exists.
  */
 enum class LayoutAxis {
@@ -196,6 +290,75 @@ enum class LayoutPlacementRelation {
 enum class LayoutRelationshipKind {
     OWNERSHIP,
     CONNECTIVITY,
+}
+
+/**
+ * Explainable relationship constraint between layout-intent items before solved layout facts exist.
+ */
+data class LayoutIntentRelationshipConstraint(
+    val relationship: SchematicLayoutRelationship,
+    val targetIntentId: LayoutIntentId,
+    val axis: LayoutAxis? = null,
+) {
+    internal fun stableKey(): String = listOf(
+        relationship.name,
+        targetIntentId.value,
+        axis?.name.orEmpty(),
+    ).joinToString(separator = "|")
+}
+
+/**
+ * Schematic relationship vocabulary used by layout intent. These are constraints, not route facts.
+ */
+enum class SchematicLayoutRelationship {
+    BEFORE,
+    AFTER,
+    NEAR,
+    ALIGNED_WITH,
+    GROUPED_WITH,
+    CONNECTS_TO,
+}
+
+/**
+ * One explainable schematic layout-intent item anchored to canonical subject and occurrence identity.
+ *
+ * This is pre-solver intent. It deliberately avoids coordinates, CSS, DOM, canvas interaction state,
+ * route segments, label placement, or adapter output.
+ */
+data class LayoutIntentItem(
+    val intentId: LayoutIntentId,
+    val subjectId: StableSemanticIdentity,
+    val occurrenceId: LayoutOccurrenceId,
+    val role: SchematicLayoutRole,
+    val preferredZone: SchematicLayoutZone,
+    val priority: LayoutPriority = LayoutPriority.NORMAL,
+    val alignment: LayoutAlignment? = null,
+    val relationshipConstraints: List<LayoutIntentRelationshipConstraint> = emptyList(),
+    val sourceSpan: LayoutSourceSpan? = null,
+)
+
+/**
+ * Immutable, ordered layout-intent snapshot derived before any M21 layout strategy solves facts.
+ */
+data class LayoutIntentSnapshot(
+    val snapshotId: LayoutSnapshotId,
+    val family: ElectricalProjectionFamily,
+    val items: List<LayoutIntentItem>,
+    val relationshipConstraints: List<LayoutIntentRelationshipConstraint> = emptyList(),
+) {
+    companion object {
+        fun canonical(
+            snapshotId: LayoutSnapshotId,
+            family: ElectricalProjectionFamily,
+            items: List<LayoutIntentItem>,
+            relationshipConstraints: List<LayoutIntentRelationshipConstraint> = emptyList(),
+        ): LayoutIntentSnapshot = LayoutIntentSnapshot(
+            snapshotId = snapshotId,
+            family = family,
+            items = items.sortedBy { item -> item.intentId.value },
+            relationshipConstraints = relationshipConstraints.sortedBy(LayoutIntentRelationshipConstraint::stableKey),
+        )
+    }
 }
 
 /**
