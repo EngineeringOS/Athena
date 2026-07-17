@@ -1,35 +1,35 @@
 ---
-title: Athena M22 - Governed Auto Layout And Layout Round-Trip Foundation
+title: Athena M22 - Governed Layout Optimization And Round-Trip Foundation
 status: draft
 created: 2026-07-17
 updated: 2026-07-17
 ---
 
-# PRD: Athena M22 - Governed Auto Layout And Layout Round-Trip Foundation
+# PRD: Athena M22 - Governed Layout Optimization And Round-Trip Foundation
 
 ## 0. Document Purpose
 
-M22 follows M21 by turning Athena's layout-intelligence foundation into a visibly better and
-round-trippable engineering sheet workflow.
+M22 follows M21 by turning Athena's layout-intelligence foundation into a visibly better,
+constraint-driven, and round-trippable engineering sheet workflow.
 
 M21 introduced layout intent, layout facts, schematic region facts, schematic route facts, label
 facts, and Theia proof. The visible result is still far from the professional engineering layout
 standard shown in the EPLAN-style references under `draft/screenshort`. M22 exists to close the
 next credibility gap:
 
-> Can Athena automatically improve schematic layout quality and persist user-approved layout
-> adjustments as governed `.athena` intent instead of canvas-local state?
+> Can Athena optimize schematic layout through governed engineering constraints and persist
+> user-approved layout adjustments as `.athena` intent instead of canvas-local state?
 
 M22 is not full EPLAN parity, not a public repository/import milestone, not a full IEC library
-milestone, and not a cabinet/physical-routing milestone. It is the first governed auto-layout and
-layout round-trip milestone.
+milestone, and not a cabinet/physical-routing milestone. It is the first governed layout
+optimization and layout round-trip milestone.
 
 ## 1. Vision
 
 Athena should help engineers produce professional schematic sheets without making the canvas the
 source of truth. A user should be able to open a real `.athena` project, see Athena produce a more
 credible layout than M21, adjust placement where needed, and have those adjustments reflected back
-as governed layout intent.
+as governed layout constraints and intent.
 
 The target pipeline is:
 
@@ -38,6 +38,7 @@ The target pipeline is:
     -> projection
     -> presentation / sheet IR
     -> layout intent
+    -> layout constraints
     -> Athena layout rules
     -> optional ELK adapter
     -> normalized Athena layout facts
@@ -57,7 +58,8 @@ the sheet still does not look intelligent enough.
 
 If M22 moves to broad component libraries, repository/import infrastructure, or AI layout before
 layout quality and round-trip behavior are credible, Athena risks scaling a weak presentation
-surface. M22 should make the core schematic workflow visibly stronger first.
+surface. M22 should make the core schematic workflow visibly stronger first through governed layout
+optimization, not generic graph prettification.
 
 ## 2. Target User
 
@@ -90,7 +92,7 @@ surface. M22 should make the core schematic workflow visibly stronger first.
     labels, and sheet readability.
   - **Climax:** The sheet is visibly more professional than M21: fewer overlaps, clearer zones,
     cleaner orthogonal routing, and better label placement.
-  - **Resolution:** Aaron can show the result as a real customer-facing auto-layout proof.
+  - **Resolution:** Aaron can show the result as a real customer-facing layout optimization proof.
 
 - **UJ-2. Maya adjusts layout and sees governed source intent.**
   - **Persona + context:** Maya needs to refine a schematic without turning Athena into a drawing
@@ -104,7 +106,7 @@ surface. M22 should make the core schematic workflow visibly stronger first.
 
 - **UJ-3. Winston validates the ELK boundary.**
   - **Persona + context:** Winston is checking that Athena has not outsourced architecture to ELK.
-  - **Entry state:** The M22 auto-layout proof is implemented.
+  - **Entry state:** The M22 layout optimization proof is implemented.
   - **Path:** Winston inspects layout intent, ELK adapter input/output, normalized Athena layout
     facts, and renderer consumption.
   - **Climax:** ELK output is normalized into Athena facts and cannot define semantic meaning or
@@ -113,10 +115,14 @@ surface. M22 should make the core schematic workflow visibly stronger first.
 
 ## 3. Glossary
 
-- **Governed Auto Layout** - Automatic layout improvement driven by Athena layout intent and rules,
-  optionally assisted by helper adapters, with normalized Athena layout facts as output.
+- **Governed Layout Optimization** - Layout improvement driven by Athena layout intent,
+  constraints, and rules, optionally assisted by helper adapters, with normalized Athena layout
+  facts as output.
 - **ELK Adapter** - A subordinate integration that converts Athena layout intent into helper input
   and normalizes helper output back into Athena-owned layout facts.
+- **Layout Constraint Model** - Declarative relationships such as near, aligned-with, below,
+  grouped-with, preferred-zone, and routing-lane preference that guide the solver without becoming
+  raw canvas coordinates.
 - **Layout Round-Trip** - The ability for a user-visible layout adjustment to become governed source
   intent and then reproduce the same layout later.
 - **Layout Hint** - Source-level or model-level authored intent that constrains placement, grouping,
@@ -134,8 +140,8 @@ surface. M22 should make the core schematic workflow visibly stronger first.
 
 #### FR-1: Provide an openable M22 sample project
 
-Athena provides `examples/m22/sample-project` with real `.athena` files that exercise auto-layout,
-layout adjustment, and layout-hint round-trip scenarios.
+Athena provides `examples/m22/sample-project` with real `.athena` files that exercise governed
+layout optimization, layout adjustment, and layout-hint round-trip scenarios.
 
 **Consequences:**
 
@@ -155,23 +161,38 @@ M21 comparison criteria.
 - Acceptance checks cover spacing, grouping, routing, label readability, and sheet scanability.
 - The acceptance bar does not claim full EPLAN parity.
 
-### 4.2 Governed Auto Layout With Optional ELK Adapter
+### 4.2 Governed Layout Optimization With Optional ELK Adapter
 
-**Description:** Athena introduces an auto-layout path that may use ELK through an adapter boundary.
+**Description:** Athena introduces a layout optimization path that may use ELK through an adapter
+boundary.
 
-#### FR-3: Add an Athena layout-solver boundary
+#### FR-3: Add a layout constraint model
 
-Athena can turn layout intent, layout rules, and existing layout facts into improved layout facts
-through a governed layout-solver boundary.
+Athena can derive and persist declarative layout constraints between layout intent and solved layout
+facts.
+
+**Consequences:**
+
+- Constraints can express relationships such as near, aligned-with, below, grouped-with,
+  preferred-zone, and route-lane preference.
+- Constraints are source/model intent, not renderer state.
+- The solver consumes constraints before producing coordinates.
+- M22 avoids raw `x/y` coordinates as the primary authored layout language.
+
+#### FR-4: Add an Athena layout-solver boundary
+
+Athena can turn layout intent, layout constraints, layout rules, and existing layout facts into
+improved layout facts through a governed layout-solver boundary.
 
 **Consequences:**
 
 - The solver consumes Athena layout intent and facts.
+- The solver consumes Athena layout constraints.
 - The solver emits normalized Athena layout facts.
 - The renderer remains paint-only.
 - The same governed input produces stable output.
 
-#### FR-4: Add an ELK adapter spike without final stack selection
+#### FR-5: Add an optional experimental ELK adapter spike without final stack selection
 
 Athena can evaluate ELK-style layout assistance behind the layout-solver boundary.
 
@@ -180,9 +201,11 @@ Athena can evaluate ELK-style layout assistance behind the layout-solver boundar
 - ELK input is derived from Athena layout intent, not raw renderer DOM.
 - ELK output is normalized into Athena layout facts before rendering.
 - Athena rules retain authority over engineering role, zone, representation family, and persistence.
+- The adapter is experimental and optional in M22; the core acceptance can fall back to Athena rules
+  if the adapter is not clean enough.
 - M22 does not choose ELK as the final architecture or sole layout engine.
 
-#### FR-5: Improve visible schematic layout quality
+#### FR-6: Improve visible schematic layout quality
 
 Athena visibly improves placement, grouping, orthogonal routing, and label placement in the M22
 sample project.
@@ -190,37 +213,41 @@ sample project.
 **Consequences:**
 
 - Power, protection, controller, HMI, terminals, and load path are visually identifiable.
-- Routes avoid obvious major overlaps in the acceptance sheet.
-- Labels avoid obvious conflicts with their own anchors and primary routes.
+- Routes use basic diagram edge routing only; advanced electrical routing intelligence is deferred.
+- Labels use basic overlap avoidance only; smart label generation and standards-specific labeling are
+  deferred.
 - The sheet remains grid-backed and readable in the existing Theia graph workbench.
 
 ### 4.3 Layout Adjustment And `.athena` Round-Trip
 
 **Description:** M22 turns user layout adjustments into governed source/model intent.
 
-#### FR-6: Capture canvas adjustments as layout adjustment intents
+#### FR-7: Capture canvas adjustments as layout adjustment intents
 
-Athena can capture a user placement or alignment adjustment as an explicit layout adjustment intent.
+Athena can capture a user placement, alignment, or grouping adjustment as an explicit layout
+adjustment intent.
 
 **Consequences:**
 
 - Adjustment payloads carry canonical subject, occurrence, view, sheet, and source identities.
 - Adjustment intent goes through the existing governed mutation authority.
 - The canvas never persists hidden layout truth by itself.
+- M22 adjustment scope is limited to component placement, alignment, and grouping.
 
-#### FR-7: Persist approved adjustments as `.athena` layout hints
+#### FR-8: Persist approved component adjustments as `.athena` layout hints
 
-Athena can reflect approved layout adjustments in `.athena` as governed layout hints or layout
-blocks.
+Athena can reflect approved component placement, alignment, and grouping adjustments in `.athena` as
+governed layout hints or layout blocks.
 
 **Consequences:**
 
 - Closing and reopening the project reproduces the adjusted layout from source.
 - The source edit is reviewable in the editor and SCM.
 - Source, outline, Problems, and sheet identity remain coherent after the round-trip.
-- Layout hints express engineering intent, not arbitrary DOM or canvas state.
+- Layout hints express engineering intent and constraints, not arbitrary DOM or canvas state.
+- Route and label hint persistence is deferred unless it remains trivially clean.
 
-#### FR-8: Provide mutation preview before applying layout source edits
+#### FR-9: Provide mutation preview before applying layout source edits
 
 Athena shows an inspectable preview before applying layout-hint edits.
 
@@ -232,12 +259,12 @@ Athena shows an inspectable preview before applying layout-hint edits.
 
 ### 4.4 IDE Coherence And Guardrails
 
-**Description:** Auto layout and round-trip edits must preserve the accepted Theia workflow.
+**Description:** Layout optimization and round-trip edits must preserve the accepted Theia workflow.
 
-#### FR-9: Preserve source, outline, Problems, and graph coherence
+#### FR-10: Preserve source, outline, Problems, and graph coherence
 
 Athena keeps canonical identities stable across source, outline, Problems, and Graphical View while
-auto layout and layout round-trip are active.
+layout optimization and layout round-trip are active.
 
 **Consequences:**
 
@@ -246,7 +273,7 @@ auto layout and layout round-trip are active.
 - Outline navigation keeps the same `.athena` editor tab.
 - Diagnostics and selection reveal use the same canonical identities as rendered sheet occurrences.
 
-#### FR-10: Preserve accepted graph workbench canvas behavior
+#### FR-11: Preserve accepted graph workbench canvas behavior
 
 Athena keeps the accepted M20/M21 graph workbench behavior.
 
@@ -257,9 +284,9 @@ Athena keeps the accepted M20/M21 graph workbench behavior.
 - `Cabinet Main` information remains in the top information popover.
 - Floating controls remain transparent overlays.
 
-#### FR-11: Keep M22 boundaries explicit
+#### FR-12: Keep M22 boundaries explicit
 
-Athena keeps M22 scoped to governed auto layout and layout round-trip.
+Athena keeps M22 scoped to governed layout optimization and layout round-trip.
 
 **Consequences:**
 
@@ -281,19 +308,22 @@ Athena keeps M22 scoped to governed auto layout and layout round-trip.
 - Final ELK or layout-stack selection
 - Free-form drawing editor behavior
 - Persisting raw canvas coordinates as hidden state
+- Advanced electrical routing intelligence
+- Smart standards-specific label generation
 
 ## 6. MVP Scope
 
 ### 6.1 In Scope
 
 - `examples/m22/sample-project` with real `.athena` files
-- Theia-visible auto-layout proof
+- Theia-visible layout optimization proof
 - Layout-solver boundary
-- ELK adapter spike behind Athena layout contracts
-- Improved schematic placement, grouping, routing, and label readability in one governed acceptance
-  sheet
-- Layout adjustment intent from the graph workbench
-- Approved adjustment reflected into `.athena` layout hints or layout blocks
+- Layout constraint model
+- Optional experimental ELK adapter spike behind Athena layout contracts
+- Improved schematic placement and grouping in one governed acceptance sheet
+- Basic diagram edge routing and basic label overlap avoidance
+- Component placement, alignment, and grouping adjustment intent from the graph workbench
+- Approved component adjustment reflected into `.athena` layout hints or layout blocks
 - Source/outline/Problems/sheet coherence after layout round-trip
 - Regression coverage for active source projection selection
 - Boundary tests proving ELK, canvas, and deferred scopes remain subordinate
@@ -304,6 +334,8 @@ Athena keeps M22 scoped to governed auto layout and layout round-trip.
 - Broad multi-page engineering packages
 - Full authoring depth
 - Physical layout or cabinet routing
+- Advanced electrical routing intelligence
+- Smart standards-specific label generation
 - Public ecosystem infrastructure
 - AI optimization
 - Final solver-stack decision
@@ -313,13 +345,13 @@ Athena keeps M22 scoped to governed auto layout and layout round-trip.
 **Primary**
 
 - **SM-1:** A reviewer opens the M22 sample project in Theia and sees visible layout improvement over
-  M21.
+  M21 through governed layout constraints.
 - **SM-2:** The M22 acceptance sheet exposes power, protection, controller, HMI, terminals, and load
   path without reading implementation code.
 - **SM-3:** ELK-assisted output, if used, is normalized into Athena layout facts and does not become
   authority.
-- **SM-4:** A user-approved placement adjustment is reflected into `.athena` layout intent and
-  reproduces after reopening.
+- **SM-4:** A user-approved component placement, alignment, or grouping adjustment is reflected into
+  `.athena` layout intent and reproduces after reopening.
 - **SM-5:** Source, outline, Problems, and Graphical View remain coherent for the active `.athena`
   file.
 - **SM-6:** Repeated runs on the same governed input produce stable layout facts and stable visible
@@ -338,19 +370,22 @@ Athena keeps M22 scoped to governed auto layout and layout round-trip.
 - M21 layout intent, layout engine, route facts, label facts, and graph workbench proof remain
   available.
 - Theia remains the only frontend scope for M22.
-- ELK can be evaluated locally as an optional helper without forcing a final layout-stack decision.
-- `.athena` can accept a small layout-hint syntax or layout block without destabilizing the language.
+- ELK can be evaluated locally as an optional experimental helper without forcing a final
+  layout-stack decision.
+- `.athena` can accept a small constraint-oriented layout-hint syntax or layout block without
+  destabilizing the language.
 - M8-style governed mutation authority remains the right path for source-changing layout
   adjustments.
 - The references under `draft/screenshort` are visual acceptance inspiration, not full parity scope.
 
 ## 9. Open Questions
 
-- What is the smallest `.athena` layout-hint syntax that can represent M22 adjustment intent without
-  overfitting to canvas coordinates?
-- Should ELK be included directly as a dependency in M22 or isolated behind an experimental adapter
-  package?
+- What is the smallest `.athena` layout-hint syntax that can represent component placement,
+  alignment, and grouping constraints without overfitting to canvas coordinates?
+- Should ELK be included directly as an optional experimental dependency in M22 or isolated behind an
+  experimental adapter package?
 - Which exact `draft/screenshort` images define the M22 acceptance comparison?
-- Should M22 persist only component placement hints, or also routing and label hints?
+- Should M22 persist only component placement/alignment/grouping hints, or allow a narrow route/label
+  hint only if it is mechanically simple?
 - Should layout adjustment preview reuse guided authoring UI patterns from M15/M21 or introduce a
   dedicated layout-edit preview surface?
