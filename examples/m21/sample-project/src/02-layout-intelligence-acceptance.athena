@@ -1,0 +1,79 @@
+package com.engineeringood.m21.sample
+
+system LayoutIntelligenceAcceptance {
+  device PowerSupply24V {
+    type Switch
+    model "24VDC"
+  }
+
+  device ProtectionQF1 {
+    type Switch
+    model "QF1"
+  }
+
+  device ControllerPLC1 {
+    type Switch
+    model "CPU"
+  }
+
+  device OperatorHMI1 {
+    type Lamp
+    model "Panel"
+  }
+
+  device TerminalBlockXT1 {
+    type Switch
+    model "XT1"
+  }
+
+  device PrimaryLoadM1 {
+    type Motor
+    model "M1"
+  }
+
+  port PowerSupply24V.out {
+    direction out
+    signal Control24V
+  }
+
+  port ProtectionQF1.in {
+    direction in
+    signal Control24V
+  }
+
+  port ProtectionQF1.out {
+    direction out
+    signal Protected24V
+  }
+
+  port ControllerPLC1.power {
+    direction in
+    signal Protected24V
+  }
+
+  port OperatorHMI1.power {
+    direction in
+    signal Protected24V
+  }
+
+  port TerminalBlockXT1.in {
+    direction in
+    signal Protected24V
+  }
+
+  port TerminalBlockXT1.out {
+    direction out
+    signal MotorEnable
+  }
+
+  port PrimaryLoadM1.in {
+    direction in
+    signal MotorEnable
+  }
+
+  connect PowerSupply24V.out -> ProtectionQF1.in
+  connect ProtectionQF1.out -> ControllerPLC1.power
+  connect ProtectionQF1.out -> OperatorHMI1.power
+  connect ProtectionQF1.out -> TerminalBlockXT1.in
+  connect TerminalBlockXT1.out -> PrimaryLoadM1.in
+}

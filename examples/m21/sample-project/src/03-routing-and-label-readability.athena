@@ -1,0 +1,57 @@
+package com.engineeringood.m21.sample
+
+system RoutingAndLabelReadability {
+  device RoutePLC1 {
+    type Switch
+    model "CPU"
+  }
+
+  device RouteSensorS1 {
+    type Switch
+    model "S1"
+  }
+
+  device RouteActuatorY1 {
+    type Lamp
+    model "Y1"
+  }
+
+  device RouteTerminalXT2 {
+    type Switch
+    model "XT2"
+  }
+
+  port RouteSensorS1.out {
+    direction out
+    signal SensorSignal
+  }
+
+  port RoutePLC1.input {
+    direction in
+    signal SensorSignal
+  }
+
+  port RoutePLC1.output {
+    direction out
+    signal ActuatorCommand
+  }
+
+  port RouteTerminalXT2.in {
+    direction in
+    signal ActuatorCommand
+  }
+
+  port RouteTerminalXT2.out {
+    direction out
+    signal ActuatorCommand
+  }
+
+  port RouteActuatorY1.in {
+    direction in
+    signal ActuatorCommand
+  }
+
+  connect RouteSensorS1.out -> RoutePLC1.input
+  connect RoutePLC1.output -> RouteTerminalXT2.in
+  connect RouteTerminalXT2.out -> RouteActuatorY1.in
+}

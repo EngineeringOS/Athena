@@ -1,0 +1,56 @@
+---
+generated: 2026-07-17T14:45:00+08:00
+last_updated: 2026-07-17T15:46:43+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m21
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+development_status:
+  epic-1: in-progress
+  1-1-create-the-openable-m21-sample-project: review
+  1-2-add-graph-workbench-visual-proof-for-the-sample-project: backlog
+  1-3-preserve-the-accepted-m20-canvas-contract-in-m21: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  2-1-introduce-layout-intent-and-layout-snapshot-contracts: backlog
+  2-2-add-the-rule-based-schematic-layout-strategy-boundary: backlog
+  2-3-guard-the-adapter-boundary-without-choosing-a-final-layout-stack: backlog
+  epic-2-retrospective: optional
+  epic-3: backlog
+  3-1-arrange-schematic-subjects-by-engineering-role: backlog
+  3-2-produce-deterministic-schematic-conductor-route-facts: backlog
+  3-3-keep-labels-and-cross-references-readable: backlog
+  epic-3-retrospective: optional
+  epic-4: backlog
+  4-1-preserve-source-outline-problems-and-sheet-identity: backlog
+  4-2-add-m21-visual-regression-and-acceptance-coverage: backlog
+  4-3-keep-m21-deferred-boundaries-explicit: backlog
+  epic-4-retrospective: optional

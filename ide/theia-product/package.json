@@ -66,7 +66,9 @@
     "build": "theia build --mode development && node scripts/copy-tree-sitter-assets.js",
     "rebuild": "theia rebuild:electron",
     "start": "electron scripts/athena-electron-main.js",
+    "start:m21": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m21/sample-project",
     "start:smoke": "node scripts/verify-athena-start.js",
+    "start:smoke:m21": "node scripts/verify-athena-m21-sample-project.js",
     "start:smoke:tree-sitter": "node scripts/verify-athena-tree-sitter-highlighting.js",
     "start:smoke:reuse-catalog": "node scripts/verify-athena-reuse-catalog.js",
     "watch": "theia build --watch --mode development"

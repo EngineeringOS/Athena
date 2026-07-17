@@ -1,0 +1,34 @@
+package com.engineeringood.m21.sample
+
+system BaselineSheetShowcase {
+  device BaselineSW1 {
+    type Switch
+    model "Main"
+  }
+
+  device BaselineM1 {
+    type Motor
+  }
+
+  device BaselineL1 {
+    type Lamp
+  }
+
+  port BaselineSW1.out {
+    direction out
+    signal Control24V
+  }
+
+  port BaselineM1.in {
+    direction in
+    signal Control24V
+  }
+
+  port BaselineL1.in {
+    direction in
+    signal Control24V
+  }
+
+  connect BaselineSW1.out -> BaselineM1.in
+  connect BaselineSW1.out -> BaselineL1.in
+}
