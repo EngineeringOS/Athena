@@ -6,6 +6,19 @@ import { inject, injectable, postConstruct } from '@theia/core/shared/inversify'
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import type { AthenaAuthoringPreviewPayload } from './athena-authoring-protocol';
 import {
+    keepAthenaGraphViewportFocusedOnSelection,
+    type AthenaGraphWorkbenchEdge,
+    type AthenaGraphWorkbenchNode,
+    type AthenaGraphViewportSize,
+    type AthenaGraphViewportTransform,
+    buildAthenaGraphWorkbenchModel,
+    clampAthenaGraphZoom,
+    fitAthenaGraphViewport,
+    panAthenaGraphViewport,
+    resizeAthenaGraphViewport,
+    zoomAthenaGraphViewportAtPoint
+} from './athena-graph-workbench-model';
+import {
     buildAuthoringDecisionRequest,
     buildConnectPortsPreviewRequest
 } from './athena-authoring-protocol';
@@ -18,17 +31,6 @@ import {
 } from './athena-guided-connection-model';
 import { AthenaGraphWorkbenchEdgeLayer } from './athena-graph-workbench-edge-layer';
 import { AthenaGraphWorkbenchPresentationNode } from './athena-graph-workbench-presentation-node';
-import {
-    AthenaGraphWorkbenchNode,
-    AthenaGraphViewportSize,
-    AthenaGraphViewportTransform,
-    buildAthenaGraphWorkbenchModel,
-    clampAthenaGraphZoom,
-    fitAthenaGraphViewport,
-    panAthenaGraphViewport,
-    resizeAthenaGraphViewport,
-    zoomAthenaGraphViewportAtPoint
-} from './athena-graph-workbench-model';
 import {
     AthenaLspEditorBridgeService,
     AthenaSemanticInspectionPayload
@@ -83,6 +85,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected panState: AthenaGraphPanState | undefined;
     protected dragState: AthenaGraphNodeDragState | undefined;
     protected pendingAutoFit = true;
+    protected lastDiagramViewportKey: string | undefined;
     protected overlayPanelExpanded = false;
     protected lastGraphCommandIntent = undefined as AthenaGraphCommandIntentPayload | undefined;
     protected connectPortsArmed = false;
@@ -186,6 +189,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             if (this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
                 return;
             }
+            const nextDiagramViewportKey = this.diagramViewportKey(diagram);
+            const shouldAutoFit = this.lastDiagramViewportKey !== nextDiagramViewportKey;
             this.diagram = diagram;
             this.componentKnowledge = componentKnowledge;
             this.semanticInspection = semanticInspection;
@@ -198,9 +203,16 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.connectPreviewMessage = undefined;
             this.reconcileTransientSelection(diagram);
             void this.handleSemanticSelectionChanged(this.semanticSelectionService.selection, diagram);
-            this.pendingAutoFit = true;
-            this.viewportMode = 'auto-fit';
-            this.fitViewportToDiagramIfPossible();
+            this.lastDiagramViewportKey = nextDiagramViewportKey;
+            if (shouldAutoFit) {
+                this.pendingAutoFit = true;
+                this.viewportMode = 'auto-fit';
+                this.fitViewportToDiagramIfPossible();
+            } else {
+                this.pendingAutoFit = false;
+                this.viewportMode = 'manual';
+                this.keepSelectionVisible(diagram);
+            }
         } catch (error) {
             if (this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
                 return;
@@ -1265,6 +1277,46 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         };
     }
 
+    protected diagramViewportKey(
+        diagram: Awaited<ReturnType<AthenaGraphAdapterService['requestDiagram']>>
+    ): string {
+        return [
+            diagram.kind,
+            diagram.graph?.id ?? 'unknown-graph',
+            diagram.activeViewId ?? 'unknown-view',
+            diagram.activeSheetId ?? 'unknown-sheet'
+        ].join('|');
+    }
+
+    protected keepSelectionVisible(
+        diagram: Awaited<ReturnType<AthenaGraphAdapterService['requestDiagram']>> | undefined = this.diagram,
+    ): void {
+        const currentDiagram = diagram ?? this.diagram;
+        const selection = this.semanticSelectionService.selection;
+        if (!currentDiagram || !selection) {
+            return;
+        }
+
+        const model = buildAthenaGraphWorkbenchModel(currentDiagram);
+        const nextTransform = keepAthenaGraphViewportFocusedOnSelection(
+            this.viewportTransform,
+            this.viewportSize,
+            model.nodes,
+            model.edges,
+            selection.semanticId,
+        );
+        if (
+            nextTransform.zoom === this.viewportTransform.zoom &&
+            nextTransform.offsetX === this.viewportTransform.offsetX &&
+            nextTransform.offsetY === this.viewportTransform.offsetY
+        ) {
+            return;
+        }
+
+        this.viewportTransform = nextTransform;
+        this.update();
+    }
+
     protected handleViewportClick = (event: React.MouseEvent<HTMLDivElement>): void => {
         if (!this.isInteractiveTarget(event.target)) {
             void this.semanticSelectionService.clearSelection();
@@ -1511,6 +1563,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
         try {
             const diagram = await this.graphAdapterService.switchActiveView(viewId);
+            this.lastDiagramViewportKey = this.diagramViewportKey(diagram);
             this.diagram = diagram;
             this.reconcileTransientSelection(diagram);
             this.revealingSelectionSemanticId = undefined;
@@ -1541,9 +1594,11 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.lastGraphCommandIntent = payload;
             if (payload?.status === 'accepted') {
                 const diagram = await this.graphAdapterService.requestDiagram();
+                this.lastDiagramViewportKey = this.diagramViewportKey(diagram);
                 this.diagram = diagram;
                 this.reconcileTransientSelection(diagram);
                 this.revealingSelectionSemanticId = undefined;
+                this.keepSelectionVisible(diagram);
                 await this.semanticSelectionService.selectSemanticId(dragState.semanticId);
             }
             this.errorMessage = undefined;
@@ -1571,9 +1626,11 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.lastGraphCommandIntent = payload;
             if (payload?.status === 'accepted') {
                 const diagram = await this.graphAdapterService.requestDiagram();
+                this.lastDiagramViewportKey = this.diagramViewportKey(diagram);
                 this.diagram = diagram;
                 this.reconcileTransientSelection(diagram);
                 this.revealingSelectionSemanticId = undefined;
+                this.keepSelectionVisible(diagram);
                 const createdConnectionId = payload.execution?.changedSemanticIds.find(semanticId => semanticId.startsWith('connection:'));
                 if (createdConnectionId) {
                     await this.semanticSelectionService.selectSemanticId(createdConnectionId);
@@ -1603,6 +1660,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         }
         if (graphContainsSemanticId(diagram, selection.semanticId)) {
             this.revealingSelectionSemanticId = undefined;
+            this.keepSelectionVisible(diagram);
             return;
         }
         if (this.revealingSelectionSemanticId === selection.semanticId) {
@@ -1616,11 +1674,14 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 return;
             }
             const viewChanged = !this.diagram || revealedDiagram.activeViewId !== this.diagram.activeViewId;
+            this.lastDiagramViewportKey = this.diagramViewportKey(revealedDiagram);
             this.diagram = revealedDiagram;
             if (viewChanged && graphContainsSemanticId(revealedDiagram, selection.semanticId)) {
                 this.pendingAutoFit = true;
                 this.viewportMode = 'auto-fit';
                 this.fitViewportToDiagramIfPossible();
+            } else {
+                this.keepSelectionVisible(revealedDiagram);
             }
             this.errorMessage = undefined;
         } catch (error) {

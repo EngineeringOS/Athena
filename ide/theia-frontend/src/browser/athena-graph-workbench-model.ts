@@ -362,6 +362,135 @@ export function resizeAthenaGraphViewport(
     };
 }
 
+export function keepAthenaGraphViewportFocusedOnSelection(
+    transform: AthenaGraphViewportTransform,
+    viewport: AthenaGraphViewportSize,
+    nodes: AthenaGraphWorkbenchNode[],
+    edges: AthenaGraphWorkbenchEdge[],
+    semanticId: string,
+    padding: number = 48,
+): AthenaGraphViewportTransform {
+    const selectedNode = nodes.find(node => node.semanticId === semanticId);
+    if (selectedNode) {
+        return keepAthenaGraphViewportFocusedOnBounds(
+            transform,
+            viewport,
+            resolveAthenaGraphNodeBounds(selectedNode),
+            padding,
+        );
+    }
+
+    const selectedEdge = edges.find(edge => edge.semanticId === semanticId);
+    if (selectedEdge) {
+        const routeBounds = resolveAthenaGraphRouteBounds(selectedEdge.routePoints);
+        return routeBounds
+            ? keepAthenaGraphViewportFocusedOnBounds(transform, viewport, routeBounds, padding)
+            : transform;
+    }
+
+    return transform;
+}
+
+export function keepAthenaGraphViewportFocusedOnBounds(
+    transform: AthenaGraphViewportTransform,
+    viewport: AthenaGraphViewportSize,
+    bounds: AthenaGraphSceneBounds,
+    padding: number = 48,
+): AthenaGraphViewportTransform {
+    if (viewport.width <= 0 || viewport.height <= 0) {
+        return transform;
+    }
+    if (isAthenaGraphBoundsVisible(transform, viewport, bounds, padding)) {
+        return transform;
+    }
+    return centerAthenaGraphViewportOnBounds(transform, viewport, bounds);
+}
+
+function resolveAthenaGraphNodeBounds(
+    node: Pick<AthenaGraphWorkbenchNode, 'position' | 'size'>,
+): AthenaGraphSceneBounds {
+    const minX = node.position.x;
+    const minY = node.position.y;
+    const maxX = node.position.x + node.size.width;
+    const maxY = node.position.y + node.size.height;
+    return {
+        minX,
+        minY,
+        maxX,
+        maxY,
+        width: Math.max(maxX - minX, 1),
+        height: Math.max(maxY - minY, 1),
+        centerX: minX + (Math.max(maxX - minX, 1) / 2),
+        centerY: minY + (Math.max(maxY - minY, 1) / 2),
+    };
+}
+
+function resolveAthenaGraphRouteBounds(routePoints: AthenaGLSPPoint[]): AthenaGraphSceneBounds | undefined {
+    if (routePoints.length === 0) {
+        return undefined;
+    }
+
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+
+    for (const point of routePoints) {
+        minX = Math.min(minX, point.x);
+        minY = Math.min(minY, point.y);
+        maxX = Math.max(maxX, point.x);
+        maxY = Math.max(maxY, point.y);
+    }
+
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+        return undefined;
+    }
+
+    const width = Math.max(maxX - minX, 1);
+    const height = Math.max(maxY - minY, 1);
+    return {
+        minX,
+        minY,
+        maxX,
+        maxY,
+        width,
+        height,
+        centerX: minX + (width / 2),
+        centerY: minY + (height / 2),
+    };
+}
+
+function centerAthenaGraphViewportOnBounds(
+    transform: AthenaGraphViewportTransform,
+    viewport: AthenaGraphViewportSize,
+    bounds: AthenaGraphSceneBounds,
+): AthenaGraphViewportTransform {
+    const zoom = transform.zoom <= 0 ? 1 : transform.zoom;
+    return {
+        zoom,
+        offsetX: (viewport.width / 2) - (bounds.centerX * zoom),
+        offsetY: (viewport.height / 2) - (bounds.centerY * zoom),
+    };
+}
+
+function isAthenaGraphBoundsVisible(
+    transform: AthenaGraphViewportTransform,
+    viewport: AthenaGraphViewportSize,
+    bounds: AthenaGraphSceneBounds,
+    padding: number,
+): boolean {
+    const zoom = transform.zoom <= 0 ? 1 : transform.zoom;
+    const left = (bounds.minX * zoom) + transform.offsetX;
+    const top = (bounds.minY * zoom) + transform.offsetY;
+    const right = (bounds.maxX * zoom) + transform.offsetX;
+    const bottom = (bounds.maxY * zoom) + transform.offsetY;
+    const inset = Math.max(0, padding);
+    return left >= inset &&
+        top >= inset &&
+        right <= Math.max(viewport.width - inset, inset) &&
+        bottom <= Math.max(viewport.height - inset, inset);
+}
+
 function resolveEmptyState(
     diagram: AthenaGLSPDiagram,
     nodes: Array<{ id: string }>,

@@ -763,6 +763,83 @@ test('preserves the same world center when the viewport resizes in manual mode',
     assert.equal(Math.round(((600 / 2) - (-120)) / 1.5), Math.round(((900 / 2) - resized.offsetY) / 1.5));
 });
 
+test('keeps an offscreen node selection centered without drifting on repeated focus checks', () => {
+    const nodes = [
+        {
+            semanticId: 'component:PLC1',
+            position: { x: 1320, y: 760 },
+            size: { width: 140, height: 90 }
+        }
+    ];
+    const edges = [];
+    const viewport = {
+        width: 960,
+        height: 540
+    };
+    const initial = {
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0
+    };
+
+    const once = graphWorkbenchModel.keepAthenaGraphViewportFocusedOnSelection(
+        initial,
+        viewport,
+        nodes,
+        edges,
+        'component:PLC1'
+    );
+    const twice = graphWorkbenchModel.keepAthenaGraphViewportFocusedOnSelection(
+        once,
+        viewport,
+        nodes,
+        edges,
+        'component:PLC1'
+    );
+
+    assert.notDeepEqual(once, initial);
+    assert.deepEqual(twice, once);
+    assert.equal(once.zoom, 1);
+    assert.equal(Math.round((1320 + 70) + once.offsetX), Math.round(viewport.width / 2));
+    assert.equal(Math.round((760 + 45) + once.offsetY), Math.round(viewport.height / 2));
+});
+
+test('keeps a connection selection centered from its route points', () => {
+    const transform = {
+        zoom: 1.25,
+        offsetX: -60,
+        offsetY: -40
+    };
+    const viewport = {
+        width: 1200,
+        height: 800
+    };
+    const nodes = [];
+    const edges = [
+        {
+            semanticId: 'connection:PLC1.out->M1.in',
+            routePoints: [
+                { x: 1640, y: 420 },
+                { x: 1760, y: 480 },
+                { x: 1880, y: 540 }
+            ]
+        }
+    ];
+
+    const focused = graphWorkbenchModel.keepAthenaGraphViewportFocusedOnSelection(
+        transform,
+        viewport,
+        nodes,
+        edges,
+        'connection:PLC1.out->M1.in'
+    );
+
+    assert.equal(focused.zoom, transform.zoom);
+    assert.notDeepEqual(focused, transform);
+    assert.equal(Math.round(((1640 + 1880) / 2) * focused.zoom + focused.offsetX), Math.round(viewport.width / 2));
+    assert.equal(Math.round(((420 + 540) / 2) * focused.zoom + focused.offsetY), Math.round(viewport.height / 2));
+});
+
 test('builds a safe model even when optional diagram arrays are missing at runtime', () => {
     const sparseDiagram = {
         kind: 'athena-glsp-diagram',
