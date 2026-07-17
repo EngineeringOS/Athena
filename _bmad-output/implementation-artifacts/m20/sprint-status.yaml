@@ -1,6 +1,6 @@
 ﻿---
 generated: 2026-07-16T21:40:00+08:00
-last_updated: 2026-07-17T08:16:44.3699345+08:00
+last_updated: 2026-07-17T08:30:06.2449898+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -46,8 +46,8 @@ development_status:
   epic-2-retrospective: optional
   epic-3: in-progress
   3-1-stabilize-viewport-choreography: review
-  3-2-keep-source-problems-and-sheet-coherence-intact: ready-for-dev
-  3-3-keep-dense-content-readable-at-common-window-sizes: ready-for-dev
+  3-2-keep-source-problems-and-sheet-coherence-intact: review
+  3-3-keep-dense-content-readable-at-common-window-sizes: review
   epic-3-retrospective: optional
   epic-4: in-progress
   4-1-define-the-customer-facing-acceptance-fixture: ready-for-dev

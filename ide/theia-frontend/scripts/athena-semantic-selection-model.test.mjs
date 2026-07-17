@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const semanticSelectionModel = await import('../lib/browser/athena-semantic-selection-model.js');
+const { default: m20ReadyDiagram } = await import('../../../examples/m20/schematic-sheet-proof/ready-sheet.diagram.mjs');
 
 const inspection = {
     uri: 'file:///workspace/demo.athena',
@@ -299,6 +300,96 @@ test('resolves Problem diagnostics through canonical ids or governed source rang
         ),
         undefined
     );
+});
+
+test('resolves source and Problem reveal through governed M20 presentation occurrences', () => {
+    const m20Inspection = {
+        uri: 'file:///workspace/m20-ready.athena',
+        version: 1,
+        status: 'ready',
+        systemName: 'M20ReadySheet',
+        diagnosticsCount: 1,
+        diagnosticSummaries: [],
+        componentCount: 1,
+        portCount: 0,
+        connectionCount: 1,
+        components: [
+            {
+                semanticId: 'component:PSU1',
+                name: 'PSU1',
+                kind: 'PowerSupply',
+                properties: '',
+                sourceRange: {
+                    start: { line: 2, character: 0 },
+                    end: { line: 5, character: 1 }
+                }
+            }
+        ],
+        ports: [],
+        connections: [
+            {
+                semanticId: 'connection:PSU1.plus->PLC1.power',
+                fromPath: 'PSU1.plus',
+                toPath: 'PLC1.power',
+                sourceRange: {
+                    start: { line: 7, character: 0 },
+                    end: { line: 7, character: 31 }
+                }
+            }
+        ]
+    };
+    const presentationOnlyDiagram = {
+        ...m20ReadyDiagram,
+        graph: {
+            ...m20ReadyDiagram.graph,
+            nodes: [],
+            edges: []
+        },
+        presentation: {
+            occurrences: [
+                {
+                    occurrenceId: 'schematic/presentation/occurrence/component_PSU1',
+                    semanticId: 'component:PSU1'
+                }
+            ],
+            connectors: [
+                {
+                    occurrenceId: 'schematic/presentation/connector/connection_PSU1_plus_PLC1_power',
+                    semanticId: 'connection:PSU1.plus->PLC1.power'
+                }
+            ]
+        }
+    };
+
+    const sourceReveal = semanticSelectionModel.resolveSemanticRevealTargetFromSourceRange(
+        m20Inspection,
+        presentationOnlyDiagram,
+        m20Inspection.uri,
+        {
+            start: { line: 3, character: 1 },
+            end: { line: 3, character: 4 }
+        }
+    );
+    const diagnosticReveal = semanticSelectionModel.resolveSemanticRevealTargetFromDiagnostic(
+        m20Inspection,
+        presentationOnlyDiagram,
+        m20Inspection.uri,
+        {
+            range: m20Inspection.connections[0].sourceRange,
+            data: {
+                semanticId: 'connection:PSU1.plus->PLC1.power'
+            }
+        }
+    );
+
+    assert.deepEqual(sourceReveal?.occurrenceIds, [
+        'schematic/presentation/occurrence/component_PSU1'
+    ]);
+    assert.deepEqual(diagnosticReveal?.occurrenceIds, [
+        'schematic/presentation/connector/connection_PSU1_plus_PLC1_power'
+    ]);
+    assert.equal(sourceReveal?.semanticId, 'component:PSU1');
+    assert.equal(diagnosticReveal?.semanticId, 'connection:PSU1.plus->PLC1.power');
 });
 
 test('chooses governed reveal views deterministically and stops after supported views are exhausted', () => {

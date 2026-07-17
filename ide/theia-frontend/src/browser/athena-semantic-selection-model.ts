@@ -112,6 +112,16 @@ type AthenaProjectionSelectionCarrier = {
         portSemanticId: string;
         anchorId: string;
     }>;
+    presentation?: {
+        occurrences?: Array<{
+            occurrenceId: string;
+            semanticId?: string;
+        }>;
+        connectors?: Array<{
+            occurrenceId: string;
+            semanticId?: string;
+        }>;
+    };
     graph: {
         nodes: Array<{ id: string; semanticId?: string }>;
         edges: Array<{ id: string; semanticId?: string }>;
@@ -303,7 +313,15 @@ export function resolveProjectionOccurrence(
         };
     }
 
-    const occurrenceIds = [
+    const presentationOccurrenceIds = [
+        ...(diagram.presentation?.occurrences ?? [])
+            .filter(occurrence => occurrence.semanticId === semanticId)
+            .map(occurrence => occurrence.occurrenceId),
+        ...(diagram.presentation?.connectors ?? [])
+            .filter(connector => connector.semanticId === semanticId)
+            .map(connector => connector.occurrenceId)
+    ];
+    const graphOccurrenceIds = [
         ...diagram.graph.nodes
             .filter(node => (node.semanticId ?? node.id) === semanticId)
             .map(node => node.id),
@@ -311,6 +329,9 @@ export function resolveProjectionOccurrence(
             .filter(edge => (edge.semanticId ?? edge.id) === semanticId)
             .map(edge => edge.id)
     ];
+    const occurrenceIds = Array.from(new Set(
+        presentationOccurrenceIds.length > 0 ? presentationOccurrenceIds : graphOccurrenceIds
+    ));
     const status = occurrenceIds.length === 0
         ? 'unresolved'
         : occurrenceIds.length === 1
