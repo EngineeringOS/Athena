@@ -48,7 +48,7 @@ internal fun AthenaLspSessionHostReady.currentProjectionSession(
         languageFeatures == null || sourcePath == null -> null
         snapshot.lastOpenedDocumentUri != null -> {
             languageFeatures.trackedDocument(snapshot.lastOpenedDocumentUri)
-                ?.takeIf { tracked -> tracked.path.normalize() == sourcePath.normalize() }
+                ?.takeIf { tracked -> tracked.path.isWithinSourceRoot(snapshot.sourceRootPath) }
         }
 
         else -> null
@@ -56,6 +56,10 @@ internal fun AthenaLspSessionHostReady.currentProjectionSession(
     return trackedDocument?.let { tracked ->
         context.previewProjectionSession(tracked.compilation)
     } ?: context.projectProjectionSession()
+}
+
+private fun java.nio.file.Path.isWithinSourceRoot(sourceRootPath: java.nio.file.Path): Boolean {
+    return toAbsolutePath().normalize().startsWith(sourceRootPath.toAbsolutePath().normalize())
 }
 
 internal fun AthenaRuntimeProjectionSession.toPayload(

@@ -13,6 +13,7 @@ import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent
 import org.eclipse.lsp4j.TextDocumentItem
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
+import kotlin.io.path.writeText
 
 class AthenaProjectionRequestTest {
     @Test
@@ -953,6 +954,83 @@ class AthenaProjectionRequestTest {
                 assertEquals(2, readyProjection.components.size)
                 assertEquals(0, readyProjection.connections.size)
                 assertEquals(2, readyProjection.labels.size)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `projection session request follows latest opened source file in governed repository`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-projection-active-source-",
+            sourceFileName = "01-baseline-sheet.athena",
+            sourceText = demoCabinetSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        val layoutSource = """
+            system LayoutAcceptance {
+              device PLC2 {
+                type Switch
+              }
+
+              device M2 {
+                type Motor
+              }
+
+              port PLC2.out {
+                direction out
+                signal Digital
+              }
+
+              port M2.in {
+                direction in
+                signal Digital
+              }
+
+              connect PLC2.out -> M2.in
+            }
+        """.trimIndent()
+        val layoutSourcePath = repository.sourceRoot.resolve("02-layout-intelligence-acceptance.athena")
+        try {
+            layoutSourcePath.writeText(layoutSource)
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val layoutDocumentUri = layoutSourcePath.toUri().toString()
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            layoutDocumentUri,
+                            "athena",
+                            1,
+                            layoutSource,
+                        ),
+                    ),
+                )
+
+                val payload = server.projectionSession(
+                    AthenaProjectionSessionParams(),
+                ).get()
+
+                assertNotNull(payload)
+                assertEquals("ready", payload.status)
+                val readyProjection = assertNotNull(payload.readyProjection)
+                assertEquals("LayoutAcceptance", readyProjection.systemName)
+                assertTrue(
+                    readyProjection.components.any { component -> component.semanticId == "component:PLC2" },
+                    "Projection should come from the latest opened source, not the repository seed source.",
+                )
             } finally {
                 server.shutdown().get()
             }
