@@ -19,7 +19,10 @@ Supported:
 - openable M21 sample project in the Athena Theia IDE
 - accepted M20 canvas behavior as the visible baseline
 - real `.athena` source scenarios for later layout-intent and schematic-routing stories
-- local proof checks for sample-project shape and launch path
+- governed layout intent, layout strategy, schematic region, schematic route, label, and
+  cross-reference fact checks
+- local proof checks for sample-project shape, launch path, graph workbench DOM behavior, same-tab
+  navigation, acceptance coverage, and boundary discipline
 
 Not supported in M21:
 
@@ -45,6 +48,11 @@ That command opens the sample project at `../../examples/m21/sample-project/`.
 In the IDE:
 
 - open the `.athena` source files in the sample project
+- review `src/01-baseline-sheet.athena` for the accepted M20 canvas baseline
+- review `src/02-layout-intelligence-acceptance.athena` for power, control, terminal, and load
+  readability intent
+- review `src/03-routing-and-label-readability.athena` for schematic routing and label readability
+- review `src/04-boundary-scope.athena` for deferred-scope guardrails
 - switch to the schematic sheet surface
 - inspect source and Problems against the same canonical subject
 - use outline navigation in the same editor tab for `.athena` files
@@ -56,6 +64,23 @@ In the IDE:
 The smoke proof opens the same sample project, uses the home `Graphical View` action, and validates
 the rendered graph workbench DOM for the stage grid, transparent overlays, sheet frame, info
 popover, and whitespace-close behavior.
+
+## What M21 Proves
+
+M21 proves foundation-level engineering layout intelligence:
+
+- layout intent exists before solved placement facts
+- schematic placement facts are deterministic and Athena-owned
+- helper/adapter output stays subordinate to Athena layout contracts
+- schematic regions make power, control, terminal, and load areas inspectable
+- schematic conductor routes are deterministic topology facts, not physical routing claims
+- label and cross-reference facts keep canonical identity and deterministic placement
+- source, outline, Problems, and sheet identity remain coherent in the IDE
+- M21 boundaries are executable and visible
+
+M21 does not prove full EPLAN parity, full IEC breadth, public repository/import ecosystem behavior,
+cabinet authoring, physical routing, AI layout, final layout-stack selection, or sheet-local
+drag-save truth.
 
 ## Verification Path
 
@@ -81,3 +106,5 @@ powershell -ExecutionPolicy Bypass -File .\tools\encoding-audit.ps1
 - Keep the sample project openable as a normal Athena project with real `.athena` files.
 - Keep `.mjs` files as supporting tests only; they are not the customer proof.
 - Keep M20 canvas invariants intact.
+- Keep future layout improvements routed through governed layout intent, route facts, label facts,
+  and renderer-consumed facts rather than canvas-local state.

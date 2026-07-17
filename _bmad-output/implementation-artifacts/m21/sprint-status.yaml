@@ -1,6 +1,6 @@
 ---
 generated: 2026-07-17T14:45:00+08:00
-last_updated: 2026-07-17T21:14:00+08:00
+last_updated: 2026-07-17T21:14:01+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -38,19 +38,41 @@ development_status:
   1-1-create-the-openable-m21-sample-project: done
   1-2-add-graph-workbench-visual-proof-for-the-sample-project: done
   1-3-preserve-the-accepted-m20-canvas-contract-in-m21: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
   epic-2: done
   2-1-introduce-layout-intent-and-layout-snapshot-contracts: done
   2-2-add-the-rule-based-schematic-layout-strategy-boundary: done
   2-3-guard-the-adapter-boundary-without-choosing-a-final-layout-stack: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
   epic-3: done
   3-1-arrange-schematic-subjects-by-engineering-role: done
   3-2-produce-deterministic-schematic-conductor-route-facts: done
   3-3-keep-labels-and-cross-references-readable: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
   epic-4: done
   4-1-preserve-source-outline-problems-and-sheet-identity: done
   4-2-add-m21-visual-regression-and-acceptance-coverage: done
   4-3-keep-m21-deferred-boundaries-explicit: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
+
+action_items:
+  - epic: 4
+    action: "Keep M21 usage framed around the openable Theia sample project, not .mjs files."
+    owner: "Product"
+    status: open
+  - epic: 4
+    action: "Use M21 layout intent as the required contract for future layout intelligence."
+    owner: "Architecture"
+    status: open
+  - epic: 4
+    action: "Preserve layout-engine and routing-model determinism tests when extending layout behavior."
+    owner: "Development"
+    status: open
+  - epic: 4
+    action: "Keep M21 acceptance coverage and boundary checks in the verification path for future presentation work."
+    owner: "QA"
+    status: open
+  - epic: 4
+    action: "Evaluate future sheet rendering improvements against engineering readability, not generic visual polish."
+    owner: "UX/Product"
+    status: open
