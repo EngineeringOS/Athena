@@ -76,3 +76,22 @@ test('M21 sample sources stay inside the accepted local Athena syntax', () => {
         assert.doesNotMatch(source, /\bregistry\b|\bmarketplace\b|\bcabinet\b|\bharness\b|\bcable tray\b|\b3D installation\b/i);
     });
 });
+
+test('M21 routing sample preserves source endpoint identity vocabulary', () => {
+    const routingSource = readRepoFile('examples/m21/sample-project/src/03-routing-and-label-readability.athena');
+    const expectedIdentities = [
+        'RouteSensorS1',
+        'RoutePLC1',
+        'RouteTerminalXT2',
+        'RouteActuatorY1',
+        'SensorSignal',
+        'ActuatorCommand'
+    ];
+
+    expectedIdentities.forEach(identity => {
+        assert.match(routingSource, new RegExp(`\\b${identity}\\b`));
+    });
+    assert.match(routingSource, /connect RouteSensorS1\.out -> RoutePLC1\.input/);
+    assert.match(routingSource, /connect RoutePLC1\.output -> RouteTerminalXT2\.in/);
+    assert.match(routingSource, /connect RouteTerminalXT2\.out -> RouteActuatorY1\.in/);
+});

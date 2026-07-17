@@ -62,9 +62,13 @@ popover, and whitespace-close behavior.
 Run checks sequentially on Windows:
 
 ```powershell
+.\gradlew.bat --no-daemon --console=plain :kernel:layout-engine:test
+.\gradlew.bat --no-daemon --console=plain :kernel:routing-model:test
+node --test ide/theia-frontend/scripts/athena-m21-acceptance-coverage.test.mjs
+node --test ide/theia-frontend/scripts/athena-m21-boundary.test.mjs
+node --test ide/theia-frontend/scripts/athena-theia-editor-navigation.test.mjs
 node --test ide/theia-frontend/scripts/athena-m21-sample-project.test.mjs
 node --test ide/theia-frontend/scripts/athena-m21-graph-workbench-visual-proof.test.mjs
-node --test ide/theia-frontend/scripts/athena-m21-canvas-contract.test.mjs
 Set-Location ide
 yarn workspace @engineeringood/athena-theia-product start:smoke:m21
 Set-Location ..
