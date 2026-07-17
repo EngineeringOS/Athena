@@ -26,6 +26,7 @@ data class SchematicLayoutStrategyResult(
     val snapshotId: LayoutSnapshotId,
     val family: ElectricalProjectionFamily,
     val placementFacts: List<SchematicPlacementFact>,
+    val regionFacts: List<SchematicRegionFact> = emptyList(),
 )
 
 /**
@@ -61,6 +62,31 @@ data class SchematicPlacementFact(
     val sourceSpan: LayoutSourceSpan? = null,
 )
 
+/** Stable schematic region identity owned by Athena layout facts and scoped by snapshot id. */
+@JvmInline
+value class SchematicRegionId(val value: String) {
+    override fun toString(): String = value
+}
+
+/** Bounds of a coherent schematic region in sheet coordinates. */
+data class SchematicRegionBounds(
+    val origin: SchematicLayoutPoint,
+    val size: SchematicLayoutSize,
+)
+
+/**
+ * Grouping fact that makes engineering regions inspectable without downstream reconstruction.
+ */
+data class SchematicRegionFact(
+    val regionId: SchematicRegionId,
+    val snapshotId: LayoutSnapshotId,
+    val zone: SchematicLayoutZone,
+    val intentIds: List<LayoutIntentId>,
+    val occurrenceIds: List<LayoutOccurrenceId>,
+    val roles: List<SchematicLayoutRole>,
+    val bounds: SchematicRegionBounds,
+)
+
 /**
  * Stable identifier for a subordinate layout helper.
  */
@@ -94,7 +120,11 @@ class SchematicLayoutHelperNormalizer {
             "Schematic layout helper proposals must target the active layout intent snapshot."
         }
         val intentById = snapshot.items.associateBy(LayoutIntentItem::intentId)
-        require(proposal.placementFacts.map(SchematicPlacementFact::intentId).toSet() == intentById.keys) {
+        val proposalIntentIds = proposal.placementFacts.map(SchematicPlacementFact::intentId)
+        require(proposalIntentIds.size == proposalIntentIds.toSet().size) {
+            "Schematic layout helper proposals must reference each layout intent item at most once."
+        }
+        require(proposalIntentIds.size == intentById.size && proposalIntentIds.toSet() == intentById.keys) {
             "Schematic layout helper proposals must cover every layout intent item exactly once."
         }
         proposal.placementFacts.forEach { fact ->
@@ -116,11 +146,14 @@ class SchematicLayoutHelperNormalizer {
             require(fact.preferredZone == intent.preferredZone) {
                 "Schematic layout helper placement facts must preserve preferred schematic zone."
             }
+            fact.requireValidGeometry()
         }
+        val normalizedPlacementFacts = proposal.placementFacts.sortedBy { fact -> fact.intentId.value }
         return SchematicLayoutStrategyResult(
             snapshotId = snapshot.snapshotId,
             family = snapshot.family,
-            placementFacts = proposal.placementFacts.sortedBy { fact -> fact.intentId.value },
+            placementFacts = normalizedPlacementFacts,
+            regionFacts = buildRegionFacts(snapshot.snapshotId, normalizedPlacementFacts),
         )
     }
 }
@@ -168,8 +201,68 @@ class RuleBasedSchematicLayoutStrategy(
             snapshotId = snapshot.snapshotId,
             family = snapshot.family,
             placementFacts = facts,
+            regionFacts = buildRegionFacts(snapshot.snapshotId, facts),
         )
     }
+}
+
+private fun buildRegionFacts(
+    snapshotId: LayoutSnapshotId,
+    placementFacts: List<SchematicPlacementFact>,
+): List<SchematicRegionFact> {
+    placementFacts.forEach { fact -> fact.requireValidGeometry() }
+    return placementFacts
+        .groupBy(SchematicPlacementFact::preferredZone)
+        .toSortedMap(compareBy { zone -> zone.ordinal })
+        .map { (zone, zoneFacts) ->
+            val orderedFacts = zoneFacts.sortedWith(
+                compareBy<SchematicPlacementFact>(
+                    { fact -> fact.position.y },
+                    { fact -> fact.position.x },
+                    { fact -> fact.intentId.value },
+                    { fact -> fact.occurrenceId.value },
+                    { fact -> fact.role.name },
+                ),
+            )
+            SchematicRegionFact(
+                regionId = SchematicRegionId("region:schematic:${zone.name.lowercase()}"),
+                snapshotId = snapshotId,
+                zone = zone,
+                intentIds = orderedFacts.map(SchematicPlacementFact::intentId),
+                occurrenceIds = orderedFacts.map(SchematicPlacementFact::occurrenceId),
+                roles = orderedFacts.map(SchematicPlacementFact::role).distinct(),
+                bounds = orderedFacts.toRegionBounds(),
+            )
+        }
+}
+
+private fun List<SchematicPlacementFact>.toRegionBounds(): SchematicRegionBounds {
+    val left = minOf { fact -> fact.position.x }
+    val top = minOf { fact -> fact.position.y }
+    val right = maxOf { fact -> fact.position.x.toLong() + fact.size.width.toLong() }.toIntExact()
+    val bottom = maxOf { fact -> fact.position.y.toLong() + fact.size.height.toLong() }.toIntExact()
+    return SchematicRegionBounds(
+        origin = SchematicLayoutPoint(x = left, y = top),
+        size = SchematicLayoutSize(width = right - left, height = bottom - top),
+    )
+}
+
+private fun SchematicPlacementFact.requireValidGeometry() {
+    require(position.x >= 0 && position.y >= 0) {
+        "Schematic layout helper placement facts must use non-negative sheet coordinates."
+    }
+    require(size.width > 0 && size.height > 0) {
+        "Schematic layout helper placement facts must use positive sheet sizes."
+    }
+    (position.x.toLong() + size.width.toLong()).toIntExact()
+    (position.y.toLong() + size.height.toLong()).toIntExact()
+}
+
+private fun Long.toIntExact(): Int {
+    require(this in Int.MIN_VALUE..Int.MAX_VALUE) {
+        "Schematic layout geometry must stay within Int sheet coordinate bounds."
+    }
+    return toInt()
 }
 
 private fun SchematicLayoutRole.defaultSize(): SchematicLayoutSize {

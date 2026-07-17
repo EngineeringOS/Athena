@@ -54,6 +54,7 @@ include(
     ":kernel:template-model",
     ":kernel:layout-model",
     ":kernel:layout-engine",
+    ":kernel:routing-model",
     ":kernel:geometry-model",
     ":kernel:projection-model",
     ":kernel:presentation-model",
