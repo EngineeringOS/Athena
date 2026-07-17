@@ -1,6 +1,6 @@
 ﻿---
 generated: 2026-07-16T21:40:00+08:00
-last_updated: 2026-07-17T08:37:26.4896177+08:00
+last_updated: 2026-07-17T08:40:52.7486456+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -52,5 +52,5 @@ development_status:
   epic-4: in-progress
   4-1-define-the-customer-facing-acceptance-fixture: review
   4-2-add-executable-regression-coverage-for-layout-and-interaction: review
-  4-3-keep-the-deferred-boundaries-explicit: ready-for-dev
+  4-3-keep-the-deferred-boundaries-explicit: review
   epic-4-retrospective: optional
