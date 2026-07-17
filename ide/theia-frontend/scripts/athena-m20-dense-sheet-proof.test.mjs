@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { buildAthenaGraphWorkbenchModel } = await import('../lib/browser/athena-graph-workbench-model.js');
+const {
+    buildAthenaGraphWorkbenchModel,
+    fitAthenaGraphViewport
+} = await import('../lib/browser/athena-graph-workbench-model.js');
 const { default: denseDiagram } = await import('../../../examples/m20/dense-sheet-proof/ready-sheet.diagram.mjs');
 
 function overlaps(left, right) {
@@ -62,4 +65,31 @@ test('M20 dense sheet proof keeps drawing rules governed and readable', () => {
     }
 
     assert.deepEqual(firstModel, secondModel);
+});
+
+test('M20 dense sheet proof stays readable at common window sizes', () => {
+    const model = buildAthenaGraphWorkbenchModel(denseDiagram);
+    const commonSizes = [
+        { width: 1366, height: 768 },
+        { width: 1440, height: 900 },
+        { width: 1600, height: 900 },
+    ];
+
+    const transforms = commonSizes.map(viewport => fitAthenaGraphViewport(model.sceneBounds, viewport));
+    const repeatedTransforms = commonSizes.map(viewport => fitAthenaGraphViewport(model.sceneBounds, viewport));
+
+    assert.deepEqual(transforms, repeatedTransforms);
+    transforms.forEach((transform, index) => {
+        const viewport = commonSizes[index];
+        const left = Math.round((model.sceneBounds.minX * transform.zoom) + transform.offsetX);
+        const top = Math.round((model.sceneBounds.minY * transform.zoom) + transform.offsetY);
+        const right = Math.round((model.sceneBounds.maxX * transform.zoom) + transform.offsetX);
+        const bottom = Math.round((model.sceneBounds.maxY * transform.zoom) + transform.offsetY);
+
+        assert.ok(transform.zoom > 1);
+        assert.ok(left >= 36);
+        assert.ok(top >= 36);
+        assert.ok(right <= viewport.width - 36);
+        assert.ok(bottom <= viewport.height - 36);
+    });
 });
