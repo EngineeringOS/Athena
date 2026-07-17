@@ -3,10 +3,16 @@ import * as React from '@theia/core/shared/react';
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { Disposable, DisposableCollection } from '@theia/core/lib/common/disposable';
 import { inject, injectable, postConstruct } from '@theia/core/shared/inversify';
+import { Message } from '@lumino/messaging';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import type { AthenaAuthoringPreviewPayload } from './athena-authoring-protocol';
 import {
+    buildAthenaGraphLayoutMutationPreview,
+    buildAthenaGraphLayoutSourceEdit,
+    captureAthenaGraphLayoutAdjustmentIntent,
     keepAthenaGraphViewportFocusedOnSelection,
+    type AthenaGraphLayoutAdjustmentIntent,
+    type AthenaGraphLayoutMutationPreview,
     type AthenaGraphWorkbenchEdge,
     type AthenaGraphWorkbenchNode,
     type AthenaGraphViewportSize,
@@ -86,8 +92,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected dragState: AthenaGraphNodeDragState | undefined;
     protected pendingAutoFit = true;
     protected lastDiagramViewportKey: string | undefined;
-    protected overlayPanelExpanded = false;
     protected lastGraphCommandIntent = undefined as AthenaGraphCommandIntentPayload | undefined;
+    protected lastLayoutAdjustmentIntent = undefined as AthenaGraphLayoutAdjustmentIntent | undefined;
+    protected layoutMutationPreview = undefined as AthenaGraphLayoutMutationPreview | undefined;
     protected connectPortsArmed = false;
     protected connectPortsSource: AthenaGraphPortConnectSource | undefined;
     protected connectPortsPending = false;
@@ -95,6 +102,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected connectPreviewMessage: string | undefined;
     protected connectApplyingDecision = false;
     protected revealingSelectionSemanticId: string | undefined;
+    protected infoPopoverOpen = false;
 
     @postConstruct()
     protected init(): void {
@@ -103,6 +111,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         this.title.caption = AthenaGraphWorkbenchWidget.LABEL;
         this.title.closable = true;
         this.title.iconClass = 'codicon codicon-type-hierarchy-sub';
+        this.node.tabIndex = -1;
         this.addClass('athena-graph-workbench-widget');
 
         this.toDispose.push(this.currentEditorListeners);
@@ -130,10 +139,16 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.connectPreviewMessage = undefined;
             this.connectApplyingDecision = false;
             this.revealingSelectionSemanticId = undefined;
+            this.infoPopoverOpen = false;
         }));
 
         this.bindCurrentEditor(this.editorManager.currentEditor);
         this.scheduleRefresh();
+    }
+
+    protected override onActivateRequest(msg: Message): void {
+        super.onActivateRequest(msg);
+        this.node.focus();
     }
 
     protected bindCurrentEditor(widget: EditorWidget | undefined): void {
@@ -201,6 +216,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.connectPortsPending = false;
             this.connectPreview = undefined;
             this.connectPreviewMessage = undefined;
+            this.infoPopoverOpen = false;
             this.reconcileTransientSelection(diagram);
             void this.handleSemanticSelectionChanged(this.semanticSelectionService.selection, diagram);
             this.lastDiagramViewportKey = nextDiagramViewportKey;
@@ -295,6 +311,15 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const compatibleConnectTargetIds = new Set(compatibleConnectTargets.map(target => target.semanticId));
         const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
+        const cabinetMainRows = this.buildCabinetMainInfoRows(
+            model,
+            selectedSemantic,
+            selectedSemanticId,
+            selectionResolution,
+            endpointAliasResolution,
+            crossReference,
+            relatedSubjects,
+        );
         const sheetSurfaceStyle: React.CSSProperties = {
             width: `${model.sheetChrome.frame.width}px`,
             height: `${model.sheetChrome.frame.height}px`,
@@ -308,353 +333,19 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             model.isElectricalFamily ? 'athena-graph-workbench__stage--electrical' : '',
         ].filter(Boolean).join(' ');
 
-        return <div className='athena-graph-workbench'>
+        return <div className='athena-graph-workbench' onClick={this.handleWorkbenchClick}>
             <div className='athena-graph-workbench__workspace'>
                 <section
                     className={stageClassName}
                     style={stageStyle}
-                    onClick={this.handleStageClick}
                 >
                     {model.emptyState
-                        ? <div className='athena-graph-workbench__empty athena-graph-workbench__empty--inline'>
+                        ? (<div className='athena-graph-workbench__empty athena-graph-workbench__empty--inline'>
                             <h4>{model.emptyState.title}</h4>
                             <p>{model.emptyState.message}</p>
-                        </div>
+                        </div>)
                         : <>
-                            <div className='athena-graph-workbench__overlay athena-graph-workbench__overlay--top'>
-                                <div className='athena-graph-workbench__floating-bar'>
-                                    <div className='athena-graph-workbench__identity'>
-                                        <h2>{model.headerTitle}</h2>
-                                        <div className='athena-graph-workbench__meta-strip'>
-                                            <span className='athena-graph-workbench__meta-chip'>{model.viewLabel}</span>
-                                        </div>
-                                    </div>
-                                    <div className='athena-graph-workbench__tool-group'>
-                                        <div className='athena-graph-workbench__view-switches'>
-                                            {model.supportedViews.map(view => <button
-                                                key={view.viewId}
-                                                className={`athena-graph-workbench__tool-button athena-graph-workbench__tool-button--view ${view.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`}
-                                                title={this.viewAriaLabel(view)}
-                                                aria-label={this.viewAriaLabel(view)}
-                                                type='button'
-                                                disabled={view.isActive || this.switchingView}
-                                                onClick={() => void this.switchActiveView(view.viewId)}
-                                            >
-                                                <span className={`codicon ${this.viewIconClass(view)}`} />
-                                            </button>)}
-                                        </div>
-                                        {connectPortsSupported
-                                            ? <button
-                                                className={`athena-graph-workbench__tool-button ${this.connectPortsArmed || this.connectPortsSource || this.connectPreview ? 'athena-graph-workbench__tool-button--active' : ''}`}
-                                                type='button'
-                                                title={this.connectPortsButtonTitle()}
-                                                aria-label={this.connectPortsButtonTitle()}
-                                                disabled={this.connectPortsPending || this.connectApplyingDecision}
-                                                onClick={() => this.toggleConnectPortsMode()}
-                                            >
-                                                <span className={`codicon ${this.connectPortsPending ? 'codicon-loading codicon-modifier-spin' : 'codicon-link'}`} />
-                                            </button>
-                                            : undefined}
-                                        <button
-                                            className={`athena-graph-workbench__overlay-toggle ${this.overlayPanelExpanded ? 'athena-graph-workbench__overlay-toggle--active' : ''}`}
-                                            type='button'
-                                            title={this.overlayPanelExpanded ? 'Collapse information panel' : 'Expand information panel'}
-                                            aria-label={this.overlayPanelExpanded ? 'Collapse information panel' : 'Expand information panel'}
-                                            onClick={() => this.toggleOverlayPanel()}
-                                        >
-                                            <span className='codicon codicon-info' />
-                                        </button>
-                                        <div
-                                            className={`athena-graph-workbench__status athena-graph-workbench__status--${model.statusTone}`}
-                                            title={model.statusLabel}
-                                            aria-label={model.statusLabel}
-                                        >
-                                            <span className={`athena-graph-workbench__status-icon codicon ${this.statusIconClass(model.statusTone)}`} />
-                                        </div>
-                                    </div>
-                                </div>
-                                {this.overlayPanelExpanded
-                                    ? <div className='athena-graph-workbench__floating-panel'>
-                                        <section className='athena-graph-workbench__overlay-section'>
-                                            <div className='athena-graph-workbench__panel-title'>Selection</div>
-                                            {!selectedSemanticId
-                                                ? <div className='athena-graph-workbench__panel-empty'>No selection</div>
-                                                : <div className='athena-graph-workbench__selection'>
-                                                    <strong>{selectedSemantic?.label ?? selectedSemanticId}</strong>
-                                                    <span className='athena-graph-workbench__pill'>{selectedSemantic?.kind ?? 'semantic'}</span>
-                                                    <code>{selectedSemanticId}</code>
-                                                    {selectionResolution
-                                                        ? <div className='athena-graph-workbench__panel-empty'>
-                                                            {selectionResolution.status} - {selectionResolution.occurrenceIds.length} occurrence(s)
-                                                        </div>
-                                                        : undefined}
-                                                    {endpointAliasResolution && endpointAliasResolution.status !== 'unresolved'
-                                                        ? <div className='athena-graph-workbench__panel-empty'>
-                                                            terminal aliases - {endpointAliasResolution.endpointIds.length} endpoint(s), {endpointAliasResolution.anchorIds.length} anchor(s)
-                                                        </div>
-                                                        : undefined}
-                                                    {crossReference
-                                                        ? <div className='athena-graph-workbench__panel-empty'>
-                                                            {crossReference.kind} - {crossReference.sheetIds.length} sheet(s)
-                                                        </div>
-                                                        : undefined}
-                                                </div>}
-                                            {this.connectPortsArmed
-                                                ? <div className='athena-graph-workbench__panel-empty'>
-                                                    {this.connectPortsSource
-                                                        ? <>Awaiting target port for <code>{this.connectPortsSource.semanticId}</code>.</>
-                                                        : 'Connect ports is armed. Select a source port label, then a target port label.'}
-                                                </div>
-                                                : undefined}
-                                            {this.connectPortsSource && compatibleConnectTargets.length > 0
-                                                ? <ul className='athena-graph-workbench__list'>
-                                                    {compatibleConnectTargets.slice(0, 8).map(target => <li
-                                                        key={target.semanticId}
-                                                        className='athena-graph-workbench__item'
-                                                    >
-                                                        <button
-                                                            className='athena-graph-workbench__inline-action'
-                                                            type='button'
-                                                            onClick={() => void this.handleConnectablePortSelection(target.semanticId, target.label)}
-                                                        >
-                                                            {target.label}
-                                                        </button>
-                                                        <div className='athena-graph-workbench__related-meta'>
-                                                            <code>{target.semanticId}</code>
-                                                        </div>
-                                                    </li>)}
-                                                </ul>
-                                                : undefined}
-                                            {this.connectPreview || this.connectPreviewMessage
-                                                ? <div className='athena-graph-workbench__panel-empty'>
-                                                    {this.connectPreviewMessage
-                                                        ? <div>{this.connectPreviewMessage}</div>
-                                                        : undefined}
-                                                    {this.connectPreview
-                                                        ? <>
-                                                            <strong>{this.connectPreview.title}</strong>
-                                                            <ul className='athena-graph-workbench__list'>
-                                                                {this.connectPreview.changes.map(change => <li
-                                                                    key={`${change.kind}:${change.title}`}
-                                                                    className='athena-graph-workbench__item'
-                                                                >
-                                                                    <div className='athena-graph-workbench__diagnostic-header'>
-                                                                        <span className='athena-graph-workbench__pill'>{change.kind}</span>
-                                                                        <code>{change.title}</code>
-                                                                    </div>
-                                                                    {change.summary ? <div>{change.summary}</div> : undefined}
-                                                                </li>)}
-                                                            </ul>
-                                                            <div className='athena-semantic-inspection__actions'>
-                                                                <button
-                                                                    className='athena-semantic-inspection__action'
-                                                                    type='button'
-                                                                    disabled={this.connectApplyingDecision}
-                                                                    onClick={() => void this.acceptConnectPreview()}
-                                                                >
-                                                                    {this.connectApplyingDecision ? 'Applying...' : 'Accept'}
-                                                                </button>
-                                                                <button
-                                                                    className='athena-semantic-inspection__action athena-semantic-inspection__action--secondary'
-                                                                    type='button'
-                                                                    disabled={this.connectApplyingDecision}
-                                                                    onClick={() => void this.rejectConnectPreview()}
-                                                                >
-                                                                    Reject
-                                                                </button>
-                                                            </div>
-                                                        </>
-                                                        : undefined}
-                                                </div>
-                                                : undefined}
-                                        </section>
-
-                                        <section className='athena-graph-workbench__overlay-section'>
-                                            <div className='athena-graph-workbench__panel-title'>Related</div>
-                                            {!selectedSemanticId
-                                                ? <div className='athena-graph-workbench__panel-empty'>No canonical subject is selected.</div>
-                                                : <>
-                                                    {canRevealDocumentationReferences
-                                                        ? <button
-                                                            className='athena-graph-workbench__inline-action'
-                                                            type='button'
-                                                            onClick={() => void this.switchActiveView('documentation')}
-                                                        >
-                                                            Show repeated references
-                                                        </button>
-                                                        : undefined}
-                                                    {relatedSubjects.length === 0
-                                                        ? <div className='athena-graph-workbench__panel-empty'>No governed related subjects are published for the current selection.</div>
-                                                        : <ul className='athena-graph-workbench__list'>
-                                                            {relatedSubjects.map(subject => <li
-                                                                key={`${subject.relation}:${subject.relatedSemanticId}`}
-                                                                className='athena-graph-workbench__item'
-                                                            >
-                                                                <button
-                                                                    className='athena-graph-workbench__inline-action'
-                                                                    type='button'
-                                                                    onClick={() => void this.semanticSelectionService.selectSemanticId(subject.relatedSemanticId)}
-                                                                >
-                                                                    {this.relatedSubjectLabel(subject.relation)}
-                                                                </button>
-                                                                <div className='athena-graph-workbench__related-meta'>
-                                                                    <code>{subject.relatedSemanticId}</code>
-                                                                </div>
-                                                            </li>)}
-                                                        </ul>}
-                                                </>}
-                                        </section>
-
-                                        <section className='athena-graph-workbench__overlay-section'>
-                                            <div className='athena-graph-workbench__panel-title'>Snapshot</div>
-                                            <dl className='athena-graph-workbench__detail-list'>
-                                                <div>
-                                                    <dt><span className='codicon codicon-symbol-class' /></dt>
-                                                    <dd>{model.metrics.nodeCount} nodes</dd>
-                                                </div>
-                                                <div>
-                                                    <dt><span className='codicon codicon-git-commit' /></dt>
-                                                    <dd>{model.metrics.edgeCount} links</dd>
-                                                </div>
-                                                <div>
-                                                    <dt><span className='codicon codicon-warning' /></dt>
-                                                    <dd>{model.metrics.diagnosticCount} diagnostics</dd>
-                                                </div>
-                                            </dl>
-                                        </section>
-
-                                        <section className='athena-graph-workbench__overlay-section'>
-                                            <div className='athena-graph-workbench__panel-title'>Session</div>
-                                            <dl className='athena-graph-workbench__detail-list'>
-                                                <div>
-                                                    <dt>View</dt>
-                                                    <dd>{this.diagram.activeViewId}</dd>
-                                                </div>
-                                                {model.viewFamilyId
-                                                    ? <div>
-                                                        <dt>Family</dt>
-                                                        <dd><code>{model.viewFamilyId}</code></dd>
-                                                    </div>
-                                                    : undefined}
-                                                {model.activeSheetId
-                                                    ? <div>
-                                                        <dt>Sheet</dt>
-                                                        <dd><code>{model.activeSheetId}</code></dd>
-                                                    </div>
-                                                    : undefined}
-                                                {model.notationPackId
-                                                    ? <div>
-                                                        <dt>Notation</dt>
-                                                        <dd><code>{model.notationPackId}</code></dd>
-                                                    </div>
-                                                    : undefined}
-                                                <div>
-                                                    <dt>Sheets</dt>
-                                                    <dd>{model.sheetCount}</dd>
-                                                </div>
-                                                <div>
-                                                    <dt>Cross refs</dt>
-                                                    <dd>{model.crossReferenceCount}</dd>
-                                                </div>
-                                                <div>
-                                                    <dt>Graph</dt>
-                                                    <dd><code>{this.diagram.graph.id}</code></dd>
-                                                </div>
-                                                <div>
-                                                    <dt>Mappings</dt>
-                                                    <dd>{model.activeRenderContributions.map(contribution => contribution.displayName).join(', ') || 'None'}</dd>
-                                                </div>
-                                            </dl>
-                                        </section>
-
-                                        {this.lastGraphCommandIntent
-                                            ? <section className='athena-graph-workbench__overlay-section'>
-                                                <div className='athena-graph-workbench__panel-title'>Last Intent</div>
-                                                <dl className='athena-graph-workbench__detail-list'>
-                                                    <div>
-                                                        <dt>Status</dt>
-                                                        <dd>{this.lastGraphCommandIntent.status}</dd>
-                                                    </div>
-                                                    {this.lastGraphCommandIntent.source
-                                                        ? <div>
-                                                            <dt>Source</dt>
-                                                            <dd><code>{this.lastGraphCommandIntent.source.semanticId}</code></dd>
-                                                        </div>
-                                                        : undefined}
-                                                    <div>
-                                                        <dt>Intent</dt>
-                                                        <dd><code>{this.lastGraphCommandIntent.intentId}</code></dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt>Category</dt>
-                                                        <dd>{this.lastGraphCommandIntent.mutationCategory}</dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt>Target</dt>
-                                                        <dd><code>{this.lastGraphCommandIntent.target.semanticId}</code></dd>
-                                                    </div>
-                                                    <div>
-                                                        <dt>View</dt>
-                                                        <dd>{this.lastGraphCommandIntent.viewId}</dd>
-                                                    </div>
-                                                    {this.lastGraphCommandIntent.execution
-                                                        ? <div>
-                                                            <dt>Command</dt>
-                                                            <dd><code>{this.lastGraphCommandIntent.execution.commandKind}</code></dd>
-                                                        </div>
-                                                        : undefined}
-                                                    {this.lastGraphCommandIntent.execution?.commandId
-                                                        ? <div>
-                                                            <dt>Command Id</dt>
-                                                            <dd><code>{this.lastGraphCommandIntent.execution.commandId}</code></dd>
-                                                        </div>
-                                                        : undefined}
-                                                </dl>
-                                                {this.lastGraphCommandIntent.validationFeedback.length > 0
-                                                    ? <ul className='athena-graph-workbench__list'>
-                                                        {this.lastGraphCommandIntent.validationFeedback.map(feedback => <li
-                                                            key={`${feedback.code}:${feedback.message}`}
-                                                            className='athena-graph-workbench__item'
-                                                        >
-                                                            <div className='athena-graph-workbench__diagnostic-header'>
-                                                                <span className={`athena-graph-workbench__diagnostic-severity athena-graph-workbench__diagnostic-severity--${feedback.severity}`}>
-                                                                    {feedback.severity}
-                                                                </span>
-                                                                <code>{feedback.code}</code>
-                                                            </div>
-                                                            <div>{feedback.message}</div>
-                                                        </li>)}
-                                                    </ul>
-                                                    : undefined}
-                                                {this.lastGraphCommandIntent.reason
-                                                    ? <div className='athena-graph-workbench__panel-empty'>{this.lastGraphCommandIntent.reason}</div>
-                                                    : undefined}
-                                            </section>
-                                            : undefined}
-
-                                        {model.diagnostics.length > 0
-                                            ? <section className='athena-graph-workbench__overlay-section'>
-                                                <div className='athena-graph-workbench__panel-title'>Diagnostics</div>
-                                                <ul className='athena-graph-workbench__list'>
-                                                    {model.diagnostics.slice(0, 3).map(diagnostic => <li
-                                                        key={`${diagnostic.code}:${diagnostic.message}`}
-                                                        className='athena-graph-workbench__item'
-                                                    >
-                                                        <div className='athena-graph-workbench__diagnostic-header'>
-                                                            <span className={`athena-graph-workbench__diagnostic-severity athena-graph-workbench__diagnostic-severity--${diagnostic.severity}`}>
-                                                                {diagnostic.severity}
-                                                            </span>
-                                                            <code>{diagnostic.code}</code>
-                                                        </div>
-                                                        <div>{diagnostic.message}</div>
-                                                    </li>)}
-                                                </ul>
-                                            </section>
-                                            : undefined}
-                            </div>
-                                    : undefined}
-                            </div>
-
+                            {this.renderStageChrome(model, connectPortsSupported, cabinetMainRows)}
                             <div
                                 className='athena-graph-workbench__viewport'
                                 ref={this.bindViewportElement}
@@ -667,7 +358,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                 onPointerCancel={this.handleViewportPointerEnd}
                             >
                                 <div className='athena-graph-workbench__sheet' style={sheetSurfaceStyle}>
-                                    {this.renderSheetChrome(model)}
+                                    {this.renderSheetChrome()}
                                     <svg
                                         className='athena-graph-workbench__canvas'
                                         viewBox={model.svgViewBox}
@@ -683,77 +374,246 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                     </svg>
                                 </div>
                             </div>
-
-                            <div className='athena-graph-workbench__overlay athena-graph-workbench__overlay--bottom-right'>
-                                <div className='athena-graph-workbench__zoom-dock'>
-                                    <div
-                                        className='athena-graph-workbench__statusline-readout'
-                                        title={`Canvas size ${model.canvas.width} x ${model.canvas.height}`}
-                                        aria-label={`Canvas size ${model.canvas.width} x ${model.canvas.height}`}
-                                    >
-                                        Canvas {model.canvas.width} x {model.canvas.height}
-                                    </div>
-                                    <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1 / 1.15)} title='Zoom out' aria-label='Zoom out'>
-                                        <span className='codicon codicon-zoom-out' />
-                                    </button>
-                                    <button className='athena-graph-workbench__tool-button athena-graph-workbench__tool-button--readout' type='button' onClick={() => this.resetZoom()} title='Reset zoom' aria-label='Reset zoom'>
-                                        {zoomPercent}%
-                                    </button>
-                                    <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1.15)} title='Zoom in' aria-label='Zoom in'>
-                                        <span className='codicon codicon-zoom-in' />
-                                    </button>
-                                    <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.fitViewportToDiagram()} title='Fit graph to viewport' aria-label='Fit graph to viewport'>
-                                        <span className='codicon codicon-screen-full' />
-                                    </button>
-                                </div>
-                            </div>
-                        </>}
+                            {this.renderLayoutMutationPreview()}
+                            {this.renderBottomDock(model, zoomPercent)}
+                        </>
+                    }
                 </section>
             </div>
         </div>;
     }
 
-    protected renderSheetChrome(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
-        const titleBlock = model.sheetChrome.titleBlock;
-        const crossReferenceMarkers = model.sheetChrome.crossReferenceMarkers.filter(marker => marker.isActiveSheetLinked);
+    protected buildCabinetMainInfoRows(
+        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
+        selectedSemantic: AthenaActiveSemanticSelection | undefined,
+        selectedSemanticId: string | undefined,
+        selectionResolution: ReturnType<typeof resolveProjectionOccurrence> | undefined,
+        endpointAliasResolution: ReturnType<typeof resolveProjectionEndpointAlias> | undefined,
+        crossReference: ReturnType<typeof resolveProjectionCrossReference>,
+        relatedSubjects: ReturnType<typeof resolveProjectionRelatedSubjects>,
+    ): Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }> {
+        const selectionLabel = selectedSemantic?.label ?? selectedSemanticId ?? 'No selection';
+        const sheetTitle = model.sheetChrome.titleBlock?.displayName ?? 'No active sheet';
+        const sheetId = model.sheetChrome.titleBlock?.sheetId ?? '-';
+        const occurrenceSummary = selectionResolution
+            ? `${selectionResolution.status}${selectionResolution.occurrenceIds.length > 0 ? `: ${selectionResolution.occurrenceIds.join(', ')}` : ''}`
+            : '-';
+        const endpointSummary = endpointAliasResolution
+            ? `${endpointAliasResolution.status}${endpointAliasResolution.endpointIds.length > 0 ? `: ${endpointAliasResolution.endpointIds.join(', ')}` : ''}`
+            : '-';
+        const crossReferenceSummary = crossReference
+            ? `${crossReference.kind}: ${crossReference.sheetIds.join(', ')}`
+            : '-';
+        const relatedSummary = relatedSubjects.length > 0
+            ? relatedSubjects.map(item => `${item.relation}:${item.relatedSemanticId}`).join(', ')
+            : '-';
+        const sourceSummary = selectedSemantic?.sourceUri ?? '-';
 
-        return <>
-            <div className='athena-graph-workbench__sheet-grid' aria-hidden='true' />
-            <div className='athena-graph-workbench__sheet-frame' aria-hidden='true' />
-            {titleBlock
-                ? <section className='athena-graph-workbench__sheet-title-block' aria-label={`Sheet ${titleBlock.displayName}`}>
-                    <div className='athena-graph-workbench__sheet-title-row'>
-                        <strong className='athena-graph-workbench__sheet-title-name'>{titleBlock.displayName}</strong>
-                        <span className='athena-graph-workbench__sheet-title-index'>S{String(titleBlock.order + 1).padStart(2, '0')}</span>
+        return [
+            { key: 'project', label: 'Project', value: model.headerTitle, code: true },
+            { key: 'view', label: 'View', value: model.viewLabel },
+            { key: 'sheet', label: 'Sheet', value: sheetTitle },
+            { key: 'sheet-id', label: 'Sheet ID', value: sheetId, code: true },
+            { key: 'selection', label: 'Selection', value: selectionLabel },
+            { key: 'semantic-id', label: 'Semantic ID', value: selectedSemanticId ?? '-', code: true },
+            { key: 'occurrence', label: 'Occurrence', value: occurrenceSummary, code: true },
+            { key: 'endpoint', label: 'Endpoint', value: endpointSummary, code: true },
+            { key: 'cross-refs', label: 'Cross refs', value: crossReferenceSummary, code: true },
+            { key: 'related', label: 'Related', value: relatedSummary, code: true },
+            { key: 'source', label: 'Source', value: sourceSummary, code: true },
+        ];
+    }
+
+    protected renderStageChrome(
+        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
+        connectPortsSupported: boolean,
+        cabinetMainRows: Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }>,
+    ): React.ReactNode {
+        return <div className='athena-graph-workbench__overlay athena-graph-workbench__overlay--top'>
+            <div className='athena-graph-workbench__floating-bar'>
+                <div className='athena-graph-workbench__identity'>
+                    <h2>{model.headerTitle}</h2>
+                    <div className='athena-graph-workbench__meta-strip'>
+                        <span className='athena-graph-workbench__meta-chip'>{model.viewLabel}</span>
                     </div>
-                    <dl className='athena-graph-workbench__sheet-title-grid'>
-                        <div>
-                            <dt>Sheet</dt>
-                            <dd><code>{titleBlock.sheetId}</code></dd>
-                        </div>
-                        <div>
-                            <dt>Subjects</dt>
-                            <dd>{titleBlock.subjectCount}</dd>
-                        </div>
-                        <div>
-                            <dt>Refs</dt>
-                            <dd>{titleBlock.crossReferenceCount}</dd>
-                        </div>
-                    </dl>
-                    {crossReferenceMarkers.length > 0
-                        ? <ul className='athena-graph-workbench__sheet-cross-reference-markers'>
-                            {crossReferenceMarkers.slice(0, 4).map(marker => <li
-                                key={`${marker.kind}:${marker.semanticId}`}
-                                className='athena-graph-workbench__sheet-cross-reference-marker'
-                                title={`${marker.semanticId} references ${marker.sheetIds.length} sheet(s)`}
-                            >
-                                <span>{marker.markerLabel}</span>
-                                <code>{marker.sheetIds.length} sheets</code>
-                            </li>)}
-                        </ul>
+                </div>
+                <div className='athena-graph-workbench__tool-group'>
+                    <div className='athena-graph-workbench__view-switches'>
+                        {model.supportedViews.map(view => <button
+                            key={view.viewId}
+                            className={`athena-graph-workbench__tool-button athena-graph-workbench__tool-button--view ${view.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`}
+                            title={this.viewAriaLabel(view)}
+                            aria-label={this.viewAriaLabel(view)}
+                            type='button'
+                            disabled={view.isActive || this.switchingView}
+                            onClick={() => void this.switchActiveView(view.viewId)}
+                        >
+                            <span className={`codicon ${this.viewIconClass(view)}`} />
+                        </button>)}
+                    </div>
+                    {connectPortsSupported
+                        ? <button
+                            className={`athena-graph-workbench__tool-button ${this.connectPortsArmed || this.connectPortsSource || this.connectPreview ? 'athena-graph-workbench__tool-button--active' : ''}`}
+                            type='button'
+                            title={this.connectPortsButtonTitle()}
+                            aria-label={this.connectPortsButtonTitle()}
+                            disabled={this.connectPortsPending || this.connectApplyingDecision}
+                            onClick={() => this.toggleConnectPortsMode()}
+                        >
+                            <span className={`codicon ${this.connectPortsPending ? 'codicon-loading codicon-modifier-spin' : 'codicon-link'}`} />
+                        </button>
                         : undefined}
-                </section>
-                : undefined}
+                    <button
+                        className={`athena-graph-workbench__tool-button ${this.infoPopoverOpen ? 'athena-graph-workbench__tool-button--active' : ''}`}
+                        data-athena-info-button='true'
+                        type='button'
+                        title='Cabinet Main information'
+                        aria-label='Cabinet Main information'
+                        aria-expanded={this.infoPopoverOpen}
+                        onClick={() => this.toggleInfoPopover()}
+                    >
+                        <span className='codicon codicon-info' />
+                    </button>
+                    <div
+                        className={`athena-graph-workbench__status athena-graph-workbench__status--${model.statusTone}`}
+                        title={model.statusLabel}
+                        aria-label={model.statusLabel}
+                    >
+                        <span className={`athena-graph-workbench__status-icon codicon ${this.statusIconClass(model.statusTone)}`} />
+                    </div>
+                </div>
+            </div>
+            {this.infoPopoverOpen ? this.renderCabinetMainPopover(cabinetMainRows) : undefined}
+        </div>;
+    }
+
+    protected renderCabinetMainPopover(
+        cabinetMainRows: Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }>,
+    ): React.ReactNode {
+        return <section
+            className='athena-graph-workbench__info-popover'
+            data-athena-info-popover='true'
+            role='dialog'
+            aria-label='Cabinet Main information'
+        >
+            <div className='athena-graph-workbench__info-popover-header'>
+                <div>
+                    <span className='athena-graph-workbench__info-popover-eyebrow'>Cabinet Main</span>
+                    <h3>Projection Information</h3>
+                </div>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Close Cabinet Main information'
+                    aria-label='Close Cabinet Main information'
+                    onClick={() => this.closeInfoPopover()}
+                >
+                    <span className='codicon codicon-close' />
+                </button>
+            </div>
+            <table className='athena-graph-workbench__info-table'>
+                <tbody>
+                    {cabinetMainRows.map(row => <tr key={row.key}>
+                        <th>{row.label}</th>
+                        <td>{row.code ? <code>{row.value}</code> : row.value}</td>
+                    </tr>)}
+                </tbody>
+            </table>
+        </section>;
+    }
+
+    protected renderBottomDock(
+        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
+        zoomPercent: number,
+    ): React.ReactNode {
+        return <section className='athena-graph-workbench__bottom-dock' aria-label='Canvas controls'>
+            <div className='athena-graph-workbench__zoom-dock'>
+                <div
+                    className='athena-graph-workbench__statusline-readout'
+                    title={`Canvas size ${model.canvas.width} x ${model.canvas.height}`}
+                    aria-label={`Canvas size ${model.canvas.width} x ${model.canvas.height}`}
+                >
+                    Canvas {model.canvas.width} x {model.canvas.height}
+                </div>
+                <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1 / 1.15)} title='Zoom out' aria-label='Zoom out'>
+                    <span className='codicon codicon-zoom-out' />
+                </button>
+                <button className='athena-graph-workbench__tool-button athena-graph-workbench__tool-button--readout' type='button' onClick={() => this.resetZoom()} title='Reset zoom' aria-label='Reset zoom'>
+                    {zoomPercent}%
+                </button>
+                <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.stepZoom(1.15)} title='Zoom in' aria-label='Zoom in'>
+                    <span className='codicon codicon-zoom-in' />
+                </button>
+                <button className='athena-graph-workbench__tool-button' type='button' onClick={() => this.fitViewportToDiagram()} title='Fit graph to viewport' aria-label='Fit graph to viewport'>
+                    <span className='codicon codicon-screen-full' />
+                </button>
+            </div>
+        </section>;
+    }
+
+    protected renderLayoutMutationPreview(): React.ReactNode {
+        const preview = this.layoutMutationPreview;
+        if (!preview) {
+            return undefined;
+        }
+        return <section className='athena-graph-workbench__layout-preview' aria-label='Layout mutation preview'>
+            <div className='athena-graph-workbench__layout-preview-header'>
+                <span>{preview.title}</span>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    onClick={() => this.acceptLayoutMutationPreview()}
+                    title='Apply layout preview'
+                    aria-label='Apply layout preview'
+                >
+                    <span className='codicon codicon-check' aria-hidden='true' />
+                </button>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    onClick={() => this.rejectLayoutMutationPreview()}
+                    title='Reject layout preview'
+                    aria-label='Reject layout preview'
+                >
+                    <span className='codicon codicon-close' aria-hidden='true' />
+                </button>
+            </div>
+            <pre className='athena-graph-workbench__layout-preview-code'>{preview.layoutBlockSnippet}</pre>
+        </section>;
+    }
+
+    protected acceptLayoutMutationPreview(): void {
+        const preview = this.layoutMutationPreview;
+        const currentEditor = this.isAthenaEditor(this.editorManager.currentEditor)
+            ? this.editorManager.currentEditor
+            : undefined;
+        if (!preview || !currentEditor) {
+            return;
+        }
+        const documentText = currentEditor.editor.document.getText();
+        const lines = documentText.split(/\r\n|\r|\n/);
+        const insertionLine = Math.max(0, lines.length - 1);
+        const insertionCharacter = lines[lines.length - 1]?.length ?? 0;
+        const sourceEdit = buildAthenaGraphLayoutSourceEdit({
+            preview,
+            insertionLine,
+            insertionCharacter,
+        });
+        this.lspEditorBridgeService.applyAuthoringSourceEdit(sourceEdit);
+        this.layoutMutationPreview = undefined;
+        this.scheduleRefresh();
+        void this.semanticSelectionService.selectSemanticId(preview.subjectSemanticId);
+        this.update();
+    }
+
+    protected rejectLayoutMutationPreview(): void {
+        this.layoutMutationPreview = undefined;
+        this.update();
+    }
+
+    protected renderSheetChrome(): React.ReactNode {
+        return <>
+            <div className='athena-graph-workbench__sheet-frame' aria-hidden='true' />
         </>;
     }
 
@@ -965,29 +825,29 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         return `Select target port for ${this.connectPortsSource.label}`;
     }
 
-    protected relatedSubjectLabel(
-        relation: 'owner' | 'owned-port' | 'connection' | 'source-port' | 'target-port',
-    ): string {
-        switch (relation) {
-            case 'owner':
-                return 'Reveal owner';
-            case 'owned-port':
-                return 'Reveal owned port';
-            case 'connection':
-                return 'Reveal connection';
-            case 'source-port':
-                return 'Reveal source port';
-            case 'target-port':
-                return 'Reveal target port';
-            default:
-                return 'Reveal related subject';
-        }
-    }
-
-    protected toggleOverlayPanel(): void {
-        this.overlayPanelExpanded = !this.overlayPanelExpanded;
+    protected toggleInfoPopover(): void {
+        this.infoPopoverOpen = !this.infoPopoverOpen;
         this.update();
     }
+
+    protected closeInfoPopover(): void {
+        if (!this.infoPopoverOpen) {
+            return;
+        }
+        this.infoPopoverOpen = false;
+        this.update();
+    }
+
+    protected handleWorkbenchClick = (event: React.MouseEvent<HTMLDivElement>): void => {
+        if (!this.infoPopoverOpen) {
+            return;
+        }
+        const target = event.target instanceof HTMLElement ? event.target : undefined;
+        if (target?.closest('[data-athena-info-button="true"], [data-athena-info-popover="true"]')) {
+            return;
+        }
+        this.closeInfoPopover();
+    };
 
     protected currentCompatibleConnectTargets(): AthenaCompatibleConnectionTarget[] {
         return buildAthenaCompatibleConnectionTargets({
@@ -1036,14 +896,12 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 }),
             );
             this.connectPreview = submission?.preview;
-            this.overlayPanelExpanded = true;
             if (!submission?.preview) {
                 this.connectPreviewMessage = 'Athena could not create a guided connection preview for the selected ports.';
             }
         } catch (error) {
             this.connectPreview = undefined;
             this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
-            this.overlayPanelExpanded = true;
         } finally {
             this.connectPortsPending = false;
             this.update();
@@ -1323,22 +1181,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         }
     };
 
-    protected handleStageClick = (event: React.MouseEvent<HTMLElement>): void => {
-        if (!this.overlayPanelExpanded) {
-            return;
-        }
-        const target = event.target;
-        if (
-            target instanceof Element &&
-            (target.closest('.athena-graph-workbench__floating-panel') ||
-                target.closest('.athena-graph-workbench__overlay-toggle'))
-        ) {
-            return;
-        }
-        this.overlayPanelExpanded = false;
-        this.update();
-    };
-
     protected handleViewportDoubleClick = (event: React.MouseEvent<HTMLDivElement>): void => {
         if (this.isInteractiveTarget(event.target)) {
             return;
@@ -1490,7 +1332,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 semanticId,
                 label,
             };
-            this.overlayPanelExpanded = true;
             this.update();
             return;
         }
@@ -1498,7 +1339,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const source = this.connectPortsSource;
         if (!this.isCompatibleConnectTarget(semanticId)) {
             this.connectPreviewMessage = `Port \`${label}\` is not a compatible target for \`${source.label}\`.`;
-            this.overlayPanelExpanded = true;
             this.update();
             return;
         }
@@ -1581,6 +1421,20 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected async submitPlacementIntent(dragState: AthenaGraphNodeDragState): Promise<void> {
         if (!this.diagram) {
             return;
+        }
+        const model = buildAthenaGraphWorkbenchModel(this.diagram);
+        const node = model.nodes.find(candidate => candidate.semanticId === dragState.semanticId);
+        if (node) {
+            const capture = captureAthenaGraphLayoutAdjustmentIntent({
+                model,
+                node,
+                kind: 'place',
+                relation: 'near',
+            });
+            this.lastLayoutAdjustmentIntent = capture.accepted ? capture.intent : undefined;
+            this.layoutMutationPreview = capture.accepted
+                ? buildAthenaGraphLayoutMutationPreview(capture.intent)
+                : undefined;
         }
 
         try {

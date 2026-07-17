@@ -1,0 +1,25 @@
+package com.engineeringood.m22.sample
+
+system BoundaryScopeShowcase {
+  device BoundaryPowerSupply {
+    type Switch
+    model "LocalOnly"
+  }
+
+  device BoundaryLoad {
+    type Lamp
+    model "NoRegistryNoCabinet"
+  }
+
+  port BoundaryPowerSupply.out {
+    direction out
+    signal Boundary24V
+  }
+
+  port BoundaryLoad.in {
+    direction in
+    signal Boundary24V
+  }
+
+  connect BoundaryPowerSupply.out -> BoundaryLoad.in
+}

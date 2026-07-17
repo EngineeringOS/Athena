@@ -660,6 +660,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     protected readonly documentSymbolProviderDidChangeEmitter = new monaco.Emitter<void>();
     protected activeEditorListeners = new DisposableCollection();
     protected languageProviderListeners = new DisposableCollection();
+    protected lastAthenaEditorWidget = undefined as EditorWidget | undefined;
     protected semanticBoundaryMessageShown = false;
 
     onStart(_app: FrontendApplication): void {
@@ -679,6 +680,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             this.problemManager.cleanAllMarkers();
             this.openedDocumentVersions.clear();
             this.documentSyncOperations.clear();
+            this.lastAthenaEditorWidget = undefined;
         });
 
         this.bindCurrentEditor(this.editorManager.currentEditor);
@@ -920,6 +922,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             return;
         }
 
+        this.lastAthenaEditorWidget = widget;
         const model = monaco.editor.getModel(monaco.Uri.parse(widget.editor.uri.toString()));
         this.ensureAthenaModelLanguage(model);
 
@@ -940,7 +943,9 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     }
 
     protected currentAthenaEditorModel(): monaco.editor.ITextModel | undefined {
-        const widget = this.editorManager.currentEditor;
+        const widget = this.isAthenaEditor(this.editorManager.currentEditor)
+            ? this.editorManager.currentEditor
+            : this.lastAthenaEditorWidget;
         if (!this.isAthenaEditor(widget)) {
             return undefined;
         }

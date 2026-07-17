@@ -67,9 +67,7 @@ function renderPresentationCommand(
 ): React.ReactNode {
     const stroke = resolveToken(args.tokenDefaults, args.tokenOverrides, command.strokeTokenKey, 'var(--athena-graph-node-stroke)');
     const strokeWidth = resolveToken(args.tokenDefaults, args.tokenOverrides, command.strokeWidthTokenKey, '1.6');
-    const fill = command.fillTokenKey
-        ? resolveToken(args.tokenDefaults, args.tokenOverrides, command.fillTokenKey, 'none')
-        : 'none';
+    const fill = 'transparent';
     const className = `${args.nodeClassName} ${args.selected ? 'athena-graph-workbench__presentation-shape--selected' : ''}`;
 
     switch (command.kind) {

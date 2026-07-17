@@ -118,6 +118,103 @@ class LayoutModelTest {
     }
 
     @Test
+    fun `layout constraint snapshot expresses engineering relationships with canonical identity`() {
+        val sourceSpan = LayoutSourceSpan(
+            sourceUnitId = "src/02-layout-optimization-acceptance.athena",
+            startLine = 20,
+            startColumn = 3,
+            endLine = 25,
+            endColumn = 4,
+        )
+        val controller = LayoutConstraintSubject(
+            intentId = LayoutIntentId("intent:controller/plc-1"),
+            subjectId = StableSemanticIdentity("component:plc-1"),
+            occurrenceId = LayoutOccurrenceId("occurrence:schematic:plc-1"),
+            sheetId = "sheet:m22:acceptance",
+            viewId = "schematic-sheet",
+            sourceSpan = sourceSpan,
+        )
+        val terminal = LayoutConstraintSubject(
+            intentId = LayoutIntentId("intent:terminal/xt-1"),
+            subjectId = StableSemanticIdentity("component:xt-1"),
+            occurrenceId = LayoutOccurrenceId("occurrence:schematic:xt-1"),
+            sheetId = "sheet:m22:acceptance",
+            viewId = "schematic-sheet",
+            sourceSpan = sourceSpan,
+        )
+        val constraints = listOf(
+            LayoutConstraint.near(LayoutConstraintId("constraint:near:plc-xt"), controller, terminal),
+            LayoutConstraint.below(LayoutConstraintId("constraint:below:xt-plc"), terminal, controller),
+            LayoutConstraint.alignedWith(
+                constraintId = LayoutConstraintId("constraint:aligned:hmi-plc"),
+                subject = controller,
+                target = terminal,
+                axis = LayoutAxis.VERTICAL,
+            ),
+            LayoutConstraint.groupedWith(LayoutConstraintId("constraint:grouped:plc-xt"), controller, terminal),
+            LayoutConstraint.preferredZone(
+                constraintId = LayoutConstraintId("constraint:zone:plc"),
+                subject = controller,
+                zone = SchematicLayoutZone.CONTROL,
+            ),
+            LayoutConstraint.preserveOrder(
+                constraintId = LayoutConstraintId("constraint:order:power-chain"),
+                subjects = listOf(controller, terminal),
+            ),
+            LayoutConstraint.routeLanePreference(
+                constraintId = LayoutConstraintId("constraint:route-lane:plc-xt"),
+                subject = controller,
+                target = terminal,
+                lane = SchematicRouteLanePreference.VERTICAL_FIRST,
+            ),
+        )
+
+        val snapshot = LayoutConstraintSnapshot.canonical(
+            snapshotId = LayoutSnapshotId("snapshot:m22:constraints"),
+            family = ElectricalProjectionFamily.SCHEMATIC,
+            constraints = constraints.reversed(),
+        )
+        val constraintFieldNames = LayoutConstraint::class.java.declaredFields.map { field -> field.name.lowercase() }
+
+        assertEquals(LayoutSnapshotId("snapshot:m22:constraints"), snapshot.snapshotId)
+        assertEquals(ElectricalProjectionFamily.SCHEMATIC, snapshot.family)
+        assertEquals(constraints.map(LayoutConstraint::constraintId), snapshot.constraints.map(LayoutConstraint::constraintId))
+        assertEquals(
+            listOf(
+                LayoutConstraintKind.NEAR,
+                LayoutConstraintKind.BELOW,
+                LayoutConstraintKind.ALIGNED_WITH,
+                LayoutConstraintKind.GROUPED_WITH,
+                LayoutConstraintKind.PREFERRED_ZONE,
+                LayoutConstraintKind.PRESERVE_ORDER,
+                LayoutConstraintKind.ROUTE_LANE_PREFERENCE,
+            ),
+            snapshot.constraints.map(LayoutConstraint::kind),
+        )
+        assertEquals(StableSemanticIdentity("component:plc-1"), snapshot.constraints.first().subject.subjectId)
+        assertEquals(LayoutOccurrenceId("occurrence:schematic:plc-1"), snapshot.constraints.first().subject.occurrenceId)
+        assertEquals("sheet:m22:acceptance", snapshot.constraints.first().subject.sheetId)
+        assertEquals("schematic-sheet", snapshot.constraints.first().subject.viewId)
+        assertEquals(LayoutSnapshotId("snapshot:m22:constraints"), snapshot.constraints.first().snapshotId)
+        assertEquals(sourceSpan, snapshot.constraints.first().subject.sourceSpan)
+        assertEquals(SchematicLayoutZone.CONTROL, snapshot.constraints[4].zone)
+        assertEquals(SchematicRouteLanePreference.VERTICAL_FIRST, snapshot.constraints.last().routeLanePreference)
+        assertEquals(listOf(controller, terminal), snapshot.constraints[5].orderedSubjects)
+        listOf("x", "y").forEach { forbidden ->
+            assertFalse(
+                constraintFieldNames.any { field -> field == forbidden },
+                "Authored layout constraints must not expose raw renderer coordinate field `$forbidden`.",
+            )
+        }
+        listOf("coordinate", "pixel", "canvas", "dom", "css").forEach { forbidden ->
+            assertFalse(
+                constraintFieldNames.any { field -> field.contains(forbidden) },
+                "Authored layout constraints must not expose raw renderer coordinate field `$forbidden`.",
+            )
+        }
+    }
+
+    @Test
     fun `layout source span rejects inverted same-line ranges`() {
         assertFailsWith<IllegalArgumentException> {
             LayoutSourceSpan(

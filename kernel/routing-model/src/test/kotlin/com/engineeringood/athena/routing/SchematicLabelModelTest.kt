@@ -74,6 +74,34 @@ class SchematicLabelModelTest {
     }
 
     @Test
+    fun `subject label placement avoids declared subject bounds`() {
+        val result = RuleBasedSchematicLabelStrategy().solve(
+            SchematicLabelSnapshot(
+                snapshotId = LayoutSnapshotId("snapshot:m22:labels"),
+                family = ElectricalProjectionFamily.SCHEMATIC,
+                requests = listOf(
+                    subjectLabelRequest(
+                        labelId = SchematicLabelId("label:device/hmi-1"),
+                        text = "HMI1",
+                        subjectId = StableSemanticIdentity("component:hmi-1"),
+                        occurrenceId = LayoutOccurrenceId("occurrence:schematic:hmi-1"),
+                        subjectBounds = SchematicLabelSubjectBounds(
+                            origin = SchematicRoutePoint(x = 300, y = 150),
+                            width = 96,
+                            height = 64,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val label = result.labelFacts.single()
+
+        assertFalse(requireNotNull(label.anchor.subjectBounds).contains(label.placement.origin))
+        assertEquals(SchematicLabelAnchorRelation.RIGHT, label.placement.relation)
+    }
+
+    @Test
     fun `label facts remain deterministic across repeated runs`() {
         val route = sampleRouteFact()
         val snapshot = SchematicLabelSnapshot(
@@ -196,6 +224,7 @@ class SchematicLabelModelTest {
         kind: SchematicLabelKind = SchematicLabelKind.DEVICE_NAME,
         subjectId: StableSemanticIdentity = StableSemanticIdentity("component:plc-1"),
         occurrenceId: LayoutOccurrenceId = LayoutOccurrenceId("occurrence:schematic:plc-1"),
+        subjectBounds: SchematicLabelSubjectBounds? = null,
     ): SchematicLabelRequest {
         return SchematicLabelRequest(
             labelId = labelId,
@@ -204,6 +233,7 @@ class SchematicLabelModelTest {
             anchor = SchematicLabelAnchor(
                 subjectId = subjectId,
                 occurrenceId = occurrenceId,
+                subjectBounds = subjectBounds,
                 point = SchematicRoutePoint(x = 320, y = 160),
             ),
         )

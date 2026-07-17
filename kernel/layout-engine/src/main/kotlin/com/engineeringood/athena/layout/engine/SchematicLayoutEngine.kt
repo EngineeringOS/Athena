@@ -2,6 +2,9 @@ package com.engineeringood.athena.layout.engine
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
+import com.engineeringood.athena.layout.LayoutConstraintId
+import com.engineeringood.athena.layout.LayoutConstraintKind
+import com.engineeringood.athena.layout.LayoutConstraintSnapshot
 import com.engineeringood.athena.layout.LayoutIntentId
 import com.engineeringood.athena.layout.LayoutIntentItem
 import com.engineeringood.athena.layout.LayoutIntentSnapshot
@@ -11,6 +14,35 @@ import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.layout.SchematicLayoutRole
 import com.engineeringood.athena.layout.SchematicLayoutZone
+
+/**
+ * Governed M22 input for schematic layout optimization.
+ */
+data class SchematicLayoutOptimizationInput(
+    val intentSnapshot: LayoutIntentSnapshot,
+    val constraintSnapshot: LayoutConstraintSnapshot,
+    val existingPlacementFacts: List<SchematicPlacementFact> = emptyList(),
+)
+
+/**
+ * Deterministic M22 optimization result expressed only as Athena-owned layout facts.
+ */
+data class SchematicLayoutOptimizationResult(
+    val snapshotId: LayoutSnapshotId,
+    val family: ElectricalProjectionFamily,
+    val placementFacts: List<SchematicPlacementFact>,
+    val regionFacts: List<SchematicRegionFact> = emptyList(),
+    val groupFacts: List<SchematicLayoutGroupFact> = emptyList(),
+    val appliedConstraintIds: List<LayoutConstraintId> = emptyList(),
+    val helperId: LayoutHelperAdapterId? = null,
+)
+
+/**
+ * Boundary that turns governed intent and constraints into normalized Athena layout facts.
+ */
+interface SchematicLayoutOptimizer {
+    fun optimize(input: SchematicLayoutOptimizationInput): SchematicLayoutOptimizationResult
+}
 
 /**
  * Strategy boundary that turns governed schematic layout intent into Athena-owned layout facts.
@@ -87,6 +119,25 @@ data class SchematicRegionFact(
     val bounds: SchematicRegionBounds,
 )
 
+/** Stable schematic grouping identity owned by Athena layout facts and scoped by constraints. */
+@JvmInline
+value class SchematicLayoutGroupId(val value: String) {
+    override fun toString(): String = value
+}
+
+/**
+ * Grouping fact derived from governed constraints, not downstream inference.
+ */
+data class SchematicLayoutGroupFact(
+    val groupId: SchematicLayoutGroupId,
+    val snapshotId: LayoutSnapshotId,
+    val constraintIds: List<LayoutConstraintId>,
+    val intentIds: List<LayoutIntentId>,
+    val occurrenceIds: List<LayoutOccurrenceId>,
+    val roles: List<SchematicLayoutRole>,
+    val zone: SchematicLayoutZone,
+)
+
 /**
  * Stable identifier for a subordinate layout helper.
  */
@@ -154,6 +205,54 @@ class SchematicLayoutHelperNormalizer {
             family = snapshot.family,
             placementFacts = normalizedPlacementFacts,
             regionFacts = buildRegionFacts(snapshot.snapshotId, normalizedPlacementFacts),
+        )
+    }
+}
+
+/**
+ * Rule-based M22 optimizer that keeps optimization authority inside Athena layout facts.
+ */
+class RuleBasedSchematicLayoutOptimizer(
+    private val strategy: SchematicLayoutStrategy = RuleBasedSchematicLayoutStrategy(),
+) : SchematicLayoutOptimizer {
+    override fun optimize(input: SchematicLayoutOptimizationInput): SchematicLayoutOptimizationResult {
+        require(input.intentSnapshot.family == ElectricalProjectionFamily.SCHEMATIC) {
+            "Rule-based schematic layout optimizer only accepts schematic layout intent snapshots."
+        }
+        require(input.constraintSnapshot.family == input.intentSnapshot.family) {
+            "Layout constraints must target the same projection family as layout intent."
+        }
+        require(input.constraintSnapshot.snapshotId == input.intentSnapshot.snapshotId) {
+            "Layout constraints must target the active layout intent snapshot."
+        }
+        input.existingPlacementFacts.forEach { fact ->
+            require(fact.snapshotId == input.intentSnapshot.snapshotId) {
+                "Existing placement facts must preserve the active layout snapshot identity."
+            }
+            fact.requireValidGeometry()
+        }
+        val canonicalIntent = LayoutIntentSnapshot.canonical(
+            snapshotId = input.intentSnapshot.snapshotId,
+            family = input.intentSnapshot.family,
+            items = input.intentSnapshot.items,
+            relationshipConstraints = input.intentSnapshot.relationshipConstraints,
+        )
+        val canonicalConstraints = LayoutConstraintSnapshot.canonical(
+            snapshotId = input.constraintSnapshot.snapshotId,
+            family = input.constraintSnapshot.family,
+            constraints = input.constraintSnapshot.constraints,
+        )
+        val constrainedIntent = canonicalIntent.withPreferredZoneConstraints(canonicalConstraints)
+        val solved = strategy.solve(constrainedIntent)
+        return SchematicLayoutOptimizationResult(
+            snapshotId = solved.snapshotId,
+            family = solved.family,
+            placementFacts = solved.placementFacts,
+            regionFacts = solved.regionFacts,
+            groupFacts = buildGroupFacts(solved.snapshotId, canonicalConstraints, solved.placementFacts),
+            appliedConstraintIds = canonicalConstraints.constraints
+                .map { constraint -> constraint.constraintId }
+                .sortedBy(LayoutConstraintId::value),
         )
     }
 }
@@ -233,6 +332,63 @@ private fun buildRegionFacts(
                 roles = orderedFacts.map(SchematicPlacementFact::role).distinct(),
                 bounds = orderedFacts.toRegionBounds(),
             )
+        }
+}
+
+private fun LayoutIntentSnapshot.withPreferredZoneConstraints(
+    constraintSnapshot: LayoutConstraintSnapshot,
+): LayoutIntentSnapshot {
+    val preferredZones = constraintSnapshot.constraints
+        .filter { constraint -> constraint.kind == LayoutConstraintKind.PREFERRED_ZONE && constraint.zone != null }
+        .associate { constraint -> constraint.subject.intentId to requireNotNull(constraint.zone) }
+    if (preferredZones.isEmpty()) {
+        return this
+    }
+    return LayoutIntentSnapshot.canonical(
+        snapshotId = snapshotId,
+        family = family,
+        items = items.map { item ->
+            preferredZones[item.intentId]?.let { zone -> item.copy(preferredZone = zone) } ?: item
+        },
+        relationshipConstraints = relationshipConstraints,
+    )
+}
+
+private fun buildGroupFacts(
+    snapshotId: LayoutSnapshotId,
+    constraintSnapshot: LayoutConstraintSnapshot,
+    placementFacts: List<SchematicPlacementFact>,
+): List<SchematicLayoutGroupFact> {
+    val placementByIntent = placementFacts.associateBy(SchematicPlacementFact::intentId)
+    return constraintSnapshot.constraints
+        .filter { constraint -> constraint.kind == LayoutConstraintKind.GROUPED_WITH && constraint.target != null }
+        .sortedBy { constraint -> constraint.constraintId.value }
+        .mapNotNull { constraint ->
+            val members = listOfNotNull(
+                placementByIntent[constraint.subject.intentId],
+                placementByIntent[requireNotNull(constraint.target).intentId],
+            ).distinctBy(SchematicPlacementFact::intentId)
+                .sortedWith(
+                    compareBy<SchematicPlacementFact>(
+                        { fact -> fact.preferredZone.ordinal },
+                        { fact -> fact.position.y },
+                        { fact -> fact.position.x },
+                        { fact -> fact.intentId.value },
+                    ),
+                )
+            if (members.size < 2) {
+                null
+            } else {
+                SchematicLayoutGroupFact(
+                    groupId = SchematicLayoutGroupId("group:${constraint.constraintId.value}"),
+                    snapshotId = snapshotId,
+                    constraintIds = listOf(constraint.constraintId),
+                    intentIds = members.map(SchematicPlacementFact::intentId),
+                    occurrenceIds = members.map(SchematicPlacementFact::occurrenceId),
+                    roles = members.map(SchematicPlacementFact::role).distinct(),
+                    zone = members.first().preferredZone,
+                )
+            }
         }
 }
 

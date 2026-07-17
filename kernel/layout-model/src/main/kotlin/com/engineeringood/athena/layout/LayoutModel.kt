@@ -320,6 +320,191 @@ enum class SchematicLayoutRelationship {
 }
 
 /**
+ * Stable identifier for one governed layout constraint.
+ */
+@JvmInline
+value class LayoutConstraintId(val value: String) {
+    override fun toString(): String = value
+}
+
+/**
+ * Canonical subject identity carried by one layout constraint.
+ *
+ * The subject binds optimization input back to semantic, occurrence, sheet, view, snapshot, and
+ * source identities. It deliberately does not carry coordinates or renderer state.
+ */
+data class LayoutConstraintSubject(
+    val intentId: LayoutIntentId,
+    val subjectId: StableSemanticIdentity,
+    val occurrenceId: LayoutOccurrenceId,
+    val sheetId: String? = null,
+    val viewId: String? = null,
+    val sourceSpan: LayoutSourceSpan? = null,
+)
+
+/**
+ * M22 constraint vocabulary used between layout intent and solved layout facts.
+ */
+enum class LayoutConstraintKind {
+    NEAR,
+    BELOW,
+    ALIGNED_WITH,
+    GROUPED_WITH,
+    PREFERRED_ZONE,
+    PRESERVE_ORDER,
+    ROUTE_LANE_PREFERENCE,
+}
+
+/**
+ * Basic schematic route-lane preference. This is not physical routing.
+ */
+enum class SchematicRouteLanePreference {
+    HORIZONTAL_FIRST,
+    VERTICAL_FIRST,
+    DIRECT,
+}
+
+/**
+ * One governed layout constraint used as optimization input.
+ *
+ * Constraints express engineering presentation relationships and preferences. Solvers may turn them
+ * into coordinates later, but authored constraints remain relationship/zone/lane based.
+ */
+data class LayoutConstraint(
+    val constraintId: LayoutConstraintId,
+    val kind: LayoutConstraintKind,
+    val subject: LayoutConstraintSubject,
+    val target: LayoutConstraintSubject? = null,
+    val axis: LayoutAxis? = null,
+    val zone: SchematicLayoutZone? = null,
+    val orderedSubjects: List<LayoutConstraintSubject> = emptyList(),
+    val routeLanePreference: SchematicRouteLanePreference? = null,
+    val snapshotId: LayoutSnapshotId? = null,
+) {
+    internal fun stableKey(): String = listOf(
+        kind.ordinal.toString().padStart(2, '0'),
+        constraintId.value,
+        subject.intentId.value,
+        target?.intentId?.value.orEmpty(),
+        axis?.name.orEmpty(),
+        zone?.name.orEmpty(),
+        routeLanePreference?.name.orEmpty(),
+        orderedSubjects.joinToString(separator = ",") { item -> item.intentId.value },
+    ).joinToString(separator = "|")
+
+    internal fun withSnapshot(snapshotId: LayoutSnapshotId): LayoutConstraint = copy(snapshotId = snapshotId)
+
+    companion object {
+        fun near(
+            constraintId: LayoutConstraintId,
+            subject: LayoutConstraintSubject,
+            target: LayoutConstraintSubject,
+        ): LayoutConstraint = LayoutConstraint(
+            constraintId = constraintId,
+            kind = LayoutConstraintKind.NEAR,
+            subject = subject,
+            target = target,
+        )
+
+        fun below(
+            constraintId: LayoutConstraintId,
+            subject: LayoutConstraintSubject,
+            target: LayoutConstraintSubject,
+        ): LayoutConstraint = LayoutConstraint(
+            constraintId = constraintId,
+            kind = LayoutConstraintKind.BELOW,
+            subject = subject,
+            target = target,
+            axis = LayoutAxis.VERTICAL,
+        )
+
+        fun alignedWith(
+            constraintId: LayoutConstraintId,
+            subject: LayoutConstraintSubject,
+            target: LayoutConstraintSubject,
+            axis: LayoutAxis? = null,
+        ): LayoutConstraint = LayoutConstraint(
+            constraintId = constraintId,
+            kind = LayoutConstraintKind.ALIGNED_WITH,
+            subject = subject,
+            target = target,
+            axis = axis,
+        )
+
+        fun groupedWith(
+            constraintId: LayoutConstraintId,
+            subject: LayoutConstraintSubject,
+            target: LayoutConstraintSubject,
+        ): LayoutConstraint = LayoutConstraint(
+            constraintId = constraintId,
+            kind = LayoutConstraintKind.GROUPED_WITH,
+            subject = subject,
+            target = target,
+        )
+
+        fun preferredZone(
+            constraintId: LayoutConstraintId,
+            subject: LayoutConstraintSubject,
+            zone: SchematicLayoutZone,
+        ): LayoutConstraint = LayoutConstraint(
+            constraintId = constraintId,
+            kind = LayoutConstraintKind.PREFERRED_ZONE,
+            subject = subject,
+            zone = zone,
+        )
+
+        fun preserveOrder(
+            constraintId: LayoutConstraintId,
+            subjects: List<LayoutConstraintSubject>,
+        ): LayoutConstraint {
+            require(subjects.isNotEmpty()) { "Preserve-order constraints require at least one subject." }
+            return LayoutConstraint(
+                constraintId = constraintId,
+                kind = LayoutConstraintKind.PRESERVE_ORDER,
+                subject = subjects.first(),
+                orderedSubjects = subjects,
+            )
+        }
+
+        fun routeLanePreference(
+            constraintId: LayoutConstraintId,
+            subject: LayoutConstraintSubject,
+            target: LayoutConstraintSubject,
+            lane: SchematicRouteLanePreference,
+        ): LayoutConstraint = LayoutConstraint(
+            constraintId = constraintId,
+            kind = LayoutConstraintKind.ROUTE_LANE_PREFERENCE,
+            subject = subject,
+            target = target,
+            routeLanePreference = lane,
+        )
+    }
+}
+
+/**
+ * Immutable, ordered constraint snapshot consumed by M22 layout optimization.
+ */
+data class LayoutConstraintSnapshot(
+    val snapshotId: LayoutSnapshotId,
+    val family: ElectricalProjectionFamily,
+    val constraints: List<LayoutConstraint>,
+) {
+    companion object {
+        fun canonical(
+            snapshotId: LayoutSnapshotId,
+            family: ElectricalProjectionFamily,
+            constraints: List<LayoutConstraint>,
+        ): LayoutConstraintSnapshot = LayoutConstraintSnapshot(
+            snapshotId = snapshotId,
+            family = family,
+            constraints = constraints
+                .map { constraint -> constraint.withSnapshot(snapshotId) }
+                .sortedBy(LayoutConstraint::stableKey),
+        )
+    }
+}
+
+/**
  * One explainable schematic layout-intent item anchored to canonical subject and occurrence identity.
  *
  * This is pre-solver intent. It deliberately avoids coordinates, CSS, DOM, canvas interaction state,

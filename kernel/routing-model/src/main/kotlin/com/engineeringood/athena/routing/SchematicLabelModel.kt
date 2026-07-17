@@ -36,6 +36,24 @@ data class SchematicLabelPlacement(
     val relation: SchematicLabelAnchorRelation,
 )
 
+/** Bounds for the subject body that owns a label anchor. */
+data class SchematicLabelSubjectBounds(
+    val origin: SchematicRoutePoint,
+    val width: Int,
+    val height: Int,
+) {
+    init {
+        require(width > 0 && height > 0) { "Schematic label subject bounds must use positive size." }
+    }
+
+    fun contains(point: SchematicRoutePoint): Boolean {
+        return point.x >= origin.x &&
+            point.y >= origin.y &&
+            point.x < origin.x + width &&
+            point.y < origin.y + height
+    }
+}
+
 /** Governed anchor used to derive one schematic label fact. */
 data class SchematicLabelAnchor(
     val subjectId: StableSemanticIdentity? = null,
@@ -43,6 +61,7 @@ data class SchematicLabelAnchor(
     val endpointId: SchematicEndpointId? = null,
     val routeId: SchematicRouteId? = null,
     val routeSegment: SchematicRouteSegment? = null,
+    val subjectBounds: SchematicLabelSubjectBounds? = null,
     val point: SchematicRoutePoint,
 ) {
     init {
@@ -144,10 +163,15 @@ private fun placeLabel(anchor: SchematicLabelAnchor): SchematicLabelPlacement {
             )
         }
     }
-    return SchematicLabelPlacement(
-        origin = anchor.point.moveBy(dx = 12, dy = 12),
-        relation = SchematicLabelAnchorRelation.LOWER_RIGHT,
-    )
+    val lowerRight = anchor.point.moveBy(dx = 12, dy = 12)
+    val bounds = anchor.subjectBounds
+    if (bounds != null && bounds.contains(lowerRight)) {
+        return SchematicLabelPlacement(
+            origin = SchematicRoutePoint(x = bounds.origin.x + bounds.width + 12, y = anchor.point.y),
+            relation = SchematicLabelAnchorRelation.RIGHT,
+        )
+    }
+    return SchematicLabelPlacement(origin = lowerRight, relation = SchematicLabelAnchorRelation.LOWER_RIGHT)
 }
 
 private fun SchematicRouteSegment.midpoint(): SchematicRoutePoint {

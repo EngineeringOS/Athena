@@ -3,6 +3,10 @@ package com.engineeringood.athena.layout.engine
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.LayoutAlignment
+import com.engineeringood.athena.layout.LayoutConstraint
+import com.engineeringood.athena.layout.LayoutConstraintId
+import com.engineeringood.athena.layout.LayoutConstraintSnapshot
+import com.engineeringood.athena.layout.LayoutConstraintSubject
 import com.engineeringood.athena.layout.LayoutIntentId
 import com.engineeringood.athena.layout.LayoutIntentItem
 import com.engineeringood.athena.layout.LayoutIntentSnapshot
@@ -261,6 +265,155 @@ class SchematicLayoutEngineTest {
     }
 
     @Test
+    fun `optimization boundary canonicalizes inputs and emits stable Athena layout facts`() {
+        val snapshot = sampleIntentSnapshot()
+        val byIntent = snapshot.items.associateBy(LayoutIntentItem::intentId)
+        val controller = byIntent.getValue(LayoutIntentId("intent:control/plc-1")).toConstraintSubject("sheet:m22")
+        val terminal = byIntent.getValue(LayoutIntentId("intent:terminal/xt-1")).toConstraintSubject("sheet:m22")
+        val protection = byIntent.getValue(LayoutIntentId("intent:protection/qf-1")).toConstraintSubject("sheet:m22")
+        val constraints = LayoutConstraintSnapshot.canonical(
+            snapshotId = snapshot.snapshotId,
+            family = snapshot.family,
+            constraints = listOf(
+                LayoutConstraint.groupedWith(LayoutConstraintId("constraint:group:plc-xt"), terminal, controller),
+                LayoutConstraint.alignedWith(LayoutConstraintId("constraint:align:qf-plc"), protection, controller),
+                LayoutConstraint.near(LayoutConstraintId("constraint:near:plc-xt"), controller, terminal),
+            ).reversed(),
+        )
+        val existingFacts = RuleBasedSchematicLayoutStrategy().solve(snapshot).placementFacts.reversed()
+        val input = SchematicLayoutOptimizationInput(
+            intentSnapshot = snapshot.copy(items = snapshot.items.reversed()),
+            constraintSnapshot = constraints.copy(constraints = constraints.constraints.reversed()),
+            existingPlacementFacts = existingFacts,
+        )
+        val optimizer = RuleBasedSchematicLayoutOptimizer()
+
+        val first = optimizer.optimize(input)
+        val second = optimizer.optimize(input)
+
+        assertEquals(first, second)
+        assertEquals(snapshot.snapshotId, first.snapshotId)
+        assertEquals(ElectricalProjectionFamily.SCHEMATIC, first.family)
+        assertEquals(
+            listOf(
+                "intent:power/ps-1",
+                "intent:protection/qf-1",
+                "intent:control/plc-1",
+                "intent:terminal/xt-1",
+                "intent:load/m-1",
+            ),
+            first.placementFacts.map { fact -> fact.intentId.value },
+        )
+        assertEquals(
+            listOf(
+                "constraint:align:qf-plc",
+                "constraint:group:plc-xt",
+                "constraint:near:plc-xt",
+            ),
+            first.appliedConstraintIds.map { id -> id.value },
+        )
+        assertEquals(first.regionFacts, RuleBasedSchematicLayoutStrategy().solve(snapshot).regionFacts)
+    }
+
+    @Test
+    fun `optimization applies preferred zone constraints and emits governed grouping facts`() {
+        val hmi = LayoutIntentItem(
+            intentId = LayoutIntentId("intent:hmi/hmi-1"),
+            subjectId = StableSemanticIdentity("component:hmi-1"),
+            occurrenceId = LayoutOccurrenceId("occurrence:schematic:hmi-1"),
+            role = SchematicLayoutRole.HMI,
+            preferredZone = SchematicLayoutZone.ANNOTATION,
+            priority = LayoutPriority.NORMAL,
+        )
+        val snapshot = LayoutIntentSnapshot.canonical(
+            snapshotId = LayoutSnapshotId("snapshot:m22:grouping"),
+            family = ElectricalProjectionFamily.SCHEMATIC,
+            items = sampleIntentSnapshot().items + hmi,
+        )
+        val byIntent = snapshot.items.associateBy(LayoutIntentItem::intentId)
+        val controller = byIntent.getValue(LayoutIntentId("intent:control/plc-1")).toConstraintSubject("sheet:m22")
+        val hmiSubject = byIntent.getValue(LayoutIntentId("intent:hmi/hmi-1")).toConstraintSubject("sheet:m22")
+        val constraints = LayoutConstraintSnapshot.canonical(
+            snapshotId = snapshot.snapshotId,
+            family = snapshot.family,
+            constraints = listOf(
+                LayoutConstraint.preferredZone(
+                    constraintId = LayoutConstraintId("constraint:zone:hmi-control"),
+                    subject = hmiSubject,
+                    zone = SchematicLayoutZone.CONTROL,
+                ),
+                LayoutConstraint.groupedWith(
+                    constraintId = LayoutConstraintId("constraint:group:hmi-plc"),
+                    subject = hmiSubject,
+                    target = controller,
+                ),
+            ).reversed(),
+        )
+
+        val result = RuleBasedSchematicLayoutOptimizer().optimize(
+            SchematicLayoutOptimizationInput(
+                intentSnapshot = snapshot,
+                constraintSnapshot = constraints,
+            ),
+        )
+        val hmiFact = result.placementFacts.single { fact -> fact.intentId == hmi.intentId }
+        val group = result.groupFacts.single()
+
+        assertEquals(SchematicLayoutZone.CONTROL, hmiFact.preferredZone)
+        assertEquals(SchematicLayoutPoint(x = 240, y = 120), hmiFact.position)
+        assertEquals(SchematicLayoutGroupId("group:constraint:group:hmi-plc"), group.groupId)
+        assertEquals(listOf(LayoutConstraintId("constraint:group:hmi-plc")), group.constraintIds)
+        assertEquals(
+            listOf(LayoutIntentId("intent:control/plc-1"), LayoutIntentId("intent:hmi/hmi-1")),
+            group.intentIds,
+        )
+        assertEquals(
+            listOf(
+                LayoutOccurrenceId("occurrence:schematic:plc-1"),
+                LayoutOccurrenceId("occurrence:schematic:hmi-1"),
+            ),
+            group.occurrenceIds,
+        )
+        assertEquals(listOf(SchematicLayoutRole.CONTROLLER, SchematicLayoutRole.HMI), group.roles)
+        assertEquals(SchematicLayoutZone.CONTROL, group.zone)
+    }
+
+    @Test
+    fun `experimental ELK adapter normalizes output into Athena facts and falls back when disabled`() {
+        val snapshot = sampleIntentSnapshot()
+        val constraints = LayoutConstraintSnapshot.canonical(
+            snapshotId = snapshot.snapshotId,
+            family = snapshot.family,
+            constraints = emptyList(),
+        )
+        val input = SchematicLayoutOptimizationInput(
+            intentSnapshot = snapshot,
+            constraintSnapshot = constraints,
+        )
+        val optimizer = ExperimentalElkSchematicLayoutOptimizer()
+        val disabledOptimizer = ExperimentalElkSchematicLayoutOptimizer(
+            adapter = ExperimentalElkSchematicLayoutAdapter(enabled = false),
+        )
+
+        val first = optimizer.optimize(input)
+        val second = optimizer.optimize(input)
+        val fallback = disabledOptimizer.optimize(input)
+
+        assertEquals(first, second)
+        assertEquals(LayoutHelperAdapterId("helper:experimental-elk"), first.helperId)
+        assertEquals(
+            RuleBasedSchematicLayoutOptimizer().optimize(input).placementFacts.map(SchematicPlacementFact::intentId).toSet(),
+            first.placementFacts.map(SchematicPlacementFact::intentId).toSet(),
+        )
+        assertEquals(
+            RuleBasedSchematicLayoutOptimizer().optimize(input).regionFacts,
+            first.regionFacts,
+        )
+        assertEquals(first.placementFacts.map(SchematicPlacementFact::intentId).toSet(), fallback.placementFacts.map(SchematicPlacementFact::intentId).toSet())
+        assertEquals(null, fallback.helperId)
+    }
+
+    @Test
     fun `layout engine boundary avoids renderer frontend final stack and deferred scope contracts`() {
         val source = readModuleSource()
         val forbiddenTerms = listOf(
@@ -290,6 +443,15 @@ class SchematicLayoutEngineTest {
             )
         }
     }
+
+    private fun LayoutIntentItem.toConstraintSubject(sheetId: String): LayoutConstraintSubject = LayoutConstraintSubject(
+        intentId = intentId,
+        subjectId = subjectId,
+        occurrenceId = occurrenceId,
+        sheetId = sheetId,
+        viewId = "schematic-sheet",
+        sourceSpan = sourceSpan,
+    )
 
     private fun sampleIntentSnapshot(): LayoutIntentSnapshot {
         return LayoutIntentSnapshot.canonical(

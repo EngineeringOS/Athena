@@ -23,7 +23,9 @@ FrontendApplicationConfigProvider.set({
     "reloadOnReconnect": true,
     "uriScheme": "theia",
     "preferences": {
-        "toolbar.showToolbar": true
+        "toolbar.showToolbar": true,
+        "editor.enablePreview": false,
+        "workbench.editor.revealIfOpen": true
     }
 });
 

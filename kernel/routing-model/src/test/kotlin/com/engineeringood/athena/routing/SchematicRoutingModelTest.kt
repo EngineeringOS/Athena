@@ -4,6 +4,7 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.SchematicRouteLanePreference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -113,6 +114,28 @@ class SchematicRoutingModelTest {
     }
 
     @Test
+    fun `route facts honor schematic lane preference without leaving schematic scope`() {
+        val route = RuleBasedSchematicRouteStrategy().solve(
+            SchematicRouteSnapshot(
+                snapshotId = LayoutSnapshotId("snapshot:m22:routing"),
+                family = ElectricalProjectionFamily.SCHEMATIC,
+                requests = listOf(
+                    sampleRouteRequest(
+                        routeId = SchematicRouteId("route:signal/hmi-to-plc"),
+                        source = SchematicRoutePoint(x = 40, y = 40),
+                        target = SchematicRoutePoint(x = 280, y = 160),
+                        lanePreference = SchematicRouteLanePreference.VERTICAL_FIRST,
+                    ),
+                ),
+            ),
+        ).routeFacts.single()
+
+        assertEquals(SchematicRouteSegmentOrientation.VERTICAL, route.segments.first().orientation)
+        assertEquals(SchematicRoutePoint(x = 40, y = 160), route.segments.first().end)
+        assertEquals(SchematicRouteSegmentOrientation.HORIZONTAL, route.segments.last().orientation)
+    }
+
+    @Test
     fun `route facts preserve governed endpoint identity`() {
         val request = sampleRouteRequest()
         val route = RuleBasedSchematicRouteStrategy().solve(
@@ -196,9 +219,11 @@ class SchematicRoutingModelTest {
         targetEndpointId: SchematicEndpointId = SchematicEndpointId("endpoint:plc-1/input"),
         source: SchematicRoutePoint = SchematicRoutePoint(x = 0, y = 40),
         target: SchematicRoutePoint = SchematicRoutePoint(x = 320, y = 160),
+        lanePreference: SchematicRouteLanePreference? = null,
     ): SchematicRouteRequest {
         return SchematicRouteRequest(
             routeId = routeId,
+            lanePreference = lanePreference,
             source = SchematicRouteEndpointRef(
                 endpointId = sourceEndpointId,
                 subjectId = StableSemanticIdentity("component:sensor-s1"),

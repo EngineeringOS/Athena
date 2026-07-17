@@ -37,6 +37,51 @@ export type AthenaGraphViewportTransform = {
     offsetY: number;
 };
 
+export type AthenaGraphLayoutAdjustmentKind = 'place' | 'align' | 'group' | 'route' | 'label';
+
+export type AthenaGraphLayoutAdjustmentIntent = {
+    intentId: string;
+    kind: 'place' | 'align' | 'group';
+    subjectSemanticId: string;
+    occurrenceId: string;
+    viewId: string;
+    sheetId: string;
+    snapshotId: string;
+    sourceUri: string;
+    targetSemanticId?: string;
+    relation?: 'near' | 'below' | 'aligned-with' | 'grouped-with';
+    transientOnly: true;
+    persisted: false;
+};
+
+export type AthenaGraphLayoutAdjustmentCaptureResult =
+    | { accepted: true; intent: AthenaGraphLayoutAdjustmentIntent }
+    | { accepted: false; reason: string };
+
+export type AthenaGraphLayoutMutationPreview = {
+    previewId: string;
+    intentId: string;
+    subjectSemanticId: string;
+    sourceUri: string;
+    title: string;
+    layoutBlockSnippet: string;
+    persisted: false;
+};
+
+export type AthenaGraphLayoutSourceEdit = {
+    uri: string;
+    range: {
+        start: { line: number; character: number };
+        end: { line: number; character: number };
+    };
+    newText: string;
+    selectionRange?: {
+        start: { line: number; character: number };
+        end: { line: number; character: number };
+    };
+    suggestedSemanticId?: string;
+};
+
 /** Pure presentation model used by the first Athena graphical workbench panel. */
 export type AthenaGraphWorkbenchModel = {
     headerTitle: string;
@@ -46,6 +91,7 @@ export type AthenaGraphWorkbenchModel = {
     statusLabel: string;
     statusTone: 'ready' | 'warning' | 'idle';
     semanticPath: string;
+    snapshotId: string;
     activeSheetId?: string;
     sheetCount: number;
     notationPackId?: string;
@@ -259,6 +305,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         statusLabel: diagram.status,
         statusTone: diagram.status === 'ready' ? 'ready' : 'warning',
         semanticPath: diagram.semanticPath,
+        snapshotId: resolveWorkbenchSnapshotId(diagram),
         activeSheetId: diagram.activeSheetId,
         sheetCount: sheets.length,
         notationPackId: diagram.notationPack?.packId,
@@ -287,6 +334,112 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         surfaceTokens: resolveSurfaceTokens(renderContributions),
         emptyState: resolveEmptyState(diagram, nodes, edges),
     };
+}
+
+export function captureAthenaGraphLayoutAdjustmentIntent(args: {
+    model: AthenaGraphWorkbenchModel;
+    node: AthenaGraphWorkbenchNode;
+    kind: AthenaGraphLayoutAdjustmentKind;
+    targetSemanticId?: string;
+    relation?: AthenaGraphLayoutAdjustmentIntent['relation'];
+}): AthenaGraphLayoutAdjustmentCaptureResult {
+    if (args.kind === 'route' || args.kind === 'label') {
+        return {
+            accepted: false,
+            reason: 'Route and label adjustment persistence is outside M22 scope.',
+        };
+    }
+    const activeView = args.model.supportedViews.find(view => view.isActive);
+    const viewId = activeView?.viewId ?? args.model.viewFamilyId ?? args.model.viewLabel;
+    const sheetId = args.model.activeSheetId ?? args.model.sheetChrome.activeSheet?.sheetId ?? 'sheet:unknown';
+    const occurrenceId = args.node.presentationOccurrence?.occurrenceId ?? args.node.id;
+    return {
+        accepted: true,
+        intent: {
+            intentId: [
+                'layout-adjustment',
+                args.kind,
+                args.node.semanticId,
+                occurrenceId,
+                args.model.snapshotId,
+            ].join(':'),
+            kind: args.kind,
+            subjectSemanticId: args.node.semanticId,
+            occurrenceId,
+            viewId,
+            sheetId,
+            snapshotId: args.model.snapshotId,
+            sourceUri: args.model.semanticPath,
+            ...(args.targetSemanticId ? { targetSemanticId: args.targetSemanticId } : {}),
+            ...(args.relation ? { relation: args.relation } : {}),
+            transientOnly: true,
+            persisted: false,
+        },
+    };
+}
+
+export function buildAthenaGraphLayoutMutationPreview(
+    intent: AthenaGraphLayoutAdjustmentIntent,
+): AthenaGraphLayoutMutationPreview {
+    const relation = intent.relation ?? (
+        intent.kind === 'align' ? 'aligned-with' : intent.kind === 'group' ? 'grouped-with' : 'near'
+    );
+    const target = intent.targetSemanticId ?? intent.subjectSemanticId;
+    const command = intent.kind === 'align'
+        ? `align ${intent.subjectSemanticId} ${relation} ${target}`
+        : intent.kind === 'group'
+            ? `group ${intent.subjectSemanticId} ${relation} ${target}`
+            : `place ${intent.subjectSemanticId} ${relation} ${target}`;
+    return {
+        previewId: `layout-preview:${intent.intentId}`,
+        intentId: intent.intentId,
+        subjectSemanticId: intent.subjectSemanticId,
+        sourceUri: intent.sourceUri,
+        title: `Layout ${intent.kind} preview for ${intent.subjectSemanticId}`,
+        layoutBlockSnippet: [
+            `layout schematic-sheet {`,
+            `  ${command}`,
+            `}`,
+        ].join('\n'),
+        persisted: false,
+    };
+}
+
+export function buildAthenaGraphLayoutSourceEdit(args: {
+    preview: AthenaGraphLayoutMutationPreview;
+    insertionLine: number;
+    insertionCharacter: number;
+}): AthenaGraphLayoutSourceEdit {
+    const preview = args.preview;
+    const position = {
+        line: Math.max(0, args.insertionLine),
+        character: Math.max(0, args.insertionCharacter),
+    };
+    return {
+        uri: preview.sourceUri,
+        range: {
+            start: position,
+            end: position,
+        },
+        newText: `
+
+${preview.layoutBlockSnippet}
+`,
+        selectionRange: {
+            start: position,
+            end: position,
+        },
+        suggestedSemanticId: preview.subjectSemanticId,
+    };
+}
+
+function resolveWorkbenchSnapshotId(diagram: AthenaGLSPDiagram): string {
+    return [
+        'workbench-snapshot',
+        diagram.semanticPath || 'unknown-source',
+        diagram.activeViewId || 'unknown-view',
+        diagram.activeSheetId || 'unknown-sheet',
+    ].join(':');
 }
 
 export function clampAthenaGraphZoom(zoom: number): number {

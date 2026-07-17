@@ -1,0 +1,52 @@
+package com.engineeringood.m22.sample
+
+system ComponentRoundTripScenario {
+  device RoundTripControllerPLC1 {
+    type Switch
+    model "CPU"
+  }
+
+  device RoundTripHMI1 {
+    type Lamp
+    model "HMI"
+  }
+
+  device RoundTripTerminalXT2 {
+    type Switch
+    model "XT2"
+  }
+
+  device RoundTripLoadM2 {
+    type Motor
+    model "M2"
+  }
+
+  port RoundTripControllerPLC1.output {
+    direction out
+    signal RoundTripCommand
+  }
+
+  port RoundTripHMI1.status {
+    direction in
+    signal RoundTripCommand
+  }
+
+  port RoundTripTerminalXT2.in {
+    direction in
+    signal RoundTripCommand
+  }
+
+  port RoundTripTerminalXT2.out {
+    direction out
+    signal RoundTripCommand
+  }
+
+  port RoundTripLoadM2.in {
+    direction in
+    signal RoundTripCommand
+  }
+
+  connect RoundTripControllerPLC1.output -> RoundTripHMI1.status
+  connect RoundTripControllerPLC1.output -> RoundTripTerminalXT2.in
+  connect RoundTripTerminalXT2.out -> RoundTripLoadM2.in
+}

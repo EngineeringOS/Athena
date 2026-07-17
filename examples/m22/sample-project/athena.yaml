@@ -1,0 +1,4 @@
+primaryPackage:
+  name: com.engineeringood.m22.sample
+  version: 1.0.0
+  sourceRoot: src

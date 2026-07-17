@@ -4,6 +4,7 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.SchematicRouteLanePreference
 
 /** Stable identifier for one schematic endpoint in a route request or fact. */
 @JvmInline
@@ -80,6 +81,7 @@ data class SchematicRouteRequest(
     val routeId: SchematicRouteId,
     val source: SchematicRouteEndpointRef,
     val target: SchematicRouteEndpointRef,
+    val lanePreference: SchematicRouteLanePreference? = null,
 )
 
 /** Immutable schematic route derivation input for one layout snapshot. */
@@ -131,7 +133,7 @@ class RuleBasedSchematicRouteStrategy : SchematicRouteStrategy {
                 source = request.source,
                 target = request.target,
                 lane = SchematicRouteLane(index),
-                segments = orthogonalSegments(request.source.anchor, request.target.anchor),
+                segments = orthogonalSegments(request.source.anchor, request.target.anchor, request.lanePreference),
             )
         }
         return SchematicRouteStrategyResult(
@@ -145,6 +147,7 @@ class RuleBasedSchematicRouteStrategy : SchematicRouteStrategy {
 private fun orthogonalSegments(
     source: SchematicRoutePoint,
     target: SchematicRoutePoint,
+    lanePreference: SchematicRouteLanePreference? = null,
 ): List<SchematicRouteSegment> {
     require(source != target) { "Schematic route endpoints must not share the same sheet point." }
     if (source.y == target.y) {
@@ -160,6 +163,36 @@ private fun orthogonalSegments(
         return listOf(
             SchematicRouteSegment(
                 start = source,
+                end = target,
+                orientation = SchematicRouteSegmentOrientation.VERTICAL,
+            ),
+        )
+    }
+    if (lanePreference == SchematicRouteLanePreference.VERTICAL_FIRST) {
+        val turn = SchematicRoutePoint(x = source.x, y = target.y)
+        return listOf(
+            SchematicRouteSegment(
+                start = source,
+                end = turn,
+                orientation = SchematicRouteSegmentOrientation.VERTICAL,
+            ),
+            SchematicRouteSegment(
+                start = turn,
+                end = target,
+                orientation = SchematicRouteSegmentOrientation.HORIZONTAL,
+            ),
+        )
+    }
+    if (lanePreference == SchematicRouteLanePreference.HORIZONTAL_FIRST) {
+        val turn = SchematicRoutePoint(x = target.x, y = source.y)
+        return listOf(
+            SchematicRouteSegment(
+                start = source,
+                end = turn,
+                orientation = SchematicRouteSegmentOrientation.HORIZONTAL,
+            ),
+            SchematicRouteSegment(
+                start = turn,
                 end = target,
                 orientation = SchematicRouteSegmentOrientation.VERTICAL,
             ),
