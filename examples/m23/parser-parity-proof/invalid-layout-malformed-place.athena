@@ -1,0 +1,5 @@
+system MachineNo000 {
+  layout schematic-sheet {
+    place HMI1 beside PLC1
+  }
+}

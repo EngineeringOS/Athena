@@ -92,15 +92,34 @@ async function openWorkspace(window) {
                 return normalizedHash === normalizedTarget ? target : undefined;
             }, 'target workspace URL fragment');
 
-            const graphicalViewButton = await waitFor(() => {
-                return Array.from(document.querySelectorAll('button'))
-                    .find(button => (button.textContent || '').trim() === 'Graphical View');
-            }, 'Graphical View quick action');
-            graphicalViewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+            if (typeof require === 'function') {
+                const { CommandRegistry } = require('@theia/core/lib/common/command');
+                const commandRegistry = window.theia.container.get(CommandRegistry);
+                await commandRegistry.executeCommand('athena.revealGraphicalView');
+            } else {
+                const graphicalViewButton = await waitFor(() => {
+                    return Array.from(document.querySelectorAll('button'))
+                        .find(button => (button.textContent || '').trim() === 'Graphical View');
+                }, 'Graphical View quick action');
+                graphicalViewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+            }
 
             const workbench = await requireElement('.athena-graph-workbench', 'graph workbench root');
             const stage = await requireElement('.athena-graph-workbench__stage', 'graph workbench stage');
-            const viewport = await requireElement('.athena-graph-workbench__viewport', 'graph workbench viewport');
+            const viewport = await waitFor(() => {
+                const element = document.querySelector('.athena-graph-workbench__viewport');
+                if (element) {
+                    return element;
+                }
+                const empty = document.querySelector('.athena-graph-workbench__empty');
+                if (empty) {
+                    const text = (empty.textContent || '').replace(/\\s+/g, ' ').trim();
+                    if (text.includes('Projection unavailable') || text.includes('Projection is empty')) {
+                        throw new Error('Graph workbench rendered empty state before viewport: ' + text);
+                    }
+                }
+                return undefined;
+            }, 'graph workbench viewport');
             const sheet = await requireElement('.athena-graph-workbench__sheet', 'graph workbench sheet');
             const canvas = await requireElement('.athena-graph-workbench__canvas', 'graph workbench canvas');
             const floatingBar = await requireElement('.athena-graph-workbench__floating-bar', 'graph workbench floating bar');

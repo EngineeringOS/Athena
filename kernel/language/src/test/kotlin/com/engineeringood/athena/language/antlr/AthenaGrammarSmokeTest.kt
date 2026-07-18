@@ -168,6 +168,89 @@ class AthenaGrammarSmokeTest {
         assertEquals("PLC1.out", port.twoPartName().text.replace(" ", ""))
     }
 
+    @Test
+    fun `parses system-scoped layout block with admitted m23 statement vocabulary`() {
+        val source =
+            """
+            system MachineNo000 {
+              device PLC1 {
+                type Switch
+              }
+              layout schematic-sheet {
+                place HMI1 near PLC1
+                place XT1 below PLC1
+                align HMI1 aligned-with PLC1 axis vertical
+                align HMI2 aligned-with PLC1 axis horizontal
+                group HMI1 grouped-with PLC1
+              }
+            }
+            """.trimIndent()
+
+        val parse = parseSource(source)
+
+        assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
+        val layout = parse.tree.systemDecl().declaration(1).layoutDecl()
+        assertEquals("schematic-sheet", layout.viewFamilyName().text)
+        assertEquals(5, layout.layoutStatement().size)
+        assertEquals("placeHMI1nearPLC1", layout.layoutStatement(0).text)
+        assertEquals("placeXT1belowPLC1", layout.layoutStatement(1).text)
+        assertEquals("alignHMI1aligned-withPLC1axisvertical", layout.layoutStatement(2).text)
+        assertEquals("alignHMI2aligned-withPLC1axishorizontal", layout.layoutStatement(3).text)
+        assertEquals("groupHMI1grouped-withPLC1", layout.layoutStatement(4).text)
+    }
+
+    @Test
+    fun `rejects file-global layout block before the system block`() {
+        val source =
+            """
+            layout schematic-sheet {
+              place HMI1 near PLC1
+            }
+            system MachineNo000 {}
+            """.trimIndent()
+
+        val parse = parseSource(source)
+
+        assertTrue(parse.errors.isNotEmpty(), "Expected file-global layout to fail")
+    }
+
+    @Test
+    fun `m23 parser parity corpus keeps the expected layout syntax inventory`() {
+        val corpus = resolveRepoRoot().resolve("examples/m23/parser-parity-proof")
+        val discovered = Files.newDirectoryStream(corpus, "*.athena").use { stream ->
+            stream.map { path -> path.fileName.toString().removeSuffix(".athena") }.sorted()
+        }
+
+        assertEquals(
+            listOf(
+                "invalid-file-global-layout",
+                "invalid-layout-bad-axis",
+                "invalid-layout-malformed-place",
+                "invalid-layout-missing-target",
+                "valid-layout-block",
+            ),
+            discovered,
+        )
+    }
+
+    @Test
+    fun `m23 parser parity corpus accepts valid layout syntax and rejects invalid layout syntax`() {
+        val corpus = resolveRepoRoot().resolve("examples/m23/parser-parity-proof")
+        val valid = parseSource(Files.readString(corpus.resolve("valid-layout-block.athena")))
+
+        assertTrue(valid.errors.isEmpty(), "Unexpected syntax errors: ${valid.errors}")
+
+        listOf(
+            "invalid-file-global-layout",
+            "invalid-layout-bad-axis",
+            "invalid-layout-malformed-place",
+            "invalid-layout-missing-target",
+        ).forEach { name ->
+            val parse = parseSource(Files.readString(corpus.resolve("$name.athena")))
+            assertTrue(parse.errors.isNotEmpty(), "Expected $name to fail")
+        }
+    }
+
     private fun parseSource(source: String): AntlrParse {
         val errors = mutableListOf<String>()
         val listener = object : BaseErrorListener() {

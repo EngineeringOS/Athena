@@ -1,0 +1,78 @@
+========================================
+System-scoped schematic layout block
+========================================
+
+system MachineNo000 {
+  device PLC1 {
+    type Switch
+  }
+  layout schematic-sheet {
+    place HMI1 near PLC1
+    place XT1 below PLC1
+    align HMI1 aligned-with PLC1 axis vertical
+    align HMI2 aligned-with PLC1 axis horizontal
+    group HMI1 grouped-with PLC1
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))))
+    (declaration
+      (layout_declaration
+        view_family: (view_family_name)
+        (layout_statement
+          (place_statement
+            subject: (identifier)
+            (layout_placement_relation)
+            target: (identifier)))
+        (layout_statement
+          (place_statement
+            subject: (identifier)
+            (layout_placement_relation)
+            target: (identifier)))
+        (layout_statement
+          (align_statement
+            subject: (identifier)
+            target: (identifier)
+            axis: (layout_axis)))
+        (layout_statement
+          (align_statement
+            subject: (identifier)
+            target: (identifier)
+            axis: (layout_axis)))
+        (layout_statement
+          (group_statement
+            subject: (identifier)
+            target: (identifier)))))))
+
+========================================
+File-global layout remains invalid
+========================================
+
+layout schematic-sheet {
+  place HMI1 near PLC1
+}
+system MachineNo000 {
+}
+
+---
+
+(source_file
+  (ERROR
+    (identifier)
+    (identifier)
+    (UNEXPECTED 's')
+    (identifier)
+    (identifier)
+    (identifier))
+  (system_declaration
+    name: (name)))

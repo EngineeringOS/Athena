@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":kernel:repository-model"))
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:geometry-model"))
+    implementation(project(":kernel:layout-engine"))
     implementation(project(":kernel:layout-model"))
     implementation(project(":kernel:part-model"))
     implementation(project(":kernel:physical-model"))

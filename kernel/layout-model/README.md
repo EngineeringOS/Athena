@@ -9,6 +9,12 @@ engineering placement meaning before any strategy solves coordinates: role, pref
 priority, alignment, relationship constraints, canonical subject identity, occurrence identity,
 snapshot identity, and source span.
 
+M23 adds a separate authored layout-intent priority vocabulary for source-owned hints:
+`HARD`, `SOFT`, and `PREFERENCE`. The admitted M23 layout syntax currently defaults every
+authored statement to `PREFERENCE`; `HARD` and `SOFT` exist as model capacity for later conflict
+handling. This authored priority type deliberately does not replace or reinterpret the existing
+solver-facing `LayoutPriority` values.
+
 ## Responsibilities
 
 - Define `ViewDefinition` for supported projection contexts.
@@ -40,6 +46,9 @@ snapshot identity, and source span.
 - `SchematicLayoutZone`
 - `LayoutAlignment`
 - `LayoutPriority`
+- `AuthoredLayoutIntentPriority`
+- `AuthoredLayoutIntent`
+- `AuthoredLayoutIntentStatement`
 - `LayoutIntentRelationshipConstraint`
 
 ## Dependencies

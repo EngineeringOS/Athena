@@ -12,6 +12,8 @@ import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPubli
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.LayoutDeclaration
+import com.engineeringood.athena.language.LayoutStatement
 import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.QualifiedName
@@ -272,7 +274,8 @@ class AthenaLanguageFeatures(
         val resolvedSnapshot = compiler.resolveProjectSemanticImports(builtSnapshot)
         val diagnosticSnapshot = compiler.emitProjectSemanticDiagnostics(resolvedSnapshot)
         val indexedSnapshot = compiler.indexProjectSemanticDeclarations(diagnosticSnapshot)
-        val linkedSnapshot = compiler.linkProjectSemanticReferences(indexedSnapshot)
+        val layoutBoundSnapshot = compiler.bindProjectSemanticLayoutHints(indexedSnapshot)
+        val linkedSnapshot = compiler.linkProjectSemanticReferences(layoutBoundSnapshot)
         val packageSourceRoots = packageSourceRoots(publication)
         val sourceUnitUris = linkedSnapshot.sourceUnits.mapNotNull { sourceUnit ->
             val packageSourceRoot = packageSourceRoots[sourceUnit.packageKey] ?: return@mapNotNull null
@@ -970,6 +973,31 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
             range = span.toLspRange()
             selectionRange = span.toLspRange()
         }
+
+        is LayoutDeclaration -> DocumentSymbol().apply {
+            name = viewFamily
+            kind = SymbolKind.Module
+            detail = "layout"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+            children = statements.map { statement -> statement.toDocumentSymbol() }
+        }
+    }
+}
+
+private fun LayoutStatement.toDocumentSymbol(): DocumentSymbol {
+    return DocumentSymbol().apply {
+        name = when (val statement = this@toDocumentSymbol) {
+            is LayoutStatement.PlaceNear -> "place ${statement.subject} near ${statement.target}"
+            is LayoutStatement.PlaceBelow -> "place ${statement.subject} below ${statement.target}"
+            is LayoutStatement.AlignWith ->
+                "align ${statement.subject} aligned-with ${statement.target} axis ${statement.axis.name.lowercase()}"
+            is LayoutStatement.GroupWith -> "group ${statement.subject} grouped-with ${statement.target}"
+        }
+        kind = SymbolKind.Property
+        detail = "layout statement"
+        range = span.toLspRange()
+        selectionRange = span.toLspRange()
     }
 }
 

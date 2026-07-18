@@ -268,6 +268,54 @@ enum class LayoutPriority {
 }
 
 /**
+ * Authored M23 layout-hint priority before semantic binding or solver constraint lowering.
+ */
+enum class AuthoredLayoutIntentPriority(val sortRank: Int) {
+    HARD(0),
+    SOFT(1),
+    PREFERENCE(2),
+}
+
+/**
+ * Authored M23 layout-hint relation before semantic binding.
+ */
+enum class AuthoredLayoutIntentRelation {
+    NEAR,
+    BELOW,
+    ALIGNED_WITH,
+    GROUPED_WITH,
+}
+
+/**
+ * Authored M23 alignment axis before semantic binding.
+ */
+enum class AuthoredLayoutAxis {
+    HORIZONTAL,
+    VERTICAL,
+}
+
+/**
+ * Source-owned layout intent block admitted by M23 before subjects are semantically resolved.
+ */
+data class AuthoredLayoutIntent(
+    val viewFamily: String,
+    val statements: List<AuthoredLayoutIntentStatement>,
+    val sourceSpan: LayoutSourceSpan,
+)
+
+/**
+ * One source-authored layout relationship. Subjects and targets remain authored names here.
+ */
+data class AuthoredLayoutIntentStatement(
+    val subject: String,
+    val relation: AuthoredLayoutIntentRelation,
+    val target: String,
+    val axis: AuthoredLayoutAxis? = null,
+    val priority: AuthoredLayoutIntentPriority = AuthoredLayoutIntentPriority.PREFERENCE,
+    val sourceSpan: LayoutSourceSpan,
+)
+
+/**
  * Relative orientation vocabulary used by layout intent before geometry exists.
  */
 enum class LayoutAxis {
@@ -379,6 +427,7 @@ data class LayoutConstraint(
     val zone: SchematicLayoutZone? = null,
     val orderedSubjects: List<LayoutConstraintSubject> = emptyList(),
     val routeLanePreference: SchematicRouteLanePreference? = null,
+    val authoredPriority: AuthoredLayoutIntentPriority = AuthoredLayoutIntentPriority.PREFERENCE,
     val snapshotId: LayoutSnapshotId? = null,
 ) {
     internal fun stableKey(): String = listOf(
@@ -389,6 +438,7 @@ data class LayoutConstraint(
         axis?.name.orEmpty(),
         zone?.name.orEmpty(),
         routeLanePreference?.name.orEmpty(),
+        authoredPriority.sortRank.toString().padStart(2, '0'),
         orderedSubjects.joinToString(separator = ",") { item -> item.intentId.value },
     ).joinToString(separator = "|")
 

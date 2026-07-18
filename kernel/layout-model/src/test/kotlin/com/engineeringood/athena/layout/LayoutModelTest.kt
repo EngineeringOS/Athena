@@ -9,6 +9,39 @@ import kotlin.test.assertIs
 
 class LayoutModelTest {
     @Test
+    fun `authored layout priority ordering is deterministic and separate from solved layout priority`() {
+        val ordered = listOf(
+            AuthoredLayoutIntentPriority.PREFERENCE,
+            AuthoredLayoutIntentPriority.HARD,
+            AuthoredLayoutIntentPriority.SOFT,
+        ).sortedBy(AuthoredLayoutIntentPriority::sortRank)
+
+        val statement = AuthoredLayoutIntentStatement(
+            subject = "HMI1",
+            relation = AuthoredLayoutIntentRelation.NEAR,
+            target = "PLC1",
+            sourceSpan = LayoutSourceSpan(
+                sourceUnitId = "src/01-layout-hints.athena",
+                startLine = 10,
+                startColumn = 3,
+                endLine = 10,
+                endColumn = 23,
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                AuthoredLayoutIntentPriority.HARD,
+                AuthoredLayoutIntentPriority.SOFT,
+                AuthoredLayoutIntentPriority.PREFERENCE,
+            ),
+            ordered,
+        )
+        assertEquals(AuthoredLayoutIntentPriority.PREFERENCE, statement.priority)
+        assertEquals(listOf(LayoutPriority.CRITICAL, LayoutPriority.HIGH, LayoutPriority.NORMAL, LayoutPriority.LOW), LayoutPriority.entries)
+    }
+
+    @Test
     fun `layout intent snapshot carries explainable schematic intent and canonical identity`() {
         val controllerIntentId = LayoutIntentId("intent:controller/plc-1")
         val terminalIntentId = LayoutIntentId("intent:terminal/xt-1")

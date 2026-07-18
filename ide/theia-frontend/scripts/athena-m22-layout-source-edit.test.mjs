@@ -20,13 +20,13 @@ test('graph workbench applies approved layout preview as reviewable source edit'
 
     assert.match(modelSource, /buildAthenaGraphLayoutSourceEdit/);
     assert.match(modelSource, /suggestedSemanticId:\s*preview\.subjectSemanticId/);
-    assert.match(modelSource, /newText:\s*`\n\n\$\{preview\.layoutBlockSnippet\}\n`/);
+    assert.match(modelSource, /serializeAthenaGraphAuthoredLayoutIntent\(preview\.authoredIntent\)/);
     assert.match(widgetSource, /acceptLayoutMutationPreview/);
     assert.match(widgetSource, /buildAthenaGraphLayoutSourceEdit/);
     assert.match(widgetSource, /applyAuthoringSourceEdit\(sourceEdit\)/);
     assert.match(widgetSource, /this\.layoutMutationPreview = undefined/);
     assert.match(widgetSource, /this\.scheduleRefresh\(\)/);
     assert.doesNotMatch(widgetSource, /localStorage|sessionStorage|indexedDB/);
-    assert.match(usage, /approved layout preview/i);
-    assert.match(usage, /layout block is appended/i);
+    assert.match(usage, /approved adjustments/i);
+    assert.match(usage, /reviewable `\.athena`\s+layout intent/i);
 });

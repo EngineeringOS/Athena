@@ -4,10 +4,11 @@ Date: 2026-07-18
 
 ## Summary
 
-M22 completed the governed layout optimization and layout round-trip foundation. The milestone moved
+M22 completed the governed layout optimization foundation and selected a layout round-trip syntax
+direction. The milestone moved
 Athena beyond the M21 layout-intelligence model by adding explicit layout constraints, a deterministic
-optimization boundary, an optional local ELK normalization spike, a reviewable component layout
-round-trip path, and IDE coherence guardrails around the visible Theia graph workbench.
+optimization boundary, an optional local ELK normalization spike, a frontend layout-adjustment
+preview/source-edit concept, and IDE coherence guardrails around the visible Theia graph workbench.
 
 The main product proof is no longer an `.mjs` fixture. It is the openable Athena project at
 `../../../examples/m22/sample-project`, with real `.athena` files and supporting checklist/proof
@@ -47,10 +48,11 @@ documents.
 
 ### Epic 4 - Reviewable Component Layout Round-Trip
 
-- Selected the minimal M22 layout-hint syntax in `M22-LAYOUT-HINT-SYNTAX.md`.
+- Selected the minimal M22 layout-hint syntax shape in `M22-LAYOUT-HINT-SYNTAX.md`.
 - Added graph workbench adjustment intent capture for placement, alignment, and grouping.
-- Added mutation preview before applying layout source edits.
-- Persisted approved layout changes as reviewable `.athena` layout blocks through the editor bridge.
+- Added mutation preview/source-edit construction for layout snippets.
+- Did not complete real parser/compiler/LSP admission for `.athena` layout blocks; real source
+  round-trip is deferred to M23.
 - Kept the canvas from becoming hidden persistence state.
 
 ### Epic 5 - IDE Coherence And Scope Guardrails
@@ -86,7 +88,9 @@ Primary files to inspect:
 
 - `src/01-baseline-sheet.athena` - accepted baseline graph workbench behavior.
 - `src/02-layout-optimization-acceptance.athena` - governed layout optimization acceptance case.
-- `src/03-component-round-trip.athena` - component placement/alignment/grouping round-trip case.
+- `src/03-component-round-trip.athena` - component placement/alignment/grouping identities for the
+  round-trip preview case. It does not contain the selected layout block because the M22 language
+  layer does not yet accept that syntax.
 - `src/04-boundary-scope.athena` - explicit deferred-scope guardrails.
 - `M22-LAYOUT-ACCEPTANCE.md` - professional readability checklist.
 - `M22-LAYOUT-REPLAY-PROOF.md` - deterministic layout-fact replay proof.
@@ -100,8 +104,8 @@ Expected IDE checks:
 - Click whitespace; the information popover must close.
 - Use the floating zoom controls; the controls must remain transparent overlays on the grid surface.
 - Use outline navigation; it must reveal in the same `.athena` editor tab.
-- Review `src/03-component-round-trip.athena` and the layout mutation preview path; approved changes
-  must be reviewable source edits, not hidden canvas state.
+- Review `src/03-component-round-trip.athena` and the layout mutation preview path; M22 proves the
+  preview/source-edit direction, but real accepted `.athena` layout-block persistence is not complete.
 
 Supporting usage document:
 
@@ -171,8 +175,9 @@ Result: encoding audit passed.
   to preserve the last active Athena editor in the bridge used by projection requests.
 - Layout quality is still not EPLAN-level. M22 intentionally proves the governed optimization and
   round-trip foundation, not final professional layout parity.
-- Round-trip scope had to stay narrow. M22 correctly limited persisted adjustment intent to component
-  placement, alignment, and grouping.
+- Round-trip scope had to stay narrower than originally recorded. M22 selected component placement,
+  alignment, and grouping syntax intent, but did not admit that block into the real `.athena`
+  parser/compiler/LSP.
 - UI regressions around `Cabinet Main`, grid visibility, and transparent controls were costly. The
   lesson is to treat accepted visual behavior as product contract, not incidental CSS.
 
@@ -187,6 +192,8 @@ Result: encoding audit passed.
 - External layout engines should be adapters behind Athena facts, not the architecture.
 - Persist user layout changes as governed intent. Do not save hidden canvas state.
 - Keep `.athena` examples inside the syntax that the current IDE/LSP actually accepts.
+- Do not claim source round-trip support until the generated source is accepted by the parser,
+  compiler, LSP, and sample project.
 
 ## Deferred Scope
 
@@ -201,6 +208,7 @@ M22 deliberately did not solve:
 - final solver-stack selection
 - advanced electrical routing intelligence
 - standards-specific label generation
+- real `.athena` parser/compiler/LSP support for the selected layout block
 
 ## Next Recommendations
 
@@ -210,4 +218,5 @@ M22 deliberately did not solve:
 - Keep a hard gate: no story is complete unless the M22 sample project remains openable in Theia and
   the active `.athena` source projects correctly.
 - If ELK continues, graduate it only through the adapter boundary and normalized fact comparison.
-- If layout round-trip expands, add one category at a time and keep source edits reviewable.
+- If layout round-trip expands, first admit the selected layout block into the real language and keep
+  source edits reviewable.

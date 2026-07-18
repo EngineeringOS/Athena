@@ -20,8 +20,9 @@ test('graph workbench prepares reviewable layout mutation previews before source
     assert.match(modelSource, /AthenaGraphLayoutMutationPreview/);
     assert.match(modelSource, /buildAthenaGraphLayoutMutationPreview/);
     assert.match(modelSource, /previewId/);
+    assert.match(modelSource, /authoredIntent/);
+    assert.match(modelSource, /serializeAthenaGraphAuthoredLayoutIntent/);
     assert.match(modelSource, /layoutBlockSnippet/);
-    assert.match(modelSource, /layout schematic-sheet/);
     assert.match(modelSource, /persisted:\s*false/);
     assert.match(widgetSource, /layoutMutationPreview/);
     assert.match(widgetSource, /renderLayoutMutationPreview/);

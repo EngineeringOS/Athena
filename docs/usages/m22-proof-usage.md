@@ -19,7 +19,7 @@ The local proof corpus lives under `../../examples/m22/`:
 - `_bmad-output/implementation-artifacts/m22/M22-ELK-COMPARISON.md` compares ELK-assisted output
   against Athena rule output using normalized Athena facts
 - `_bmad-output/implementation-artifacts/m22/M22-LAYOUT-HINT-SYNTAX.md` records the selected layout
-  block syntax for M22 source round-trip
+  block shape for preview/source-edit intent; real parser/compiler/LSP admission is deferred to M23
 
 ## Supported Workflow Slice
 
@@ -67,8 +67,8 @@ In the IDE:
   label placement; this remains schematic topology and non-standards-specific label behavior
 - review `src/03-component-round-trip.athena` for placement, alignment, grouping, and source
   round-trip subject identities
-- approve a graph workbench placement, alignment, or grouping change from the approved layout preview;
-  the layout block is appended to the active `.athena` source through the editor bridge
+- review the graph workbench placement, alignment, or grouping preview path; M22 can construct the
+  selected layout-block snippet, but the real `.athena` language does not yet accept that block
 - review `src/04-boundary-scope.athena` for deferred-scope guardrails
 - review `M22-LAYOUT-ACCEPTANCE.md` for the named comparison set and required layout acceptance
   checks
@@ -113,10 +113,11 @@ powershell -ExecutionPolicy Bypass -File .\tools\encoding-audit.ps1
 
 ## Boundary Handoff
 
-M22 deliberately leaves deferred domains for future milestones: public repository/import ecosystem,
-full IEC/QElectroTech library ingestion, cabinet authoring, physical routing, AI layout, final
-solver-stack decision, and full EPLAN parity. No hidden canvas state persists layout truth; approved
-adjustments must become reviewable `.athena` layout intent.
+M22 deliberately leaves deferred domains for future milestones: parser/compiler/LSP admission of the
+selected layout block, public repository/import ecosystem, full IEC/QElectroTech library ingestion,
+cabinet authoring, physical routing, AI layout, final solver-stack decision, and full EPLAN parity.
+No hidden canvas state persists layout truth; approved adjustments must become reviewable `.athena`
+layout intent once the language admits the layout block.
 
 ## Retrospective Record
 

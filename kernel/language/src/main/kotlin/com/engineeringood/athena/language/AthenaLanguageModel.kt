@@ -142,6 +142,56 @@ data class ConnectionDeclaration(
 ) : Declaration
 
 /**
+ * Syntax node for a `layout <view-family> { ... }` declaration authored inside a system block.
+ *
+ * This is the M23 language admission surface for layout intent. It preserves authored layout
+ * statements without resolving subjects, generating constraints, or assigning renderer-owned
+ * coordinates.
+ */
+data class LayoutDeclaration(
+    val viewFamily: String,
+    val statements: List<LayoutStatement>,
+    override val span: SourceSpan,
+) : Declaration
+
+/** Syntax-only authored statements inside a [LayoutDeclaration]. */
+sealed interface LayoutStatement {
+    val subject: String
+    val target: String
+    val span: SourceSpan
+
+    data class PlaceNear(
+        override val subject: String,
+        override val target: String,
+        override val span: SourceSpan,
+    ) : LayoutStatement
+
+    data class PlaceBelow(
+        override val subject: String,
+        override val target: String,
+        override val span: SourceSpan,
+    ) : LayoutStatement
+
+    data class AlignWith(
+        override val subject: String,
+        override val target: String,
+        val axis: LayoutAxis,
+        override val span: SourceSpan,
+    ) : LayoutStatement
+
+    data class GroupWith(
+        override val subject: String,
+        override val target: String,
+        override val span: SourceSpan,
+    ) : LayoutStatement
+}
+
+enum class LayoutAxis {
+    Horizontal,
+    Vertical,
+}
+
+/**
  * Preserves a dotted authored reference such as `PLC1.out`.
  *
  * Part of the frozen Athena-owned authored syntax contract; syntax-only and stable across

@@ -13,6 +13,7 @@ const packageRoot = path.resolve(__dirname, '..');
 const repoRoot = path.resolve(packageRoot, '..', '..');
 const wasmPath = path.join(packageRoot, 'tree-sitter-athena.wasm');
 const m18SyntaxProofDir = path.join(repoRoot, 'examples', 'm18', 'syntax-proof');
+const m23ParserParityDir = path.join(repoRoot, 'examples', 'm23', 'parser-parity-proof');
 const M18_SYNTAX_FIXTURE_NAMES = [
     'invalid-alias',
     'invalid-missing-target',
@@ -20,6 +21,13 @@ const M18_SYNTAX_FIXTURE_NAMES = [
     'invalid-wildcard',
     'valid-package-import',
     'valid-package-only',
+];
+const M23_LAYOUT_FIXTURE_NAMES = [
+    'invalid-file-global-layout',
+    'invalid-layout-bad-axis',
+    'invalid-layout-malformed-place',
+    'invalid-layout-missing-target',
+    'valid-layout-block',
 ];
 
 const PARITY_FIXTURES = [
@@ -142,3 +150,29 @@ test('M18 Tree-sitter fixture coverage matches the checked-in syntax inventory',
         .sort();
     assert.deepEqual(discovered, M18_SYNTAX_FIXTURE_NAMES);
 });
+
+test('M23 Tree-sitter fixture coverage matches the checked-in layout syntax inventory', () => {
+    const discovered = readdirSync(m23ParserParityDir)
+        .filter(name => name.endsWith('.athena'))
+        .map(name => name.slice(0, -'.athena'.length))
+        .sort();
+    assert.deepEqual(discovered, M23_LAYOUT_FIXTURE_NAMES);
+});
+
+test('M23 valid layout fixture parses without ERROR or MISSING nodes', () => {
+    const source = readFileSync(path.join(m23ParserParityDir, 'valid-layout-block.athena'), 'utf8');
+    const parser = new Parser();
+    parser.setLanguage(language);
+    const tree = parser.parse(source);
+    assert.equal(tree.rootNode.hasError, false, tree.rootNode.toString());
+});
+
+for (const fixtureName of M23_LAYOUT_FIXTURE_NAMES.filter(name => name.startsWith('invalid-'))) {
+    test(`M23 invalid layout fixture ${fixtureName} retains an error node`, () => {
+        const source = readFileSync(path.join(m23ParserParityDir, `${fixtureName}.athena`), 'utf8');
+        const parser = new Parser();
+        parser.setLanguage(language);
+        const tree = parser.parse(source);
+        assert.equal(tree.rootNode.hasError, true, `expected syntax error for ${fixtureName}:\n${tree.rootNode.toString()}`);
+    });
+}

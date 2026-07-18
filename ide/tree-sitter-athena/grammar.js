@@ -1,10 +1,11 @@
 // Athena Tree-sitter grammar — SYNTAX UX ONLY.
 //
 // AD-107: Tree-sitter owns syntax UX only (highlighting/structure), never semantic truth.
-// AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset.
+// AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset and
+// M23 system-scoped layout-block admission.
 // `kernel/language/src/main/kotlin/com/engineeringood/athena/language/AthenaLanguageModel.kt` /
 // `AthenaLanguageParser.kt`: optional package, repeated imports, one system block, and the
-// existing device/port/connect, qualified-name, string, identifier, and property syntax.
+// existing device/port/connect, layout, qualified-name, string, identifier, and property syntax.
 //
 // Do NOT add aliases, wildcards, visibility, comments, numeric literals, or expressions. Widening this
 // grammar beyond the frozen subset (AD-104) is an explicit future-story decision, not an
@@ -80,6 +81,7 @@ module.exports = grammar({
       $.device_declaration,
       $.port_declaration,
       $.connect_declaration,
+      $.layout_declaration,
     ),
 
     device_declaration: $ => seq(
@@ -103,6 +105,55 @@ module.exports = grammar({
       field('from', $.qualified_name),
       '->',
       field('to', $.qualified_name),
+    ),
+
+    layout_declaration: $ => seq(
+      'layout',
+      field('view_family', $.view_family_name),
+      '{',
+      repeat($.layout_statement),
+      '}',
+    ),
+
+    view_family_name: _ => token(/[A-Za-z_][A-Za-z0-9_]*(?:-[A-Za-z_][A-Za-z0-9_]*)*/),
+
+    layout_statement: $ => choice(
+      $.place_statement,
+      $.align_statement,
+      $.group_statement,
+    ),
+
+    place_statement: $ => seq(
+      'place',
+      field('subject', $.identifier),
+      $.layout_placement_relation,
+      field('target', $.identifier),
+    ),
+
+    layout_placement_relation: _ => choice(
+      'near',
+      'below',
+    ),
+
+    align_statement: $ => seq(
+      'align',
+      field('subject', $.identifier),
+      'aligned-with',
+      field('target', $.identifier),
+      'axis',
+      field('axis', $.layout_axis),
+    ),
+
+    layout_axis: _ => choice(
+      'horizontal',
+      'vertical',
+    ),
+
+    group_statement: $ => seq(
+      'group',
+      field('subject', $.identifier),
+      'grouped-with',
+      field('target', $.identifier),
     ),
 
     qualified_name: $ => seq(

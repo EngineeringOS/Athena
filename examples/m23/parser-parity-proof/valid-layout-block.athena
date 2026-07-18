@@ -1,0 +1,12 @@
+system MachineNo000 {
+  device PLC1 {
+    type Switch
+  }
+  layout schematic-sheet {
+    place HMI1 near PLC1
+    place XT1 below PLC1
+    align HMI1 aligned-with PLC1 axis vertical
+    align HMI2 aligned-with PLC1 axis horizontal
+    group HMI1 grouped-with PLC1
+  }
+}

@@ -4,6 +4,9 @@ import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.ImportDeclaration
+import com.engineeringood.athena.language.LayoutAxis
+import com.engineeringood.athena.language.LayoutDeclaration
+import com.engineeringood.athena.language.LayoutStatement
 import com.engineeringood.athena.language.PackageDeclaration
 import com.engineeringood.athena.language.ParseFailure
 import com.engineeringood.athena.language.ParseResult
@@ -275,12 +278,13 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         context.deviceDecl()?.let { return adaptDevice(it) }
         context.portDecl()?.let { return adaptPort(it) }
         context.connectDecl()?.let { return adaptConnect(it) }
+        context.layoutDecl()?.let { return adaptLayout(it) }
         throw AthenaAntlrAdapterFailure(
             SyntaxDiagnostic(
                 file = file,
                 line = context.start.line,
                 column = context.start.charPositionInLine + 1,
-                message = "Expected 'device', 'port', or 'connect'",
+                message = "Expected 'device', 'port', 'connect', or 'layout'",
                 span = spanOfContext(context.start, context.stop),
             ),
         )
@@ -318,6 +322,77 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         return ConnectionDeclaration(
             from = from,
             to = to,
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptLayout(context: AthenaParser.LayoutDeclContext): LayoutDeclaration {
+        return LayoutDeclaration(
+            viewFamily = context.viewFamilyName().text,
+            statements = context.layoutStatement().map { adaptLayoutStatement(it) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptLayoutStatement(context: AthenaParser.LayoutStatementContext): LayoutStatement {
+        context.placeStatement()?.let { return adaptPlaceStatement(it) }
+        context.alignStatement()?.let { return adaptAlignStatement(it) }
+        context.groupStatement()?.let { return adaptGroupStatement(it) }
+        throw AthenaAntlrAdapterFailure(
+            SyntaxDiagnostic(
+                file = file,
+                line = context.start.line,
+                column = context.start.charPositionInLine + 1,
+                message = "Expected layout statement",
+                span = spanOfContext(context.start, context.stop),
+            ),
+        )
+    }
+
+    private fun adaptPlaceStatement(context: AthenaParser.PlaceStatementContext): LayoutStatement {
+        val subject = context.ident(0).text
+        val target = context.ident(1).text
+        val span = spanOfContext(context.start, context.stop)
+        return when (context.layoutPlacementRelation().text) {
+            "near" -> LayoutStatement.PlaceNear(subject, target, span)
+            "below" -> LayoutStatement.PlaceBelow(subject, target, span)
+            else -> throw AthenaAntlrAdapterFailure(
+                SyntaxDiagnostic(
+                    file = file,
+                    line = context.layoutPlacementRelation().start.line,
+                    column = context.layoutPlacementRelation().start.charPositionInLine + 1,
+                    message = "Expected layout placement relation 'near' or 'below'",
+                    span = spanOfContext(context.layoutPlacementRelation().start, context.layoutPlacementRelation().stop),
+                ),
+            )
+        }
+    }
+
+    private fun adaptAlignStatement(context: AthenaParser.AlignStatementContext): LayoutStatement.AlignWith {
+        return LayoutStatement.AlignWith(
+            subject = context.ident(0).text,
+            target = context.ident(1).text,
+            axis = when (context.layoutAxis().text) {
+                "horizontal" -> LayoutAxis.Horizontal
+                "vertical" -> LayoutAxis.Vertical
+                else -> throw AthenaAntlrAdapterFailure(
+                    SyntaxDiagnostic(
+                        file = file,
+                        line = context.layoutAxis().start.line,
+                        column = context.layoutAxis().start.charPositionInLine + 1,
+                        message = "Expected layout axis 'horizontal' or 'vertical'",
+                        span = spanOfContext(context.layoutAxis().start, context.layoutAxis().stop),
+                    ),
+                )
+            },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptGroupStatement(context: AthenaParser.GroupStatementContext): LayoutStatement.GroupWith {
+        return LayoutStatement.GroupWith(
+            subject = context.ident(0).text,
+            target = context.ident(1).text,
             span = spanOfContext(context.start, context.stop),
         )
     }

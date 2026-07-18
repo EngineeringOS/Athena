@@ -596,6 +596,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const insertionCharacter = lines[lines.length - 1]?.length ?? 0;
         const sourceEdit = buildAthenaGraphLayoutSourceEdit({
             preview,
+            documentText,
             insertionLine,
             insertionCharacter,
         });

@@ -10,8 +10,18 @@
 (port_declaration "port" @keyword)
 (connect_declaration "connect" @keyword)
 (connect_declaration "->" @operator)
+(layout_declaration "layout" @keyword)
+(place_statement "place" @keyword)
+(align_statement "align" @keyword)
+(group_statement "group" @keyword)
+(layout_placement_relation) @keyword
+(layout_axis) @constant
+(align_statement "aligned-with" @operator)
+(align_statement "axis" @keyword)
+(group_statement "grouped-with" @operator)
 
 (name) @variable
+(view_family_name) @namespace
 (property_name) @property
 (package_name) @namespace
 (identifier) @variable

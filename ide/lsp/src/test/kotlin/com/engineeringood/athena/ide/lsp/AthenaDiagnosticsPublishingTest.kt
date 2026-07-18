@@ -8,6 +8,8 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticRelatedLocatio
 import com.engineeringood.athena.compiler.semantic.SourceUnitId
 import com.engineeringood.athena.language.SourcePosition
 import com.engineeringood.athena.language.SourceSpan
+import java.nio.file.Files
+import java.nio.file.Path
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DiagnosticSeverity
@@ -203,6 +205,386 @@ class AthenaDiagnosticsPublishingTest {
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `valid m23 layout block publishes no false lsp diagnostics`() {
+        val sourceText = """
+            package com.engineeringood.factoryline
+
+            system FactoryLine {
+              device PLC1 {
+                type Switch
+              }
+              device HMI1 {
+                type Switch
+              }
+              device XT1 {
+                type Switch
+              }
+
+              layout schematic-sheet {
+                place HMI1 near PLC1
+                place XT1 below PLC1
+                align HMI1 aligned-with PLC1 axis vertical
+                group HMI1 grouped-with PLC1
+              }
+            }
+        """.trimIndent()
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-m23-valid-layout-",
+            packageName = "com.engineeringood.factoryline",
+            sourceText = sourceText,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+        AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = repositoryRoot.toUri().toString()
+                },
+            ).get()
+
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        sourcePath.toUri().toString(),
+                        "athena",
+                        1,
+                        sourceText,
+                    ),
+                ),
+            )
+
+            val diagnostics = client.publishedDiagnostics.last().diagnostics
+            assertEquals(
+                0,
+                diagnostics.size,
+                buildString {
+                    appendLine("Published diagnostics:")
+                    diagnostics.forEach { diagnostic ->
+                        appendLine("- ${diagnostic.code?.left ?: "<no-code>"}: ${diagnostic.message}")
+                    }
+                },
+            )
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `invalid m23 layout syntax publishes normal syntax diagnostics through lsp`() {
+        val invalidSources = listOf(
+            "invalid relation" to """
+                package com.engineeringood.factoryline
+
+                system FactoryLine {
+                  device PLC1 {}
+                  device HMI1 {}
+
+                  layout schematic-sheet {
+                    place HMI1 beside PLC1
+                  }
+                }
+            """.trimIndent(),
+            "missing target" to """
+                package com.engineeringood.factoryline
+
+                system FactoryLine {
+                  device PLC1 {}
+                  device HMI1 {}
+
+                  layout schematic-sheet {
+                    place HMI1 near
+                  }
+                }
+            """.trimIndent(),
+            "invalid axis" to """
+                package com.engineeringood.factoryline
+
+                system FactoryLine {
+                  device PLC1 {}
+                  device HMI1 {}
+
+                  layout schematic-sheet {
+                    align HMI1 aligned-with PLC1 axis diagonal
+                  }
+                }
+            """.trimIndent(),
+        )
+
+        invalidSources.forEach { (caseName, sourceText) ->
+            val repository = createGovernedTestRepository(
+                prefix = "athena-lsp-m23-invalid-layout-",
+                packageName = "com.engineeringood.factoryline",
+                sourceText = sourceText,
+            )
+            val repositoryRoot = repository.repositoryRoot
+            val sourcePath = repository.seedSourcePath
+
+            val client = AthenaRecordingLanguageClient()
+            val server = AthenaLanguageServer()
+            server.connect(client)
+
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            sourcePath.toUri().toString(),
+                            "athena",
+                            1,
+                            sourceText,
+                        ),
+                    ),
+                )
+
+                val diagnostics = client.publishedDiagnostics.last().diagnostics
+                assertTrue(
+                    diagnostics.any { diagnostic ->
+                        diagnostic.source == "Athena syntax" &&
+                            diagnostic.code.left == "syntax" &&
+                            diagnostic.range.start.line >= 0
+                    },
+                    "$caseName diagnostics: ${diagnostics.map { diagnostic -> diagnostic.source to diagnostic.message }}",
+                )
+            } finally {
+                server.shutdown().get()
+                repositoryRoot.toFile().deleteRecursively()
+            }
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `unknown m23 layout references publish project semantic diagnostics through lsp`() {
+        val sourceText = """
+            package com.engineeringood.factoryline
+
+            system FactoryLine {
+              device PLC1 {
+                type Switch
+              }
+
+              layout schematic-sheet {
+                place HMI1 near PLC1
+                place PLC1 below XT1
+              }
+            }
+        """.trimIndent()
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-m23-layout-semantic-",
+            packageName = "com.engineeringood.factoryline",
+            sourceText = sourceText,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+        AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = repositoryRoot.toUri().toString()
+                },
+            ).get()
+
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        sourcePath.toUri().toString(),
+                        "athena",
+                        1,
+                        sourceText,
+                    ),
+                ),
+            )
+
+            val diagnostics = client.publishedDiagnostics.last().diagnostics
+            val layoutDiagnostics = diagnostics.filter { diagnostic ->
+                diagnostic.code.left == "semantic.layout.reference.unknown"
+            }
+            assertEquals(
+                2,
+                layoutDiagnostics.size,
+                "Published diagnostics: ${diagnostics.map { diagnostic -> diagnostic.code.left to diagnostic.message }}",
+            )
+            assertTrue(layoutDiagnostics.all { diagnostic -> diagnostic.source == "Athena package semantic" })
+            assertTrue(layoutDiagnostics.all { diagnostic -> diagnostic.severity == DiagnosticSeverity.Error })
+            assertTrue(layoutDiagnostics.all { diagnostic -> diagnostic.range.start.line >= 0 })
+            assertTrue(layoutDiagnostics.any { diagnostic -> diagnostic.message.contains("`HMI1`") })
+            assertTrue(layoutDiagnostics.any { diagnostic -> diagnostic.message.contains("`XT1`") })
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `m20 sample project open publishes no diagnostics for boundary scope source`() {
+        val repoRoot = resolveRepoRoot()
+        val sampleProjectRoot = repoRoot.resolve("examples/m20/sample-project")
+        val sourcePath = sampleProjectRoot.resolve("src/04-boundary-scope.athena")
+        val sourceText = Files.readString(sourcePath)
+
+        AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = sampleProjectRoot.toUri().toString()
+                },
+            ).get()
+
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        sourcePath.toUri().toString(),
+                        "athena",
+                        1,
+                        sourceText,
+                    ),
+                ),
+            )
+
+            val diagnostics = client.publishedDiagnostics.last().diagnostics
+            assertEquals(
+                0,
+                diagnostics.size,
+                buildString {
+                    appendLine("Published diagnostics for ${sourcePath.fileName}:")
+                    diagnostics.forEach { diagnostic ->
+                        appendLine("- ${diagnostic.code?.left ?: "<no-code>"}: ${diagnostic.message}")
+                    }
+                },
+            )
+        } finally {
+            server.shutdown().get()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `m20 sample project showcase files open without diagnostics`() {
+        val repoRoot = resolveRepoRoot()
+        val sampleProjectRoot = repoRoot.resolve("examples/m20/sample-project")
+        val sourcePaths = listOf(
+            sampleProjectRoot.resolve("src/01-schematic-sheet.athena"),
+            sampleProjectRoot.resolve("src/02-dense-sheet.athena"),
+            sampleProjectRoot.resolve("src/03-acceptance-sheet.athena"),
+            sampleProjectRoot.resolve("src/04-boundary-scope.athena"),
+        )
+
+        AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = sampleProjectRoot.toUri().toString()
+                },
+            ).get()
+
+            sourcePaths.forEach { sourcePath ->
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            sourcePath.toUri().toString(),
+                            "athena",
+                            1,
+                            Files.readString(sourcePath),
+                        ),
+                    ),
+                )
+
+                val diagnostics = client.publishedDiagnostics.last().diagnostics
+                assertEquals(
+                    0,
+                    diagnostics.size,
+                    buildString {
+                        appendLine("Published diagnostics for ${sourcePath.fileName}:")
+                        diagnostics.forEach { diagnostic ->
+                            appendLine("- ${diagnostic.code?.left ?: "<no-code>"}: ${diagnostic.message}")
+                        }
+                    },
+                )
+            }
+        } finally {
+            server.shutdown().get()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `m23 sample project layout source opens without diagnostics`() {
+        val repoRoot = resolveRepoRoot()
+        val sampleProjectRoot = repoRoot.resolve("examples/m23/sample-project")
+        val sourcePath = sampleProjectRoot.resolve("src/01-layout-hints.athena")
+        val sourceText = Files.readString(sourcePath)
+
+        AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = sampleProjectRoot.toUri().toString()
+                },
+            ).get()
+
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        sourcePath.toUri().toString(),
+                        "athena",
+                        1,
+                        sourceText,
+                    ),
+                ),
+            )
+
+            val diagnostics = client.publishedDiagnostics.last().diagnostics
+            assertEquals(
+                0,
+                diagnostics.size,
+                buildString {
+                    appendLine("Published diagnostics for ${sourcePath.fileName}:")
+                    diagnostics.forEach { diagnostic ->
+                        appendLine("- ${diagnostic.code?.left ?: "<no-code>"}: ${diagnostic.message}")
+                    }
+                },
+            )
+        } finally {
+            server.shutdown().get()
         }
     }
 
@@ -454,6 +836,15 @@ private fun sourceSpan(
         start = SourcePosition(startOffset, startLine, startColumn),
         end = SourcePosition(startOffset + endColumn - startColumn, endLine, endColumn),
     )
+}
+
+private fun resolveRepoRoot(): Path {
+    var current = Path.of("").toAbsolutePath()
+    while (current.parent != null && !Files.exists(current.resolve("settings.gradle.kts"))) {
+        current = current.parent
+    }
+    check(Files.exists(current.resolve("settings.gradle.kts"))) { "Could not locate repository root" }
+    return current
 }
 
 class AthenaRecordingLanguageClient : LanguageClient {

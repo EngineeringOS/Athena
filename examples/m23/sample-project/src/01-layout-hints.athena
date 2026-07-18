@@ -1,0 +1,59 @@
+package com.engineeringood.m23.sample
+
+system LayoutHintRoundTrip {
+  device ControllerPLC1 {
+    type Switch
+    model "CPU"
+  }
+
+  device OperatorHMI1 {
+    type Lamp
+    model "HMI"
+  }
+
+  device TerminalBlockXT1 {
+    type Switch
+    model "XT1"
+  }
+
+  device PrimaryLoadM1 {
+    type Motor
+    model "M1"
+  }
+
+  port ControllerPLC1.command {
+    direction out
+    signal Digital
+  }
+
+  port OperatorHMI1.status {
+    direction in
+    signal Digital
+  }
+
+  port TerminalBlockXT1.in {
+    direction in
+    signal Digital
+  }
+
+  port TerminalBlockXT1.out {
+    direction out
+    signal Digital
+  }
+
+  port PrimaryLoadM1.in {
+    direction in
+    signal Digital
+  }
+
+  connect ControllerPLC1.command -> OperatorHMI1.status
+  connect ControllerPLC1.command -> TerminalBlockXT1.in
+  connect TerminalBlockXT1.out -> PrimaryLoadM1.in
+
+  layout schematic-sheet {
+    place OperatorHMI1 near ControllerPLC1
+    place TerminalBlockXT1 below ControllerPLC1
+    align OperatorHMI1 aligned-with ControllerPLC1 axis vertical
+    group OperatorHMI1 grouped-with ControllerPLC1
+  }
+}

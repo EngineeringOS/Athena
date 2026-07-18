@@ -12,7 +12,7 @@ Athena Tree-sitter grammar for **syntax UX only** (AD-107).
 
 ## Contents
 
-- `grammar.js` - AD-110 parity subset (`package` / `import` headers plus existing system/declaration syntax)
+- `grammar.js` - AD-110 parity subset (`package` / `import` headers plus existing system/declaration syntax and M23 system-scoped layout blocks)
 - `src/` - generated parser sources (`tree-sitter generate`)
 - `queries/highlights.scm` - highlight queries for Story 3.2
 - `test/corpus/` - Tree-sitter corpus proofs
@@ -45,3 +45,19 @@ until the cross-platform bootstrap follow-up is completed.
 
 - Corpus: `npx tree-sitter test`
 - Incomplete-source tolerance: `node --test scripts/*.test.mjs`
+
+## M23 Layout Syntax Nodes
+
+Tree-sitter accepts these syntax-UX-only nodes for M23:
+
+- `layout_declaration`
+- `view_family_name`
+- `layout_statement`
+- `place_statement`
+- `layout_placement_relation`
+- `align_statement`
+- `layout_axis`
+- `group_statement`
+
+These nodes do not resolve subjects, validate targets, or emit semantic diagnostics. Compiler/LSP
+remains the semantic authority.

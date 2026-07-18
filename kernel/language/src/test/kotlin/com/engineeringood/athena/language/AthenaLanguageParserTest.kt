@@ -231,6 +231,29 @@ class AthenaLanguageParserTest {
     }
 
     @Test
+    fun `parses m23 layout block into authored syntax-only ast`() {
+        val source = Files.readString(resolveRepoRoot().resolve("examples/m23/parser-parity-proof/valid-layout-block.athena"))
+
+        val result = AthenaLanguageParser().parse("valid-layout-block.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        assertEquals(2, success.ast.declarations.size)
+        val layout = assertIs<LayoutDeclaration>(success.ast.declarations[1])
+        assertEquals("schematic-sheet", layout.viewFamily)
+        assertEquals(
+            listOf(
+                LayoutStatement.PlaceNear(subject = "HMI1", target = "PLC1", span = layout.statements[0].span),
+                LayoutStatement.PlaceBelow(subject = "XT1", target = "PLC1", span = layout.statements[1].span),
+                LayoutStatement.AlignWith(subject = "HMI1", target = "PLC1", axis = LayoutAxis.Vertical, span = layout.statements[2].span),
+                LayoutStatement.AlignWith(subject = "HMI2", target = "PLC1", axis = LayoutAxis.Horizontal, span = layout.statements[3].span),
+                LayoutStatement.GroupWith(subject = "HMI1", target = "PLC1", span = layout.statements[4].span),
+            ),
+            layout.statements,
+        )
+        assertTrue(layout.span.start.line < layout.span.end.line)
+    }
+
+    @Test
     fun `parses deterministically for identical source input`() {
         val source = """
             system DemoCabinet {

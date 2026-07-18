@@ -29,6 +29,7 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticImportResolver
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticLinkedLowerer
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticLinkedLoweringResult
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticLayoutHintBinder
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticReferenceLinker
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.geometry.GeometryDocument
@@ -93,6 +94,7 @@ class AthenaCompiler(
     private val projectSemanticImportResolver: ProjectSemanticImportResolver = ProjectSemanticImportResolver(),
     private val projectSemanticDiagnosticProjector: ProjectSemanticDiagnosticProjector = ProjectSemanticDiagnosticProjector(),
     private val projectSemanticDeclarationIndexer: ProjectSemanticDeclarationIndexer = ProjectSemanticDeclarationIndexer(),
+    private val projectSemanticLayoutHintBinder: ProjectSemanticLayoutHintBinder = ProjectSemanticLayoutHintBinder(),
     private val projectSemanticReferenceLinker: ProjectSemanticReferenceLinker = ProjectSemanticReferenceLinker(),
     private val projectSemanticCapabilityProvenanceProjector: ProjectSemanticCapabilityProvenanceProjector =
         ProjectSemanticCapabilityProvenanceProjector(),
@@ -332,6 +334,11 @@ class AthenaCompiler(
     /** Indexes authored declarations into compiler-owned semantic namespaces. */
     fun indexProjectSemanticDeclarations(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
         return projectSemanticDeclarationIndexer.index(snapshot)
+    }
+
+    /** Binds M23 authored layout hint references against compiler-owned semantic declarations. */
+    fun bindProjectSemanticLayoutHints(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
+        return projectSemanticLayoutHintBinder.bind(snapshot)
     }
 
     /** Links supported authored references against compiler-owned semantic declarations. */

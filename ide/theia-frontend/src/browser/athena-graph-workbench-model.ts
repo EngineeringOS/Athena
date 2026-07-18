@@ -54,6 +54,23 @@ export type AthenaGraphLayoutAdjustmentIntent = {
     persisted: false;
 };
 
+export type AthenaGraphAuthoredLayoutIntentRelation = 'near' | 'below' | 'aligned-with' | 'grouped-with';
+
+export type AthenaGraphAuthoredLayoutAxis = 'horizontal' | 'vertical';
+
+export type AthenaGraphAuthoredLayoutIntentStatement = {
+    subject: string;
+    relation: AthenaGraphAuthoredLayoutIntentRelation;
+    target: string;
+    axis?: AthenaGraphAuthoredLayoutAxis;
+    priority: 'preference';
+};
+
+export type AthenaGraphAuthoredLayoutIntent = {
+    viewFamily: string;
+    statements: AthenaGraphAuthoredLayoutIntentStatement[];
+};
+
 export type AthenaGraphLayoutAdjustmentCaptureResult =
     | { accepted: true; intent: AthenaGraphLayoutAdjustmentIntent }
     | { accepted: false; reason: string };
@@ -64,6 +81,7 @@ export type AthenaGraphLayoutMutationPreview = {
     subjectSemanticId: string;
     sourceUri: string;
     title: string;
+    authoredIntent: AthenaGraphAuthoredLayoutIntent;
     layoutBlockSnippet: string;
     persisted: false;
 };
@@ -381,40 +399,88 @@ export function captureAthenaGraphLayoutAdjustmentIntent(args: {
 export function buildAthenaGraphLayoutMutationPreview(
     intent: AthenaGraphLayoutAdjustmentIntent,
 ): AthenaGraphLayoutMutationPreview {
+    const authoredIntent = buildAthenaGraphAuthoredLayoutIntent(intent);
+    const layoutBlockSnippet = serializeAthenaGraphAuthoredLayoutIntent(authoredIntent);
+    const statement = authoredIntent.statements[0];
+    const subject = statement?.subject ?? semanticIdToAuthoredName(intent.subjectSemanticId);
     const relation = intent.relation ?? (
         intent.kind === 'align' ? 'aligned-with' : intent.kind === 'group' ? 'grouped-with' : 'near'
     );
-    const target = intent.targetSemanticId ?? intent.subjectSemanticId;
-    const command = intent.kind === 'align'
-        ? `align ${intent.subjectSemanticId} ${relation} ${target}`
-        : intent.kind === 'group'
-            ? `group ${intent.subjectSemanticId} ${relation} ${target}`
-            : `place ${intent.subjectSemanticId} ${relation} ${target}`;
     return {
         previewId: `layout-preview:${intent.intentId}`,
         intentId: intent.intentId,
         subjectSemanticId: intent.subjectSemanticId,
         sourceUri: intent.sourceUri,
-        title: `Layout ${intent.kind} preview for ${intent.subjectSemanticId}`,
-        layoutBlockSnippet: [
-            `layout schematic-sheet {`,
-            `  ${command}`,
-            `}`,
-        ].join('\n'),
+        title: `Layout ${intent.kind} preview for ${subject}`,
+        authoredIntent,
+        layoutBlockSnippet,
         persisted: false,
     };
 }
 
+export function buildAthenaGraphAuthoredLayoutIntent(
+    intent: AthenaGraphLayoutAdjustmentIntent,
+): AthenaGraphAuthoredLayoutIntent {
+    const relation = intent.relation ?? (
+        intent.kind === 'align' ? 'aligned-with' : intent.kind === 'group' ? 'grouped-with' : 'near'
+    );
+    return {
+        viewFamily: resolveLayoutViewFamily(intent.viewId),
+        statements: [
+            {
+                subject: semanticIdToAuthoredName(intent.subjectSemanticId),
+                relation,
+                target: semanticIdToAuthoredName(intent.targetSemanticId ?? intent.subjectSemanticId),
+                ...(relation === 'aligned-with' ? { axis: 'vertical' as const } : {}),
+                priority: 'preference' as const,
+            },
+        ],
+    };
+}
+
+export function serializeAthenaGraphAuthoredLayoutIntent(intent: AthenaGraphAuthoredLayoutIntent): string {
+    return [
+        `layout ${intent.viewFamily} {`,
+        ...intent.statements.map(statement => `  ${serializeAthenaGraphAuthoredLayoutIntentStatement(statement)}`),
+        `}`,
+    ].join('\n');
+}
+
+function serializeAthenaGraphAuthoredLayoutIntentStatement(statement: AthenaGraphAuthoredLayoutIntentStatement): string {
+    if (statement.priority !== 'preference') {
+        throw new Error('M23 source syntax admits only default preference layout hints.');
+    }
+    const subject = semanticIdToAuthoredName(statement.subject);
+    const target = semanticIdToAuthoredName(statement.target);
+    switch (statement.relation) {
+        case 'near':
+            return `place ${subject} near ${target}`;
+        case 'below':
+            return `place ${subject} below ${target}`;
+        case 'aligned-with':
+            return `align ${subject} aligned-with ${target} axis ${statement.axis ?? 'vertical'}`;
+        case 'grouped-with':
+            return `group ${subject} grouped-with ${target}`;
+    }
+}
+
 export function buildAthenaGraphLayoutSourceEdit(args: {
     preview: AthenaGraphLayoutMutationPreview;
+    documentText?: string;
     insertionLine: number;
     insertionCharacter: number;
 }): AthenaGraphLayoutSourceEdit {
     const preview = args.preview;
-    const position = {
-        line: Math.max(0, args.insertionLine),
-        character: Math.max(0, args.insertionCharacter),
-    };
+    const position = args.documentText
+        ? resolveSystemScopedLayoutInsertionPosition(args.documentText, args.insertionLine, args.insertionCharacter)
+        : {
+            line: Math.max(0, args.insertionLine),
+            character: Math.max(0, args.insertionCharacter),
+        };
+    const layoutSource = indentLayoutBlock(
+        serializeAthenaGraphAuthoredLayoutIntent(preview.authoredIntent),
+        '  ',
+    );
     return {
         uri: preview.sourceUri,
         range: {
@@ -423,7 +489,7 @@ export function buildAthenaGraphLayoutSourceEdit(args: {
         },
         newText: `
 
-${preview.layoutBlockSnippet}
+${layoutSource}
 `,
         selectionRange: {
             start: position,
@@ -431,6 +497,49 @@ ${preview.layoutBlockSnippet}
         },
         suggestedSemanticId: preview.subjectSemanticId,
     };
+}
+
+function resolveSystemScopedLayoutInsertionPosition(
+    documentText: string,
+    fallbackLine: number,
+    fallbackCharacter: number,
+): { line: number; character: number } {
+    const systemCloseOffset = documentText.lastIndexOf('}');
+    if (systemCloseOffset < 0) {
+        return {
+            line: Math.max(0, fallbackLine),
+            character: Math.max(0, fallbackCharacter),
+        };
+    }
+    return offsetToPosition(documentText, systemCloseOffset);
+}
+
+function offsetToPosition(text: string, offset: number): { line: number; character: number } {
+    const beforeOffset = text.slice(0, Math.max(0, offset));
+    const lines = beforeOffset.split(/\r\n|\r|\n/);
+    return {
+        line: Math.max(0, lines.length - 1),
+        character: lines.at(-1)?.length ?? 0,
+    };
+}
+
+function indentLayoutBlock(source: string, indent: string): string {
+    return source
+        .split('\n')
+        .map(line => `${indent}${line}`)
+        .join('\n');
+}
+
+function resolveLayoutViewFamily(viewId: string): string {
+    if (viewId.includes('schematic')) {
+        return 'schematic-sheet';
+    }
+    return 'schematic-sheet';
+}
+
+function semanticIdToAuthoredName(semanticId: string): string {
+    const lastSegment = semanticId.split(':').filter(Boolean).at(-1) ?? semanticId;
+    return lastSegment.split('.').filter(Boolean).at(-1) ?? lastSegment;
 }
 
 function resolveWorkbenchSnapshotId(diagram: AthenaGLSPDiagram): string {

@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
  */
 class AstExtensibilityLandingZoneTest {
     @Test
-    fun `Declaration consumers see exactly the three current sealed variants`() {
+    fun `Declaration consumers see exactly the four current sealed variants`() {
         val span = SourceSpan(SourcePosition(0, 1, 1), SourcePosition(1, 1, 2))
         val declarations: List<Declaration> = listOf(
             DeviceDeclaration(name = "PLC1", fields = emptyList(), span = span),
@@ -27,10 +27,15 @@ class AstExtensibilityLandingZoneTest {
                 to = QualifiedName(listOf("M1", "in"), span),
                 span = span,
             ),
+            LayoutDeclaration(
+                viewFamily = "schematic-sheet",
+                statements = listOf(LayoutStatement.PlaceNear("HMI1", "PLC1", span)),
+                span = span,
+            ),
         )
 
         assertEquals(
-            listOf("device", "port", "connect"),
+            listOf("device", "port", "connect", "layout"),
             declarations.map { declaration -> classifyDeclaration(declaration) },
         )
     }
@@ -59,6 +64,7 @@ class AstExtensibilityLandingZoneTest {
             is DeviceDeclaration -> "device"
             is PortDeclaration -> "port"
             is ConnectionDeclaration -> "connect"
+            is LayoutDeclaration -> "layout"
         }
     }
 
