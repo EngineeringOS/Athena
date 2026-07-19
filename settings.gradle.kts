@@ -55,6 +55,8 @@ include(
     ":kernel:layout-model",
     ":kernel:layout-engine",
     ":kernel:routing-model",
+    ":kernel:representation-model",
+    ":kernel:presentation-policy-model",
     ":kernel:geometry-model",
     ":kernel:projection-model",
     ":kernel:presentation-model",
@@ -64,4 +66,3 @@ include(
     ":extensions:domain-dummy",
     ":kernel:svg-renderer",
 )
-
