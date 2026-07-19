@@ -17,6 +17,7 @@ export function AthenaGraphWorkbenchEdgeLayer(
             const sourceSelected = !!edge.sourcePortSemanticId && selectedSemanticId === edge.sourcePortSemanticId;
             const targetSelected = !!edge.targetPortSemanticId && selectedSemanticId === edge.targetPortSemanticId;
             const edgeSelected = selectedSemanticId === edge.semanticId || sourceSelected || targetSelected;
+            const tooltipLabels = edge.routeLabels.map(label => label.text).filter(Boolean).join(' | ');
 
             return <React.Fragment key={edge.id}>
                 <g
@@ -33,6 +34,7 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         void onSelectSemanticId(edge.semanticId);
                     }}
                 >
+                    <title>{tooltipLabels || edge.semanticId}</title>
                     <path
                         className={`athena-graph-workbench__edge-casing ${edgeSelected ? 'athena-graph-workbench__edge-casing--selected' : ''}`}
                         d={edge.path}
@@ -69,18 +71,22 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         vectorEffect='non-scaling-stroke'
                     />)}
                 </g>
-                {edge.routeLabels.map((label, index) => <text
-                    key={`${edge.id}:route-label:${index}`}
-                    className='athena-graph-workbench__edge-label'
-                    data-athena-route-label='true'
-                    data-athena-route-label-for={edge.id}
-                    x={label.point.x}
-                    y={label.point.y}
-                    textAnchor='middle'
-                    dominantBaseline='central'
-                >
-                    {label.text}
-                </text>)}
+                {edge.routeLabels.map((label, index) => {
+                    const deferred = label.canvasDisplay === 'selection' && !edgeSelected;
+                    return <text
+                        key={`${edge.id}:route-label:${index}`}
+                        className={`athena-graph-workbench__edge-label ${deferred ? 'athena-graph-workbench__edge-label--deferred' : ''}`}
+                        data-athena-route-label='true'
+                        data-athena-route-label-for={edge.id}
+                        data-athena-route-label-display={label.canvasDisplay}
+                        x={label.point.x}
+                        y={label.point.y}
+                        textAnchor='middle'
+                        dominantBaseline='central'
+                    >
+                        {label.text}
+                    </text>;
+                })}
                 {edge.terminals.map(terminal => {
                     const terminalSemanticId = terminal.portSemanticId ?? edge.semanticId;
                     const terminalSelected = selectedSemanticId === edge.semanticId || selectedSemanticId === terminal.portSemanticId;

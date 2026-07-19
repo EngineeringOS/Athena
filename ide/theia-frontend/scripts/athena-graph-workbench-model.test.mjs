@@ -1018,6 +1018,49 @@ test('builds route inspection from governed connector facts without canvas persi
     assert.equal(graphWorkbenchModel.buildAthenaGraphRouteInspection(model, 'connection:missing').status, 'unavailable');
 });
 
+test('keeps verbose semantic route labels selection-only to avoid crowding the sheet canvas', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [
+            {
+                occurrenceId: 'route:ControllerPLC3.hmi:OperatorHMI3.status',
+                semanticId: 'connection:ControllerPLC3.hmi->OperatorHMI3.status',
+                primitiveId: 'electrical.conductor.orthogonal',
+                routePoints: [
+                    { x: 160, y: 200 },
+                    { x: 320, y: 200 },
+                    { x: 320, y: 280 },
+                    { x: 480, y: 280 }
+                ],
+                layer: 'connection',
+                markerKeys: [],
+                tokenOverrides: {
+                    routeQuality: 'SATISFIED',
+                    routeLabels: 'ControllerPLC3.hmi -> OperatorHMI3.status|HMI.OK'
+                },
+                sourceProjectionIds: []
+            }
+        ]
+    };
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.edges[0].routeLabels[0].text, 'ControllerPLC3.hmi -> OperatorHMI3.status');
+    assert.equal(model.edges[0].routeLabels[0].canvasDisplay, 'selection');
+    assert.equal(model.edges[0].routeLabels[1].text, 'HMI.OK');
+    assert.equal(model.edges[0].routeLabels[1].canvasDisplay, 'always');
+    assert.deepEqual(
+        graphWorkbenchModel.buildAthenaGraphRouteInspection(model, 'connection:ControllerPLC3.hmi->OperatorHMI3.status').labels,
+        ['ControllerPLC3.hmi -> OperatorHMI3.status', 'HMI.OK']
+    );
+});
+
 test('marks deliberate crossings between governed presentation route facts', () => {
     const diagram = JSON.parse(JSON.stringify(readyDiagram));
     diagram.presentation = {

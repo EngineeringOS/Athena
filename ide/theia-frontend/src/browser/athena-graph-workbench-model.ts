@@ -216,6 +216,7 @@ export type AthenaGraphWorkbenchEdge = AthenaGLSPEdge & {
 export type AthenaGraphWorkbenchRouteLabel = {
     text: string;
     point: AthenaGLSPPoint;
+    canvasDisplay: 'always' | 'selection';
 };
 
 export type AthenaGraphRouteInspection =
@@ -1498,7 +1499,16 @@ function buildRouteLabels(
     return labelTexts.map((text, index) => ({
         text,
         point: routeLabelPoint(anchorSegment, index),
+        canvasDisplay: resolveRouteLabelCanvasDisplay(text),
     }));
+}
+
+function resolveRouteLabelCanvasDisplay(text: string): AthenaGraphWorkbenchRouteLabel['canvasDisplay'] {
+    const normalized = text.trim();
+    if (normalized.includes('->') || normalized.length > 24) {
+        return 'selection';
+    }
+    return 'always';
 }
 
 function routeLabelPoint(

@@ -1183,6 +1183,10 @@
     stroke-width: 4px;
 }
 
+.athena-graph-workbench__edge-label--deferred {
+    display: none;
+}
+
 .athena-graph-workbench__node {
     fill: transparent;
     stroke: var(--athena-graph-node-stroke);

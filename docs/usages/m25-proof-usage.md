@@ -44,6 +44,8 @@ In the IDE:
 - confirm visible components no longer present only as generic boxes
 - confirm terminal markers and terminal numbers are visible where the representation facts provide
   them
+- confirm long semantic connection ids stay available as hover/selection labels instead of crowding
+  the canvas
 - confirm labels attach to governed label anchors rather than free canvas text
 - select symbols, terminals, labels, and routes to inspect canonical identity where supported
 
