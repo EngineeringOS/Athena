@@ -1,0 +1,64 @@
+package com.engineeringood.m25.sample
+
+system ProfessionalSymbolSheet {
+  device PowerSupplyPS1 {
+    type Switch
+    model "24VDC-PSU"
+  }
+
+  device ControllerPLC1 {
+    type Switch
+    model "PLC"
+  }
+
+  device TerminalBlockXT1 {
+    type Switch
+    model "XT1"
+  }
+
+  device ActuatorY1 {
+    type Lamp
+    model "VALVE"
+  }
+
+  port PowerSupplyPS1.lplus {
+    direction out
+    signal Digital
+  }
+
+  port ControllerPLC1.power {
+    direction in
+    signal Digital
+  }
+
+  port ControllerPLC1.do1 {
+    direction out
+    signal Digital
+  }
+
+  port TerminalBlockXT1.in1 {
+    direction in
+    signal Digital
+  }
+
+  port TerminalBlockXT1.out1 {
+    direction out
+    signal Digital
+  }
+
+  port ActuatorY1.command {
+    direction in
+    signal Digital
+  }
+
+  connect PowerSupplyPS1.lplus -> ControllerPLC1.power
+  connect ControllerPLC1.do1 -> TerminalBlockXT1.in1
+  connect TerminalBlockXT1.out1 -> ActuatorY1.command
+
+  layout schematic-sheet {
+    place ControllerPLC1 near PowerSupplyPS1
+    place TerminalBlockXT1 below ControllerPLC1
+    place ActuatorY1 near TerminalBlockXT1
+    align ActuatorY1 aligned-with TerminalBlockXT1 axis vertical
+  }
+}

@@ -690,6 +690,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             data-athena-graph-interactive='true'
             data-athena-representation-fact={node.presentationRepresentation ? 'true' : undefined}
             data-athena-representation-id={node.presentationRepresentation?.representationId}
+            data-athena-semantic-id={node.semanticId}
             data-athena-render-fallback={node.presentationRepresentation ? 'false' : undefined}
             role='button'
             tabIndex={0}

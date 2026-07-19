@@ -1,0 +1,99 @@
+package com.engineeringood.m25.sample
+
+system SixFamilyPresentationAcceptance {
+  device PowerSupplyPS3 {
+    type Switch
+    model "24VDC-PSU"
+  }
+
+  device BreakerQF3 {
+    type Switch
+    model "QF"
+  }
+
+  device ControllerPLC3 {
+    type Switch
+    model "PLC"
+  }
+
+  device OperatorHMI3 {
+    type Lamp
+    model "HMI"
+  }
+
+  device TerminalBlockXT3 {
+    type Switch
+    model "XT"
+  }
+
+  device MotorM3 {
+    type Motor
+    model "MOTOR"
+  }
+
+  port PowerSupplyPS3.lplus {
+    direction out
+    signal Digital
+  }
+
+  port BreakerQF3.line {
+    direction in
+    signal Digital
+  }
+
+  port BreakerQF3.load {
+    direction out
+    signal Digital
+  }
+
+  port ControllerPLC3.power {
+    direction in
+    signal Digital
+  }
+
+  port ControllerPLC3.do1 {
+    direction out
+    signal Digital
+  }
+
+  port ControllerPLC3.hmi {
+    direction out
+    signal Digital
+  }
+
+  port OperatorHMI3.status {
+    direction in
+    signal Digital
+  }
+
+  port TerminalBlockXT3.in1 {
+    direction in
+    signal Digital
+  }
+
+  port TerminalBlockXT3.out1 {
+    direction out
+    signal Digital
+  }
+
+  port MotorM3.u1 {
+    direction in
+    signal Digital
+  }
+
+  connect PowerSupplyPS3.lplus -> BreakerQF3.line
+  connect BreakerQF3.load -> ControllerPLC3.power
+  connect ControllerPLC3.do1 -> TerminalBlockXT3.in1
+  connect TerminalBlockXT3.out1 -> MotorM3.u1
+  connect ControllerPLC3.hmi -> OperatorHMI3.status
+
+  layout schematic-sheet {
+    place BreakerQF3 near PowerSupplyPS3
+    place ControllerPLC3 below BreakerQF3
+    place TerminalBlockXT3 below ControllerPLC3
+    place MotorM3 below TerminalBlockXT3
+    place OperatorHMI3 near ControllerPLC3
+    align MotorM3 aligned-with TerminalBlockXT3 axis vertical
+    group OperatorHMI3 grouped-with ControllerPLC3
+  }
+}

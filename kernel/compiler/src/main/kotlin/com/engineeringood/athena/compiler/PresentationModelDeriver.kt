@@ -24,8 +24,15 @@ import com.engineeringood.athena.presentation.PresentationPhysicalSize
 import com.engineeringood.athena.presentation.PresentationPrimitiveOccurrenceReference
 import com.engineeringood.athena.presentation.PresentationPrimitivePack
 import com.engineeringood.athena.presentation.PresentationPrimitiveId
+import com.engineeringood.athena.presentation.PresentationRepresentationFact
 import com.engineeringood.athena.presentation.PresentationResolvedSubject
 import com.engineeringood.athena.presentation.PresentationTextSlotId
+import com.engineeringood.athena.policy.AthenaIndustrialControlV0Profile
+import com.engineeringood.athena.policy.ComponentFamilyKey
+import com.engineeringood.athena.policy.ComponentRepresentationComposer
+import com.engineeringood.athena.policy.ComponentRepresentationFact
+import com.engineeringood.athena.policy.ComponentRepresentationRequest
+import com.engineeringood.athena.policy.ComponentSubjectKey
 import com.engineeringood.athena.projection.ElectricalAnchor
 import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
 import com.engineeringood.athena.projection.ElectricalConnectionEndpointRole
@@ -117,6 +124,7 @@ class PresentationModelDeriver {
         val routeFactSnapshot = projection.toRouteFactSnapshot(
             endpointsByConnectionId = endpointsByConnectionId,
         )
+        val representationFacts = document.toPresentationRepresentationFacts(projection)
 
         return PresentationDocument(
             view = projection.view,
@@ -128,8 +136,54 @@ class PresentationModelDeriver {
             occurrences = occurrences,
             connectors = connectors,
             routeFactSnapshot = routeFactSnapshot,
+            representationFacts = representationFacts,
         )
     }
+}
+
+private fun EngineeringDocument.toPresentationRepresentationFacts(
+    projection: ProjectionDocument,
+): List<PresentationRepresentationFact> {
+    val projectedSubjectIds = projection.nodes.map { node -> node.semanticId }.toSet()
+    val sourceProjectionIdsBySemanticId = projection.nodes.associate { node ->
+        node.semanticId to listOf(node.projectionId.value)
+    }
+    val requests = components
+        .filter { component -> component.id in projectedSubjectIds }
+        .mapNotNull { component ->
+            component.m25PresentationFamilyKey()?.let { family ->
+                ComponentRepresentationRequest(
+                    subject = ComponentSubjectKey(component.id.value),
+                    family = family,
+                )
+            }
+        }
+    if (requests.isEmpty()) {
+        return emptyList()
+    }
+    return ComponentRepresentationComposer(AthenaIndustrialControlV0Profile.profile())
+        .compose(requests)
+        .facts
+        .map { fact -> fact.toPresentationRepresentationFact(sourceProjectionIdsBySemanticId) }
+        .sortedWith(
+            compareBy<PresentationRepresentationFact> { fact -> fact.subjectId.value }
+                .thenBy { fact -> fact.occurrenceId.value },
+        )
+}
+
+private fun ComponentRepresentationFact.toPresentationRepresentationFact(
+    sourceProjectionIdsBySemanticId: Map<StableSemanticIdentity, List<String>>,
+): PresentationRepresentationFact {
+    val subject = StableSemanticIdentity(subject.value)
+    return PresentationRepresentationFact(
+        subjectId = terminals.first().subjectId,
+        occurrenceId = terminals.first().occurrenceId,
+        symbol = symbol,
+        anatomy = anatomy,
+        terminals = terminals,
+        labels = labels,
+        sourceProjectionIds = sourceProjectionIdsBySemanticId[subject].orEmpty(),
+    )
 }
 
 private fun com.engineeringood.athena.projection.ProjectionResolvedSubject.toPresentationResolvedSubject(): PresentationResolvedSubject {
@@ -387,6 +441,27 @@ private fun EngineeringComponent.presentationComponentType(): String? {
             is EngineeringPropertyValue.Text -> value.text
         }
     } ?: kind.takeIf(String::isNotBlank)
+}
+
+private fun EngineeringComponent.m25PresentationFamilyKey(): ComponentFamilyKey? {
+    val model = properties.firstOrNull { property -> property.name == "model" }?.value?.let { value ->
+        when (value) {
+            is EngineeringPropertyValue.Symbol -> value.text
+            is EngineeringPropertyValue.Text -> value.text
+        }
+    }.orEmpty()
+    val key = listOf(id.value, kind, presentationComponentType().orEmpty(), model)
+        .joinToString(separator = " ")
+        .lowercase()
+    return when {
+        "plc" in key || "controller" in key -> ComponentFamilyKey("plc-controller")
+        "hmi" in key || "operator" in key -> ComponentFamilyKey("hmi-operator")
+        "terminal" in key || "xt" in key -> ComponentFamilyKey("terminal-block")
+        "power" in key || "psu" in key || "24vdc" in key -> ComponentFamilyKey("power-supply")
+        "breaker" in key || "qf" in key || "protection" in key -> ComponentFamilyKey("protection-device")
+        "motor" in key || "actuator" in key || "valve" in key -> ComponentFamilyKey("load-actuator")
+        else -> null
+    }
 }
 
 private fun com.engineeringood.athena.layout.ProjectionFamilyContract?.toPresentationFamilyId(): String? {

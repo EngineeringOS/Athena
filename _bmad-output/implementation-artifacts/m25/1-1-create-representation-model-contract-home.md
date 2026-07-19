@@ -1,4 +1,4 @@
----
+﻿---
 status: ready-for-dev
 baseline_commit: 265e26109ebf75352fdf9db3f814edcc77bbf546
 epic: 1
@@ -69,4 +69,4 @@ So that schematic symbols do not become the root architecture.
 
 ## Status
 
-review
+done

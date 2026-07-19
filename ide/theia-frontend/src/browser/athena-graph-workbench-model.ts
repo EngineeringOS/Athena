@@ -401,6 +401,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             anchorsByNodeId,
             anchorByLabelId,
             isElectricalFamily,
+            resolveRepresentationForOccurrence(occurrence, representationByProjectionId, representationBySubjectId),
         ))
         : graphNodes.map(node => buildWorkbenchNode(
             node,
@@ -1154,6 +1155,7 @@ function buildWorkbenchNodeFromPresentation(
     anchorsByNodeId: Map<string, AthenaGLSPElectricalAnchorSource[]>,
     anchorByLabelId: Map<string, AthenaGLSPElectricalAnchorSource>,
     isElectricalFamily: boolean,
+    representation: AthenaGraphResolvedPresentationRepresentation | undefined,
 ): AthenaGraphWorkbenchNode {
     const notation = notationBySemanticId.get(occurrence.semanticId);
     const sourceProjectionIds = normalizeArray(occurrence.sourceProjectionIds);
@@ -1185,7 +1187,9 @@ function buildWorkbenchNodeFromPresentation(
             height: occurrence.bounds.height,
         },
     };
-    const renderVariant = resolveNodeRenderVariant(baseNode, notation?.symbolKey, labelAnchor, isElectricalFamily);
+    const renderVariant = representation
+        ? 'electrical-device'
+        : resolveNodeRenderVariant(baseNode, notation?.symbolKey, labelAnchor, isElectricalFamily);
     return {
         ...baseNode,
         renderVariant,
@@ -1197,11 +1201,31 @@ function buildWorkbenchNodeFromPresentation(
             : undefined,
         electricalAnchors: nodeAnchors,
         presentationOccurrence: occurrence,
-        presentationRepresentation: undefined,
-        presentationParts: normalizeArray(occurrence.parts),
-        presentationTerminals: [],
-        presentationLabels: [],
+        presentationRepresentation: representation,
+        presentationParts: representation
+            ? scaleRepresentationPartsToNode(representation.parts, baseNode)
+            : normalizeArray(occurrence.parts),
+        presentationTerminals: representation
+            ? scaleRepresentationTerminalsToNode(representation, baseNode)
+            : [],
+        presentationLabels: representation
+            ? scaleRepresentationLabelsToNode(representation, baseNode)
+            : [],
     };
+}
+
+function resolveRepresentationForOccurrence(
+    occurrence: AthenaGraphResolvedPresentationOccurrence,
+    representationByProjectionId: Map<string, AthenaGraphResolvedPresentationRepresentation>,
+    representationBySubjectId: Map<string, AthenaGraphResolvedPresentationRepresentation>,
+): AthenaGraphResolvedPresentationRepresentation | undefined {
+    for (const sourceProjectionId of normalizeArray(occurrence.sourceProjectionIds)) {
+        const representation = representationByProjectionId.get(sourceProjectionId);
+        if (representation) {
+            return representation;
+        }
+    }
+    return representationBySubjectId.get(occurrence.semanticId);
 }
 
 function scaleRepresentationPartsToNode(

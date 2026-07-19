@@ -71,11 +71,13 @@
     "start:m22": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m22/sample-project",
     "start:m23": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m23/sample-project",
     "start:m24": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m24/sample-project",
+    "start:m25": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m25/sample-project",
     "start:smoke": "node scripts/verify-athena-start.js",
     "start:smoke:m21": "node scripts/verify-athena-m21-sample-project.js",
     "start:smoke:m22": "node scripts/verify-athena-m22-sample-project.js",
     "start:smoke:m23": "node scripts/verify-athena-m23-sample-project.js",
     "start:smoke:m24": "node scripts/verify-athena-m24-sample-project.js",
+    "start:smoke:m25": "node scripts/verify-athena-m25-sample-project.js",
     "start:smoke:tree-sitter": "node scripts/verify-athena-tree-sitter-highlighting.js",
     "start:smoke:reuse-catalog": "node scripts/verify-athena-reuse-catalog.js",
     "watch": "theia build --watch --mode development"

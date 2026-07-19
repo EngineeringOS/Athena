@@ -841,6 +841,128 @@ test('renders M25 representation facts as governed electrical symbols without ge
     );
 });
 
+test('keeps M25 representation facts when Presentation IR occurrences drive sheet nodes', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 1440,
+        canvasHeight: 900,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [
+            {
+                occurrenceId: 'presentation:component:PLC1',
+                semanticId: 'component:PLC1',
+                primitiveId: 'electrical.device.plc',
+                bounds: { x: 120, y: 80, width: 260, height: 160 },
+                displayLabel: 'PLC1',
+                layer: 'component',
+                markerKeys: [],
+                sourceProjectionIds: ['cabinet/projection/node/component_PLC1'],
+                parts: [
+                    {
+                        partId: 'presentation:component:PLC1:body',
+                        kind: 'component',
+                        bounds: { x: 120, y: 80, width: 260, height: 160 },
+                        commands: [],
+                        textSlots: []
+                    }
+                ]
+            }
+        ],
+        connectors: [],
+        representationFacts: [
+            {
+                subjectId: 'component:PLC1',
+                occurrenceId: 'representation:PLC1@schematic-sheet',
+                sourceProjectionIds: ['cabinet/projection/node/component_PLC1'],
+                symbol: {
+                    familyId: 'plc-controller'
+                },
+                anatomy: {
+                    representationId: 'athena-industrial-control-v0:plc-controller',
+                    context: 'electrical_schematic',
+                    bounds: { width: 80, height: 48 },
+                    hotspot: { x: 0, y: 0 },
+                    primitives: [
+                        {
+                            kind: 'rectangle',
+                            primitiveId: 'plc-controller:body',
+                            origin: { x: 0, y: 0 },
+                            size: { width: 80, height: 48 }
+                        }
+                    ],
+                    terminals: [
+                        {
+                            terminalId: 'terminal:PLC1:Q1.0',
+                            role: 'digital_output',
+                            localPoint: { x: 80, y: 24 },
+                            side: 'right',
+                            notation: {
+                                marker: 'circle',
+                                number: 'Q1.0'
+                            }
+                        }
+                    ],
+                    labelAnchors: [
+                        {
+                            anchorId: 'representation:PLC1@schematic-sheet:component:PLC1:device_tag',
+                            role: 'device_tag',
+                            point: { x: 0, y: -12 }
+                        }
+                    ]
+                },
+                terminals: [
+                    {
+                        presentationTerminalId: 'terminal:PLC1:Q1.0',
+                        subjectId: 'component:PLC1',
+                        occurrenceId: 'representation:PLC1@schematic-sheet',
+                        portId: 'Q1.0',
+                        physicalTerminalId: 'PLC1:Q1.0',
+                        side: 'right',
+                        routeAnchor: {
+                            anchorId: 'anchor:PLC1:Q1.0',
+                            point: { x: 80, y: 24 }
+                        },
+                        notation: {
+                            marker: 'circle',
+                            number: 'Q1.0'
+                        }
+                    }
+                ],
+                labels: [
+                    {
+                        labelId: 'label:PLC1:device-tag',
+                        subjectId: 'component:PLC1',
+                        occurrenceId: 'representation:PLC1@schematic-sheet',
+                        role: 'device_tag',
+                        value: 'PLC1',
+                        anchor: {
+                            anchorId: 'representation:PLC1@schematic-sheet:component:PLC1:device_tag',
+                            role: 'device_tag',
+                            point: { x: 0, y: -12 }
+                        }
+                    }
+                ]
+            }
+        ]
+    };
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const node = model.nodes.find(candidate => candidate.semanticId === 'component:PLC1');
+
+    assert.equal(node?.id, 'presentation:component:PLC1');
+    assert.equal(node?.renderVariant, 'electrical-device');
+    assert.equal(node?.presentationRepresentation?.representationId, 'athena-industrial-control-v0:plc-controller');
+    assert.equal(node?.presentationTerminals[0]?.number, 'Q1.0');
+    assert.equal(node?.presentationTerminals[0]?.point.x, 380);
+    assert.equal(node?.presentationLabels[0]?.role, 'device_tag');
+    assert.equal(node?.presentationLabels[0]?.point.y, 40);
+    assert.equal(
+        graphWorkbenchModel.buildAthenaGraphRepresentationInspection(model, 'component:PLC1').status,
+        'ready'
+    );
+});
+
 test('builds route inspection from governed connector facts without canvas persistence', () => {
     const diagram = JSON.parse(JSON.stringify(readyDiagram));
     diagram.presentation = {

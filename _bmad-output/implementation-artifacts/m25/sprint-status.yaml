@@ -1,6 +1,6 @@
 ---
 generated: 2026-07-19T11:30:00+08:00
-last_updated: 2026-07-19T16:47:40+08:00
+last_updated: 2026-07-19T20:15:27+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -26,28 +26,44 @@ story_location: _bmad-output/implementation-artifacts/m25
 
 development_status:
   epic-1: done
-  1-1-create-representation-model-contract-home: review
-  1-2-define-presentation-policy-profile-contracts: review
-  1-3-model-semantic-ports-physical-terminals-and-presentation-terminals: review
-  1-4-define-label-facts-and-label-policy: review
+  1-1-create-representation-model-contract-home: done
+  1-2-define-presentation-policy-profile-contracts: done
+  1-3-model-semantic-ports-physical-terminals-and-presentation-terminals: done
+  1-4-define-label-facts-and-label-policy: done
   epic-1-retrospective: optional
   epic-2: done
-  2-1-compose-component-knowledge-into-representation-facts: review
-  2-2-integrate-representation-facts-into-presentation-ir: review
-  2-3-attach-m24-route-facts-to-presentation-terminals: review
-  2-4-report-fallback-and-policy-coverage-diagnostics: review
+  2-1-compose-component-knowledge-into-representation-facts: done
+  2-2-integrate-representation-facts-into-presentation-ir: done
+  2-3-attach-m24-route-facts-to-presentation-terminals: done
+  2-4-report-fallback-and-policy-coverage-diagnostics: done
   epic-2-retrospective: optional
   epic-3: done
-  3-1-render-presentation-primitives-and-schematic-symbol-anatomy: review
-  3-2-render-presentation-terminals-and-label-facts: review
-  3-3-add-representation-terminal-and-label-inspection: review
-  3-4-preserve-accepted-graph-workbench-behavior-and-frontend-boundary: review
+  3-1-render-presentation-primitives-and-schematic-symbol-anatomy: done
+  3-2-render-presentation-terminals-and-label-facts: done
+  3-3-add-representation-terminal-and-label-inspection: done
+  3-4-preserve-accepted-graph-workbench-behavior-and-frontend-boundary: done
   epic-3-retrospective: optional
-  epic-4: backlog
-  4-1-create-the-openable-m25-sample-project: ready-for-dev
-  4-2-add-m24-vs-m25-representation-acceptance-proof: ready-for-dev
-  4-3-add-m25-product-smoke-and-regression-coverage: ready-for-dev
-  4-4-publish-m25-usage-retrospective-hooks-and-boundary-checks: ready-for-dev
-  epic-4-retrospective: optional
+  epic-4: done
+  4-1-create-the-openable-m25-sample-project: done
+  4-2-add-m24-vs-m25-representation-acceptance-proof: done
+  4-3-add-m25-product-smoke-and-regression-coverage: done
+  4-4-publish-m25-usage-retrospective-hooks-and-boundary-checks: done
+  epic-4-retrospective: done
 
-action_items: []
+action_items:
+  - epic: 4
+    action: "Future presentation milestones must include a regression for Presentation IR occurrences plus milestone-specific facts."
+    owner: "Athena engineering"
+    status: open
+  - epic: 4
+    action: "Product proof scripts must assert actual governed transport enum values rather than guessed display spellings."
+    owner: "Athena engineering"
+    status: open
+  - epic: 4
+    action: "Keep QElectroTech as documentation/reference vocabulary until a dedicated library-ingestion milestone exists."
+    owner: "Athena architecture"
+    status: open
+  - epic: 4
+    action: "Keep desktop-viewer, Compose, and deprecated KMP frontend paths out of current IDE milestones."
+    owner: "Athena engineering"
+    status: open

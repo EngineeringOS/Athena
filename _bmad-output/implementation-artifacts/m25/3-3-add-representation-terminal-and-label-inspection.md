@@ -1,4 +1,4 @@
----
+﻿---
 status: ready-for-dev
 baseline_commit: b195399ea8ba56f120948427e5f63d55cc8fec5f
 epic: 3
@@ -61,4 +61,4 @@ So that graphical inspection remains tied to source semantics.
 
 ## Status
 
-review
+done

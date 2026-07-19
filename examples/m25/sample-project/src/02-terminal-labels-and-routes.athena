@@ -1,0 +1,64 @@
+package com.engineeringood.m25.sample
+
+system TerminalLabelsAndRoutes {
+  device ControllerPLC2 {
+    type Switch
+    model "PLC"
+  }
+
+  device TerminalStripXT2 {
+    type Switch
+    model "XT2"
+  }
+
+  device MotorM2 {
+    type Motor
+    model "M2"
+  }
+
+  device OperatorHMI2 {
+    type Lamp
+    model "HMI"
+  }
+
+  port ControllerPLC2.do1 {
+    direction out
+    signal Digital
+  }
+
+  port ControllerPLC2.status {
+    direction out
+    signal Digital
+  }
+
+  port TerminalStripXT2.in1 {
+    direction in
+    signal Digital
+  }
+
+  port TerminalStripXT2.out1 {
+    direction out
+    signal Digital
+  }
+
+  port MotorM2.start {
+    direction in
+    signal Digital
+  }
+
+  port OperatorHMI2.statusIn {
+    direction in
+    signal Digital
+  }
+
+  connect ControllerPLC2.do1 -> TerminalStripXT2.in1
+  connect TerminalStripXT2.out1 -> MotorM2.start
+  connect ControllerPLC2.status -> OperatorHMI2.statusIn
+
+  layout schematic-sheet {
+    place TerminalStripXT2 below ControllerPLC2
+    place MotorM2 below TerminalStripXT2
+    place OperatorHMI2 near ControllerPLC2
+    group MotorM2 grouped-with TerminalStripXT2
+  }
+}

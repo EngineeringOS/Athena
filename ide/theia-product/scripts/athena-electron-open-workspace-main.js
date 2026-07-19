@@ -150,7 +150,8 @@ async function openWorkspace(window) {
                     stageHasGrid: window.getComputedStyle(stage).backgroundImage.includes('linear-gradient'),
                     infoPopoverOpened: popoverText.includes('Cabinet Main'),
                     infoPopoverClosedOnWhitespace: !document.querySelector('[data-athena-info-popover="true"]'),
-                    routeProof: collectRouteProof()
+                    routeProof: collectRouteProof(),
+                    representationProof: collectRepresentationProof()
                 }
             };
 
@@ -183,6 +184,34 @@ async function openWorkspace(window) {
                         .filter(route => !route.hasTerminalAnchors || route.pointCount <= 2)
                         .map(route => route.routeId || route.semanticId || '<unknown>'),
                     routeStates
+                };
+            }
+
+            function collectRepresentationProof() {
+                const representations = Array.from(document.querySelectorAll('[data-athena-representation-fact="true"]'));
+                const terminals = Array.from(document.querySelectorAll('[data-athena-presentation-terminal="true"]'));
+                const labels = Array.from(document.querySelectorAll('[data-athena-presentation-label="true"]'));
+                const representationStates = representations.map(representation => ({
+                    representationId: representation.getAttribute('data-athena-representation-id') || '',
+                    fallback: representation.getAttribute('data-athena-render-fallback') === 'true',
+                    semanticId: representation.getAttribute('data-athena-semantic-id') || ''
+                }));
+                return {
+                    representationCount: representations.length,
+                    presentationTerminalCount: terminals.length,
+                    presentationLabelCount: labels.length,
+                    terminalNumbers: terminals
+                        .map(terminal => terminal.getAttribute('data-athena-presentation-terminal-number') || '')
+                        .filter(Boolean),
+                    labelRoles: labels
+                        .map(label => label.getAttribute('data-athena-presentation-label-role') || '')
+                        .filter(Boolean),
+                    representationIds: representationStates.map(representation => representation.representationId).filter(Boolean),
+                    semanticIds: representationStates.map(representation => representation.semanticId).filter(Boolean),
+                    fallbackRepresentationIds: representationStates
+                        .filter(representation => representation.fallback)
+                        .map(representation => representation.representationId || representation.semanticId || '<unknown>'),
+                    representationStates
                 };
             }
         })();

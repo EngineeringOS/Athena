@@ -1,4 +1,4 @@
----
+﻿---
 status: ready-for-dev
 baseline_commit: 265e26109ebf75352fdf9db3f814edcc77bbf546
 epic: 1
@@ -61,4 +61,4 @@ So that labels are inspectable and not raw text drawing calls.
 
 ## Status
 
-review
+done

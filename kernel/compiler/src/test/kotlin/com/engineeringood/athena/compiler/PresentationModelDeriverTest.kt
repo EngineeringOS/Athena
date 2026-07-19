@@ -87,6 +87,22 @@ class PresentationModelDeriverTest {
         })
     }
 
+    @Test
+    fun `presentation derivation publishes M25 representation facts for real sample sources`() {
+        val sourcePath = resolveRepoRoot()
+            .resolve("examples/m25/sample-project/src/01-professional-symbol-sheet.athena")
+
+        val success = assertIs<CompilerCompilationSuccess>(AthenaCompiler().compile(sourcePath))
+        val schematic = success.presentations.first { presentation -> presentation.view.id == "schematic" }
+        val facts = schematic.representationFacts
+
+        assertTrue(facts.size >= 4)
+        assertTrue(facts.any { fact -> fact.subjectId.value == "component:PowerSupplyPS1" })
+        assertTrue(facts.any { fact -> fact.subjectId.value == "component:ControllerPLC1" })
+        assertTrue(facts.all { fact -> fact.terminals.isNotEmpty() })
+        assertTrue(facts.all { fact -> fact.labels.any { label -> label.role.name == "DEVICE_TAG" } })
+    }
+
     private fun resolveRepoRoot(): Path {
         var current = Path.of("").toAbsolutePath()
         while (current.parent != null && !Files.exists(current.resolve("settings.gradle.kts"))) {

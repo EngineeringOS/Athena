@@ -1,4 +1,4 @@
----
+﻿---
 status: ready-for-dev
 baseline_commit: 265e26109ebf75352fdf9db3f814edcc77bbf546
 epic: 1
@@ -65,4 +65,4 @@ So that component appearance is selected by policy rather than renderer hardcodi
 
 ## Status
 
-review
+done
