@@ -42,6 +42,13 @@ export function AthenaGraphWorkbenchEdgeLayer(
                     <path
                         className={`athena-graph-workbench__edge athena-graph-workbench__edge--${edge.conductorStyle} ${edgeSelected ? 'athena-graph-workbench__edge--selected' : ''}`}
                         d={edge.path}
+                        data-athena-route-fact='true'
+                        data-athena-route-id={edge.id}
+                        data-athena-route-semantic-id={edge.semanticId}
+                        data-athena-route-point-count={edge.routePoints.length}
+                        data-athena-route-source-anchor-id={edge.terminals[0]?.anchorId ?? ''}
+                        data-athena-route-target-anchor-id={edge.terminals[1]?.anchorId ?? ''}
+                        data-athena-route-quality={edge.presentationConnector?.tokenOverrides.routeQuality ?? ''}
                         fill='none'
                         vectorEffect='non-scaling-stroke'
                     />
@@ -53,7 +60,27 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         r={4}
                         vectorEffect='non-scaling-stroke'
                     />)}
+                    {edge.crossingMarkerPoints.map((point, index) => <circle
+                        key={`${edge.id}:crossing:${index}`}
+                        className={`athena-graph-workbench__edge-crossing ${edgeSelected ? 'athena-graph-workbench__edge-crossing--selected' : ''}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r={6}
+                        vectorEffect='non-scaling-stroke'
+                    />)}
                 </g>
+                {edge.routeLabels.map((label, index) => <text
+                    key={`${edge.id}:route-label:${index}`}
+                    className='athena-graph-workbench__edge-label'
+                    data-athena-route-label='true'
+                    data-athena-route-label-for={edge.id}
+                    x={label.point.x}
+                    y={label.point.y}
+                    textAnchor='middle'
+                    dominantBaseline='central'
+                >
+                    {label.text}
+                </text>)}
                 {edge.terminals.map(terminal => {
                     const terminalSemanticId = terminal.portSemanticId ?? edge.semanticId;
                     const terminalSelected = selectedSemanticId === edge.semanticId || selectedSemanticId === terminal.portSemanticId;
@@ -61,6 +88,11 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         key={`${edge.id}:terminal:${terminal.role}`}
                         className={`athena-graph-workbench__edge-terminal ${terminalSelected ? 'athena-graph-workbench__edge-terminal--selected' : ''}`}
                         data-athena-graph-interactive='true'
+                        data-athena-route-terminal='true'
+                        data-athena-route-terminal-for={edge.id}
+                        data-athena-route-terminal-role={terminal.role}
+                        data-athena-route-terminal-anchor-id={terminal.anchorId ?? ''}
+                        data-athena-route-terminal-port-id={terminal.portSemanticId ?? ''}
                         role='button'
                         tabIndex={0}
                         aria-label={`${terminal.role} terminal`}

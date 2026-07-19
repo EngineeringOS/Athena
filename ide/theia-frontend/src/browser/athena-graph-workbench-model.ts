@@ -203,11 +203,35 @@ export type AthenaGraphWorkbenchCrossReferenceMarker = {
 export type AthenaGraphWorkbenchEdge = AthenaGLSPEdge & {
     routePoints: AthenaGLSPPoint[];
     bendMarkerPoints: AthenaGLSPPoint[];
+    crossingMarkerPoints: AthenaGLSPPoint[];
+    routeLabels: AthenaGraphWorkbenchRouteLabel[];
     path: string;
     conductorStyle: 'electrical' | 'generic';
     terminals: AthenaGraphWorkbenchEdgeTerminal[];
     presentationConnector?: AthenaGraphResolvedPresentationConnector;
 };
+
+export type AthenaGraphWorkbenchRouteLabel = {
+    text: string;
+    point: AthenaGLSPPoint;
+};
+
+export type AthenaGraphRouteInspection =
+    | {
+        status: 'ready';
+        connectionId: string;
+        sourcePortSemanticId?: string;
+        targetPortSemanticId?: string;
+        routeQuality: string;
+        policySummary: string;
+        labels: string[];
+        persisted: false;
+    }
+    | {
+        status: 'unavailable';
+        reason: string;
+        persisted: false;
+    };
 
 export type AthenaGraphWorkbenchEdgeTerminal = {
     role: 'source' | 'target';
@@ -302,7 +326,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             anchorByLabelId,
             isElectricalFamily,
         ));
-    const edges = presentationConnectors.length > 0
+    const rawEdges = presentationConnectors.length > 0
         ? presentationConnectors.map(connector => buildWorkbenchEdgeFromPresentation(
             connector,
             endpointsByConnectionId,
@@ -313,6 +337,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             endpointsByConnectionId.get(edge.id) ?? [],
             anchorById,
         ));
+    const edges = withCrossingMarkers(rawEdges);
     const sheetChrome = resolveSheetChrome(diagram, canvasWidth, canvasHeight);
 
     return {
@@ -351,6 +376,32 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         sceneBounds: resolveSceneBounds(nodes, edges, canvasWidth, canvasHeight),
         surfaceTokens: resolveSurfaceTokens(renderContributions),
         emptyState: resolveEmptyState(diagram, nodes, edges),
+    };
+}
+
+export function buildAthenaGraphRouteInspection(
+    model: AthenaGraphWorkbenchModel,
+    semanticId: string,
+): AthenaGraphRouteInspection {
+    const edge = model.edges.find(candidate => candidate.semanticId === semanticId || candidate.id === semanticId);
+    if (!edge?.presentationConnector) {
+        return {
+            status: 'unavailable',
+            reason: 'No governed route fact is available for the selected rendered route.',
+            persisted: false,
+        };
+    }
+    const routeQuality = edge.presentationConnector.tokenOverrides.routeQuality ?? 'UNKNOWN';
+    const routeSegmentCount = edge.presentationConnector.tokenOverrides.routeSegmentCount ?? `${Math.max(0, edge.routePoints.length - 1)}`;
+    return {
+        status: 'ready',
+        connectionId: edge.semanticId,
+        sourcePortSemanticId: edge.sourcePortSemanticId,
+        targetPortSemanticId: edge.targetPortSemanticId,
+        routeQuality,
+        policySummary: `m24:route-fact:${routeQuality}:${routeSegmentCount}-segment`,
+        labels: edge.routeLabels.map(label => label.text),
+        persisted: false,
     };
 }
 
@@ -1086,6 +1137,8 @@ function buildWorkbenchEdge(
         bendPoints,
         routePoints,
         bendMarkerPoints: bendPoints.map(point => ({ x: point.x, y: point.y })),
+        crossingMarkerPoints: [],
+        routeLabels: [],
         path: buildEdgePath(routePoints),
         conductorStyle: edge.routingStyle === 'orthogonal' || bendPoints.length > 0 ? 'electrical' : 'generic',
         terminals: [
@@ -1125,9 +1178,118 @@ function buildWorkbenchEdgeFromPresentation(
         ...built,
         routePoints,
         bendMarkerPoints: routePoints.slice(1, Math.max(routePoints.length - 1, 1)),
+        crossingMarkerPoints: [],
+        routeLabels: buildRouteLabels(connector, routePoints),
         path: buildEdgePath(routePoints),
         presentationConnector: connector,
     };
+}
+
+function buildRouteLabels(
+    connector: AthenaGraphResolvedPresentationConnector,
+    routePoints: AthenaGLSPPoint[],
+): AthenaGraphWorkbenchRouteLabel[] {
+    const labelTexts = (connector.tokenOverrides.routeLabels ?? '')
+        .split('|')
+        .map(text => text.trim())
+        .filter(Boolean);
+    if (labelTexts.length === 0 || routePoints.length < 2) {
+        return [];
+    }
+    const anchorSegment = routePointSegments(routePoints)
+        .sort((left, right) => routePointSegmentLength(right) - routePointSegmentLength(left))[0];
+    if (!anchorSegment) {
+        return [];
+    }
+    return labelTexts.map((text, index) => ({
+        text,
+        point: routeLabelPoint(anchorSegment, index),
+    }));
+}
+
+function routeLabelPoint(
+    segment: [AthenaGLSPPoint, AthenaGLSPPoint],
+    index: number,
+): AthenaGLSPPoint {
+    const [start, end] = segment;
+    const midpoint = {
+        x: Math.trunc((start.x + end.x) / 2),
+        y: Math.trunc((start.y + end.y) / 2),
+    };
+    const offset = 16 + (index * 14);
+    if (start.y === end.y) {
+        return { x: midpoint.x, y: Math.max(0, midpoint.y - offset) };
+    }
+    return { x: midpoint.x + offset, y: midpoint.y };
+}
+
+function withCrossingMarkers(edges: AthenaGraphWorkbenchEdge[]): AthenaGraphWorkbenchEdge[] {
+    const crossingsByEdgeId = new Map<string, AthenaGLSPPoint[]>();
+    for (let leftIndex = 0; leftIndex < edges.length; leftIndex += 1) {
+        for (let rightIndex = leftIndex + 1; rightIndex < edges.length; rightIndex += 1) {
+            for (const leftSegment of routePointSegments(edges[leftIndex].routePoints)) {
+                for (const rightSegment of routePointSegments(edges[rightIndex].routePoints)) {
+                    const crossing = routeSegmentCrossing(leftSegment, rightSegment);
+                    if (!crossing) {
+                        continue;
+                    }
+                    appendUniquePoint(crossingsByEdgeId, edges[leftIndex].id, crossing);
+                    appendUniquePoint(crossingsByEdgeId, edges[rightIndex].id, crossing);
+                }
+            }
+        }
+    }
+    return edges.map(edge => ({
+        ...edge,
+        crossingMarkerPoints: crossingsByEdgeId.get(edge.id) ?? [],
+    }));
+}
+
+function routePointSegments(routePoints: AthenaGLSPPoint[]): Array<[AthenaGLSPPoint, AthenaGLSPPoint]> {
+    const segments: Array<[AthenaGLSPPoint, AthenaGLSPPoint]> = [];
+    for (let index = 0; index < routePoints.length - 1; index += 1) {
+        segments.push([routePoints[index], routePoints[index + 1]]);
+    }
+    return segments;
+}
+
+function routePointSegmentLength(segment: [AthenaGLSPPoint, AthenaGLSPPoint]): number {
+    return Math.abs(segment[0].x - segment[1].x) + Math.abs(segment[0].y - segment[1].y);
+}
+
+function routeSegmentCrossing(
+    left: [AthenaGLSPPoint, AthenaGLSPPoint],
+    right: [AthenaGLSPPoint, AthenaGLSPPoint],
+): AthenaGLSPPoint | undefined {
+    const leftHorizontal = left[0].y === left[1].y;
+    const rightHorizontal = right[0].y === right[1].y;
+    if (leftHorizontal === rightHorizontal) {
+        return undefined;
+    }
+    const horizontal = leftHorizontal ? left : right;
+    const vertical = leftHorizontal ? right : left;
+    const y = horizontal[0].y;
+    const x = vertical[0].x;
+    const horizontalMinX = Math.min(horizontal[0].x, horizontal[1].x);
+    const horizontalMaxX = Math.max(horizontal[0].x, horizontal[1].x);
+    const verticalMinY = Math.min(vertical[0].y, vertical[1].y);
+    const verticalMaxY = Math.max(vertical[0].y, vertical[1].y);
+    if (x <= horizontalMinX || x >= horizontalMaxX || y <= verticalMinY || y >= verticalMaxY) {
+        return undefined;
+    }
+    return { x, y };
+}
+
+function appendUniquePoint(
+    pointMap: Map<string, AthenaGLSPPoint[]>,
+    edgeId: string,
+    point: AthenaGLSPPoint,
+): void {
+    const points = pointMap.get(edgeId) ?? [];
+    if (!points.some(existing => existing.x === point.x && existing.y === point.y)) {
+        points.push(point);
+    }
+    pointMap.set(edgeId, points);
 }
 
 function buildWorkbenchTerminal(

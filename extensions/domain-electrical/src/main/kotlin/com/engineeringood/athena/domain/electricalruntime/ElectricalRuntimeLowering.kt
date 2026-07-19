@@ -2,6 +2,7 @@ package com.engineeringood.athena.domain.electricalruntime
 
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.ScalarValue
@@ -19,6 +20,7 @@ internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): Athen
             is DeviceDeclaration -> deviceDeclarations += declaration
             is PortDeclaration -> portDeclarations += declaration
             is ConnectionDeclaration -> connectionDeclarations += declaration
+            is LayoutDeclaration -> Unit
         }
     }
 

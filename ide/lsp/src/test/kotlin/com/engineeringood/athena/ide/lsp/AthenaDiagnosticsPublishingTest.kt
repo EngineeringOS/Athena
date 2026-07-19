@@ -590,6 +590,59 @@ class AthenaDiagnosticsPublishingTest {
 
     @Test
     @Suppress("DEPRECATION")
+    fun `m24 sample project routing sources open without diagnostics`() {
+        val repoRoot = resolveRepoRoot()
+        val sampleProjectRoot = repoRoot.resolve("examples/m24/sample-project")
+        val sourcePaths = listOf(
+            sampleProjectRoot.resolve("src/01-control-route.athena"),
+            sampleProjectRoot.resolve("src/02-terminal-strip-routes.athena"),
+            sampleProjectRoot.resolve("src/03-power-protection-load.athena"),
+        )
+
+        AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = sampleProjectRoot.toUri().toString()
+                },
+            ).get()
+
+            sourcePaths.forEach { sourcePath ->
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            sourcePath.toUri().toString(),
+                            "athena",
+                            1,
+                            Files.readString(sourcePath),
+                        ),
+                    ),
+                )
+
+                val diagnostics = client.publishedDiagnostics.last().diagnostics
+                assertEquals(
+                    0,
+                    diagnostics.size,
+                    buildString {
+                        appendLine("Published diagnostics for ${sourcePath.fileName}:")
+                        diagnostics.forEach { diagnostic ->
+                            appendLine("- ${diagnostic.code?.left ?: "<no-code>"}: ${diagnostic.message}")
+                        }
+                    },
+                )
+            }
+        } finally {
+            server.shutdown().get()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
     fun `project semantic diagnostics use the authored package identity instead of always using the root package`() {
         val sourceText = """
             package com.vendor

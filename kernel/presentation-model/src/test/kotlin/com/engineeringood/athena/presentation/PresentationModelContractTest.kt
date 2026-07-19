@@ -2,7 +2,23 @@ package com.engineeringood.athena.presentation
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutIntent
+import com.engineeringood.athena.layout.LayoutOccurrenceId
+import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.layout.ViewDefinition
+import com.engineeringood.athena.routing.ElectricalConnectionId
+import com.engineeringood.athena.routing.ElectricalPortId
+import com.engineeringood.athena.routing.ElectricalPortRole
+import com.engineeringood.athena.routing.RouteFact
+import com.engineeringood.athena.routing.RouteFactSnapshot
+import com.engineeringood.athena.routing.RouteQualityState
+import com.engineeringood.athena.routing.SchematicRouteId
+import com.engineeringood.athena.routing.SchematicRouteLane
+import com.engineeringood.athena.routing.SchematicRoutePoint
+import com.engineeringood.athena.routing.SchematicRouteSegment
+import com.engineeringood.athena.routing.SchematicRouteSegmentOrientation
+import com.engineeringood.athena.routing.TerminalAnchorFact
+import com.engineeringood.athena.routing.TerminalAnchorId
+import com.engineeringood.athena.routing.TerminalSide
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -137,5 +153,111 @@ class PresentationModelContractTest {
         assertEquals(2, primitive.commands.size)
         assertIs<PresentationCircle>(primitive.commands.first())
         assertIs<PresentationSvgPath>(primitive.commands.last())
+    }
+
+    @Test
+    fun `presentation snapshots expose route facts instead of accepting old edge route points`() {
+        val snapshotId = LayoutSnapshotId("snapshot:m24:presentation-route-facts")
+        val routeFact = routeFact(snapshotId)
+        val document = PresentationDocument(
+            view = ViewDefinition(
+                id = "schematic",
+                displayName = "Schematic",
+                layoutIntent = LayoutIntent.CONNECTIVITY,
+            ),
+            canvasWidth = 640,
+            canvasHeight = 360,
+            primitivePacks = emptyList(),
+            compositePacks = emptyList(),
+            occurrences = emptyList(),
+            connectors = listOf(
+                PresentationConnector(
+                    occurrenceId = PresentationOccurrenceId("schematic/presentation/old-edge"),
+                    semanticId = StableSemanticIdentity("connection:PLC1.DO1->XT1.1"),
+                    primitiveId = PresentationPrimitiveId("electrical.conductor.generic"),
+                    routePoints = listOf(
+                        PresentationPoint(x = 320, y = 180),
+                        PresentationPoint(x = 520, y = 180),
+                    ),
+                ),
+            ),
+            routeFactSnapshot = RouteFactSnapshot.canonical(
+                snapshotId = snapshotId,
+                family = "schematic",
+                routeFacts = listOf(routeFact),
+            ),
+        )
+
+        val connector = document.connectorsForRendering().single()
+
+        assertEquals("route:PLC1.DO1->XT1.1", connector.occurrenceId.value)
+        assertEquals(StableSemanticIdentity("connection:PLC1.DO1->XT1.1"), connector.semanticId)
+        assertEquals(
+            listOf(
+                PresentationPoint(x = 320, y = 180),
+                PresentationPoint(x = 340, y = 180),
+                PresentationPoint(x = 340, y = 220),
+                PresentationPoint(x = 520, y = 220),
+            ),
+            connector.routePoints,
+        )
+        assertEquals("anchor:PLC1:DO1", connector.sourceAnchorId)
+        assertEquals("anchor:XT1:1", connector.targetAnchorId)
+        assertEquals(StableSemanticIdentity("port:PLC1.DO1"), connector.sourcePortSemanticId)
+        assertEquals(StableSemanticIdentity("port:XT1.1"), connector.targetPortSemanticId)
+        assertEquals("0", connector.tokenOverrides["routeLane"])
+        assertEquals(RouteQualityState.SATISFIED.name, connector.tokenOverrides["routeQuality"])
+    }
+
+    private fun routeFact(snapshotId: LayoutSnapshotId): RouteFact {
+        val connectionId = ElectricalConnectionId("connection:PLC1.DO1->XT1.1")
+        val source = terminalAnchor("PLC1", "DO1", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 320, 180)
+        val target = terminalAnchor("XT1", "1", ElectricalPortRole.TERMINAL, TerminalSide.LEFT, 520, 220)
+        return RouteFact(
+            routeId = SchematicRouteId("route:PLC1.DO1->XT1.1"),
+            snapshotId = snapshotId,
+            connectionId = connectionId,
+            source = source,
+            target = target,
+            lane = SchematicRouteLane(0),
+            segments = listOf(
+                SchematicRouteSegment(
+                    start = SchematicRoutePoint(x = 320, y = 180),
+                    end = SchematicRoutePoint(x = 340, y = 180),
+                    orientation = SchematicRouteSegmentOrientation.HORIZONTAL,
+                ),
+                SchematicRouteSegment(
+                    start = SchematicRoutePoint(x = 340, y = 180),
+                    end = SchematicRoutePoint(x = 340, y = 220),
+                    orientation = SchematicRouteSegmentOrientation.VERTICAL,
+                ),
+                SchematicRouteSegment(
+                    start = SchematicRoutePoint(x = 340, y = 220),
+                    end = SchematicRoutePoint(x = 520, y = 220),
+                    orientation = SchematicRouteSegmentOrientation.HORIZONTAL,
+                ),
+            ),
+        )
+    }
+
+    private fun terminalAnchor(
+        subject: String,
+        port: String,
+        role: ElectricalPortRole,
+        side: TerminalSide,
+        x: Int,
+        y: Int,
+    ): TerminalAnchorFact {
+        return TerminalAnchorFact(
+            anchorId = TerminalAnchorId("anchor:$subject:$port"),
+            subjectId = StableSemanticIdentity("component:$subject"),
+            occurrenceId = LayoutOccurrenceId("occurrence:component:$subject"),
+            portId = ElectricalPortId("$subject.$port"),
+            portSemanticId = StableSemanticIdentity("port:$subject.$port"),
+            portRole = role,
+            side = side,
+            point = SchematicRoutePoint(x = x, y = y),
+            gridPoint = SchematicRoutePoint(x = x, y = y),
+        )
     }
 }

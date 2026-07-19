@@ -5,6 +5,8 @@ import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
+import com.engineeringood.athena.layout.LayoutOccurrenceId
+import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.presentation.PresentationAnchorAlias
 import com.engineeringood.athena.presentation.PresentationAnchorBinding
 import com.engineeringood.athena.presentation.PresentationCompositeOccurrenceReference
@@ -28,12 +30,29 @@ import com.engineeringood.athena.projection.ElectricalAnchor
 import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
 import com.engineeringood.athena.projection.ElectricalConnectionEndpointRole
 import com.engineeringood.athena.projection.ElectricalRoutingCorridor
+import com.engineeringood.athena.projection.ElectricalAnchorSide
 import com.engineeringood.athena.projection.ProjectionBounds
 import com.engineeringood.athena.projection.ProjectionConnection
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionLabel
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNotationSubject
+import com.engineeringood.athena.routing.AthenaRouteEngineInput
+import com.engineeringood.athena.routing.AthenaRouteEngineV0
+import com.engineeringood.athena.routing.AthenaRouteRequest
+import com.engineeringood.athena.routing.ElectricalConnectionId
+import com.engineeringood.athena.routing.ElectricalConnectionIntent
+import com.engineeringood.athena.routing.ElectricalConnectionRole
+import com.engineeringood.athena.routing.ElectricalPortId
+import com.engineeringood.athena.routing.ElectricalPortRole
+import com.engineeringood.athena.routing.ElectricalSignalClass
+import com.engineeringood.athena.routing.SchematicComponentBounds
+import com.engineeringood.athena.routing.SchematicRouteId
+import com.engineeringood.athena.routing.SchematicRoutePoint
+import com.engineeringood.athena.routing.SchematicRoutingLayoutContext
+import com.engineeringood.athena.routing.TerminalAnchorFact
+import com.engineeringood.athena.routing.TerminalAnchorId
+import com.engineeringood.athena.routing.TerminalSide
 
 /**
  * Derives the first rebuildable `Presentation IR` from a renderer-neutral projection document.
@@ -95,6 +114,9 @@ class PresentationModelDeriver {
                 corridor = corridorByConnectionId[connection.projectionId],
             )
         }.sortedBy { connector -> connector.occurrenceId.value }
+        val routeFactSnapshot = projection.toRouteFactSnapshot(
+            endpointsByConnectionId = endpointsByConnectionId,
+        )
 
         return PresentationDocument(
             view = projection.view,
@@ -105,6 +127,7 @@ class PresentationModelDeriver {
             resolvedSubjects = projection.resolvedSubjects.map { resolved -> resolved.toPresentationResolvedSubject() },
             occurrences = occurrences,
             connectors = connectors,
+            routeFactSnapshot = routeFactSnapshot,
         )
     }
 }
@@ -230,6 +253,108 @@ private fun ProjectionBounds.toPresentationBounds(): com.engineeringood.athena.p
 
 private fun com.engineeringood.athena.projection.ProjectionPoint.toPresentationPoint(): PresentationPoint {
     return PresentationPoint(x = x, y = y)
+}
+
+private fun ProjectionDocument.toRouteFactSnapshot(
+    endpointsByConnectionId: Map<com.engineeringood.athena.projection.ProjectionConnectionId, List<ElectricalConnectionEndpoint>>,
+): com.engineeringood.athena.routing.RouteFactSnapshot? {
+    val anchorById = electricalAnchors.associateBy(ElectricalAnchor::anchorId)
+    val requests = connections.mapNotNull { connection ->
+        val endpoints = endpointsByConnectionId[connection.projectionId].orEmpty()
+        val sourceEndpoint = endpoints.firstOrNull { endpoint -> endpoint.endpointRole == ElectricalConnectionEndpointRole.SOURCE }
+        val targetEndpoint = endpoints.firstOrNull { endpoint -> endpoint.endpointRole == ElectricalConnectionEndpointRole.TARGET }
+        val sourceAnchor = sourceEndpoint?.anchorId?.let(anchorById::get)
+        val targetAnchor = targetEndpoint?.anchorId?.let(anchorById::get)
+        if (sourceEndpoint == null || targetEndpoint == null || sourceAnchor == null || targetAnchor == null) {
+            null
+        } else {
+            connection.toRouteRequest(
+                sourceEndpoint = sourceEndpoint,
+                targetEndpoint = targetEndpoint,
+                sourceAnchor = sourceAnchor,
+                targetAnchor = targetAnchor,
+            )
+        }
+    }
+    if (requests.isEmpty()) {
+        return null
+    }
+    return AthenaRouteEngineV0().solve(
+        AthenaRouteEngineInput(
+            snapshotId = LayoutSnapshotId("snapshot:${view.id}:${sheets.firstOrNull()?.sheetId?.value ?: "sheet"}"),
+            layoutContext = SchematicRoutingLayoutContext(gridSize = 20),
+            componentBounds = nodes.map(ProjectionNode::toSchematicComponentBounds),
+            requests = requests,
+        ),
+    )
+}
+
+private fun ProjectionConnection.toRouteRequest(
+    sourceEndpoint: ElectricalConnectionEndpoint,
+    targetEndpoint: ElectricalConnectionEndpoint,
+    sourceAnchor: ElectricalAnchor,
+    targetAnchor: ElectricalAnchor,
+): AthenaRouteRequest {
+    val connectionId = ElectricalConnectionId(semanticId.value)
+    val sourceTerminal = sourceAnchor.toTerminalAnchorFact(sourceEndpoint, ElectricalPortRole.OUTPUT)
+    val targetTerminal = targetAnchor.toTerminalAnchorFact(targetEndpoint, ElectricalPortRole.INPUT)
+    return AthenaRouteRequest(
+        routeId = SchematicRouteId("route:${semanticId.value}"),
+        connectionIntent = ElectricalConnectionIntent(
+            connectionId = connectionId,
+            sourceSubjectId = sourceTerminal.subjectId,
+            sourcePortId = sourceTerminal.portId,
+            sourcePortSemanticId = sourceEndpoint.portSemanticId,
+            targetSubjectId = targetTerminal.subjectId,
+            targetPortId = targetTerminal.portId,
+            targetPortSemanticId = targetEndpoint.portSemanticId,
+            role = ElectricalConnectionRole.CONTROL_SIGNAL,
+            signalClass = ElectricalSignalClass.UNKNOWN,
+        ),
+        sourceAnchor = sourceTerminal,
+        targetAnchor = targetTerminal,
+    )
+}
+
+private fun ElectricalAnchor.toTerminalAnchorFact(
+    endpoint: ElectricalConnectionEndpoint,
+    portRole: ElectricalPortRole,
+): TerminalAnchorFact {
+    return TerminalAnchorFact(
+        anchorId = TerminalAnchorId(anchorId.value),
+        subjectId = ownerSemanticId,
+        occurrenceId = LayoutOccurrenceId("occurrence:${ownerSemanticId.value}"),
+        portId = ElectricalPortId(endpoint.portSemanticId.value.removePrefix("port:")),
+        portSemanticId = endpoint.portSemanticId,
+        portRole = portRole,
+        side = side.toTerminalSide(),
+        point = SchematicRoutePoint(x = position.x, y = position.y),
+        gridPoint = SchematicRoutePoint(x = position.x.snapToGrid(20), y = position.y.snapToGrid(20)),
+        policySource = "m24:projection-electrical-anchor",
+    )
+}
+
+private fun ProjectionNode.toSchematicComponentBounds(): SchematicComponentBounds {
+    return SchematicComponentBounds(
+        subjectId = semanticId,
+        occurrenceId = LayoutOccurrenceId("occurrence:${semanticId.value}"),
+        topLeft = SchematicRoutePoint(x = bounds.x, y = bounds.y),
+        width = bounds.width,
+        height = bounds.height,
+    )
+}
+
+private fun ElectricalAnchorSide.toTerminalSide(): TerminalSide {
+    return when (this) {
+        ElectricalAnchorSide.LEFT -> TerminalSide.LEFT
+        ElectricalAnchorSide.RIGHT -> TerminalSide.RIGHT
+        ElectricalAnchorSide.TOP -> TerminalSide.TOP
+        ElectricalAnchorSide.BOTTOM -> TerminalSide.BOTTOM
+    }
+}
+
+private fun Int.snapToGrid(gridSize: Int): Int {
+    return (((this + gridSize / 2) / gridSize) * gridSize).coerceAtLeast(0)
 }
 
 private fun selectCompositeId(

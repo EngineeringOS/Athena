@@ -1,0 +1,75 @@
+package com.engineeringood.m24.sample
+
+system TerminalStripRouteProof {
+  device TerminalRoutePLC1 {
+    type Switch
+    model "PLC"
+  }
+
+  device TerminalStripXT1 {
+    type Switch
+    model "XT1"
+  }
+
+  device ValveY1 {
+    type Lamp
+    model "Y1"
+  }
+
+  device SensorB1 {
+    type Switch
+    model "B1"
+  }
+
+  port TerminalRoutePLC1.do1 {
+    direction out
+    signal Digital
+  }
+
+  port TerminalRoutePLC1.do2 {
+    direction out
+    signal Digital
+  }
+
+  port TerminalStripXT1.in1 {
+    direction in
+    signal Digital
+  }
+
+  port TerminalStripXT1.in2 {
+    direction in
+    signal Digital
+  }
+
+  port TerminalStripXT1.out1 {
+    direction out
+    signal Digital
+  }
+
+  port TerminalStripXT1.out2 {
+    direction out
+    signal Digital
+  }
+
+  port ValveY1.command {
+    direction in
+    signal Digital
+  }
+
+  port SensorB1.feedback {
+    direction in
+    signal Digital
+  }
+
+  connect TerminalRoutePLC1.do1 -> TerminalStripXT1.in1
+  connect TerminalRoutePLC1.do2 -> TerminalStripXT1.in2
+  connect TerminalStripXT1.out1 -> ValveY1.command
+  connect TerminalStripXT1.out2 -> SensorB1.feedback
+
+  layout schematic-sheet {
+    place TerminalStripXT1 below TerminalRoutePLC1
+    place ValveY1 near TerminalStripXT1
+    place SensorB1 near TerminalStripXT1
+    group ValveY1 grouped-with TerminalStripXT1
+  }
+}

@@ -1,5 +1,6 @@
 ---
-status: ready-for-dev
+baseline_commit: e4b243ab9441d585e79c2d8effceb1a6692a3be2
+status: review
 epic: 5
 story: 5.4
 title: Publish M24 usage retrospective hooks and boundary checks
@@ -27,3 +28,37 @@ overclaiming.
 ## Notes
 
 Do not write the retrospective until implementation evidence exists.
+
+## Tasks/Subtasks
+
+- [x] Publish M24 usage documentation for the openable sample and IDE checks.
+- [x] Record retrospective evidence for what M24 proves and defers.
+- [x] Extend boundary checks to cover usage, retrospective, and M23 regression expectations.
+
+## Dev Agent Record
+
+### Debug Log
+
+- 2026-07-19: Started after Story 5.3 product smoke produced route proof evidence.
+- 2026-07-19: Verified `yarn --cwd ide/theia-frontend test` and repository encoding audit after publishing usage and retrospective evidence.
+
+### Completion Notes
+
+- Published M24 usage documentation with IDE path, sample files, expected checks, verification commands, and observed route proof evidence.
+- Recorded M24 retrospective evidence covering what the milestone proves, explicit deferrals, and lessons learned.
+- Extended M24 boundary checks to cover usage, retrospective, M23 syntax regression expectations, and no-overclaim language.
+
+### File List
+
+- docs/usages/m24-proof-usage.md
+- docs/usages/m24-routing-acceptance-proof.md
+- _bmad-output/implementation-artifacts/m24/m24-achievement-usage-retrospective-2026-07-19.md
+- examples/m24/README.md
+- ide/theia-frontend/scripts/athena-m24-routing-acceptance.test.mjs
+- _bmad-output/implementation-artifacts/m24/5-4-publish-m24-usage-retrospective-hooks-and-boundary-checks.md
+- _bmad-output/implementation-artifacts/m24/sprint-status.yaml
+
+### Change Log
+
+- 2026-07-19: Started Story 5.4 and added usage/retrospective evidence artifacts.
+- 2026-07-19: Completed Story 5.4 usage, retrospective, and boundary verification.

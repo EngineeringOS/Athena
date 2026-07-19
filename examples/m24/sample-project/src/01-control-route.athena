@@ -1,0 +1,30 @@
+package com.engineeringood.m24.sample
+
+system ControlRouteProof {
+  device ControllerPLC1 {
+    type Switch
+    model "PLC"
+  }
+
+  device OperatorHMI1 {
+    type Lamp
+    model "HMI"
+  }
+
+  port ControllerPLC1.statusOut {
+    direction out
+    signal Digital
+  }
+
+  port OperatorHMI1.statusIn {
+    direction in
+    signal Digital
+  }
+
+  connect ControllerPLC1.statusOut -> OperatorHMI1.statusIn
+
+  layout schematic-sheet {
+    place OperatorHMI1 near ControllerPLC1
+    align OperatorHMI1 aligned-with ControllerPLC1 axis vertical
+  }
+}

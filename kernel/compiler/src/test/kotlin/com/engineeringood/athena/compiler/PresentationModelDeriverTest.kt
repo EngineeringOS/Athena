@@ -1,6 +1,8 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.presentation.PresentationCompositeOccurrenceReference
+import com.engineeringood.athena.presentation.connectorsForRendering
+import com.engineeringood.athena.routing.RouteFact
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -55,6 +57,34 @@ class PresentationModelDeriverTest {
                     binding.sourceLabelId == "cabinet/projection/label/port_PLC1_out"
             },
         )
+    }
+
+    @Test
+    fun `presentation derivation publishes terminal anchor route facts for rendered schematic wires`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+
+        val success = assertIs<CompilerCompilationSuccess>(AthenaCompiler().compile(sourcePath))
+        val schematic = success.presentations.first { presentation -> presentation.view.id == "schematic" }
+        val routeFacts = assertNotNull(schematic.routeFactSnapshot).routeFacts
+        val route = routeFacts.single()
+        val connector = schematic.connectorsForRendering().single()
+
+        assertEquals("connection:PLC1.out->M1.in", route.connectionId.value)
+        assertEquals("port:PLC1.out", route.source.portSemanticId?.value)
+        assertEquals("port:M1.in", route.target.portSemanticId?.value)
+        assertEquals(route.source.gridPoint.x, connector.routePoints.first().x)
+        assertEquals(route.source.gridPoint.y, connector.routePoints.first().y)
+        assertEquals(route.target.gridPoint.x, connector.routePoints.last().x)
+        assertEquals(route.target.gridPoint.y, connector.routePoints.last().y)
+        assertEquals(route.source.anchorId.value, connector.sourceAnchorId)
+        assertEquals(route.target.anchorId.value, connector.targetAnchorId)
+        assertEquals(route.routeId.value, connector.occurrenceId.value)
+        assertTrue(routeFacts.flatMap(RouteFact::segments).all { segment ->
+            segment.start.x % 20 == 0 &&
+                segment.start.y % 20 == 0 &&
+                segment.end.x % 20 == 0 &&
+                segment.end.y % 20 == 0
+        })
     }
 
     private fun resolveRepoRoot(): Path {

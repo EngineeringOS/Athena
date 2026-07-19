@@ -18,6 +18,7 @@ import com.engineeringood.athena.presentation.PresentationStrokeLine
 import com.engineeringood.athena.presentation.PresentationStrokeRectangle
 import com.engineeringood.athena.presentation.PresentationSvgPath
 import com.engineeringood.athena.presentation.PresentationTextSlot
+import com.engineeringood.athena.presentation.connectorsForRendering
 
 internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload {
     return AthenaPresentationDocumentPayload(
@@ -26,7 +27,7 @@ internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload
         primitivePacks = primitivePacks.map(PresentationPrimitivePack::toPayload),
         compositePacks = compositePacks.map(PresentationCompositePack::toPayload),
         occurrences = occurrences.map(PresentationOccurrence::toPayload),
-        connectors = connectors.map(PresentationConnector::toPayload),
+        connectors = connectorsForRendering().map(PresentationConnector::toPayload),
     )
 }
 

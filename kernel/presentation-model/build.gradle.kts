@@ -5,4 +5,5 @@ plugins {
 dependencies {
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:layout-model"))
+    implementation(project(":kernel:routing-model"))
 }

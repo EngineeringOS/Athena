@@ -1,0 +1,64 @@
+package com.engineeringood.m24.sample
+
+system PowerProtectionRouteProof {
+  device PowerSupplyPS1 {
+    type Switch
+    model "24VDC"
+  }
+
+  device BreakerQF1 {
+    type Switch
+    model "QF1"
+  }
+
+  device ContactorKM1 {
+    type Switch
+    model "KM1"
+  }
+
+  device MotorM1 {
+    type Motor
+    model "M1"
+  }
+
+  port PowerSupplyPS1.lplus {
+    direction out
+    signal Digital
+  }
+
+  port BreakerQF1.line {
+    direction in
+    signal Digital
+  }
+
+  port BreakerQF1.load {
+    direction out
+    signal Digital
+  }
+
+  port ContactorKM1.a1 {
+    direction in
+    signal Digital
+  }
+
+  port ContactorKM1.t1 {
+    direction out
+    signal Digital
+  }
+
+  port MotorM1.u1 {
+    direction in
+    signal Digital
+  }
+
+  connect PowerSupplyPS1.lplus -> BreakerQF1.line
+  connect BreakerQF1.load -> ContactorKM1.a1
+  connect ContactorKM1.t1 -> MotorM1.u1
+
+  layout schematic-sheet {
+    place BreakerQF1 near PowerSupplyPS1
+    place ContactorKM1 below BreakerQF1
+    place MotorM1 below ContactorKM1
+    align MotorM1 aligned-with ContactorKM1 axis vertical
+  }
+}

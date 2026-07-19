@@ -149,9 +149,42 @@ async function openWorkspace(window) {
                     sheetFrame: !!sheetFrame,
                     stageHasGrid: window.getComputedStyle(stage).backgroundImage.includes('linear-gradient'),
                     infoPopoverOpened: popoverText.includes('Cabinet Main'),
-                    infoPopoverClosedOnWhitespace: !document.querySelector('[data-athena-info-popover="true"]')
+                    infoPopoverClosedOnWhitespace: !document.querySelector('[data-athena-info-popover="true"]'),
+                    routeProof: collectRouteProof()
                 }
             };
+
+            function collectRouteProof() {
+                const routes = Array.from(document.querySelectorAll('[data-athena-route-fact="true"]'));
+                const terminals = Array.from(document.querySelectorAll('[data-athena-route-terminal="true"]'));
+                const labels = Array.from(document.querySelectorAll('[data-athena-route-label="true"]'));
+                const routeStates = routes.map(route => {
+                    const pointCount = Number(route.getAttribute('data-athena-route-point-count') || '0');
+                    const sourceAnchorId = route.getAttribute('data-athena-route-source-anchor-id') || '';
+                    const targetAnchorId = route.getAttribute('data-athena-route-target-anchor-id') || '';
+                    return {
+                        routeId: route.getAttribute('data-athena-route-id') || '',
+                        semanticId: route.getAttribute('data-athena-route-semantic-id') || '',
+                        pointCount,
+                        sourceAnchorId,
+                        targetAnchorId,
+                        quality: route.getAttribute('data-athena-route-quality') || '',
+                        hasTerminalAnchors: !!sourceAnchorId && !!targetAnchorId,
+                        hasOrthogonalBends: pointCount >= 4
+                    };
+                });
+                return {
+                    routeCount: routes.length,
+                    terminalCount: terminals.length,
+                    labelCount: labels.length,
+                    routesWithTerminalAnchors: routeStates.filter(route => route.hasTerminalAnchors).length,
+                    routesWithOrthogonalBends: routeStates.filter(route => route.hasOrthogonalBends).length,
+                    centerFallbackRouteIds: routeStates
+                        .filter(route => !route.hasTerminalAnchors || route.pointCount <= 2)
+                        .map(route => route.routeId || route.semanticId || '<unknown>'),
+                    routeStates
+                };
+            }
         })();
     `, true);
 

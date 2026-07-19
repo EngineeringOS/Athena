@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":kernel:physical-model"))
     implementation(project(":kernel:presentation-model"))
     implementation(project(":kernel:projection-model"))
+    implementation(project(":kernel:routing-model"))
     implementation(project(":kernel:language"))
     implementation(project(":kernel:svg-renderer"))
     implementation(project(":kernel:validation"))

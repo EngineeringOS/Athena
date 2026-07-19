@@ -7,6 +7,7 @@ import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.eclipse.lsp4j.InitializeParams
@@ -280,6 +281,58 @@ class AthenaProjectionRequestTest {
                 assertEquals(ready.components.size, sheetLayout.placements.size)
                 assertEquals(ready.labels.size, sheetLayout.labelLayouts.size)
                 assertEquals(ready.electricalRoutingCorridors.size, sheetLayout.routingGuidance.size)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `projection session payload renders terminal anchor route facts instead of legacy graph edges`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-projection-route-facts-",
+            sourceFileName = "demo-cabinet.athena",
+            sourceText = demoCabinetSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val payload = server.projectionSession(AthenaProjectionSessionParams()).get()
+                val ready = assertNotNull(payload?.readyProjection)
+                val presentation = assertNotNull(ready.presentation)
+                val legacyConnection = ready.connections.single()
+                val connector = presentation.connectors.single()
+                val anchorIds = presentation.occurrences
+                    .flatMap { occurrence -> occurrence.anchorBindings }
+                    .map { binding -> binding.anchorId }
+                    .toSet()
+
+                assertNotNull(connector.sourceAnchorId)
+                assertNotNull(connector.targetAnchorId)
+                assertTrue(connector.sourceAnchorId in anchorIds)
+                assertTrue(connector.targetAnchorId in anchorIds)
+                assertEquals("port:PLC1.out", connector.sourcePortSemanticId)
+                assertEquals("port:M1.in", connector.targetPortSemanticId)
+                assertTrue(connector.routePoints.size >= 4)
+                assertTrue(
+                    connector.routePoints.zipWithNext().all { (start, end) ->
+                        start.x == end.x || start.y == end.y
+                    },
+                )
+                assertTrue(connector.routePoints.all { point -> point.x % 20 == 0 && point.y % 20 == 0 })
+                assertNotEquals(legacyConnection.x1 to legacyConnection.y1, connector.routePoints.first().let { it.x to it.y })
+                assertNotEquals(legacyConnection.x2 to legacyConnection.y2, connector.routePoints.last().let { it.x to it.y })
             } finally {
                 server.shutdown().get()
             }

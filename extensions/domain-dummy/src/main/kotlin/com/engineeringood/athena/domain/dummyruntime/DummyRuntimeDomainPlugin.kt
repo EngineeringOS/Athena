@@ -9,6 +9,7 @@ import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.ScalarValue
@@ -83,6 +84,7 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                 is DeviceDeclaration -> deviceDeclarations += declaration
                 is PortDeclaration -> portDeclarations += declaration
                 is ConnectionDeclaration -> connectionDeclarations += declaration
+                is LayoutDeclaration -> Unit
             }
         }
 

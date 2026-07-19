@@ -17,6 +17,7 @@ import {
     type AthenaGraphWorkbenchNode,
     type AthenaGraphViewportSize,
     type AthenaGraphViewportTransform,
+    buildAthenaGraphRouteInspection,
     buildAthenaGraphWorkbenchModel,
     clampAthenaGraphZoom,
     fitAthenaGraphViewport,
@@ -408,6 +409,21 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             ? relatedSubjects.map(item => `${item.relation}:${item.relatedSemanticId}`).join(', ')
             : '-';
         const sourceSummary = selectedSemantic?.sourceUri ?? '-';
+        const routeInspection = selectedSemanticId
+            ? buildAthenaGraphRouteInspection(model, selectedSemanticId)
+            : undefined;
+        const routeRows = routeInspection?.status === 'ready'
+            ? [
+                { key: 'route-quality', label: 'Route quality', value: routeInspection.routeQuality },
+                {
+                    key: 'route-ports',
+                    label: 'Route ports',
+                    value: `${routeInspection.sourcePortSemanticId ?? '-'} -> ${routeInspection.targetPortSemanticId ?? '-'}`,
+                    code: true,
+                },
+                { key: 'route-policy', label: 'Route policy', value: routeInspection.policySummary, code: true },
+            ]
+            : [];
 
         return [
             { key: 'project', label: 'Project', value: model.headerTitle, code: true },
@@ -420,6 +436,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             { key: 'endpoint', label: 'Endpoint', value: endpointSummary, code: true },
             { key: 'cross-refs', label: 'Cross refs', value: crossReferenceSummary, code: true },
             { key: 'related', label: 'Related', value: relatedSummary, code: true },
+            ...routeRows,
             { key: 'source', label: 'Source', value: sourceSummary, code: true },
         ];
     }

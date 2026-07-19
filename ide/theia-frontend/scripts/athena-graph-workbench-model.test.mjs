@@ -639,6 +639,126 @@ test('prefers Presentation IR occurrences and symbol commands when the diagram i
     );
     assert.equal(model.edges[0].presentationConnector?.routePoints.length, 4);
     assert.equal(model.edges[0].path, 'M 380 160 L 540 160 L 540 260 L 720 260');
+    assert.equal(model.edges[0].sourcePoint.x, 380);
+    assert.equal(model.edges[0].sourcePoint.y, 160);
+    assert.equal(model.edges[0].targetPoint.x, 720);
+    assert.equal(model.edges[0].targetPoint.y, 260);
+    assert.notDeepEqual(
+        model.edges[0].routePoints,
+        [
+            { x: 180, y: 90 },
+            { x: 180, y: 260 },
+            { x: 628, y: 260 }
+        ]
+    );
+    assert.equal(model.edges[0].terminals[0].anchorId, 'cabinet/projection/label/port_PLC1_out/anchor');
+    assert.equal(model.edges[0].terminals[0].portSemanticId, 'port:PLC1.out');
+    assert.equal(model.edges[0].terminals[1].anchorId, 'cabinet/projection/label/port_M1_in/anchor');
+    assert.equal(model.edges[0].terminals[1].portSemanticId, 'port:M1.in');
+});
+
+test('builds route inspection from governed connector facts without canvas persistence', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [
+            {
+                occurrenceId: 'route:PLC1.out:M1.in',
+                semanticId: 'connection:PLC1.out->M1.in',
+                primitiveId: 'electrical.conductor.orthogonal',
+                routePoints: [
+                    { x: 380, y: 160 },
+                    { x: 540, y: 160 },
+                    { x: 540, y: 260 },
+                    { x: 720, y: 260 }
+                ],
+                layer: 'connection',
+                sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                sourcePortSemanticId: 'port:PLC1.out',
+                targetPortSemanticId: 'port:M1.in',
+                markerKeys: [],
+                tokenOverrides: {
+                    routeQuality: 'SATISFIED',
+                    routeLane: '0',
+                    routeSegmentCount: '3',
+                    routeLabels: 'M1.IN'
+                },
+                sourceProjectionIds: []
+            }
+        ]
+    };
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const inspection = graphWorkbenchModel.buildAthenaGraphRouteInspection(model, 'connection:PLC1.out->M1.in');
+
+    assert.deepEqual(inspection, {
+        status: 'ready',
+        connectionId: 'connection:PLC1.out->M1.in',
+        sourcePortSemanticId: 'port:PLC1.out',
+        targetPortSemanticId: 'port:M1.in',
+        routeQuality: 'SATISFIED',
+        policySummary: 'm24:route-fact:SATISFIED:3-segment',
+        labels: ['M1.IN'],
+        persisted: false
+    });
+    assert.equal(Object.hasOwn(inspection, 'routePoints'), false);
+    assert.equal(Object.hasOwn(inspection, 'canvasCoordinates'), false);
+    assert.equal(graphWorkbenchModel.buildAthenaGraphRouteInspection(model, 'connection:missing').status, 'unavailable');
+});
+
+test('marks deliberate crossings between governed presentation route facts', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [
+            {
+                occurrenceId: 'route:crossing:a',
+                semanticId: 'connection:A.out->B.in',
+                primitiveId: 'electrical.conductor.orthogonal',
+                routePoints: [
+                    { x: 100, y: 200 },
+                    { x: 300, y: 200 }
+                ],
+                layer: 'connection',
+                markerKeys: [],
+                tokenOverrides: { routeLabels: 'A1' },
+                sourceProjectionIds: []
+            },
+            {
+                occurrenceId: 'route:crossing:b',
+                semanticId: 'connection:C.out->D.in',
+                primitiveId: 'electrical.conductor.orthogonal',
+                routePoints: [
+                    { x: 200, y: 100 },
+                    { x: 200, y: 300 }
+                ],
+                layer: 'connection',
+                markerKeys: [],
+                tokenOverrides: { routeLabels: 'B1' },
+                sourceProjectionIds: []
+            }
+        ]
+    };
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.deepEqual(model.edges[0].crossingMarkerPoints, [{ x: 200, y: 200 }]);
+    assert.deepEqual(model.edges[1].crossingMarkerPoints, [{ x: 200, y: 200 }]);
+    assert.equal(model.edges[0].routeLabels[0].text, 'A1');
+    assert.deepEqual(model.edges[0].routeLabels[0].point, { x: 200, y: 184 });
+    assert.equal(model.edges[1].routeLabels[0].text, 'B1');
+    assert.deepEqual(model.edges[1].routeLabels[0].point, { x: 216, y: 200 });
 });
 
 test('keeps schematic sheet chrome and identity mapping deterministic across repeated builds', () => {
