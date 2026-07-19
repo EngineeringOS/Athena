@@ -2,9 +2,18 @@ package com.engineeringood.athena.presentation
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ViewDefinition
+import com.engineeringood.athena.representation.LabelFact
+import com.engineeringood.athena.representation.PresentationAnatomy
+import com.engineeringood.athena.representation.PresentationTerminalFact
+import com.engineeringood.athena.representation.RepresentationOccurrenceId
+import com.engineeringood.athena.representation.RepresentationSubjectId
+import com.engineeringood.athena.representation.SymbolAnatomy
+import com.engineeringood.athena.routing.ElectricalConnectionId
 import com.engineeringood.athena.routing.RouteFact
 import com.engineeringood.athena.routing.RouteFactSnapshot
+import com.engineeringood.athena.routing.RouteQualityState
 import com.engineeringood.athena.routing.RouteLabelFact
+import com.engineeringood.athena.routing.SchematicRouteId
 import com.engineeringood.athena.routing.SchematicRoutePoint
 
 /**
@@ -24,7 +33,62 @@ data class PresentationDocument(
     val occurrences: List<PresentationOccurrence>,
     val connectors: List<PresentationConnector> = emptyList(),
     val routeFactSnapshot: RouteFactSnapshot? = null,
+    val representationFacts: List<PresentationRepresentationFact> = emptyList(),
 )
+
+/** Renderer-facing representation fact carried by Presentation IR. */
+data class PresentationRepresentationFact(
+    val subjectId: RepresentationSubjectId,
+    val occurrenceId: RepresentationOccurrenceId,
+    val symbol: SymbolAnatomy,
+    val anatomy: PresentationAnatomy,
+    val terminals: List<PresentationTerminalFact>,
+    val labels: List<LabelFact>,
+    val sourceProjectionIds: List<String> = emptyList(),
+) {
+    init {
+        require(symbol.anatomy == anatomy) { "Presentation representation fact symbol must wrap the same anatomy." }
+    }
+}
+
+fun PresentationDocument.representationFactsForRendering(): List<PresentationRepresentationFact> =
+    representationFacts.sortedWith(
+        compareBy<PresentationRepresentationFact> { fact -> fact.subjectId.value }
+            .thenBy { fact -> fact.occurrenceId.value },
+    )
+
+data class PresentationRouteAttachmentFact(
+    val routeId: SchematicRouteId,
+    val connectionId: ElectricalConnectionId,
+    val sourcePresentationTerminalId: com.engineeringood.athena.representation.PresentationTerminalId,
+    val targetPresentationTerminalId: com.engineeringood.athena.representation.PresentationTerminalId,
+    val routeQuality: RouteQualityState,
+) {
+    val usesCenterFallback: Boolean
+        get() = false
+}
+
+fun attachRoutesToPresentationTerminals(
+    routeFactSnapshot: RouteFactSnapshot,
+    terminals: List<PresentationTerminalFact>,
+): List<PresentationRouteAttachmentFact> {
+    val terminalsByAnchor = terminals.associateBy { terminal -> terminal.routeAnchor.anchorId.value }
+    return routeFactSnapshot.routeFacts.mapNotNull { route ->
+        val sourceTerminal = terminalsByAnchor[route.source.anchorId.value]
+        val targetTerminal = terminalsByAnchor[route.target.anchorId.value]
+        if (sourceTerminal == null || targetTerminal == null) {
+            null
+        } else {
+            PresentationRouteAttachmentFact(
+                routeId = route.routeId,
+                connectionId = route.connectionId,
+                sourcePresentationTerminalId = sourceTerminal.presentationTerminalId,
+                targetPresentationTerminalId = targetTerminal.presentationTerminalId,
+                routeQuality = route.quality.state,
+            )
+        }
+    }.sortedBy { attachment -> attachment.routeId.value }
+}
 
 /**
  * Renderer-facing connector list. M24 route facts take precedence over legacy edge route points

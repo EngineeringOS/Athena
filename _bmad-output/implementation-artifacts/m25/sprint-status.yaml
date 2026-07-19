@@ -1,6 +1,6 @@
 ---
 generated: 2026-07-19T11:30:00+08:00
-last_updated: 2026-07-19T13:30:00+08:00
+last_updated: 2026-07-19T13:47:44+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -31,11 +31,11 @@ development_status:
   1-3-model-semantic-ports-physical-terminals-and-presentation-terminals: review
   1-4-define-label-facts-and-label-policy: review
   epic-1-retrospective: optional
-  epic-2: backlog
-  2-1-compose-component-knowledge-into-representation-facts: ready-for-dev
-  2-2-integrate-representation-facts-into-presentation-ir: ready-for-dev
-  2-3-attach-m24-route-facts-to-presentation-terminals: ready-for-dev
-  2-4-report-fallback-and-policy-coverage-diagnostics: ready-for-dev
+  epic-2: done
+  2-1-compose-component-knowledge-into-representation-facts: review
+  2-2-integrate-representation-facts-into-presentation-ir: review
+  2-3-attach-m24-route-facts-to-presentation-terminals: review
+  2-4-report-fallback-and-policy-coverage-diagnostics: review
   epic-2-retrospective: optional
   epic-3: backlog
   3-1-render-presentation-primitives-and-schematic-symbol-anatomy: ready-for-dev
