@@ -12,7 +12,9 @@ import {
     AthenaGraphResolvedPresentationOccurrence,
     AthenaGraphResolvedPresentationPart,
     resolvePresentationConnectors,
-    resolvePresentationOccurrences
+    resolvePresentationOccurrences,
+    resolvePresentationRepresentations,
+    AthenaGraphResolvedPresentationRepresentation
 } from './athena-graph-presentation-model';
 
 export type AthenaGraphSceneBounds = {
@@ -233,6 +235,52 @@ export type AthenaGraphRouteInspection =
         persisted: false;
     };
 
+export type AthenaGraphRepresentationInspection =
+    | {
+        status: 'ready';
+        subjectId: string;
+        occurrenceId: string;
+        representationId: string;
+        symbolFamilyId: string;
+        fallback: false;
+        terminals: Array<{
+            terminalId: string;
+            portId: string;
+            physicalTerminalId: string;
+            anchorId: string;
+            side: string;
+            number: string;
+            marker: string;
+        }>;
+        labels: Array<{
+            labelId: string;
+            role: string;
+            value: string;
+            anchorId: string;
+        }>;
+        selectedTerminal?: {
+            terminalId: string;
+            portId: string;
+            physicalTerminalId: string;
+            anchorId: string;
+            side: string;
+            number: string;
+            marker: string;
+        };
+        selectedLabel?: {
+            labelId: string;
+            role: string;
+            value: string;
+            anchorId: string;
+        };
+        persisted: false;
+    }
+    | {
+        status: 'unavailable';
+        reason: string;
+        persisted: false;
+    };
+
 export type AthenaGraphWorkbenchEdgeTerminal = {
     role: 'source' | 'target';
     point: AthenaGLSPPoint;
@@ -257,6 +305,29 @@ export type AthenaGraphWorkbenchNodeAnchor = {
     labelId?: string;
 };
 
+export type AthenaGraphWorkbenchPresentationTerminal = {
+    terminalId: string;
+    subjectId: string;
+    occurrenceId: string;
+    portId: string;
+    physicalTerminalId: string;
+    side: string;
+    marker: string;
+    number: string;
+    point: AthenaGLSPPoint;
+    anchorId: string;
+};
+
+export type AthenaGraphWorkbenchPresentationLabel = {
+    labelId: string;
+    subjectId: string;
+    occurrenceId: string;
+    role: string;
+    value: string;
+    point: AthenaGLSPPoint;
+    anchorId: string;
+};
+
 export type AthenaGraphWorkbenchNode = AthenaGLSPNode & {
     renderVariant: 'generic-component' | 'electrical-device' | 'generic-label' | 'electrical-terminal-label';
     notationSymbolKey?: string;
@@ -265,7 +336,10 @@ export type AthenaGraphWorkbenchNode = AthenaGLSPNode & {
     labelLeader?: AthenaGraphWorkbenchLeaderSegment;
     electricalAnchors: AthenaGraphWorkbenchNodeAnchor[];
     presentationOccurrence?: AthenaGraphResolvedPresentationOccurrence;
+    presentationRepresentation?: AthenaGraphResolvedPresentationRepresentation;
     presentationParts: AthenaGraphResolvedPresentationPart[];
+    presentationTerminals: AthenaGraphWorkbenchPresentationTerminal[];
+    presentationLabels: AthenaGraphWorkbenchPresentationLabel[];
 };
 
 /** Builds one deterministic workbench-facing view model from the adapter-owned graph diagram. */
@@ -286,6 +360,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
     const graphEdges = normalizeArray(graph.edges);
     const presentationOccurrences = resolvePresentationOccurrences(diagram);
     const presentationConnectors = resolvePresentationConnectors(diagram);
+    const presentationRepresentations = resolvePresentationRepresentations(diagram);
     const supportedViews = normalizeArray(diagram.supportedViews);
     const diagnostics = normalizeArray(diagram.diagnostics);
     const sheets = normalizeArray(diagram.sheets);
@@ -311,6 +386,14 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         electricalAnchors.flatMap(anchor => anchor.labelId ? [[anchor.labelId, anchor] as const] : [])
     );
     const endpointsByConnectionId = groupEndpointsByConnectionId(electricalConnectionEndpoints);
+    const representationByProjectionId = new Map(
+        presentationRepresentations.flatMap(representation =>
+            representation.sourceProjectionIds.map(projectionId => [projectionId, representation] as const)
+        ),
+    );
+    const representationBySubjectId = new Map(
+        presentationRepresentations.map(representation => [representation.subjectId, representation] as const),
+    );
     const nodes = presentationOccurrences.length > 0
         ? presentationOccurrences.map(occurrence => buildWorkbenchNodeFromPresentation(
             occurrence,
@@ -325,6 +408,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             anchorsByNodeId,
             anchorByLabelId,
             isElectricalFamily,
+            representationByProjectionId.get(node.id) ?? representationBySubjectId.get(node.semanticId),
         ));
     const rawEdges = presentationConnectors.length > 0
         ? presentationConnectors.map(connector => buildWorkbenchEdgeFromPresentation(
@@ -401,6 +485,68 @@ export function buildAthenaGraphRouteInspection(
         routeQuality,
         policySummary: `m24:route-fact:${routeQuality}:${routeSegmentCount}-segment`,
         labels: edge.routeLabels.map(label => label.text),
+        persisted: false,
+    };
+}
+
+export function buildAthenaGraphRepresentationInspection(
+    model: AthenaGraphWorkbenchModel,
+    semanticId: string,
+): AthenaGraphRepresentationInspection {
+    const node = model.nodes.find(candidate =>
+        candidate.semanticId === semanticId
+        || candidate.id === semanticId
+        || candidate.presentationRepresentation?.occurrenceId === semanticId
+        || candidate.presentationTerminals.some(terminal =>
+            terminal.terminalId === semanticId
+            || terminal.anchorId === semanticId
+            || terminal.portId === semanticId
+        )
+        || candidate.presentationLabels.some(label =>
+            label.labelId === semanticId
+            || label.anchorId === semanticId
+        )
+    );
+    if (!node?.presentationRepresentation) {
+        return {
+            status: 'unavailable',
+            reason: 'No governed representation fact is available for the selected rendered subject.',
+            persisted: false,
+        };
+    }
+    const terminalSummaries = node.presentationTerminals.map(terminal => ({
+        terminalId: terminal.terminalId,
+        portId: terminal.portId,
+        physicalTerminalId: terminal.physicalTerminalId,
+        anchorId: terminal.anchorId,
+        side: terminal.side,
+        number: terminal.number,
+        marker: terminal.marker,
+    }));
+    const labelSummaries = node.presentationLabels.map(label => ({
+        labelId: label.labelId,
+        role: label.role,
+        value: label.value,
+        anchorId: label.anchorId,
+    }));
+    return {
+        status: 'ready',
+        subjectId: node.presentationRepresentation.subjectId,
+        occurrenceId: node.presentationRepresentation.occurrenceId,
+        representationId: node.presentationRepresentation.representationId,
+        symbolFamilyId: node.presentationRepresentation.symbolFamilyId,
+        fallback: false,
+        terminals: terminalSummaries,
+        labels: labelSummaries,
+        selectedTerminal: terminalSummaries.find(terminal =>
+            terminal.terminalId === semanticId
+            || terminal.anchorId === semanticId
+            || terminal.portId === semanticId
+        ),
+        selectedLabel: labelSummaries.find(label =>
+            label.labelId === semanticId
+            || label.anchorId === semanticId
+        ),
         persisted: false,
     };
 }
@@ -963,6 +1109,7 @@ function buildWorkbenchNode(
     anchorsByNodeId: Map<string, AthenaGLSPElectricalAnchorSource[]>,
     anchorByLabelId: Map<string, AthenaGLSPElectricalAnchorSource>,
     isElectricalFamily: boolean,
+    representation: AthenaGraphResolvedPresentationRepresentation | undefined,
 ): AthenaGraphWorkbenchNode {
     const notation = notationBySemanticId.get(node.semanticId);
     const nodeAnchors = normalizeArray(anchorsByNodeId.get(node.id)).map(anchor => ({
@@ -973,7 +1120,9 @@ function buildWorkbenchNode(
         labelId: anchor.labelId,
     }));
     const labelAnchor = node.kind === 'label' ? anchorByLabelId.get(node.id) : undefined;
-    const renderVariant = resolveNodeRenderVariant(node, notation?.symbolKey, labelAnchor, isElectricalFamily);
+    const renderVariant = representation
+        ? 'electrical-device'
+        : resolveNodeRenderVariant(node, notation?.symbolKey, labelAnchor, isElectricalFamily);
 
     return {
         ...node,
@@ -986,7 +1135,16 @@ function buildWorkbenchNode(
             : undefined,
         electricalAnchors: nodeAnchors,
         presentationOccurrence: undefined,
-        presentationParts: [],
+        presentationRepresentation: representation,
+        presentationParts: representation
+            ? scaleRepresentationPartsToNode(representation.parts, node)
+            : [],
+        presentationTerminals: representation
+            ? scaleRepresentationTerminalsToNode(representation, node)
+            : [],
+        presentationLabels: representation
+            ? scaleRepresentationLabelsToNode(representation, node)
+            : [],
     };
 }
 
@@ -1039,8 +1197,120 @@ function buildWorkbenchNodeFromPresentation(
             : undefined,
         electricalAnchors: nodeAnchors,
         presentationOccurrence: occurrence,
+        presentationRepresentation: undefined,
         presentationParts: normalizeArray(occurrence.parts),
+        presentationTerminals: [],
+        presentationLabels: [],
     };
+}
+
+function scaleRepresentationPartsToNode(
+    parts: AthenaGraphResolvedPresentationPart[],
+    node: AthenaGLSPNode,
+): AthenaGraphResolvedPresentationPart[] {
+    return parts.map(part => ({
+        ...part,
+        bounds: {
+            x: node.position.x,
+            y: node.position.y,
+            width: node.size.width,
+            height: node.size.height,
+        },
+        commands: part.commands.map(command => scaleRepresentationCommand(command, part.bounds, node)),
+        textSlots: part.textSlots.map(slot => ({
+            ...slot,
+            x: scaleWithinNode(slot.x, part.bounds.width, node.position.x, node.size.width),
+            y: scaleWithinNode(slot.y, part.bounds.height, node.position.y, node.size.height),
+        })),
+    }));
+}
+
+function scaleRepresentationCommand(
+    command: AthenaGraphResolvedPresentationPart['commands'][number],
+    sourceBounds: AthenaGraphResolvedPresentationPart['bounds'],
+    node: AthenaGLSPNode,
+): AthenaGraphResolvedPresentationPart['commands'][number] {
+    return {
+        ...command,
+        bounds: command.bounds
+            ? {
+                x: scaleWithinNode(command.bounds.x, sourceBounds.width, node.position.x, node.size.width),
+                y: scaleWithinNode(command.bounds.y, sourceBounds.height, node.position.y, node.size.height),
+                width: scaleLengthWithinNode(command.bounds.width, sourceBounds.width, node.size.width),
+                height: scaleLengthWithinNode(command.bounds.height, sourceBounds.height, node.size.height),
+            }
+            : undefined,
+        start: command.start
+            ? {
+                x: scaleWithinNode(command.start.x, sourceBounds.width, node.position.x, node.size.width),
+                y: scaleWithinNode(command.start.y, sourceBounds.height, node.position.y, node.size.height),
+            }
+            : undefined,
+        end: command.end
+            ? {
+                x: scaleWithinNode(command.end.x, sourceBounds.width, node.position.x, node.size.width),
+                y: scaleWithinNode(command.end.y, sourceBounds.height, node.position.y, node.size.height),
+            }
+            : undefined,
+        center: command.center
+            ? {
+                x: scaleWithinNode(command.center.x, sourceBounds.width, node.position.x, node.size.width),
+                y: scaleWithinNode(command.center.y, sourceBounds.height, node.position.y, node.size.height),
+            }
+            : undefined,
+        radius: command.radius === undefined
+            ? undefined
+            : Math.max(1, Math.round(command.radius * Math.min(node.size.width / sourceBounds.width, node.size.height / sourceBounds.height))),
+    };
+}
+
+function scaleWithinNode(value: number, sourceLength: number, targetOrigin: number, targetLength: number): number {
+    return targetOrigin + Math.round((value / sourceLength) * targetLength);
+}
+
+function scaleLengthWithinNode(value: number, sourceLength: number, targetLength: number): number {
+    return Math.round((value / sourceLength) * targetLength);
+}
+
+function scaleRepresentationTerminalsToNode(
+    representation: AthenaGraphResolvedPresentationRepresentation,
+    node: AthenaGLSPNode,
+): AthenaGraphWorkbenchPresentationTerminal[] {
+    const bounds = representation.parts[0]?.bounds ?? { x: 0, y: 0, width: node.size.width, height: node.size.height };
+    return normalizeArray(representation.terminals).map(terminal => ({
+        terminalId: terminal.presentationTerminalId,
+        subjectId: terminal.subjectId,
+        occurrenceId: terminal.occurrenceId,
+        portId: terminal.portId,
+        physicalTerminalId: terminal.physicalTerminalId,
+        side: terminal.side,
+        marker: terminal.notation.marker,
+        number: terminal.notation.number,
+        point: {
+            x: scaleWithinNode(terminal.routeAnchor.point.x, bounds.width, node.position.x, node.size.width),
+            y: scaleWithinNode(terminal.routeAnchor.point.y, bounds.height, node.position.y, node.size.height),
+        },
+        anchorId: terminal.routeAnchor.anchorId,
+    }));
+}
+
+function scaleRepresentationLabelsToNode(
+    representation: AthenaGraphResolvedPresentationRepresentation,
+    node: AthenaGLSPNode,
+): AthenaGraphWorkbenchPresentationLabel[] {
+    const bounds = representation.parts[0]?.bounds ?? { x: 0, y: 0, width: node.size.width, height: node.size.height };
+    return normalizeArray(representation.labels).map(label => ({
+        labelId: label.labelId,
+        subjectId: label.subjectId,
+        occurrenceId: label.occurrenceId,
+        role: label.role,
+        value: label.value,
+        point: {
+            x: scaleWithinNode(label.anchor.point.x, bounds.width, node.position.x, node.size.width),
+            y: scaleWithinNode(label.anchor.point.y, bounds.height, node.position.y, node.size.height),
+        },
+        anchorId: label.anchor.anchorId,
+    }));
 }
 
 function resolveNodeRenderVariant(

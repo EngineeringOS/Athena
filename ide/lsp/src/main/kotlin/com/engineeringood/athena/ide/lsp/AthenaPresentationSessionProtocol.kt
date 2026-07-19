@@ -13,12 +13,25 @@ import com.engineeringood.athena.presentation.PresentationOccurrence
 import com.engineeringood.athena.presentation.PresentationPrimitiveDefinition
 import com.engineeringood.athena.presentation.PresentationPrimitiveOccurrenceReference
 import com.engineeringood.athena.presentation.PresentationPrimitivePack
+import com.engineeringood.athena.presentation.PresentationRepresentationFact
 import com.engineeringood.athena.presentation.PresentationShapeCommand
 import com.engineeringood.athena.presentation.PresentationStrokeLine
 import com.engineeringood.athena.presentation.PresentationStrokeRectangle
 import com.engineeringood.athena.presentation.PresentationSvgPath
 import com.engineeringood.athena.presentation.PresentationTextSlot
 import com.engineeringood.athena.presentation.connectorsForRendering
+import com.engineeringood.athena.presentation.representationFactsForRendering
+import com.engineeringood.athena.representation.LabelFact
+import com.engineeringood.athena.representation.PresentationAnatomy
+import com.engineeringood.athena.representation.PresentationLabelAnchor
+import com.engineeringood.athena.representation.PresentationPoint
+import com.engineeringood.athena.representation.PresentationPrimitive
+import com.engineeringood.athena.representation.PresentationRouteAnchor
+import com.engineeringood.athena.representation.PresentationSize
+import com.engineeringood.athena.representation.PresentationTerminalFact
+import com.engineeringood.athena.representation.PresentationTerminalPoint
+import com.engineeringood.athena.representation.SymbolAnatomy
+import com.engineeringood.athena.representation.TerminalNotation
 
 internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload {
     return AthenaPresentationDocumentPayload(
@@ -28,6 +41,7 @@ internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload
         compositePacks = compositePacks.map(PresentationCompositePack::toPayload),
         occurrences = occurrences.map(PresentationOccurrence::toPayload),
         connectors = connectorsForRendering().map(PresentationConnector::toPayload),
+        representationFacts = representationFactsForRendering().map(PresentationRepresentationFact::toPayload),
     )
 }
 
@@ -201,5 +215,135 @@ private fun PresentationConnector.toPayload(): AthenaPresentationConnectorPayloa
         markerKeys = markerKeys,
         tokenOverrides = tokenOverrides.toSortedMap(),
         sourceProjectionIds = sourceProjectionIds.sorted(),
+    )
+}
+
+private fun PresentationRepresentationFact.toPayload(): AthenaPresentationRepresentationFactPayload {
+    return AthenaPresentationRepresentationFactPayload(
+        subjectId = subjectId.value,
+        occurrenceId = occurrenceId.value,
+        sourceProjectionIds = sourceProjectionIds.sorted(),
+        symbol = symbol.toPayload(),
+        anatomy = anatomy.toPayload(),
+        terminals = terminals.map(PresentationTerminalFact::toPayload),
+        labels = labels.map(LabelFact::toPayload),
+    )
+}
+
+private fun SymbolAnatomy.toPayload(): AthenaPresentationSymbolAnatomyPayload {
+    return AthenaPresentationSymbolAnatomyPayload(
+        familyId = familyId.value,
+    )
+}
+
+private fun PresentationAnatomy.toPayload(): AthenaPresentationAnatomyPayload {
+    return AthenaPresentationAnatomyPayload(
+        representationId = representationId.value,
+        context = context.name.lowercase(),
+        bounds = AthenaPresentationSizePayload(
+            width = bounds.width.value,
+            height = bounds.height.value,
+        ),
+        hotspot = hotspot.point.toPayload(),
+        primitives = primitives.map(PresentationPrimitive::toPayload),
+        terminals = terminals.map(PresentationTerminalPoint::toPayload),
+        labelAnchors = labelAnchors.map(PresentationLabelAnchor::toPayload),
+    )
+}
+
+private fun PresentationPrimitive.toPayload(): AthenaPresentationAnatomyPrimitivePayload {
+    return when (this) {
+        is PresentationPrimitive.Rectangle -> AthenaPresentationAnatomyPrimitivePayload(
+            kind = "rectangle",
+            primitiveId = primitiveId.value,
+            origin = origin.toPayload(),
+            size = AthenaPresentationSizePayload(
+                width = size.width.value,
+                height = size.height.value,
+            ),
+        )
+
+        is PresentationPrimitive.Line -> AthenaPresentationAnatomyPrimitivePayload(
+            kind = "line",
+            primitiveId = primitiveId.value,
+            start = start.toPayload(),
+            end = end.toPayload(),
+        )
+
+        is PresentationPrimitive.Polyline -> AthenaPresentationAnatomyPrimitivePayload(
+            kind = "polyline",
+            primitiveId = primitiveId.value,
+            points = points.map(PresentationPoint::toPayload),
+        )
+
+        is PresentationPrimitive.Circle -> AthenaPresentationAnatomyPrimitivePayload(
+            kind = "circle",
+            primitiveId = primitiveId.value,
+            center = center.toPayload(),
+            radius = radius.value,
+        )
+    }
+}
+
+private fun PresentationTerminalPoint.toPayload(): AthenaPresentationTerminalPointPayload {
+    return AthenaPresentationTerminalPointPayload(
+        terminalId = terminalId.value,
+        role = role.name.lowercase(),
+        localPoint = localPoint.toPayload(),
+        side = side.name.lowercase(),
+        notation = notation.toPayload(),
+    )
+}
+
+private fun PresentationTerminalFact.toPayload(): AthenaPresentationTerminalFactPayload {
+    return AthenaPresentationTerminalFactPayload(
+        presentationTerminalId = presentationTerminalId.value,
+        subjectId = subjectId.value,
+        occurrenceId = occurrenceId.value,
+        portId = portId.value,
+        physicalTerminalId = physicalTerminalId.value,
+        side = side.name.lowercase(),
+        routeAnchor = routeAnchor.toPayload(),
+        notation = notation.toPayload(),
+    )
+}
+
+private fun PresentationRouteAnchor.toPayload(): AthenaPresentationRouteAnchorPayload {
+    return AthenaPresentationRouteAnchorPayload(
+        anchorId = anchorId.value,
+        point = point.toPayload(),
+    )
+}
+
+private fun TerminalNotation.toPayload(): AthenaPresentationTerminalNotationPayload {
+    return AthenaPresentationTerminalNotationPayload(
+        marker = marker.name.lowercase(),
+        number = number.value,
+    )
+}
+
+private fun LabelFact.toPayload(): AthenaPresentationLabelFactPayload {
+    return AthenaPresentationLabelFactPayload(
+        labelId = labelId.value,
+        subjectId = subjectId.value,
+        occurrenceId = occurrenceId.value,
+        role = role.name.lowercase(),
+        value = value.value,
+        anchor = anchor.toPayload(),
+    )
+}
+
+private fun PresentationLabelAnchor.toPayload(): AthenaPresentationLabelAnchorPayload {
+    return AthenaPresentationLabelAnchorPayload(
+        anchorId = anchorId.value,
+        role = role.name.lowercase(),
+        point = point.toPayload(),
+    )
+}
+
+private fun PresentationPoint.toPayload(): AthenaProjectionPointPayload {
+    return AthenaProjectionPointPayload(
+        x = x.value,
+        y = y.value,
     )
 }

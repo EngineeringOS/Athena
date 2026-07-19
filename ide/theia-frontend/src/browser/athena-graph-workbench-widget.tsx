@@ -17,6 +17,7 @@ import {
     type AthenaGraphWorkbenchNode,
     type AthenaGraphViewportSize,
     type AthenaGraphViewportTransform,
+    buildAthenaGraphRepresentationInspection,
     buildAthenaGraphRouteInspection,
     buildAthenaGraphWorkbenchModel,
     clampAthenaGraphZoom,
@@ -412,6 +413,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const routeInspection = selectedSemanticId
             ? buildAthenaGraphRouteInspection(model, selectedSemanticId)
             : undefined;
+        const representationInspection = selectedSemanticId
+            ? buildAthenaGraphRepresentationInspection(model, selectedSemanticId)
+            : undefined;
         const routeRows = routeInspection?.status === 'ready'
             ? [
                 { key: 'route-quality', label: 'Route quality', value: routeInspection.routeQuality },
@@ -422,6 +426,24 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     code: true,
                 },
                 { key: 'route-policy', label: 'Route policy', value: routeInspection.policySummary, code: true },
+            ]
+            : [];
+        const representationRows = representationInspection?.status === 'ready'
+            ? [
+                { key: 'representation-id', label: 'Representation', value: representationInspection.representationId, code: true },
+                { key: 'symbol-family', label: 'Symbol family', value: representationInspection.symbolFamilyId, code: true },
+                {
+                    key: 'terminal-ids',
+                    label: 'Terminals',
+                    value: representationInspection.terminals.map(terminal => `${terminal.terminalId}:${terminal.number}`).join(', ') || '-',
+                    code: true,
+                },
+                {
+                    key: 'label-ids',
+                    label: 'Labels',
+                    value: representationInspection.labels.map(label => `${label.labelId}:${label.role}`).join(', ') || '-',
+                    code: true,
+                },
             ]
             : [];
 
@@ -436,6 +458,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             { key: 'endpoint', label: 'Endpoint', value: endpointSummary, code: true },
             { key: 'cross-refs', label: 'Cross refs', value: crossReferenceSummary, code: true },
             { key: 'related', label: 'Related', value: relatedSummary, code: true },
+            ...representationRows,
             ...routeRows,
             { key: 'source', label: 'Source', value: sourceSummary, code: true },
         ];
@@ -665,6 +688,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             key={node.id}
             className='athena-graph-workbench__element'
             data-athena-graph-interactive='true'
+            data-athena-representation-fact={node.presentationRepresentation ? 'true' : undefined}
+            data-athena-representation-id={node.presentationRepresentation?.representationId}
+            data-athena-render-fallback={node.presentationRepresentation ? 'false' : undefined}
             role='button'
             tabIndex={0}
             transform={node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined}
@@ -702,6 +728,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     labelClassName={labelClassName}
                     selected={selected}
                 />
+                {node.presentationTerminals.map(terminal => this.renderPresentationTerminal(terminal, selected))}
+                {node.presentationLabels.map(label => this.renderPresentationLabel(label, labelClassName))}
                 {node.renderVariant === 'electrical-device'
                     ? node.electricalAnchors.map(anchor => this.renderElectricalNodeAnchor(anchor, selected))
                     : undefined}
@@ -768,6 +796,80 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 </text>
                 : undefined}
         </>;
+    }
+
+    protected renderPresentationTerminal(
+        terminal: AthenaGraphWorkbenchNode['presentationTerminals'][number],
+        selected: boolean,
+    ): React.ReactNode {
+        const markerClassName = `athena-graph-workbench__presentation-terminal ${selected ? 'athena-graph-workbench__presentation-terminal--selected' : ''}`;
+        const numberOffset = terminal.side.toLowerCase() === 'left' ? -34 : 10;
+        const marker = terminal.marker.toLowerCase();
+        return <g
+            key={terminal.terminalId}
+            data-athena-presentation-terminal='true'
+            data-athena-presentation-terminal-id={terminal.terminalId}
+            data-athena-presentation-terminal-number={terminal.number}
+            data-athena-presentation-terminal-anchor-id={terminal.anchorId}
+            onClick={event => {
+                event.stopPropagation();
+                void this.semanticSelectionService.selectSemanticId(terminal.terminalId);
+            }}
+        >
+            {marker === 'square'
+                ? <rect
+                    className={markerClassName}
+                    x={terminal.point.x - 4}
+                    y={terminal.point.y - 4}
+                    width={8}
+                    height={8}
+                    vectorEffect='non-scaling-stroke'
+                />
+                : marker === 'line'
+                    ? <line
+                        className={markerClassName}
+                        x1={terminal.point.x - 5}
+                        y1={terminal.point.y}
+                        x2={terminal.point.x + 5}
+                        y2={terminal.point.y}
+                        vectorEffect='non-scaling-stroke'
+                    />
+                    : <circle
+                        className={markerClassName}
+                        cx={terminal.point.x}
+                        cy={terminal.point.y}
+                        r={5}
+                        vectorEffect='non-scaling-stroke'
+                    />}
+            <text
+                className='athena-graph-workbench__presentation-terminal-number'
+                x={terminal.point.x + numberOffset}
+                y={terminal.point.y - 8}
+            >
+                {terminal.number}
+            </text>
+        </g>;
+    }
+
+    protected renderPresentationLabel(
+        label: AthenaGraphWorkbenchNode['presentationLabels'][number],
+        labelClassName: string,
+    ): React.ReactNode {
+        return <text
+            key={label.labelId}
+            className={`${labelClassName} athena-graph-workbench__presentation-label`}
+            data-athena-presentation-label='true'
+            data-athena-presentation-label-id={label.labelId}
+            data-athena-presentation-label-role={label.role}
+            x={label.point.x}
+            y={label.point.y}
+            onClick={event => {
+                event.stopPropagation();
+                void this.semanticSelectionService.selectSemanticId(label.labelId);
+            }}
+        >
+            {label.value}
+        </text>;
     }
 
     protected renderElectricalNodeAnchor(

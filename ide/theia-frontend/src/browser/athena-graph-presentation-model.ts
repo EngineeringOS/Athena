@@ -6,6 +6,7 @@ import {
     AthenaGLSPPresentationCompositeDefinitionSource,
     AthenaGLSPPresentationOccurrenceSource,
     AthenaGLSPPresentationPrimitiveDefinitionSource,
+    AthenaGLSPPresentationRepresentationFactSource,
     AthenaGLSPPresentationShapeCommandSource
 } from '@engineeringood/athena-graph-glsp';
 
@@ -58,6 +59,19 @@ export type AthenaGraphResolvedPresentationConnector = {
     markerKeys: string[];
     tokenOverrides: Record<string, string>;
     sourceProjectionIds: string[];
+};
+
+export type AthenaGraphResolvedPresentationRepresentation = {
+    subjectId: string;
+    occurrenceId: string;
+    representationId: string;
+    context: string;
+    symbolFamilyId: string;
+    fallback: false;
+    sourceProjectionIds: string[];
+    parts: AthenaGraphResolvedPresentationPart[];
+    terminals: AthenaGLSPPresentationRepresentationFactSource['terminals'];
+    labels: AthenaGLSPPresentationRepresentationFactSource['labels'];
 };
 
 export function resolvePresentationOccurrences(
@@ -115,6 +129,25 @@ export function resolvePresentationConnectors(
         markerKeys: [...(connector.markerKeys ?? [])],
         tokenOverrides: { ...(connector.tokenOverrides ?? {}) },
         sourceProjectionIds: [...(connector.sourceProjectionIds ?? [])],
+    }));
+}
+
+export function resolvePresentationRepresentations(
+    diagram: AthenaGLSPDiagram,
+): AthenaGraphResolvedPresentationRepresentation[] {
+    return (diagram.presentation?.representationFacts ?? []).map(fact => ({
+        subjectId: fact.subjectId,
+        occurrenceId: fact.occurrenceId,
+        representationId: fact.anatomy.representationId,
+        context: fact.anatomy.context,
+        symbolFamilyId: fact.symbol.familyId,
+        fallback: false,
+        sourceProjectionIds: [...(fact.sourceProjectionIds ?? [])],
+        parts: [
+            resolveRepresentationPart(fact),
+        ],
+        terminals: [...(fact.terminals ?? [])],
+        labels: [...(fact.labels ?? [])],
     }));
 }
 
@@ -222,6 +255,88 @@ function resolvePrimitivePart(args: {
         tokenDefaults: { ...(primitive.tokenDefaults ?? {}) },
         tokenOverrides: { ...tokenOverrides },
     };
+}
+
+function resolveRepresentationPart(
+    fact: AthenaGLSPPresentationRepresentationFactSource,
+): AthenaGraphResolvedPresentationPart {
+    const bounds = {
+        x: 0,
+        y: 0,
+        width: fact.anatomy.bounds.width,
+        height: fact.anatomy.bounds.height,
+    };
+    return {
+        partId: fact.anatomy.representationId,
+        primitiveId: fact.symbol.familyId,
+        bounds,
+        commands: (fact.anatomy.primitives ?? []).map(primitive => representationPrimitiveToCommand(primitive, fact)),
+        textSlots: [],
+        tokenDefaults: {
+            stroke: '#202020',
+            strokeWidth: '1.6',
+            label: '#202020',
+        },
+        tokenOverrides: {},
+    };
+}
+
+function representationPrimitiveToCommand(
+    primitive: AthenaGLSPPresentationRepresentationFactSource['anatomy']['primitives'][number],
+    fact: AthenaGLSPPresentationRepresentationFactSource,
+): AthenaGLSPPresentationShapeCommandSource {
+    const sourceBounds = {
+        x: 0,
+        y: 0,
+        width: fact.anatomy.bounds.width,
+        height: fact.anatomy.bounds.height,
+    };
+    switch (primitive.kind) {
+        case 'rectangle':
+            return {
+                kind: 'stroke_rectangle',
+                bounds: {
+                    x: primitive.origin.x,
+                    y: primitive.origin.y,
+                    width: primitive.size.width,
+                    height: primitive.size.height,
+                },
+                strokeTokenKey: 'stroke',
+                strokeWidthTokenKey: 'strokeWidth',
+            };
+        case 'line':
+            return {
+                kind: 'stroke_line',
+                start: { ...primitive.start },
+                end: { ...primitive.end },
+                strokeTokenKey: 'stroke',
+                strokeWidthTokenKey: 'strokeWidth',
+            };
+        case 'circle':
+            return {
+                kind: 'circle',
+                center: { ...primitive.center },
+                radius: primitive.radius,
+                strokeTokenKey: 'stroke',
+                strokeWidthTokenKey: 'strokeWidth',
+            };
+        case 'polyline':
+            return {
+                kind: 'svg_path',
+                pathData: primitive.points
+                    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+                    .join(' '),
+                strokeTokenKey: 'stroke',
+                strokeWidthTokenKey: 'strokeWidth',
+            };
+        default:
+            return {
+                kind: 'stroke_rectangle',
+                bounds: sourceBounds,
+                strokeTokenKey: 'stroke',
+                strokeWidthTokenKey: 'strokeWidth',
+            };
+    }
 }
 
 function scaleShapeCommand(

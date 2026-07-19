@@ -298,5 +298,91 @@ function normalizePresentationDocument(
             tokenOverrides: { ...connector.tokenOverrides },
             sourceProjectionIds: [...normalizeArray(connector.sourceProjectionIds)],
         })),
+        representationFacts: normalizeArray(document.representationFacts).map(fact => ({
+            subjectId: fact.subjectId,
+            occurrenceId: fact.occurrenceId,
+            sourceProjectionIds: [...normalizeArray(fact.sourceProjectionIds)],
+            symbol: {
+                familyId: fact.symbol.familyId,
+            },
+            anatomy: {
+                representationId: fact.anatomy.representationId,
+                context: fact.anatomy.context,
+                bounds: { ...fact.anatomy.bounds },
+                hotspot: { ...fact.anatomy.hotspot },
+                primitives: normalizeArray(fact.anatomy.primitives).map(primitive => normalizeRepresentationPrimitive(primitive)),
+                terminals: normalizeArray(fact.anatomy.terminals).map(terminal => ({
+                    terminalId: terminal.terminalId,
+                    role: terminal.role,
+                    localPoint: { ...terminal.localPoint },
+                    side: terminal.side,
+                    notation: { ...terminal.notation },
+                })),
+                labelAnchors: normalizeArray(fact.anatomy.labelAnchors).map(anchor => ({
+                    anchorId: anchor.anchorId,
+                    role: anchor.role,
+                    point: { ...anchor.point },
+                })),
+            },
+            terminals: normalizeArray(fact.terminals).map(terminal => ({
+                presentationTerminalId: terminal.presentationTerminalId,
+                subjectId: terminal.subjectId,
+                occurrenceId: terminal.occurrenceId,
+                portId: terminal.portId,
+                physicalTerminalId: terminal.physicalTerminalId,
+                side: terminal.side,
+                routeAnchor: {
+                    anchorId: terminal.routeAnchor.anchorId,
+                    point: { ...terminal.routeAnchor.point },
+                },
+                notation: { ...terminal.notation },
+            })),
+            labels: normalizeArray(fact.labels).map(label => ({
+                labelId: label.labelId,
+                subjectId: label.subjectId,
+                occurrenceId: label.occurrenceId,
+                role: label.role,
+                value: label.value,
+                anchor: {
+                    anchorId: label.anchor.anchorId,
+                    role: label.anchor.role,
+                    point: { ...label.anchor.point },
+                },
+            })),
+        })),
     };
+}
+
+function normalizeRepresentationPrimitive(
+    primitive: NonNullable<NonNullable<AthenaGLSPReadyProjectionSource['presentation']>['representationFacts']>[number]['anatomy']['primitives'][number],
+): NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['representationFacts']>[number]['anatomy']['primitives'][number] {
+    switch (primitive.kind) {
+        case 'line':
+            return {
+                kind: primitive.kind,
+                primitiveId: primitive.primitiveId,
+                start: { ...primitive.start },
+                end: { ...primitive.end },
+            };
+        case 'rectangle':
+            return {
+                kind: primitive.kind,
+                primitiveId: primitive.primitiveId,
+                origin: { ...primitive.origin },
+                size: { ...primitive.size },
+            };
+        case 'polyline':
+            return {
+                kind: primitive.kind,
+                primitiveId: primitive.primitiveId,
+                points: normalizeArray(primitive.points).map(point => ({ ...point })),
+            };
+        case 'circle':
+            return {
+                kind: primitive.kind,
+                primitiveId: primitive.primitiveId,
+                center: { ...primitive.center },
+                radius: primitive.radius,
+            };
+    }
 }

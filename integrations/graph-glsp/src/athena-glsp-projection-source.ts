@@ -181,6 +181,7 @@ export type AthenaGLSPPresentationDocumentSource = {
     compositePacks: AthenaGLSPPresentationCompositePackSource[];
     occurrences: AthenaGLSPPresentationOccurrenceSource[];
     connectors: AthenaGLSPPresentationConnectorSource[];
+    representationFacts?: AthenaGLSPPresentationRepresentationFactSource[];
 };
 
 export type AthenaGLSPPresentationPrimitivePackSource = {
@@ -297,4 +298,100 @@ export type AthenaGLSPPresentationAnchorBindingSource = {
     portSemanticId?: string;
     ownerSemanticId?: string;
     sourceLabelId?: string;
+};
+
+export type AthenaGLSPPresentationRepresentationFactSource = {
+    subjectId: string;
+    occurrenceId: string;
+    sourceProjectionIds: string[];
+    symbol: AthenaGLSPSymbolAnatomySource;
+    anatomy: AthenaGLSPPresentationAnatomySource;
+    terminals: AthenaGLSPPresentationTerminalFactSource[];
+    labels: AthenaGLSPLabelFactSource[];
+};
+
+export type AthenaGLSPSymbolAnatomySource = {
+    familyId: string;
+};
+
+export type AthenaGLSPPresentationAnatomySource = {
+    representationId: string;
+    context: string;
+    bounds: AthenaGLSPPresentationSizeSource;
+    hotspot: AthenaGLSPPoint;
+    primitives: AthenaGLSPPresentationPrimitiveSource[];
+    terminals: AthenaGLSPPresentationTerminalPointSource[];
+    labelAnchors: AthenaGLSPPresentationLabelAnchorSource[];
+};
+
+export type AthenaGLSPPresentationPrimitiveSource =
+    | {
+        kind: 'line';
+        primitiveId: string;
+        start: AthenaGLSPPoint;
+        end: AthenaGLSPPoint;
+    }
+    | {
+        kind: 'rectangle';
+        primitiveId: string;
+        origin: AthenaGLSPPoint;
+        size: AthenaGLSPPresentationSizeSource;
+    }
+    | {
+        kind: 'polyline';
+        primitiveId: string;
+        points: AthenaGLSPPoint[];
+    }
+    | {
+        kind: 'circle';
+        primitiveId: string;
+        center: AthenaGLSPPoint;
+        radius: number;
+    };
+
+export type AthenaGLSPPresentationSizeSource = {
+    width: number;
+    height: number;
+};
+
+export type AthenaGLSPPresentationTerminalPointSource = {
+    terminalId: string;
+    role: string;
+    localPoint: AthenaGLSPPoint;
+    side: string;
+    notation: AthenaGLSPTerminalNotationSource;
+};
+
+export type AthenaGLSPPresentationTerminalFactSource = {
+    presentationTerminalId: string;
+    subjectId: string;
+    occurrenceId: string;
+    portId: string;
+    physicalTerminalId: string;
+    side: string;
+    routeAnchor: {
+        anchorId: string;
+        point: AthenaGLSPPoint;
+    };
+    notation: AthenaGLSPTerminalNotationSource;
+};
+
+export type AthenaGLSPTerminalNotationSource = {
+    marker: string;
+    number: string;
+};
+
+export type AthenaGLSPPresentationLabelAnchorSource = {
+    anchorId: string;
+    role: string;
+    point: AthenaGLSPPoint;
+};
+
+export type AthenaGLSPLabelFactSource = {
+    labelId: string;
+    subjectId: string;
+    occurrenceId: string;
+    role: string;
+    value: string;
+    anchor: AthenaGLSPPresentationLabelAnchorSource;
 };

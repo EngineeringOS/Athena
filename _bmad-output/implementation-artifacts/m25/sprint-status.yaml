@@ -1,6 +1,6 @@
 ---
 generated: 2026-07-19T11:30:00+08:00
-last_updated: 2026-07-19T13:47:44+08:00
+last_updated: 2026-07-19T16:47:40+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -37,11 +37,11 @@ development_status:
   2-3-attach-m24-route-facts-to-presentation-terminals: review
   2-4-report-fallback-and-policy-coverage-diagnostics: review
   epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-render-presentation-primitives-and-schematic-symbol-anatomy: ready-for-dev
-  3-2-render-presentation-terminals-and-label-facts: ready-for-dev
-  3-3-add-representation-terminal-and-label-inspection: ready-for-dev
-  3-4-preserve-accepted-graph-workbench-behavior-and-frontend-boundary: ready-for-dev
+  epic-3: done
+  3-1-render-presentation-primitives-and-schematic-symbol-anatomy: review
+  3-2-render-presentation-terminals-and-label-facts: review
+  3-3-add-representation-terminal-and-label-inspection: review
+  3-4-preserve-accepted-graph-workbench-behavior-and-frontend-boundary: review
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-create-the-openable-m25-sample-project: ready-for-dev

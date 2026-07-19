@@ -1154,16 +1154,33 @@
 }
 
 .athena-graph-workbench__edge-terminal,
-.athena-graph-workbench__edge-marker {
+.athena-graph-workbench__edge-marker,
+.athena-graph-workbench__edge-crossing {
     fill: var(--athena-graph-terminal-fill);
     stroke: var(--athena-graph-terminal-stroke);
     stroke-width: 1.6;
 }
 
 .athena-graph-workbench__edge-terminal--selected,
-.athena-graph-workbench__edge-marker--selected {
+.athena-graph-workbench__edge-marker--selected,
+.athena-graph-workbench__edge-crossing--selected {
     fill: var(--athena-graph-terminal-selected-fill);
     stroke: var(--athena-graph-terminal-selected-stroke);
+}
+
+.athena-graph-workbench__edge-crossing {
+    fill: var(--athena-graph-canvas-bg);
+    stroke-width: 1.4;
+}
+
+.athena-graph-workbench__edge-label {
+    fill: var(--theia-foreground);
+    font-size: 11px;
+    font-weight: 600;
+    paint-order: stroke;
+    pointer-events: none;
+    stroke: var(--athena-graph-canvas-bg);
+    stroke-width: 4px;
 }
 
 .athena-graph-workbench__node {
@@ -1230,6 +1247,29 @@
 .athena-graph-workbench__node-anchor {
     stroke: var(--athena-graph-node-stroke);
     stroke-width: 1.4;
+}
+
+.athena-graph-workbench__presentation-terminal {
+    fill: var(--athena-graph-canvas-bg);
+    stroke: var(--athena-graph-node-stroke);
+    stroke-width: 1.4;
+}
+
+.athena-graph-workbench__presentation-terminal--selected {
+    stroke: var(--athena-graph-node-selected-stroke);
+    stroke-width: 1.8;
+}
+
+.athena-graph-workbench__presentation-terminal-number,
+.athena-graph-workbench__presentation-label {
+    fill: var(--athena-graph-node-label);
+    font-size: 11px;
+    font-weight: 650;
+    paint-order: stroke;
+    pointer-events: none;
+    stroke: var(--athena-graph-canvas-bg);
+    stroke-width: 3px;
+    user-select: none;
 }
 
 .athena-graph-workbench__label-leader--selected,

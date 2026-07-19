@@ -88,7 +88,41 @@ const readyProjectionSession = {
             ],
             compositePacks: [],
             occurrences: [],
-            connectors: []
+            connectors: [],
+            representationFacts: [
+                {
+                    subjectId: 'component:PLC1',
+                    occurrenceId: 'representation:PLC1@schematic-sheet',
+                    sourceProjectionIds: ['cabinet/projection/node/component_PLC1'],
+                    symbol: {
+                        familyId: 'plc-controller'
+                    },
+                    anatomy: {
+                        representationId: 'athena-industrial-control-v0:plc-controller',
+                        context: 'electrical_schematic',
+                        bounds: { width: 80, height: 48 },
+                        hotspot: { x: 0, y: 0 },
+                        primitives: [
+                            {
+                                kind: 'rectangle',
+                                primitiveId: 'plc-controller:body',
+                                origin: { x: 0, y: 0 },
+                                size: { width: 80, height: 48 }
+                            },
+                            {
+                                kind: 'line',
+                                primitiveId: 'plc-controller:terminal-line',
+                                start: { x: 60, y: 24 },
+                                end: { x: 80, y: 24 }
+                            }
+                        ],
+                        terminals: [],
+                        labelAnchors: []
+                    },
+                    terminals: [],
+                    labels: []
+                }
+            ]
         },
         activeSheetId: 'cabinet/sheet/01-main',
         sheets: [
@@ -271,6 +305,9 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.electricalConnectionEndpoints.length, 2);
     assert.equal(diagram.electricalRoutingCorridors.length, 1);
     assert.equal(diagram.presentation?.primitivePacks[0].primitives[1].commands[0].kind, 'svg_path');
+    assert.equal(diagram.presentation?.representationFacts[0].subjectId, 'component:PLC1');
+    assert.equal(diagram.presentation?.representationFacts[0].anatomy.primitives[1].kind, 'line');
+    assert.deepEqual(diagram.presentation?.representationFacts[0].sourceProjectionIds, ['cabinet/projection/node/component_PLC1']);
     assert.equal(
         diagram.presentation?.primitivePacks[0].primitives[1].commands[0].pathData,
         'M 8 8 L 8 24 M 24 8 L 24 24 M 8 20 L 24 12'
