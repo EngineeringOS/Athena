@@ -16,6 +16,7 @@ function readRepoFile(path) {
 test('M25 graph workbench renders governed representation terminal and label DOM markers', () => {
     const widgetSource = readRepoFile('ide/theia-frontend/src/browser/athena-graph-workbench-widget.tsx');
     const modelSource = readRepoFile('ide/theia-frontend/src/browser/athena-graph-workbench-model.ts');
+    const presentationNodeSource = readRepoFile('ide/theia-frontend/src/browser/athena-graph-workbench-presentation-node.tsx');
 
     assert.match(widgetSource, /data-athena-representation-fact=\{node\.presentationRepresentation \? 'true' : undefined\}/);
     assert.match(widgetSource, /data-athena-render-fallback=\{node\.presentationRepresentation \? 'false' : undefined\}/);
@@ -23,6 +24,9 @@ test('M25 graph workbench renders governed representation terminal and label DOM
     assert.match(widgetSource, /data-athena-presentation-terminal-number=\{terminal\.number\}/);
     assert.match(widgetSource, /data-athena-presentation-label='true'/);
     assert.match(widgetSource, /data-athena-presentation-label-role=\{label\.role\}/);
+    assert.match(presentationNodeSource, /const hasPartTextSlots = node\.presentationParts\.some/);
+    assert.match(presentationNodeSource, /const renderOccurrenceTextSlots = !node\.presentationRepresentation && !hasPartTextSlots/);
+    assert.match(presentationNodeSource, /renderOccurrenceTextSlots \? occurrence\.textSlots\.map/);
     assert.match(modelSource, /presentationTerminals: representation/);
     assert.match(modelSource, /presentationLabels: representation/);
 });

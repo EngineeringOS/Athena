@@ -291,10 +291,13 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     }
 
     private fun adaptDevice(context: AthenaParser.DeviceDeclContext): DeviceDeclaration {
+        val deviceName = context.ident().text
+        val members = context.deviceMember()
         return DeviceDeclaration(
-            name = context.ident().text,
-            fields = context.propertyAssignment().map { adaptProperty(it) },
+            name = deviceName,
+            fields = members.mapNotNull { it.propertyAssignment()?.let { property -> adaptProperty(property) } },
             span = spanOfContext(context.start, context.stop),
+            nestedPorts = members.mapNotNull { it.nestedPortDecl()?.let { port -> adaptNestedPort(deviceName, port) } },
         )
     }
 
@@ -305,6 +308,21 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         )
         return PortDeclaration(
             qualifiedName = qualifiedName,
+            fields = context.propertyAssignment().map { adaptProperty(it) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptNestedPort(
+        ownerName: String,
+        context: AthenaParser.NestedPortDeclContext,
+    ): PortDeclaration {
+        val nameContext = context.ident()
+        return PortDeclaration(
+            qualifiedName = QualifiedName(
+                parts = listOf(ownerName, nameContext.text),
+                span = spanOfContext(nameContext.start, nameContext.stop),
+            ),
             fields = context.propertyAssignment().map { adaptProperty(it) },
             span = spanOfContext(context.start, context.stop),
         )

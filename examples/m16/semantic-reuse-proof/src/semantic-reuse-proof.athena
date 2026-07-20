@@ -1,2 +1,30 @@
 system SemanticReuseProof {
+
+  device PlcCpu {
+    type Switch
+    componentRef "electrical.plc.cpu"
+    vendorPartNumber "proof.cpu.313c"
+    label "PlcCpu"
+  }
+
+  port PlcCpu.lplus {
+    direction in
+    signal Power24
+  }
+
+  port PlcCpu.m {
+    direction in
+    signal Common24
+  }
+
+  port PlcCpu.pe {
+    direction in
+    signal ProtectiveEarth
+  }
+
+  port PlcCpu.mpi {
+    direction out
+    signal MPIBus
+    protocol mpi
+  }
 }

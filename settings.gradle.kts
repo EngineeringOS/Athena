@@ -52,6 +52,7 @@ include(
     ":kernel:authoring-model",
     ":kernel:reuse-model",
     ":kernel:template-model",
+    ":kernel:spatial-model",
     ":kernel:layout-model",
     ":kernel:layout-engine",
     ":kernel:routing-model",

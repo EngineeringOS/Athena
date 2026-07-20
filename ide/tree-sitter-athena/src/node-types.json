@@ -108,6 +108,10 @@
       "required": false,
       "types": [
         {
+          "type": "nested_port_declaration",
+          "named": true
+        },
+        {
           "type": "property_assignment",
           "named": true
         }
@@ -220,6 +224,32 @@
         },
         {
           "type": "place_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "nested_port_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "property_assignment",
           "named": true
         }
       ]

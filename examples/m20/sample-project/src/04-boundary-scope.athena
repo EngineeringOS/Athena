@@ -1,0 +1,24 @@
+package com.engineeringood.m20.sample
+
+system BoundaryScopeShowcase {
+  device BoundarySwitch {
+    type Switch
+    model "Boundary"
+  }
+
+  device BoundaryLamp {
+    type Lamp
+  }
+
+  port BoundarySwitch.out {
+    direction out
+    signal Control24V
+  }
+
+  port BoundaryLamp.in {
+    direction in
+    signal Control24V
+  }
+
+  connect BoundarySwitch.out -> BoundaryLamp.in
+}

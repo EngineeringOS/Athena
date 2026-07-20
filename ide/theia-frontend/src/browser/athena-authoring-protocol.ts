@@ -7,7 +7,7 @@ export type AthenaAuthoringValuePayload = {
 
 export type AthenaAuthoringPreviewParams = {
     intentId: string;
-    intentKind: 'create-component' | 'update-component-properties' | 'connect-ports' | 'reveal-subject';
+    intentKind: 'create-component' | 'update-component-properties' | 'connect-ports' | 'semantic-relationship' | 'reveal-subject';
     originSurface: 'palette' | 'inspector' | 'graph' | 'form' | 'template' | 'ai' | 'api' | 'dsl';
     originDetail?: string;
     parentIdentity?: string;
@@ -18,6 +18,13 @@ export type AthenaAuthoringPreviewParams = {
     properties?: Record<string, AthenaAuthoringValuePayload>;
     sourcePortId?: string;
     targetPortId?: string;
+    relationshipType?: string;
+    sourceSubjectId?: string;
+    targetSubjectId?: string;
+    projectionViewId?: string;
+    projectionOccurrenceId?: string;
+    persistenceSourceUri?: string;
+    provenance?: string;
     subjectId?: string;
     revealTargets?: Array<'source' | 'graph' | 'inspector' | 'semantic-scm'>;
 };
@@ -141,6 +148,32 @@ export function buildConnectPortsPreviewRequest(input: {
         originDetail: input.originDetail,
         sourcePortId: input.sourcePortId,
         targetPortId: input.targetPortId,
+    };
+}
+
+export function buildSemanticRelationshipPreviewRequest(input: {
+    relationshipType?: string;
+    sourceSubjectId: string;
+    targetSubjectId: string;
+    projectionViewId?: string;
+    projectionOccurrenceId?: string;
+    persistenceSourceUri?: string;
+    provenance?: string;
+    originDetail?: string;
+    intentId?: string;
+}): AthenaAuthoringPreviewParams {
+    return {
+        intentId: input.intentId ?? `intent-${Date.now()}`,
+        intentKind: 'semantic-relationship',
+        originSurface: 'graph',
+        originDetail: input.originDetail,
+        relationshipType: input.relationshipType ?? 'ElectricalConnectionRelationship',
+        sourceSubjectId: input.sourceSubjectId,
+        targetSubjectId: input.targetSubjectId,
+        projectionViewId: input.projectionViewId,
+        projectionOccurrenceId: input.projectionOccurrenceId,
+        persistenceSourceUri: input.persistenceSourceUri,
+        provenance: input.provenance,
     };
 }
 

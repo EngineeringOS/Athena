@@ -37,6 +37,78 @@ class ProjectSemanticDeclarationIndexerTest {
     }
 
     @Test
+    fun `indexes nested device owned ports with canonical owner dot port name`() {
+        val rootId = PackageIdentifier("com.root", "1")
+        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
+        val rootDeclarations = declarations(
+            "nested.athena",
+            """
+            package com.root
+            system Root {
+              device PLC1 {
+                port out {
+                  direction out
+                  signal Digital
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+        val source = sourceUnit(rootKey, "nested.athena", "nested", rootDeclarations)
+        val namespace = namespace(rootKey, listOf("com", "root"), listOf(source.sourceUnitId))
+
+        val indexed = ProjectSemanticDeclarationIndexer().index(
+            snapshot(rootKey, listOf(ProjectSemanticPackage(rootId, rootKey, "src", emptyList())), listOf(source), listOf(namespace)),
+        )
+
+        assertEquals(
+            listOf(
+                "port:PLC1.out",
+                "device:PLC1",
+            ),
+            indexed.declarations.map { "${it.kind}:${it.qualifiedAuthoredName.joinToString(".")}" },
+        )
+        assertEquals(emptyList(), indexed.diagnostics)
+    }
+
+    @Test
+    fun `reports duplicate identity when nested and top level ports declare the same owner dot port`() {
+        val rootId = PackageIdentifier("com.root", "1")
+        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
+        val rootDeclarations = declarations(
+            "duplicate-nested-port.athena",
+            """
+            package com.root
+            system Root {
+              device PLC1 {
+                port out {
+                  direction out
+                  signal Digital
+                }
+              }
+
+              port PLC1.out {
+                direction out
+                signal Digital
+              }
+            }
+            """.trimIndent(),
+        )
+        val source = sourceUnit(rootKey, "duplicate-nested-port.athena", "duplicate nested port", rootDeclarations)
+        val namespace = namespace(rootKey, listOf("com", "root"), listOf(source.sourceUnitId))
+
+        val indexed = ProjectSemanticDeclarationIndexer().index(
+            snapshot(rootKey, listOf(ProjectSemanticPackage(rootId, rootKey, "src", emptyList())), listOf(source), listOf(namespace)),
+        )
+
+        assertEquals(
+            listOf("semantic.declaration.duplicate"),
+            indexed.diagnostics.map { it.code.value },
+        )
+        assertEquals("Duplicate authored port declaration `PLC1.out`.", indexed.diagnostics.single().message)
+    }
+
+    @Test
     fun `keeps declaration records deterministic from reversed raw collections`() {
         val fixture = declarationFixture()
         val reversed = snapshot(

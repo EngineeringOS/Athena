@@ -59,3 +59,43 @@ system Demo {
           (property_name)
           (string
             (string_content)))))))
+
+==============================
+Nested device-owned port declaration
+==============================
+
+system Demo {
+  device SpareTerminalXT99 {
+    type Switch
+    model "SPARE-XT"
+
+    port in1 {
+      direction in
+      signal Digital
+    }
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (string
+            (string_content)))
+        (nested_port_declaration
+          name: (name)
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier)))))))

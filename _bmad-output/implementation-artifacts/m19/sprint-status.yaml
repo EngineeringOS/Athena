@@ -1,5 +1,5 @@
 # generated: 2026-07-16T13:48:28.4162698+08:00
-# last_updated: 2026-07-16T21:18:00+08:00
+# last_updated: 2026-07-16T21:32:00+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-16T13:48:28.4162698+08:00
-last_updated: 2026-07-16T21:18:00+08:00
+last_updated: 2026-07-16T21:32:00+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -61,4 +61,18 @@ development_status:
   epic-3: done
   3-1-make-cabinet-preview-a-deferred-boundary: done
   3-2-keep-ecosystem-expansion-out-of-m19: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
+
+action_items:
+  - epic: 3
+    action: "Keep the M19 boundary guardrails in future milestone planning."
+    owner: "Product/Architecture"
+    status: open
+  - epic: 3
+    action: "Preserve canonical-id-based reveal and selection behavior in later frontend work."
+    owner: "Frontend/LSP"
+    status: open
+  - epic: 3
+    action: "Reuse the M19 usage and proof-corpus pattern for the next customer-facing milestone."
+    owner: "Documentation"
+    status: open

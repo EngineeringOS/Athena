@@ -1,0 +1,24 @@
+package com.engineeringood.m20.sample
+
+system AcceptanceSheetShowcase {
+  device AcceptanceSW1 {
+    type Switch
+    model "Main"
+  }
+
+  device AcceptanceM1 {
+    type Motor
+  }
+
+  port AcceptanceSW1.out {
+    direction out
+    signal Control24V
+  }
+
+  port AcceptanceM1.in {
+    direction in
+    signal Control24V
+  }
+
+  connect AcceptanceSW1.out -> AcceptanceM1.in
+}

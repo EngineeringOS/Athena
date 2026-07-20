@@ -14,8 +14,13 @@ import com.engineeringood.athena.authoring.AuthoringSurface
 import com.engineeringood.athena.authoring.AuthoringValue
 import com.engineeringood.athena.authoring.ConnectPortsIntent
 import com.engineeringood.athena.authoring.CreateComponentIntent
+import com.engineeringood.athena.authoring.ElectricalConnectionRelationship
 import com.engineeringood.athena.authoring.RejectAuthoringPreviewDecision
 import com.engineeringood.athena.authoring.RevealSubjectIntent
+import com.engineeringood.athena.authoring.SemanticRelationshipIntent
+import com.engineeringood.athena.authoring.SemanticRelationshipPersistenceTarget
+import com.engineeringood.athena.authoring.SemanticRelationshipProjectionContext
+import com.engineeringood.athena.authoring.SemanticRelationshipType
 import com.engineeringood.athena.authoring.UpdateComponentPropertiesIntent
 import com.engineeringood.athena.component.EngineeringConceptId
 import com.engineeringood.athena.ir.StableSemanticIdentity
@@ -60,6 +65,13 @@ data class AthenaAuthoringPreviewParams(
     val properties: Map<String, AthenaAuthoringValuePayload> = emptyMap(),
     val sourcePortId: String? = null,
     val targetPortId: String? = null,
+    val relationshipType: String? = null,
+    val sourceSubjectId: String? = null,
+    val targetSubjectId: String? = null,
+    val projectionViewId: String? = null,
+    val projectionOccurrenceId: String? = null,
+    val persistenceSourceUri: String? = null,
+    val provenance: String? = null,
     val subjectId: String? = null,
     val revealTargets: List<String> = emptyList(),
 )
@@ -169,6 +181,22 @@ internal fun AthenaAuthoringPreviewParams.toRuntimeIntent(): AuthoringIntent {
             targetPortId = StableSemanticIdentity(requireString(targetPortId, "targetPortId")),
         )
 
+        "semantic-relationship" -> SemanticRelationshipIntent(
+            intentId = AuthoringIntentId(intentId),
+            origin = origin,
+            relationshipType = relationshipType.toSemanticRelationshipType(),
+            sourceSubjectId = StableSemanticIdentity(requireString(sourceSubjectId, "sourceSubjectId")),
+            targetSubjectId = StableSemanticIdentity(requireString(targetSubjectId, "targetSubjectId")),
+            projectionContext = SemanticRelationshipProjectionContext(
+                viewId = projectionViewId?.takeIf { value -> value.isNotBlank() },
+                occurrenceId = projectionOccurrenceId?.takeIf { value -> value.isNotBlank() },
+            ),
+            persistenceTarget = SemanticRelationshipPersistenceTarget(
+                sourceUri = persistenceSourceUri?.takeIf { value -> value.isNotBlank() },
+            ),
+            provenance = provenance?.takeIf { value -> value.isNotBlank() },
+        )
+
         "reveal-subject" -> RevealSubjectIntent(
             intentId = AuthoringIntentId(intentId),
             origin = origin,
@@ -177,7 +205,7 @@ internal fun AthenaAuthoringPreviewParams.toRuntimeIntent(): AuthoringIntent {
         )
 
         else -> error(
-            "Athena authoring intentKind must be one of create-component, update-component-properties, connect-ports, or reveal-subject.",
+            "Athena authoring intentKind must be one of create-component, update-component-properties, connect-ports, semantic-relationship, or reveal-subject.",
         )
     }
 }
@@ -297,7 +325,16 @@ private fun AuthoringIntent.toProtocolIntentKind(): String {
         is CreateComponentIntent -> "create-component"
         is UpdateComponentPropertiesIntent -> "update-component-properties"
         is ConnectPortsIntent -> "connect-ports"
+        is SemanticRelationshipIntent -> "semantic-relationship"
         is RevealSubjectIntent -> "reveal-subject"
+    }
+}
+
+private fun String?.toSemanticRelationshipType(): SemanticRelationshipType {
+    val normalized = requireString(this, "relationshipType")
+    return when (normalized) {
+        ElectricalConnectionRelationship.value -> ElectricalConnectionRelationship
+        else -> SemanticRelationshipType(normalized)
     }
 }
 

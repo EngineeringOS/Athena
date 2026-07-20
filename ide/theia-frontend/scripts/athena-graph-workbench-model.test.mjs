@@ -325,7 +325,9 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
             isActiveSheetLinked: true
         }
     ]);
-    assert.equal(model.svgViewBox, '0 0 1440 900');
+    assert.equal(model.svgViewBox, '120 80 600 188');
+    assert.equal(model.canvas.width, 600);
+    assert.equal(model.canvas.height, 188);
     assert.equal(model.metrics.nodeCount, 3);
     assert.equal(model.metrics.edgeCount, 1);
     assert.equal(model.sceneBounds.minX, 120);
@@ -396,6 +398,218 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
         }
     ]);
     assert.equal(model.emptyState, undefined);
+});
+
+test('uses governed presentation sheet surface facts before canvas-derived sheet chrome', () => {
+    const diagram = {
+        ...readyDiagram,
+        presentation: {
+            canvasWidth: 1700,
+            canvasHeight: 1100,
+            primitivePacks: [],
+            compositePacks: [],
+            occurrences: [],
+            connectors: [],
+            sheetSurface: {
+                surfaceId: 'presentation/sheet-surface/a3-landscape',
+                source: 'presentation-ir',
+                frame: {
+                    width: 1680,
+                    height: 1080,
+                    margins: {
+                        top: 40,
+                        right: 48,
+                        bottom: 72,
+                        left: 48
+                    },
+                    zoneColumns: ['1', '2', '3', '4', '5', '6'],
+                    zoneRows: ['A', 'B', 'C', 'D']
+                },
+                grid: {
+                    majorStep: 96,
+                    minorStep: 24
+                },
+                titleBlock: {
+                    fields: [
+                        { role: 'project', label: 'Project', value: 'FactoryLine' },
+                        { role: 'sheet', label: 'Sheet', value: 'Cabinet Main' },
+                        { role: 'policy', label: 'Policy', value: 'athena-m27-sheet-surface-v0' }
+                    ]
+                },
+                metadata: {
+                    sheetSize: 'A3',
+                    orientation: 'landscape',
+                    projectionPolicyId: 'athena-m27-sheet-surface-v0'
+                }
+            }
+        }
+    };
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const second = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.sheetChrome.frame.width, 1680);
+    assert.equal(model.sheetChrome.frame.height, 1080);
+    assert.deepEqual(model.sheetChrome.frame.margins, {
+        top: 40,
+        right: 48,
+        bottom: 72,
+        left: 48
+    });
+    assert.deepEqual(model.sheetChrome.frame.zoneColumns, ['1', '2', '3', '4', '5', '6']);
+    assert.deepEqual(model.sheetChrome.frame.zoneRows, ['A', 'B', 'C', 'D']);
+    assert.deepEqual(model.sheetChrome.grid, {
+        majorStep: 96,
+        minorStep: 24
+    });
+    assert.deepEqual(model.sheetChrome.titleBlock?.fields, [
+        { role: 'project', label: 'Project', value: 'FactoryLine' },
+        { role: 'sheet', label: 'Sheet', value: 'Cabinet Main' },
+        { role: 'policy', label: 'Policy', value: 'athena-m27-sheet-surface-v0' }
+    ]);
+    assert.equal(model.sheetChrome.metadata?.sheetSize, 'A3');
+    assert.equal(model.sheetChrome.metadata?.orientation, 'landscape');
+    assert.equal(model.svgViewBox, '120 80 600 188');
+    assert.equal(model.canvas.width, 600);
+    assert.equal(model.canvas.height, 188);
+    assert.deepEqual(second.sheetChrome, model.sheetChrome);
+});
+
+test('keeps projection publication sheet chrome separate from active content bounds when no presentation surface exists', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.graph.canvas = {
+        width: 2120,
+        height: 172
+    };
+    diagram.presentation = undefined;
+    diagram.sheets = [
+        {
+            ...diagram.sheets[0],
+            publication: {
+                pageSize: {
+                    format: 'A3',
+                    orientation: 'landscape'
+                },
+                frame: {
+                    frameId: 'engineering-sheet-frame',
+                    style: 'schematic'
+                },
+                coordinateZones: [],
+                titleBlock: {
+                    sheetTitle: 'Power Distribution',
+                    sheetFamily: 'documentation',
+                    sheetNumber: '01'
+                },
+                revisionMetadata: {
+                    revisionCode: 'A',
+                    revisionNote: 'Initial governed sheet publication'
+                },
+                viewComposition: {
+                    primaryViewId: 'documentation',
+                    primarySheetOrder: 0,
+                    subjectSemanticIds: ['component:PLC1']
+                }
+            }
+        }
+    ];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.sheetChrome.frame.width, 1680);
+    assert.equal(model.sheetChrome.frame.height, 1188);
+    assert.equal(model.sheetChrome.frame.source, 'projection-sheet-publication');
+    assert.equal(model.sheetChrome.metadata?.sheetSize, 'A3');
+    assert.equal(model.sheetChrome.metadata?.orientation, 'landscape');
+    assert.notEqual(model.svgViewBox, '0 0 1680 1188');
+    assert.equal(model.svgViewBox, '120 80 600 188');
+    assert.equal(model.canvas.width, 600);
+    assert.equal(model.canvas.height, 188);
+    assert.deepEqual(model.sceneBounds, {
+        minX: 120,
+        minY: 80,
+        maxX: 720,
+        maxY: 268,
+        width: 600,
+        height: 188,
+        centerX: 420,
+        centerY: 174
+    });
+});
+
+test('keeps governed sheet fit bounds stable when reference content is outside the sheet frame', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = undefined;
+    diagram.graph.canvas = {
+        width: 2120,
+        height: 172
+    };
+    diagram.graph.nodes.push({
+        id: 'documentation/projection/node/component_PLC1_reference',
+        semanticId: 'component:PLC1',
+        type: 'node',
+        kind: 'component',
+        label: 'PLC1 reference',
+        position: {
+            x: 2016,
+            y: 120
+        },
+        size: {
+            width: 260,
+            height: 160
+        }
+    });
+    diagram.graph.edges.push({
+        id: 'documentation/projection/connection/reference_overflow',
+        semanticId: 'connection:PLC1.out->Reference.in',
+        type: 'edge',
+        sourcePoint: {
+            x: 1800,
+            y: 180
+        },
+        targetPoint: {
+            x: 2140,
+            y: 180
+        }
+    });
+    diagram.sheets = [
+        {
+            ...diagram.sheets[0],
+            publication: {
+                pageSize: {
+                    format: 'A3',
+                    orientation: 'landscape'
+                },
+                frame: {
+                    frameId: 'engineering-sheet-frame',
+                    style: 'schematic'
+                },
+                coordinateZones: [],
+                titleBlock: {
+                    sheetTitle: 'Control And PLC Logic',
+                    sheetFamily: 'documentation',
+                    sheetNumber: '02'
+                },
+                revisionMetadata: {
+                    revisionCode: 'A',
+                    revisionNote: 'Initial governed sheet publication'
+                },
+                viewComposition: {
+                    primaryViewId: 'documentation',
+                    primarySheetOrder: 1,
+                    subjectSemanticIds: ['component:PLC1']
+                }
+            }
+        }
+    ];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.sheetChrome.frame.width, 1680);
+    assert.equal(model.sheetChrome.frame.height, 1188);
+    assert.notEqual(model.svgViewBox, '0 0 1680 1188');
+    assert.equal(model.svgViewBox, '120 80 600 188');
+    assert.equal(model.sceneBounds.maxX, 720);
+    assert.equal(model.sceneBounds.maxY, 268);
 });
 
 test('builds compact sheet-view selector entries from governed sheet metadata', () => {
@@ -1049,10 +1263,14 @@ test('renders M25 representation facts as governed electrical symbols without ge
         node?.presentationParts[0].commands.map(command => command.kind),
         ['stroke_rectangle', 'stroke_line', 'circle']
     );
-    assert.equal(node?.presentationParts[0].commands[0].bounds.width, 260);
-    assert.equal(node?.presentationParts[0].commands[1].start.x, 315);
+    assert.equal(node?.position.x, 300);
+    assert.equal(node?.position.y, 136);
+    assert.equal(node?.size.width, 80);
+    assert.equal(node?.size.height, 48);
+    assert.equal(node?.presentationParts[0].commands[0].bounds.width, 80);
+    assert.equal(node?.presentationParts[0].commands[1].start.x, 360);
     assert.equal(node?.presentationParts[0].commands[1].end.x, 380);
-    assert.equal(node?.presentationParts[0].commands[2].center.x, 185);
+    assert.equal(node?.presentationParts[0].commands[2].center.x, 320);
     assert.deepEqual(node?.presentationTerminals, [
         {
             terminalId: 'terminal:PLC1:Q1.0',
@@ -1067,6 +1285,7 @@ test('renders M25 representation facts as governed electrical symbols without ge
             anchorId: 'anchor:PLC1:Q1.0'
         }
     ]);
+    assert.ok(model.sceneBounds.maxX >= 418);
     assert.deepEqual(node?.presentationLabels, [
         {
             labelId: 'label:PLC1:device-tag',
@@ -1074,7 +1293,7 @@ test('renders M25 representation facts as governed electrical symbols without ge
             occurrenceId: 'representation:PLC1@schematic-sheet',
             role: 'device_tag',
             value: 'PLC1',
-            point: { x: 120, y: 40 },
+            point: { x: 300, y: 124 },
             anchorId: 'representation:PLC1@schematic-sheet:component:PLC1:device_tag'
         }
     ]);
@@ -1235,14 +1454,82 @@ test('keeps M25 representation facts when Presentation IR occurrences drive shee
     assert.equal(node?.id, 'presentation:component:PLC1');
     assert.equal(node?.renderVariant, 'electrical-device');
     assert.equal(node?.presentationRepresentation?.representationId, 'athena-industrial-control-v0:plc-controller');
+    assert.equal(node?.position.x, 300);
+    assert.equal(node?.position.y, 136);
+    assert.equal(node?.size.width, 80);
+    assert.equal(node?.size.height, 48);
     assert.equal(node?.presentationTerminals[0]?.number, 'Q1.0');
     assert.equal(node?.presentationTerminals[0]?.point.x, 380);
     assert.equal(node?.presentationLabels[0]?.role, 'device_tag');
-    assert.equal(node?.presentationLabels[0]?.point.y, 40);
+    assert.equal(node?.presentationLabels[0]?.point.y, 124);
     assert.equal(
         graphWorkbenchModel.buildAthenaGraphRepresentationInspection(model, 'component:PLC1').status,
         'ready'
     );
+});
+
+test('filters off-sheet duplicate presentation occurrences from the active sheet model', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.graph.canvas = { width: 1680, height: 1188 };
+    diagram.presentation = {
+        canvasWidth: 1680,
+        canvasHeight: 1188,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [
+            {
+                occurrenceId: 'documentation/presentation/occurrence/MainBreakerQF1/active',
+                semanticId: 'component:MainBreakerQF1',
+                referenceKind: 'composite',
+                compositeId: 'electrical.device.protection',
+                bounds: { x: 300, y: 60, width: 80, height: 48 },
+                displayLabel: 'MainBreakerQF1',
+                layer: 'device',
+                markerKeys: [],
+                sourceProjectionIds: ['documentation/projection/node/component_MainBreakerQF1']
+            },
+            {
+                occurrenceId: 'documentation/presentation/occurrence/MainBreakerQF1/off-sheet',
+                semanticId: 'component:MainBreakerQF1',
+                referenceKind: 'composite',
+                compositeId: 'electrical.device.protection',
+                bounds: { x: 2200, y: 60, width: 80, height: 48 },
+                displayLabel: 'MainBreakerQF1',
+                layer: 'device',
+                markerKeys: [],
+                sourceProjectionIds: ['documentation/projection/node/component_MainBreakerQF1/off-sheet']
+            },
+            {
+                occurrenceId: 'documentation/presentation/occurrence/MainBreakerQF1/partial-overflow',
+                semanticId: 'component:MainBreakerQF1',
+                referenceKind: 'composite',
+                compositeId: 'electrical.device.protection',
+                bounds: { x: 1640, y: 60, width: 80, height: 48 },
+                displayLabel: 'MainBreakerQF1',
+                layer: 'device',
+                markerKeys: [],
+                sourceProjectionIds: ['documentation/projection/node/component_MainBreakerQF1/partial-overflow']
+            }
+        ],
+        connectors: [],
+        representationFacts: []
+    };
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const breakerNodes = model.nodes.filter(node => node.semanticId === 'component:MainBreakerQF1');
+
+    assert.deepEqual(
+        breakerNodes.map(node => node.id),
+        [
+            'documentation/presentation/occurrence/MainBreakerQF1/active',
+            'documentation/presentation/occurrence/MainBreakerQF1/partial-overflow'
+        ]
+    );
+    assert.equal(breakerNodes[0].position.x, 300);
+    assert.equal(breakerNodes[1].position.x, 1640);
+    assert.ok(!model.nodes.some(node => node.id === 'documentation/presentation/occurrence/MainBreakerQF1/off-sheet'));
+    assert.equal(model.sceneBounds.maxX, 1720);
+    assert.ok(model.sceneBounds.maxX < 2200);
 });
 
 test('builds route inspection from governed connector facts without canvas persistence', () => {

@@ -140,6 +140,7 @@ private fun buildDeviceDeclarationSnippet(
     val fieldIndent = declaration.fields.firstOrNull()
         ?.let { field -> " ".repeat((field.span.start.column - 1).coerceAtLeast(0)) }
         ?: "$declarationIndent  "
+    val portFieldIndent = "$fieldIndent  "
     return buildString {
         append(declarationIndent)
         append("device ")
@@ -151,6 +152,23 @@ private fun buildDeviceDeclarationSnippet(
             append(' ')
             append(field.renderValue())
             appendLine()
+        }
+        declaration.nestedPorts.forEach { port ->
+            appendLine()
+            append(fieldIndent)
+            append("port ")
+            append(port.qualifiedName.parts.last())
+            appendLine(" {")
+            port.fields.forEach { field ->
+                val editableField = field.toEditableField()
+                append(portFieldIndent)
+                append(editableField.name)
+                append(' ')
+                append(editableField.renderValue())
+                appendLine()
+            }
+            append(fieldIndent)
+            appendLine("}")
         }
         append(declarationIndent)
         append("}")

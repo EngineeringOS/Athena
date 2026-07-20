@@ -1,0 +1,47 @@
+2026-07-17T00:53:58.180Z root WARN Backend DefaultMessagingService.initialize took longer than the expected maximum 50 milliseconds: 142.6 ms [1.317 s since backend process start]
+2026-07-17T00:53:58.182Z root WARN Backend Object.initialize took longer than the expected maximum 50 milliseconds: 139.5 ms [1.317 s since backend process start]
+2026-07-17T00:53:58.183Z root WARN Backend LocalizationServerImpl.initialize took longer than the expected maximum 50 milliseconds: 139.6 ms [1.317 s since backend process start]
+2026-07-17T00:54:01.191Z root WARN Frontend CommonFrontendContribution.configure took longer than the expected maximum 100 milliseconds: 146.9 ms [2.963 s since frontend page start]
+2026-07-17T00:54:01.244Z root ERROR TypeError: this.target[method] is not a function
+    at RpcProxyFactory.onNotification (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:112203:30)
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:112169:49
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41939:69
+    at CallbackList.invoke (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41946:22)
+    at _Emitter.fire (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:42074:34)
+    at _RpcProtocol.handleNotify (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111890:36)
+    at _RpcProtocol.handleMessage (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111765:20)
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111747:68
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41939:69
+    at CallbackList.invoke (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41946:22)
+2026-07-17T00:54:01.733Z root WARN Linked preference "workbench.colorCustomizations" not found.
+2026-07-17T00:54:01.734Z root WARN Linked preference "editor.experimental.preferTreeSitter" not found.
+2026-07-17T00:54:02.504Z root WARN Frontend SkillPromptCoordinator.onStart took longer than the expected maximum 100 milliseconds: 1103.4 ms [4.277 s since frontend page start]
+2026-07-17T00:54:02.708Z terminal WARN Couldn't attach - can't find terminal with id: 1805387667
+2026-07-17T00:54:02.995Z terminal WARN Failed attaching to terminal id 1805387667, the terminal is most likely gone. Starting up a new terminal instead.
+2026-07-17T00:54:25.949Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.graphWorkbench
+2026-07-17T00:55:26.143Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.graphWorkbench
+2026-07-17T00:55:50.416Z root WARN Frontend CommonFrontendContribution.configure took longer than the expected maximum 100 milliseconds: 169.0 ms [3.627 s since frontend page start]
+2026-07-17T00:55:50.517Z root ERROR TypeError: this.target[method] is not a function
+    at RpcProxyFactory.onNotification (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:112203:30)
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:112169:49
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41939:69
+    at CallbackList.invoke (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41946:22)
+    at _Emitter.fire (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:42074:34)
+    at _RpcProtocol.handleNotify (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111890:36)
+    at _RpcProtocol.handleMessage (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111765:20)
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111747:68
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41939:69
+    at CallbackList.invoke (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41946:22)
+2026-07-17T00:55:51.052Z root WARN Linked preference "workbench.colorCustomizations" not found.
+2026-07-17T00:55:51.053Z root WARN Linked preference "editor.experimental.preferTreeSitter" not found.
+2026-07-17T00:55:52.144Z root WARN Frontend SkillPromptCoordinator.onStart took longer than the expected maximum 100 milliseconds: 1446.1 ms [5.354 s since frontend page start]
+2026-07-17T00:55:52.472Z root WARN Frontend TerminalFrontendContribution.initializeLayout took longer than the expected maximum 100 milliseconds: 171.8 ms [5.681 s since frontend page start]
+2026-07-17T00:55:54.268Z root ERROR Athena LSP activation failed for D:\Aaron\workspace\projects\2026\eos\Athena\examples\m20\dense-sheet-proof after 2097.9ms.
+2026-07-17T00:55:54.606Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.home
+2026-07-17T00:55:55.020Z root WARN Frontend AthenaProductContribution.initializeLayout took longer than the expected maximum 100 milliseconds: 2474.4 ms [8.235 s since frontend page start]
+2026-07-17T00:55:57.088Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: outputView
+2026-07-17T00:56:51.682Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.repositoryGraph
+2026-07-17T00:56:54.346Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.repositoryGraph
+2026-07-17T00:56:54.876Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.semanticMacroCatalog
+2026-07-17T00:56:56.614Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.semanticMacroCatalog
+2026-07-17T00:56:57.713Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: athena.semanticScm

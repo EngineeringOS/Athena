@@ -1,0 +1,81 @@
+package com.engineeringood.m28.sample
+
+system RelationshipAuthoringProof {
+  device MainPowerSupplyPS1 {
+    type Switch
+    model "24VDC-PSU"
+
+    port lplus {
+      direction out
+      signal Digital
+    }
+  }
+
+  device MainBreakerQF1 {
+    type Switch
+    model "QF"
+
+    port line {
+      direction in
+      signal Digital
+    }
+
+    port load {
+      direction out
+      signal Digital
+    }
+  }
+
+  device ControllerPLC1 {
+    type Switch
+    model "PLC"
+
+    port power {
+      direction in
+      signal Digital
+    }
+
+    port do1 {
+      direction out
+      signal Digital
+    }
+
+    port spareDo {
+      direction out
+      signal Digital
+    }
+  }
+
+  device OperatorHMI1 {
+    type Lamp
+    model "HMI"
+
+    port status {
+      direction in
+      signal Digital
+    }
+  }
+
+  device SpareTerminalXT99 {
+    type Switch
+    model "SPARE-XT"
+
+    port in1 {
+      direction in
+      signal Digital
+    }
+  }
+
+  connect MainPowerSupplyPS1.lplus -> MainBreakerQF1.line
+  connect MainBreakerQF1.load -> ControllerPLC1.power
+  connect ControllerPLC1.do1 -> OperatorHMI1.status
+
+  layout schematic-sheet {
+    place MainBreakerQF1 near MainPowerSupplyPS1
+    place ControllerPLC1 below MainBreakerQF1
+    place OperatorHMI1 near ControllerPLC1
+    place SpareTerminalXT99 below OperatorHMI1
+    align ControllerPLC1 aligned-with MainBreakerQF1 axis vertical
+    group OperatorHMI1 grouped-with ControllerPLC1
+  }
+}

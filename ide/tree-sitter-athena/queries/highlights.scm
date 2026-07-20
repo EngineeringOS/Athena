@@ -8,6 +8,7 @@
 (incomplete_import_declaration "import" @keyword)
 (device_declaration "device" @keyword)
 (port_declaration "port" @keyword)
+(nested_port_declaration "port" @keyword)
 (connect_declaration "connect" @keyword)
 (connect_declaration "->" @operator)
 (layout_declaration "layout" @keyword)

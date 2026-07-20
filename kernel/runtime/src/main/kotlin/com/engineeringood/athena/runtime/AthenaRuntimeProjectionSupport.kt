@@ -80,8 +80,11 @@ internal fun ProjectionSheet.toRuntimeProjectionSheet(): AthenaRuntimeProjection
 
 internal fun ProjectionDocument.toRuntimeProjectionSheetLayout(
     scene: AthenaRuntimeViewerScene,
+    activeSheetId: String? = null,
 ): AthenaRuntimeProjectionSheetLayout? {
-    val sheet = sheets.firstOrNull() ?: return null
+    val sheet = activeSheetId?.let { selectedSheetId -> sheets.find { sheet -> sheet.sheetId.value == selectedSheetId } }
+        ?: sheets.firstOrNull()
+        ?: return null
     val connectionById = connections.associateBy { connection -> connection.projectionId.value }
     return AthenaRuntimeProjectionSheetLayout(
         sheetId = sheet.sheetId.value,

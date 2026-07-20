@@ -1,0 +1,52 @@
+yarn workspace v1.22.19
+yarn run v1.22.19
+$ electron scripts/athena-electron-main.js
+
+ATHENA_JAVA_HOME=D:\Program Files\Java\openjdk-25.0.2
+Electron main: loading modules... [0.548 s since electron main start]
+Electron main: container created [0.665 s since electron main start]
+Electron main: modules loaded [0.667 s since electron main start]
+Electron main: resolving application [0.668 s since electron main start]
+Electron main: application resolved [0.679 s since electron main start]
+ATHENA_DESKTOP_WINDOW_CREATED
+Showing main window early
+Backend main: entry point loaded [0.799 s since backend process start]
+Backend server: loading modules... [0.806 s since backend process start]
+Backend server: container created [1.186 s since backend process start]
+Backend server: modules loaded [1.379 s since backend process start]
+Backend server: resolving application [1.404 s since backend process start]
+2026-07-17T02:27:33.421Z root INFO Athena backend contribution configured with JVM runtime, repository-session, and Athena LSP transport endpoints.
+2026-07-17T02:27:33.429Z core:BackendApplication INFO configured all backend app contributions
+2026-07-17T02:27:33.433Z root INFO Configuration directory URI: 'file:///c%3A/Users/admin/.athena'
+2026-07-17T02:27:33.440Z core:BackendApplication INFO Theia app listening on http://127.0.0.1:1308.
+2026-07-17T02:27:33.445Z root INFO Backend application startup sequence completed (async work may still be pending): 23.2 ms [1.615 s since backend process start]
+2026-07-17T02:27:33.445Z root INFO All backend contributions settled: 204.7 ms [1.615 s since backend process start]
+Starting backend: 1681.9 ms [2.382 s since electron main start]
+Attaching security token: 5.6 ms [2.388 s since electron main start]
+ElectronMessagingContribution.onStart: 7.3 ms [2.397 s since electron main start]
+TheiaMainApi.onStart: 6.2 ms [2.397 s since electron main start]
+ElectronApi.onStart: 0.7 ms [2.397 s since electron main start]
+Starting contributions: 9.1 ms [2.397 s since electron main start]
+Startup sequence completed: 1705.1 ms [2.398 s since electron main start]
+ATHENA_DESKTOP_READY
+2026-07-17T02:27:35.640Z root INFO creating connection for 1
+Opening channel for service path '/services/electron-window'.
+2026-07-17T02:27:38.556Z SkillService INFO Loaded 2 skills
+2026-07-17T02:27:38.639Z root INFO Start frontend contributions: 1962.5 ms [5.136 s since frontend page start]
+2026-07-17T02:27:38.640Z root INFO Changed application state from 'init' to 'started_contributions'.
+2026-07-17T02:27:38.665Z root INFO Changed application state from 'started_contributions' to 'attached_shell'.
+2026-07-17T02:27:38.666Z root INFO >>> Restoring the layout state...
+2026-07-17T02:27:38.957Z root INFO Resolved Athena LSP launcher from source-tree: D:\Aaron\workspace\projects\2026\eos\Athena\ide\lsp\build\install\athena-lsp-host\bin\athena-lsp-host.bat
+2026-07-17T02:27:38.957Z root INFO Starting Athena LSP stdio host with Java 25.0.2 from athena-java-home: D:\Program Files\Java\openjdk-25.0.2.
+2026-07-17T02:27:39.592Z root INFO <<< The layout has been successfully restored.
+2026-07-17T02:27:39.617Z root INFO Initialize the workbench layout: 947.8 ms [6.121 s since frontend page start]
+2026-07-17T02:27:39.618Z root INFO Changed application state from 'attached_shell' to 'initialized_layout'.
+2026-07-17T02:27:40.439Z root INFO Frontend application startup sequence completed (async work may still be pending): 3508.4 ms [8.609 s since backend process start]
+2026-07-17T02:27:40.440Z root INFO Replace loading indicator with ready workbench UI (animation): 818.2 ms [6.970 s since frontend page start]
+2026-07-17T02:27:40.440Z root INFO Changed application state from 'initialized_layout' to 'ready'.
+2026-07-17T02:27:40.441Z root INFO All frontend contributions settled: 3798.2 ms [6.971 s since frontend page start]
+2026-07-17T02:27:41.171Z root INFO [athena-lsp] Athena LSP initialize timings: total=127.5ms, languageFeatures=2ms, repositoryRoot=D:\Aaron\workspace\projects\2026\eos\Athena\examples\m20\sample-project
+2026-07-17T02:27:41.211Z root INFO Athena LSP activation timings for D:\Aaron\workspace\projects\2026\eos\Athena\examples\m20\sample-project: spawn=49.6ms, initialize=2255.3ms, total=2306.6ms.
+2026-07-17T02:27:41.562Z root INFO [athena-lsp] Published 2 diagnostic(s) for file:///d%3A/Aaron/workspace/projects/2026/eos/Athena/examples/m20/sample-project/src/04-boundary-scope.athena
+2026-07-17T02:27:41.564Z root INFO [athena-lsp] Athena diagnostics published from JVM stack: 2 item(s) for file:///d%3A/Aaron/workspace/projects/2026/eos/Athena/examples/m20/sample-project/src/04-boundary-scope.athena
+2026-07-17T02:27:41.566Z root INFO [athena-lsp] Athena semantic path active: textDocument/didOpen -> runtime/compiler :: file:///d%3A/Aaron/workspace/projects/2026/eos/Athena/examples/m20/sample-project/src/04-boundary-scope.athena

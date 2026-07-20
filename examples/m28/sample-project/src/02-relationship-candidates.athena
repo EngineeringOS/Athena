@@ -1,0 +1,58 @@
+package com.engineeringood.m28.sample
+
+system RelationshipRejectionCandidates {
+  device CandidateOutputModuleIOM28 {
+    type Switch
+    model "FIELD-IO"
+
+    port do1 {
+      direction out
+      signal Digital
+    }
+
+    port do2 {
+      direction out
+      signal Digital
+    }
+  }
+
+  device CandidateTerminalXT28 {
+    type Switch
+    model "XT"
+
+    port in1 {
+      direction in
+      signal Digital
+    }
+
+    port in2 {
+      direction in
+      signal Digital
+    }
+
+    port out1 {
+      direction out
+      signal Digital
+    }
+  }
+
+  device CandidateMotorM28 {
+    type Motor
+    model "MOTOR"
+
+    port u1 {
+      direction in
+      signal Digital
+    }
+  }
+
+  connect CandidateOutputModuleIOM28.do1 -> CandidateTerminalXT28.in1
+  connect CandidateTerminalXT28.out1 -> CandidateMotorM28.u1
+
+  layout schematic-sheet {
+    place CandidateTerminalXT28 near CandidateOutputModuleIOM28
+    place CandidateMotorM28 below CandidateTerminalXT28
+    align CandidateMotorM28 aligned-with CandidateTerminalXT28 axis vertical
+    group CandidateTerminalXT28 grouped-with CandidateOutputModuleIOM28
+  }
+}

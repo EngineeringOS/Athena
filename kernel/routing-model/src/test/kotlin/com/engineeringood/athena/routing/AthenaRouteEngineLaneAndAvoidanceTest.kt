@@ -6,6 +6,7 @@ import com.engineeringood.athena.layout.LayoutSnapshotId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class AthenaRouteEngineLaneAndAvoidanceTest {
     @Test
@@ -42,6 +43,28 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
         assertEquals(SchematicRouteLane(0), route.lane)
         assertFalse(route.segments.any { segment -> obstacle.intersects(segment) })
         assertEquals(RouteQualityState.SATISFIED, route.quality.state)
+    }
+
+    @Test
+    fun `route quality is degraded when no component avoiding lane is available`() {
+        val obstacle = SchematicComponentBounds(
+            subjectId = StableSemanticIdentity("component:BLOCKING_OBSTACLE"),
+            occurrenceId = LayoutOccurrenceId("occurrence:component:BLOCKING_OBSTACLE"),
+            topLeft = SchematicRoutePoint(x = 220, y = 0),
+            width = 80,
+            height = 140,
+        )
+        val result = AthenaRouteEngineV0().solve(
+            input(
+                componentBounds = listOf(obstacle),
+                requests = listOf(request("blocked", 120, 80, 400, 80)),
+            ),
+        )
+        val route = result.routeFacts.single()
+
+        assertTrue(route.segments.any { segment -> obstacle.intersects(segment) })
+        assertEquals(RouteQualityState.DEGRADED, route.quality.state)
+        assertEquals(listOf(RouteConstraintId("constraint:blocked:avoid")), route.quality.failedConstraintIds)
     }
 
     private fun input(

@@ -118,7 +118,7 @@ class ComponentRepresentationComposer(
                     subjectId = subjectId,
                     occurrenceId = occurrenceId,
                     role = PresentationLabelRole.DEVICE_TAG,
-                    value = LabelValue(subject.value),
+                    value = LabelValue(subject.displayTag()),
                     anchor = tagAnchor,
                 ),
             ),
@@ -215,4 +215,7 @@ class ComponentRepresentationComposer(
             else -> TerminalPresentationRole.DIGITAL_OUTPUT
         }
     }
+
+    private fun ComponentSubjectKey.displayTag(): String =
+        value.substringAfterLast(':').ifBlank { value }
 }

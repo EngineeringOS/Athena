@@ -1,0 +1,107 @@
+package com.engineeringood.m27.sample
+
+system ProfessionalSheetProofAcceptance {
+  device MainPowerSupplyPS1 {
+    type Switch
+    model "24VDC-PSU"
+  }
+
+  device MainBreakerQF1 {
+    type Switch
+    model "QF"
+  }
+
+  device ControllerPLC1 {
+    type Switch
+    model "PLC"
+  }
+
+  device OperatorHMI1 {
+    type Lamp
+    model "HMI"
+  }
+
+  device FieldOutputModuleIOM1 {
+    type Switch
+    model "FIELD-IO"
+  }
+
+  device FieldTerminalXT1 {
+    type Switch
+    model "XT"
+  }
+
+  device ConveyorMotorM1 {
+    type Motor
+    model "MOTOR"
+  }
+
+  port MainPowerSupplyPS1.lplus {
+    direction out
+    signal Digital
+  }
+
+  port MainBreakerQF1.line {
+    direction in
+    signal Digital
+  }
+
+  port MainBreakerQF1.load {
+    direction out
+    signal Digital
+  }
+
+  port ControllerPLC1.power {
+    direction in
+    signal Digital
+  }
+
+  port ControllerPLC1.hmiStatus {
+    direction out
+    signal Digital
+  }
+
+  port OperatorHMI1.status {
+    direction in
+    signal Digital
+  }
+
+  port FieldOutputModuleIOM1.do1 {
+    direction out
+    signal Digital
+  }
+
+  port FieldTerminalXT1.in1 {
+    direction in
+    signal Digital
+  }
+
+  port FieldTerminalXT1.out1 {
+    direction out
+    signal Digital
+  }
+
+  port ConveyorMotorM1.u1 {
+    direction in
+    signal Digital
+  }
+
+  connect MainPowerSupplyPS1.lplus -> MainBreakerQF1.line
+  connect MainBreakerQF1.load -> ControllerPLC1.power
+  connect ControllerPLC1.hmiStatus -> OperatorHMI1.status
+  connect FieldOutputModuleIOM1.do1 -> FieldTerminalXT1.in1
+  connect FieldTerminalXT1.out1 -> ConveyorMotorM1.u1
+
+  layout schematic-sheet {
+    place MainBreakerQF1 near MainPowerSupplyPS1
+    place ControllerPLC1 below MainBreakerQF1
+    place OperatorHMI1 near ControllerPLC1
+    place FieldOutputModuleIOM1 below ControllerPLC1
+    place FieldTerminalXT1 near FieldOutputModuleIOM1
+    place ConveyorMotorM1 below FieldTerminalXT1
+    align ControllerPLC1 aligned-with MainBreakerQF1 axis vertical
+    align ConveyorMotorM1 aligned-with FieldTerminalXT1 axis vertical
+    group OperatorHMI1 grouped-with ControllerPLC1
+    group FieldTerminalXT1 grouped-with FieldOutputModuleIOM1
+  }
+}

@@ -20,6 +20,7 @@ class AthenaExecutionContext(
     private var activeCompilationSnapshot: CompilerCompilationResult? = null
     private var activeProjectionSessionSnapshot: AthenaRuntimeProjectionSession? = null
     private var activeProjectionViewId: String? = null
+    private var activeProjectionSheetId: String? = null
     private var projectionMetadataState: AthenaProjectionMetadataState = AthenaProjectionMetadataState()
     private var commandHistoryState: AthenaCommandHistoryState = AthenaCommandHistoryState()
     private var authoringSessionState: AthenaAuthoringSessionState = AthenaAuthoringSessionState()
@@ -264,10 +265,22 @@ class AthenaExecutionContext(
     internal fun currentActiveProjectionViewId(): String? = activeProjectionViewId
 
     /**
+     * Returns the current runtime-owned active projection sheet id when a document sheet has been selected.
+     */
+    internal fun currentActiveProjectionSheetId(): String? = activeProjectionSheetId
+
+    /**
      * Replaces the runtime-owned active projection view id after a successful switch.
      */
     internal fun replaceActiveProjectionViewId(viewId: String) {
         activeProjectionViewId = viewId
+    }
+
+    /**
+     * Replaces the runtime-owned active projection sheet id after a governed sheet switch.
+     */
+    internal fun replaceActiveProjectionSheetId(sheetId: String?) {
+        activeProjectionSheetId = sheetId
     }
 
     /**

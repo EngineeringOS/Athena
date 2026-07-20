@@ -242,41 +242,42 @@ private fun documentationSheets(
     val referenceNodeIds = nodes.filter(ProjectionNode::isDocumentationReferenceNode).map(ProjectionNode::projectionId).toSet()
     val overviewConnectionIds = connections.map(ProjectionConnection::projectionId).toSet()
     val overviewLabelIds = labels.map(ProjectionLabel::projectionId).toSet()
-    val powerSubjects = allSubjects.filter { subject ->
+    val sheetNodeIds = overviewNodeIds + referenceNodeIds
+    val powerSubjects = documentationSheetSubjects(
+        allSubjects = allSubjects,
+        selectedSubjects = allSubjects.filter { subject ->
         subject.isPowerDistributionSubject() || !subject.hasRecognizedDocumentationRole()
-    }.mapNotNull { subject ->
-        subject.filtered(
-            nodeIds = overviewNodeIds + referenceNodeIds,
+        },
+        nodeIds = sheetNodeIds,
+        connectionIds = overviewConnectionIds,
+        labelIds = overviewLabelIds,
+    ).ifEmpty {
+        documentationSheetSubjects(
+            allSubjects = allSubjects,
+            selectedSubjects = allSubjects,
+            nodeIds = sheetNodeIds,
             connectionIds = overviewConnectionIds,
             labelIds = overviewLabelIds,
         )
-    }.ifEmpty {
-        allSubjects.mapNotNull { subject ->
-            subject.filtered(
-                nodeIds = overviewNodeIds + referenceNodeIds,
-                connectionIds = overviewConnectionIds,
-                labelIds = overviewLabelIds,
-            )
-        }
     }
-    val controlSubjects = allSubjects.filter { subject ->
+    val controlSubjects = documentationSheetSubjects(
+        allSubjects = allSubjects,
+        selectedSubjects = allSubjects.filter { subject ->
         subject.isControlLogicSubject() || !subject.hasRecognizedDocumentationRole()
-    }.mapNotNull { subject ->
-        subject.filtered(
-            nodeIds = overviewNodeIds + referenceNodeIds,
-            connectionIds = overviewConnectionIds,
-            labelIds = overviewLabelIds,
-        )
-    }
-    val fieldSubjects = allSubjects.filter { subject ->
+        },
+        nodeIds = sheetNodeIds,
+        connectionIds = overviewConnectionIds,
+        labelIds = overviewLabelIds,
+    )
+    val fieldSubjects = documentationSheetSubjects(
+        allSubjects = allSubjects,
+        selectedSubjects = allSubjects.filter { subject ->
         subject.isFieldWiringSubject() || !subject.hasRecognizedDocumentationRole()
-    }.mapNotNull { subject ->
-        subject.filtered(
-            nodeIds = overviewNodeIds + referenceNodeIds,
-            connectionIds = overviewConnectionIds,
-            labelIds = overviewLabelIds,
-        )
-    }
+        },
+        nodeIds = sheetNodeIds,
+        connectionIds = overviewConnectionIds,
+        labelIds = overviewLabelIds,
+    )
     return listOf(
         ProjectionSheet(
             sheetId = powerDistributionId,
@@ -319,6 +320,31 @@ private fun documentationSheets(
             ),
         ),
     )
+}
+
+private fun documentationSheetSubjects(
+    allSubjects: List<ProjectionSheetSubject>,
+    selectedSubjects: List<ProjectionSheetSubject>,
+    nodeIds: Set<ProjectionNodeId>,
+    connectionIds: Set<ProjectionConnectionId>,
+    labelIds: Set<ProjectionLabelId>,
+): List<ProjectionSheetSubject> {
+    val subjectBySemanticId = allSubjects.associateBy(ProjectionSheetSubject::semanticId)
+    val selectedSemanticIds = selectedSubjects.map(ProjectionSheetSubject::semanticId).toSet()
+    val owningComponents = selectedSubjects
+        .flatMap(ProjectionSheetSubject::owningComponentSemanticIds)
+        .filterNot(selectedSemanticIds::contains)
+        .mapNotNull(subjectBySemanticId::get)
+    return (selectedSubjects + owningComponents)
+        .distinctBy(ProjectionSheetSubject::semanticId)
+        .mapNotNull { subject ->
+            subject.filtered(
+                nodeIds = nodeIds,
+                connectionIds = connectionIds,
+                labelIds = labelIds,
+            )
+        }
+        .sortedBy { subject -> subject.semanticId.value }
 }
 
 private fun documentationProjectionNodes(
@@ -569,6 +595,23 @@ private fun ProjectionSheetSubject.isFieldWiringSubject(): Boolean {
 
 private fun ProjectionSheetSubject.hasRecognizedDocumentationRole(): Boolean {
     return isPowerDistributionSubject() || isControlLogicSubject() || isFieldWiringSubject()
+}
+
+private fun ProjectionSheetSubject.owningComponentSemanticIds(): List<StableSemanticIdentity> {
+    val value = semanticId.value
+    val ownerNames = when {
+        value.startsWith("port:") -> listOf(value.removePrefix("port:").substringBefore('.'))
+        value.startsWith("connection:") -> value
+            .removePrefix("connection:")
+            .split("->")
+            .map { endpoint -> endpoint.substringBefore('.') }
+
+        else -> emptyList()
+    }
+    return ownerNames
+        .filter(String::isNotBlank)
+        .distinct()
+        .map { ownerName -> StableSemanticIdentity("component:$ownerName") }
 }
 
 private fun ProjectionSheetSubject.filtered(

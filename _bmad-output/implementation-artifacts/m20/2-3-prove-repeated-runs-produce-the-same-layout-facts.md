@@ -4,7 +4,7 @@ baseline_commit: b699dda601e216033ed0728d610042887aa82561
 
 # Story 2.3: Prove repeated runs produce the same layout facts
 
-Status: review
+Status: done
 
 ## Story
 

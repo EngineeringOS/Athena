@@ -64,6 +64,41 @@ fun PresentationDocument.representationFactsForRendering(): List<PresentationRep
             .thenBy { fact -> fact.occurrenceId.value },
     )
 
+/**
+ * Returns the part of this Presentation IR belonging to one selected projection sheet.
+ *
+ * The caller supplies projection-owned membership. Presentation IR remains downstream and does
+ * not decide which engineering subjects belong to a sheet.
+ */
+fun PresentationDocument.scopedToProjectionMembership(
+    sourceProjectionIds: Set<String>,
+    connectionSemanticIds: Set<String>,
+    occurrenceSemanticIds: Set<String>,
+): PresentationDocument {
+    return copy(
+        occurrences = occurrences.filter { occurrence ->
+            occurrence.semanticId.value in occurrenceSemanticIds ||
+                occurrence.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds }
+        },
+        connectors = connectors.filter { connector ->
+            connector.semanticId.value in connectionSemanticIds ||
+                connector.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds }
+        },
+        routeFactSnapshot = routeFactSnapshot?.copy(
+            routeFacts = routeFactSnapshot.routeFacts.filter { routeFact ->
+                routeFact.connectionId.value in connectionSemanticIds
+            },
+        ),
+        representationFacts = representationFacts.filter { fact ->
+            fact.subjectId.value in occurrenceSemanticIds ||
+                fact.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds }
+        },
+        referenceMarkers = referenceMarkers.filter { marker ->
+            marker.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds }
+        },
+    )
+}
+
 data class PresentationRouteAttachmentFact(
     val routeId: SchematicRouteId,
     val connectionId: ElectricalConnectionId,

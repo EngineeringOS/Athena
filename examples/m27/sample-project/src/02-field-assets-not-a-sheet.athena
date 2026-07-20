@@ -1,0 +1,29 @@
+package com.engineeringood.m27.sample
+
+system ProfessionalSheetProofSupportCatalog {
+  device SpareFieldGatewayGW1 {
+    type Switch
+    model "SPARE-GW"
+  }
+
+  device SpareTerminalXT99 {
+    type Switch
+    model "SPARE-XT"
+  }
+
+  port SpareFieldGatewayGW1.do1 {
+    direction out
+    signal Digital
+  }
+
+  port SpareTerminalXT99.in1 {
+    direction in
+    signal Digital
+  }
+
+  connect SpareFieldGatewayGW1.do1 -> SpareTerminalXT99.in1
+
+  layout schematic-sheet {
+    place SpareTerminalXT99 below SpareFieldGatewayGW1
+  }
+}

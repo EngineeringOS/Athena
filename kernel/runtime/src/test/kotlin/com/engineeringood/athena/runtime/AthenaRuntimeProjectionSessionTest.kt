@@ -192,6 +192,106 @@ class AthenaRuntimeProjectionSessionTest {
     }
 
     @Test
+    fun `documentation sheet switch changes active sheet without treating source files as pages`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+        val baselineDocument = assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document
+
+        val switchResult = context.switchActiveProjectionView("documentation/sheet/02-control-and-plc-logic")
+
+        val success = assertIs<AthenaRuntimeProjectionSwitchSuccess>(switchResult)
+        assertEquals("documentation/sheet/02-control-and-plc-logic", success.requestedViewId)
+        assertEquals("documentation", success.session.activeViewId)
+        val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(success.session.activeProjection)
+        assertEquals("documentation", ready.viewId)
+        assertEquals("documentation/sheet/02-control-and-plc-logic", ready.activeSheetId)
+        val sheetLayout = assertNotNull(ready.sheetLayout)
+        assertEquals("documentation/sheet/02-control-and-plc-logic", sheetLayout.sheetId)
+        assertEquals("Control And PLC Logic", sheetLayout.displayName)
+        assertEquals(1, sheetLayout.order)
+        assertEquals(
+            ready.sheets[1].subjectSemanticIds,
+            sheetLayout.subjectSemanticIds,
+        )
+        assertEquals(baselineDocument, assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document)
+    }
+
+    @Test
+    fun `m27 field wiring sheet renders field subjects from the active semantic source`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m27/sample-project/src/01-workspace-semantic-source.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "m27-sample-project",
+            sourcePath = sourcePath,
+        )
+
+        val switchResult = context.switchActiveProjectionView("documentation/sheet/03-field-wiring-and-terminal-transition")
+
+        val success = assertIs<AthenaRuntimeProjectionSwitchSuccess>(switchResult)
+        val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(success.session.activeProjection)
+        assertEquals("documentation/sheet/03-field-wiring-and-terminal-transition", ready.activeSheetId)
+        assertTrue(
+            ready.scene.components.any { component -> component.semanticId == "component:FieldTerminalXT1" },
+            "M27 field sheet must render the terminal transition subject from the active projected system.",
+        )
+        assertTrue(
+            ready.scene.components.any { component -> component.semanticId == "component:ConveyorMotorM1" },
+            "M27 field sheet must render the field load subject from the active projected system.",
+        )
+        assertTrue(
+            ready.scene.connections.any { connection ->
+                connection.semanticId == "connection:FieldOutputModuleIOM1.do1->FieldTerminalXT1.in1"
+            },
+            "M27 field sheet must include a routed field output to terminal connection.",
+        )
+        assertTrue(
+            ready.electricalAnchors.any { anchor -> anchor.ownerSemanticId == "component:FieldTerminalXT1" },
+            "M27 field sheet must keep terminal anchors available after active-sheet scoping.",
+        )
+    }
+
+    @Test
+    fun `m27 document sheets do not render orphan terminal labels`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m27/sample-project/src/01-workspace-semantic-source.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "m27-sample-project",
+            sourcePath = sourcePath,
+        )
+
+        val documentSheetIds = assertIs<AthenaRuntimeProjectionReadySnapshot>(
+            assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+                context.switchActiveProjectionView("documentation"),
+            ).session.activeProjection,
+        ).sheets.map { sheet -> sheet.sheetId }
+
+        documentSheetIds.forEach { sheetId ->
+            val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(
+                assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+                    context.switchActiveProjectionView(sheetId),
+                ).session.activeProjection,
+            )
+            val renderedComponentIds = ready.scene.components.map { component -> component.semanticId }.toSet()
+            val orphanTerminalLabels = ready.scene.labels
+                .map { label -> label.semanticId }
+                .filter { semanticId -> semanticId.startsWith("port:") }
+                .filterNot { semanticId ->
+                    val ownerName = semanticId.removePrefix("port:").substringBefore('.')
+                    "component:$ownerName" in renderedComponentIds
+                }
+
+            assertTrue(
+                orphanTerminalLabels.isEmpty(),
+                "Sheet `$sheetId` renders terminal labels without their owning component: $orphanTerminalLabels",
+            )
+        }
+    }
+
+    @Test
     fun `projection session cache stays stable until runtime invalidates it`() {
         val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
         val runtime = AthenaRuntime()

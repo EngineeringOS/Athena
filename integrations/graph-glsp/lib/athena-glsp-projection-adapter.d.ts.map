@@ -1,1 +1,1 @@
-{"version":3,"file":"athena-glsp-projection-adapter.d.ts","sourceRoot":"","sources":["../src/athena-glsp-projection-adapter.ts"],"names":[],"mappings":"AAAA,OAAO,EACH,iBAAiB,EAEjB,0BAA0B,EAE7B,MAAM,6BAA6B,CAAC;AAErC,8FAA8F;AAC9F,wBAAgB,uCAAuC,CACnD,UAAU,EAAE,0BAA0B,GACvC,iBAAiB,CA+DnB"}
+{"version":3,"file":"athena-glsp-projection-adapter.d.ts","sourceRoot":"","sources":["../src/athena-glsp-projection-adapter.ts"],"names":[],"mappings":"AAAA,OAAO,EACH,iBAAiB,EAEjB,0BAA0B,EAE7B,MAAM,6BAA6B,CAAC;AAErC,8FAA8F;AAC9F,wBAAgB,uCAAuC,CACnD,UAAU,EAAE,0BAA0B,GACvC,iBAAiB,CAgEnB"}

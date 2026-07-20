@@ -37,8 +37,9 @@ function translateProjectionSessionToGLSPDiagram(projection) {
             : undefined,
         sheets: normalizeArray(readyProjection?.sheets).map(sheet => ({
             ...sheet,
-            role: resolveSheetViewRole(sheet.displayName),
+            role: sheet.role ?? resolveSheetViewRole(sheet.displayName),
             subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
+            ...(sheet.publication ? { publication: normalizeSheetPublication(sheet.publication) } : {}),
         })),
         notationPack: readyProjection?.notationPack
             ? {
@@ -193,6 +194,7 @@ function normalizePresentationDocument(document) {
     return {
         canvasWidth: document.canvasWidth,
         canvasHeight: document.canvasHeight,
+        ...(document.sheetSurface ? { sheetSurface: normalizeSheetSurface(document.sheetSurface) } : {}),
         primitivePacks: normalizeArray(document.primitivePacks).map(pack => ({
             packId: pack.packId,
             displayName: pack.displayName,
@@ -340,6 +342,37 @@ function normalizePresentationDocument(document) {
                 },
             })),
         })),
+    };
+}
+function normalizeSheetPublication(publication) {
+    return {
+        pageSize: { ...publication.pageSize },
+        frame: { ...publication.frame },
+        coordinateZones: normalizeArray(publication.coordinateZones).map(zone => ({ ...zone })),
+        titleBlock: { ...publication.titleBlock },
+        revisionMetadata: { ...publication.revisionMetadata },
+        viewComposition: {
+            ...publication.viewComposition,
+            subjectSemanticIds: [...normalizeArray(publication.viewComposition.subjectSemanticIds)],
+        },
+    };
+}
+function normalizeSheetSurface(sheetSurface) {
+    return {
+        surfaceId: sheetSurface.surfaceId,
+        source: sheetSurface.source,
+        frame: {
+            width: sheetSurface.frame.width,
+            height: sheetSurface.frame.height,
+            ...(sheetSurface.frame.margins ? { margins: { ...sheetSurface.frame.margins } } : {}),
+            ...(sheetSurface.frame.zoneColumns ? { zoneColumns: [...normalizeArray(sheetSurface.frame.zoneColumns)] } : {}),
+            ...(sheetSurface.frame.zoneRows ? { zoneRows: [...normalizeArray(sheetSurface.frame.zoneRows)] } : {}),
+        },
+        grid: { ...sheetSurface.grid },
+        titleBlock: {
+            fields: normalizeArray(sheetSurface.titleBlock.fields).map(field => ({ ...field })),
+        },
+        metadata: { ...sheetSurface.metadata },
     };
 }
 function normalizeRepresentationPrimitive(primitive) {

@@ -114,18 +114,74 @@ data class UpdateComponentPropertiesIntent(
     val properties: Map<AuthoringPropertyName, AuthoringValue>,
 ) : AuthoringIntent
 
+/** Stable relationship type name for governed semantic relationship authoring. */
+@JvmInline
+value class SemanticRelationshipType(val value: String) {
+    override fun toString(): String = value
+}
+
+/** M28 first relationship specialization: an electrical connection between compatible port subjects. */
+val ElectricalConnectionRelationship = SemanticRelationshipType("ElectricalConnectionRelationship")
+
+/** Optional projection context that helped produce a relationship authoring request. */
+data class SemanticRelationshipProjectionContext(
+    val viewId: String? = null,
+    val occurrenceId: String? = null,
+)
+
+/** Optional persistence target chosen or inferred for accepted semantic relationship mutation. */
+data class SemanticRelationshipPersistenceTarget(
+    val sourceUri: String? = null,
+)
+
+/**
+ * Requests creation of one governed semantic relationship between two existing semantic subjects.
+ *
+ * Electrical connection is the first specialization, but this contract is intentionally not named
+ * around wires so later flow, containment, control, communication, mounting, and dependency
+ * relationships can reuse the same authoring boundary.
+ */
+data class SemanticRelationshipIntent(
+    override val intentId: AuthoringIntentId,
+    override val origin: AuthoringOrigin,
+    val relationshipType: SemanticRelationshipType,
+    val sourceSubjectId: StableSemanticIdentity,
+    val targetSubjectId: StableSemanticIdentity,
+    val projectionContext: SemanticRelationshipProjectionContext = SemanticRelationshipProjectionContext(),
+    val persistenceTarget: SemanticRelationshipPersistenceTarget = SemanticRelationshipPersistenceTarget(),
+    val provenance: String? = null,
+) : AuthoringIntent
+
 /**
  * Requests creation of one canonical connection between two existing semantic ports.
  *
  * The contract captures user intent from graph or guided flows without allowing graph code to
- * create semantic state directly.
+ * create semantic state directly. Kept for legacy call sites; new M28 architecture should use
+ * [SemanticRelationshipIntent] with [ElectricalConnectionRelationship].
  */
 data class ConnectPortsIntent(
     override val intentId: AuthoringIntentId,
     override val origin: AuthoringOrigin,
     val sourcePortId: StableSemanticIdentity,
     val targetPortId: StableSemanticIdentity,
-) : AuthoringIntent
+) : AuthoringIntent {
+    fun toSemanticRelationshipIntent(
+        projectionContext: SemanticRelationshipProjectionContext = SemanticRelationshipProjectionContext(),
+        persistenceTarget: SemanticRelationshipPersistenceTarget = SemanticRelationshipPersistenceTarget(),
+        provenance: String? = null,
+    ): SemanticRelationshipIntent {
+        return SemanticRelationshipIntent(
+            intentId = intentId,
+            origin = origin,
+            relationshipType = ElectricalConnectionRelationship,
+            sourceSubjectId = sourcePortId,
+            targetSubjectId = targetPortId,
+            projectionContext = projectionContext,
+            persistenceTarget = persistenceTarget,
+            provenance = provenance,
+        )
+    }
+}
 
 /**
  * Requests reveal of one canonical semantic subject across guided authoring surfaces.

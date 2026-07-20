@@ -4,6 +4,7 @@ import test from 'node:test';
 const {
     buildAuthoringDecisionRequest,
     buildCreateComponentPreviewRequest,
+    buildSemanticRelationshipPreviewRequest,
     buildUpdateComponentPropertiesPreviewRequest,
 } = await import('../lib/browser/athena-authoring-protocol.js');
 
@@ -42,6 +43,32 @@ test('buildAuthoringDecisionRequest keeps accept and reject decision payloads tr
             intentId: 'intent-0001',
             decision: 'accepted',
             note: 'Apply guided insertion.',
+        },
+    );
+});
+
+test('buildSemanticRelationshipPreviewRequest emits generic relationship authoring payload', async () => {
+    assert.deepEqual(
+        buildSemanticRelationshipPreviewRequest({
+            sourceSubjectId: 'port:PLC1.out',
+            targetSubjectId: 'port:M1.in',
+            projectionViewId: 'schematic',
+            persistenceSourceUri: 'file:///workspace/main.athena',
+            originDetail: 'graph:schematic',
+            intentId: 'intent-relationship-1',
+        }),
+        {
+            intentId: 'intent-relationship-1',
+            intentKind: 'semantic-relationship',
+            originSurface: 'graph',
+            originDetail: 'graph:schematic',
+            relationshipType: 'ElectricalConnectionRelationship',
+            sourceSubjectId: 'port:PLC1.out',
+            targetSubjectId: 'port:M1.in',
+            projectionViewId: 'schematic',
+            projectionOccurrenceId: undefined,
+            persistenceSourceUri: 'file:///workspace/main.athena',
+            provenance: undefined,
         },
     );
 });

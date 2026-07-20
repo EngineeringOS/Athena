@@ -63,6 +63,42 @@ export type AthenaGLSPSheetSource = {
     previousSheetId?: string;
     nextSheetId?: string;
     subjectSemanticIds: string[];
+    publication?: AthenaGLSPSheetPublicationSource;
+};
+export type AthenaGLSPSheetPublicationSource = {
+    pageSize: AthenaGLSPSheetPageSizeSource;
+    frame: AthenaGLSPSheetFrameSource;
+    coordinateZones: AthenaGLSPSheetCoordinateZoneSource[];
+    titleBlock: AthenaGLSPSheetTitleBlockSource;
+    revisionMetadata: AthenaGLSPSheetRevisionMetadataSource;
+    viewComposition: AthenaGLSPSheetViewCompositionSource;
+};
+export type AthenaGLSPSheetPageSizeSource = {
+    format: string;
+    orientation: string;
+};
+export type AthenaGLSPSheetFrameSource = {
+    frameId: string;
+    style: string;
+};
+export type AthenaGLSPSheetCoordinateZoneSource = {
+    zoneId: string;
+    label: string;
+    order: number;
+};
+export type AthenaGLSPSheetTitleBlockSource = {
+    sheetTitle: string;
+    sheetFamily: string;
+    sheetNumber: string;
+};
+export type AthenaGLSPSheetRevisionMetadataSource = {
+    revisionCode: string;
+    revisionNote: string;
+};
+export type AthenaGLSPSheetViewCompositionSource = {
+    primaryViewId: string;
+    primarySheetOrder: number;
+    subjectSemanticIds: string[];
 };
 export type AthenaGLSPNotationSubjectSource = {
     semanticId: string;
@@ -159,12 +195,51 @@ export type AthenaGLSPDiagnosticSource = {
 export type AthenaGLSPPresentationDocumentSource = {
     canvasWidth: number;
     canvasHeight: number;
+    sheetSurface?: AthenaGLSPPresentationSheetSurfaceSource;
     primitivePacks: AthenaGLSPPresentationPrimitivePackSource[];
     compositePacks: AthenaGLSPPresentationCompositePackSource[];
     occurrences: AthenaGLSPPresentationOccurrenceSource[];
     connectors: AthenaGLSPPresentationConnectorSource[];
     representationFacts?: AthenaGLSPPresentationRepresentationFactSource[];
     referenceMarkers?: AthenaGLSPPresentationReferenceMarkerSource[];
+};
+export type AthenaGLSPPresentationSheetSurfaceSource = {
+    surfaceId: string;
+    source: string;
+    frame: AthenaGLSPPresentationSheetFrameSource;
+    grid: AthenaGLSPPresentationSheetGridSource;
+    titleBlock: AthenaGLSPPresentationSheetTitleBlockSource;
+    metadata: AthenaGLSPPresentationSheetMetadataSource;
+};
+export type AthenaGLSPPresentationSheetFrameSource = {
+    width: number;
+    height: number;
+    margins?: AthenaGLSPPresentationSheetMarginsSource;
+    zoneColumns?: string[];
+    zoneRows?: string[];
+};
+export type AthenaGLSPPresentationSheetMarginsSource = {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+};
+export type AthenaGLSPPresentationSheetGridSource = {
+    majorStep: number;
+    minorStep: number;
+};
+export type AthenaGLSPPresentationSheetTitleBlockSource = {
+    fields: AthenaGLSPPresentationSheetTitleBlockFieldSource[];
+};
+export type AthenaGLSPPresentationSheetTitleBlockFieldSource = {
+    role: string;
+    label: string;
+    value: string;
+};
+export type AthenaGLSPPresentationSheetMetadataSource = {
+    sheetSize: string;
+    orientation: string;
+    projectionPolicyId: string;
 };
 export type AthenaGLSPPresentationPrimitivePackSource = {
     packId: string;

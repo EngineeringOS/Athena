@@ -5,8 +5,8 @@
  * :kernel:compiler, :kernel:runtime, :ide:*, or any other downstream module.
  * Downstream code must use only com.engineeringood.athena.language contracts.
  *
- * Scope includes M17 syntax plus M18 file-level package and import declarations, and M23
- * system-scoped layout block grammar admission:
+ * Scope includes M17 syntax plus M18 file-level package and import declarations, M23
+ * system-scoped layout block grammar admission, and M28 nested device-owned ports:
  * system, package, import, device, port, connect, qualified names, string literals,
  * property assignments, and layout place/align/group statements only. No expression /
  * macro-use forms.
@@ -49,7 +49,16 @@ declaration
     ;
 
 deviceDecl
-    : DEVICE ident LBRACE propertyAssignment* RBRACE
+    : DEVICE ident LBRACE deviceMember* RBRACE
+    ;
+
+deviceMember
+    : propertyAssignment
+    | nestedPortDecl
+    ;
+
+nestedPortDecl
+    : PORT ident LBRACE propertyAssignment* RBRACE
     ;
 
 portDecl

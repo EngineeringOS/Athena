@@ -4,7 +4,7 @@ baseline_commit: b699dda601e216033ed0728d610042887aa82561
 
 # Story 2.2: Encode engineering drawing rules for dense content
 
-Status: review
+Status: done
 
 ## Story
 

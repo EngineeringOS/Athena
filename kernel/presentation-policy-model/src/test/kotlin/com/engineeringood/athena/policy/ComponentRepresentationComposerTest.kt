@@ -38,4 +38,20 @@ class ComponentRepresentationComposerTest {
         assertTrue(snapshot.hasZeroFallbackSymbols())
         assertEquals(listOf("HMI1", "QF1"), snapshot.facts.map { it.subject.value })
     }
+
+    @Test
+    fun `device tag labels display authored tag instead of canonical semantic prefix`() {
+        val composer = ComponentRepresentationComposer(AthenaIndustrialControlV0Profile.profile())
+        val snapshot = composer.compose(
+            listOf(
+                ComponentRepresentationRequest(
+                    ComponentSubjectKey("component:MainBreakerQF1"),
+                    ComponentFamilyKey("protection-device"),
+                ),
+            ),
+        )
+
+        assertEquals("component:MainBreakerQF1", snapshot.facts.single().subject.value)
+        assertEquals("MainBreakerQF1", snapshot.facts.single().labels.single().value.value)
+    }
 }

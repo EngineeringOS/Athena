@@ -1,0 +1,55 @@
+# generated: 2026-07-21T00:00:00+08:00
+# last_updated: 2026-07-21T00:00:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m28
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: 2026-07-21T00:00:00+08:00
+last_updated: 2026-07-21T06:00:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m28
+
+development_status:
+  epic-1: done
+  1-1-admit-nested-device-owned-ports-in-antlr-and-ast: done
+  1-2-preserve-canonical-port-identity-in-lowering-and-semantic-index: done
+  1-3-admit-nested-ports-in-tree-sitter-and-syntax-ux: done
+  1-4-canonicalize-m28-examples-and-docs-around-nested-anatomy: done
+  epic-1-retrospective: optional
+  epic-2: done
+  2-1-create-openable-m28-sample-project: done
+  2-2-define-semanticrelationshipintent-and-electrical-specialization: done
+  2-3-validate-relationship-compatibility-and-persistence-eligibility: done
+  epic-2-retrospective: optional
+  epic-3: done
+  3-1-select-semantic-subjects-in-graphical-view: done
+  3-2-preview-relationship-route-and-source-impact: done
+  3-3-accept-relationship-through-m8-mutation-authority: done
+  3-4-recompile-reproject-and-preserve-coherence: done
+  epic-3-retrospective: optional
+  epic-4: done
+  4-1-product-path-m28-authoring-smoke: done
+  4-2-structured-parser-mutation-and-projection-assertions: done
+  4-3-m28-usage-retrospective-and-cleanup-ledger: done
+  epic-4-retrospective: done

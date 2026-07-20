@@ -268,6 +268,64 @@
           "type": "REPEAT",
           "content": {
             "type": "SYMBOL",
+            "name": "_device_member"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "}"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_device_member": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "property_assignment"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "nested_port_declaration"
+        }
+      ]
+    },
+    "nested_port_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "port"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
             "name": "property_assignment"
           }
         },
@@ -633,6 +691,9 @@
     ],
     [
       "port_declaration"
+    ],
+    [
+      "nested_port_declaration"
     ]
   ],
   "precedences": [],

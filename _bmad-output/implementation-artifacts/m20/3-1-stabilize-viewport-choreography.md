@@ -4,7 +4,7 @@ baseline_commit: 0be07ce79c1cbcab9d4e678966fd283fda63bd5d
 
 # Story 3.1: Stabilize viewport choreography
 
-Status: review
+Status: done
 
 ## Story
 

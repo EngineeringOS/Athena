@@ -1,0 +1,19 @@
+2026-07-17T02:27:33.412Z root WARN Backend DefaultMessagingService.initialize took longer than the expected maximum 50 milliseconds: 164.5 ms [1.581 s since backend process start]
+2026-07-17T02:27:33.415Z root WARN Backend Object.initialize took longer than the expected maximum 50 milliseconds: 160.5 ms [1.581 s since backend process start]
+2026-07-17T02:27:33.416Z root WARN Backend LocalizationServerImpl.initialize took longer than the expected maximum 50 milliseconds: 160.5 ms [1.582 s since backend process start]
+2026-07-17T02:27:36.950Z root WARN Frontend CommonFrontendContribution.configure took longer than the expected maximum 100 milliseconds: 189.0 ms [3.475 s since frontend page start]
+2026-07-17T02:27:37.008Z root ERROR TypeError: this.target[method] is not a function
+    at RpcProxyFactory.onNotification (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:112203:30)
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:112169:49
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41939:69
+    at CallbackList.invoke (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41946:22)
+    at _Emitter.fire (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:42074:34)
+    at _RpcProtocol.handleNotify (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111890:36)
+    at _RpcProtocol.handleMessage (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111765:20)
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:111747:68
+    at D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41939:69
+    at CallbackList.invoke (D:\Aaron\workspace\projects\2026\eos\Athena\ide\theia-product\lib\backend\main.js:41946:22)
+2026-07-17T02:27:37.906Z root WARN Linked preference "workbench.colorCustomizations" not found.
+2026-07-17T02:27:37.907Z root WARN Linked preference "editor.experimental.preferTreeSitter" not found.
+2026-07-17T02:27:38.560Z root WARN Frontend SkillPromptCoordinator.onStart took longer than the expected maximum 100 milliseconds: 1367.8 ms [5.089 s since frontend page start]
+2026-07-17T02:27:43.294Z core:ApplicationShell WARN Widget was activated, but did not accept focus after 2000ms: outputView

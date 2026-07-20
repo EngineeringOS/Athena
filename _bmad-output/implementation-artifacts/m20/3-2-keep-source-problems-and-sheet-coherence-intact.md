@@ -4,7 +4,7 @@ baseline_commit: b76b2da
 
 # Story 3.2: Keep source, Problems, and sheet coherence intact
 
-Status: review
+Status: done
 
 ## Story
 

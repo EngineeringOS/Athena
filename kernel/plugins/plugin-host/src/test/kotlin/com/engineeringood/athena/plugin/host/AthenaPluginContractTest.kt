@@ -171,6 +171,7 @@ class AthenaPluginContractTest {
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
                 AthenaExtensionPoint.VIEW_DEFINITIONS,
+                AthenaExtensionPoint.PRESENTATION_PACKS,
                 AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
                 AthenaExtensionPoint.RUNTIME_COMMANDS,
                 AthenaExtensionPoint.RUNTIME_VIEWS,
@@ -188,7 +189,7 @@ class AthenaPluginContractTest {
         val cabinet = viewDefinitions.first { definition -> definition.id == "cabinet" }
         val wiring = viewDefinitions.first { definition -> definition.id == "wiring" }
 
-        assertEquals(listOf("cabinet", "wiring"), viewDefinitions.map { definition -> definition.id })
+        assertEquals(listOf("cabinet", "wiring", "schematic", "documentation"), viewDefinitions.map { definition -> definition.id })
         assertEquals(LayoutIntent.STRUCTURAL, cabinet.layoutIntent)
         assertEquals(LayoutIntent.CONNECTIVITY, wiring.layoutIntent)
         assertEquals(listOf(ViewEmphasis.OWNERSHIP, ViewEmphasis.PLACEMENT), cabinet.viewEmphasis)

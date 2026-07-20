@@ -34,6 +34,13 @@
     --athena-graph-wiring-node-label: var(--athena-workbench-text);
     --athena-graph-wiring-node-meta: color-mix(in srgb, var(--athena-workbench-muted) 76%, var(--athena-workbench-accent) 24%);
     --athena-graph-wiring-edge-stroke: color-mix(in srgb, var(--athena-workbench-accent) 64%, var(--athena-workbench-text) 36%);
+    --athena-graph-electrical-line-width: 1.6px;
+    --athena-graph-electrical-selected-line-width: 2.4px;
+    --athena-graph-terminal-marker-size: 8px;
+    --athena-graph-terminal-text-size: 10px;
+    --athena-graph-device-text-size: 11px;
+    --athena-graph-route-label-size: 10px;
+    --athena-graph-reference-marker-size: 10px;
 }
 
 .athena-home-widget,
@@ -1016,7 +1023,7 @@
     background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 92%, black 8%);
     color: var(--athena-workbench-text);
     font: inherit;
-    font-size: 11px;
+    font-size: var(--athena-graph-reference-marker-size);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1117,24 +1124,21 @@
     top: 0;
     left: 0;
     box-sizing: border-box;
-    overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 58%, transparent);
+    overflow: visible;
+    border: 0;
     border-radius: 0;
     background: transparent;
-    box-shadow:
-        0 0 0 1px color-mix(in srgb, var(--athena-workbench-surface) 86%, transparent),
-        0 18px 44px color-mix(in srgb, black 36%, transparent);
+    box-shadow: none;
 }
 
 .athena-graph-workbench__sheet-frame {
     position: absolute;
-    inset: 16px;
+    inset: 0;
     z-index: 1;
     pointer-events: none;
-    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 72%, transparent);
-    box-shadow:
-        inset 0 0 0 1px color-mix(in srgb, var(--athena-workbench-surface) 76%, transparent),
-        inset 0 -52px 0 color-mix(in srgb, var(--athena-workbench-text) 3%, transparent);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 .athena-graph-workbench__canvas {
@@ -1188,14 +1192,14 @@
 }
 
 .athena-graph-workbench__stage--electrical .athena-graph-workbench__edge {
-    stroke-width: 1.8;
+    stroke-width: var(--athena-graph-electrical-line-width);
     stroke-linejoin: miter;
     stroke-linecap: square;
     opacity: 1;
 }
 
 .athena-graph-workbench__stage--electrical .athena-graph-workbench__edge--selected {
-    stroke-width: 2.6;
+    stroke-width: var(--athena-graph-electrical-selected-line-width);
 }
 
 .athena-graph-workbench__stage--electrical .athena-graph-workbench__edge-casing {
@@ -1228,7 +1232,7 @@
 
 .athena-graph-workbench__edge-label {
     fill: var(--theia-foreground);
-    font-size: 11px;
+    font-size: var(--athena-graph-route-label-size);
     font-weight: 600;
     paint-order: stroke;
     pointer-events: none;
@@ -1249,7 +1253,13 @@
 .athena-graph-workbench__node-hitbox {
     fill: transparent;
     stroke: transparent;
-    stroke-width: 0;
+    stroke-width: 1.2;
+    stroke-dasharray: 4 3;
+}
+
+.athena-graph-workbench__element:is(:hover, :focus, :focus-visible) > .athena-graph-workbench__node-hitbox {
+    stroke: color-mix(in srgb, var(--athena-graph-node-selected-stroke) 62%, transparent);
+    stroke-dasharray: 4 3;
 }
 
 .athena-graph-workbench__node--label {
@@ -1281,12 +1291,12 @@
 }
 
 .athena-graph-workbench__node-label--electrical-device {
-    font-size: 12px;
+    font-size: var(--athena-graph-device-text-size);
     font-weight: 700;
 }
 
 .athena-graph-workbench__node-label--electrical-terminal-label {
-    font-size: 11px;
+    font-size: var(--athena-graph-terminal-text-size);
     font-weight: 600;
 }
 
@@ -1320,7 +1330,7 @@
 .athena-graph-workbench__presentation-terminal-number,
 .athena-graph-workbench__presentation-label {
     fill: var(--athena-graph-node-label);
-    font-size: 11px;
+    font-size: var(--athena-graph-terminal-text-size);
     font-weight: 650;
     paint-order: stroke;
     pointer-events: none;

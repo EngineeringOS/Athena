@@ -4,7 +4,7 @@ baseline_commit: 9fcd97a
 
 # Story 4.2: Add executable regression coverage for layout and interaction
 
-Status: review
+Status: done
 
 ## Story
 

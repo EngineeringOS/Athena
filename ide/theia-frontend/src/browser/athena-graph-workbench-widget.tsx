@@ -15,6 +15,7 @@ import {
     type AthenaGraphLayoutMutationPreview,
     type AthenaGraphWorkbenchEdge,
     type AthenaGraphWorkbenchNode,
+    type AthenaGraphWorkbenchSheetViewSelector,
     type AthenaGraphViewportSize,
     type AthenaGraphViewportTransform,
     buildAthenaGraphDocumentReferenceInspection,
@@ -63,6 +64,7 @@ import { AthenaGraphNodeDragState, AthenaGraphPanState, AthenaGraphPortConnectSo
 export class AthenaGraphWorkbenchWidget extends ReactWidget {
     static readonly ID = 'athena.graphWorkbench';
     static readonly LABEL = 'Graphical View';
+    protected static readonly BOTTOM_DOCK_AUTO_FIT_RESERVE = 52;
 
     @inject(EditorManager)
     protected readonly editorManager: EditorManager;
@@ -107,6 +109,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected connectApplyingDecision = false;
     protected revealingSelectionSemanticId: string | undefined;
     protected infoPopoverOpen = false;
+    protected lastDocumentSheetViewSelector: AthenaGraphWorkbenchSheetViewSelector | undefined;
 
     @postConstruct()
     protected init(): void {
@@ -313,8 +316,10 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             sourcePortSemanticId: this.connectPortsSource?.semanticId,
         });
         const compatibleConnectTargetIds = new Set(compatibleConnectTargets.map(target => target.semanticId));
-        const zoomPercent = Math.round(this.viewportTransform.zoom * 100);
+        const renderViewportTransform = this.resolveRenderViewportTransform(model);
+        const zoomPercent = Math.round(renderViewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
+        this.rememberDocumentSheetViewSelector(model);
         const cabinetMainRows = this.buildCabinetMainInfoRows(
             model,
             selectedSemantic,
@@ -325,9 +330,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             relatedSubjects,
         );
         const sheetSurfaceStyle: React.CSSProperties = {
-            width: `${model.sheetChrome.frame.width}px`,
-            height: `${model.sheetChrome.frame.height}px`,
-            transform: `translate(${this.viewportTransform.offsetX}px, ${this.viewportTransform.offsetY}px) scale(${this.viewportTransform.zoom})`,
+            width: `${model.canvas.width}px`,
+            height: `${model.canvas.height}px`,
+            transform: `translate(${renderViewportTransform.offsetX + (model.sceneBounds.minX * renderViewportTransform.zoom)}px, ${renderViewportTransform.offsetY + (model.sceneBounds.minY * renderViewportTransform.zoom)}px) scale(${renderViewportTransform.zoom})`,
             transformOrigin: '0 0',
         };
 
@@ -362,7 +367,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                 onPointerCancel={this.handleViewportPointerEnd}
                             >
                                 <div className='athena-graph-workbench__sheet' style={sheetSurfaceStyle}>
-                                    {this.renderSheetChrome()}
+                                    {this.renderSheetChrome(model)}
                                     <svg
                                         className='athena-graph-workbench__canvas'
                                         viewBox={model.svgViewBox}
@@ -385,6 +390,22 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 </section>
             </div>
         </div>;
+    }
+
+    protected resolveRenderViewportTransform(
+        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
+    ): AthenaGraphViewportTransform {
+        if (this.viewportMode !== 'auto-fit' || this.viewportSize.width <= 0 || this.viewportSize.height <= 0 || model.emptyState) {
+            return this.viewportTransform;
+        }
+        return fitAthenaGraphViewport(model.sceneBounds, this.resolveAutoFitViewportSize());
+    }
+
+    protected resolveAutoFitViewportSize(): AthenaGraphViewportSize {
+        return {
+            width: this.viewportSize.width,
+            height: Math.max(1, this.viewportSize.height - AthenaGraphWorkbenchWidget.BOTTOM_DOCK_AUTO_FIT_RESERVE),
+        };
     }
 
     protected buildCabinetMainInfoRows(
@@ -500,7 +521,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     </div>
                 </div>
                 <div className='athena-graph-workbench__tool-group'>
-                    {model.sheetViewSelector ? this.renderSheetViewSelector(model) : undefined}
+                    {this.resolveVisibleSheetViewSelector(model) ? this.renderSheetViewSelector(model) : undefined}
                     {model.referenceMarkers.length > 0 ? this.renderReferenceMarkerControls(model) : undefined}
                     <div className='athena-graph-workbench__view-switches'>
                         {model.supportedViews.map(view => <button
@@ -553,7 +574,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     }
 
     protected renderSheetViewSelector(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
-        const selector = model.sheetViewSelector;
+        const selector = this.resolveVisibleSheetViewSelector(model);
         if (!selector) {
             return undefined;
         }
@@ -577,6 +598,18 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 </option>)}
             </select>
         </label>;
+    }
+
+    protected rememberDocumentSheetViewSelector(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): void {
+        if (model.sheetViewSelector) {
+            this.lastDocumentSheetViewSelector = model.sheetViewSelector;
+        }
+    }
+
+    protected resolveVisibleSheetViewSelector(
+        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
+    ): AthenaGraphWorkbenchSheetViewSelector | undefined {
+        return model.sheetViewSelector ?? this.lastDocumentSheetViewSelector;
     }
 
     protected renderReferenceMarkerControls(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
@@ -722,9 +755,30 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         this.update();
     }
 
-    protected renderSheetChrome(): React.ReactNode {
+    protected renderSheetChrome(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
+        const frame = model.sheetChrome.frame;
+        const metadata = model.sheetChrome.metadata;
+        const titleBlock = model.sheetChrome.titleBlock;
+        const fields = titleBlock?.fields ?? [];
         return <>
-            <div className='athena-graph-workbench__sheet-frame' aria-hidden='true' />
+            <div
+                className='athena-graph-workbench__sheet-frame'
+                aria-hidden='true'
+                data-athena-sheet-surface={frame.source ? 'true' : undefined}
+                data-athena-sheet-surface-id={frame.surfaceId}
+                data-athena-sheet-surface-source={frame.source}
+                data-athena-sheet-size={metadata?.sheetSize}
+                data-athena-sheet-orientation={metadata?.orientation}
+                data-athena-sheet-policy-id={metadata?.projectionPolicyId}
+                data-athena-sheet-zone-columns={frame.zoneColumns?.join(',')}
+                data-athena-sheet-zone-rows={frame.zoneRows?.join(',')}
+                data-athena-sheet-margin-top={frame.margins?.top}
+                data-athena-sheet-margin-right={frame.margins?.right}
+                data-athena-sheet-margin-bottom={frame.margins?.bottom}
+                data-athena-sheet-margin-left={frame.margins?.left}
+                data-athena-sheet-title-block={fields.length > 0 ? 'true' : undefined}
+                data-athena-sheet-title-field-roles={fields.map(field => field.role).join(',')}
+            />
         </>;
     }
 
@@ -1239,8 +1293,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             return;
         }
 
-        const nextWidth = Math.max(Math.round(this.viewportElement.clientWidth), 0);
-        const nextHeight = Math.max(Math.round(this.viewportElement.clientHeight), 0);
+        const nextSize = this.readViewportElementSize();
+        const nextWidth = nextSize.width;
+        const nextHeight = nextSize.height;
         const changed = nextWidth !== this.viewportSize.width || nextHeight !== this.viewportSize.height;
         const previousViewportSize = this.viewportSize;
         this.viewportSize = { width: nextWidth, height: nextHeight };
@@ -1254,7 +1309,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             if (this.viewportMode === 'auto-fit' && this.diagram) {
                 const model = buildAthenaGraphWorkbenchModel(this.diagram);
                 if (!model.emptyState) {
-                    this.viewportTransform = fitAthenaGraphViewport(model.sceneBounds, this.viewportSize);
+                    this.viewportTransform = fitAthenaGraphViewport(model.sceneBounds, this.resolveAutoFitViewportSize());
                 }
             } else if (previousViewportSize.width > 0 && previousViewportSize.height > 0) {
                 this.viewportTransform = resizeAthenaGraphViewport(
@@ -1267,6 +1322,20 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         }
     }
 
+    protected readViewportElementSize(): AthenaGraphViewportSize {
+        return {
+            width: Math.max(Math.round(this.viewportElement?.clientWidth ?? 0), 0),
+            height: Math.max(Math.round(this.viewportElement?.clientHeight ?? 0), 0),
+        };
+    }
+
+    protected refreshViewportSizeFromElement(): void {
+        if (!this.viewportElement) {
+            return;
+        }
+        this.viewportSize = this.readViewportElementSize();
+    }
+
     protected fitViewportToDiagram(): void {
         this.pendingAutoFit = true;
         this.viewportMode = 'auto-fit';
@@ -1274,6 +1343,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     }
 
     protected fitViewportToDiagramIfPossible(): void {
+        this.refreshViewportSizeFromElement();
         if (!this.pendingAutoFit || !this.diagram || this.viewportSize.width <= 0 || this.viewportSize.height <= 0) {
             return;
         }
@@ -1286,7 +1356,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             return;
         }
 
-        this.viewportTransform = fitAthenaGraphViewport(model.sceneBounds, this.viewportSize);
+        this.viewportTransform = fitAthenaGraphViewport(model.sceneBounds, this.resolveAutoFitViewportSize());
         this.pendingAutoFit = false;
         this.viewportMode = 'auto-fit';
         this.update();

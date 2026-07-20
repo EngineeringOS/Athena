@@ -115,6 +115,7 @@ data class DeviceDeclaration(
     val name: String,
     val fields: List<PropertyAssignment>,
     override val span: SourceSpan,
+    val nestedPorts: List<PortDeclaration> = emptyList(),
 ) : Declaration
 
 /**

@@ -16,6 +16,8 @@ export function AthenaGraphWorkbenchPresentationNode(
     if (!occurrence || node.presentationParts.length === 0) {
         return undefined;
     }
+    const hasPartTextSlots = node.presentationParts.some(part => part.textSlots.some(slot => !!slot.text));
+    const renderOccurrenceTextSlots = !node.presentationRepresentation && !hasPartTextSlots;
 
     return <>
         {node.presentationParts.map(part => <React.Fragment key={`${node.id}:${part.partId}`}>
@@ -41,7 +43,7 @@ export function AthenaGraphWorkbenchPresentationNode(
                 </text>
                 : undefined)}
         </React.Fragment>)}
-        {occurrence.textSlots.map(slot => slot.text
+        {renderOccurrenceTextSlots ? occurrence.textSlots.map(slot => slot.text
             ? <text
                 key={`${node.id}:occurrence:text:${slot.slotId}`}
                 className={labelClassName}
@@ -50,7 +52,7 @@ export function AthenaGraphWorkbenchPresentationNode(
             >
                 {slot.text}
             </text>
-            : undefined)}
+            : undefined) : undefined}
     </>;
 }
 

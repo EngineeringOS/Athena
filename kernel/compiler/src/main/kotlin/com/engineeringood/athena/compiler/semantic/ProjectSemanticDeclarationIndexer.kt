@@ -12,7 +12,7 @@ class ProjectSemanticDeclarationIndexer {
         val diagnostics = mutableListOf<ProjectSemanticDiagnostic>()
         val declarations = snapshot.sourceUnits.flatMap { sourceUnit ->
             val namespace = namespacesBySourceUnit[sourceUnit.sourceUnitId] ?: return@flatMap emptyList()
-            sourceUnit.authoredDeclarations.mapNotNull { authoredDeclaration ->
+            sourceUnit.authoredDeclarations.flatMap { authoredDeclaration ->
                 authoredDeclaration.toSemanticDeclaration(sourceUnit.sourceUnitId, namespace.namespaceId)
             }
         }
@@ -70,20 +70,25 @@ class ProjectSemanticDeclarationIndexer {
     private fun Declaration.toSemanticDeclaration(
         sourceUnitId: SourceUnitId,
         namespaceId: NamespaceId,
-    ): ProjectSemanticDeclaration? {
-        val (kind, qualifiedName) = when (this) {
-            is DeviceDeclaration -> "device" to listOf(name)
-            is PortDeclaration -> "port" to qualifiedName.parts
-            else -> return null
+    ): List<ProjectSemanticDeclaration> {
+        val semanticDeclarations = when (this) {
+            is DeviceDeclaration -> listOf(
+                "device" to listOf(name) to span,
+            ) + nestedPorts.map { port -> "port" to port.qualifiedName.parts to port.span }
+            is PortDeclaration -> listOf("port" to qualifiedName.parts to span)
+            else -> return emptyList()
         }
-        return ProjectSemanticDeclaration(
-            declarationId = CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, kind, qualifiedName),
-            namespaceId = namespaceId,
-            sourceUnitId = sourceUnitId,
-            kind = kind,
-            qualifiedAuthoredName = qualifiedName,
-            authoredSpan = span,
-        )
+        return semanticDeclarations.map { (kindAndName, authoredSpan) ->
+            val (kind, qualifiedName) = kindAndName
+            ProjectSemanticDeclaration(
+                declarationId = CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, kind, qualifiedName),
+                namespaceId = namespaceId,
+                sourceUnitId = sourceUnitId,
+                kind = kind,
+                qualifiedAuthoredName = qualifiedName,
+                authoredSpan = authoredSpan,
+            )
+        }
     }
 
     private companion object {

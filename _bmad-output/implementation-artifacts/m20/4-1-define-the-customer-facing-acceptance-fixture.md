@@ -4,7 +4,7 @@ baseline_commit: 5c22bae
 
 # Story 4.1: Define the customer-facing acceptance fixture
 
-Status: review
+Status: done
 
 ## Story
 

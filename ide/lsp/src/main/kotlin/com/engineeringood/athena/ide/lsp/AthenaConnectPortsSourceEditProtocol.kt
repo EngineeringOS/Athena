@@ -2,7 +2,13 @@ package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.authoring.AuthoringPreviewStatus
 import com.engineeringood.athena.authoring.ConnectPortsIntent
+import com.engineeringood.athena.authoring.ElectricalConnectionRelationship
+import com.engineeringood.athena.authoring.ElectricalSemanticRelationshipCompatibilityValidator
+import com.engineeringood.athena.authoring.SemanticRelationshipIntent
+import com.engineeringood.athena.authoring.SemanticRelationshipValidationRequest
+import com.engineeringood.athena.authoring.SemanticRelationshipSourceState
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
+import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.runtime.AthenaAuthoringSessionRecord
 
@@ -20,7 +26,7 @@ internal fun acceptedConnectPortsSourceEdit(
     if (record.preview.status != AuthoringPreviewStatus.ACCEPTED) {
         return null
     }
-    val intent = record.intent as? ConnectPortsIntent ?: return null
+    val relationship = record.intent.toElectricalRelationshipSubjects() ?: return null
     val compilation = trackedDocument.compilation as? CompilerCompilationSuccess ?: return null
     val insertOffset = trackedDocument.text.lastIndexOf('}')
     if (insertOffset < 0) {
@@ -28,8 +34,21 @@ internal fun acceptedConnectPortsSourceEdit(
     }
 
     val portsBySemanticId = compilation.document.ports.associateBy { port -> port.id.value }
-    val sourcePort = portsBySemanticId[intent.sourcePortId.value] ?: return null
-    val targetPort = portsBySemanticId[intent.targetPortId.value] ?: return null
+    val sourcePort = portsBySemanticId[relationship.sourcePortId.value] ?: return null
+    val targetPort = portsBySemanticId[relationship.targetPortId.value] ?: return null
+    val relationshipIntent = record.intent.toSemanticRelationshipIntentForValidation() ?: return null
+    val validation = ElectricalSemanticRelationshipCompatibilityValidator().validate(
+        SemanticRelationshipValidationRequest(
+            intent = relationshipIntent,
+            document = compilation.document,
+            sourceState = SemanticRelationshipSourceState.VALID,
+            sourceText = trackedDocument.text,
+        ),
+    )
+    if (!validation.persistenceEligible) {
+        return null
+    }
+
     val sourcePath = sourcePort.authoredPath()
     val targetPath = targetPort.authoredPath()
     val suggestedConnectionSemanticId = "connection:$sourcePath->$targetPath"
@@ -64,6 +83,32 @@ private fun buildConnectPortsSnippet(
         append(sourcePath)
         append(" -> ")
         append(targetPath)
+    }
+}
+
+private data class ElectricalRelationshipSubjects(
+    val sourcePortId: StableSemanticIdentity,
+    val targetPortId: StableSemanticIdentity,
+)
+
+private fun Any.toElectricalRelationshipSubjects(): ElectricalRelationshipSubjects? {
+    return when (this) {
+        is ConnectPortsIntent -> ElectricalRelationshipSubjects(sourcePortId, targetPortId)
+        is SemanticRelationshipIntent -> {
+            if (relationshipType != ElectricalConnectionRelationship) {
+                return null
+            }
+            ElectricalRelationshipSubjects(sourceSubjectId, targetSubjectId)
+        }
+        else -> null
+    }
+}
+
+private fun Any.toSemanticRelationshipIntentForValidation(): SemanticRelationshipIntent? {
+    return when (this) {
+        is ConnectPortsIntent -> toSemanticRelationshipIntent()
+        is SemanticRelationshipIntent -> this
+        else -> null
     }
 }
 

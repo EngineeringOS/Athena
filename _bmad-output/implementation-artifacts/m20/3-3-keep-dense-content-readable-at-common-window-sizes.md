@@ -4,7 +4,7 @@ baseline_commit: b76b2da
 
 # Story 3.3: Keep dense content readable at common window sizes
 
-Status: review
+Status: done
 
 ## Story
 

@@ -4,7 +4,7 @@ baseline_commit: b699dda601e216033ed0728d610042887aa82561
 
 # Story 2.1: Insert the sheet layout model between Presentation IR and rendering
 
-Status: review
+Status: done
 
 ## Story
 

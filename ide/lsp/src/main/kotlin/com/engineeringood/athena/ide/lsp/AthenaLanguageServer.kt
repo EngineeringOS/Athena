@@ -588,6 +588,11 @@ class AthenaLanguageServer(
                         record = result.record,
                     )
 
+                    is com.engineeringood.athena.authoring.SemanticRelationshipIntent -> acceptedConnectPortsSourceEdit(
+                        trackedDocument = currentTrackedDocument,
+                        record = result.record,
+                    )
+
                     else -> null
                 }
             }

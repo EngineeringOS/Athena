@@ -10,6 +10,13 @@ function readBrowserSource(fileName) {
     return readFileSync(path.join(browserDir, fileName), 'utf8');
 }
 
+function cssRule(styles, selector) {
+    const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = styles.match(new RegExp(`${escapedSelector}\\s*\\{([\\s\\S]*?)\\}`));
+    assert.ok(match, `Missing CSS rule for ${selector}`);
+    return match[1];
+}
+
 test('Athena home workbench uses dense panel markup instead of dashboard cards', () => {
     const source = readBrowserSource('athena-home-widget.tsx');
 
@@ -56,9 +63,13 @@ test('Athena graph workbench keeps controls in the bottom dock and Cabinet Main 
     assert.match(source, /handleViewportClick/);
     assert.match(source, /athena-graph-workbench__sheet/);
     assert.match(source, /athena-graph-workbench__sheet-frame/);
+    assert.match(source, /lastDocumentSheetViewSelector/);
+    assert.match(source, /rememberDocumentSheetViewSelector\(model\)/);
+    assert.match(source, /resolveVisibleSheetViewSelector\(model\)/);
+    assert.match(source, /refreshViewportSizeFromElement\(\);[\s\S]*if \(!this\.pendingAutoFit/);
     assert.doesNotMatch(source, /athena-graph-workbench__sheet-grid/);
-    assert.match(source, /width:\s*`\$\{model\.sheetChrome\.frame\.width\}px`/);
-    assert.match(source, /height:\s*`\$\{model\.sheetChrome\.frame\.height\}px`/);
+    assert.match(source, /width:\s*`\$\{model\.canvas\.width\}px`/);
+    assert.match(source, /height:\s*`\$\{model\.canvas\.height\}px`/);
     assert.doesNotMatch(source, />\{model\.statusLabel\}<\/div>/);
     assert.doesNotMatch(source, />\{this\.abbreviateViewLabel\(view\.displayName\)\}<\/button>/);
     assert.doesNotMatch(source, /athena-graph-workbench__overlay--bottom-right/);
@@ -85,6 +96,13 @@ test('Athena shared styles define an IDE-density surface language', () => {
     assert.match(styles, /\.athena-graph-workbench\s*\{[\s\S]*height:\s*100%/);
     assert.match(styles, /\.athena-graph-workbench__stage\s*\{[\s\S]*linear-gradient\(var\(--athena-graph-grid-major\)/);
     assert.match(styles, /\.athena-graph-workbench__stage\s*\{[\s\S]*background-size:[\s\S]*var\(--athena-graph-sheet-grid-major-step\)/);
+    assert.match(styles, /--athena-graph-electrical-line-width:\s*1\.6px/);
+    assert.match(styles, /--athena-graph-terminal-text-size:\s*10px/);
+    assert.match(styles, /--athena-graph-device-text-size:\s*11px/);
+    assert.match(styles, /--athena-graph-route-label-size:\s*10px/);
+    assert.match(styles, /--athena-graph-reference-marker-size:\s*10px/);
+    assert.match(styles, /\.athena-graph-workbench__stage--electrical \.athena-graph-workbench__edge\s*\{[\s\S]*stroke-width:\s*var\(--athena-graph-electrical-line-width\)/);
+    assert.match(styles, /\.athena-graph-workbench__presentation-terminal-number,\s*\n\.athena-graph-workbench__presentation-label\s*\{[\s\S]*font-size:\s*var\(--athena-graph-terminal-text-size\)/);
     assert.match(styles, /\.athena-graph-workbench__sheet\s*\{[\s\S]*background:\s*transparent/);
     assert.match(styles, /\.athena-graph-workbench__overlay--top\s*\{[\s\S]*pointer-events:\s*auto/);
     assert.match(styles, /\.athena-graph-workbench__bottom-dock\s*\{[\s\S]*position:\s*absolute/);
@@ -98,6 +116,17 @@ test('Athena shared styles define an IDE-density surface language', () => {
     assert.match(styles, /\.athena-graph-workbench__node\s*\{[\s\S]*fill:\s*transparent/);
     assert.match(styles, /\.athena-graph-workbench__node--electrical-device\s*\{[\s\S]*fill:\s*transparent/);
     assert.match(styles, /\.athena-graph-workbench__status\s*\{[\s\S]*background:\s*transparent/);
+
+    const sheetRule = cssRule(styles, '.athena-graph-workbench__sheet');
+    const sheetFrameRule = cssRule(styles, '.athena-graph-workbench__sheet-frame');
+    const nodeHitboxRule = cssRule(styles, '.athena-graph-workbench__node-hitbox');
+    assert.match(sheetRule, /border:\s*0;/);
+    assert.match(sheetRule, /box-shadow:\s*none;/);
+    assert.match(sheetFrameRule, /border:\s*0;/);
+    assert.match(sheetFrameRule, /box-shadow:\s*none;/);
+    assert.match(nodeHitboxRule, /stroke:\s*transparent/);
+    assert.match(styles, /\.athena-graph-workbench__element:is\(:hover,\s*:focus,\s*:focus-visible\)\s*>\s*\.athena-graph-workbench__node-hitbox\s*\{[\s\S]*stroke-dasharray:\s*4 3/);
+
     assert.doesNotMatch(styles, /athena-graph-workbench__bottom-dock-heading/);
     assert.doesNotMatch(styles, /athena-graph-workbench__floating-panel/);
     assert.doesNotMatch(styles, /athena-graph-workbench__overlay-toggle/);
@@ -106,4 +135,5 @@ test('Athena shared styles define an IDE-density surface language', () => {
     assert.doesNotMatch(styles, /athena-graph-workbench__sheet-grid/);
     assert.doesNotMatch(styles, /athena-graph-workbench__grid/);
     assert.doesNotMatch(styles, /backdrop-filter\s*:/);
+    assert.doesNotMatch(styles, /font-size:\s*(?:calc|clamp|min|max)\(/);
 });

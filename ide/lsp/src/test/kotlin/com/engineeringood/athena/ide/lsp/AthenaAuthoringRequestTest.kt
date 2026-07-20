@@ -3,6 +3,7 @@ package com.engineeringood.athena.ide.lsp
 import com.engineeringood.athena.compiler.AthenaCompiler
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -198,8 +199,10 @@ class AthenaAuthoringRequestTest {
                 assertTrue(sourceEdit.newText.contains("device PLC2"))
                 assertTrue(sourceEdit.newText.contains("componentRef \"electrical.plc.cpu\""))
                 assertTrue(sourceEdit.newText.contains("vendorPartNumber \"proof.cpu.313c\""))
-                assertTrue(sourceEdit.newText.contains("port PLC2.lplus"))
-                assertTrue(sourceEdit.newText.contains("port PLC2.mpi"))
+                assertTrue(sourceEdit.newText.contains("    port lplus {"))
+                assertTrue(sourceEdit.newText.contains("    port mpi {"))
+                assertFalse(sourceEdit.newText.contains("port PLC2.lplus"))
+                assertFalse(sourceEdit.newText.contains("port PLC2.mpi"))
                 val selectionRange = assertNotNull(sourceEdit.selectionRange)
                 assertEquals("component:PLC2", sourceEdit.suggestedSemanticId)
 
@@ -437,6 +440,109 @@ class AthenaAuthoringRequestTest {
 
     @Test
     @Suppress("DEPRECATION")
+    fun `accepted semantic-relationship preview returns governed electrical connection source edit`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-authoring-relationship-",
+            sourceText = authoringConnectSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val documentUri = repository.seedSourcePath.toUri().toString()
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            documentUri,
+                            "athena",
+                            1,
+                            authoringConnectSource,
+                        ),
+                    ),
+                )
+
+                val submission = assertNotNull(
+                    server.authoringPreview(
+                        AthenaAuthoringPreviewParams(
+                            intentId = "intent-relationship-0001",
+                            intentKind = "semantic-relationship",
+                            originSurface = "graph",
+                            relationshipType = "ElectricalConnectionRelationship",
+                            sourceSubjectId = "port:PLC1.out",
+                            targetSubjectId = "port:M1.in",
+                            projectionViewId = "schematic",
+                            persistenceSourceUri = documentUri,
+                        ),
+                    ).get(),
+                )
+                assertEquals("semantic-relationship", submission.preview.intentKind)
+
+                val decision = assertNotNull(
+                    server.authoringDecision(
+                        AthenaAuthoringDecisionParams(
+                            previewId = submission.preview.previewId,
+                            intentId = submission.preview.intentId,
+                            decision = "accepted",
+                            note = "Apply governed graph relationship.",
+                        ),
+                    ).get(),
+                )
+
+                val sourceEdit = assertNotNull(decision.sourceEdit)
+                assertEquals(documentUri, sourceEdit.uri)
+                assertEquals("connection:PLC1.out->M1.in", sourceEdit.suggestedSemanticId)
+                assertTrue(sourceEdit.newText.contains("connect PLC1.out -> M1.in"))
+
+                val updatedSource = applySourceEdit(
+                    source = authoringConnectSource,
+                    edit = sourceEdit,
+                )
+                server.textDocumentService.didChange(
+                    DidChangeTextDocumentParams().apply {
+                        textDocument = VersionedTextDocumentIdentifier(documentUri, 2)
+                        contentChanges = listOf(TextDocumentContentChangeEvent(updatedSource))
+                    },
+                )
+
+                val projection = assertNotNull(server.projectionSession(AthenaProjectionSessionParams()).get())
+                val readyProjection = assertNotNull(projection.readyProjection)
+                assertEquals("ready", projection.status)
+                assertTrue(readyProjection.connections.any { connection -> connection.semanticId == "connection:PLC1.out->M1.in" })
+                assertTrue(readyProjection.electricalConnectionEndpoints.any { endpoint ->
+                    endpoint.connectionSemanticId == "connection:PLC1.out->M1.in" &&
+                        endpoint.portSemanticId == "port:PLC1.out"
+                })
+                assertTrue(readyProjection.electricalConnectionEndpoints.any { endpoint ->
+                    endpoint.connectionSemanticId == "connection:PLC1.out->M1.in" &&
+                        endpoint.portSemanticId == "port:M1.in"
+                })
+                assertTrue(readyProjection.electricalRoutingCorridors.any { corridor ->
+                    corridor.connectionSemanticId == "connection:PLC1.out->M1.in"
+                })
+
+                val authoringState = assertNotNull(server.authoringState(AthenaAuthoringStateParams()).get())
+                assertEquals(0, authoringState.pendingPreviewCount)
+                assertEquals("accepted", authoringState.previews.single { preview ->
+                    preview.intentId == submission.preview.intentId
+                }.status)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
     fun `guided authoring proof flow stays repository backed across create rename insert and connect`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-authoring-proof-",
@@ -606,8 +712,10 @@ class AthenaAuthoringRequestTest {
                 assertTrue(inspection.connections.any { connection -> connection.semanticId == "connection:PWR1.out->PLCMAIN.lplus" })
                 assertTrue(currentSource.contains("device PLCMAIN"))
                 assertTrue(currentSource.contains("device PWR1"))
-                assertTrue(currentSource.contains("port PLCMAIN.lplus"))
-                assertTrue(currentSource.contains("port PWR1.out"))
+                assertTrue(currentSource.contains("    port lplus {"))
+                assertTrue(currentSource.contains("    port out {"))
+                assertFalse(currentSource.contains("port PLCMAIN.lplus"))
+                assertFalse(currentSource.contains("port PWR1.out"))
                 assertTrue(currentSource.contains("connect PWR1.out -> PLCMAIN.lplus"))
             } finally {
                 server.shutdown().get()

@@ -156,6 +156,38 @@ class AthenaLanguageParserTest {
     }
 
     @Test
+    fun `parses nested device owned ports as first class component anatomy`() {
+        val source =
+            """
+            system Demo {
+              device SpareTerminalXT99 {
+                type Switch
+                model "SPARE-XT"
+
+                port in1 {
+                  direction in
+                  signal Digital
+                }
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("nested-port.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val device = assertIs<DeviceDeclaration>(success.ast.declarations.single())
+        assertEquals("SpareTerminalXT99", device.name)
+        assertEquals(2, device.fields.size)
+        val nestedPort = device.nestedPorts.single()
+        assertEquals(listOf("SpareTerminalXT99", "in1"), nestedPort.qualifiedName.parts)
+        assertEquals(2, nestedPort.fields.size)
+        assertEquals("direction", nestedPort.fields[0].name)
+        assertEquals("signal", nestedPort.fields[1].name)
+        assertTrue(nestedPort.span.start.offset > device.span.start.offset)
+        assertTrue(nestedPort.span.end.offset < device.span.end.offset)
+    }
+
+    @Test
     fun `parses a single segment package name`() {
         val result = AthenaLanguageParser().parse(
             "single-package.athena",

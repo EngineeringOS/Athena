@@ -1,0 +1,34 @@
+package com.engineeringood.m20.sample
+
+system SchematicSheetShowcase {
+  device SchematicSW1 {
+    type Switch
+    model "Main"
+  }
+
+  device SchematicM1 {
+    type Motor
+  }
+
+  device SchematicL1 {
+    type Lamp
+  }
+
+  port SchematicSW1.out {
+    direction out
+    signal Control24V
+  }
+
+  port SchematicM1.in {
+    direction in
+    signal Control24V
+  }
+
+  port SchematicL1.in {
+    direction in
+    signal Control24V
+  }
+
+  connect SchematicSW1.out -> SchematicM1.in
+  connect SchematicSW1.out -> SchematicL1.in
+}

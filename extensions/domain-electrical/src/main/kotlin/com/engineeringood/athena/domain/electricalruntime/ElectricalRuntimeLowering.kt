@@ -17,7 +17,10 @@ internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): Athen
     val connectionDeclarations = mutableListOf<ConnectionDeclaration>()
     for (declaration in context.source.ast.declarations) {
         when (declaration) {
-            is DeviceDeclaration -> deviceDeclarations += declaration
+            is DeviceDeclaration -> {
+                deviceDeclarations += declaration
+                portDeclarations += declaration.nestedPorts
+            }
             is PortDeclaration -> portDeclarations += declaration
             is ConnectionDeclaration -> connectionDeclarations += declaration
             is LayoutDeclaration -> Unit

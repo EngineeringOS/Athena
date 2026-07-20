@@ -47,6 +47,7 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         data-athena-route-fact='true'
                         data-athena-route-id={edge.id}
                         data-athena-route-semantic-id={edge.semanticId}
+                        data-athena-route-points={edge.routePoints.map(point => `${point.x},${point.y}`).join(';')}
                         data-athena-route-point-count={edge.routePoints.length}
                         data-athena-route-source-anchor-id={edge.terminals[0]?.anchorId ?? ''}
                         data-athena-route-target-anchor-id={edge.terminals[1]?.anchorId ?? ''}

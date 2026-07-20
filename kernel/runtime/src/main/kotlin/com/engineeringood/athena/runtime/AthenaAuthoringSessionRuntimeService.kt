@@ -12,6 +12,7 @@ import com.engineeringood.athena.authoring.ConnectPortsIntent
 import com.engineeringood.athena.authoring.CreateComponentIntent
 import com.engineeringood.athena.authoring.RejectAuthoringPreviewDecision
 import com.engineeringood.athena.authoring.RevealSubjectIntent
+import com.engineeringood.athena.authoring.SemanticRelationshipIntent
 import com.engineeringood.athena.authoring.UpdateComponentPropertiesIntent
 
 /**
@@ -250,6 +251,20 @@ private fun AuthoringIntent.toPreview(previewId: AuthoringPreviewId): AuthoringP
                     title = "${sourcePortId.value} -> ${targetPortId.value}",
                     summary = "Create one guided semantic connection between the selected ports.",
                     affectedSubjectIdentities = setOf(sourcePortId, targetPortId),
+                ),
+            ),
+        )
+
+        is SemanticRelationshipIntent -> AuthoringPreview(
+            previewId = previewId,
+            intentId = intentId,
+            title = "Semantic relationship preview",
+            changes = listOf(
+                AuthoringPreviewChange(
+                    kind = AuthoringPreviewChangeKind.CONNECT,
+                    title = "${sourceSubjectId.value} -> ${targetSubjectId.value}",
+                    summary = "Create one governed `${relationshipType.value}` semantic relationship between the selected subjects.",
+                    affectedSubjectIdentities = setOf(sourceSubjectId, targetSubjectId),
                 ),
             ),
         )

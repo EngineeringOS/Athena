@@ -122,27 +122,25 @@ private fun buildCreateComponentSnippet(
         append("    label \"")
         append(componentName)
         appendLine("\"")
-        appendLine("  }")
         portTemplates.forEach { template ->
             appendLine()
-            append("  port ")
-            append(componentName)
-            append('.')
+            append("    port ")
             append(template.name)
             appendLine(" {")
-            append("    direction ")
+            append("      direction ")
             append(template.direction)
             appendLine()
-            append("    signal ")
+            append("      signal ")
             append(template.signal)
             appendLine()
             template.protocol?.let { protocol ->
-                append("    protocol ")
+                append("      protocol ")
                 append(protocol)
                 appendLine()
             }
-            appendLine("  }")
+            appendLine("    }")
         }
+        appendLine("  }")
     }
 }
 

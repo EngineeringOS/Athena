@@ -110,7 +110,7 @@ class AthenaRouteEngineV0 {
             lane = SchematicRouteLane(input.requests.sortedBy { request -> request.routeId.value }.indexOf(this)),
             constraints = constraints,
             labels = routeLabels(segments, input),
-            quality = routeQuality(sourceAnchor, targetAnchor, input.layoutContext),
+            quality = routeQuality(sourceAnchor, targetAnchor, segments, input),
         )
     }
 
@@ -163,11 +163,12 @@ class AthenaRouteEngineV0 {
         val source = sourceAnchor.gridPoint
         val target = targetAnchor.gridPoint
         require(source != target) { "Route engine endpoints must not share the same terminal anchor point." }
+        val obstacles = input.componentBounds.excludingEndpointOwners(sourceAnchor, targetAnchor)
         val sourceStub = sideStubPoint(sourceAnchor, input.layoutContext) ?: source
         val targetStub = sideStubPoint(targetAnchor, input.layoutContext) ?: target
         val segments = mutableListOf<SchematicRouteSegment>()
         segments.addSegment(source, sourceStub)
-        segments += middleSegments(sourceStub, targetStub, input.componentBounds, input.layoutContext)
+        segments += middleSegments(sourceStub, targetStub, obstacles, input.layoutContext)
         segments.addSegment(targetStub, target)
         return segments
 
@@ -248,24 +249,47 @@ class AthenaRouteEngineV0 {
         }
     }
 
-    private fun routeQuality(
+    private fun AthenaRouteRequest.routeQuality(
         sourceAnchor: TerminalAnchorFact,
         targetAnchor: TerminalAnchorFact,
-        layoutContext: SchematicRoutingLayoutContext,
+        segments: List<SchematicRouteSegment>,
+        input: AthenaRouteEngineInput,
     ): RouteQuality {
         val failed = buildList {
-            if (sideStubPoint(sourceAnchor, layoutContext) == null) {
+            if (sideStubPoint(sourceAnchor, input.layoutContext) == null) {
                 add(RouteConstraintId("constraint:${sourceAnchor.anchorId.value}:preferred-side-stub"))
             }
-            if (sideStubPoint(targetAnchor, layoutContext) == null) {
+            if (sideStubPoint(targetAnchor, input.layoutContext) == null) {
                 add(RouteConstraintId("constraint:${targetAnchor.anchorId.value}:preferred-side-stub"))
+            }
+            val obstacles = input.componentBounds.excludingEndpointOwners(sourceAnchor, targetAnchor)
+            if (segments.any { segment -> obstacles.any { bounds -> bounds.intersects(segment) } }) {
+                val avoidanceConstraintIds = constraints
+                    .filter { constraint ->
+                        constraint.kind == RouteConstraintKind.AVOID_COMPONENT_BODY ||
+                            constraint.kind == RouteConstraintKind.AVOID_NODE
+                    }
+                    .map(RouteConstraint::constraintId)
+                if (avoidanceConstraintIds.isEmpty()) {
+                    add(RouteConstraintId("constraint:${connectionIntent.connectionId.value}:avoid-component-body"))
+                } else {
+                    addAll(avoidanceConstraintIds)
+                }
             }
         }
         return if (failed.isEmpty()) {
             RouteQuality.satisfied()
         } else {
-            RouteQuality.degraded(failed, "Preferred terminal side stub could not be produced inside sheet bounds.")
+            RouteQuality.degraded(failed.distinct(), "Route could not satisfy all preferred side and component avoidance constraints.")
         }
+    }
+
+    private fun List<SchematicComponentBounds>.excludingEndpointOwners(
+        sourceAnchor: TerminalAnchorFact,
+        targetAnchor: TerminalAnchorFact,
+    ): List<SchematicComponentBounds> = filterNot { bounds ->
+        (bounds.subjectId == sourceAnchor.subjectId && bounds.occurrenceId == sourceAnchor.occurrenceId) ||
+            (bounds.subjectId == targetAnchor.subjectId && bounds.occurrenceId == targetAnchor.occurrenceId)
     }
 
     private fun MutableList<SchematicRouteSegment>.addSegment(

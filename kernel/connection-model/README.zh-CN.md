@@ -1,15 +1,22 @@
 ﻿# `:kernel:connection-model`
 
-[English](README.md) | 绠€浣撲腑鏂?
-`:kernel:connection-model` 妯″潡瀹氫箟 Athena 鍦?M14 鐨?semantic port knowledge contract銆?
-杩欎釜妯″潡鎶婃墍鏈夋潈閾炬潯鍥哄畾涓猴細
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+`:kernel:connection-model` 模块定义了 Athena 在 M14 的语义端口知识契约。
+
+这个模块把所有权层级保持清晰：
 
 `Engineering IR -> semantic port knowledge -> downstream M9 / projection / presentation consumers`
 
-## 鑱岃矗
+## 职责
 
-- 閫氳繃 `SemanticPortTypeId` 鍙戝竷绋冲畾 semantic port identity銆?- 鍙戝竷绋冲畾鐨?role銆乨irection銆乻ignal-family 涓?protocol 鏍囪瘑銆?- 閫氳繃 `SemanticPortDefinition` 鍙戝竷 vendor-neutral semantic port definition銆?- 閫氳繃 `ResolvedSemanticPortDefinition` 鍙戝竷鍙 resolved semantic port knowledge銆?- 淇濇寔 canonical authored port truth 浠嶇劧鐣欏湪 `Engineering IR`銆?
-## 涓昏绫诲瀷
+- 通过 `SemanticPortTypeId` 发布稳定的语义端口标识。
+- 发布稳定的角色、方向、信号族和协议标识。
+- 通过 `SemanticPortDefinition` 发布供应商无关的语义端口定义。
+- 通过 `ResolvedSemanticPortDefinition` 发布只读的解析后语义端口知识。
+- 保持规范化的端口真实含义仍然留在 `Engineering IR`。
+
+## 主要类型
 
 - `SemanticPortTypeId`
 - `SemanticPortRoleId`
@@ -19,16 +26,19 @@
 - `SemanticPortDefinition`
 - `ResolvedSemanticPortDefinition`
 
-## 渚濊禆
+## 依赖
 
-璇ユā鍧椾緷璧?`:kernel:engineering-model`锛岄€氳繃 `StableSemanticIdentity` 澶嶇敤瑙勮寖璇箟鏍囪瘑銆?
-## 杈圭晫
+该模块依赖 `:kernel:engineering-model`，并通过 `StableSemanticIdentity` 复用规范化的语义标识。
 
-璇ユā鍧椾笉瀹氫箟 compatibility 鎴?sufficiency judgement锛屼笉瀹氫箟 routing geometry锛屼笉鎼哄甫 graph coordinates銆乻hape ids銆亀idget state锛屼笉瀹氫箟 physical traits锛屼篃涓嶈礋璐?knowledge-pack loading銆乧ompiler orchestration銆乺untime transport銆乸rojection logic銆乸resentation logic 鎴?renderer behavior銆傛洿涓板瘜鐨勫垽鏂暀鍦?M9 鐨勪笅娓搁摼鏉￠噷锛?
+## 边界
+
+该模块不定义兼容性或充分性判断，不定义布线几何、图形坐标、形状 id、控件状态、物理特征，也不承担 knowledge-pack 加载、编译器编排、运行时传输、投影逻辑、呈现逻辑或渲染器行为。更丰富的判断留在 M9 的下游链路里：
+
 `DerivedEngineeringContext -> EngineeringCapabilityFacts -> EngineeringConstraintEvaluations`
 
-瀹冨彧鏄獎璇箟绔彛鐭ヨ瘑濂戠害灞傘€?
-## 楠岃瘉
+它只是一层窄的语义端口知识契约。
+
+## 验证
 
 ```bash
 ./gradlew :kernel:connection-model:test

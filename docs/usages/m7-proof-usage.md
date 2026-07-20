@@ -129,7 +129,7 @@ Then, inside the running Athena shell:
 4. Confirm the graph opens beside the source editor.
 5. Switch between `Cabinet` and `Wiring`.
 6. Pan, zoom, and fit the graph viewport.
-7. Toggle the floating info panel and inspect selection plus session metadata.
+7. Toggle the info dock and inspect selection plus session metadata.
 
 What this proves:
 

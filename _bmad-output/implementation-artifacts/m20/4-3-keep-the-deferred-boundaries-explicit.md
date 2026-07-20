@@ -4,7 +4,7 @@ baseline_commit: 0dc5446
 
 # Story 4.3: Keep the deferred boundaries explicit
 
-Status: review
+Status: done
 
 ## Story
 

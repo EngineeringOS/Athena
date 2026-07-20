@@ -51,7 +51,7 @@ class AthenaGrammarSmokeTest {
         assertEquals("import", system.ident().text)
         val device = system.declaration().single().deviceDecl()
         assertEquals("import", device.ident().text)
-        val property = device.propertyAssignment().single()
+        val property = device.deviceMember().single().propertyAssignment()
         assertEquals("import", property.ident().text)
         assertEquals("import", property.scalarValue().ident().text)
     }

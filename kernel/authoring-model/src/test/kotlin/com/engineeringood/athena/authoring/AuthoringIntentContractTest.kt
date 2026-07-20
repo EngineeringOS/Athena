@@ -68,6 +68,52 @@ class AuthoringIntentContractTest {
     }
 
     @Test
+    fun `semantic relationship intent is generic while electrical connection is a specialization`() {
+        val intent = SemanticRelationshipIntent(
+            intentId = AuthoringIntentId("intent:relate-plc-hmi"),
+            origin = AuthoringOrigin(AuthoringSurface.GRAPH),
+            relationshipType = ElectricalConnectionRelationship,
+            sourceSubjectId = StableSemanticIdentity("port:PLC1.MPI"),
+            targetSubjectId = StableSemanticIdentity("port:HMI1.MPI"),
+            projectionContext = SemanticRelationshipProjectionContext(viewId = "schematic"),
+            persistenceTarget = SemanticRelationshipPersistenceTarget(sourceUri = "main.athena"),
+            provenance = "graphical relationship preview",
+        )
+
+        assertIs<AuthoringIntent>(intent)
+        assertEquals("ElectricalConnectionRelationship", intent.relationshipType.value)
+        assertEquals("port:PLC1.MPI", intent.sourceSubjectId.value)
+        assertEquals("port:HMI1.MPI", intent.targetSubjectId.value)
+        assertEquals("schematic", intent.projectionContext.viewId)
+        assertEquals("main.athena", intent.persistenceTarget.sourceUri)
+    }
+
+    @Test
+    fun `legacy connect ports intent lifts into electrical semantic relationship intent`() {
+        val legacyIntent = ConnectPortsIntent(
+            intentId = AuthoringIntentId("intent:connect-mpi"),
+            origin = AuthoringOrigin(AuthoringSurface.GRAPH),
+            sourcePortId = StableSemanticIdentity("port:PLC1.MPI"),
+            targetPortId = StableSemanticIdentity("port:HMI1.MPI"),
+        )
+
+        val relationshipIntent = legacyIntent.toSemanticRelationshipIntent(
+            projectionContext = SemanticRelationshipProjectionContext(viewId = "schematic"),
+            persistenceTarget = SemanticRelationshipPersistenceTarget(sourceUri = "main.athena"),
+            provenance = "legacy graph connection action",
+        )
+
+        assertEquals(legacyIntent.intentId, relationshipIntent.intentId)
+        assertEquals(legacyIntent.origin, relationshipIntent.origin)
+        assertEquals(ElectricalConnectionRelationship, relationshipIntent.relationshipType)
+        assertEquals(legacyIntent.sourcePortId, relationshipIntent.sourceSubjectId)
+        assertEquals(legacyIntent.targetPortId, relationshipIntent.targetSubjectId)
+        assertEquals("schematic", relationshipIntent.projectionContext.viewId)
+        assertEquals("main.athena", relationshipIntent.persistenceTarget.sourceUri)
+        assertEquals("legacy graph connection action", relationshipIntent.provenance)
+    }
+
+    @Test
     fun `authoring values stay reusable across future authoring surfaces`() {
         val values = listOf(
             AuthoringValue.Text("PLC1"),

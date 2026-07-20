@@ -795,7 +795,10 @@ class AthenaNavigationIndex(
     private val ast: SourceFileAst,
 ) {
     private val deviceDeclarations = ast.declarations.filterIsInstance<DeviceDeclaration>().associateBy { declaration -> declaration.name }
-    private val portDeclarations = ast.declarations.filterIsInstance<PortDeclaration>().associateBy { declaration ->
+    private val portDeclarations = (
+        ast.declarations.filterIsInstance<PortDeclaration>() +
+            ast.declarations.filterIsInstance<DeviceDeclaration>().flatMap { declaration -> declaration.nestedPorts }
+        ).associateBy { declaration ->
         declaration.qualifiedName.parts.joinToString(".")
     }
     private val ownerReferences = buildList {
