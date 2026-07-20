@@ -126,6 +126,25 @@ M26 intentionally defers:
 The term `folio` was rejected because it pulls the architecture toward an EPLAN page-authority model.
 The safer Athena term is semantic document projection.
 
+The M26 sample briefly violated Athena's current source-of-truth boundary by declaring the same
+authored semantic identity in more than one `.athena` source file. `ControllerPLC1` and
+`ControllerPLC1.do1` appeared in both workspace source units, which made the LSP correctly report an
+ambiguous authored reference. The mistake was treating source files as if Athena already supported
+partial component declarations across files.
+
+Current rule:
+
+```text
+One project namespace may contain only one authored declaration for a semantic identity.
+Do not split or extend the same component across `.athena` files until Athena admits explicit
+extension/partial-declaration syntax through ANTLR4, Tree-sitter, compiler, LSP, tests, and docs.
+```
+
+For M26-style semantic document projection, source files may contribute different semantic entities
+to one workspace graph, but they must not duplicate the same entity to force a visual sheet grouping.
+Document projection remains downstream of the semantic graph; it must not be simulated by duplicate
+source declarations.
+
 The strongest M26 boundary is this:
 
 ```text
