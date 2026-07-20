@@ -1,0 +1,75 @@
+# generated: 2026-07-20T10:24:56+08:00
+# last_updated: 2026-07-20T10:24:56+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m26
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created.
+# - Stories can be worked in parallel if team capacity allows.
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings.
+# - Dev moves story to 'review', then runs code-review.
+# - Retrospective appends action items to action_items; sprint-status surfaces open ones.
+
+generated: 2026-07-20T10:24:56+08:00
+last_updated: 2026-07-20T17:55:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m26
+
+development_status:
+  epic-1: done
+  1-1-define-document-projection-model-contracts: done
+  1-2-define-the-built-in-document-projection-policy-contract: done
+  1-3-add-workspace-level-document-projection-entry-point: done
+  1-4-materialize-deterministic-sheet-views-and-occurrence-membership: done
+  1-5-build-document-occurrence-index-stability-coverage: done
+  epic-1-retrospective: optional
+  epic-2: done
+  2-1-derive-continuation-facts-from-cross-view-route-membership: done
+  2-2-produce-typed-cross-reference-facts-for-related-occurrences: done
+  2-3-add-document-reference-diagnostic-provenance: done
+  2-4-integrate-compact-reference-markers-into-presentation-facts: done
+  epic-2-retrospective: optional
+  epic-3: done
+  3-1-transport-document-projection-snapshot-to-theia: done
+  3-2-add-lightweight-sheet-view-selector-in-graphical-view: done
+  3-3-navigate-continuation-and-cross-reference-clicks-through-occurrence-index: done
+  3-4-preserve-source-outline-problems-inspector-and-editor-coherence: done
+  epic-3-retrospective: optional
+  epic-4: done
+  4-1-create-openable-m26-sample-project-with-source-view-anti-regression-case: done
+  4-2-publish-m26-acceptance-proof-and-m25-comparison-documentation: done
+  4-3-add-product-smoke-and-regression-coverage: done
+  4-4-publish-m26-retrospective-hooks-and-boundary-checks: done
+  epic-4-retrospective: done

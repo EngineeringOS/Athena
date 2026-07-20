@@ -235,49 +235,87 @@ private fun documentationSheets(
     connections: List<ProjectionConnection>,
     labels: List<ProjectionLabel>,
 ): List<ProjectionSheet> {
-    val overviewId = ProjectionSheetId("${view.id}/sheet/01-overview")
-    val referenceId = ProjectionSheetId("${view.id}/sheet/02-reference")
+    val powerDistributionId = ProjectionSheetId("${view.id}/sheet/01-power-distribution")
+    val controlLogicId = ProjectionSheetId("${view.id}/sheet/02-control-and-plc-logic")
+    val fieldWiringId = ProjectionSheetId("${view.id}/sheet/03-field-wiring-and-terminal-transition")
     val overviewNodeIds = nodes.filterNot(ProjectionNode::isDocumentationReferenceNode).map(ProjectionNode::projectionId).toSet()
     val referenceNodeIds = nodes.filter(ProjectionNode::isDocumentationReferenceNode).map(ProjectionNode::projectionId).toSet()
     val overviewConnectionIds = connections.map(ProjectionConnection::projectionId).toSet()
     val overviewLabelIds = labels.map(ProjectionLabel::projectionId).toSet()
-    val overviewSubjects = allSubjects.mapNotNull { subject ->
+    val powerSubjects = allSubjects.filter { subject ->
+        subject.isPowerDistributionSubject() || !subject.hasRecognizedDocumentationRole()
+    }.mapNotNull { subject ->
         subject.filtered(
-            nodeIds = overviewNodeIds,
+            nodeIds = overviewNodeIds + referenceNodeIds,
+            connectionIds = overviewConnectionIds,
+            labelIds = overviewLabelIds,
+        )
+    }.ifEmpty {
+        allSubjects.mapNotNull { subject ->
+            subject.filtered(
+                nodeIds = overviewNodeIds + referenceNodeIds,
+                connectionIds = overviewConnectionIds,
+                labelIds = overviewLabelIds,
+            )
+        }
+    }
+    val controlSubjects = allSubjects.filter { subject ->
+        subject.isControlLogicSubject() || !subject.hasRecognizedDocumentationRole()
+    }.mapNotNull { subject ->
+        subject.filtered(
+            nodeIds = overviewNodeIds + referenceNodeIds,
             connectionIds = overviewConnectionIds,
             labelIds = overviewLabelIds,
         )
     }
-    val referenceSubjects = allSubjects.mapNotNull { subject ->
+    val fieldSubjects = allSubjects.filter { subject ->
+        subject.isFieldWiringSubject() || !subject.hasRecognizedDocumentationRole()
+    }.mapNotNull { subject ->
         subject.filtered(
-            nodeIds = referenceNodeIds,
+            nodeIds = overviewNodeIds + referenceNodeIds,
+            connectionIds = overviewConnectionIds,
+            labelIds = overviewLabelIds,
         )
     }
     return listOf(
         ProjectionSheet(
-            sheetId = overviewId,
-            displayName = "Overview",
+            sheetId = powerDistributionId,
+            displayName = "Power Distribution",
             order = 0,
-            nextSheetId = referenceId,
-            subjects = overviewSubjects,
+            nextSheetId = controlLogicId,
+            subjects = powerSubjects,
             publication = ProjectionSheetPublication.fromProjectionState(
-                sheetId = overviewId,
-                displayName = "Overview",
+                sheetId = powerDistributionId,
+                displayName = "Power Distribution",
                 order = 0,
-                subjects = overviewSubjects,
+                subjects = powerSubjects,
             ),
         ),
         ProjectionSheet(
-            sheetId = referenceId,
-            displayName = "Reference",
+            sheetId = controlLogicId,
+            displayName = "Control And PLC Logic",
             order = 1,
-            previousSheetId = overviewId,
-            subjects = referenceSubjects,
+            previousSheetId = powerDistributionId,
+            nextSheetId = fieldWiringId,
+            subjects = controlSubjects,
             publication = ProjectionSheetPublication.fromProjectionState(
-                sheetId = referenceId,
-                displayName = "Reference",
+                sheetId = controlLogicId,
+                displayName = "Control And PLC Logic",
                 order = 1,
-                subjects = referenceSubjects,
+                subjects = controlSubjects,
+            ),
+        ),
+        ProjectionSheet(
+            sheetId = fieldWiringId,
+            displayName = "Field Wiring And Terminal Transition",
+            order = 2,
+            previousSheetId = controlLogicId,
+            subjects = fieldSubjects,
+            publication = ProjectionSheetPublication.fromProjectionState(
+                sheetId = fieldWiringId,
+                displayName = "Field Wiring And Terminal Transition",
+                order = 2,
+                subjects = fieldSubjects,
             ),
         ),
     )
@@ -512,6 +550,26 @@ private fun GeometryPoint.toProjectionPoint(): ProjectionPoint {
 }
 
 private fun ProjectionNode.isDocumentationReferenceNode(): Boolean = projectionId.value.endsWith("_reference")
+
+private fun ProjectionSheetSubject.isPowerDistributionSubject(): Boolean {
+    val normalized = semanticId.value.lowercase()
+    return listOf("power", "supply", "ps", "breaker", "qf", "line", "load", "lplus").any(normalized::contains)
+}
+
+private fun ProjectionSheetSubject.isControlLogicSubject(): Boolean {
+    val normalized = semanticId.value.lowercase()
+    return listOf("controller", "plc", "hmi", "operator", "status", "do").any(normalized::contains)
+}
+
+private fun ProjectionSheetSubject.isFieldWiringSubject(): Boolean {
+    val normalized = semanticId.value.lowercase()
+    return listOf("field", "terminal", "xt", "motor", "conveyor", "u1", "component:m", "port:m", "do")
+        .any(normalized::contains)
+}
+
+private fun ProjectionSheetSubject.hasRecognizedDocumentationRole(): Boolean {
+    return isPowerDistributionSubject() || isControlLogicSubject() || isFieldWiringSubject()
+}
 
 private fun ProjectionSheetSubject.filtered(
     nodeIds: Set<ProjectionNodeId> = emptySet(),

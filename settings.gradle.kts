@@ -55,6 +55,7 @@ include(
     ":kernel:layout-model",
     ":kernel:layout-engine",
     ":kernel:routing-model",
+    ":kernel:document-projection-model",
     ":kernel:representation-model",
     ":kernel:presentation-policy-model",
     ":kernel:geometry-model",

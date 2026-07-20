@@ -11,6 +11,7 @@ data class AthenaPresentationDocumentPayload(
     val occurrences: List<AthenaPresentationOccurrencePayload>,
     val connectors: List<AthenaPresentationConnectorPayload>,
     val representationFacts: List<AthenaPresentationRepresentationFactPayload> = emptyList(),
+    val referenceMarkers: List<AthenaPresentationReferenceMarkerPayload> = emptyList(),
 )
 
 /**
@@ -125,6 +126,30 @@ data class AthenaPresentationConnectorPayload(
     val markerKeys: List<String>,
     val tokenOverrides: Map<String, String>,
     val sourceProjectionIds: List<String>,
+)
+
+/**
+ * M26 compact document reference marker exposed through the Athena LSP boundary.
+ */
+data class AthenaPresentationReferenceMarkerPayload(
+    val markerId: String,
+    val markerKind: String,
+    val relationType: String,
+    val selectedSheetViewId: String,
+    val sourceOccurrenceId: String,
+    val targetOccurrenceId: String,
+    val sourceIdentity: String,
+    val targetIdentity: String,
+    val sourceDocumentLocation: AthenaDocumentLocationPayload,
+    val targetDocumentLocation: AthenaDocumentLocationPayload,
+    val compactNotation: String,
+    val sourceProjectionIds: List<String>,
+)
+
+data class AthenaDocumentLocationPayload(
+    val sheetViewId: String,
+    val zoneId: String,
+    val displayNotation: String,
 )
 
 /**

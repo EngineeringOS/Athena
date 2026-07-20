@@ -818,15 +818,20 @@ class AthenaProjectionRequestTest {
                 val readyProjection = assertNotNull(session.readyProjection)
                 assertEquals("documentation", session.activeViewId)
                 assertEquals("electrical/documentation", readyProjection.familyId)
-                assertEquals("documentation/sheet/01-overview", readyProjection.activeSheetId)
+                assertEquals("documentation/sheet/01-power-distribution", readyProjection.activeSheetId)
                 assertEquals(
-                    listOf("documentation/sheet/01-overview", "documentation/sheet/02-reference"),
+                    listOf(
+                        "documentation/sheet/01-power-distribution",
+                        "documentation/sheet/02-control-and-plc-logic",
+                        "documentation/sheet/03-field-wiring-and-terminal-transition",
+                    ),
                     readyProjection.sheets.map { sheet -> sheet.sheetId },
                 )
-                assertEquals("documentation/sheet/02-reference", readyProjection.sheets.first().nextSheetId)
-                assertEquals("documentation/sheet/01-overview", readyProjection.sheets.last().previousSheetId)
+                assertEquals("documentation/sheet/02-control-and-plc-logic", readyProjection.sheets.first().nextSheetId)
+                assertEquals("documentation/sheet/02-control-and-plc-logic", readyProjection.sheets.last().previousSheetId)
                 assertTrue(readyProjection.sheets.first().subjectSemanticIds.contains("component:PLC1"))
-                assertTrue(readyProjection.sheets.last().subjectSemanticIds.contains("component:PLC1"))
+                assertTrue(readyProjection.sheets[1].subjectSemanticIds.contains("component:PLC1"))
+                assertTrue(readyProjection.sheets.last().subjectSemanticIds.contains("component:M1"))
                 assertEquals(2, readyProjection.components.count { component -> component.semanticId == "component:PLC1" })
                 assertEquals(
                     2,

@@ -58,6 +58,7 @@ export type AthenaGLSPReadyProjectionSource = {
 export type AthenaGLSPSheetSource = {
     sheetId: string;
     displayName: string;
+    role?: string;
     order: number;
     previousSheetId?: string;
     nextSheetId?: string;
@@ -163,6 +164,7 @@ export type AthenaGLSPPresentationDocumentSource = {
     occurrences: AthenaGLSPPresentationOccurrenceSource[];
     connectors: AthenaGLSPPresentationConnectorSource[];
     representationFacts?: AthenaGLSPPresentationRepresentationFactSource[];
+    referenceMarkers?: AthenaGLSPPresentationReferenceMarkerSource[];
 };
 export type AthenaGLSPPresentationPrimitivePackSource = {
     packId: string;
@@ -245,6 +247,25 @@ export type AthenaGLSPPresentationConnectorSource = {
     markerKeys: string[];
     tokenOverrides: Record<string, string>;
     sourceProjectionIds: string[];
+};
+export type AthenaGLSPPresentationReferenceMarkerSource = {
+    markerId: string;
+    markerKind: string;
+    relationType: string;
+    selectedSheetViewId: string;
+    sourceOccurrenceId: string;
+    targetOccurrenceId: string;
+    sourceIdentity: string;
+    targetIdentity: string;
+    sourceDocumentLocation: AthenaGLSPDocumentLocationSource;
+    targetDocumentLocation: AthenaGLSPDocumentLocationSource;
+    compactNotation: string;
+    sourceProjectionIds: string[];
+};
+export type AthenaGLSPDocumentLocationSource = {
+    sheetViewId: string;
+    zoneId: string;
+    displayNotation: string;
 };
 export type AthenaGLSPPresentationBoundsSource = {
     x: number;

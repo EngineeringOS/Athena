@@ -53,7 +53,7 @@ class AthenaRuntimeViewerProjectionTest {
             val unavailable = assertIs<AthenaRuntimeViewerUnavailableProjection>(projection)
             assertEquals("broken", unavailable.projectName)
             assertTrue(unavailable.reason.isNotBlank())
-            assertContains(unavailable.reason, "Expected")
+            assertContains(unavailable.reason, "missing '->'")
         } finally {
             Files.deleteIfExists(brokenPath)
         }

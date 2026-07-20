@@ -17,7 +17,9 @@ import {
     type AthenaGraphWorkbenchNode,
     type AthenaGraphViewportSize,
     type AthenaGraphViewportTransform,
+    buildAthenaGraphDocumentReferenceInspection,
     buildAthenaGraphRepresentationInspection,
+    resolveAthenaGraphReferenceMarkerNavigation,
     buildAthenaGraphRouteInspection,
     buildAthenaGraphWorkbenchModel,
     clampAthenaGraphZoom,
@@ -416,6 +418,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const representationInspection = selectedSemanticId
             ? buildAthenaGraphRepresentationInspection(model, selectedSemanticId)
             : undefined;
+        const documentReferenceInspection = selectedSemanticId
+            ? buildAthenaGraphDocumentReferenceInspection(model, selectedSemanticId)
+            : undefined;
         const routeRows = routeInspection?.status === 'ready'
             ? [
                 { key: 'route-quality', label: 'Route quality', value: routeInspection.routeQuality },
@@ -446,6 +451,22 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 },
             ]
             : [];
+        const documentReferenceRows = documentReferenceInspection?.status === 'ready'
+            ? [
+                {
+                    key: 'document-reference-relation',
+                    label: 'Reference',
+                    value: documentReferenceInspection.references.map(reference => `${reference.relationType}:${reference.compactNotation}`).join(', '),
+                    code: true,
+                },
+                {
+                    key: 'document-reference-target',
+                    label: 'Reference target',
+                    value: documentReferenceInspection.references.map(reference => `${reference.targetOccurrenceId}@${reference.targetLocation}`).join(', '),
+                    code: true,
+                },
+            ]
+            : [];
 
         return [
             { key: 'project', label: 'Project', value: model.headerTitle, code: true },
@@ -458,6 +479,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             { key: 'endpoint', label: 'Endpoint', value: endpointSummary, code: true },
             { key: 'cross-refs', label: 'Cross refs', value: crossReferenceSummary, code: true },
             { key: 'related', label: 'Related', value: relatedSummary, code: true },
+            ...documentReferenceRows,
             ...representationRows,
             ...routeRows,
             { key: 'source', label: 'Source', value: sourceSummary, code: true },
@@ -478,12 +500,15 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     </div>
                 </div>
                 <div className='athena-graph-workbench__tool-group'>
+                    {model.sheetViewSelector ? this.renderSheetViewSelector(model) : undefined}
+                    {model.referenceMarkers.length > 0 ? this.renderReferenceMarkerControls(model) : undefined}
                     <div className='athena-graph-workbench__view-switches'>
                         {model.supportedViews.map(view => <button
                             key={view.viewId}
                             className={`athena-graph-workbench__tool-button athena-graph-workbench__tool-button--view ${view.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`}
                             title={this.viewAriaLabel(view)}
                             aria-label={this.viewAriaLabel(view)}
+                            data-athena-projection-view-id={view.viewId}
                             type='button'
                             disabled={view.isActive || this.switchingView}
                             onClick={() => void this.switchActiveView(view.viewId)}
@@ -524,6 +549,51 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 </div>
             </div>
             {this.infoPopoverOpen ? this.renderCabinetMainPopover(cabinetMainRows) : undefined}
+        </div>;
+    }
+
+    protected renderSheetViewSelector(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
+        const selector = model.sheetViewSelector;
+        if (!selector) {
+            return undefined;
+        }
+
+        return <label
+            className='athena-graph-workbench__sheet-view-selector'
+            title='Document projection sheet view'
+        >
+            <span className='codicon codicon-layout' aria-hidden='true' />
+            <select
+                value={selector.activeSheetViewId ?? ''}
+                aria-label='Document projection sheet view'
+                disabled={this.switchingView}
+                onChange={event => void this.switchActiveSheetView(event.currentTarget.value)}
+            >
+                {selector.entries.map(entry => <option
+                    key={entry.sheetViewId}
+                    value={entry.sheetViewId}
+                >
+                    {entry.label}{entry.role ? ` (${entry.role})` : ''}
+                </option>)}
+            </select>
+        </label>;
+    }
+
+    protected renderReferenceMarkerControls(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
+        return <div className='athena-graph-workbench__reference-marker-controls'>
+            {model.referenceMarkers.slice(0, 4).map(marker => <button
+                key={marker.markerId}
+                className='athena-graph-workbench__reference-marker-button'
+                type='button'
+                title={`${marker.relationType}: ${marker.targetIdentity}`}
+                aria-label={`Follow ${marker.relationType} ${marker.compactNotation}`}
+                data-athena-reference-marker='true'
+                data-athena-reference-marker-id={marker.markerId}
+                onClick={() => void this.handleReferenceMarkerClick(marker.markerId)}
+            >
+                <span className='codicon codicon-arrow-swap' aria-hidden='true' />
+                <span>{marker.compactNotation}</span>
+            </button>)}
         </div>;
     }
 
@@ -1537,6 +1607,34 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.switchingView = false;
             this.update();
         }
+    }
+
+    protected async switchActiveSheetView(sheetViewId: string): Promise<void> {
+        if (!sheetViewId || sheetViewId === this.diagram?.activeSheetId) {
+            return;
+        }
+        await this.switchActiveView(sheetViewId);
+    }
+
+    protected async handleReferenceMarkerClick(markerId: string): Promise<void> {
+        if (!this.diagram) {
+            return;
+        }
+
+        const navigation = resolveAthenaGraphReferenceMarkerNavigation(
+            buildAthenaGraphWorkbenchModel(this.diagram),
+            markerId,
+        );
+        if (navigation.status !== 'ready') {
+            this.errorMessage = navigation.reason;
+            this.update();
+            return;
+        }
+
+        if (navigation.requiresSheetSwitch) {
+            await this.switchActiveSheetView(navigation.targetSheetViewId);
+        }
+        await this.semanticSelectionService.selectSemanticId(navigation.targetCanonicalId);
     }
 
     protected async submitPlacementIntent(dragState: AthenaGraphNodeDragState): Promise<void> {

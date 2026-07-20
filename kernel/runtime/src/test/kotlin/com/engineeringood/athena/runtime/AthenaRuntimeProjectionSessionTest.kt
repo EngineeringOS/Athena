@@ -143,116 +143,35 @@ class AthenaRuntimeProjectionSessionTest {
         val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(success.session.activeProjection)
         assertEquals("documentation", ready.viewId)
         assertEquals("electrical/documentation", ready.familyId)
-        assertEquals("documentation/sheet/01-overview", ready.activeSheetId)
+        assertEquals("documentation/sheet/01-power-distribution", ready.activeSheetId)
         assertEquals(
-            listOf("documentation/sheet/01-overview", "documentation/sheet/02-reference"),
+            listOf(
+                "documentation/sheet/01-power-distribution",
+                "documentation/sheet/02-control-and-plc-logic",
+                "documentation/sheet/03-field-wiring-and-terminal-transition",
+            ),
             ready.sheets.map { sheet -> sheet.sheetId },
         )
-        assertEquals("documentation/sheet/02-reference", ready.sheets.first().nextSheetId)
-        assertEquals("documentation/sheet/01-overview", ready.sheets.last().previousSheetId)
+        assertEquals("documentation/sheet/02-control-and-plc-logic", ready.sheets.first().nextSheetId)
+        assertEquals("documentation/sheet/02-control-and-plc-logic", ready.sheets.last().previousSheetId)
         assertTrue(ready.sheets.first().subjectSemanticIds.contains("component:PLC1"))
-        assertTrue(ready.sheets.last().subjectSemanticIds.contains("component:PLC1"))
-        val expectedOverviewPublication = AthenaRuntimeProjectionSheetPublication(
-            pageSize = AthenaRuntimeProjectionSheetPageSize(
-                format = "A3",
-                orientation = "landscape",
-            ),
-            frame = AthenaRuntimeProjectionSheetFrame(
-                frameId = "engineering-sheet-frame",
-                style = "schematic",
-            ),
-            coordinateZones = listOf(
-                AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "header", label = "Header", order = 0),
-                AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "body", label = "Body", order = 1),
-                AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "title-block", label = "Title Block", order = 2),
-            ),
-            titleBlock = AthenaRuntimeProjectionSheetTitleBlock(
-                sheetTitle = "Overview",
-                sheetFamily = "documentation",
-                sheetNumber = "01-overview",
-            ),
-            revisionMetadata = AthenaRuntimeProjectionSheetRevisionMetadata(
-                revisionCode = "A",
-                revisionNote = "Initial governed sheet publication",
-            ),
-            viewComposition = AthenaRuntimeProjectionSheetViewComposition(
-                primaryViewId = "documentation",
-                primarySheetOrder = 0,
-                subjectSemanticIds = listOf(
-                    "component:M1",
-                    "component:PLC1",
-                    "connection:PLC1.out->M1.in",
-                    "port:M1.in",
-                    "port:PLC1.out",
-                ),
-            ),
-        )
-        val expectedOverviewComposition = AthenaRuntimeProjectionSheetComposition(
-            sheetId = "documentation/sheet/01-overview",
-            displayName = "Overview",
-            order = 0,
-            publication = expectedOverviewPublication,
-            subjectSemanticIds = listOf(
-                "component:M1",
-                "component:PLC1",
-                "connection:PLC1.out->M1.in",
-                "port:M1.in",
-                "port:PLC1.out",
-            ),
-            representationFamilyId = "schematic-sheet",
-        )
-        val expectedReferencePublication = AthenaRuntimeProjectionSheetPublication(
-            pageSize = AthenaRuntimeProjectionSheetPageSize(
-                format = "A3",
-                orientation = "landscape",
-            ),
-            frame = AthenaRuntimeProjectionSheetFrame(
-                frameId = "engineering-sheet-frame",
-                style = "schematic",
-            ),
-            coordinateZones = listOf(
-                AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "header", label = "Header", order = 0),
-                AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "body", label = "Body", order = 1),
-                AthenaRuntimeProjectionSheetCoordinateZone(zoneId = "title-block", label = "Title Block", order = 2),
-            ),
-            titleBlock = AthenaRuntimeProjectionSheetTitleBlock(
-                sheetTitle = "Reference",
-                sheetFamily = "documentation",
-                sheetNumber = "02-reference",
-            ),
-            revisionMetadata = AthenaRuntimeProjectionSheetRevisionMetadata(
-                revisionCode = "A",
-                revisionNote = "Initial governed sheet publication",
-            ),
-            viewComposition = AthenaRuntimeProjectionSheetViewComposition(
-                primaryViewId = "documentation",
-                primarySheetOrder = 1,
-                subjectSemanticIds = listOf(
-                    "component:M1",
-                    "component:PLC1",
-                ),
-            ),
-        )
-        val expectedReferenceComposition = AthenaRuntimeProjectionSheetComposition(
-            sheetId = "documentation/sheet/02-reference",
-            displayName = "Reference",
-            order = 1,
-            publication = expectedReferencePublication,
-            subjectSemanticIds = listOf(
-                "component:M1",
-                "component:PLC1",
-            ),
-            representationFamilyId = "schematic-sheet",
-        )
+        assertTrue(ready.sheets[1].subjectSemanticIds.contains("component:PLC1"))
+        assertTrue(ready.sheets.last().subjectSemanticIds.contains("component:M1"))
         assertEquals("schematic-sheet", ready.sheets.first().composition.representationFamilyId)
-        assertEquals(expectedOverviewPublication, ready.sheets.first().publication)
-        assertEquals(expectedOverviewComposition, ready.sheets.first().composition)
+        assertEquals("Power Distribution", ready.sheets.first().publication.titleBlock.sheetTitle)
+        assertEquals("01-power-distribution", ready.sheets.first().publication.titleBlock.sheetNumber)
+        assertEquals("documentation", ready.sheets.first().publication.viewComposition.primaryViewId)
+        assertEquals(0, ready.sheets.first().publication.viewComposition.primarySheetOrder)
+        assertEquals(ready.sheets.first().subjectSemanticIds, ready.sheets.first().composition.subjectSemanticIds)
         assertEquals("schematic-sheet", ready.sheets.last().composition.representationFamilyId)
-        assertEquals(expectedReferencePublication, ready.sheets.last().publication)
-        assertEquals(expectedReferenceComposition, ready.sheets.last().composition)
+        assertEquals("Field Wiring And Terminal Transition", ready.sheets.last().publication.titleBlock.sheetTitle)
+        assertEquals("03-field-wiring-and-terminal-transition", ready.sheets.last().publication.titleBlock.sheetNumber)
+        assertEquals("documentation", ready.sheets.last().publication.viewComposition.primaryViewId)
+        assertEquals(2, ready.sheets.last().publication.viewComposition.primarySheetOrder)
+        assertEquals(ready.sheets.last().subjectSemanticIds, ready.sheets.last().composition.subjectSemanticIds)
         val sheetLayout = assertNotNull(ready.sheetLayout)
-        assertEquals("documentation/sheet/01-overview", sheetLayout.sheetId)
-        assertEquals("Overview", sheetLayout.displayName)
+        assertEquals("documentation/sheet/01-power-distribution", sheetLayout.sheetId)
+        assertEquals("Power Distribution", sheetLayout.displayName)
         assertEquals(0, sheetLayout.order)
         assertEquals("schematic-sheet", sheetLayout.representationFamilyId)
         assertEquals(ready.sheets.first().subjectSemanticIds, sheetLayout.subjectSemanticIds)

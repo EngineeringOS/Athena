@@ -120,7 +120,7 @@ class AthenaEngineeringGraphProjectionTest {
 
             val unavailable = assertIs<AthenaEngineeringGraphUnavailableProjection>(projection)
             assertEquals("broken", unavailable.projectName)
-            assertContains(unavailable.reason, "Expected")
+            assertContains(unavailable.reason, "missing '->'")
         } finally {
             Files.deleteIfExists(brokenPath)
         }

@@ -37,7 +37,7 @@ test('M20 keeps deferred boundaries explicit in docs and stories', () => {
     assert.match(story, /No story in M20 expands to full IEC breadth or frontend-owned semantic resolution\./);
     assert.match(examples, /customer-facing acceptance baseline/);
     assert.match(acceptanceReadme, /customer-facing acceptance baseline/);
-    assert.match(sprintStatus, /4-3-keep-the-deferred-boundaries-explicit:\s*(ready-for-dev|review)/);
+    assert.match(sprintStatus, /4-3-keep-the-deferred-boundaries-explicit:\s*(ready-for-dev|review|done)/);
 
     assert.doesNotMatch(epics, /Story\s+\d+\.\d+:\s*(Implement|Render|Ship|Support|Build)\b.*cabinet preview/i);
     assert.doesNotMatch(epics, /Story\s+\d+\.\d+:\s*(Implement|Render|Ship|Support|Build)\b.*repository\/import/i);

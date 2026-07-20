@@ -231,7 +231,7 @@ class AthenaCommandRuntimeTest {
             assertEquals(AthenaCommandKind.CONNECT_PORTS, unavailable.commandKind)
             assertEquals(AthenaMutationOutcome.UNAVAILABLE, unavailable.outcome)
             assertTrue(unavailable.validationFeedback.isEmpty())
-            assertContains(unavailable.reason, "Expected")
+            assertContains(unavailable.reason, "missing '->'")
         } finally {
             Files.deleteIfExists(brokenPath)
         }

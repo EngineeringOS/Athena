@@ -37,6 +37,7 @@ function translateProjectionSessionToGLSPDiagram(projection) {
             : undefined,
         sheets: normalizeArray(readyProjection?.sheets).map(sheet => ({
             ...sheet,
+            role: resolveSheetViewRole(sheet.displayName),
             subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
         })),
         notationPack: readyProjection?.notationPack
@@ -64,6 +65,19 @@ function translateProjectionSessionToGLSPDiagram(projection) {
             electricalRoutingCorridors,
         }),
     };
+}
+function resolveSheetViewRole(displayName) {
+    const normalized = displayName.toLowerCase();
+    if (normalized.includes('power distribution')) {
+        return 'power_distribution';
+    }
+    if (normalized.includes('control') || normalized.includes('plc')) {
+        return 'control_logic';
+    }
+    if (normalized.includes('field wiring') || normalized.includes('terminal')) {
+        return 'field_wiring';
+    }
+    return undefined;
 }
 function toGraph(args) {
     const { projection, electricalConnectionEndpoints, electricalRoutingCorridors } = args;

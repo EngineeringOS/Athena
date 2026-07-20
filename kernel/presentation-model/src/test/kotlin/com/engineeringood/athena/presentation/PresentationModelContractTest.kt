@@ -1,5 +1,14 @@
 package com.engineeringood.athena.presentation
 
+import com.engineeringood.athena.document.CrossReferenceRelationType
+import com.engineeringood.athena.document.DocumentOccurrenceDetailRole
+import com.engineeringood.athena.document.DocumentOccurrenceRole
+import com.engineeringood.athena.document.DocumentProjectionEntryPoint
+import com.engineeringood.athena.document.DocumentProjectionSourceUnitSummary
+import com.engineeringood.athena.document.DocumentProjectionSubjectSummary
+import com.engineeringood.athena.document.DocumentProjectionWorkspaceSemanticSnapshot
+import com.engineeringood.athena.document.SheetViewId
+import com.engineeringood.athena.document.SheetViewRole
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.layout.LayoutOccurrenceId
@@ -21,6 +30,7 @@ import com.engineeringood.athena.routing.TerminalAnchorId
 import com.engineeringood.athena.routing.TerminalSide
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -207,6 +217,81 @@ class PresentationModelContractTest {
         assertEquals(StableSemanticIdentity("port:XT1.1"), connector.targetPortSemanticId)
         assertEquals("0", connector.tokenOverrides["routeLane"])
         assertEquals(RouteQualityState.SATISFIED.name, connector.tokenOverrides["routeQuality"])
+    }
+
+    @Test
+    fun `presentation reference markers keep compact notation with canonical payload`() {
+        val routeIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1")
+        val sourceTerminal = StableSemanticIdentity("terminal:PLC1.Q0.0")
+        val targetTerminal = StableSemanticIdentity("terminal:XT1.1")
+        val documentProjection = DocumentProjectionEntryPoint.projectWorkspace(
+            DocumentProjectionWorkspaceSemanticSnapshot(
+                semanticGraphId = "graph:presentation-markers",
+                sourceUnits = listOf(DocumentProjectionSourceUnitSummary("source:system", "src/system.athena")),
+                subjects = listOf(
+                    DocumentProjectionSubjectSummary(
+                        canonicalSubjectId = routeIdentity,
+                        occurrenceRole = DocumentOccurrenceRole.ROUTE,
+                        detailRole = DocumentOccurrenceDetailRole.ROUTE,
+                        sheetViewRoles = listOf(
+                            SheetViewRole.CONTROL_AND_PLC_LOGIC,
+                            SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION,
+                        ),
+                        sourceTerminalIdentity = sourceTerminal,
+                        targetTerminalIdentity = targetTerminal,
+                    ),
+                    DocumentProjectionSubjectSummary(
+                        canonicalSubjectId = sourceTerminal,
+                        occurrenceRole = DocumentOccurrenceRole.TERMINAL,
+                        detailRole = DocumentOccurrenceDetailRole.TERMINAL,
+                        sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
+                    ),
+                    DocumentProjectionSubjectSummary(
+                        canonicalSubjectId = targetTerminal,
+                        occurrenceRole = DocumentOccurrenceRole.TERMINAL,
+                        detailRole = DocumentOccurrenceDetailRole.TERMINAL,
+                        sheetViewRoles = listOf(SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION),
+                    ),
+                ),
+            ),
+        )
+
+        val markers = documentReferenceMarkersForSheetView(
+            documentProjection = documentProjection,
+            selectedSheetViewId = SheetViewId("sheet-view:control-and-plc-logic"),
+        )
+        val markerByRelation = markers.associateBy(PresentationReferenceMarkerFact::relationType)
+        val routeMarker = markerByRelation.getValue(CrossReferenceRelationType.ROUTE_CONTINUATION)
+        val terminalMarker = markerByRelation.getValue(CrossReferenceRelationType.TERMINAL_CONTINUATION)
+
+        assertEquals(PresentationReferenceMarkerKind.CONTINUATION, routeMarker.markerKind)
+        assertEquals(routeIdentity, routeMarker.sourceIdentity)
+        assertEquals(routeIdentity, routeMarker.targetIdentity)
+        assertEquals("sheet-view:field-wiring-and-terminal-transition A1", routeMarker.compactNotation)
+        assertTrue(routeMarker.compactNotation.contains("field-wiring"))
+        assertFalse(routeMarker.compactNotation.contains("connection:"))
+
+        assertEquals(PresentationReferenceMarkerKind.CONTINUATION, terminalMarker.markerKind)
+        assertEquals(sourceTerminal, terminalMarker.sourceIdentity)
+        assertEquals(targetTerminal, terminalMarker.targetIdentity)
+        assertEquals("sheet-view:field-wiring-and-terminal-transition B2", terminalMarker.compactNotation)
+        assertFalse(terminalMarker.compactNotation.contains("terminal:"))
+
+        val document = PresentationDocument(
+            view = ViewDefinition(
+                id = "schematic",
+                displayName = "Schematic",
+                layoutIntent = LayoutIntent.CONNECTIVITY,
+            ),
+            canvasWidth = 640,
+            canvasHeight = 360,
+            primitivePacks = emptyList(),
+            compositePacks = emptyList(),
+            occurrences = emptyList(),
+            referenceMarkers = markers,
+        )
+
+        assertEquals(markers, document.referenceMarkers)
     }
 
     private fun routeFact(snapshotId: LayoutSnapshotId): RouteFact {

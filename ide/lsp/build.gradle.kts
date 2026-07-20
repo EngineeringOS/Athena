@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":kernel:compiler"))
     implementation(project(":kernel:component-model"))
     implementation(project(":kernel:connection-model"))
+    implementation(project(":kernel:document-projection-model"))
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:layout-model"))
     implementation(project(":kernel:language"))

@@ -973,6 +973,59 @@
     gap: 4px;
 }
 
+.athena-graph-workbench__sheet-view-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: min(360px, 34vw);
+    min-height: 30px;
+    padding: 0 7px;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 14%, transparent);
+    background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 92%, black 8%);
+    color: var(--athena-workbench-text);
+}
+
+.athena-graph-workbench__sheet-view-selector select {
+    min-width: 0;
+    max-width: 300px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 11px;
+}
+
+.athena-graph-workbench__sheet-view-selector select:disabled {
+    opacity: 0.7;
+}
+
+.athena-graph-workbench__reference-marker-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.athena-graph-workbench__reference-marker-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 30px;
+    max-width: 96px;
+    padding: 0 7px;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 14%, transparent);
+    background: color-mix(in srgb, var(--athena-workbench-surface-elevated) 92%, black 8%);
+    color: var(--athena-workbench-text);
+    font: inherit;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.athena-graph-workbench__reference-marker-button:hover {
+    background: color-mix(in srgb, var(--athena-workbench-accent) 12%, transparent);
+}
+
 .athena-graph-workbench__tool-button {
     min-width: 28px;
     padding: 0 8px;

@@ -13,6 +13,7 @@ import com.engineeringood.athena.presentation.PresentationOccurrence
 import com.engineeringood.athena.presentation.PresentationPrimitiveDefinition
 import com.engineeringood.athena.presentation.PresentationPrimitiveOccurrenceReference
 import com.engineeringood.athena.presentation.PresentationPrimitivePack
+import com.engineeringood.athena.presentation.PresentationReferenceMarkerFact
 import com.engineeringood.athena.presentation.PresentationRepresentationFact
 import com.engineeringood.athena.presentation.PresentationShapeCommand
 import com.engineeringood.athena.presentation.PresentationStrokeLine
@@ -42,6 +43,7 @@ internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload
         occurrences = occurrences.map(PresentationOccurrence::toPayload),
         connectors = connectorsForRendering().map(PresentationConnector::toPayload),
         representationFacts = representationFactsForRendering().map(PresentationRepresentationFact::toPayload),
+        referenceMarkers = referenceMarkers.map(PresentationReferenceMarkerFact::toPayload),
     )
 }
 
@@ -214,6 +216,31 @@ private fun PresentationConnector.toPayload(): AthenaPresentationConnectorPayloa
         targetPortSemanticId = targetPortSemanticId?.value,
         markerKeys = markerKeys,
         tokenOverrides = tokenOverrides.toSortedMap(),
+        sourceProjectionIds = sourceProjectionIds.sorted(),
+    )
+}
+
+private fun PresentationReferenceMarkerFact.toPayload(): AthenaPresentationReferenceMarkerPayload {
+    return AthenaPresentationReferenceMarkerPayload(
+        markerId = markerId.value,
+        markerKind = markerKind.name.lowercase(),
+        relationType = relationType.name.lowercase(),
+        selectedSheetViewId = selectedSheetViewId.value,
+        sourceOccurrenceId = sourceOccurrenceId.value,
+        targetOccurrenceId = targetOccurrenceId.value,
+        sourceIdentity = sourceIdentity.value,
+        targetIdentity = targetIdentity.value,
+        sourceDocumentLocation = AthenaDocumentLocationPayload(
+            sheetViewId = sourceDocumentLocation.sheetViewId.value,
+            zoneId = sourceDocumentLocation.zoneId.value,
+            displayNotation = sourceDocumentLocation.displayNotation,
+        ),
+        targetDocumentLocation = AthenaDocumentLocationPayload(
+            sheetViewId = targetDocumentLocation.sheetViewId.value,
+            zoneId = targetDocumentLocation.zoneId.value,
+            displayNotation = targetDocumentLocation.displayNotation,
+        ),
+        compactNotation = compactNotation,
         sourceProjectionIds = sourceProjectionIds.sorted(),
     )
 }

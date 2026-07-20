@@ -6,6 +6,7 @@ import {
     AthenaGLSPPresentationCompositeDefinitionSource,
     AthenaGLSPPresentationOccurrenceSource,
     AthenaGLSPPresentationPrimitiveDefinitionSource,
+    AthenaGLSPPresentationReferenceMarkerSource,
     AthenaGLSPPresentationRepresentationFactSource,
     AthenaGLSPPresentationShapeCommandSource
 } from '@engineeringood/athena-graph-glsp';
@@ -73,6 +74,8 @@ export type AthenaGraphResolvedPresentationRepresentation = {
     terminals: AthenaGLSPPresentationRepresentationFactSource['terminals'];
     labels: AthenaGLSPPresentationRepresentationFactSource['labels'];
 };
+
+export type AthenaGraphResolvedPresentationReferenceMarker = AthenaGLSPPresentationReferenceMarkerSource;
 
 export function resolvePresentationOccurrences(
     diagram: AthenaGLSPDiagram,
@@ -148,6 +151,25 @@ export function resolvePresentationRepresentations(
         ],
         terminals: [...(fact.terminals ?? [])],
         labels: [...(fact.labels ?? [])],
+    }));
+}
+
+export function resolvePresentationReferenceMarkers(
+    diagram: AthenaGLSPDiagram,
+): AthenaGraphResolvedPresentationReferenceMarker[] {
+    return (diagram.presentation?.referenceMarkers ?? []).map(marker => ({
+        markerId: marker.markerId,
+        markerKind: marker.markerKind,
+        relationType: marker.relationType,
+        selectedSheetViewId: marker.selectedSheetViewId,
+        sourceOccurrenceId: marker.sourceOccurrenceId,
+        targetOccurrenceId: marker.targetOccurrenceId,
+        sourceIdentity: marker.sourceIdentity,
+        targetIdentity: marker.targetIdentity,
+        sourceDocumentLocation: { ...marker.sourceDocumentLocation },
+        targetDocumentLocation: { ...marker.targetDocumentLocation },
+        compactNotation: marker.compactNotation,
+        sourceProjectionIds: [...(marker.sourceProjectionIds ?? [])],
     }));
 }
 

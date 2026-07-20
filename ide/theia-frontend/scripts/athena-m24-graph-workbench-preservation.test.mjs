@@ -42,9 +42,17 @@ test('M24 preserves accepted graph workbench behavior while adding route renderi
 
     assert.match(widgetSource, /data-athena-info-button='true'/);
     assert.match(widgetSource, /data-athena-info-popover='true'/);
+    assert.match(widgetSource, /athena-graph-workbench__sheet-view-selector/);
+    assert.match(widgetSource, /switchActiveSheetView/);
+    assert.match(widgetSource, /data-athena-reference-marker='true'/);
+    assert.match(widgetSource, /handleReferenceMarkerClick/);
+    assert.match(widgetSource, /resolveAthenaGraphReferenceMarkerNavigation/);
+    assert.match(widgetSource, /buildAthenaGraphDocumentReferenceInspection/);
+    assert.match(widgetSource, /document-reference-relation/);
     assert.match(methodBody(widgetSource, 'handleWorkbenchClick'), /this\.closeInfoPopover\(\)/);
     assert.doesNotMatch(methodBody(widgetSource, 'renderBottomDock'), /Cabinet Main/);
     assert.doesNotMatch(methodBody(widgetSource, 'renderSheetChrome'), /Cabinet Main/);
+    assert.doesNotMatch(widgetSource, /DocumentExplorer|document explorer/i);
 
     assert.match(bridgeSource, /lastAthenaEditorWidget/);
     assert.match(widgetSource, /onDocumentContentChanged\(\(\) => this\.scheduleRefresh\(\)\)/);

@@ -398,6 +398,288 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
     assert.equal(model.emptyState, undefined);
 });
 
+test('builds compact sheet-view selector entries from governed sheet metadata', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.activeSheetId = 'document-projection/sheet/control-plc';
+    diagram.sheets = [
+        {
+            sheetId: 'document-projection/sheet/power-distribution',
+            displayName: 'Power Distribution',
+            role: 'power_distribution',
+            order: 0,
+            subjectSemanticIds: ['component:PSU1', 'component:QF1', 'connection:PSU1.L+->QF1.L+']
+        },
+        {
+            sheetId: 'document-projection/sheet/control-plc',
+            displayName: 'Control And PLC Logic',
+            role: 'control_logic',
+            order: 1,
+            subjectSemanticIds: ['component:PLC1', 'component:HMI1']
+        },
+        {
+            sheetId: 'document-projection/sheet/field-wiring-terminal-transition',
+            displayName: 'Field Wiring And Terminal Transition',
+            role: 'field_wiring',
+            order: 2,
+            subjectSemanticIds: ['component:XT1']
+        }
+    ];
+
+    const originalSheets = JSON.parse(JSON.stringify(diagram.sheets));
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.deepEqual(model.sheetViewSelector, {
+        activeSheetViewId: 'document-projection/sheet/control-plc',
+        hasMultipleSheetViews: true,
+        entries: [
+            {
+                sheetViewId: 'document-projection/sheet/power-distribution',
+                displayOrder: 1,
+                title: 'Power Distribution',
+                role: 'power_distribution',
+                subjectCount: 3,
+                isActive: false,
+                label: '1 - Power Distribution'
+            },
+            {
+                sheetViewId: 'document-projection/sheet/control-plc',
+                displayOrder: 2,
+                title: 'Control And PLC Logic',
+                role: 'control_logic',
+                subjectCount: 2,
+                isActive: true,
+                label: '2 - Control And PLC Logic'
+            },
+            {
+                sheetViewId: 'document-projection/sheet/field-wiring-terminal-transition',
+                displayOrder: 3,
+                title: 'Field Wiring And Terminal Transition',
+                role: 'field_wiring',
+                subjectCount: 1,
+                isActive: false,
+                label: '3 - Field Wiring And Terminal Transition'
+            }
+        ]
+    });
+    assert.deepEqual(diagram.sheets, originalSheets);
+});
+
+test('omits sheet-view selector when only one sheet view is available', () => {
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(readyDiagram);
+
+    assert.equal(model.sheetViewSelector, undefined);
+});
+
+test('resolves reference marker navigation through target occurrence identity', () => {
+    assert.equal(typeof graphWorkbenchModel.resolveAthenaGraphReferenceMarkerNavigation, 'function');
+
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.activeSheetId = 'document-projection/sheet/power-distribution';
+    diagram.sheets = [
+        {
+            sheetId: 'document-projection/sheet/power-distribution',
+            displayName: 'Power Distribution',
+            role: 'power_distribution',
+            order: 0,
+            subjectSemanticIds: ['component:PSU1', 'connection:PSU1.L+->PLC1.L+']
+        },
+        {
+            sheetId: 'document-projection/sheet/control-plc',
+            displayName: 'Control And PLC Logic',
+            role: 'control_logic',
+            order: 1,
+            subjectSemanticIds: ['component:PLC1', 'connection:PSU1.L+->PLC1.L+']
+        }
+    ];
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [],
+        referenceMarkers: [
+            {
+                markerId: 'marker:route:power-to-control',
+                markerKind: 'continuation',
+                relationType: 'route_continuation',
+                selectedSheetViewId: 'document-projection/sheet/power-distribution',
+                sourceOccurrenceId: 'occurrence:power-route',
+                targetOccurrenceId: 'occurrence:control-route',
+                sourceIdentity: 'connection:PSU1.L+->PLC1.L+',
+                targetIdentity: 'connection:PSU1.L+->PLC1.L+',
+                sourceDocumentLocation: {
+                    sheetViewId: 'document-projection/sheet/power-distribution',
+                    zoneId: 'A1',
+                    displayNotation: '1-A1'
+                },
+                targetDocumentLocation: {
+                    sheetViewId: 'document-projection/sheet/control-plc',
+                    zoneId: 'B2',
+                    displayNotation: '2-B2'
+                },
+                compactNotation: '2-B2',
+                sourceProjectionIds: ['cross-reference:power-to-control']
+            }
+        ]
+    };
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.deepEqual(
+        graphWorkbenchModel.resolveAthenaGraphReferenceMarkerNavigation(model, 'marker:route:power-to-control'),
+        {
+            status: 'ready',
+            markerId: 'marker:route:power-to-control',
+            relationType: 'route_continuation',
+            targetSheetViewId: 'document-projection/sheet/control-plc',
+            targetOccurrenceId: 'occurrence:control-route',
+            targetCanonicalId: 'connection:PSU1.L+->PLC1.L+',
+            requiresSheetSwitch: true,
+            displayNotation: '2-B2'
+        }
+    );
+});
+
+test('resolves same-view reference marker navigation without switching views', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.activeSheetId = 'document-projection/sheet/control-plc';
+    diagram.sheets = [
+        {
+            sheetId: 'document-projection/sheet/control-plc',
+            displayName: 'Control And PLC Logic',
+            role: 'control_logic',
+            order: 1,
+            subjectSemanticIds: ['component:PLC1', 'component:HMI1']
+        }
+    ];
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [],
+        referenceMarkers: [
+            {
+                markerId: 'marker:repeated:plc',
+                markerKind: 'cross_reference',
+                relationType: 'repeated_subject',
+                selectedSheetViewId: 'document-projection/sheet/control-plc',
+                sourceOccurrenceId: 'occurrence:plc-a',
+                targetOccurrenceId: 'occurrence:plc-b',
+                sourceIdentity: 'component:PLC1',
+                targetIdentity: 'component:PLC1',
+                sourceDocumentLocation: {
+                    sheetViewId: 'document-projection/sheet/control-plc',
+                    zoneId: 'A2',
+                    displayNotation: '2-A2'
+                },
+                targetDocumentLocation: {
+                    sheetViewId: 'document-projection/sheet/control-plc',
+                    zoneId: 'C2',
+                    displayNotation: '2-C2'
+                },
+                compactNotation: '2-C2',
+                sourceProjectionIds: ['cross-reference:plc-repeat']
+            }
+        ]
+    };
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const result = graphWorkbenchModel.resolveAthenaGraphReferenceMarkerNavigation(model, 'marker:repeated:plc');
+
+    assert.equal(result.status, 'ready');
+    assert.equal(result.requiresSheetSwitch, false);
+    assert.equal(result.targetCanonicalId, 'component:PLC1');
+});
+
+test('reference marker navigation fails closed when the target marker is missing', () => {
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(readyDiagram);
+
+    assert.deepEqual(
+        graphWorkbenchModel.resolveAthenaGraphReferenceMarkerNavigation(model, 'marker:missing'),
+        {
+            status: 'missing-marker',
+            markerId: 'marker:missing',
+            reason: 'No governed reference marker is available for marker:missing.'
+        }
+    );
+});
+
+test('builds document reference inspection from selected canonical identity', () => {
+    assert.equal(typeof graphWorkbenchModel.buildAthenaGraphDocumentReferenceInspection, 'function');
+
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.activeSheetId = 'document-projection/sheet/control-plc';
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [],
+        referenceMarkers: [
+            {
+                markerId: 'marker:repeated:plc',
+                markerKind: 'cross_reference',
+                relationType: 'repeated_subject',
+                selectedSheetViewId: 'document-projection/sheet/control-plc',
+                sourceOccurrenceId: 'occurrence:plc-a',
+                targetOccurrenceId: 'occurrence:plc-b',
+                sourceIdentity: 'component:PLC1',
+                targetIdentity: 'component:PLC1',
+                sourceDocumentLocation: {
+                    sheetViewId: 'document-projection/sheet/control-plc',
+                    zoneId: 'A2',
+                    displayNotation: '2-A2'
+                },
+                targetDocumentLocation: {
+                    sheetViewId: 'document-projection/sheet/control-plc',
+                    zoneId: 'C2',
+                    displayNotation: '2-C2'
+                },
+                compactNotation: '2-C2',
+                sourceProjectionIds: ['cross-reference:plc-repeat']
+            }
+        ]
+    };
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.deepEqual(
+        graphWorkbenchModel.buildAthenaGraphDocumentReferenceInspection(model, 'component:PLC1'),
+        {
+            status: 'ready',
+            canonicalIdentity: 'component:PLC1',
+            references: [
+                {
+                    markerId: 'marker:repeated:plc',
+                    markerKind: 'cross_reference',
+                    relationType: 'repeated_subject',
+                    compactNotation: '2-C2',
+                    sourceOccurrenceId: 'occurrence:plc-a',
+                    targetOccurrenceId: 'occurrence:plc-b',
+                    sourceLocation: '2-A2',
+                    targetLocation: '2-C2',
+                    targetSheetViewId: 'document-projection/sheet/control-plc',
+                    sourceProjectionIds: ['cross-reference:plc-repeat']
+                }
+            ],
+            persisted: false
+        }
+    );
+    assert.deepEqual(
+        graphWorkbenchModel.buildAthenaGraphDocumentReferenceInspection(model, 'component:missing'),
+        {
+            status: 'unavailable',
+            canonicalIdentity: 'component:missing',
+            references: [],
+            persisted: false
+        }
+    );
+});
+
 test('prefers Presentation IR occurrences and symbol commands when the diagram includes a governed presentation document', () => {
     const diagram = JSON.parse(JSON.stringify(readyDiagram));
     diagram.presentation = {

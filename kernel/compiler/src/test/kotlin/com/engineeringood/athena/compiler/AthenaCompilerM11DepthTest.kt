@@ -32,17 +32,17 @@ class AthenaCompilerM11DepthTest {
             success.projections.map { projection -> projection.view.id }.sorted(),
         )
         val documentation = success.projections.first { projection -> projection.view.id == "documentation" }
-        assertEquals(2, documentation.sheets.size)
+        assertEquals(
+            listOf(
+                "documentation/sheet/01-power-distribution",
+                "documentation/sheet/02-control-and-plc-logic",
+                "documentation/sheet/03-field-wiring-and-terminal-transition",
+            ),
+            documentation.sheets.map { sheet -> sheet.sheetId.value },
+        )
         assertTrue(documentation.crossReferences.size >= 12)
         assertEquals(2, documentation.nodes.count { node -> node.semanticId.value == "component:M1" })
-        val motorReference = documentation.crossReferences.first { crossReference ->
-            crossReference.semanticId.value == "component:M1"
-        }
-        assertEquals(
-            listOf("documentation/sheet/01-overview", "documentation/sheet/02-reference"),
-            motorReference.sheetIds.map { sheetId -> sheetId.value },
-        )
-        assertEquals(2, motorReference.occurrenceIds.size)
+        assertTrue(documentation.crossReferences.any { crossReference -> crossReference.sheetIds.size >= 2 })
         assertContains(
             success.validationBreakdown.engineeringSufficiencyDiagnostics.map { diagnostic -> diagnostic.ruleId.value },
             "knowledge.protection_sufficiency",

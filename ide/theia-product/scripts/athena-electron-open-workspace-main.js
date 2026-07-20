@@ -12,6 +12,7 @@ const ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_PROOF=';
 const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED';
 const SHOULD_EXIT_ON_WORKSPACE_OPEN = process.env.ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN === '1';
+const SMOKE_ACTIVE_VIEW = process.env.ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW || '';
 
 const targetWorkspace = process.argv[2] ? path.resolve(process.cwd(), process.argv[2]) : undefined;
 if (process.env.ATHENA_ELECTRON_TEMP_USER_DATA === '1') {
@@ -106,6 +107,20 @@ async function openWorkspace(window) {
 
             const workbench = await requireElement('.athena-graph-workbench', 'graph workbench root');
             const stage = await requireElement('.athena-graph-workbench__stage', 'graph workbench stage');
+            const smokeActiveView = ${JSON.stringify(SMOKE_ACTIVE_VIEW)};
+            if (smokeActiveView) {
+                const viewButton = await requireElement(
+                    '[data-athena-projection-view-id="' + smokeActiveView + '"]',
+                    'projection view button ' + smokeActiveView
+                );
+                if (!viewButton.disabled) {
+                    viewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                }
+                await waitFor(() => {
+                    const activeButton = document.querySelector('[data-athena-projection-view-id="' + smokeActiveView + '"]');
+                    return activeButton?.disabled ? activeButton : undefined;
+                }, 'active projection view ' + smokeActiveView);
+            }
             const viewport = await waitFor(() => {
                 const element = document.querySelector('.athena-graph-workbench__viewport');
                 if (element) {
@@ -127,6 +142,8 @@ async function openWorkspace(window) {
             const zoomDock = await requireElement('.athena-graph-workbench__zoom-dock', 'graph workbench zoom dock');
             const sheetFrame = await requireElement('.athena-graph-workbench__sheet-frame', 'graph workbench sheet frame');
             const infoButton = await requireElement('[data-athena-info-button="true"]', 'graph workbench info button');
+            const sheetViewSelector = document.querySelector('.athena-graph-workbench__sheet-view-selector select');
+            const referenceMarkerButtons = Array.from(document.querySelectorAll('[data-athena-reference-marker="true"]'));
 
             infoButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
             const infoPopover = await requireElement('[data-athena-info-popover="true"]', 'graph workbench info popover');
@@ -150,10 +167,34 @@ async function openWorkspace(window) {
                     stageHasGrid: window.getComputedStyle(stage).backgroundImage.includes('linear-gradient'),
                     infoPopoverOpened: popoverText.includes('Cabinet Main'),
                     infoPopoverClosedOnWhitespace: !document.querySelector('[data-athena-info-popover="true"]'),
+                    documentProjectionProof: collectDocumentProjectionProof(sheetViewSelector, referenceMarkerButtons),
                     routeProof: collectRouteProof(),
                     representationProof: collectRepresentationProof()
                 }
             };
+
+            function collectDocumentProjectionProof(sheetViewSelector, referenceMarkerButtons) {
+                const options = sheetViewSelector
+                    ? Array.from(sheetViewSelector.options).map(option => ({
+                        value: option.value,
+                        text: option.textContent || '',
+                        selected: option.selected
+                    }))
+                    : [];
+                return {
+                    hasSheetViewSelector: !!sheetViewSelector,
+                    sheetViewOptionCount: options.length,
+                    sheetViewOptionTexts: options.map(option => option.text),
+                    selectedSheetViewId: options.find(option => option.selected)?.value || '',
+                    compactReferenceMarkerCount: referenceMarkerButtons.length,
+                    compactReferenceMarkerNotations: referenceMarkerButtons
+                        .map(button => (button.textContent || '').replace(/\\s+/g, ' ').trim())
+                        .filter(Boolean),
+                    markerTargetIds: referenceMarkerButtons
+                        .map(button => button.getAttribute('data-athena-reference-marker-id') || '')
+                        .filter(Boolean)
+                };
+            }
 
             function collectRouteProof() {
                 const routes = Array.from(document.querySelectorAll('[data-athena-route-fact="true"]'));
@@ -178,6 +219,10 @@ async function openWorkspace(window) {
                     routeCount: routes.length,
                     terminalCount: terminals.length,
                     labelCount: labels.length,
+                    visibleLabelTexts: labels
+                        .filter(label => label.getAttribute('data-athena-route-label-display') !== 'selection')
+                        .map(label => (label.textContent || '').replace(/\\s+/g, ' ').trim())
+                        .filter(Boolean),
                     routesWithTerminalAnchors: routeStates.filter(route => route.hasTerminalAnchors).length,
                     routesWithOrthogonalBends: routeStates.filter(route => route.hasOrthogonalBends).length,
                     centerFallbackRouteIds: routeStates

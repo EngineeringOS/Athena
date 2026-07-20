@@ -49,7 +49,7 @@ test('M19 keeps ecosystem expansion out of the schematic-first milestone', () =>
     assert.match(architecture, /public repository\/import ecosystem work/i);
     assert.match(epics, /Story 3\.2: Keep ecosystem expansion out of M19/);
     assert.match(epics, /full IEC breadth/i);
-    assert.match(sprintStatus, /3-2-keep-ecosystem-expansion-out-of-m19:\s*in-progress/);
+    assert.match(sprintStatus, /3-2-keep-ecosystem-expansion-out-of-m19:\s*(in-progress|done)/);
 
     assert.doesNotMatch(epics, /Story\s+\d+\.\d+:\s*(Implement|Render|Ship|Support|Build)\b.*repository\/import/i);
     const activeEcosystemStories = sprintStatus

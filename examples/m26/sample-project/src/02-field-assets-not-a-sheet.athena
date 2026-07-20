@@ -1,0 +1,47 @@
+package com.engineeringood.m26.sample
+
+system SemanticDocumentProjectionAcceptanceField {
+  device ControllerPLC1 {
+    type Switch
+    model "PLC"
+  }
+
+  device FieldTerminalXT1 {
+    type Switch
+    model "XT"
+  }
+
+  device ConveyorMotorM1 {
+    type Motor
+    model "MOTOR"
+  }
+
+  port ControllerPLC1.do1 {
+    direction out
+    signal Digital
+  }
+
+  port FieldTerminalXT1.in1 {
+    direction in
+    signal Digital
+  }
+
+  port FieldTerminalXT1.out1 {
+    direction out
+    signal Digital
+  }
+
+  port ConveyorMotorM1.u1 {
+    direction in
+    signal Digital
+  }
+
+  connect ControllerPLC1.do1 -> FieldTerminalXT1.in1
+  connect FieldTerminalXT1.out1 -> ConveyorMotorM1.u1
+
+  layout schematic-sheet {
+    place FieldTerminalXT1 below ControllerPLC1
+    place ConveyorMotorM1 below FieldTerminalXT1
+    align ConveyorMotorM1 aligned-with FieldTerminalXT1 axis vertical
+  }
+}

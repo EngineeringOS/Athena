@@ -299,6 +299,7 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.supportedViews[0].familyId, 'electrical/cabinet');
     assert.equal(diagram.activeSheetId, 'cabinet/sheet/01-main');
     assert.equal(diagram.sheets.length, 1);
+    assert.equal(diagram.sheets[0].role, undefined);
     assert.equal(diagram.notationPack?.packId, 'electrical-notation/cabinet/default-v1');
     assert.equal(diagram.crossReferences.length, 1);
     assert.equal(diagram.electricalAnchors.length, 2);
@@ -375,6 +376,45 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
         sourcePortSemanticId: 'port:PLC1.out',
         targetPortSemanticId: 'port:M1.in'
     });
+});
+
+test('assigns stable M26 document sheet roles from governed sheet projection names', () => {
+    assert.equal(typeof adapter.translateProjectionSessionToGLSPDiagram, 'function');
+
+    const diagram = adapter.translateProjectionSessionToGLSPDiagram({
+        ...readyProjectionSession,
+        activeViewId: 'documentation',
+        readyProjection: {
+            ...readyProjectionSession.readyProjection,
+            viewId: 'documentation',
+            activeSheetId: 'documentation/sheet/01-power-distribution',
+            sheets: [
+                {
+                    sheetId: 'documentation/sheet/01-power-distribution',
+                    displayName: 'Power Distribution',
+                    order: 0,
+                    subjectSemanticIds: ['component:PowerSupply1'],
+                },
+                {
+                    sheetId: 'documentation/sheet/02-control-and-plc-logic',
+                    displayName: 'Control And PLC Logic',
+                    order: 1,
+                    subjectSemanticIds: ['component:ControllerPLC1'],
+                },
+                {
+                    sheetId: 'documentation/sheet/03-field-wiring-and-terminal-transition',
+                    displayName: 'Field Wiring And Terminal Transition',
+                    order: 2,
+                    subjectSemanticIds: ['component:TerminalBlock1'],
+                },
+            ],
+        },
+    });
+
+    assert.deepEqual(
+        diagram.sheets.map(sheet => sheet.role),
+        ['power_distribution', 'control_logic', 'field_wiring']
+    );
 });
 
 test('keeps unavailable projection state disposable instead of inventing fallback authority', () => {

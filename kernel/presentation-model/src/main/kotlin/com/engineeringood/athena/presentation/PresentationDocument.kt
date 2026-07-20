@@ -1,6 +1,12 @@
 package com.engineeringood.athena.presentation
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
+import com.engineeringood.athena.document.CrossReferenceFact
+import com.engineeringood.athena.document.CrossReferenceRelationType
+import com.engineeringood.athena.document.DocumentLocation
+import com.engineeringood.athena.document.DocumentOccurrenceId
+import com.engineeringood.athena.document.DocumentProjectionSnapshot
+import com.engineeringood.athena.document.SheetViewId
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.representation.LabelFact
 import com.engineeringood.athena.representation.PresentationAnatomy
@@ -34,6 +40,7 @@ data class PresentationDocument(
     val connectors: List<PresentationConnector> = emptyList(),
     val routeFactSnapshot: RouteFactSnapshot? = null,
     val representationFacts: List<PresentationRepresentationFact> = emptyList(),
+    val referenceMarkers: List<PresentationReferenceMarkerFact> = emptyList(),
 )
 
 /** Renderer-facing representation fact carried by Presentation IR. */
@@ -132,3 +139,82 @@ private fun RouteFact.routePoints(): List<PresentationPoint> {
 }
 
 private fun SchematicRoutePoint.toPresentationPoint(): PresentationPoint = PresentationPoint(x = x, y = y)
+
+@JvmInline
+value class PresentationReferenceMarkerId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Presentation reference marker id must not be blank." }
+    }
+
+    override fun toString(): String = value
+}
+
+enum class PresentationReferenceMarkerKind {
+    CONTINUATION,
+    CROSS_REFERENCE,
+}
+
+data class PresentationReferenceMarkerFact(
+    val markerId: PresentationReferenceMarkerId,
+    val markerKind: PresentationReferenceMarkerKind,
+    val relationType: CrossReferenceRelationType,
+    val selectedSheetViewId: SheetViewId,
+    val sourceOccurrenceId: DocumentOccurrenceId,
+    val targetOccurrenceId: DocumentOccurrenceId,
+    val sourceIdentity: StableSemanticIdentity,
+    val targetIdentity: StableSemanticIdentity,
+    val sourceDocumentLocation: DocumentLocation,
+    val targetDocumentLocation: DocumentLocation,
+    val compactNotation: String,
+    val sourceProjectionIds: List<String> = emptyList(),
+) {
+    init {
+        require(sourceDocumentLocation.sheetViewId == selectedSheetViewId) {
+            "Presentation reference marker source location must belong to the selected sheet view."
+        }
+        require(compactNotation.isNotBlank()) { "Presentation reference marker notation must not be blank." }
+        require(sourceProjectionIds.all(String::isNotBlank)) {
+            "Presentation reference marker projection ids must not be blank."
+        }
+    }
+}
+
+fun documentReferenceMarkersForSheetView(
+    documentProjection: DocumentProjectionSnapshot,
+    selectedSheetViewId: SheetViewId,
+): List<PresentationReferenceMarkerFact> =
+    documentProjection.referenceFacts.crossReferenceFacts
+        .filter { reference -> reference.sourceDocumentLocation.sheetViewId == selectedSheetViewId }
+        .map { reference ->
+            PresentationReferenceMarkerFact(
+                markerId = PresentationReferenceMarkerId("reference-marker:${reference.crossReferenceFactId.value}"),
+                markerKind = reference.markerKind(),
+                relationType = reference.relationType,
+                selectedSheetViewId = selectedSheetViewId,
+                sourceOccurrenceId = reference.sourceOccurrenceId,
+                targetOccurrenceId = reference.targetOccurrenceId,
+                sourceIdentity = reference.sourceIdentity,
+                targetIdentity = reference.targetIdentity,
+                sourceDocumentLocation = reference.sourceDocumentLocation,
+                targetDocumentLocation = reference.targetDocumentLocation,
+                compactNotation = reference.displayNotation,
+                sourceProjectionIds = listOf(reference.crossReferenceFactId.value),
+            )
+        }
+        .sortedWith(
+            compareBy<PresentationReferenceMarkerFact>(
+                { marker -> marker.markerKind.name },
+                { marker -> marker.relationType.name },
+                { marker -> marker.sourceIdentity.value },
+                { marker -> marker.targetIdentity.value },
+                { marker -> marker.markerId.value },
+            ),
+        )
+
+private fun CrossReferenceFact.markerKind(): PresentationReferenceMarkerKind =
+    when (relationType) {
+        CrossReferenceRelationType.ROUTE_CONTINUATION,
+        CrossReferenceRelationType.TERMINAL_CONTINUATION,
+        -> PresentationReferenceMarkerKind.CONTINUATION
+        CrossReferenceRelationType.REPEATED_SUBJECT -> PresentationReferenceMarkerKind.CROSS_REFERENCE
+    }
