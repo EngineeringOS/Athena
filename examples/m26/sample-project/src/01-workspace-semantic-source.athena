@@ -41,11 +41,6 @@ system SemanticDocumentProjectionAcceptance {
     signal Digital
   }
 
-  port ControllerPLC1.do1 {
-    direction out
-    signal Digital
-  }
-
   port ControllerPLC1.hmiStatus {
     direction out
     signal Digital

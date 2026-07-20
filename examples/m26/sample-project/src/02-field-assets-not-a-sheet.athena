@@ -1,9 +1,9 @@
 package com.engineeringood.m26.sample
 
 system SemanticDocumentProjectionAcceptanceField {
-  device ControllerPLC1 {
+  device FieldOutputModuleIOM1 {
     type Switch
-    model "PLC"
+    model "FIELD-IO"
   }
 
   device FieldTerminalXT1 {
@@ -16,7 +16,7 @@ system SemanticDocumentProjectionAcceptanceField {
     model "MOTOR"
   }
 
-  port ControllerPLC1.do1 {
+  port FieldOutputModuleIOM1.do1 {
     direction out
     signal Digital
   }
@@ -36,11 +36,11 @@ system SemanticDocumentProjectionAcceptanceField {
     signal Digital
   }
 
-  connect ControllerPLC1.do1 -> FieldTerminalXT1.in1
+  connect FieldOutputModuleIOM1.do1 -> FieldTerminalXT1.in1
   connect FieldTerminalXT1.out1 -> ConveyorMotorM1.u1
 
   layout schematic-sheet {
-    place FieldTerminalXT1 below ControllerPLC1
+    place FieldTerminalXT1 below FieldOutputModuleIOM1
     place ConveyorMotorM1 below FieldTerminalXT1
     align ConveyorMotorM1 aligned-with FieldTerminalXT1 axis vertical
   }

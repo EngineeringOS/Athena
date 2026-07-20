@@ -39,9 +39,10 @@ test('M26 sample project is an openable workspace with source/view anti-regressi
     assert.match(sourceA, /MainBreakerQF1/);
     assert.match(sourceA, /ControllerPLC1/);
     assert.match(sourceA, /OperatorHMI1/);
+    assert.match(sourceB, /FieldOutputModuleIOM1/);
     assert.match(sourceB, /FieldTerminalXT1/);
     assert.match(sourceB, /ConveyorMotorM1/);
-    assert.match(`${sourceA}\n${sourceB}`, /ControllerPLC1\.do1 -> FieldTerminalXT1\.in1/);
+    assert.match(`${sourceA}\n${sourceB}`, /FieldOutputModuleIOM1\.do1 -> FieldTerminalXT1\.in1/);
 });
 
 test('M26 usage documentation states projection proof and M25 comparison without new syntax', () => {
