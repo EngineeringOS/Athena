@@ -1,0 +1,58 @@
+package com.engineeringood.m29.sample
+
+system InteractionCandidateProof {
+  device CandidateOutputModuleIOM29 {
+    type Switch
+    model "FIELD-IO"
+
+    port do1 {
+      direction out
+      signal Digital
+    }
+
+    port do2 {
+      direction out
+      signal Digital
+    }
+  }
+
+  device CandidateTerminalXT29 {
+    type Switch
+    model "XT"
+
+    port in1 {
+      direction in
+      signal Digital
+    }
+
+    port in2 {
+      direction in
+      signal Digital
+    }
+
+    port out1 {
+      direction out
+      signal Digital
+    }
+  }
+
+  device CandidateMotorM29 {
+    type Motor
+    model "MOTOR"
+
+    port u1 {
+      direction in
+      signal Digital
+    }
+  }
+
+  connect CandidateOutputModuleIOM29.do1 -> CandidateTerminalXT29.in1
+  connect CandidateTerminalXT29.out1 -> CandidateMotorM29.u1
+
+  layout schematic-sheet {
+    place CandidateTerminalXT29 near CandidateOutputModuleIOM29
+    place CandidateMotorM29 below CandidateTerminalXT29
+    align CandidateMotorM29 aligned-with CandidateTerminalXT29 axis vertical
+    group CandidateTerminalXT29 grouped-with CandidateOutputModuleIOM29
+  }
+}

@@ -118,7 +118,14 @@ async function openWorkspace(window) {
                 'Electron renderer require for Graphical View command',
                 10000
             ).catch(() => undefined);
-            if (electronRequire) {
+            const athenaWorkbenchSmoke = await waitFor(
+                () => window.__athenaWorkbenchSmoke?.revealGraphicalView,
+                'Athena workbench smoke command hook',
+                60000
+            ).catch(() => undefined);
+            if (athenaWorkbenchSmoke) {
+                await athenaWorkbenchSmoke();
+            } else if (electronRequire) {
                 const { CommandRegistry } = electronRequire('@theia/core/lib/common/command');
                 const commandRegistry = window.theia.container.get(CommandRegistry);
                 await commandRegistry.executeCommand('athena.revealGraphicalView');

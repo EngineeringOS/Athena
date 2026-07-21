@@ -4,6 +4,7 @@ import test from 'node:test';
 const {
     activateRelationshipMode,
     buildRelationshipAuthoringPreview,
+    buildRelationshipInteractionCommand,
     clearRelationshipAuthoringPreview,
     relationshipModeSubjectClassName,
     selectRelationshipModeSubject,
@@ -91,7 +92,7 @@ test('relationship mode affordance class keeps normal chrome transparent and onl
     );
 });
 
-test('relationship authoring preview shows transient route quality and source impact', () => {
+test('relationship authoring preview shows transient route quality and backend-owned source impact', () => {
     const selected = selectRelationshipModeSubject(
         selectRelationshipModeSubject(
             activateRelationshipMode(),
@@ -113,8 +114,9 @@ test('relationship authoring preview shows transient route quality and source im
         targetSemanticId: 'port:M1.in',
         routeQuality: 'SATISFIED',
         sourceImpact: {
+            authority: 'backend-runtime-source-edit',
             serializationTargetUri: 'file:///workspace/main.athena',
-            statement: 'connect PLC1.out -> M1.in'
+            status: 'pending-runtime-source-edit'
         },
         transient: true,
         persisted: false,
@@ -122,7 +124,44 @@ test('relationship authoring preview shows transient route quality and source im
     });
 });
 
-test('relationship authoring preview clears on cancel reload refresh or accepted mutation', () => {
+test('relationship authoring discovers an Interaction command for electrical semantic relationship mutation', () => {
+    const selected = selectRelationshipModeSubject(
+        selectRelationshipModeSubject(
+            activateRelationshipMode(),
+            { portSemanticId: 'port:PLC1.out', anchorId: 'anchor:PLC1.out' }
+        ),
+        { portSemanticId: 'port:M1.in', anchorId: 'anchor:M1.in' }
+    );
+
+    assert.deepEqual(buildRelationshipInteractionCommand(selected), {
+        status: 'ready',
+        commandId: 'command:relationship:port:PLC1.out->port:M1.in',
+        actionIntent: {
+            actionIntentId: 'action:relationship:port:PLC1.out->port:M1.in',
+            actionFamily: 'mutate',
+            subject: {
+                canonicalSubjectId: 'port:PLC1.out',
+                subjectKind: 'port'
+            },
+            targetSubjects: [
+                {
+                    canonicalSubjectId: 'port:M1.in',
+                    subjectKind: 'port'
+                }
+            ],
+            requestedBy: {
+                originSurface: 'graph',
+                reason: 'relationship authoring'
+            },
+            parameters: {
+                relationshipType: 'ElectricalConnectionRelationship'
+            }
+        },
+        diagnostics: []
+    });
+});
+
+test('relationship authoring preview clears or becomes stale on lifecycle invalidation', () => {
     const selected = selectRelationshipModeSubject(
         selectRelationshipModeSubject(
             activateRelationshipMode(),
@@ -137,7 +176,19 @@ test('relationship authoring preview clears on cancel reload refresh or accepted
     });
 
     assert.equal(clearRelationshipAuthoringPreview(preview, 'cancel'), undefined);
-    assert.equal(clearRelationshipAuthoringPreview(preview, 'source-reload'), undefined);
-    assert.equal(clearRelationshipAuthoringPreview(preview, 'projection-refresh'), undefined);
-    assert.equal(clearRelationshipAuthoringPreview(preview, 'accepted-mutation'), undefined);
+    assert.deepEqual(clearRelationshipAuthoringPreview(preview, 'source-reload'), {
+        status: 'stale',
+        staleReason: 'source-reload',
+        transient: true,
+        persisted: false,
+        diagnostics: [
+            {
+                code: 'relationship.preview.stale',
+                message: 'Relationship preview invalidated by source-reload.'
+            }
+        ]
+    });
+    assert.equal(clearRelationshipAuthoringPreview(preview, 'projection-refresh')?.status, 'stale');
+    assert.equal(clearRelationshipAuthoringPreview(preview, 'active-source-change')?.status, 'stale');
+    assert.equal(clearRelationshipAuthoringPreview(preview, 'accepted-mutation')?.status, 'stale');
 });

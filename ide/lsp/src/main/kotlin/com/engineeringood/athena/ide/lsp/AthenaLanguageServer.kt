@@ -517,17 +517,30 @@ class AthenaLanguageServer(
     fun authoringPreview(params: AthenaAuthoringPreviewParams): CompletableFuture<AthenaAuthoringPreviewSubmissionPayload?> {
         val activation = activeSession ?: return CompletableFuture.completedFuture(null)
         val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
+        val result = activation.context.authoringSessions()
+            .submit(
+                context = activation.context,
+                intent = params.toRuntimeIntent(),
+            )
+            .let { submission -> submission as AthenaAuthoringPreviewSubmitted }
+        val trackedDocument = sessionSnapshot
+            ?.sourcePath
+            ?.let { sourcePath -> languageFeatures?.trackedDocumentByPath(sourcePath) }
+        val componentKnowledge = activation.context.componentKnowledgeRuntime()
+            .inspect(activation.context) as? com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
+        val sourceImpact = trackedDocument?.let { currentTrackedDocument ->
+            previewCreateComponentSourceEdit(
+                trackedDocument = currentTrackedDocument,
+                record = result.record,
+                componentKnowledge = componentKnowledge,
+            )
+        }
         return CompletableFuture.completedFuture(
-            activation.context.authoringSessions()
-                .submit(
-                    context = activation.context,
-                    intent = params.toRuntimeIntent(),
-                )
-                .let { result -> result as AthenaAuthoringPreviewSubmitted }
-                .toPayload(
-                    projectName = activation.context.project.name,
-                    semanticPath = semanticPath,
-                ),
+            result.toPayload(
+                projectName = activation.context.project.name,
+                semanticPath = semanticPath,
+                sourceImpact = sourceImpact,
+            ),
         )
     }
 

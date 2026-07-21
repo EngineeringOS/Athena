@@ -14,6 +14,7 @@ import com.engineeringood.athena.authoring.RejectAuthoringPreviewDecision
 import com.engineeringood.athena.authoring.RevealSubjectIntent
 import com.engineeringood.athena.authoring.SemanticRelationshipIntent
 import com.engineeringood.athena.authoring.UpdateComponentPropertiesIntent
+import com.engineeringood.athena.ir.StableSemanticIdentity
 
 /**
  * Runtime-owned record linking one guided authoring intent to its current inspectable preview.
@@ -212,7 +213,12 @@ private fun AuthoringIntent.toPreview(previewId: AuthoringPreviewId): AuthoringP
                             append("`.")
                         }
                     },
-                    affectedSubjectIdentities = setOf(parentIdentity),
+                    affectedSubjectIdentities = buildSet {
+                        add(parentIdentity)
+                        suggestedName?.takeIf(String::isNotBlank)?.let { name ->
+                            add(StableSemanticIdentity("component:$name"))
+                        }
+                    },
                 ),
             ),
         )

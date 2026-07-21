@@ -2,6 +2,8 @@
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/EngineeringOS/Athena)
+
 Athena is the JVM-first implementation workspace for the EngineeringOS semantic compiler thesis.
 
 ## Name

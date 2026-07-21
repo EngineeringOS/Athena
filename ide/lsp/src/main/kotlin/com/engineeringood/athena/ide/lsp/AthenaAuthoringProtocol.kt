@@ -99,6 +99,7 @@ data class AthenaAuthoringPreviewPayload(
     val title: String,
     val changes: List<AthenaAuthoringPreviewChangePayload>,
     val warnings: List<String>,
+    val sourceImpact: AthenaAuthoringSourceEditPayload? = null,
 )
 
 /**
@@ -242,12 +243,13 @@ internal fun AthenaLspSessionHostReady.authoringStatePayload(
 internal fun AthenaAuthoringPreviewSubmitted.toPayload(
     projectName: String,
     semanticPath: String,
+    sourceImpact: AthenaAuthoringSourceEditPayload? = null,
 ): AthenaAuthoringPreviewSubmissionPayload {
     return AthenaAuthoringPreviewSubmissionPayload(
         projectName = projectName,
         semanticPath = semanticPath,
         status = "submitted",
-        preview = record.toPayload(),
+        preview = record.toPayload(sourceImpact = sourceImpact),
     )
 }
 
@@ -287,7 +289,9 @@ private fun AthenaAuthoringSessionView.toPayload(
     )
 }
 
-private fun AthenaAuthoringSessionRecord.toPayload(): AthenaAuthoringPreviewPayload {
+private fun AthenaAuthoringSessionRecord.toPayload(
+    sourceImpact: AthenaAuthoringSourceEditPayload? = null,
+): AthenaAuthoringPreviewPayload {
     return AthenaAuthoringPreviewPayload(
         previewId = preview.previewId.value,
         intentId = preview.intentId.value,
@@ -298,6 +302,7 @@ private fun AthenaAuthoringSessionRecord.toPayload(): AthenaAuthoringPreviewPayl
         title = preview.title,
         changes = preview.changes.map(AuthoringPreviewChange::toPayload),
         warnings = preview.warnings,
+        sourceImpact = sourceImpact,
     )
 }
 

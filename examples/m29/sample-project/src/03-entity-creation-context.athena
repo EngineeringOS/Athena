@@ -1,0 +1,17 @@
+package com.engineeringood.m29.sample
+
+system EntityCreationProof {
+  device ExistingPanelAnchorA1 {
+    type Switch
+    model "PANEL-ANCHOR"
+
+    port spareOut {
+      direction out
+      signal Digital
+    }
+  }
+
+  layout schematic-sheet {
+    place ExistingPanelAnchorA1 near ExistingPanelAnchorA1
+  }
+}

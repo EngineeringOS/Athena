@@ -15,6 +15,14 @@ import {
     AthenaWorkbenchExtension
 } from './athena-workbench-extensions';
 
+declare global {
+    interface Window {
+        __athenaWorkbenchSmoke?: {
+            revealGraphicalView: () => Promise<void>;
+        };
+    }
+}
+
 @injectable()
 export class AthenaProductContribution extends AbstractViewContribution<AthenaHomeWidget>
 implements FrontendApplicationContribution, CommandContribution, MenuContribution {
@@ -60,6 +68,11 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
             commands.registerCommand(extension.command, {
                 execute: () => this.revealWorkbenchExtension(extension)
             });
+        }
+        if (typeof window !== 'undefined') {
+            window.__athenaWorkbenchSmoke = {
+                revealGraphicalView: () => commands.executeCommand(AthenaCommands.REVEAL_GRAPHICAL_VIEW.id)
+            };
         }
     }
 

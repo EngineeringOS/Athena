@@ -30,8 +30,9 @@ export type AthenaRelationshipAuthoringPreview =
         targetSemanticId: string;
         routeQuality: string;
         sourceImpact: {
+            authority: 'backend-runtime-source-edit';
             serializationTargetUri: string;
-            statement: string;
+            status: 'pending-runtime-source-edit';
         };
         transient: true;
         persisted: false;
@@ -42,13 +43,51 @@ export type AthenaRelationshipAuthoringPreview =
         transient: true;
         persisted: false;
         diagnostics: AthenaRelationshipAuthoringDiagnostic[];
+    }
+    | {
+        status: 'stale';
+        staleReason: AthenaRelationshipAuthoringPreviewClearReason;
+        transient: true;
+        persisted: false;
+        diagnostics: AthenaRelationshipAuthoringDiagnostic[];
     };
 
 export type AthenaRelationshipAuthoringPreviewClearReason =
     | 'cancel'
     | 'source-reload'
     | 'projection-refresh'
+    | 'active-source-change'
     | 'accepted-mutation';
+
+export type AthenaRelationshipInteractionCommand =
+    | {
+        status: 'ready';
+        commandId: string;
+        actionIntent: {
+            actionIntentId: string;
+            actionFamily: 'mutate';
+            subject: {
+                canonicalSubjectId: string;
+                subjectKind: 'port';
+            };
+            targetSubjects: Array<{
+                canonicalSubjectId: string;
+                subjectKind: 'port';
+            }>;
+            requestedBy: {
+                originSurface: 'graph';
+                reason: 'relationship authoring';
+            };
+            parameters: {
+                relationshipType: 'ElectricalConnectionRelationship';
+            };
+        };
+        diagnostics: AthenaRelationshipAuthoringDiagnostic[];
+    }
+    | {
+        status: 'blocked';
+        diagnostics: AthenaRelationshipAuthoringDiagnostic[];
+    };
 
 export function activateRelationshipMode(): AthenaRelationshipAuthoringModeState {
     return {
@@ -155,8 +194,9 @@ export function buildRelationshipAuthoringPreview(input: {
         targetSemanticId: target.semanticId,
         routeQuality: input.routeQuality,
         sourceImpact: {
+            authority: 'backend-runtime-source-edit',
             serializationTargetUri: input.serializationTargetUri,
-            statement: `connect ${authoredPortPath(source.semanticId)} -> ${authoredPortPath(target.semanticId)}`,
+            status: 'pending-runtime-source-edit',
         },
         transient: true,
         persisted: false,
@@ -164,13 +204,72 @@ export function buildRelationshipAuthoringPreview(input: {
     };
 }
 
-export function clearRelationshipAuthoringPreview(
-    _preview: AthenaRelationshipAuthoringPreview | undefined,
-    _reason: AthenaRelationshipAuthoringPreviewClearReason,
-): undefined {
-    return undefined;
+export function buildRelationshipInteractionCommand(
+    state: AthenaRelationshipAuthoringModeState,
+): AthenaRelationshipInteractionCommand {
+    const source = state.sourceSubject;
+    const target = state.targetSubject;
+    if (!source || !target) {
+        return {
+            status: 'blocked',
+            diagnostics: [
+                {
+                    code: 'relationship.command.incomplete',
+                    message: 'Relationship command requires source and target semantic port subjects.',
+                },
+            ],
+        };
+    }
+
+    const relationshipKey = `${source.semanticId}->${target.semanticId}`;
+    return {
+        status: 'ready',
+        commandId: `command:relationship:${relationshipKey}`,
+        actionIntent: {
+            actionIntentId: `action:relationship:${relationshipKey}`,
+            actionFamily: 'mutate',
+            subject: {
+                canonicalSubjectId: source.semanticId,
+                subjectKind: 'port',
+            },
+            targetSubjects: [
+                {
+                    canonicalSubjectId: target.semanticId,
+                    subjectKind: 'port',
+                },
+            ],
+            requestedBy: {
+                originSurface: 'graph',
+                reason: 'relationship authoring',
+            },
+            parameters: {
+                relationshipType: 'ElectricalConnectionRelationship',
+            },
+        },
+        diagnostics: [],
+    };
 }
 
-function authoredPortPath(semanticId: string): string {
-    return semanticId.startsWith('port:') ? semanticId.slice('port:'.length) : semanticId;
+export function clearRelationshipAuthoringPreview(
+    preview: AthenaRelationshipAuthoringPreview | undefined,
+    reason: AthenaRelationshipAuthoringPreviewClearReason,
+): AthenaRelationshipAuthoringPreview | undefined {
+    if (!preview) {
+        return undefined;
+    }
+    if (reason === 'cancel') {
+        return undefined;
+    }
+    return {
+        status: 'stale',
+        staleReason: reason,
+        transient: true,
+        persisted: false,
+        diagnostics: [
+            {
+                code: 'relationship.preview.stale',
+                message: `Relationship preview invalidated by ${reason}.`,
+            },
+        ],
+    };
 }

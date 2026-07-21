@@ -1,0 +1,63 @@
+﻿# generated: 2026-07-21T00:00:00+08:00
+# last_updated: 2026-07-21T00:00:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m29
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: 2026-07-21T00:00:00+08:00
+last_updated: 2026-07-21T09:33:41+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m29
+
+development_status:
+  epic-1: done
+  1-1-define-platform-owned-interaction-ir-models: done
+  1-2-introduce-semantic-action-intent-primitive: done
+  1-3-add-lifecycle-provenance-and-diagnostic-contract-tests: done
+  epic-1-retrospective: optional
+  epic-2: done
+  2-1-build-semantic-capability-registry-from-facts: done
+  2-2-discover-interaction-actions-from-registry-and-policy: done
+  2-3-expose-product-safe-interaction-payloads-through-runtime-transport: done
+  epic-2-retrospective: optional
+  epic-3: done
+  3-1-resolve-selected-subjects-to-interaction-subjects: done
+  3-2-reveal-subjects-across-source-graph-inspector-and-problems: done
+  3-3-adapt-theia-reveal-ui-to-interaction-ir: done
+  epic-3-retrospective: optional
+  epic-4: done
+  4-1-route-relationship-mode-through-interaction-command-discovery: done
+  4-2-preserve-backend-mutation-and-source-edit-gates: done
+  4-3-clear-previews-and-ledger-legacy-connect-ports-paths: done
+  epic-4-retrospective: optional
+  epic-5: done
+  5-1-discover-insert-semantic-entity-action: done
+  5-2-preview-semantic-entity-creation-source-impact: done
+  5-3-accept-nested-port-component-creation-through-mutation-authority: done
+  epic-5-retrospective: optional
+  epic-6: done
+  6-1-create-openable-m29-sample-project: done
+  6-2-add-structured-interaction-product-smoke: done
+  6-3-publish-m29-usage-retrospective-cleanup-ledger-and-regression-checks: done
+  epic-6-retrospective: done

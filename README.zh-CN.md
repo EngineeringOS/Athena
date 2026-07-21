@@ -4,6 +4,8 @@
 
 Athena 是 EngineeringOS 语义编译器论点的 JVM-first 实现工作区。
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/EngineeringOS/Athena)
+
 ## 名称说明
 
 `engineeringood` 同时表达两层含义：

@@ -50,6 +50,7 @@ include(
     ":kernel:connection-model",
     ":kernel:physical-model",
     ":kernel:authoring-model",
+    ":kernel:interaction-model",
     ":kernel:reuse-model",
     ":kernel:template-model",
     ":kernel:spatial-model",

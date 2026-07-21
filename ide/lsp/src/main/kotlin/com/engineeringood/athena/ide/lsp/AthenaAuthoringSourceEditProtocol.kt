@@ -44,7 +44,34 @@ internal fun acceptedCreateComponentSourceEdit(
     record: AthenaAuthoringSessionRecord,
     componentKnowledge: AthenaComponentKnowledgeReady?,
 ): AthenaAuthoringSourceEditPayload? {
-    if (record.preview.status != AuthoringPreviewStatus.ACCEPTED) {
+    return createComponentSourceEdit(
+        trackedDocument = trackedDocument,
+        record = record,
+        componentKnowledge = componentKnowledge,
+        requiredStatus = AuthoringPreviewStatus.ACCEPTED,
+    )
+}
+
+internal fun previewCreateComponentSourceEdit(
+    trackedDocument: AthenaTrackedDocument,
+    record: AthenaAuthoringSessionRecord,
+    componentKnowledge: AthenaComponentKnowledgeReady?,
+): AthenaAuthoringSourceEditPayload? {
+    return createComponentSourceEdit(
+        trackedDocument = trackedDocument,
+        record = record,
+        componentKnowledge = componentKnowledge,
+        requiredStatus = AuthoringPreviewStatus.PENDING_REVIEW,
+    )
+}
+
+private fun createComponentSourceEdit(
+    trackedDocument: AthenaTrackedDocument,
+    record: AthenaAuthoringSessionRecord,
+    componentKnowledge: AthenaComponentKnowledgeReady?,
+    requiredStatus: AuthoringPreviewStatus,
+): AthenaAuthoringSourceEditPayload? {
+    if (record.preview.status != requiredStatus) {
         return null
     }
     val intent = record.intent as? CreateComponentIntent ?: return null

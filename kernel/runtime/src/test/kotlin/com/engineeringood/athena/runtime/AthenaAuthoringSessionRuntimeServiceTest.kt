@@ -48,7 +48,10 @@ class AthenaAuthoringSessionRuntimeServiceTest {
             assertEquals("authoring-preview-0001", submitted.record.preview.previewId.value)
             assertEquals("intent-0001", submitted.record.preview.intentId.value)
             assertEquals(AuthoringPreviewStatus.PENDING_REVIEW, submitted.record.preview.status)
-            assertEquals(listOf("system:AuthoringRuntime"), submitted.record.preview.changes.single().affectedSubjectIdentities.map { it.value })
+            assertEquals(
+                listOf("component:PLC2", "system:AuthoringRuntime"),
+                submitted.record.preview.changes.single().affectedSubjectIdentities.map { it.value }.sorted(),
+            )
             assertSame(canonicalCompilation, context.compileActiveProject())
             assertTrue(context.commandRuntime().history(context).records.isEmpty())
             assertEquals(1, context.authoringSessions().state(context).pendingPreviewCount)

@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
@@ -54,7 +55,10 @@ class AthenaAuthoringRequestTest {
                 assertEquals("create-component", payload.preview.intentKind)
                 assertEquals("palette", payload.preview.originSurface)
                 assertEquals("pending-review", payload.preview.status)
-                assertEquals(listOf("system:FactoryLine"), payload.preview.changes.single().affectedSubjectIdentities)
+                assertEquals(
+                    listOf("component:PLC2", "system:FactoryLine"),
+                    payload.preview.changes.single().affectedSubjectIdentities,
+                )
             } finally {
                 server.shutdown().get()
             }
@@ -182,6 +186,14 @@ class AthenaAuthoringRequestTest {
                         ),
                     ).get(),
                 )
+                val previewSourceImpact = assertNotNull(submission.preview.sourceImpact)
+                assertEquals(documentUri, previewSourceImpact.uri)
+                assertEquals("component:PLC2", previewSourceImpact.suggestedSemanticId)
+                assertTrue(previewSourceImpact.newText.contains("device PLC2"))
+                assertTrue(previewSourceImpact.newText.contains("    port lplus {"))
+                assertTrue(previewSourceImpact.newText.contains("    port mpi {"))
+                assertFalse(previewSourceImpact.newText.contains("port PLC2.lplus"))
+                assertTrue(submission.preview.changes.single().affectedSubjectIdentities.contains("component:PLC2"))
 
                 val decision = assertNotNull(
                     server.authoringDecision(
@@ -230,6 +242,95 @@ class AthenaAuthoringRequestTest {
                 assertEquals(3, inspection.componentCount)
                 assertTrue(inspection.ports.any { port -> port.path == "PLC2.lplus" })
                 assertTrue(inspection.components.any { component -> component.name == "PLC2" })
+
+                val projection = assertNotNull(server.projectionSession(AthenaProjectionSessionParams()).get())
+                val readyProjection = assertNotNull(projection.readyProjection)
+                assertEquals("ready", projection.status)
+                assertTrue(readyProjection.components.any { component ->
+                    component.semanticId == "component:PLC2"
+                })
+                assertTrue(readyProjection.labels.any { label ->
+                    label.semanticId == "port:PLC2.lplus"
+                })
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `rejected create-component preview exposes source impact without mutating source or projection`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-authoring-insert-reject-",
+            sourceText = authoringSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val documentUri = repository.seedSourcePath.toUri().toString()
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            documentUri,
+                            "athena",
+                            1,
+                            authoringSource,
+                        ),
+                    ),
+                )
+
+                val submission = assertNotNull(
+                    server.authoringPreview(
+                        AthenaAuthoringPreviewParams(
+                            intentId = "intent-insert-reject-0001",
+                            intentKind = "create-component",
+                            originSurface = "graph",
+                            parentIdentity = "system:FactoryLine",
+                            conceptId = "electrical.plc.cpu",
+                            preferredImplementationId = "impl/electrical/plc-cpu/siemens-proof-cpu313c",
+                            suggestedName = "PLC2",
+                        ),
+                    ).get(),
+                )
+                assertNotNull(submission.preview.sourceImpact)
+
+                val decision = assertNotNull(
+                    server.authoringDecision(
+                        AthenaAuthoringDecisionParams(
+                            previewId = submission.preview.previewId,
+                            intentId = submission.preview.intentId,
+                            decision = "rejected",
+                            note = "Do not apply insertion.",
+                        ),
+                    ).get(),
+                )
+
+                assertEquals("updated", decision.status)
+                assertEquals("rejected", decision.preview?.status)
+                assertNull(decision.sourceEdit)
+
+                val inspection = assertNotNull(
+                    server.semanticInspection(
+                        AthenaSemanticInspectionParams(
+                            textDocument = AthenaSemanticInspectionTextDocument(documentUri),
+                        ),
+                    ).get(),
+                )
+                assertEquals("ready", inspection.status)
+                assertEquals(2, inspection.componentCount)
+                assertFalse(inspection.components.any { component -> component.name == "PLC2" })
             } finally {
                 server.shutdown().get()
             }
@@ -533,6 +634,94 @@ class AthenaAuthoringRequestTest {
                 assertEquals("accepted", authoringState.previews.single { preview ->
                     preview.intentId == submission.preview.intentId
                 }.status)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `invalid semantic-relationship accept is blocked by backend source edit gate`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-authoring-relationship-invalid-",
+            sourceText = authoringConnectSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val documentUri = repository.seedSourcePath.toUri().toString()
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            documentUri,
+                            "athena",
+                            1,
+                            authoringConnectSource,
+                        ),
+                    ),
+                )
+
+                val beforeInspection = assertNotNull(
+                    server.semanticInspection(
+                        AthenaSemanticInspectionParams(
+                            textDocument = AthenaSemanticInspectionTextDocument(documentUri),
+                        ),
+                    ).get(),
+                )
+                assertEquals(0, beforeInspection.connectionCount)
+
+                val submission = assertNotNull(
+                    server.authoringPreview(
+                        AthenaAuthoringPreviewParams(
+                            intentId = "intent-relationship-invalid-0001",
+                            intentKind = "semantic-relationship",
+                            originSurface = "graph",
+                            relationshipType = "ElectricalConnectionRelationship",
+                            sourceSubjectId = "port:M1.in",
+                            targetSubjectId = "port:PLC1.out",
+                            projectionViewId = "schematic",
+                            persistenceSourceUri = documentUri,
+                        ),
+                    ).get(),
+                )
+                assertEquals("semantic-relationship", submission.preview.intentKind)
+
+                val decision = assertNotNull(
+                    server.authoringDecision(
+                        AthenaAuthoringDecisionParams(
+                            previewId = submission.preview.previewId,
+                            intentId = submission.preview.intentId,
+                            decision = "accepted",
+                            note = "Attempt invalid graph relationship.",
+                        ),
+                    ).get(),
+                )
+
+                assertEquals("updated", decision.status)
+                assertEquals("accepted", decision.preview?.status)
+                assertNull(decision.sourceEdit)
+
+                val afterInspection = assertNotNull(
+                    server.semanticInspection(
+                        AthenaSemanticInspectionParams(
+                            textDocument = AthenaSemanticInspectionTextDocument(documentUri),
+                        ),
+                    ).get(),
+                )
+                assertEquals("ready", afterInspection.status)
+                assertEquals(0, afterInspection.connectionCount)
             } finally {
                 server.shutdown().get()
             }
