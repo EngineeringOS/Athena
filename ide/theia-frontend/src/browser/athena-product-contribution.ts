@@ -1,7 +1,8 @@
-import { AbstractViewContribution, ApplicationShell, FrontendApplicationContribution } from '@theia/core/lib/browser';
+import { AbstractViewContribution, ApplicationShell, FrontendApplicationContribution, OpenerService, open } from '@theia/core/lib/browser';
 import { CommonMenus } from '@theia/core/lib/browser/common-frontend-contribution';
 import { CommandContribution, CommandRegistry } from '@theia/core/lib/common/command';
 import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu';
+import URI from '@theia/core/lib/common/uri';
 import { injectable, inject } from '@theia/core/shared/inversify';
 import { EditorManager } from '@theia/editor/lib/browser';
 import { WorkspaceCommands } from '@theia/workspace/lib/browser/workspace-commands';
@@ -19,8 +20,16 @@ declare global {
     interface Window {
         __athenaWorkbenchSmoke?: {
             revealGraphicalView: () => Promise<void>;
+            revealOutlineForSource: (sourceUri: string) => Promise<AthenaOutlineSmokeProof>;
         };
     }
+}
+
+export interface AthenaOutlineSmokeProof {
+    readonly widgetId: string;
+    readonly hasOutlineWidget: boolean;
+    readonly nodeNames: string[];
+    readonly paths: string[];
 }
 
 @injectable()
@@ -31,6 +40,9 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
 
     @inject(AthenaRepositoryCreationService)
     protected readonly repositoryCreationService: AthenaRepositoryCreationService;
+
+    @inject(OpenerService)
+    protected readonly openerService: OpenerService;
 
     constructor() {
         super({
@@ -71,7 +83,8 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         }
         if (typeof window !== 'undefined') {
             window.__athenaWorkbenchSmoke = {
-                revealGraphicalView: () => commands.executeCommand(AthenaCommands.REVEAL_GRAPHICAL_VIEW.id)
+                revealGraphicalView: () => commands.executeCommand(AthenaCommands.REVEAL_GRAPHICAL_VIEW.id),
+                revealOutlineForSource: sourceUri => this.revealOutlineForSource(commands, sourceUri)
             };
         }
     }
@@ -176,4 +189,90 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
 
         await this.shell.activateWidget(extension.widgetId);
     }
+
+    protected async revealOutlineForSource(
+        commands: CommandRegistry,
+        sourceUri: string
+    ): Promise<AthenaOutlineSmokeProof> {
+        await open(this.openerService, new URI(sourceUri));
+        await this.revealWorkbenchWidget('outline-view', 'right');
+        await commands.executeCommand('outlineView.expand.all').catch(() => undefined);
+        const outlineWidget = this.shell.getWidgetById('outline-view') as unknown as {
+            id?: string;
+            model?: { root?: AthenaOutlineNode };
+        } | undefined;
+        const root = await this.waitForOutlineRoot(outlineWidget);
+        const tree = this.collectOutlineTree(root);
+        return {
+            widgetId: outlineWidget?.id ?? '',
+            hasOutlineWidget: outlineWidget?.id === 'outline-view',
+            nodeNames: this.collectOutlineNodeNames(root),
+            paths: this.collectOutlinePaths(tree)
+        };
+    }
+
+    protected async waitForOutlineRoot(
+        outlineWidget: { model?: { root?: AthenaOutlineNode } } | undefined,
+        timeoutMs = 10000,
+        intervalMs = 100,
+    ): Promise<AthenaOutlineNode | undefined> {
+        const startedAt = Date.now();
+        let lastRoot = outlineWidget?.model?.root;
+        while (Date.now() - startedAt < timeoutMs) {
+            const currentRoot = outlineWidget?.model?.root;
+            if (currentRoot) {
+                const paths = this.collectOutlinePaths(this.collectOutlineTree(currentRoot));
+                if (paths.length > 0) {
+                    return currentRoot;
+                }
+                lastRoot = currentRoot;
+            }
+            await new Promise(resolve => window.setTimeout(resolve, intervalMs));
+        }
+        return lastRoot;
+    }
+
+    protected collectOutlineTree(node: AthenaOutlineNode | undefined): AthenaOutlineTree | undefined {
+        if (!node) {
+            return undefined;
+        }
+        return {
+            name: node.name ?? '',
+            id: node.id ?? '',
+            children: Array.from(node.children ?? [])
+                .map(child => this.collectOutlineTree(child))
+                .filter((child): child is AthenaOutlineTree => !!child)
+        };
+    }
+
+    protected collectOutlineNodeNames(node: AthenaOutlineNode | undefined): string[] {
+        if (!node) {
+            return [];
+        }
+        return [
+            node.name ?? '',
+            ...Array.from(node.children ?? []).flatMap(child => this.collectOutlineNodeNames(child))
+        ].filter(Boolean);
+    }
+
+    protected collectOutlinePaths(tree: AthenaOutlineTree | undefined, prefix: string[] = []): string[] {
+        if (!tree) {
+            return [];
+        }
+        const current = tree.name && tree.name !== 'Outline' ? [...prefix, tree.name] : prefix;
+        const childPaths = tree.children.flatMap(child => this.collectOutlinePaths(child, current));
+        return current.length > 0 ? [current.join(' > '), ...childPaths] : childPaths;
+    }
+}
+
+interface AthenaOutlineNode {
+    readonly id?: string;
+    readonly name?: string;
+    readonly children?: readonly AthenaOutlineNode[];
+}
+
+interface AthenaOutlineTree {
+    readonly id: string;
+    readonly name: string;
+    readonly children: AthenaOutlineTree[];
 }

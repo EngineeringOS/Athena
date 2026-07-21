@@ -16,7 +16,11 @@ class AthenaRuntimeProjectionDepthTest {
             sourcePath = sourcePath,
         )
 
-        val cabinet = assertIs<AthenaRuntimeProjectionReadySnapshot>(context.projectProjectionSession().activeProjection)
+        val cabinet = assertIs<AthenaRuntimeProjectionReadySnapshot>(
+            assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+                context.switchActiveProjectionView("cabinet"),
+            ).session.activeProjection,
+        )
         assertEquals("electrical/cabinet", cabinet.familyId)
         assertEquals(16, cabinet.scene.components.size)
         assertEquals(29, cabinet.scene.connections.size)

@@ -82,6 +82,22 @@ class AthenaLanguageProvenanceTest {
         assertTrue(failure.diagnostics.single().message.contains("owner.port"))
     }
 
+    @Test
+    fun `requires qualified grouped connection endpoints independently of group parsing`() {
+        val source = """
+            system InvalidGroupedConnectionQualifiedNames {
+              connect control_feed {
+                PLC1.out -> M1
+              }
+            }
+        """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("invalid-grouped-connect-qualified.athena", source)
+
+        val failure = assertIs<ParseFailure>(result)
+        assertTrue(failure.diagnostics.single().message.contains("owner.port"))
+    }
+
     private fun resolveRepoRoot(): Path {
         var current = Path.of("").toAbsolutePath()
         while (current.parent != null && !Files.exists(current.resolve("settings.gradle.kts"))) {

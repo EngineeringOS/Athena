@@ -21,6 +21,7 @@ import {
     buildAthenaGraphDocumentReferenceInspection,
     buildAthenaGraphRepresentationInspection,
     resolveAthenaGraphReferenceMarkerNavigation,
+    resolveVisibleAthenaGraphSheetViewSelector,
     buildAthenaGraphRouteInspection,
     buildAthenaGraphWorkbenchModel,
     clampAthenaGraphZoom,
@@ -609,7 +610,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected resolveVisibleSheetViewSelector(
         model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
     ): AthenaGraphWorkbenchSheetViewSelector | undefined {
-        return model.sheetViewSelector ?? this.lastDocumentSheetViewSelector;
+        return resolveVisibleAthenaGraphSheetViewSelector(model, this.lastDocumentSheetViewSelector);
     }
 
     protected renderReferenceMarkerControls(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {

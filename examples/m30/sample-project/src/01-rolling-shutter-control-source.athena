@@ -1,0 +1,160 @@
+package com.engineeringood.m30.sample
+
+system RollingShutterControlProof {
+  device MainPowerSupplyPS30 {
+    type Switch
+    model "24VDC-PSU"
+
+    port lplus {
+      direction out
+      signal Digital
+    }
+  }
+
+  device MainBreakerQF30 {
+    type Switch
+    model "QF"
+
+    port line {
+      direction in
+      signal Digital
+    }
+
+    port load {
+      direction out
+      signal Digital
+    }
+  }
+
+  device WallSwitchS30 {
+    type Switch
+    model "UP-DOWN"
+
+    port up {
+      direction out
+      signal Digital
+    }
+
+    port down {
+      direction out
+      signal Digital
+    }
+  }
+
+  device ControlRelayK30 {
+    type Switch
+    model "K30"
+
+    port supply {
+      direction in
+      signal Digital
+    }
+
+    port upCommand {
+      direction in
+      signal Digital
+    }
+
+    port downCommand {
+      direction in
+      signal Digital
+    }
+
+    port upOut {
+      direction out
+      signal Digital
+    }
+
+    port downOut {
+      direction out
+      signal Digital
+    }
+
+    port status {
+      direction out
+      signal Digital
+    }
+  }
+
+  device FieldTerminalXT30 {
+    type Switch
+    model "XT30"
+
+    port controlUp {
+      direction in
+      signal Digital
+    }
+
+    port controlDown {
+      direction in
+      signal Digital
+    }
+
+    port motorUp {
+      direction out
+      signal Digital
+    }
+
+    port motorDown {
+      direction out
+      signal Digital
+    }
+  }
+
+  device ShutterMotorM30 {
+    type Motor
+    model "ROLLING-SHUTTER"
+
+    port up {
+      direction in
+      signal Digital
+    }
+
+    port down {
+      direction in
+      signal Digital
+    }
+  }
+
+  device PilotLampHL30 {
+    type Lamp
+    model "STATUS"
+
+    port status {
+      direction in
+      signal Digital
+    }
+  }
+
+  connect supply_feed {
+    MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
+    MainBreakerQF30.load -> ControlRelayK30.supply
+  }
+
+  connect operator_commands {
+    WallSwitchS30.up -> ControlRelayK30.upCommand
+    WallSwitchS30.down -> ControlRelayK30.downCommand
+  }
+
+  connect motor_drive {
+    ControlRelayK30.upOut -> FieldTerminalXT30.controlUp
+    ControlRelayK30.downOut -> FieldTerminalXT30.controlDown
+    FieldTerminalXT30.motorUp -> ShutterMotorM30.up
+    FieldTerminalXT30.motorDown -> ShutterMotorM30.down
+  }
+
+  connect ControlRelayK30.status -> PilotLampHL30.status
+
+  layout schematic-sheet {
+    place MainBreakerQF30 near MainPowerSupplyPS30
+    place ControlRelayK30 below MainBreakerQF30
+    place WallSwitchS30 near ControlRelayK30
+    place FieldTerminalXT30 near ControlRelayK30
+    place ShutterMotorM30 below FieldTerminalXT30
+    place PilotLampHL30 near WallSwitchS30
+    align ControlRelayK30 aligned-with MainBreakerQF30 axis vertical
+    align ShutterMotorM30 aligned-with FieldTerminalXT30 axis vertical
+    group WallSwitchS30 grouped-with ControlRelayK30
+    group ShutterMotorM30 grouped-with FieldTerminalXT30
+  }
+}

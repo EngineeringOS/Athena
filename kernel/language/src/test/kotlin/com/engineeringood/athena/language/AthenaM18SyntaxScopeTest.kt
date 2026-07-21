@@ -37,6 +37,7 @@ class AthenaM18SyntaxScopeTest {
                 is DeviceDeclaration -> it.name
                 is PortDeclaration -> it.qualifiedName.parts.first()
                 is ConnectionDeclaration -> it.from.parts.first()
+                is ConnectionGroupDeclaration -> it.name
                 is LayoutDeclaration -> error("Layout declarations are outside this M18 compatibility fixture")
             }
         })

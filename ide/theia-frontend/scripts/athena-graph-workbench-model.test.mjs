@@ -684,6 +684,61 @@ test('omits sheet-view selector when only one sheet view is available', () => {
     assert.equal(model.sheetViewSelector, undefined);
 });
 
+test('preserves document sheet selector across projection view changes from sheet facts', () => {
+    assert.equal(typeof graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector, 'function');
+
+    const documentationDiagram = JSON.parse(JSON.stringify(readyDiagram));
+    documentationDiagram.activeViewId = 'documentation';
+    documentationDiagram.activeSheetId = 'documentation/sheet/02-control';
+    documentationDiagram.sourceFiles = [
+        'src/01-main.athena',
+        'src/02-library.athena',
+    ];
+    documentationDiagram.supportedViews = [
+        ...readyDiagram.supportedViews,
+        {
+            viewId: 'documentation',
+            displayName: 'Documentation',
+            description: 'Governed schematic sheets',
+            familyId: 'electrical/documentation',
+            ownershipContract: readyDiagram.supportedViews[0].ownershipContract,
+        },
+    ];
+    documentationDiagram.sheets = [
+        {
+            sheetId: 'documentation/sheet/01-power',
+            displayName: 'Power Distribution',
+            role: 'power_distribution',
+            order: 0,
+            subjectSemanticIds: ['component:PSU1'],
+        },
+        {
+            sheetId: 'documentation/sheet/02-control',
+            displayName: 'Control Logic',
+            role: 'control_logic',
+            order: 1,
+            subjectSemanticIds: ['component:PLC1', 'component:HMI1'],
+        },
+        {
+            sheetId: 'documentation/sheet/03-field',
+            displayName: 'Field Wiring',
+            role: 'field_wiring',
+            order: 2,
+            subjectSemanticIds: ['component:XT1'],
+        },
+    ];
+    const documentationModel = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(documentationDiagram);
+    const cabinetModel = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(readyDiagram);
+
+    assert.equal(documentationModel.sheetViewSelector.entries.length, 3);
+    assert.equal(documentationModel.sheetViewSelector.entries.length, documentationDiagram.sheets.length);
+    assert.notEqual(documentationModel.sheetViewSelector.entries.length, documentationDiagram.sourceFiles.length);
+    assert.deepEqual(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(cabinetModel, documentationModel.sheetViewSelector),
+        documentationModel.sheetViewSelector,
+    );
+});
+
 test('resolves reference marker navigation through target occurrence identity', () => {
     assert.equal(typeof graphWorkbenchModel.resolveAthenaGraphReferenceMarkerNavigation, 'function');
 

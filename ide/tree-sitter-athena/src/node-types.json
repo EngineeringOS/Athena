@@ -41,6 +41,52 @@
     "fields": {
       "from": {
         "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "qualified_name",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "to": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "qualified_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "connect_group_edge",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "connect_group_edge",
+    "named": true,
+    "fields": {
+      "from": {
+        "multiple": false,
         "required": true,
         "types": [
           {

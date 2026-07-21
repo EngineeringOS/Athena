@@ -104,7 +104,10 @@ private fun AthenaExecutionContext.activeProjectionViewId(
     return if (storedViewId != null && supportedViews.any { view -> view.viewId == storedViewId }) {
         storedViewId
     } else {
-        supportedViews.first().viewId
+        supportedViews.firstOrNull { view -> view.viewId == "cabinet" }?.viewId
+            ?: supportedViews.firstOrNull { view -> view.viewId == "documentation" }?.viewId
+            ?: supportedViews.firstOrNull { view -> view.viewId == "schematic" }?.viewId
+            ?: supportedViews.first().viewId
     }
 }
 

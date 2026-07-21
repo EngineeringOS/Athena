@@ -39,3 +39,37 @@ system Demo {
         to: (qualified_name
           (identifier)
           (identifier))))))
+
+============================
+Grouped connect forms
+============================
+
+system Demo {
+  connect control_feed {
+    PLC1.out -> M1.in
+    M1.feedback -> PLC1.feedback
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (connect_declaration
+        name: (name)
+        (connect_group_edge
+          from: (qualified_name
+            (identifier)
+            (identifier))
+          to: (qualified_name
+            (identifier)
+            (identifier)))
+        (connect_group_edge
+          from: (qualified_name
+            (identifier)
+            (identifier))
+          to: (qualified_name
+            (identifier)
+            (identifier)))))))

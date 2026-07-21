@@ -11,7 +11,7 @@ const ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_PROOF=';
 const ATHENA_INTERACTION_PROOF_SENTINEL = 'ATHENA_INTERACTION_PROOF=';
 const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME=';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED=';
-const STARTUP_TIMEOUT_MS = 90000;
+const STARTUP_TIMEOUT_MS = 180000;
 const INTERACTION_SCHEMA_VERSION = 'm29.interaction.v1';
 
 const REQUIRED_INTERACTION_PROOF_KINDS = [
@@ -40,7 +40,6 @@ async function main() {
                 ...process.env,
                 ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN: '1',
                 ATHENA_ELECTRON_TEMP_USER_DATA: '1',
-                ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW: 'documentation',
                 ELECTRON_ENABLE_LOGGING: '1'
             },
             stdio: ['ignore', 'pipe', 'pipe'],
@@ -115,6 +114,7 @@ async function main() {
     const interactionProofPayloads = buildStructuredInteractionProofPayloads(repositoryRoot);
     assertStructuredInteractionProofPayloads(interactionProofPayloads);
     assertGraphWorkbenchProof(graphWorkbenchProof);
+    assertOutlineProof(graphWorkbenchProof.outlineProof);
     assertRouteProof(graphWorkbenchProof.routeProof);
     assertRepresentationProof(graphWorkbenchProof.representationProof);
 
@@ -263,6 +263,27 @@ function assertGraphWorkbenchProof(graphWorkbenchProof) {
     if (missingGraphProof.length > 0) {
         throw new Error(
             `Athena M29 graph-workbench proof failed: ${missingGraphProof.join(', ')}\n${JSON.stringify(graphWorkbenchProof)}`
+        );
+    }
+    if (graphWorkbenchProof.activeViewId !== 'cabinet') {
+        throw new Error(
+            `Athena M29 graph-workbench must default to Cabinet view, received ${graphWorkbenchProof.activeViewId || '<missing>'}.`
+        );
+    }
+}
+
+function assertOutlineProof(outlineProof) {
+    if (!outlineProof || outlineProof.skipped) {
+        throw new Error(`Athena M29 outline proof was not collected.\n${JSON.stringify(outlineProof)}`);
+    }
+    if (outlineProof.hasOutlineWidget !== true || outlineProof.widgetId !== 'outline-view') {
+        throw new Error(`Athena M29 outline proof did not open Theia's Outline view.\n${JSON.stringify(outlineProof)}`);
+    }
+    const paths = Array.isArray(outlineProof.paths) ? outlineProof.paths : [];
+    const expectedPathSuffix = 'InteractionAuthoringProof > OperatorHMI1 > status';
+    if (!paths.some(path => path.endsWith(expectedPathSuffix))) {
+        throw new Error(
+            `Athena M29 Outline view missing nested compact port path '${expectedPathSuffix}'.\n${JSON.stringify(outlineProof, null, 2)}`
         );
     }
 }

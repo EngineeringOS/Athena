@@ -910,6 +910,13 @@ export function resolveSheetViewSelector(
     };
 }
 
+export function resolveVisibleAthenaGraphSheetViewSelector(
+    model: Pick<AthenaGraphWorkbenchModel, 'sheetViewSelector'>,
+    previousDocumentSelector: AthenaGraphWorkbenchSheetViewSelector | undefined,
+): AthenaGraphWorkbenchSheetViewSelector | undefined {
+    return model.sheetViewSelector ?? previousDocumentSelector;
+}
+
 export function resolveAthenaGraphReferenceMarkerNavigation(
     model: AthenaGraphWorkbenchModel,
     markerId: string,

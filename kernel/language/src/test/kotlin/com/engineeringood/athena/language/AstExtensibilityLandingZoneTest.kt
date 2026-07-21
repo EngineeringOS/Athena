@@ -13,8 +13,13 @@ import kotlin.test.assertEquals
  */
 class AstExtensibilityLandingZoneTest {
     @Test
-    fun `Declaration consumers see exactly the four current sealed variants`() {
+    fun `Declaration consumers see exactly the five current sealed variants`() {
         val span = SourceSpan(SourcePosition(0, 1, 1), SourcePosition(1, 1, 2))
+        val connection = ConnectionDeclaration(
+            from = QualifiedName(listOf("PLC1", "out"), span),
+            to = QualifiedName(listOf("M1", "in"), span),
+            span = span,
+        )
         val declarations: List<Declaration> = listOf(
             DeviceDeclaration(name = "PLC1", fields = emptyList(), span = span),
             PortDeclaration(
@@ -22,11 +27,8 @@ class AstExtensibilityLandingZoneTest {
                 fields = emptyList(),
                 span = span,
             ),
-            ConnectionDeclaration(
-                from = QualifiedName(listOf("PLC1", "out"), span),
-                to = QualifiedName(listOf("M1", "in"), span),
-                span = span,
-            ),
+            connection,
+            ConnectionGroupDeclaration(name = "control_feed", connections = listOf(connection), span = span),
             LayoutDeclaration(
                 viewFamily = "schematic-sheet",
                 statements = listOf(LayoutStatement.PlaceNear("HMI1", "PLC1", span)),
@@ -35,7 +37,7 @@ class AstExtensibilityLandingZoneTest {
         )
 
         assertEquals(
-            listOf("device", "port", "connect", "layout"),
+            listOf("device", "port", "connect", "connect-group", "layout"),
             declarations.map { declaration -> classifyDeclaration(declaration) },
         )
     }
@@ -64,6 +66,7 @@ class AstExtensibilityLandingZoneTest {
             is DeviceDeclaration -> "device"
             is PortDeclaration -> "port"
             is ConnectionDeclaration -> "connect"
+            is ConnectionGroupDeclaration -> "connect-group"
             is LayoutDeclaration -> "layout"
         }
     }

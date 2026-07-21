@@ -143,6 +143,19 @@ data class ConnectionDeclaration(
 ) : Declaration
 
 /**
+ * Syntax node for a readable source grouping of repeated `connect` edges.
+ *
+ * This is authoring structure only. The group name is preserved for outline/folding/provenance,
+ * while semantic lowering keeps canonical [com.engineeringood.athena.ir.EngineeringConnection]
+ * facts flat.
+ */
+data class ConnectionGroupDeclaration(
+    val name: String,
+    val connections: List<ConnectionDeclaration>,
+    override val span: SourceSpan,
+) : Declaration
+
+/**
  * Syntax node for a `layout <view-family> { ... }` declaration authored inside a system block.
  *
  * This is the M23 language admission surface for layout intent. It preserves authored layout

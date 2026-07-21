@@ -3,6 +3,7 @@ package com.engineeringood.athena.compiler
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.PortDeclaration
@@ -372,6 +373,7 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
                 is DeviceDeclaration -> deviceDeclarations += declaration
                 is PortDeclaration -> portDeclarations += declaration
                 is ConnectionDeclaration -> connectionDeclarations += declaration
+                is ConnectionGroupDeclaration -> connectionDeclarations += declaration.connections
                 is LayoutDeclaration -> Unit
             }
         }

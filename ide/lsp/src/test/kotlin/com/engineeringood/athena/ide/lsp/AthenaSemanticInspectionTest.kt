@@ -136,6 +136,75 @@ class AthenaSemanticInspectionTest {
 
     @Test
     @Suppress("DEPRECATION")
+    fun `semantic inspection resolves source ranges for grouped connect child edges`() {
+        val repository = createGovernedTestRepository("athena-lsp-grouped-connect-inspection-")
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+        val sourceText = """
+            system GroupedConnectInspection {
+              device PLC1 {
+                type Switch
+              }
+              device M1 {
+                type Motor
+              }
+              port PLC1.out {
+                direction out
+                signal Digital
+              }
+              port M1.in {
+                direction in
+                signal Digital
+              }
+
+              connect control_group {
+                PLC1.out -> M1.in
+              }
+            }
+        """.trimIndent()
+
+        val server = AthenaLanguageServer()
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = repositoryRoot.toUri().toString()
+                },
+            ).get()
+
+            val documentUri = sourcePath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        documentUri,
+                        "athena",
+                        1,
+                        sourceText,
+                    ),
+                ),
+            )
+
+            val inspection = server.semanticInspection(
+                AthenaSemanticInspectionParams(
+                    AthenaSemanticInspectionTextDocument(documentUri),
+                ),
+            ).get()
+
+            assertNotNull(inspection)
+            assertEquals("ready", inspection.status)
+            assertEquals(1, inspection.connectionCount)
+            val connectionRange = inspection.connections.single().sourceRange
+            assertEquals(17, connectionRange.start.line)
+            assertEquals(17, connectionRange.end.line)
+            assertTrue(connectionRange.start.character > 0)
+            assertTrue(connectionRange.end.character > connectionRange.start.character)
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
     fun `semantic inspection includes current knowledge diagnostics and m9 knowledge counts`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-knowledge-inspection-",

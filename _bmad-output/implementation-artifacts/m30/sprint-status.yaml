@@ -1,0 +1,177 @@
+﻿# generated: 2026-07-21T00:00:00+08:00
+# last_updated: 2026-07-21T00:00:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m30
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: 2026-07-21T00:00:00+08:00
+last_updated: 2026-07-21T18:46:06+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m30
+
+development_status:
+  epic-1: done
+  1-1-define-representation-policy-definition-and-occurrence-ir-contracts: done
+  1-2-add-representation-relevant-semantic-contract-audit: done
+  1-3-add-representation-diagnostics-and-serialization-tests: done
+  epic-1-retrospective: done
+  epic-2: done
+  2-1-create-native-symbol-library-asset-format-and-loader: done
+  2-2-add-demo-symbol-set-for-control-sheet-proof: done
+  2-3-add-anchor-label-slot-bounds-lifecycle-and-primitive-tests: done
+  epic-2-retrospective: done
+  epic-3: done
+  3-1-build-binding-rule-model-and-occurrence-output: done
+  3-2-bind-demo-devices-ports-relationships-and-references: done
+  3-3-surface-missing-or-ambiguous-binding-diagnostics: done
+  epic-3-retrospective: done
+  epic-4: done
+  4-1-define-composition-intent-model: done
+  4-2-compose-the-m30-control-sheet-proof: done
+  4-3-add-composition-bounds-proof-and-wrapper-regression-guard: done
+  epic-4-retrospective: done
+  epic-5: done
+  5-1-render-representation-primitives-from-presentation-ir: done
+  5-2-enforce-transparent-normal-chrome: done
+  5-3-derive-svg-viewbox-and-remove-duplicate-elements: done
+  5-4-preserve-projection-and-sheet-switch-controls: done
+  epic-5-retrospective: done
+  epic-6: done
+  6-1-create-m30-sample-project: done
+  6-2-add-structured-product-smoke: done
+  6-3-add-screenshot-guard-and-usage-documentation: done
+  epic-6-retrospective: done
+  epic-7: done
+  7-1-document-deferred-offline-qet-converter-design: done
+  7-2-publish-m30-retrospective-and-cleanup-ledger: done
+  7-3-run-final-purge-and-regression-checks: done
+  epic-7-retrospective: done
+  epic-8: done
+  8-1-support-grouped-connect-authoring-syntax: done
+  epic-8-retrospective: done
+
+# Previous action_items mixed completed M30 discipline, future guardrails, and real deferred gaps.
+# Normalized on 2026-07-21 so the sprint file reflects actual state instead of leaving everything `open`.
+
+completed_in_m30:
+  - epic: 1
+    action: "Add AC-to-evidence review notes before marking stories done."
+    owner: "M30 implementation agent"
+    status: done
+    evidence: "Story closeout notes and epic retrospectives now map acceptance criteria to fresh verification."
+  - epic: 1
+    action: "Verify binding stories consume or deliberately defer symbol family, variant, occurrence role, fallback, and priority."
+    owner: "M30 representation binding"
+    status: done
+    evidence: "Stories 1.1, 2.1, 3.1, and 3.3 recorded the consumed/deferred binding contract explicitly."
+  - epic: 3
+    action: "Require explicit evidence mapping for every Acceptance Criterion before story close."
+    owner: "M30 implementation agent"
+    status: done
+    evidence: "Later M30 stories were only moved to done after fresh command evidence and updated story notes."
+  - epic: 5
+    action: "Align executable smoke and BMAD story acceptance text when the product contract changes."
+    owner: "M30 closeout"
+    status: done
+    evidence: "Story 5.4, cleanup ledger M30-CL-004, and final purge report were aligned to the Cabinet-default contract."
+  - epic: 5
+    action: "Add deterministic waits to smoke hooks that depend on asynchronously populated UI models."
+    owner: "Theia smoke harness"
+    status: done
+    evidence: "The Outline smoke race was fixed in `AthenaProductContribution.revealOutlineForSource`, then M27-M30 product smokes were re-run successfully."
+  - epic: 7
+    action: "Re-run earlier milestone product smokes on final milestone code before closeout."
+    owner: "Milestone closeout owner"
+    status: done
+    evidence: "Final sequential `start:smoke:m27`, `m28`, `m29`, and `m30` passed on the closing code."
+  - epic: 7
+    action: "Treat stale story text and stale executable proof assumptions as cleanup defects."
+    owner: "BMAD closeout discipline"
+    status: done
+    evidence: "Story 5.4 wording, smoke assertions, cleanup ledger, and final report were corrected during closeout."
+
+carry_forward_items:
+  - epic: 2
+    action: "For future symbol-pack stories, require one AC-to-assertion mapping for each mandatory symbol field."
+    owner: "M30 implementation agent"
+    status: open
+  - epic: 2
+    action: "Do not expand the symbol pack beyond demo scope unless a story adds binding and rendering proof for each new symbol."
+    owner: "M30 product/demo owner"
+    status: open
+  - epic: 3
+    action: "Keep binding stories anchored to Representation Policy IR rather than renderer selection logic."
+    owner: "M30 representation binding"
+    status: open
+  - epic: 3
+    action: "Preserve the no-silent-fallback rule for all proof payloads and renderer guards."
+    owner: "M30 proof/runtime boundary"
+    status: open
+  - epic: 4
+    action: "Keep composition proof structural; do not let future stories replace it with screenshot-only acceptance."
+    owner: "M30 composition/presentation boundary"
+    status: open
+  - epic: 4
+    action: "Preserve wrapperless normal-state proof checks whenever renderer stories evolve selection or hover chrome."
+    owner: "M30 renderer integration"
+    status: open
+  - epic: 4
+    action: "Treat viewBox, duplicate element, repeated label, and wrapper-border regressions as permanent invariants."
+    owner: "M30 proof/runtime boundary"
+    status: open
+  - epic: 5
+    action: "Keep transparent normal-state and derived-viewBox guards in the permanent renderer regression set."
+    owner: "M30 renderer/proof boundary"
+    status: open
+  - epic: 6
+    action: "Keep demo usage docs synchronized with the real sample and smoke commands on each milestone closeout."
+    owner: "Demo/proof owner"
+    status: open
+  - epic: 6
+    action: "Preserve the rule that structured proof is authoritative and screenshots are secondary evidence."
+    owner: "M30 product smoke boundary"
+    status: open
+  - epic: 8
+    action: "Keep grouped authoring constructs provenance-only unless a later milestone explicitly promotes them into semantic truth."
+    owner: "Language/compiler boundary"
+    status: open
+  - epic: 8
+    action: "Require sample-project and smoke coverage whenever syntax changes affect authoring structure."
+    owner: "Language/product proof owner"
+    status: open
+  - epic: 8
+    action: "Audit fixture names after grammar changes so outdated vocabulary does not survive in tests."
+    owner: "Parser/test maintenance"
+    status: open
+
+deferred_gaps:
+  - epic: 1
+    action: "Keep terminal number as a tracked domain-contract gap until semantic ports expose it uniformly."
+    owner: "Domain model / electrical slice"
+    status: open
+  - epic: 2
+    action: "Keep .properties documented as v0 bootstrap until a structured representation asset parser is chosen."
+    owner: "M30 representation library"
+    status: open
+

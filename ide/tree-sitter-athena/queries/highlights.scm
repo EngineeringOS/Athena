@@ -11,6 +11,7 @@
 (nested_port_declaration "port" @keyword)
 (connect_declaration "connect" @keyword)
 (connect_declaration "->" @operator)
+(connect_group_edge "->" @operator)
 (layout_declaration "layout" @keyword)
 (place_statement "place" @keyword)
 (align_statement "align" @keyword)

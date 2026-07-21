@@ -17,6 +17,7 @@ class AthenaRuntimeViewerProjectionTest {
             projectName = "demo-cabinet",
             sourcePath = sourcePath,
         )
+        assertIs<AthenaRuntimeProjectionSwitchSuccess>(context.switchActiveProjectionView("cabinet"))
 
         val projection = context.projectViewerProjection()
 

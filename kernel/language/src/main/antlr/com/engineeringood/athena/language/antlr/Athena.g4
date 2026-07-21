@@ -6,10 +6,11 @@
  * Downstream code must use only com.engineeringood.athena.language contracts.
  *
  * Scope includes M17 syntax plus M18 file-level package and import declarations, M23
- * system-scoped layout block grammar admission, and M28 nested device-owned ports:
- * system, package, import, device, port, connect, qualified names, string literals,
- * property assignments, and layout place/align/group statements only. No expression /
- * macro-use forms.
+ * system-scoped layout block grammar admission, M28 nested device-owned ports, and
+ * compact grouped connect authoring:
+ * system, package, import, device, port, connect, grouped connect, qualified names,
+ * string literals, property assignments, and layout place/align/group statements only.
+ * No expression / macro-use forms.
  */
 grammar Athena;
 
@@ -44,6 +45,7 @@ systemDecl
 declaration
     : deviceDecl
     | portDecl
+    | connectGroupDecl
     | connectDecl
     | layoutDecl
     ;
@@ -67,6 +69,14 @@ portDecl
 
 connectDecl
     : CONNECT twoPartName ARROW twoPartName
+    ;
+
+connectGroupDecl
+    : CONNECT ident LBRACE connectGroupEdge* RBRACE
+    ;
+
+connectGroupEdge
+    : twoPartName ARROW twoPartName
     ;
 
 layoutDecl

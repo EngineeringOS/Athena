@@ -292,7 +292,9 @@ function resolveRepresentationPart(
         partId: fact.anatomy.representationId,
         primitiveId: fact.symbol.familyId,
         bounds,
-        commands: (fact.anatomy.primitives ?? []).map(primitive => representationPrimitiveToCommand(primitive, fact)),
+        commands: (fact.anatomy.primitives ?? [])
+            .map(primitive => representationPrimitiveToCommand(primitive, fact))
+            .filter(isPresentationShapeCommand),
         textSlots: [],
         tokenDefaults: {
             stroke: '#202020',
@@ -306,13 +308,7 @@ function resolveRepresentationPart(
 function representationPrimitiveToCommand(
     primitive: AthenaGLSPPresentationRepresentationFactSource['anatomy']['primitives'][number],
     fact: AthenaGLSPPresentationRepresentationFactSource,
-): AthenaGLSPPresentationShapeCommandSource {
-    const sourceBounds = {
-        x: 0,
-        y: 0,
-        width: fact.anatomy.bounds.width,
-        height: fact.anatomy.bounds.height,
-    };
+): AthenaGLSPPresentationShapeCommandSource | undefined {
     switch (primitive.kind) {
         case 'rectangle':
             return {
@@ -352,13 +348,14 @@ function representationPrimitiveToCommand(
                 strokeWidthTokenKey: 'strokeWidth',
             };
         default:
-            return {
-                kind: 'stroke_rectangle',
-                bounds: sourceBounds,
-                strokeTokenKey: 'stroke',
-                strokeWidthTokenKey: 'strokeWidth',
-            };
+            return undefined;
     }
+}
+
+function isPresentationShapeCommand(
+    command: AthenaGLSPPresentationShapeCommandSource | undefined,
+): command is AthenaGLSPPresentationShapeCommandSource {
+    return !!command;
 }
 
 function scaleShapeCommand(

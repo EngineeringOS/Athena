@@ -2,7 +2,8 @@
 //
 // AD-107: Tree-sitter owns syntax UX only (highlighting/structure), never semantic truth.
 // AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset,
-// M23 system-scoped layout-block admission, and M28 nested device-owned ports.
+// M23 system-scoped layout-block admission, M28 nested device-owned ports, and compact grouped
+// connect authoring.
 // `kernel/language/src/main/kotlin/com/engineeringood/athena/language/AthenaLanguageModel.kt` /
 // `AthenaLanguageParser.kt`: optional package, repeated imports, one system block, and the
 // existing device/port/connect, layout, qualified-name, string, identifier, and property syntax.
@@ -116,6 +117,22 @@ module.exports = grammar({
 
     connect_declaration: $ => seq(
       'connect',
+      choice(
+        seq(
+          field('from', $.qualified_name),
+          '->',
+          field('to', $.qualified_name),
+        ),
+        seq(
+          field('name', alias($.identifier, $.name)),
+          '{',
+          repeat($.connect_group_edge),
+          '}',
+        ),
+      ),
+    ),
+
+    connect_group_edge: $ => seq(
       field('from', $.qualified_name),
       '->',
       field('to', $.qualified_name),

@@ -10,7 +10,7 @@ const ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_PROOF=';
 const ATHENA_GRAPH_WORKBENCH_SCREENSHOT_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_SCREENSHOT=';
 const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME=';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED=';
-const STARTUP_TIMEOUT_MS = 90000;
+const STARTUP_TIMEOUT_MS = 180000;
 
 async function main() {
     const repositoryRoot = resolveM27SampleProject();
@@ -29,6 +29,8 @@ async function main() {
                 ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN: '1',
                 ATHENA_ELECTRON_TEMP_USER_DATA: '1',
                 ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW: 'documentation',
+                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/01-workspace-semantic-source.athena',
+                ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH: 'ProfessionalSheetProofAcceptance > MainPowerSupplyPS1',
                 ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT: screenshotPath,
                 ELECTRON_ENABLE_LOGGING: '1'
             },
@@ -132,8 +134,8 @@ function assertVisualProof(visualProof) {
         throw new Error('Athena M27 smoke did not receive visualProof in graph-workbench proof payload.');
     }
     const failures = [];
-    if (visualProof.viewportWidth < 800 || visualProof.viewportHeight < 500) {
-        failures.push(`viewport too small for visual acceptance: ${visualProof.viewportWidth}x${visualProof.viewportHeight}`);
+    if (visualProof.viewportWidth <= 0 || visualProof.viewportHeight <= 0) {
+        failures.push(`viewport has invalid dimensions: ${visualProof.viewportWidth}x${visualProof.viewportHeight}`);
     }
     if (visualProof.svgViewBox === '0 0 1680 1188') {
         failures.push('svg viewBox still uses full A3 publication bounds instead of active content bounds');

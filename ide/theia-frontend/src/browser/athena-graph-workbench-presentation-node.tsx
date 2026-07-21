@@ -80,6 +80,7 @@ function renderPresentationCommand(
             return <rect
                 key={args.key}
                 className={className}
+                data-athena-render-authority='presentation-ir'
                 x={command.bounds.x}
                 y={command.bounds.y}
                 width={command.bounds.width}
@@ -97,6 +98,7 @@ function renderPresentationCommand(
             return <line
                 key={args.key}
                 className={className}
+                data-athena-render-authority='presentation-ir'
                 x1={command.start.x}
                 y1={command.start.y}
                 x2={command.end.x}
@@ -112,6 +114,7 @@ function renderPresentationCommand(
             return <circle
                 key={args.key}
                 className={className}
+                data-athena-render-authority='presentation-ir'
                 cx={command.center.x}
                 cy={command.center.y}
                 r={command.radius}
@@ -126,6 +129,7 @@ function renderPresentationCommand(
             return <path
                 key={args.key}
                 className={className}
+                data-athena-render-authority='presentation-ir'
                 d={command.pathData}
                 style={{ stroke, strokeWidth, fill }}
                 vectorEffect='non-scaling-stroke'

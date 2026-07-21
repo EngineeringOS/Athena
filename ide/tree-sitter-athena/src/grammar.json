@@ -387,6 +387,74 @@
           "value": "connect"
         },
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "from",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "qualified_name"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": "->"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "to",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "qualified_name"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "name",
+                  "content": {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "identifier"
+                    },
+                    "named": true,
+                    "value": "name"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": "{"
+                },
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "connect_group_edge"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": "}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "connect_group_edge": {
+      "type": "SEQ",
+      "members": [
+        {
           "type": "FIELD",
           "name": "from",
           "content": {

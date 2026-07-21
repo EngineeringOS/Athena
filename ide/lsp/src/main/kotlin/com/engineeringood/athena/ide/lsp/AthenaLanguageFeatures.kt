@@ -10,6 +10,7 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.compiler.semantic.SourceUnitId
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPublicationResult
 import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
@@ -782,13 +783,14 @@ class AthenaProjectSemanticNavigationIndex(
  *
  * M17 migration-continuity guardrail (AD-109 / AD-106): every lookup here depends only on the
  * authored `SourceFileAst` (`DeviceDeclaration`, `PortDeclaration`, `ConnectionDeclaration`,
- * `QualifiedName`) and its `SourceSpan`/`SourcePosition` values. Now that Epic 2 has replaced the
- * handwritten parser with ANTLR4-backed parsing, `documentSymbols`, `definition`, `references`,
- * and the `componentSourceRange`/`portSourceRange`/`connectionSourceRange` helpers must keep
- * working unchanged as long as the resulting `SourceFileAst` and its spans are populated
- * correctly, because they read the authored AST contract, never parser internals. After Epic 3's
- * Tree-sitter integration, these utilities stay LSP-served and AST-backed; Tree-sitter must not
- * become an alternative implementation of navigation, symbols, or source-range computation.
+ * `ConnectionGroupDeclaration`, `QualifiedName`) and its `SourceSpan`/`SourcePosition` values.
+ * Now that Epic 2 has replaced the handwritten parser with ANTLR4-backed parsing,
+ * `documentSymbols`, `definition`, `references`, and the
+ * `componentSourceRange`/`portSourceRange`/`connectionSourceRange` helpers must keep working
+ * unchanged as long as the resulting `SourceFileAst` and its spans are populated correctly,
+ * because they read the authored AST contract, never parser internals. After Epic 3's Tree-sitter
+ * integration, these utilities stay LSP-served and AST-backed; Tree-sitter must not become an
+ * alternative implementation of navigation, symbols, or source-range computation.
  */
 class AthenaNavigationIndex(
     private val documentUri: String,
@@ -801,17 +803,18 @@ class AthenaNavigationIndex(
         ).associateBy { declaration ->
         declaration.qualifiedName.parts.joinToString(".")
     }
+    private val connectionDeclarations = ast.authoredConnectionDeclarations()
     private val ownerReferences = buildList {
         ast.declarations.filterIsInstance<PortDeclaration>().forEach { declaration ->
             add(AthenaOwnerReference(declaration.qualifiedName.parts.first(), declaration.ownerSpan()))
         }
-        ast.declarations.filterIsInstance<ConnectionDeclaration>().forEach { declaration ->
+        connectionDeclarations.forEach { declaration ->
             add(AthenaOwnerReference(declaration.from.parts.first(), declaration.from.ownerSpan()))
             add(AthenaOwnerReference(declaration.to.parts.first(), declaration.to.ownerSpan()))
         }
     }
     private val portReferences = buildList {
-        ast.declarations.filterIsInstance<ConnectionDeclaration>().forEach { declaration ->
+        connectionDeclarations.forEach { declaration ->
             add(AthenaPortReference(declaration.from.parts.joinToString("."), declaration.from.span))
             add(AthenaPortReference(declaration.to.parts.joinToString("."), declaration.to.span))
         }
@@ -877,8 +880,7 @@ class AthenaNavigationIndex(
      * Resolves the full authored declaration range for one inspected connection.
      */
     fun connectionSourceRange(fromPath: String, toPath: String): Range? {
-        return ast.declarations
-            .filterIsInstance<ConnectionDeclaration>()
+        return connectionDeclarations
             .firstOrNull { declaration ->
                 declaration.from.parts.joinToString(".") == fromPath &&
                     declaration.to.parts.joinToString(".") == toPath
@@ -905,7 +907,19 @@ class AthenaNavigationIndex(
     }
 }
 
-/**
+private fun SourceFileAst.authoredConnectionDeclarations(): List<ConnectionDeclaration> {
+    return declarations.flatMap { declaration ->
+        when (declaration) {
+            is ConnectionDeclaration -> listOf(declaration)
+            is ConnectionGroupDeclaration -> declaration.connections
+            is DeviceDeclaration -> emptyList()
+            is PortDeclaration -> emptyList()
+            is LayoutDeclaration -> emptyList()
+        }
+    }
+}
+
+/** 
  * Target kinds the M4 navigation layer can resolve in a single document.
  */
 sealed interface AthenaTarget {
@@ -957,17 +971,11 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
             detail = "device"
             range = span.toLspRange()
             selectionRange = nameSpan().toLspRange()
-            children = fields.map { field -> field.toDocumentSymbol() }
+            children = fields.map { field -> field.toDocumentSymbol() } +
+                nestedPorts.map { port -> port.toDocumentSymbol(displayName = port.qualifiedName.parts.last()) }
         }
 
-        is PortDeclaration -> DocumentSymbol().apply {
-            name = qualifiedName.parts.joinToString(".")
-            kind = SymbolKind.Field
-            detail = "port"
-            range = span.toLspRange()
-            selectionRange = qualifiedName.span.toLspRange()
-            children = fields.map { field -> field.toDocumentSymbol() }
-        }
+        is PortDeclaration -> toDocumentSymbol(displayName = qualifiedName.parts.joinToString("."))
 
         is ConnectionDeclaration -> DocumentSymbol().apply {
             name = "connect ${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
@@ -975,6 +983,15 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
             detail = "connect"
             range = span.toLspRange()
             selectionRange = span.toLspRange()
+        }
+
+        is ConnectionGroupDeclaration -> DocumentSymbol().apply {
+            name = "connect ${this@toDocumentSymbol.name}"
+            kind = SymbolKind.Module
+            detail = "connect group"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+            children = connections.map { connection -> connection.toConnectEdgeDocumentSymbol() }
         }
 
         is LayoutDeclaration -> DocumentSymbol().apply {
@@ -985,6 +1002,27 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
             selectionRange = span.toLspRange()
             children = statements.map { statement -> statement.toDocumentSymbol() }
         }
+    }
+}
+
+private fun ConnectionDeclaration.toConnectEdgeDocumentSymbol(): DocumentSymbol {
+    return DocumentSymbol().apply {
+        name = "${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
+        kind = SymbolKind.Operator
+        detail = "connect edge"
+        range = span.toLspRange()
+        selectionRange = span.toLspRange()
+    }
+}
+
+private fun PortDeclaration.toDocumentSymbol(displayName: String): DocumentSymbol {
+    return DocumentSymbol().apply {
+        name = displayName
+        kind = SymbolKind.Field
+        detail = "port"
+        range = span.toLspRange()
+        selectionRange = qualifiedName.span.toLspRange()
+        children = fields.map { field -> field.toDocumentSymbol() }
     }
 }
 

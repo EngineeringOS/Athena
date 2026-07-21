@@ -1,6 +1,7 @@
 package com.engineeringood.athena.language.antlr
 
 import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.ImportDeclaration
@@ -277,6 +278,7 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     private fun adaptDeclaration(context: AthenaParser.DeclarationContext): Declaration {
         context.deviceDecl()?.let { return adaptDevice(it) }
         context.portDecl()?.let { return adaptPort(it) }
+        context.connectGroupDecl()?.let { return adaptConnectGroup(it) }
         context.connectDecl()?.let { return adaptConnect(it) }
         context.layoutDecl()?.let { return adaptLayout(it) }
         throw AthenaAntlrAdapterFailure(
@@ -329,6 +331,30 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     }
 
     private fun adaptConnect(context: AthenaParser.ConnectDeclContext): ConnectionDeclaration {
+        val from = adaptQualifiedName(
+            context.twoPartName(0),
+            "Expected qualified source reference in owner.port form after 'connect'",
+        )
+        val to = adaptQualifiedName(
+            context.twoPartName(1),
+            "Expected qualified target reference in owner.port form after '->'",
+        )
+        return ConnectionDeclaration(
+            from = from,
+            to = to,
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptConnectGroup(context: AthenaParser.ConnectGroupDeclContext): ConnectionGroupDeclaration {
+        return ConnectionGroupDeclaration(
+            name = context.ident().text,
+            connections = context.connectGroupEdge().map { edge -> adaptConnectGroupEdge(edge) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptConnectGroupEdge(context: AthenaParser.ConnectGroupEdgeContext): ConnectionDeclaration {
         val from = adaptQualifiedName(
             context.twoPartName(0),
             "Expected qualified source reference in owner.port form after 'connect'",

@@ -55,7 +55,10 @@ class AthenaRuntimeProjectionSessionTest {
             listOf("navigate-view", "inspect-selection", "preview-related-elements"),
             wiringView.ownershipContract.transientInteractionKinds,
         )
-        val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(session.activeProjection)
+        val cabinetSession = assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+            context.switchActiveProjectionView("cabinet"),
+        ).session
+        val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(cabinetSession.activeProjection)
         assertEquals("cabinet", ready.viewId)
         assertEquals("electrical/cabinet", ready.familyId)
         assertEquals("DemoCabinet", ready.scene.systemName)
@@ -93,6 +96,25 @@ class AthenaRuntimeProjectionSessionTest {
         assertEquals(2, ready.scene.components.size)
         assertEquals(1, ready.scene.connections.size)
         assertEquals(2, ready.scene.labels.size)
+    }
+
+    @Test
+    fun `graph workbench defaults to cabinet while documentation remains an explicit projection`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+
+        val session = context.projectProjectionSession()
+        val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(session.activeProjection)
+
+        assertEquals("cabinet", session.activeViewId)
+        assertEquals("cabinet", ready.viewId)
+        assertEquals("electrical/cabinet", ready.familyId)
+        assertEquals("cabinet/sheet/01-main", ready.activeSheetId)
+        assertEquals(1, ready.sheets.size)
     }
 
     @Test
@@ -361,6 +383,7 @@ class AthenaRuntimeProjectionSessionTest {
             projectName = "demo-cabinet",
             sourcePath = sourcePath,
         )
+        assertIs<AthenaRuntimeProjectionSwitchSuccess>(context.switchActiveProjectionView("cabinet"))
         val baselineDocument = assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document
         val baselineSession = context.projectProjectionSession()
         val baselineReady = assertIs<AthenaRuntimeProjectionReadySnapshot>(baselineSession.activeProjection)

@@ -188,6 +188,63 @@ class AthenaLanguageParserTest {
     }
 
     @Test
+    fun `parses grouped connect syntax as authoring structure with child edge spans`() {
+        val source =
+            """
+            system Demo {
+              device MainPowerSupplyPS30 {
+                type Switch
+              }
+              device MainBreakerQF30 {
+                type Switch
+              }
+              device ControlRelayK30 {
+                type Switch
+              }
+
+              connect con_01 {
+                MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
+                MainBreakerQF30.load -> ControlRelayK30.supply
+              }
+
+              connect ControlRelayK30.status -> MainBreakerQF30.line
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("grouped-connect.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val group = assertIs<ConnectionGroupDeclaration>(success.ast.declarations[3])
+        assertEquals("con_01", group.name)
+        assertEquals(2, group.connections.size)
+        assertEquals(listOf("MainPowerSupplyPS30", "lplus"), group.connections[0].from.parts)
+        assertEquals(listOf("MainBreakerQF30", "line"), group.connections[0].to.parts)
+        assertEquals(listOf("MainBreakerQF30", "load"), group.connections[1].from.parts)
+        assertEquals(listOf("ControlRelayK30", "supply"), group.connections[1].to.parts)
+        assertTrue(group.connections.all { connection -> connection.span.start.offset > group.span.start.offset })
+        assertTrue(group.connections.all { connection -> connection.span.end.offset < group.span.end.offset })
+        assertIs<ConnectionDeclaration>(success.ast.declarations[4])
+    }
+
+    @Test
+    fun `parses empty grouped connect syntax as zero authoring edges`() {
+        val source =
+            """
+            system Demo {
+              connect spare_connections {
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("empty-grouped-connect.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val group = assertIs<ConnectionGroupDeclaration>(success.ast.declarations.single())
+        assertEquals("spare_connections", group.name)
+        assertTrue(group.connections.isEmpty())
+    }
+
+    @Test
     fun `parses a single segment package name`() {
         val result = AthenaLanguageParser().parse(
             "single-package.athena",

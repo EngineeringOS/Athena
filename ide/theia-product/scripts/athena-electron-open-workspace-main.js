@@ -15,6 +15,11 @@ const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED';
 const SHOULD_EXIT_ON_WORKSPACE_OPEN = process.env.ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN === '1';
 const REQUESTED_ACTIVE_VIEW = resolveRequestedActiveView();
 const GRAPH_VIEW_SCREENSHOT_PATH = process.env.ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT || '';
+const SKIP_SMOKE_OUTLINE = process.env.ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE === '1';
+const SMOKE_OUTLINE_SOURCE_RELATIVE = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE
+    || 'src/01-interaction-authoring-source.athena';
+const SMOKE_OUTLINE_EXPECTED_PATH = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH
+    || 'InteractionAuthoringProof > OperatorHMI1 > status';
 
 const targetWorkspace = process.argv[2] ? path.resolve(process.cwd(), process.argv[2]) : undefined;
 if (process.env.ATHENA_ELECTRON_TEMP_USER_DATA === '1') {
@@ -123,12 +128,27 @@ async function openWorkspace(window) {
                 'Athena workbench smoke command hook',
                 60000
             ).catch(() => undefined);
+            const outlineProof = ${JSON.stringify(SKIP_SMOKE_OUTLINE)}
+                ? { skipped: true, reason: 'ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE=1' }
+                : await collectOutlineProof(target);
             if (athenaWorkbenchSmoke) {
-                await athenaWorkbenchSmoke();
+                await Promise.race([
+                    athenaWorkbenchSmoke(),
+                    new Promise((_, reject) => setTimeout(
+                        () => reject(new Error('Timed out waiting for Athena Graphical View smoke command hook')),
+                        10000
+                    ))
+                ]).catch(() => revealGraphicalViewThroughDom());
             } else if (electronRequire) {
                 const { CommandRegistry } = electronRequire('@theia/core/lib/common/command');
                 const commandRegistry = window.theia.container.get(CommandRegistry);
-                await commandRegistry.executeCommand('athena.revealGraphicalView');
+                await Promise.race([
+                    commandRegistry.executeCommand('athena.revealGraphicalView'),
+                    new Promise((_, reject) => setTimeout(
+                        () => reject(new Error('Timed out waiting for Graphical View command registry execution')),
+                        10000
+                    ))
+                ]).catch(() => revealGraphicalViewThroughDom());
             } else {
                 await revealGraphicalViewThroughDom();
             }
@@ -187,6 +207,7 @@ async function openWorkspace(window) {
                     viewport: !!viewport,
                     sheet: !!sheet,
                     canvas: !!canvas,
+                    activeViewId: collectActiveProjectionViewId(),
                     floatingBarTransparent: isTransparent(floatingBar),
                     bottomDockTransparent: isTransparent(bottomDock),
                     zoomDockTransparent: isTransparent(zoomDock),
@@ -203,9 +224,44 @@ async function openWorkspace(window) {
                     representationProof: collectRepresentationProof(),
                     visualProof: collectVisualProof(),
                     allSheetVisualProof: await collectAllSheetVisualProofs(sheetViewSelector),
-                    sheetSelectorPersistenceProof: await collectSheetSelectorPersistenceProof(sheetViewSelector)
+                    sheetSelectorPersistenceProof: await collectSheetSelectorPersistenceProof(sheetViewSelector),
+                    outlineProof
                 }
             };
+
+            async function collectOutlineProof(target) {
+                const outlineSourceRelative = ${JSON.stringify(SMOKE_OUTLINE_SOURCE_RELATIVE)};
+                const sourcePath = target.replace(/\\\\/g, '/') + '/' + outlineSourceRelative.replace(/^\\/+/, '');
+                const sourceUri = 'file:///' + sourcePath.replace(/^\\/?([A-Za-z]:)/, '$1');
+                const revealOutlineForSource = await waitFor(
+                    () => window.__athenaWorkbenchSmoke?.revealOutlineForSource,
+                    'Athena outline smoke command hook'
+                );
+                const proof = await Promise.race([
+                    revealOutlineForSource(sourceUri),
+                    new Promise((_, reject) => setTimeout(
+                        () => reject(new Error('Timed out waiting for Athena Outline proof hook result for ' + sourceUri)),
+                        60000
+                    ))
+                ]);
+                const expectedOutlinePath = ${JSON.stringify(SMOKE_OUTLINE_EXPECTED_PATH)};
+                await waitFor(() => {
+                    const paths = Array.isArray(proof.paths) ? proof.paths : [];
+                    return paths.some(path => path.endsWith(expectedOutlinePath))
+                        ? true
+                        : undefined;
+                }, 'structured Outline proof nested path ' + expectedOutlinePath + ' in paths ' + JSON.stringify(proof.paths || []).slice(0, 500));
+                return {
+                    sourceUri,
+                    expectedOutlinePath,
+                    ...proof,
+                };
+            }
+
+            function collectActiveProjectionViewId() {
+                const activeButton = document.querySelector('.athena-graph-workbench__tool-button--view.athena-graph-workbench__tool-button--active');
+                return activeButton?.getAttribute('data-athena-projection-view-id') || '';
+            }
 
             function collectDocumentProjectionProof(sheetViewSelector, referenceMarkerButtons) {
                 const options = sheetViewSelector
@@ -512,7 +568,13 @@ async function openWorkspace(window) {
                 const { AthenaGraphWorkbenchWidget } = require('@engineeringood/athena-theia-frontend/lib/browser/athena-graph-workbench-widget');
                 const widgetManager = window.theia.container.get(WidgetManager);
                 const graphWidget = await widgetManager.getOrCreateWidget(AthenaGraphWorkbenchWidget.ID);
-                await graphWidget.switchActiveSheetView(sheetViewId);
+                await Promise.race([
+                    graphWidget.switchActiveSheetView(sheetViewId),
+                    new Promise((_, reject) => setTimeout(
+                        () => reject(new Error('Timed out waiting for graph widget sheet switch ' + sheetViewId)),
+                        5000
+                    ))
+                ]);
             }
 
             function dispatchNativeSheetSelectorChange(sheetViewId) {
@@ -550,9 +612,10 @@ async function openWorkspace(window) {
                     const semanticId = route.getAttribute('data-athena-route-semantic-id') || '';
                     const routePoints = parseRoutePoints(route.getAttribute('data-athena-route-points') || '');
                     const ownerIds = routeEndpointOwnerIds(semanticId);
-                    const crossedNodeBoxes = nodeBoxes
-                        .filter(nodeBox => !ownerIds.has(stripSemanticPrefix(nodeBox.semanticId)))
-                        .filter(nodeBox => routeCrossesNodeBox(routePoints, nodeBox));
+	                const crossedNodeBoxes = nodeBoxes
+	                        .filter(isComponentBodyBox)
+	                        .filter(nodeBox => !ownerIds.has(stripSemanticPrefix(nodeBox.semanticId)))
+	                        .filter(nodeBox => routeCrossesNodeBox(routePoints, nodeBox));
                     const nonOrthogonalSegments = countNonOrthogonalSegments(routePoints);
                     return {
                         routeId,
@@ -605,20 +668,25 @@ async function openWorkspace(window) {
                 };
             }
 
-            function collectNodeBoxes() {
-                return Array.from(document.querySelectorAll('.athena-graph-workbench__node-hitbox'))
-                    .map(hitbox => {
-                        const group = hitbox.closest('[data-athena-semantic-id]');
-                        return {
-                            semanticId: group?.getAttribute('data-athena-semantic-id') || '',
-                            x: Number(hitbox.getAttribute('x') || '0'),
-                            y: Number(hitbox.getAttribute('y') || '0'),
-                            width: Number(hitbox.getAttribute('width') || '0'),
+	            function collectNodeBoxes() {
+	                return Array.from(document.querySelectorAll('.athena-graph-workbench__node-hitbox'))
+	                    .map(hitbox => {
+	                        const group = hitbox.closest('[data-athena-semantic-id]');
+	                        return {
+	                            semanticId: group?.getAttribute('data-athena-semantic-id') || '',
+	                            representationId: group?.getAttribute('data-athena-representation-id') || '',
+	                            x: Number(hitbox.getAttribute('x') || '0'),
+	                            y: Number(hitbox.getAttribute('y') || '0'),
+	                            width: Number(hitbox.getAttribute('width') || '0'),
                             height: Number(hitbox.getAttribute('height') || '0')
                         };
-                    })
-                    .filter(box => box.semanticId && box.width > 0 && box.height > 0);
-            }
+	                    })
+	                    .filter(box => box.semanticId && box.width > 0 && box.height > 0);
+	            }
+
+	            function isComponentBodyBox(nodeBox) {
+	                return nodeBox.semanticId.startsWith('component:') && !!nodeBox.representationId;
+	            }
 
             function parseRoutePoints(value) {
                 return value

@@ -21,6 +21,7 @@ class AthenaGraphCommandIntentServiceTest {
             projectName = "demo-cabinet",
             sourcePath = sourcePath,
         )
+        assertIs<AthenaRuntimeProjectionSwitchSuccess>(context.switchActiveProjectionView("cabinet"))
         val baselineDocument = assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document
         val baselineSession = context.projectProjectionSession()
         val baselineReady = assertIs<AthenaRuntimeProjectionReadySnapshot>(baselineSession.activeProjection)
@@ -104,6 +105,7 @@ class AthenaGraphCommandIntentServiceTest {
             projectName = "demo-cabinet",
             sourcePath = sourcePath,
         )
+        assertIs<AthenaRuntimeProjectionSwitchSuccess>(context.switchActiveProjectionView("cabinet"))
         val baselineSession = context.projectProjectionSession()
 
         val result = context.graphCommandIntentRuntime().submit(
@@ -134,6 +136,7 @@ class AthenaGraphCommandIntentServiceTest {
             projectName = "demo-cabinet",
             sourcePath = sourcePath,
         )
+        assertIs<AthenaRuntimeProjectionSwitchSuccess>(context.switchActiveProjectionView("cabinet"))
 
         val result = context.graphCommandIntentRuntime().submit(
             context = context,

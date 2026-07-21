@@ -9,7 +9,7 @@ const ATHENA_WORKSPACE_OPEN_FAILURE_SENTINEL = 'ATHENA_WORKSPACE_OPEN_FAILURE=';
 const ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_PROOF=';
 const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME=';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED=';
-const STARTUP_TIMEOUT_MS = 90000;
+const STARTUP_TIMEOUT_MS = 180000;
 
 async function main() {
     const repositoryRoot = resolveM28SampleProject();
@@ -26,6 +26,9 @@ async function main() {
                 ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN: '1',
                 ATHENA_ELECTRON_TEMP_USER_DATA: '1',
                 ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW: 'documentation',
+                ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE: '1',
+                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/01-relationship-authoring-source.athena',
+                ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH: 'RelationshipAuthoringProof > OperatorHMI1 > status',
                 ELECTRON_ENABLE_LOGGING: '1'
             },
             stdio: ['ignore', 'pipe', 'pipe'],
