@@ -1,6 +1,7 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
+import com.engineeringood.athena.authoring.AuthoringRevisionGuard
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
@@ -49,6 +50,7 @@ import org.eclipse.lsp4j.services.TextDocumentService
 import org.eclipse.lsp4j.services.WorkspaceService
 import java.net.URI
 import java.nio.file.Path
+import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Locale
 import java.util.concurrent.CompletableFuture
@@ -500,14 +502,68 @@ class AthenaLanguageServer(
                 ),
             )
 
-        return CompletableFuture.completedFuture(
-            activation.context.graphCommandIntentRuntime()
-                .submit(
-                    context = activation.context,
-                    intent = intent,
+        val trackedDocument = sessionSnapshot
+            ?.sourcePath
+            ?.let { sourcePath -> languageFeatures?.trackedDocumentByPath(sourcePath) }
+        val preflightSourceEdit = if (params.authoredLayoutIntent != null) {
+            if (trackedDocument == null) {
+                return CompletableFuture.completedFuture(
+                    AthenaGraphCommandIntentPayload(
+                        projectName = activation.context.project.name,
+                        semanticPath = semanticPath,
+                        status = "rejected",
+                        intentId = params.intentId,
+                        mutationCategory = params.defaultMutationCategory().name.lowercase().replace('_', '-'),
+                        viewId = params.viewId,
+                        source = params.source,
+                        target = params.target,
+                        requestedPlacement = params.requestedPlacement,
+                        reason = "Accepted authored layout commands require an active source document to produce a durable source edit.",
+                    ),
                 )
-                .toPayload(semanticPath = semanticPath),
-        )
+            }
+            val revisionGuard = trackedDocument.toAuthoringRevisionGuard()
+            val authoredIntent = params.authoredLayoutIntent.toBackendIntent(trackedDocument.path.fileName.toString())
+            val document = trackedDocument.toBackendSourceDocument(revisionGuard)
+            val plannedSourceEdit = if (authoredIntent != null && document != null) {
+                (com.engineeringood.athena.compiler.BackendAuthoringSourceEditPlanner().plan(
+                    com.engineeringood.athena.compiler.BackendAuthoredLayoutPlanningRequest(
+                        document = document,
+                        revisionGuard = revisionGuard,
+                        subjectSemanticId = params.target.semanticId,
+                        intent = authoredIntent,
+                    ),
+                ) as? com.engineeringood.athena.compiler.BackendAuthoringSourceEditPlanned)
+                    ?.plan
+                    ?.toPayload(trackedDocument.text)
+            } else {
+                null
+            }
+            plannedSourceEdit ?: return CompletableFuture.completedFuture(
+                AthenaGraphCommandIntentPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                    status = "rejected",
+                    intentId = params.intentId,
+                    mutationCategory = params.defaultMutationCategory().name.lowercase().replace('_', '-'),
+                    viewId = params.viewId,
+                    source = params.source,
+                    target = params.target,
+                    requestedPlacement = params.requestedPlacement,
+                    reason = "Backend source edit planning failed for authored layout command; no durable source edit was produced.",
+                ),
+            )
+        } else {
+            null
+        }
+        val runtimeResult = activation.context.graphCommandIntentRuntime()
+            .submit(
+                context = activation.context,
+                intent = intent,
+            )
+        val payload = runtimeResult.toPayload(semanticPath = semanticPath)
+        val sourceEdit = if (payload.status == "accepted") preflightSourceEdit else null
+        return CompletableFuture.completedFuture(payload.copy(sourceEdit = sourceEdit))
     }
 
     /**
@@ -517,19 +573,94 @@ class AthenaLanguageServer(
     fun authoringPreview(params: AthenaAuthoringPreviewParams): CompletableFuture<AthenaAuthoringPreviewSubmissionPayload?> {
         val activation = activeSession ?: return CompletableFuture.completedFuture(null)
         val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
-        val result = activation.context.authoringSessions()
-            .submit(
-                context = activation.context,
-                intent = params.toRuntimeIntent(),
-            )
-            .let { submission -> submission as AthenaAuthoringPreviewSubmitted }
         val trackedDocument = sessionSnapshot
             ?.sourcePath
             ?.let { sourcePath -> languageFeatures?.trackedDocumentByPath(sourcePath) }
+        val revisionGuard = trackedDocument?.toAuthoringRevisionGuard() ?: run {
+            val sourcePath = activation.context.project.sourcePath
+            AuthoringRevisionGuard.from(
+                semanticSnapshotId = "project:${activation.context.project.name}",
+                sourceUri = sourcePath.toUri().toString(),
+                documentVersion = 0,
+                sourceText = Files.readString(sourcePath),
+            )
+        }
+        val runtimeIntent = runCatching { params.toRuntimeIntent(revisionGuard) }.getOrElse { failure ->
+            return CompletableFuture.completedFuture(
+                params.toInvalidSubmissionPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                    reason = failure.message ?: "Athena authoring request is malformed.",
+                ),
+            )
+        }
+        val governedIntent = (
+            runtimeIntent is com.engineeringood.athena.authoring.CreateSemanticEntityIntent &&
+                com.engineeringood.athena.domain.electricalruntime.ElectricalEntityCreationProjectionAuthority
+                    .supports(runtimeIntent.conceptTemplateId.value)
+            ) || runtimeIntent is com.engineeringood.athena.authoring.SemanticRelationshipIntent
+        val capabilityDiscovery = if (governedIntent && trackedDocument != null) {
+            discoverGovernedAuthoringCapability(trackedDocument, runtimeIntent)
+        } else {
+            null
+        }
+        val capabilityEvidence = capabilityDiscovery?.evidence?.singleOrNull()
+        val previewFactory: ((com.engineeringood.athena.authoring.AuthoringPreviewId) ->
+            com.engineeringood.athena.authoring.AuthoringPreview)? =
+            if (governedIntent && capabilityEvidence == null) {
+                { previewId: com.engineeringood.athena.authoring.AuthoringPreviewId ->
+                    capabilityBlockedPreview(previewId, runtimeIntent, revisionGuard, capabilityDiscovery)
+                }
+            } else {
+                null
+            }
+        val governedPreviewFactory: ((com.engineeringood.athena.authoring.AuthoringPreviewId) ->
+            com.engineeringood.athena.runtime.AthenaGovernedAuthoringPreviewContext)? =
+            if (runtimeIntent is com.engineeringood.athena.authoring.CreateSemanticEntityIntent &&
+                trackedDocument != null && capabilityEvidence != null
+            ) {
+                { previewId: com.engineeringood.athena.authoring.AuthoringPreviewId ->
+                    requireNotNull(
+                        governedCreateEntityPreview(
+                            trackedDocument = trackedDocument,
+                            intent = runtimeIntent,
+                            previewId = previewId,
+                            capabilityEvidence = capabilityEvidence,
+                        ),
+                    ).toSessionContext()
+                }
+            } else if (runtimeIntent is com.engineeringood.athena.authoring.SemanticRelationshipIntent &&
+                trackedDocument != null && capabilityEvidence != null
+            ) {
+                { previewId: com.engineeringood.athena.authoring.AuthoringPreviewId ->
+                    requireNotNull(governedSemanticRelationshipPreview(
+                        trackedDocument = trackedDocument,
+                        intent = runtimeIntent,
+                        previewId = previewId,
+                        provenance = com.engineeringood.athena.authoring.AuthoringTransactionProvenance(
+                            actor = params.actor?.takeIf(String::isNotBlank) ?: "user:authoring",
+                            origin = runtimeIntent.origin,
+                            reason = runtimeIntent.provenance,
+                        ),
+                        capabilityEvidence = capabilityEvidence,
+                    )).toSessionContext()
+                }
+            } else {
+                null
+            }
+        val result = activation.context.authoringSessions()
+            .submit(
+                context = activation.context,
+                intent = runtimeIntent,
+                previewFactory = previewFactory,
+                governedPreviewFactory = governedPreviewFactory,
+            )
+            .let { submission -> submission as AthenaAuthoringPreviewSubmitted }
         val componentKnowledge = activation.context.componentKnowledgeRuntime()
             .inspect(activation.context) as? com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
         val sourceImpact = trackedDocument?.let { currentTrackedDocument ->
-            previewCreateComponentSourceEdit(
+            result.record.preview.relationshipEvidence?.sourceEdit?.toPayload(currentTrackedDocument.text)
+                ?: previewCreateEntitySourceEdit(
                 trackedDocument = currentTrackedDocument,
                 record = result.record,
                 componentKnowledge = componentKnowledge,
@@ -565,48 +696,97 @@ class AthenaLanguageServer(
     fun authoringDecision(params: AthenaAuthoringDecisionParams): CompletableFuture<AthenaAuthoringPreviewDecisionPayload?> {
         val activation = activeSession ?: return CompletableFuture.completedFuture(null)
         val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
-        val result = activation.context.authoringSessions()
-            .applyDecision(
-                context = activation.context,
-                decision = params.toRuntimeDecision(),
+        val decision = runCatching { params.toRuntimeDecision() }.getOrElse { failure ->
+            return CompletableFuture.completedFuture(
+                AthenaAuthoringPreviewDecisionPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                    status = "unavailable",
+                    reason = failure.message ?: "Athena authoring decision is malformed.",
+                ),
             )
+        }
         val trackedDocument = sessionSnapshot
             ?.sourcePath
             ?.let { sourcePath -> languageFeatures?.trackedDocumentByPath(sourcePath) }
+        val storedRecord = activation.context.authoringSessions()
+            .state(activation.context)
+            .records
+            .firstOrNull { record -> record.preview.previewId.value == params.previewId }
+        val governedAuthorities = storedRecord?.governedContext?.let { governedContext ->
+            trackedDocument?.let { currentTrackedDocument ->
+                governedDecisionAuthorities(
+                    trackedDocument = currentTrackedDocument,
+                    compiler = activation.context.compiler(),
+                    governedContext = governedContext,
+                    sourceMutationAuthority = { sourceEdit, proposedSource ->
+                        applyAuthoringWorkspaceMutation(
+                            client = languageClient,
+                            trackedDocument = currentTrackedDocument,
+                            sourceEdit = sourceEdit,
+                            proposedSource = proposedSource,
+                        )
+                    },
+                    onSourceMutated = { proposedSource ->
+                        languageFeatures?.trackDocument(
+                            uri = currentTrackedDocument.uri,
+                            path = currentTrackedDocument.path,
+                            version = currentTrackedDocument.version + 1,
+                            text = proposedSource,
+                        )
+                    },
+                )
+            }
+        }
+        val result = activation.context.authoringSessions()
+            .applyDecision(
+                context = activation.context,
+                decision = decision,
+                governedAuthorities = governedAuthorities,
+            )
         val componentKnowledge = activation.context.componentKnowledgeRuntime()
             .inspect(activation.context) as? com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
         val sourceEdit = when (result) {
             is com.engineeringood.athena.runtime.AthenaAuthoringPreviewDecisionUpdated -> {
+                val governedLifecycle = result.transaction?.lifecycleState
+                if (governedLifecycle != null && governedLifecycle !in setOf(
+                        com.engineeringood.athena.authoring.AuthoringLifecycleState.REPROJECTED,
+                        com.engineeringood.athena.authoring.AuthoringLifecycleState.PROJECTION_FAILED,
+                    )
+                ) {
+                    null
+                } else {
                 val currentTrackedDocument = trackedDocument ?: return CompletableFuture.completedFuture(
                     result.toPayload(
                         projectName = activation.context.project.name,
                         semanticPath = semanticPath,
                     ),
                 )
-                when (result.record.intent) {
-                    is com.engineeringood.athena.authoring.CreateComponentIntent -> acceptedCreateComponentSourceEdit(
+                result.record.governedContext?.sourceEditPlan
+                    ?.toPayload(currentTrackedDocument.text)
+                    ?.copy(appliedByAuthority = true)
+                    ?: when (result.record.intent) {
+                    is com.engineeringood.athena.authoring.CreateSemanticEntityIntent -> acceptedCreateEntitySourceEdit(
                         trackedDocument = currentTrackedDocument,
                         record = result.record,
                         componentKnowledge = componentKnowledge,
                     )
 
-                    is com.engineeringood.athena.authoring.UpdateComponentPropertiesIntent -> acceptedUpdateComponentPropertiesSourceEdit(
+                    is com.engineeringood.athena.authoring.UpdateSemanticEntityPropertiesIntent -> acceptedUpdateSemanticEntityPropertiesSourceEdit(
                         trackedDocument = currentTrackedDocument,
                         record = result.record,
                         componentKnowledge = componentKnowledge,
                     )
 
-                    is com.engineeringood.athena.authoring.ConnectPortsIntent -> acceptedConnectPortsSourceEdit(
+                    is com.engineeringood.athena.authoring.SemanticRelationshipIntent -> acceptedSemanticRelationshipSourceEdit(
                         trackedDocument = currentTrackedDocument,
                         record = result.record,
                     )
 
-                    is com.engineeringood.athena.authoring.SemanticRelationshipIntent -> acceptedConnectPortsSourceEdit(
-                        trackedDocument = currentTrackedDocument,
-                        record = result.record,
-                    )
+                    is com.engineeringood.athena.authoring.RemoveSemanticRelationshipIntent -> null
 
                     else -> null
+                    }
                 }
             }
 

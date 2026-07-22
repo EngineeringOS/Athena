@@ -7,11 +7,13 @@ import com.engineeringood.athena.projection.ElectricalAnchor
 import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
 import com.engineeringood.athena.projection.ElectricalRoutingCorridor
 import com.engineeringood.athena.projection.ProjectionCrossReference
+import com.engineeringood.athena.projection.ProjectionCrossReferenceLink
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationSubject
 import com.engineeringood.athena.projection.ProjectionPoint
 import com.engineeringood.athena.projection.ProjectionSheet
+import com.engineeringood.athena.projection.ProjectionSheetPolicyEvidence
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 
 internal const val GRAPH_WORKBENCH_RENDERER_TARGET = "graph-workbench"
@@ -73,8 +75,19 @@ internal fun ProjectionSheet.toRuntimeProjectionSheet(): AthenaRuntimeProjection
         previousSheetId = previousSheetId?.value,
         nextSheetId = nextSheetId?.value,
         subjectSemanticIds = subjects.map { subject -> subject.semanticId.value },
+        policyEvidence = policyEvidence?.toRuntimeProjectionSheetPolicyEvidence(),
         publication = publication.toRuntimeProjectionSheetPublication(),
         composition = composition.toRuntimeProjectionSheetComposition(),
+    )
+}
+
+private fun ProjectionSheetPolicyEvidence.toRuntimeProjectionSheetPolicyEvidence(): AthenaRuntimeProjectionSheetPolicyEvidence {
+    return AthenaRuntimeProjectionSheetPolicyEvidence(
+        policyId = policyId,
+        policyVersion = policyVersion,
+        policyDeterministicIdentity = policyDeterministicIdentity,
+        sheetViewRole = sheetViewRole,
+        sheetViewRoleOrder = sheetViewRoleOrder,
     )
 }
 
@@ -198,8 +211,21 @@ internal fun ProjectionCrossReference.toRuntimeProjectionCrossReference(): Athen
     return AthenaRuntimeProjectionCrossReference(
         semanticId = semanticId.value,
         kind = kind.name.lowercase(),
+        crossReferenceId = crossReferenceId.value,
         sheetIds = sheetIds.map { sheetId -> sheetId.value },
         occurrenceIds = occurrenceIds.sorted(),
+        links = links.map(ProjectionCrossReferenceLink::toRuntimeProjectionCrossReferenceLink),
+    )
+}
+
+private fun ProjectionCrossReferenceLink.toRuntimeProjectionCrossReferenceLink(): AthenaRuntimeProjectionCrossReferenceLink {
+    return AthenaRuntimeProjectionCrossReferenceLink(
+        semanticId = semanticId.value,
+        sourceSheetId = sourceSheetId.value,
+        targetSheetId = targetSheetId.value,
+        sourceOccurrenceId = sourceOccurrenceId,
+        targetOccurrenceId = targetOccurrenceId,
+        compactNotation = compactNotation,
     )
 }
 

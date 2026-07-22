@@ -9,6 +9,7 @@ import com.engineeringood.athena.interaction.SemanticActionIntent
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class InteractionAuthoringMappingTest {
     @Test
@@ -53,7 +54,39 @@ class InteractionAuthoringMappingTest {
     }
 
     @Test
-    fun `component creation action intent maps to create component intent`() {
+    fun `relationship action intent rejects non terminal semantic subjects`() {
+        val actionIntent = SemanticActionIntent(
+            actionIntentId = "action:connect-components",
+            actionFamily = InteractionActionFamily.MUTATE,
+            subject = InteractionSubjectKey(
+                canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+                subjectKind = InteractionSubjectKind.COMPONENT,
+            ),
+            targetSubjects = listOf(
+                InteractionSubjectKey(
+                    canonicalSubjectId = StableSemanticIdentity("port:HMI1.power"),
+                    subjectKind = InteractionSubjectKind.PORT,
+                ),
+            ),
+            requestedBy = InteractionProvenance(
+                actor = "user:Aaron",
+                originSurface = InteractionOriginSurface.GRAPH,
+                reason = "relationship authoring",
+            ),
+        )
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            actionIntent.toSemanticRelationshipIntent()
+        }
+
+        assertEquals(
+            "Semantic relationship mutation requires canonical port or terminal subjects.",
+            error.message,
+        )
+    }
+
+    @Test
+    fun `entity creation action intent maps to generic semantic entity intent`() {
         val parent = InteractionSubjectKey(
             canonicalSubjectId = StableSemanticIdentity("system:MainPanel"),
             subjectKind = InteractionSubjectKind.WORKSPACE,
@@ -68,17 +101,32 @@ class InteractionAuthoringMappingTest {
                 reason = "insert semantic entity",
             ),
             parameters = mapOf(
-                "componentConceptId" to "electrical.switch",
+                "conceptTemplateId" to "electrical.switch.default",
+                "conceptId" to "electrical.switch",
                 "preferredImplementationId" to "SPARE-XT",
                 "suggestedName" to "SpareTerminalXT99",
             ),
         )
 
-        val createIntent = actionIntent.toCreateComponentIntent()
+        val guard = AuthoringRevisionGuard.from(
+            semanticSnapshotId = "snapshot:test",
+            sourceUri = "file:///workspace/main.athena",
+            documentVersion = 1,
+            sourceText = "system MainPanel {}",
+        )
+        val createIntent = actionIntent.toCreateSemanticEntityIntent(
+            revisionGuard = guard,
+            provenance = AuthoringTransactionProvenance(
+                actor = "user:Aaron",
+                origin = AuthoringOrigin(AuthoringSurface.PALETTE),
+                reason = "insert semantic entity",
+            ),
+        )
 
         assertEquals("action:create-spare-terminal", createIntent.intentId.value)
         assertEquals(AuthoringSurface.PALETTE, createIntent.origin.surface)
-        assertEquals(parent.canonicalSubjectId, createIntent.parentIdentity)
+        assertEquals(parent.canonicalSubjectId, createIntent.creationContext.parentSubjectId)
+        assertEquals("electrical.switch.default", createIntent.conceptTemplateId.value)
         assertEquals("electrical.switch", createIntent.conceptId.value)
         assertEquals("SPARE-XT", createIntent.preferredImplementationId?.value)
         assertEquals("SpareTerminalXT99", createIntent.suggestedName)

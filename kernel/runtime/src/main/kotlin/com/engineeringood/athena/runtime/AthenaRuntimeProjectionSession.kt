@@ -71,7 +71,9 @@ internal fun AthenaExecutionContext.switchProjectionView(viewId: String): Athena
         )
     }
     replaceActiveProjectionViewId(targetViewId)
-    replaceActiveProjectionSheetId(targetSheetId)
+    if (sheetSwitchTarget != null) {
+        replaceActiveProjectionSheetId(targetSheetId)
+    }
     invalidateProjectionSession()
     return AthenaRuntimeProjectionSwitchSuccess(
         projectName = project.name,

@@ -22,8 +22,10 @@ import type {
     AthenaAuthoringPreviewDecisionPayload,
     AthenaAuthoringPreviewParams,
     AthenaAuthoringPreviewSubmissionPayload,
+    AthenaAuthoringRevisionGuardPayload,
     AthenaAuthoringSourceEditPayload
 } from './athena-authoring-protocol';
+import { assertAuthoringRevisionGuard } from './athena-authoring-revision-guard';
 import {
     ATHENA_LANGUAGE_ID,
     athenaLanguageConfiguration,
@@ -439,7 +441,16 @@ export type AthenaProjectionSheetPayload = {
     previousSheetId?: string;
     nextSheetId?: string;
     subjectSemanticIds: string[];
+    policyEvidence?: AthenaProjectionSheetPolicyEvidencePayload;
     publication: AthenaProjectionSheetPublicationPayload;
+};
+
+export type AthenaProjectionSheetPolicyEvidencePayload = {
+    policyId: string;
+    policyVersion: string;
+    policyDeterministicIdentity: string;
+    sheetViewRole: string;
+    sheetViewRoleOrder: number;
 };
 
 export type AthenaProjectionSheetPublicationPayload = {
@@ -1108,11 +1119,23 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         );
     }
 
-    applyAuthoringSourceEdit(edit: AthenaAuthoringSourceEditPayload): void {
+    async applyAuthoringSourceEdit(edit: AthenaAuthoringSourceEditPayload): Promise<void> {
+        if (edit.appliedByAuthority) {
+            return;
+        }
         const model = monaco.editor.getModel(monaco.Uri.parse(edit.uri)) ?? this.currentAthenaEditorModel();
         if (!model || model.uri.toString() !== edit.uri) {
             throw new Error(`Athena authoring source edit target is not open: ${edit.uri}`);
         }
+        const currentEditor = this.editorManager.currentEditor;
+        const documentVersion = this.isAthenaEditor(currentEditor) && currentEditor.editor.uri.toString() === edit.uri
+            ? currentEditor.editor.document.version
+            : model.getVersionId();
+        await assertAuthoringRevisionGuard(edit, {
+            uri: model.uri.toString(),
+            version: documentVersion,
+            text: model.getValue(),
+        });
         model.pushEditOperations(
             [],
             [{
@@ -1127,7 +1150,6 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             }],
             () => null,
         );
-        const currentEditor = this.editorManager.currentEditor;
         if (!this.isAthenaEditor(currentEditor) || currentEditor.editor.uri.toString() !== edit.uri || !edit.selectionRange) {
             return;
         }
@@ -1136,6 +1158,36 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             direction: 'ltr',
         };
         currentEditor.editor.revealRange(edit.selectionRange, { at: 'center' });
+    }
+
+    async sourceEditMatchesActiveDocument(revisionGuard: AthenaAuthoringRevisionGuardPayload | undefined): Promise<boolean> {
+        if (!revisionGuard) {
+            return false;
+        }
+        const model = monaco.editor.getModel(monaco.Uri.parse(revisionGuard.sourceUri)) ?? this.currentAthenaEditorModel();
+        if (!model || model.uri.toString() !== revisionGuard.sourceUri) {
+            return false;
+        }
+        const currentEditor = this.editorManager.currentEditor;
+        const documentVersion = this.isAthenaEditor(currentEditor) && currentEditor.editor.uri.toString() === revisionGuard.sourceUri
+            ? currentEditor.editor.document.version
+            : model.getVersionId();
+        try {
+            await assertAuthoringRevisionGuard(
+                {
+                    uri: revisionGuard.sourceUri,
+                    revisionGuard,
+                },
+                {
+                    uri: model.uri.toString(),
+                    version: documentVersion,
+                    text: model.getValue(),
+                },
+            );
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     async requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined> {

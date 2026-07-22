@@ -107,13 +107,13 @@ cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:runtime
 1. Open the same repository fixture and `factory-line.athena`.
 2. Open `Graphical View`.
 3. Stay in the `cabinet` view.
-4. Select the supported port-label targets and execute the `connect-ports` interaction.
+4. Select the supported port-label targets and execute the semantic relationship interaction.
 5. Confirm the accepted result refreshes from canonical runtime state rather than leaving the graph in a local unsaved mode.
 
 What this proves:
 
 - the graph workbench emits Athena command intent rather than renderer-owned save behavior
-- the first semantic graph mutation path reuses canonical command execution
+- the original semantic graph mutation proof reused canonical command execution; M31 migrated the product path to governed `SemanticRelationshipIntent`
 - accepted semantic graph changes feed the same review and history vocabulary as source-originated changes
 
 ## Proof Surface 3: Graph Projection Mutation

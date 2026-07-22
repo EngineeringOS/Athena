@@ -21,8 +21,9 @@ test('graph workbench prepares reviewable layout mutation previews before source
     assert.match(modelSource, /buildAthenaGraphLayoutMutationPreview/);
     assert.match(modelSource, /previewId/);
     assert.match(modelSource, /authoredIntent/);
-    assert.match(modelSource, /serializeAthenaGraphAuthoredLayoutIntent/);
+    assert.match(modelSource, /sourceEdit/);
     assert.match(modelSource, /layoutBlockSnippet/);
+    assert.match(modelSource, /sourceEdit\.newText\.trim\(\)/);
     assert.match(modelSource, /persisted:\s*false/);
     assert.match(widgetSource, /layoutMutationPreview/);
     assert.match(widgetSource, /renderLayoutMutationPreview/);
@@ -31,7 +32,7 @@ test('graph workbench prepares reviewable layout mutation previews before source
     assert.doesNotMatch(widgetSource, /applyAuthoringSourceEdit\([^)]*layoutMutationPreview/);
     assert.match(widgetSource, /acceptLayoutMutationPreview/);
     const renderPreviewStart = widgetSource.indexOf('protected renderLayoutMutationPreview');
-    const acceptPreviewStart = widgetSource.indexOf('protected acceptLayoutMutationPreview');
+    const acceptPreviewStart = widgetSource.search(/protected (?:async )?acceptLayoutMutationPreview/);
     assert.ok(renderPreviewStart >= 0 && acceptPreviewStart > renderPreviewStart);
     const renderPreviewBody = widgetSource.slice(renderPreviewStart, acceptPreviewStart);
     assert.doesNotMatch(renderPreviewBody, /applyAuthoringSourceEdit/);

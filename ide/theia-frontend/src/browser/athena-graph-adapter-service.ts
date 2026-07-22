@@ -1,11 +1,11 @@
 import { AthenaGLSPDiagram, translateProjectionSessionToGLSPDiagram } from '@engineeringood/athena-graph-glsp';
 import { inject, injectable } from '@theia/core/shared/inversify';
 import {
-    buildConnectPortsIntentRequest,
     buildAdjustLayoutPlacementIntentRequest,
-    supportsConnectPortsIntent,
+    supportsCreateSemanticRelationshipIntent,
     supportsAdjustLayoutPlacementIntent,
     type AthenaGraphCommandIntentPayload,
+    type AthenaGraphAuthoredLayoutIntentPayload,
     type AthenaGraphCommandSubjectKind
 } from './athena-graph-command-intent-protocol';
 import { AthenaLspEditorBridgeService } from './athena-lsp-editor-bridge-service';
@@ -80,11 +80,11 @@ export class AthenaGraphAdapterService {
         );
     }
 
-    supportsConnectPortsIntent(diagram: AthenaGLSPDiagram | undefined): boolean {
+    supportsCreateSemanticRelationshipIntent(diagram: AthenaGLSPDiagram | undefined): boolean {
         if (!diagram) {
             return false;
         }
-        return supportsConnectPortsIntent(
+        return supportsCreateSemanticRelationshipIntent(
             diagram.supportedViews.find(view => view.viewId === diagram.activeViewId)
         );
     }
@@ -95,6 +95,7 @@ export class AthenaGraphAdapterService {
         subjectKind: AthenaGraphCommandSubjectKind;
         x: number;
         y: number;
+        authoredLayoutIntent?: AthenaGraphAuthoredLayoutIntentPayload;
     }): Promise<AthenaGraphCommandIntentPayload | undefined> {
         const request = buildAdjustLayoutPlacementIntentRequest({
             viewId: args.diagram.activeViewId,
@@ -102,20 +103,9 @@ export class AthenaGraphAdapterService {
             subjectKind: args.subjectKind,
             x: args.x,
             y: args.y,
+            authoredLayoutIntent: args.authoredLayoutIntent,
         });
         return this.lspEditorBridgeService.requestGraphCommandIntent(request.params);
     }
 
-    async submitConnectPortsIntent(args: {
-        diagram: AthenaGLSPDiagram;
-        sourceSemanticId: string;
-        targetSemanticId: string;
-    }): Promise<AthenaGraphCommandIntentPayload | undefined> {
-        const request = buildConnectPortsIntentRequest({
-            viewId: args.diagram.activeViewId,
-            sourceSemanticId: args.sourceSemanticId,
-            targetSemanticId: args.targetSemanticId,
-        });
-        return this.lspEditorBridgeService.requestGraphCommandIntent(request.params);
-    }
 }

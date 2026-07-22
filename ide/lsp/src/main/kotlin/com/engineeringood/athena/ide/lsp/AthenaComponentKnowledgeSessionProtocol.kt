@@ -7,6 +7,7 @@ import com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeRuntimeResult
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeUnavailable
 import com.engineeringood.athena.runtime.AthenaResolvedComponentKnowledgeEntry
+import com.engineeringood.athena.domain.electricalruntime.electricalEngineeringConceptTemplates
 
 /** Empty params object for runtime-owned component-knowledge session requests. */
 data class AthenaComponentKnowledgeSessionParams(
@@ -66,6 +67,7 @@ data class AthenaAvailableComponentImplementationPayload(
 /** One available authoring component concept transported through Athena LSP. */
 data class AthenaAvailableComponentPayload(
     val conceptId: String,
+    val authoringTemplateIds: List<String>,
     val displayName: String,
     val classificationKeys: List<String>,
     val summary: String? = null,
@@ -147,6 +149,11 @@ internal fun AthenaComponentKnowledgeRuntimeResult.toPayload(semanticPath: Strin
 private fun AthenaAvailableAuthoringComponent.toPayload(): AthenaAvailableComponentPayload {
     return AthenaAvailableComponentPayload(
         conceptId = concept.conceptId.value,
+        authoringTemplateIds = electricalEngineeringConceptTemplates()
+            .filter { template -> template.conceptId == concept.conceptId }
+            .map { template -> template.templateId.value }
+            .distinct()
+            .sorted(),
         displayName = concept.displayName,
         classificationKeys = concept.classificationKeys.toList().sorted(),
         summary = concept.summary,

@@ -8,9 +8,8 @@ const {
     buildSemanticRelationshipPreviewRequest,
 } = await import('../lib/browser/athena-authoring-protocol.js');
 const {
-    activateRelationshipMode,
-    selectRelationshipModeSubject,
-} = await import('../lib/browser/athena-relationship-authoring-model.js');
+    resolveRenderedSelectionTarget,
+} = await import('../lib/browser/athena-semantic-selection-model.js');
 
 const repoRoot = [
     process.cwd(),
@@ -47,33 +46,27 @@ test('M28 product smoke is wired to the openable sample project', () => {
 });
 
 test('M28 product authoring path uses projection facts and generic semantic relationship payloads', () => {
-    const selected = selectRelationshipModeSubject(
-        selectRelationshipModeSubject(
-            activateRelationshipMode(),
-            {
-                endpointId: 'documentation/projection/connection/c1/endpoint/source',
-                anchorId: 'documentation/projection/label/port_ControllerPLC1_spareDo/anchor',
-                portSemanticId: 'port:ControllerPLC1.spareDo',
-                role: 'source',
-            },
-        ),
-        {
-            id: 'visible-label-SpareTerminalXT99-in1',
-            endpointId: 'documentation/projection/connection/candidate/endpoint/target',
-            anchorId: 'documentation/projection/label/port_SpareTerminalXT99_in1/anchor',
-            portSemanticId: 'port:SpareTerminalXT99.in1',
-            role: 'target',
-        },
-    );
+    const source = resolveRenderedSelectionTarget({
+        endpointId: 'documentation/projection/connection/c1/endpoint/source',
+        anchorId: 'documentation/projection/label/port_ControllerPLC1_spareDo/anchor',
+        portSemanticId: 'port:ControllerPLC1.spareDo',
+        role: 'source',
+    });
+    const target = resolveRenderedSelectionTarget({
+        id: 'visible-label-SpareTerminalXT99-in1',
+        endpointId: 'documentation/projection/connection/candidate/endpoint/target',
+        anchorId: 'documentation/projection/label/port_SpareTerminalXT99_in1/anchor',
+        portSemanticId: 'port:SpareTerminalXT99.in1',
+        role: 'target',
+    });
 
-    assert.equal(selected.sourceSubject?.semanticId, 'port:ControllerPLC1.spareDo');
-    assert.equal(selected.targetSubject?.semanticId, 'port:SpareTerminalXT99.in1');
-    assert.equal(selected.diagnostics.length, 0);
+    assert.equal(source?.semanticId, 'port:ControllerPLC1.spareDo');
+    assert.equal(target?.semanticId, 'port:SpareTerminalXT99.in1');
 
     assert.deepEqual(
         buildSemanticRelationshipPreviewRequest({
-            sourceSubjectId: selected.sourceSubject.semanticId,
-            targetSubjectId: selected.targetSubject.semanticId,
+            sourceSubjectId: source.semanticId,
+            targetSubjectId: target.semanticId,
             projectionViewId: 'documentation',
             persistenceSourceUri: 'file:///workspace/src/01-relationship-authoring-source.athena',
             provenance: 'projection-fact-terminal',

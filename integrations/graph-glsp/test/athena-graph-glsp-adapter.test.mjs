@@ -149,10 +149,21 @@ const readyProjectionSession = {
             {
                 semanticId: 'component:PLC1',
                 kind: 'repeated_reference',
+                crossReferenceId: 'cross-reference:component:PLC1',
                 sheetIds: ['cabinet/sheet/01-main', 'cabinet/sheet/02-reference'],
                 occurrenceIds: [
                     'cabinet/projection/node/component_PLC1',
                     'cabinet/projection/node/component_PLC1_reference'
+                ],
+                links: [
+                    {
+                        semanticId: 'component:PLC1',
+                        sourceSheetId: 'cabinet/sheet/01-main',
+                        targetSheetId: 'cabinet/sheet/02-reference',
+                        sourceOccurrenceId: 'cabinet/projection/node/component_PLC1',
+                        targetOccurrenceId: 'cabinet/projection/node/component_PLC1_reference',
+                        compactNotation: '01-main -> 02-reference'
+                    }
                 ]
             }
         ],
@@ -378,7 +389,7 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     });
 });
 
-test('assigns stable M26 document sheet roles from governed sheet projection names', () => {
+test('assigns stable M31 document sheet roles from typed policy evidence', () => {
     assert.equal(typeof adapter.translateProjectionSessionToGLSPDiagram, 'function');
 
     const diagram = adapter.translateProjectionSessionToGLSPDiagram({
@@ -387,34 +398,97 @@ test('assigns stable M26 document sheet roles from governed sheet projection nam
         readyProjection: {
             ...readyProjectionSession.readyProjection,
             viewId: 'documentation',
-            activeSheetId: 'documentation/sheet/01-power-distribution',
+            activeSheetId: 'documentation/sheet/01-control',
             sheets: [
                 {
-                    sheetId: 'documentation/sheet/01-power-distribution',
-                    displayName: 'Power Distribution',
+                    sheetId: 'documentation/sheet/01-control',
+                    displayName: 'Control',
                     order: 0,
-                    subjectSemanticIds: ['component:PowerSupply1'],
-                },
-                {
-                    sheetId: 'documentation/sheet/02-control-and-plc-logic',
-                    displayName: 'Control And PLC Logic',
-                    order: 1,
                     subjectSemanticIds: ['component:ControllerPLC1'],
+                    policyEvidence: {
+                        policyId: 'athena-m31-customer-projection-v0',
+                        policyVersion: '0',
+                        policyDeterministicIdentity: 'policy:m31:test',
+                        sheetViewRole: 'control-and-plc-logic',
+                        sheetViewRoleOrder: 0,
+                    },
                 },
                 {
-                    sheetId: 'documentation/sheet/03-field-wiring-and-terminal-transition',
-                    displayName: 'Field Wiring And Terminal Transition',
-                    order: 2,
+                    sheetId: 'documentation/sheet/02-field-device',
+                    displayName: 'Field Device',
+                    order: 1,
                     subjectSemanticIds: ['component:TerminalBlock1'],
+                    policyEvidence: {
+                        policyId: 'athena-m31-customer-projection-v0',
+                        policyVersion: '0',
+                        policyDeterministicIdentity: 'policy:m31:test',
+                        sheetViewRole: 'field-wiring-and-terminal-transition',
+                        sheetViewRoleOrder: 1,
+                    },
                 },
             ],
         },
     });
 
     assert.deepEqual(
-        diagram.sheets.map(sheet => sheet.role),
-        ['power_distribution', 'control_logic', 'field_wiring']
+        diagram.sheets.map(sheet => ({
+            sheetId: sheet.sheetId,
+            role: sheet.role,
+            policyEvidence: sheet.policyEvidence,
+        })),
+        [
+            {
+                sheetId: 'documentation/sheet/01-control',
+                role: 'control-and-plc-logic',
+                policyEvidence: {
+                    policyId: 'athena-m31-customer-projection-v0',
+                    policyVersion: '0',
+                    policyDeterministicIdentity: 'policy:m31:test',
+                    sheetViewRole: 'control-and-plc-logic',
+                    sheetViewRoleOrder: 0,
+                },
+            },
+            {
+                sheetId: 'documentation/sheet/02-field-device',
+                role: 'field-wiring-and-terminal-transition',
+                policyEvidence: {
+                    policyId: 'athena-m31-customer-projection-v0',
+                    policyVersion: '0',
+                    policyDeterministicIdentity: 'policy:m31:test',
+                    sheetViewRole: 'field-wiring-and-terminal-transition',
+                    sheetViewRoleOrder: 1,
+                },
+            },
+        ]
     );
+});
+
+test('drops malformed sheet policy evidence instead of treating it as governed authority', () => {
+    assert.equal(typeof adapter.translateProjectionSessionToGLSPDiagram, 'function');
+
+    const diagram = adapter.translateProjectionSessionToGLSPDiagram({
+        ...readyProjectionSession,
+        activeViewId: 'documentation',
+        readyProjection: {
+            ...readyProjectionSession.readyProjection,
+            viewId: 'documentation',
+            activeSheetId: 'documentation/sheet/02-field-device',
+            sheets: [
+                {
+                    sheetId: 'documentation/sheet/02-field-device',
+                    displayName: 'Field Device',
+                    order: 1,
+                    subjectSemanticIds: ['component:TerminalBlock1'],
+                    policyEvidence: {
+                        sheetViewRole: 'field-wiring-and-terminal-transition',
+                    },
+                },
+            ],
+        },
+    });
+
+    assert.equal(diagram.sheets[0].policyEvidence, undefined);
+    assert.equal(diagram.sheets[0].role, undefined);
 });
 
 test('keeps unavailable projection state disposable instead of inventing fallback authority', () => {

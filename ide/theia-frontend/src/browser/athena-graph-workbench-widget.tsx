@@ -8,7 +8,7 @@ import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import type { AthenaAuthoringPreviewPayload } from './athena-authoring-protocol';
 import {
     buildAthenaGraphLayoutMutationPreview,
-    buildAthenaGraphLayoutSourceEdit,
+    buildAthenaGraphAuthoredLayoutIntent,
     captureAthenaGraphLayoutAdjustmentIntent,
     keepAthenaGraphViewportFocusedOnSelection,
     type AthenaGraphLayoutAdjustmentIntent,
@@ -32,15 +32,19 @@ import {
 } from './athena-graph-workbench-model';
 import {
     buildAuthoringDecisionRequest,
-    buildConnectPortsPreviewRequest
+    buildCreateEntityPreviewRequest,
+    buildSemanticRelationshipPreviewRequest,
+    collectAuthoringDecisionDiagnostics,
+    isAuthoringDecisionCommitted,
+    sourceEditMatchesPreviewEvidence
 } from './athena-authoring-protocol';
 import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
+import {
+    AthenaComponentPanelItem,
+    buildAthenaComponentPanelGroups
+} from './athena-component-panel-model';
 import { AthenaGraphAdapterService } from './athena-graph-adapter-service';
 import { type AthenaGraphCommandIntentPayload } from './athena-graph-command-intent-protocol';
-import {
-    AthenaCompatibleConnectionTarget,
-    buildAthenaCompatibleConnectionTargets
-} from './athena-guided-connection-model';
 import { AthenaGraphWorkbenchEdgeLayer } from './athena-graph-workbench-edge-layer';
 import { AthenaGraphWorkbenchPresentationNode } from './athena-graph-workbench-presentation-node';
 import {
@@ -59,6 +63,13 @@ import {
 } from './athena-semantic-selection-model';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 import { AthenaGraphNodeDragState, AthenaGraphPanState, AthenaGraphPortConnectSource } from './athena-graph-workbench-types';
+
+type AthenaGraphCreateEntityDraft = {
+    conceptId: string;
+    conceptTemplateId: string;
+    suggestedName: string;
+    model: string;
+};
 
 /** Graph-first Athena workbench surface with a pannable and zoomable renderer viewport. */
 @injectable()
@@ -108,6 +119,14 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected connectPreview = undefined as AthenaAuthoringPreviewPayload | undefined;
     protected connectPreviewMessage: string | undefined;
     protected connectApplyingDecision = false;
+    protected connectPreviewRequestToken = 0;
+    protected createEntityControlsOpen = false;
+    protected createEntityDraft = undefined as AthenaGraphCreateEntityDraft | undefined;
+    protected createEntityPreview = undefined as AthenaAuthoringPreviewPayload | undefined;
+    protected createEntityPreviewMessage: string | undefined;
+    protected createEntityPreviewing = false;
+    protected createEntityApplyingDecision = false;
+    protected createEntityPreviewRequestToken = 0;
     protected revealingSelectionSemanticId: string | undefined;
     protected infoPopoverOpen = false;
     protected lastDocumentSheetViewSelector: AthenaGraphWorkbenchSheetViewSelector | undefined;
@@ -128,6 +147,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             void this.handleSemanticSelectionChanged(selection);
         }));
         this.toDispose.push(this.editorManager.onCurrentEditorChanged(widget => {
+            this.clearCreateEntityPreview('Active Athena editor changed after create-entity preview. Request a fresh preview before accepting.');
+            void this.cancelStaleConnectPreview('Active Athena editor changed after semantic relationship preview. Request a fresh preview before accepting.');
             this.bindCurrentEditor(widget);
             this.scheduleRefresh();
         }));
@@ -146,6 +167,13 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.connectPreview = undefined;
             this.connectPreviewMessage = undefined;
             this.connectApplyingDecision = false;
+            this.connectPreviewRequestToken++;
+            this.createEntityControlsOpen = false;
+            this.createEntityDraft = undefined;
+            this.createEntityPreview = undefined;
+            this.createEntityPreviewMessage = undefined;
+            this.createEntityPreviewing = false;
+            this.createEntityApplyingDecision = false;
             this.revealingSelectionSemanticId = undefined;
             this.infoPopoverOpen = false;
         }));
@@ -168,7 +196,11 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             return;
         }
 
-        this.currentEditorListeners.push(widget.editor.onDocumentContentChanged(() => this.scheduleRefresh()));
+        this.currentEditorListeners.push(widget.editor.onDocumentContentChanged(() => {
+            this.clearCreateEntityPreview('Athena source changed after create-entity preview. Request a fresh preview before accepting.');
+            void this.cancelStaleConnectPreview('Athena source changed after semantic relationship preview. Request a fresh preview before accepting.');
+            this.scheduleRefresh();
+        }));
     }
 
     protected isAthenaEditor(widget: EditorWidget | undefined): widget is EditorWidget {
@@ -194,6 +226,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.errorMessage = undefined;
             this.diagram = undefined;
             this.panState = undefined;
+            this.lastDocumentSheetViewSelector = undefined;
             this.update();
             return;
         }
@@ -219,11 +252,13 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.semanticInspection = semanticInspection;
             this.lastGraphCommandIntent = undefined;
             this.dragState = undefined;
-            this.connectPortsArmed = false;
-            this.connectPortsSource = undefined;
-            this.connectPortsPending = false;
-            this.connectPreview = undefined;
-            this.connectPreviewMessage = undefined;
+            if (!this.connectApplyingDecision) {
+                await this.cancelStaleConnectPreview('Diagram refreshed after semantic relationship preview. Request a fresh preview before accepting.');
+            }
+            this.createEntityPreviewing = false;
+            if (!this.createEntityApplyingDecision) {
+                this.clearCreateEntityPreview('Diagram refreshed after create-entity preview. Request a fresh preview before accepting.');
+            }
             this.infoPopoverOpen = false;
             this.reconcileTransientSelection(diagram);
             void this.handleSemanticSelectionChanged(this.semanticSelectionService.selection, diagram);
@@ -310,13 +345,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const canRevealDocumentationReferences = !!crossReference &&
             this.diagram.activeViewId !== 'documentation' &&
             this.diagram.supportedViews.some(view => view.viewId === 'documentation');
-        const connectPortsSupported = this.graphAdapterService.supportsConnectPortsIntent(this.diagram);
-        const compatibleConnectTargets = buildAthenaCompatibleConnectionTargets({
-            knowledge: this.componentKnowledge,
-            inspection: this.semanticInspection,
-            sourcePortSemanticId: this.connectPortsSource?.semanticId,
-        });
-        const compatibleConnectTargetIds = new Set(compatibleConnectTargets.map(target => target.semanticId));
+        const connectPortsSupported = this.graphAdapterService.supportsCreateSemanticRelationshipIntent(this.diagram);
         const renderViewportTransform = this.resolveRenderViewportTransform(model);
         const zoomPercent = Math.round(renderViewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
@@ -380,7 +409,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                             selectedSemanticId={selectedSemanticId}
                                             onSelectSemanticId={semanticId => this.semanticSelectionService.selectSemanticId(semanticId)}
                                         />
-                                        {model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId, compatibleConnectTargetIds))}
+                                        {model.nodes.map(node => this.renderGraphNode(node, selectedSemanticId))}
                                     </svg>
                                 </div>
                             </div>
@@ -523,6 +552,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 </div>
                 <div className='athena-graph-workbench__tool-group'>
                     {this.resolveVisibleSheetViewSelector(model) ? this.renderSheetViewSelector(model) : undefined}
+                    {this.renderCreateEntityActionButton()}
                     {model.referenceMarkers.length > 0 ? this.renderReferenceMarkerControls(model) : undefined}
                     <div className='athena-graph-workbench__view-switches'>
                         {model.supportedViews.map(view => <button
@@ -570,7 +600,177 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     </div>
                 </div>
             </div>
+            {this.createEntityControlsOpen ? this.renderCreateEntityControls() : undefined}
+            {this.connectPreview || this.connectPreviewMessage ? this.renderSemanticRelationshipPreview() : undefined}
             {this.infoPopoverOpen ? this.renderCabinetMainPopover(cabinetMainRows) : undefined}
+        </div>;
+    }
+
+    protected renderCreateEntityActionButton(): React.ReactNode {
+        const availableItems = this.resolveCreateEntityItems();
+        const disabled = availableItems.length === 0 ||
+            !this.componentKnowledge?.systemSemanticId ||
+            !this.isAthenaEditor(this.editorManager.currentEditor) ||
+            this.createEntityPreviewing ||
+            this.createEntityApplyingDecision;
+        return <button
+            className={`athena-graph-workbench__tool-button ${this.createEntityControlsOpen || this.createEntityPreview ? 'athena-graph-workbench__tool-button--active' : ''}`}
+            type='button'
+            title='Create governed entity'
+            aria-label='Create governed entity'
+            aria-expanded={this.createEntityControlsOpen}
+            disabled={disabled}
+            onClick={() => this.toggleCreateEntityControls()}
+        >
+            <span className={`codicon ${this.createEntityPreviewing ? 'codicon-loading codicon-modifier-spin' : 'codicon-add'}`} />
+        </button>;
+    }
+
+    protected renderCreateEntityControls(): React.ReactNode {
+        const items = this.resolveCreateEntityItems();
+        const draft = this.resolveCreateEntityDraft(items);
+        const selectedItem = this.resolveSelectedCreateEntityItem(items, draft);
+        const preview = this.createEntityPreview;
+        const evidence = preview?.entityCreationEvidence;
+        const canPreview = !!selectedItem?.conceptTemplateId && !!this.componentKnowledge?.systemSemanticId &&
+            this.isAthenaEditor(this.editorManager.currentEditor) &&
+            !this.createEntityPreviewing &&
+            !this.createEntityApplyingDecision;
+        const canAccept = !!preview?.acceptanceEligible && !!evidence?.sourceEdit && !this.createEntityApplyingDecision;
+
+        return <section
+            className='athena-graph-workbench__create-entity-panel'
+            aria-label='Create governed entity transaction'
+        >
+            <div className='athena-graph-workbench__create-entity-header'>
+                <div>
+                    <span className='athena-graph-workbench__info-popover-eyebrow'>Semantic authoring</span>
+                    <h3>Create Entity</h3>
+                </div>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Close create entity controls'
+                    aria-label='Close create entity controls'
+                    onClick={() => void this.closeCreateEntityControls()}
+                >
+                    <span className='codicon codicon-close' />
+                </button>
+            </div>
+            <div className='athena-graph-workbench__create-entity-grid'>
+                <label>
+                    <span>Concept</span>
+                    <select
+                        value={draft.conceptId}
+                        onChange={event => this.updateCreateEntityConcept(event.currentTarget.value)}
+                        disabled={this.createEntityPreviewing || this.createEntityApplyingDecision}
+                    >
+                        {items.map(item => <option key={item.conceptId} value={item.conceptId}>
+                            {item.displayName}
+                        </option>)}
+                    </select>
+                </label>
+                <label>
+                    <span>Tag</span>
+                    <input
+                        value={draft.suggestedName}
+                        onChange={event => this.updateCreateEntityDraft({ suggestedName: event.currentTarget.value })}
+                        placeholder='ShutterMotorM31'
+                        disabled={this.createEntityPreviewing || this.createEntityApplyingDecision}
+                    />
+                </label>
+                <label>
+                    <span>Model</span>
+                    <input
+                        value={draft.model}
+                        onChange={event => this.updateCreateEntityDraft({ model: event.currentTarget.value })}
+                        placeholder='SPARE-XT'
+                        disabled={this.createEntityPreviewing || this.createEntityApplyingDecision}
+                    />
+                </label>
+            </div>
+            <div className='athena-graph-workbench__create-entity-actions'>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Preview governed entity creation'
+                    aria-label='Preview governed entity creation'
+                    disabled={!canPreview}
+                    onClick={() => void this.previewCreateEntityTransaction()}
+                >
+                    <span className={`codicon ${this.createEntityPreviewing ? 'codicon-loading codicon-modifier-spin' : 'codicon-eye'}`} />
+                </button>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Accept governed entity creation'
+                    aria-label='Accept governed entity creation'
+                    disabled={!canAccept}
+                    onClick={() => void this.acceptCreateEntityPreview()}
+                >
+                    <span className='codicon codicon-check' />
+                </button>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Reject governed entity creation'
+                    aria-label='Reject governed entity creation'
+                    disabled={!preview || this.createEntityApplyingDecision}
+                    onClick={() => void this.rejectCreateEntityPreview()}
+                >
+                    <span className='codicon codicon-close' />
+                </button>
+            </div>
+            {this.createEntityPreviewMessage ? <p className='athena-graph-workbench__create-entity-message'>{this.createEntityPreviewMessage}</p> : undefined}
+            {preview ? this.renderCreateEntityPreview(preview) : undefined}
+        </section>;
+    }
+
+    protected renderCreateEntityPreview(preview: AthenaAuthoringPreviewPayload): React.ReactNode {
+        const evidence = preview.entityCreationEvidence;
+        const projectionOccurrenceIds = Array.isArray(evidence?.projectionOccurrenceIds) ? evidence.projectionOccurrenceIds : [];
+        const affectedSemanticIds = Array.isArray(evidence?.affectedSemanticIds) ? evidence.affectedSemanticIds : [];
+        const nestedPorts = Array.isArray(evidence?.nestedPorts) ? evidence.nestedPorts : [];
+        const diagnostics = Array.isArray(preview.diagnostics) ? preview.diagnostics : [];
+        const sourceEditPreviewText = preview.sourceImpact?.newText ?? evidence?.sourceEdit?.admittedText;
+        return <div className='athena-graph-workbench__create-entity-preview'>
+            <div className='athena-graph-workbench__create-entity-preview-header'>
+                <strong>{preview.title}</strong>
+                <span className={`athena-graph-workbench__status athena-graph-workbench__status--${preview.status}`}>
+                    {preview.status}
+                </span>
+            </div>
+            <table className='athena-graph-workbench__info-table'>
+                <tbody>
+                    <tr><th>Transaction</th><td><code>{preview.previewId}</code></td></tr>
+                    <tr><th>Intent</th><td><code>{preview.intentId}</code></td></tr>
+                    <tr><th>Lifecycle</th><td>{preview.status}</td></tr>
+                    <tr><th>Canonical tag</th><td><code>{evidence?.canonicalTag ?? '-'}</code></td></tr>
+                    <tr><th>Type</th><td><code>{evidence?.semanticType ?? '-'}</code></td></tr>
+                    <tr><th>Model</th><td>{evidence?.model ?? '-'}</td></tr>
+                    <tr><th>Representation</th><td><code>{evidence?.representationId ?? '-'}</code></td></tr>
+                    <tr><th>Composition</th><td><code>{evidence?.compositionTargetId ?? '-'}</code></td></tr>
+                    <tr><th>Occurrences</th><td><code>{projectionOccurrenceIds.join(', ') || '-'}</code></td></tr>
+                    <tr><th>Affected</th><td><code>{affectedSemanticIds.join(', ') || '-'}</code></td></tr>
+                    <tr><th>Ports</th><td><code>{nestedPorts.map(port => `${port.name}:${port.direction}:${port.signalOrMedium}`).join(', ') || '-'}</code></td></tr>
+                </tbody>
+            </table>
+            {diagnostics.length > 0
+                ? <ul className='athena-graph-workbench__create-entity-diagnostics'>
+                    {diagnostics.map(diagnostic => <li key={`${diagnostic.code}:${diagnostic.authority}:${diagnostic.lifecycleStage}`}>
+                        <code>{diagnostic.code}</code>
+                        <span>{diagnostic.authority}/{diagnostic.lifecycleStage}</span>
+                        <span>{diagnostic.message}</span>
+                        {diagnostic.recoveryAction ? <span>Recovery: {diagnostic.recoveryAction}</span> : undefined}
+                    </li>)}
+                </ul>
+                : undefined}
+            {sourceEditPreviewText
+                ? <pre className='athena-graph-workbench__create-entity-source'>{sourceEditPreviewText}</pre>
+                : undefined}
+            {preview.sourceImpact?.newText && evidence?.sourceEdit?.admittedText && preview.sourceImpact.newText !== evidence.sourceEdit.admittedText
+                ? <pre className='athena-graph-workbench__create-entity-source athena-graph-workbench__create-entity-source--admitted'>{evidence.sourceEdit.admittedText}</pre>
+                : undefined}
         </div>;
     }
 
@@ -602,8 +802,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     }
 
     protected rememberDocumentSheetViewSelector(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): void {
-        if (model.sheetViewSelector) {
-            this.lastDocumentSheetViewSelector = model.sheetViewSelector;
+        const selector = resolveVisibleAthenaGraphSheetViewSelector(model, undefined);
+        if (selector) {
+            this.lastDocumentSheetViewSelector = selector;
         }
     }
 
@@ -706,7 +907,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 <button
                     className='athena-graph-workbench__tool-button'
                     type='button'
-                    onClick={() => this.acceptLayoutMutationPreview()}
+                    onClick={() => void this.acceptLayoutMutationPreview()}
                     title='Apply layout preview'
                     aria-label='Apply layout preview'
                 >
@@ -726,25 +927,12 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         </section>;
     }
 
-    protected acceptLayoutMutationPreview(): void {
+    protected async acceptLayoutMutationPreview(): Promise<void> {
         const preview = this.layoutMutationPreview;
-        const currentEditor = this.isAthenaEditor(this.editorManager.currentEditor)
-            ? this.editorManager.currentEditor
-            : undefined;
-        if (!preview || !currentEditor) {
+        if (!preview) {
             return;
         }
-        const documentText = currentEditor.editor.document.getText();
-        const lines = documentText.split(/\r\n|\r|\n/);
-        const insertionLine = Math.max(0, lines.length - 1);
-        const insertionCharacter = lines[lines.length - 1]?.length ?? 0;
-        const sourceEdit = buildAthenaGraphLayoutSourceEdit({
-            preview,
-            documentText,
-            insertionLine,
-            insertionCharacter,
-        });
-        this.lspEditorBridgeService.applyAuthoringSourceEdit(sourceEdit);
+        await this.lspEditorBridgeService.applyAuthoringSourceEdit(preview.sourceEdit);
         this.layoutMutationPreview = undefined;
         this.scheduleRefresh();
         void this.semanticSelectionService.selectSemanticId(preview.subjectSemanticId);
@@ -786,27 +974,26 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected renderGraphNode(
         node: AthenaGraphWorkbenchNode,
         selectedSemanticId: string | undefined,
-        compatibleConnectTargetIds: Set<string>,
     ): React.ReactNode {
         const selected = selectedSemanticId === node.semanticId
             || node.electricalAnchors.some(anchor => anchor.portSemanticId === selectedSemanticId);
         const isConnectablePort = this.isConnectablePortNode(node.semanticId, node.kind);
-        const isCompatibleConnectTarget = isConnectablePort && compatibleConnectTargetIds.has(node.semanticId);
-        const isBlockedConnectTarget = !!this.connectPortsSource && isConnectablePort && !isCompatibleConnectTarget && node.semanticId !== this.connectPortsSource.semanticId;
+        const isRelationshipCandidate = this.isRelationshipCandidateNode(node);
+        const relationshipCandidateReason = isRelationshipCandidate
+            ? 'Compatible semantic relationship compatibility evidence is available for this projection endpoint.'
+            : undefined;
         const labelClassName = [
             'athena-graph-workbench__node-label',
             `athena-graph-workbench__node-label--${node.renderVariant}`,
             selected ? 'athena-graph-workbench__node-label--selected' : '',
-            isCompatibleConnectTarget ? 'athena-graph-workbench__node-label--connect-target' : '',
-            isBlockedConnectTarget ? 'athena-graph-workbench__node-label--connect-blocked' : '',
+            isRelationshipCandidate ? 'athena-graph-workbench__node-label--connect-target' : '',
         ].filter(Boolean).join(' ');
         const nodeClassName = [
             'athena-graph-workbench__node',
             `athena-graph-workbench__node--${node.kind}`,
             `athena-graph-workbench__node--${node.renderVariant}`,
             selected ? 'athena-graph-workbench__node--selected' : '',
-            isCompatibleConnectTarget ? 'athena-graph-workbench__node--connect-target' : '',
-            isBlockedConnectTarget ? 'athena-graph-workbench__node--connect-blocked' : '',
+            isRelationshipCandidate ? 'athena-graph-workbench__node--connect-target' : '',
         ].filter(Boolean).join(' ');
 
         return <g
@@ -816,6 +1003,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             data-athena-representation-fact={node.presentationRepresentation ? 'true' : undefined}
             data-athena-representation-id={node.presentationRepresentation?.representationId}
             data-athena-semantic-id={node.semanticId}
+            data-athena-relationship-candidate-reason={relationshipCandidateReason}
             data-athena-render-fallback={node.presentationRepresentation ? 'false' : undefined}
             role='button'
             tabIndex={0}
@@ -1054,21 +1242,113 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
     protected connectPortsButtonTitle(): string {
         if (this.connectApplyingDecision) {
-            return 'Applying connect preview decision';
+            return 'Applying semantic relationship preview decision';
         }
         if (this.connectPortsPending) {
-            return 'Submitting connect ports request';
+            return 'Submitting semantic relationship request';
         }
         if (this.connectPreview) {
-            return 'Review guided connect preview';
+            return 'Review semantic relationship preview';
         }
         if (!this.connectPortsArmed) {
-            return 'Connect ports';
+            return 'Create semantic relationship';
         }
         if (!this.connectPortsSource) {
-            return 'Select source port';
+            return 'Select source terminal';
         }
-        return `Select target port for ${this.connectPortsSource.label}`;
+        return `Select target terminal for ${this.connectPortsSource.label}`;
+    }
+
+    protected renderSemanticRelationshipPreview(): React.ReactNode {
+        const preview = this.connectPreview;
+        const evidence = preview?.relationshipEvidence;
+        const diagnostics = Array.isArray(preview?.diagnostics) ? preview.diagnostics : [];
+        const affectedSemanticIds = Array.isArray(evidence?.affectedSemanticIds) ? evidence.affectedSemanticIds : [];
+        const routePreview = evidence?.routePreview;
+        const sourceEditPreviewText = preview?.sourceImpact?.newText ?? evidence?.sourceEdit?.admittedText;
+        const canAccept = !!preview?.acceptanceEligible && !!evidence?.sourceEdit && !this.connectApplyingDecision;
+        return <section
+            className='athena-graph-workbench__create-entity-panel athena-graph-workbench__relationship-preview-panel'
+            aria-label='Semantic relationship transaction'
+        >
+            <div className='athena-graph-workbench__create-entity-header'>
+                <div>
+                    <span className='athena-graph-workbench__info-popover-eyebrow'>Semantic authoring</span>
+                    <h3>Relationship Preview</h3>
+                </div>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Cancel semantic relationship preview'
+                    aria-label='Cancel semantic relationship preview'
+                    disabled={this.connectApplyingDecision}
+                    onClick={() => void this.cancelConnectPreview()}
+                >
+                    <span className='codicon codicon-close' />
+                </button>
+            </div>
+            <div className='athena-graph-workbench__create-entity-actions'>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Accept semantic relationship'
+                    aria-label='Accept semantic relationship'
+                    disabled={!canAccept}
+                    onClick={() => void this.acceptConnectPreview()}
+                >
+                    <span className='codicon codicon-check' />
+                </button>
+                <button
+                    className='athena-graph-workbench__tool-button'
+                    type='button'
+                    title='Reject semantic relationship'
+                    aria-label='Reject semantic relationship'
+                    disabled={!preview || this.connectApplyingDecision}
+                    onClick={() => void this.rejectConnectPreview()}
+                >
+                    <span className='codicon codicon-discard' />
+                </button>
+            </div>
+            {this.connectPreviewMessage ? <p className='athena-graph-workbench__create-entity-message'>{this.connectPreviewMessage}</p> : undefined}
+            {preview ? <div className='athena-graph-workbench__create-entity-preview'>
+                <div className='athena-graph-workbench__create-entity-preview-header'>
+                    <strong>{preview.title}</strong>
+                    <span className={`athena-graph-workbench__status athena-graph-workbench__status--${preview.status}`}>
+                        {preview.status}
+                    </span>
+                </div>
+                <table className='athena-graph-workbench__info-table'>
+                    <tbody>
+                        <tr><th>Transaction</th><td><code>{preview.previewId}</code></td></tr>
+                        <tr><th>Intent</th><td><code>{preview.intentId}</code></td></tr>
+                        <tr><th>Lifecycle</th><td>{preview.status}</td></tr>
+                        <tr><th>Source</th><td><code>{evidence?.sourceSubjectId ?? '-'}</code></td></tr>
+                        <tr><th>Target</th><td><code>{evidence?.targetSubjectId ?? '-'}</code></td></tr>
+                        <tr><th>Type</th><td><code>{evidence?.relationshipType ?? '-'}</code></td></tr>
+                        <tr><th>Compatibility</th><td>{evidence?.compatibility ?? 'not-evaluated'}</td></tr>
+                        <tr><th>Route</th><td><code>{routePreview ? `${routePreview.routeId}:${routePreview.quality}:${routePreview.pointCount}` : '-'}</code></td></tr>
+                        <tr><th>Revision Guard</th><td><code>{evidence?.sourceEdit?.revisionGuard.contentSha256 ?? preview.revisionGuard?.contentSha256 ?? '-'}</code></td></tr>
+                        <tr><th>Affected</th><td><code>{affectedSemanticIds.join(', ') || '-'}</code></td></tr>
+                    </tbody>
+                </table>
+                {diagnostics.length > 0
+                    ? <ul className='athena-graph-workbench__create-entity-diagnostics'>
+                        {diagnostics.map(diagnostic => <li key={`${diagnostic.code}:${diagnostic.authority}:${diagnostic.lifecycleStage}`}>
+                            <code>{diagnostic.code}</code>
+                            <span>{diagnostic.authority}/{diagnostic.lifecycleStage}</span>
+                            <span>{diagnostic.message}</span>
+                            {diagnostic.recoveryAction ? <span>Recovery: {diagnostic.recoveryAction}</span> : undefined}
+                        </li>)}
+                    </ul>
+                    : undefined}
+                {sourceEditPreviewText
+                    ? <pre className='athena-graph-workbench__create-entity-source'>{sourceEditPreviewText}</pre>
+                    : undefined}
+                {preview.sourceImpact?.newText && evidence?.sourceEdit?.admittedText && preview.sourceImpact.newText !== evidence.sourceEdit.admittedText
+                    ? <pre className='athena-graph-workbench__create-entity-source athena-graph-workbench__create-entity-source--admitted'>{evidence.sourceEdit.admittedText}</pre>
+                    : undefined}
+            </div> : undefined}
+        </section>;
     }
 
     protected toggleInfoPopover(): void {
@@ -1084,6 +1364,308 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         this.update();
     }
 
+    protected toggleCreateEntityControls(): void {
+        if (this.createEntityPreviewing || this.createEntityApplyingDecision) {
+            return;
+        }
+        if (this.createEntityControlsOpen) {
+            void this.closeCreateEntityControls();
+            return;
+        }
+        this.createEntityControlsOpen = !this.createEntityControlsOpen;
+        if (this.createEntityControlsOpen) {
+            this.createEntityDraft = this.resolveCreateEntityDraft(this.resolveCreateEntityItems());
+            this.infoPopoverOpen = false;
+        }
+        this.update();
+    }
+
+    protected async closeCreateEntityControls(): Promise<void> {
+        if (!this.createEntityControlsOpen) {
+            return;
+        }
+        if (this.createEntityPreview) {
+            await this.cancelCreateEntityPreview();
+        }
+        this.createEntityControlsOpen = false;
+        this.update();
+    }
+
+    protected clearCreateEntityPreview(message?: string): void {
+        if (!this.createEntityPreview && !this.createEntityPreviewMessage) {
+            return;
+        }
+        this.createEntityPreview = undefined;
+        this.createEntityPreviewing = false;
+        this.createEntityApplyingDecision = false;
+        this.createEntityPreviewMessage = message;
+        this.createEntityPreviewRequestToken++;
+    }
+
+    protected resolveCreateEntityItems(): AthenaComponentPanelItem[] {
+        return buildAthenaComponentPanelGroups(this.componentKnowledge?.availableComponents ?? [])
+            .flatMap(group => group.items)
+            .filter(item => !!item.conceptTemplateId);
+    }
+
+    protected resolveCreateEntityDraft(items: AthenaComponentPanelItem[]): AthenaGraphCreateEntityDraft {
+        const existing = this.createEntityDraft;
+        const selectedItem = existing
+            ? items.find(item => item.conceptId === existing.conceptId)
+            : undefined;
+        const item = selectedItem ?? items[0];
+        return {
+            conceptId: item?.conceptId ?? '',
+            conceptTemplateId: item?.conceptTemplateId ?? '',
+            suggestedName: existing?.suggestedName ?? this.defaultCreateEntityTag(item),
+            model: existing?.model ?? item?.preferredImplementation?.vendorPartNumber ?? '',
+        };
+    }
+
+    protected resolveSelectedCreateEntityItem(
+        items: AthenaComponentPanelItem[],
+        draft: AthenaGraphCreateEntityDraft,
+    ): AthenaComponentPanelItem | undefined {
+        return items.find(item => item.conceptId === draft.conceptId && item.conceptTemplateId === draft.conceptTemplateId)
+            ?? items.find(item => item.conceptId === draft.conceptId)
+            ?? items[0];
+    }
+
+    protected updateCreateEntityConcept(conceptId: string): void {
+        const items = this.resolveCreateEntityItems();
+        const item = items.find(candidate => candidate.conceptId === conceptId);
+        this.createEntityDraft = {
+            conceptId: item?.conceptId ?? '',
+            conceptTemplateId: item?.conceptTemplateId ?? '',
+            suggestedName: this.defaultCreateEntityTag(item),
+            model: item?.preferredImplementation?.vendorPartNumber ?? '',
+        };
+        this.createEntityPreview = undefined;
+        this.createEntityPreviewMessage = undefined;
+        this.update();
+    }
+
+    protected updateCreateEntityDraft(update: Partial<Pick<AthenaGraphCreateEntityDraft, 'suggestedName' | 'model'>>): void {
+        this.createEntityDraft = {
+            ...this.resolveCreateEntityDraft(this.resolveCreateEntityItems()),
+            ...update,
+        };
+        this.createEntityPreview = undefined;
+        this.createEntityPreviewMessage = undefined;
+        this.update();
+    }
+
+    protected async previewCreateEntityTransaction(): Promise<void> {
+        const requestToken = ++this.createEntityPreviewRequestToken;
+        const knowledge = this.componentKnowledge;
+        const items = this.resolveCreateEntityItems();
+        const draft = this.resolveCreateEntityDraft(items);
+        const selectedItem = this.resolveSelectedCreateEntityItem(items, draft);
+        if (!knowledge?.systemSemanticId || !selectedItem?.conceptTemplateId) {
+            this.createEntityPreviewMessage = 'Athena cannot preview entity creation until governed concept capability evidence is available.';
+            this.createEntityPreview = undefined;
+            this.update();
+            return;
+        }
+        if (!this.isAthenaEditor(this.editorManager.currentEditor)) {
+            this.createEntityPreviewMessage = 'Open an Athena source editor before requesting a governed create-entity preview.';
+            this.createEntityPreview = undefined;
+            this.update();
+            return;
+        }
+
+        this.createEntityDraft = draft;
+        this.createEntityPreviewing = true;
+        this.createEntityPreviewMessage = undefined;
+        this.createEntityPreview = undefined;
+        this.update();
+        try {
+            const submission = await this.lspEditorBridgeService.requestAuthoringPreview(
+                buildCreateEntityPreviewRequest({
+                    systemSemanticId: knowledge.systemSemanticId,
+                    conceptTemplateId: selectedItem.conceptTemplateId,
+                    conceptId: selectedItem.conceptId,
+                    actor: 'user:theia',
+                    preferredImplementationId: selectedItem.preferredImplementation?.implementationId,
+                    suggestedName: draft.suggestedName,
+                    model: draft.model,
+                    originSurface: 'graph',
+                    originDetail: `graph:create-entity:${selectedItem.conceptId}`,
+                }),
+            );
+            if (requestToken !== this.createEntityPreviewRequestToken) {
+                return;
+            }
+            this.createEntityPreview = submission?.preview;
+            if (!submission?.preview) {
+                this.createEntityPreviewMessage = 'Athena could not create a governed entity preview for the selected concept.';
+            }
+        } catch (error) {
+            if (requestToken !== this.createEntityPreviewRequestToken) {
+                return;
+            }
+            this.createEntityPreview = undefined;
+            this.createEntityPreviewMessage = error instanceof Error ? error.message : String(error);
+        } finally {
+            if (requestToken === this.createEntityPreviewRequestToken) {
+                this.createEntityPreviewing = false;
+                this.update();
+            }
+        }
+    }
+
+    protected async acceptCreateEntityPreview(): Promise<void> {
+        const preview = this.createEntityPreview;
+        if (!preview || !preview.acceptanceEligible || !preview.entityCreationEvidence?.sourceEdit) {
+            this.createEntityPreviewMessage = 'Athena create-entity preview is not eligible for acceptance.';
+            this.update();
+            return;
+        }
+        if (!this.currentEditorMatchesCreateEntityPreview(preview)) {
+            this.clearCreateEntityPreview('Active Athena editor does not match the create-entity preview source. Request a fresh preview before accepting.');
+            this.update();
+            return;
+        }
+        if (!await this.lspEditorBridgeService.sourceEditMatchesActiveDocument(preview.entityCreationEvidence.sourceEdit.revisionGuard)) {
+            this.clearCreateEntityPreview('Active Athena editor revision no longer matches the create-entity preview. Request a fresh preview before accepting.');
+            this.update();
+            return;
+        }
+        this.createEntityApplyingDecision = true;
+        this.createEntityPreviewMessage = undefined;
+        this.update();
+        try {
+            const decision = await this.lspEditorBridgeService.requestAuthoringDecision(
+                buildAuthoringDecisionRequest({
+                    previewId: preview.previewId,
+                    intentId: preview.intentId,
+                    decision: 'accepted',
+                    note: 'Graph create-entity preview accepted.',
+                }),
+            );
+            if (!isAuthoringDecisionCommitted(decision)) {
+                this.createEntityPreviewMessage = collectAuthoringDecisionDiagnostics(decision) ||
+                    'Athena did not commit the create-entity preview.';
+                return;
+            }
+            if (!decision?.sourceEdit) {
+                throw new Error('Athena accepted the create-entity preview but did not return a governed source edit.');
+            }
+            if (!sourceEditMatchesPreviewEvidence(decision.sourceEdit, preview.entityCreationEvidence.sourceEdit)) {
+                throw new Error('Athena returned a source edit that does not match the governed create-entity preview evidence.');
+            }
+            const committedDiagnostics = collectAuthoringDecisionDiagnostics(decision);
+            await this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
+            const suggestedSemanticId = decision.sourceEdit.suggestedSemanticId
+                ?? this.resolveCreatedEntitySemanticId(preview);
+            this.createEntityPreview = undefined;
+            this.createEntityControlsOpen = !!committedDiagnostics;
+            this.createEntityPreviewMessage = committedDiagnostics || undefined;
+            this.scheduleRefresh();
+            if (suggestedSemanticId) {
+                window.setTimeout(() => {
+                    void this.semanticSelectionService.selectSemanticId(suggestedSemanticId).catch(error => {
+                        this.createEntityPreviewMessage = error instanceof Error ? error.message : String(error);
+                        this.update();
+                    });
+                }, 180);
+            }
+        } catch (error) {
+            this.createEntityPreviewMessage = error instanceof Error ? error.message : String(error);
+        } finally {
+            this.createEntityApplyingDecision = false;
+            this.update();
+        }
+    }
+
+    protected async rejectCreateEntityPreview(): Promise<void> {
+        const preview = this.createEntityPreview;
+        if (!preview) {
+            this.createEntityPreviewMessage = undefined;
+            this.update();
+            return;
+        }
+        this.createEntityApplyingDecision = true;
+        this.createEntityPreviewMessage = undefined;
+        this.update();
+        try {
+            await this.lspEditorBridgeService.requestAuthoringDecision(
+                buildAuthoringDecisionRequest({
+                    previewId: preview.previewId,
+                    intentId: preview.intentId,
+                    decision: 'rejected',
+                    note: 'Graph create-entity preview rejected.',
+                }),
+            ).then(decision => {
+                if (decision?.status === 'updated' || decision?.status === 'unavailable') {
+                    this.createEntityPreview = undefined;
+                    return;
+                }
+                this.createEntityPreviewMessage = collectAuthoringDecisionDiagnostics(decision) ||
+                    'Athena did not reject the create-entity preview.';
+            });
+        } catch (error) {
+            this.createEntityPreviewMessage = error instanceof Error ? error.message : String(error);
+        } finally {
+            this.createEntityApplyingDecision = false;
+            this.update();
+        }
+    }
+
+    protected async cancelCreateEntityPreview(): Promise<void> {
+        const preview = this.createEntityPreview;
+        if (!preview) {
+            this.createEntityPreviewMessage = undefined;
+            return;
+        }
+        this.createEntityApplyingDecision = true;
+        this.createEntityPreviewMessage = undefined;
+        this.update();
+        try {
+            const decision = await this.lspEditorBridgeService.requestAuthoringDecision(
+                buildAuthoringDecisionRequest({
+                    previewId: preview.previewId,
+                    intentId: preview.intentId,
+                    decision: 'cancelled',
+                    note: 'Graph create-entity preview cancelled.',
+                }),
+            );
+            if (decision?.status === 'updated' || decision?.status === 'unavailable') {
+                this.createEntityPreview = undefined;
+                return;
+            }
+            this.createEntityPreviewMessage = collectAuthoringDecisionDiagnostics(decision) ||
+                'Athena did not cancel the create-entity preview.';
+        } catch (error) {
+            this.createEntityPreviewMessage = error instanceof Error ? error.message : String(error);
+        } finally {
+            this.createEntityApplyingDecision = false;
+            this.update();
+        }
+    }
+
+    protected currentEditorMatchesCreateEntityPreview(preview: AthenaAuthoringPreviewPayload): boolean {
+        const currentEditor = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(currentEditor)) {
+            return false;
+        }
+        const sourceEdit = preview.entityCreationEvidence?.sourceEdit;
+        return !!sourceEdit &&
+            currentEditor.editor.uri.toString() === sourceEdit.uri &&
+            currentEditor.editor.uri.toString() === sourceEdit.revisionGuard.sourceUri;
+    }
+
+    protected resolveCreatedEntitySemanticId(preview: AthenaAuthoringPreviewPayload): string | undefined {
+        const affectedSemanticIds = preview.entityCreationEvidence?.affectedSemanticIds ?? [];
+        return affectedSemanticIds.find(semanticId => !semanticId.startsWith('port:')) ??
+            preview.entityCreationEvidence?.affectedSemanticIds[0];
+    }
+
+    protected defaultCreateEntityTag(item: AthenaComponentPanelItem | undefined): string {
+        const conceptTail = item?.conceptId.split('.').filter(Boolean).at(-1) ?? 'Device';
+        return `${conceptTail.replace(/[^A-Za-z0-9_]/g, '') || 'Device'}M31`;
+    }
+
     protected handleWorkbenchClick = (event: React.MouseEvent<HTMLDivElement>): void => {
         if (!this.infoPopoverOpen) {
             return;
@@ -1095,24 +1677,12 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         this.closeInfoPopover();
     };
 
-    protected currentCompatibleConnectTargets(): AthenaCompatibleConnectionTarget[] {
-        return buildAthenaCompatibleConnectionTargets({
-            knowledge: this.componentKnowledge,
-            inspection: this.semanticInspection,
-            sourcePortSemanticId: this.connectPortsSource?.semanticId,
-        });
-    }
-
-    protected isCompatibleConnectTarget(semanticId: string): boolean {
-        return this.currentCompatibleConnectTargets().some(target => target.semanticId === semanticId);
-    }
-
     protected toggleConnectPortsMode(): void {
         if (this.connectPortsPending || this.connectApplyingDecision) {
             return;
         }
         if (this.connectPreview) {
-            void this.rejectConnectPreview();
+            void this.cancelConnectPreview();
             return;
         }
         if (this.connectPortsArmed || this.connectPortsSource) {
@@ -1128,35 +1698,86 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         this.update();
     }
 
-    protected async previewConnectPortsIntent(sourceSemanticId: string, targetSemanticId: string): Promise<void> {
+    protected clearConnectPreview(message?: string): void {
+        if (!this.connectPreview && !this.connectPreviewMessage && !this.connectPortsArmed && !this.connectPortsSource) {
+            return;
+        }
+        this.connectPortsArmed = false;
+        this.connectPortsSource = undefined;
+        this.connectPortsPending = false;
+        this.connectPreview = undefined;
+        this.connectPreviewMessage = message;
+        this.connectApplyingDecision = false;
+        this.connectPreviewRequestToken++;
+    }
+
+    protected async cancelStaleConnectPreview(message: string): Promise<void> {
+        const preview = this.connectPreview;
+        this.clearConnectPreview(message);
+        this.update();
+        if (!preview) {
+            return;
+        }
+        try {
+            await this.lspEditorBridgeService.requestAuthoringDecision(
+                buildAuthoringDecisionRequest({
+                    previewId: preview.previewId,
+                    intentId: preview.intentId,
+                    decision: 'cancelled',
+                    note: message,
+                }),
+            );
+        } catch (error) {
+            this.connectPreviewMessage = `${message} ${error instanceof Error ? error.message : String(error)}`;
+            this.update();
+        }
+    }
+
+    protected async previewSemanticRelationship(sourceSemanticId: string, targetSemanticId: string): Promise<void> {
+        const requestToken = ++this.connectPreviewRequestToken;
         this.connectPortsPending = true;
         this.connectPreview = undefined;
         this.connectPreviewMessage = undefined;
         this.update();
         try {
             const submission = await this.lspEditorBridgeService.requestAuthoringPreview(
-                buildConnectPortsPreviewRequest({
-                    sourcePortId: sourceSemanticId,
-                    targetPortId: targetSemanticId,
+                buildSemanticRelationshipPreviewRequest({
+                    sourceSubjectId: sourceSemanticId,
+                    targetSubjectId: targetSemanticId,
                     originDetail: `graph:${this.diagram?.activeViewId ?? 'unknown-view'}`,
                 }),
             );
+            if (requestToken !== this.connectPreviewRequestToken) {
+                return;
+            }
             this.connectPreview = submission?.preview;
             if (!submission?.preview) {
-                this.connectPreviewMessage = 'Athena could not create a guided connection preview for the selected ports.';
+                this.connectPreviewMessage = 'Athena could not create a semantic relationship preview for the selected terminals.';
             }
         } catch (error) {
+            if (requestToken !== this.connectPreviewRequestToken) {
+                return;
+            }
             this.connectPreview = undefined;
             this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
         } finally {
-            this.connectPortsPending = false;
-            this.update();
+            if (requestToken === this.connectPreviewRequestToken) {
+                this.connectPortsPending = false;
+                this.update();
+            }
         }
     }
 
     protected async acceptConnectPreview(): Promise<void> {
         const preview = this.connectPreview;
-        if (!preview) {
+        if (!preview || !preview.acceptanceEligible || !preview.relationshipEvidence?.sourceEdit) {
+            this.connectPreviewMessage = 'Athena semantic relationship preview is not eligible for acceptance.';
+            this.update();
+            return;
+        }
+        if (!this.currentEditorMatchesConnectPreview(preview)) {
+            this.clearConnectPreview('Active Athena editor does not match the semantic relationship preview source. Request a fresh preview before accepting.');
+            this.update();
             return;
         }
         this.connectApplyingDecision = true;
@@ -1168,20 +1789,36 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     previewId: preview.previewId,
                     intentId: preview.intentId,
                     decision: 'accepted',
-                    note: 'Graph connect preview accepted.',
+                    note: 'Graph semantic relationship preview accepted.',
                 }),
             );
-            if (!decision?.sourceEdit) {
-                throw new Error('Athena accepted the connect preview but did not return a governed source edit.');
+            if (!isAuthoringDecisionCommitted(decision)) {
+                this.connectPreviewMessage = collectAuthoringDecisionDiagnostics(decision) ||
+                    'Athena did not commit the semantic relationship preview.';
+                return;
             }
-            this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
+            if (!this.isCurrentConnectPreview(preview)) {
+                this.connectPreviewMessage = 'Athena semantic relationship preview became stale before acceptance completed.';
+                return;
+            }
+            if (!decision?.sourceEdit) {
+                throw new Error('Athena accepted the semantic relationship preview but did not return a governed source edit.');
+            }
+            if (!sourceEditMatchesPreviewEvidence(decision.sourceEdit, preview.relationshipEvidence.sourceEdit)) {
+                throw new Error('Athena returned a source edit that does not match the governed semantic relationship preview evidence.');
+            }
+            const committedDiagnostics = collectAuthoringDecisionDiagnostics(decision);
+            await this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
+            const suggestedSemanticId = decision.sourceEdit.suggestedSemanticId
+                ?? this.resolveCreatedRelationshipSemanticId(preview);
             this.connectPreview = undefined;
             this.connectPortsArmed = false;
             this.connectPortsSource = undefined;
+            this.connectPreviewMessage = committedDiagnostics || undefined;
             this.scheduleRefresh();
-            if (decision.sourceEdit.suggestedSemanticId) {
+            if (suggestedSemanticId) {
                 window.setTimeout(() => {
-                    void this.semanticSelectionService.selectSemanticId(decision.sourceEdit!.suggestedSemanticId!).catch(error => {
+                    void this.semanticSelectionService.selectSemanticId(suggestedSemanticId).catch(error => {
                         this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
                         this.update();
                     });
@@ -1208,23 +1845,97 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         this.connectPreviewMessage = undefined;
         this.update();
         try {
-            await this.lspEditorBridgeService.requestAuthoringDecision(
+            const decision = await this.lspEditorBridgeService.requestAuthoringDecision(
                 buildAuthoringDecisionRequest({
                     previewId: preview.previewId,
                     intentId: preview.intentId,
                     decision: 'rejected',
-                    note: 'Graph connect preview rejected.',
+                    note: 'Graph semantic relationship preview rejected.',
                 }),
             );
-            this.connectPreview = undefined;
-            this.connectPortsArmed = false;
-            this.connectPortsSource = undefined;
+            if (!this.isSameConnectPreviewSession(preview)) {
+                return;
+            }
+            if (decision?.status === 'updated' || decision?.status === 'unavailable') {
+                this.connectPreview = undefined;
+                this.connectPortsArmed = false;
+                this.connectPortsSource = undefined;
+                return;
+            }
+            this.connectPreviewMessage = collectAuthoringDecisionDiagnostics(decision) ||
+                'Athena did not reject the semantic relationship preview.';
         } catch (error) {
             this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
         } finally {
             this.connectApplyingDecision = false;
             this.update();
         }
+    }
+
+    protected async cancelConnectPreview(): Promise<void> {
+        const preview = this.connectPreview;
+        if (!preview) {
+            this.clearConnectPreview();
+            this.update();
+            return;
+        }
+        this.connectApplyingDecision = true;
+        this.connectPreviewMessage = undefined;
+        this.update();
+        try {
+            const decision = await this.lspEditorBridgeService.requestAuthoringDecision(
+                buildAuthoringDecisionRequest({
+                    previewId: preview.previewId,
+                    intentId: preview.intentId,
+                    decision: 'cancelled',
+                    note: 'Graph semantic relationship preview cancelled.',
+                }),
+            );
+            if (!this.isSameConnectPreviewSession(preview)) {
+                return;
+            }
+            if (decision?.status === 'updated' || decision?.status === 'unavailable') {
+                this.connectPreview = undefined;
+                this.connectPortsArmed = false;
+                this.connectPortsSource = undefined;
+                return;
+            }
+            this.connectPreviewMessage = collectAuthoringDecisionDiagnostics(decision) ||
+                'Athena did not cancel the semantic relationship preview.';
+        } catch (error) {
+            this.connectPreviewMessage = error instanceof Error ? error.message : String(error);
+        } finally {
+            this.connectApplyingDecision = false;
+            this.update();
+        }
+    }
+
+    protected currentEditorMatchesConnectPreview(preview: AthenaAuthoringPreviewPayload): boolean {
+        const currentEditor = this.editorManager.currentEditor;
+        if (!this.isAthenaEditor(currentEditor)) {
+            return false;
+        }
+        const sourceEdit = preview.relationshipEvidence?.sourceEdit;
+        return !!sourceEdit &&
+            currentEditor.editor.uri.toString() === sourceEdit.uri &&
+            currentEditor.editor.uri.toString() === sourceEdit.revisionGuard.sourceUri;
+    }
+
+    protected isCurrentConnectPreview(preview: AthenaAuthoringPreviewPayload): boolean {
+        return this.isSameConnectPreviewSession(preview) &&
+            this.currentEditorMatchesConnectPreview(preview);
+    }
+
+    protected isSameConnectPreviewSession(preview: AthenaAuthoringPreviewPayload): boolean {
+        const currentPreview = this.connectPreview;
+        return currentPreview?.previewId === preview.previewId &&
+            currentPreview.intentId === preview.intentId;
+    }
+
+    protected resolveCreatedRelationshipSemanticId(preview: AthenaAuthoringPreviewPayload): string | undefined {
+        return preview.relationshipEvidence?.affectedSemanticIds.find(semanticId =>
+            semanticId.startsWith('connection:') || semanticId.startsWith('relationship:'),
+        );
     }
 
     protected statusIconClass(statusTone: ReturnType<typeof buildAthenaGraphWorkbenchModel>['statusTone']): string {
@@ -1583,6 +2294,14 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         return kind === 'label' && semanticId.startsWith('port:');
     }
 
+    protected isRelationshipCandidateNode(node: AthenaGraphWorkbenchNode): boolean {
+        if (!this.connectPortsSource || !this.diagram || !this.graphAdapterService.supportsCreateSemanticRelationshipIntent(this.diagram)) {
+            return false;
+        }
+        return this.isConnectablePortNode(node.semanticId, node.kind) &&
+            node.semanticId !== this.connectPortsSource.semanticId;
+    }
+
     protected async handleConnectablePortSelection(
         semanticId: string,
         label: string,
@@ -1599,15 +2318,10 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         }
 
         const source = this.connectPortsSource;
-        if (!this.isCompatibleConnectTarget(semanticId)) {
-            this.connectPreviewMessage = `Port \`${label}\` is not a compatible target for \`${source.label}\`.`;
-            this.update();
-            return;
-        }
         this.connectPortsSource = undefined;
         this.connectPortsArmed = false;
         this.update();
-        await this.previewConnectPortsIntent(source.semanticId, semanticId);
+        await this.previewSemanticRelationship(source.semanticId, semanticId);
     }
 
     protected handleComponentPointerDown(
@@ -1650,9 +2364,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         }
     }
 
-    protected async switchActiveView(viewId: string): Promise<void> {
+    protected async switchActiveView(viewId: string): Promise<boolean> {
         if (this.switchingView) {
-            return;
+            return false;
         }
 
         this.switchingView = true;
@@ -1665,6 +2379,10 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
         try {
             const diagram = await this.graphAdapterService.switchActiveView(viewId);
+            if (!diagram) {
+                this.errorMessage = `Athena did not return a governed diagram for view \`${viewId}\`.`;
+                return false;
+            }
             this.lastDiagramViewportKey = this.diagramViewportKey(diagram);
             this.diagram = diagram;
             this.reconcileTransientSelection(diagram);
@@ -1672,19 +2390,21 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.pendingAutoFit = true;
             this.viewportMode = 'auto-fit';
             this.fitViewportToDiagramIfPossible();
+            return true;
         } catch (error) {
             this.errorMessage = error instanceof Error ? error.message : String(error);
+            return false;
         } finally {
             this.switchingView = false;
             this.update();
         }
     }
 
-    protected async switchActiveSheetView(sheetViewId: string): Promise<void> {
+    protected async switchActiveSheetView(sheetViewId: string): Promise<boolean> {
         if (!sheetViewId || sheetViewId === this.diagram?.activeSheetId) {
-            return;
+            return true;
         }
-        await this.switchActiveView(sheetViewId);
+        return this.switchActiveView(sheetViewId);
     }
 
     protected async handleReferenceMarkerClick(markerId: string): Promise<void> {
@@ -1703,7 +2423,10 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         }
 
         if (navigation.requiresSheetSwitch) {
-            await this.switchActiveSheetView(navigation.targetSheetViewId);
+            const switched = await this.switchActiveSheetView(navigation.targetSheetViewId);
+            if (!switched) {
+                return;
+            }
         }
         await this.semanticSelectionService.selectSemanticId(navigation.targetCanonicalId);
     }
@@ -1714,6 +2437,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         }
         const model = buildAthenaGraphWorkbenchModel(this.diagram);
         const node = model.nodes.find(candidate => candidate.semanticId === dragState.semanticId);
+        let capturedIntent: AthenaGraphLayoutAdjustmentIntent | undefined;
         if (node) {
             const capture = captureAthenaGraphLayoutAdjustmentIntent({
                 model,
@@ -1721,10 +2445,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 kind: 'place',
                 relation: 'near',
             });
-            this.lastLayoutAdjustmentIntent = capture.accepted ? capture.intent : undefined;
-            this.layoutMutationPreview = capture.accepted
-                ? buildAthenaGraphLayoutMutationPreview(capture.intent)
-                : undefined;
+            capturedIntent = capture.accepted ? capture.intent : undefined;
+            this.lastLayoutAdjustmentIntent = capturedIntent;
+            this.layoutMutationPreview = undefined;
         }
 
         try {
@@ -1734,9 +2457,15 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 subjectKind: dragState.subjectKind,
                 x: dragState.currentX,
                 y: dragState.currentY,
+                authoredLayoutIntent: capturedIntent
+                    ? buildAthenaGraphAuthoredLayoutIntent(capturedIntent)
+                    : undefined,
             });
             this.lastGraphCommandIntent = payload;
             if (payload?.status === 'accepted') {
+                this.layoutMutationPreview = capturedIntent && payload.sourceEdit
+                    ? buildAthenaGraphLayoutMutationPreview(capturedIntent, payload.sourceEdit)
+                    : undefined;
                 const diagram = await this.graphAdapterService.requestDiagram();
                 this.lastDiagramViewportKey = this.diagramViewportKey(diagram);
                 this.diagram = diagram;
@@ -1749,41 +2478,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         } catch (error) {
             this.errorMessage = error instanceof Error ? error.message : String(error);
         } finally {
-            this.update();
-        }
-    }
-
-    protected async submitConnectPortsIntent(sourceSemanticId: string, targetSemanticId: string): Promise<void> {
-        if (!this.diagram) {
-            return;
-        }
-
-        this.connectPortsPending = true;
-        this.errorMessage = undefined;
-        this.update();
-        try {
-            const payload = await this.graphAdapterService.submitConnectPortsIntent({
-                diagram: this.diagram,
-                sourceSemanticId,
-                targetSemanticId,
-            });
-            this.lastGraphCommandIntent = payload;
-            if (payload?.status === 'accepted') {
-                const diagram = await this.graphAdapterService.requestDiagram();
-                this.lastDiagramViewportKey = this.diagramViewportKey(diagram);
-                this.diagram = diagram;
-                this.reconcileTransientSelection(diagram);
-                this.revealingSelectionSemanticId = undefined;
-                this.keepSelectionVisible(diagram);
-                const createdConnectionId = payload.execution?.changedSemanticIds.find(semanticId => semanticId.startsWith('connection:'));
-                if (createdConnectionId) {
-                    await this.semanticSelectionService.selectSemanticId(createdConnectionId);
-                }
-            }
-        } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : String(error);
-        } finally {
-            this.connectPortsPending = false;
             this.update();
         }
     }

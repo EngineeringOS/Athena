@@ -1,6 +1,9 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext
+import com.engineeringood.athena.document.BuiltInDocumentProjectionPolicies
+import com.engineeringood.athena.document.DocumentProjectionPolicy
+import com.engineeringood.athena.document.SheetViewRole
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.geometry.GeometryElement
 import com.engineeringood.athena.geometry.GeometryElementKind
@@ -12,7 +15,9 @@ import com.engineeringood.athena.projection.ProjectionBounds
 import com.engineeringood.athena.projection.ProjectionConnection
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionCrossReference
+import com.engineeringood.athena.projection.ProjectionCrossReferenceId
 import com.engineeringood.athena.projection.ProjectionCrossReferenceKind
+import com.engineeringood.athena.projection.ProjectionCrossReferenceLink
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionLabel
 import com.engineeringood.athena.projection.ProjectionLabelId
@@ -28,6 +33,7 @@ import com.engineeringood.athena.projection.ProjectionResolvedSubject
 import com.engineeringood.athena.projection.ProjectionSheetPublication
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetId
+import com.engineeringood.athena.projection.ProjectionSheetPolicyEvidence
 import com.engineeringood.athena.projection.ProjectionSheetSubject
 import com.engineeringood.athena.projection.ProjectionSymbolKey
 import com.engineeringood.athena.ir.EngineeringDocument
@@ -65,11 +71,7 @@ class ProjectionModelDeriver {
                     originGeometryElementId = element.elementId,
                 )
             }
-        val nodes = documentationProjectionNodes(
-            view = view,
-            nodes = baseNodes,
-            canvasWidth = geometry.canvasWidth,
-        )
+        val nodes = baseNodes
         val connections = geometry.elements
             .filter { element -> element.kind == GeometryElementKind.PATH }
             .map { element ->
@@ -124,11 +126,15 @@ class ProjectionModelDeriver {
                 view = view,
                 baseCanvasWidth = geometry.canvasWidth,
                 nodes = nodes,
+                connections = connections,
+                labels = labels,
             ),
             canvasHeight = documentationCanvasHeight(
                 view = view,
                 baseCanvasHeight = geometry.canvasHeight,
                 nodes = nodes,
+                connections = connections,
+                labels = labels,
             ),
             nodes = nodes,
             connections = connections,
@@ -235,27 +241,31 @@ private fun documentationSheets(
     connections: List<ProjectionConnection>,
     labels: List<ProjectionLabel>,
 ): List<ProjectionSheet> {
-    val powerDistributionId = ProjectionSheetId("${view.id}/sheet/01-power-distribution")
-    val controlLogicId = ProjectionSheetId("${view.id}/sheet/02-control-and-plc-logic")
-    val fieldWiringId = ProjectionSheetId("${view.id}/sheet/03-field-wiring-and-terminal-transition")
-    val overviewNodeIds = nodes.filterNot(ProjectionNode::isDocumentationReferenceNode).map(ProjectionNode::projectionId).toSet()
-    val referenceNodeIds = nodes.filter(ProjectionNode::isDocumentationReferenceNode).map(ProjectionNode::projectionId).toSet()
+    val policy = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
+    val controlRole = policy.supportedSheetViewRoles.single { role ->
+        role.role == SheetViewRole.CONTROL_AND_PLC_LOGIC
+    }
+    val fieldRole = policy.supportedSheetViewRoles.single { role ->
+        role.role == SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION
+    }
+    val controlSheetId = ProjectionSheetId("${view.id}/sheet/01-control")
+    val fieldSheetId = ProjectionSheetId("${view.id}/sheet/02-field-device")
+    val overviewNodeIds = nodes.map(ProjectionNode::projectionId).toSet()
     val overviewConnectionIds = connections.map(ProjectionConnection::projectionId).toSet()
     val overviewLabelIds = labels.map(ProjectionLabel::projectionId).toSet()
-    val sheetNodeIds = overviewNodeIds + referenceNodeIds
     val powerSubjects = documentationSheetSubjects(
         allSubjects = allSubjects,
         selectedSubjects = allSubjects.filter { subject ->
-        subject.isPowerDistributionSubject() || !subject.hasRecognizedDocumentationRole()
+            subject.isPowerDistributionSubject() || !subject.hasRecognizedDocumentationRole()
         },
-        nodeIds = sheetNodeIds,
+        nodeIds = overviewNodeIds,
         connectionIds = overviewConnectionIds,
         labelIds = overviewLabelIds,
     ).ifEmpty {
         documentationSheetSubjects(
             allSubjects = allSubjects,
             selectedSubjects = allSubjects,
-            nodeIds = sheetNodeIds,
+            nodeIds = overviewNodeIds,
             connectionIds = overviewConnectionIds,
             labelIds = overviewLabelIds,
         )
@@ -263,62 +273,69 @@ private fun documentationSheets(
     val controlSubjects = documentationSheetSubjects(
         allSubjects = allSubjects,
         selectedSubjects = allSubjects.filter { subject ->
-        subject.isControlLogicSubject() || !subject.hasRecognizedDocumentationRole()
+            subject.isControlLogicSubject() || subject.isPowerDistributionSubject() || !subject.hasRecognizedDocumentationRole()
         },
-        nodeIds = sheetNodeIds,
+        nodeIds = overviewNodeIds,
         connectionIds = overviewConnectionIds,
         labelIds = overviewLabelIds,
-    )
+    ).ifEmpty { powerSubjects }
     val fieldSubjects = documentationSheetSubjects(
         allSubjects = allSubjects,
         selectedSubjects = allSubjects.filter { subject ->
-        subject.isFieldWiringSubject() || !subject.hasRecognizedDocumentationRole()
+            subject.isFieldWiringSubject() || !subject.hasRecognizedDocumentationRole()
         },
-        nodeIds = sheetNodeIds,
+        nodeIds = overviewNodeIds,
         connectionIds = overviewConnectionIds,
         labelIds = overviewLabelIds,
     )
     return listOf(
         ProjectionSheet(
-            sheetId = powerDistributionId,
-            displayName = "Power Distribution",
-            order = 0,
-            nextSheetId = controlLogicId,
-            subjects = powerSubjects,
-            publication = ProjectionSheetPublication.fromProjectionState(
-                sheetId = powerDistributionId,
-                displayName = "Power Distribution",
-                order = 0,
-                subjects = powerSubjects,
-            ),
-        ),
-        ProjectionSheet(
-            sheetId = controlLogicId,
-            displayName = "Control And PLC Logic",
-            order = 1,
-            previousSheetId = powerDistributionId,
-            nextSheetId = fieldWiringId,
+            sheetId = controlSheetId,
+            displayName = controlRole.displayTitle,
+            order = controlRole.order,
+            nextSheetId = fieldSheetId,
             subjects = controlSubjects,
+            policyEvidence = policy.toProjectionSheetPolicyEvidence(
+                role = controlRole.role,
+                roleOrder = controlRole.order,
+            ),
             publication = ProjectionSheetPublication.fromProjectionState(
-                sheetId = controlLogicId,
-                displayName = "Control And PLC Logic",
-                order = 1,
+                sheetId = controlSheetId,
+                displayName = controlRole.displayTitle,
+                order = controlRole.order,
                 subjects = controlSubjects,
             ),
         ),
         ProjectionSheet(
-            sheetId = fieldWiringId,
-            displayName = "Field Wiring And Terminal Transition",
-            order = 2,
-            previousSheetId = controlLogicId,
+            sheetId = fieldSheetId,
+            displayName = fieldRole.displayTitle,
+            order = fieldRole.order,
+            previousSheetId = controlSheetId,
             subjects = fieldSubjects,
+            policyEvidence = policy.toProjectionSheetPolicyEvidence(
+                role = fieldRole.role,
+                roleOrder = fieldRole.order,
+            ),
             publication = ProjectionSheetPublication.fromProjectionState(
-                sheetId = fieldWiringId,
-                displayName = "Field Wiring And Terminal Transition",
-                order = 2,
+                sheetId = fieldSheetId,
+                displayName = fieldRole.displayTitle,
+                order = fieldRole.order,
                 subjects = fieldSubjects,
             ),
         ),
+    )
+}
+
+private fun DocumentProjectionPolicy.toProjectionSheetPolicyEvidence(
+    role: SheetViewRole,
+    roleOrder: Int,
+): ProjectionSheetPolicyEvidence {
+    return ProjectionSheetPolicyEvidence(
+        policyId = policyId.value,
+        policyVersion = policyVersion.value,
+        policyDeterministicIdentity = deterministicIdentity.value,
+        sheetViewRole = role.name.lowercase().replace('_', '-'),
+        sheetViewRoleOrder = roleOrder,
     )
 }
 
@@ -347,50 +364,42 @@ private fun documentationSheetSubjects(
         .sortedBy { subject -> subject.semanticId.value }
 }
 
-private fun documentationProjectionNodes(
-    view: ViewDefinition,
-    nodes: List<ProjectionNode>,
-    canvasWidth: Int,
-): List<ProjectionNode> {
-    val family = (view.familyContract as? ElectricalProjectionDescriptor)?.family
-    if (family != ElectricalProjectionFamily.DOCUMENTATION) {
-        return nodes
-    }
-    val referenceCopies = nodes.map { node ->
-        node.copy(
-            projectionId = ProjectionNodeId("${node.projectionId.value}_reference"),
-            bounds = node.bounds.copy(
-                x = node.bounds.x + canvasWidth + DOCUMENTATION_REFERENCE_COLUMN_GAP,
-            ),
-        )
-    }
-    return nodes + referenceCopies
-}
-
 private fun documentationCanvasWidth(
     view: ViewDefinition,
     baseCanvasWidth: Int,
     nodes: List<ProjectionNode>,
+    connections: List<ProjectionConnection>,
+    labels: List<ProjectionLabel>,
 ): Int {
     val family = (view.familyContract as? ElectricalProjectionDescriptor)?.family
     if (family != ElectricalProjectionFamily.DOCUMENTATION) {
         return baseCanvasWidth
     }
-    val maxNodeEdge = nodes.maxOfOrNull { node -> node.bounds.x + node.bounds.width } ?: baseCanvasWidth
-    return maxOf(baseCanvasWidth, maxNodeEdge + DOCUMENTATION_CANVAS_MARGIN)
+    val maxContentEdge = maxOf(
+        nodes.maxOfOrNull { node -> node.bounds.x + node.bounds.width } ?: 0,
+        labels.maxOfOrNull { label -> label.bounds.x + label.bounds.width } ?: 0,
+        connections.maxOfOrNull { connection -> maxOf(connection.start.x, connection.end.x) } ?: 0,
+    )
+    return maxOf(DOCUMENTATION_CANVAS_MARGIN, maxContentEdge + DOCUMENTATION_CANVAS_MARGIN)
 }
 
 private fun documentationCanvasHeight(
     view: ViewDefinition,
     baseCanvasHeight: Int,
     nodes: List<ProjectionNode>,
+    connections: List<ProjectionConnection>,
+    labels: List<ProjectionLabel>,
 ): Int {
     val family = (view.familyContract as? ElectricalProjectionDescriptor)?.family
     if (family != ElectricalProjectionFamily.DOCUMENTATION) {
         return baseCanvasHeight
     }
-    val maxNodeEdge = nodes.maxOfOrNull { node -> node.bounds.y + node.bounds.height } ?: baseCanvasHeight
-    return maxOf(baseCanvasHeight, maxNodeEdge + DOCUMENTATION_CANVAS_MARGIN)
+    val maxContentEdge = maxOf(
+        nodes.maxOfOrNull { node -> node.bounds.y + node.bounds.height } ?: 0,
+        labels.maxOfOrNull { label -> label.bounds.y + label.bounds.height } ?: 0,
+        connections.maxOfOrNull { connection -> maxOf(connection.start.y, connection.end.y) } ?: 0,
+    )
+    return maxOf(DOCUMENTATION_CANVAS_MARGIN, maxContentEdge + DOCUMENTATION_CANVAS_MARGIN)
 }
 
 private fun deriveNotationPack(
@@ -505,25 +514,56 @@ private fun deriveCrossReferences(
             valueTransform = { (sheet, subject) -> sheet to subject },
         )
         .mapNotNull { (semanticId, references) ->
-            val sheetIds = references
-                .map { (sheet, _) -> sheet.sheetId }
-                .distinct()
-                .sortedBy(ProjectionSheetId::value)
+            val referencesBySheet = references
+                .mapNotNull { (sheet, subject) ->
+                    val occurrenceId = subject.occurrenceIds().firstOrNull() ?: return@mapNotNull null
+                    CrossReferenceEndpoint(
+                        sheet = sheet,
+                        occurrenceId = occurrenceId,
+                    )
+                }
+                .distinctBy { endpoint -> endpoint.sheet.sheetId }
+                .sortedWith(compareBy<CrossReferenceEndpoint> { endpoint -> endpoint.sheet.order }.thenBy { endpoint ->
+                    endpoint.sheet.sheetId.value
+                })
+            val sheetIds = referencesBySheet
+                .map { endpoint -> endpoint.sheet.sheetId }
             val occurrenceIds = references
                 .flatMap { (_, subject) -> subject.occurrenceIds() }
                 .distinct()
                 .sorted()
-            if (sheetIds.size <= 1 && occurrenceIds.size <= 1) {
+            val links = referencesBySheet.zipWithNext { source, target ->
+                ProjectionCrossReferenceLink(
+                    semanticId = semanticId,
+                    sourceSheetId = source.sheet.sheetId,
+                    targetSheetId = target.sheet.sheetId,
+                    sourceOccurrenceId = source.occurrenceId,
+                    targetOccurrenceId = target.occurrenceId,
+                    compactNotation = "${source.sheet.sheetId.compactSheetNotation()} -> ${target.sheet.sheetId.compactSheetNotation()}",
+                )
+            }
+            if (sheetIds.size <= 1 || links.isEmpty()) {
                 return@mapNotNull null
             }
             ProjectionCrossReference(
                 semanticId = semanticId,
                 kind = ProjectionCrossReferenceKind.REPEATED_REFERENCE,
+                crossReferenceId = ProjectionCrossReferenceId("cross-reference:${semanticId.value}"),
                 sheetIds = sheetIds,
                 occurrenceIds = occurrenceIds,
+                links = links,
             )
         }
         .sortedBy { crossReference -> crossReference.semanticId.value }
+}
+
+private data class CrossReferenceEndpoint(
+    val sheet: ProjectionSheet,
+    val occurrenceId: String,
+)
+
+private fun ProjectionSheetId.compactSheetNotation(): String {
+    return value.substringAfterLast("/sheet/", value)
 }
 
 private fun subjectAnchors(
@@ -574,8 +614,6 @@ private fun GeometryPoint.toProjectionPoint(): ProjectionPoint {
         y = y,
     )
 }
-
-private fun ProjectionNode.isDocumentationReferenceNode(): Boolean = projectionId.value.endsWith("_reference")
 
 private fun ProjectionSheetSubject.isPowerDistributionSubject(): Boolean {
     val normalized = semanticId.value.lowercase()
@@ -661,5 +699,4 @@ private fun MutableList<ProjectionNotationSubject>.addNotationSubjects(
     )
 }
 
-private const val DOCUMENTATION_REFERENCE_COLUMN_GAP = 120
 private const val DOCUMENTATION_CANVAS_MARGIN = 40

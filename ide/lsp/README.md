@@ -71,7 +71,7 @@ The following utilities read only the authored `SourceFileAst` (`DeviceDeclarati
 | `documentSymbols`, `definition`, `references` | `AthenaLanguageFeatures.kt` | `SourceFileAst.declarations`, `SourceSpan` |
 | `AthenaNavigationIndex` (`deviceDeclarations`, `portDeclarations`, `ownerReferences`, `portReferences`, `targetAt`) | `AthenaLanguageFeatures.kt` | `SourceFileAst.declarations`, `SourceSpan` |
 | `componentSourceRange`, `portSourceRange`, `connectionSourceRange` | `AthenaLanguageFeatures.kt` | `Declaration.span` / `QualifiedName.span` (1:1 via `SourceSpan.toLspRange()`) |
-| `acceptedUpdateComponentPropertiesSourceEdit`, `acceptedConnectPortsSourceEdit`, `acceptedCreateComponentSourceEdit` | `Athena*SourceEditProtocol.kt` | `DeviceDeclaration.span`, `PortDeclaration.qualifiedName.span`, `ConnectionDeclaration.from`/`to` spans over raw tracked text |
+| `BackendAuthoringSourceEditPlanner`, `acceptedUpdateSemanticEntityPropertiesSourceEdit` | compiler planner plus `Athena*SourceEditProtocol.kt` transport | `SourceFileAst.system.span`, `DeviceDeclaration.span`, `PortDeclaration.qualifiedName.span`, and `ConnectionDeclaration.from`/`to` spans over exact revision-bound text |
 | `revealSemanticId` (frontend consumer) | `ide/theia-frontend/src/browser/athena-graph-adapter-service.ts` | server-owned `definition`/`references` results only; no local Athena re-parse |
 
 Source-edit anchoring is covered by `AthenaAuthoringRequestTest`; navigation/symbol/source-range parity is covered by `AthenaSourceNavigationParityTest`.

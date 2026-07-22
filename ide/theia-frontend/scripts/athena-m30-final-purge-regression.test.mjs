@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const reportPath = '_bmad-output/implementation-artifacts/m30/final-purge-regression-report.md';
-const sprintStatusPath = '_bmad-output/implementation-artifacts/m30/sprint-status.yaml';
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
+const reportPath = `${repoRoot}_bmad-output/implementation-artifacts/m30/final-purge-regression-report.md`;
+const sprintStatusPath = `${repoRoot}_bmad-output/implementation-artifacts/m30/sprint-status.yaml`;
 
 test('M30 final purge report records stale artifact and regression evidence', async () => {
   const report = await readFile(reportPath, 'utf8');

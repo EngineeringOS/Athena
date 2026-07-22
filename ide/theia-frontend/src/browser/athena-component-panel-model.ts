@@ -13,6 +13,7 @@ export type AthenaComponentPanelCategoryId =
 
 export type AthenaComponentPanelItem = {
     conceptId: string;
+    conceptTemplateId?: string;
     displayName: string;
     summary?: string;
     classificationKeys: string[];
@@ -55,6 +56,7 @@ export function buildAthenaComponentPanelGroups(
         const existing = groups.get(categoryId) ?? [];
         existing.push({
             conceptId: component.conceptId,
+            conceptTemplateId: [...component.authoringTemplateIds].sort((left, right) => left.localeCompare(right))[0],
             displayName: component.displayName,
             summary: component.summary,
             classificationKeys: [...component.classificationKeys].sort((left, right) => left.localeCompare(right)),

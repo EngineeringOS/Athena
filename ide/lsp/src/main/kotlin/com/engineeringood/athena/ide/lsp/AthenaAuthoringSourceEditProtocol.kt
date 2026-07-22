@@ -1,11 +1,29 @@
 package com.engineeringood.athena.ide.lsp
 
-import com.engineeringood.athena.authoring.CreateComponentIntent
 import com.engineeringood.athena.authoring.AuthoringPreviewStatus
+import com.engineeringood.athena.authoring.AuthoringPreviewId
+import com.engineeringood.athena.authoring.AuthoringPropertyName
+import com.engineeringood.athena.authoring.AuthoringRevisionGuard
+import com.engineeringood.athena.authoring.AuthoringValue
+import com.engineeringood.athena.authoring.CreateSemanticEntityIntent
+import com.engineeringood.athena.authoring.AuthoringSourceEditEvidence
+import com.engineeringood.athena.authoring.AuthoringSurface
+import com.engineeringood.athena.compiler.BackendAuthoringSourceDocument
+import com.engineeringood.athena.compiler.BackendAuthoringSourceEditPlan
+import com.engineeringood.athena.compiler.BackendAuthoringSourceEditPlanned
+import com.engineeringood.athena.compiler.BackendAuthoringSourceEditPlanner
+import com.engineeringood.athena.compiler.BackendEntityCreationPlanningRequest
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.domain.electricalruntime.electricalEngineeringConceptTemplates
+import com.engineeringood.athena.domain.electricalruntime.ElectricalEntityCreationProjectionAuthority
+import com.engineeringood.athena.interaction.AuthoringCapabilityEvidence
+import com.engineeringood.athena.interaction.InteractionOriginSurface
 import com.engineeringood.athena.runtime.AthenaAuthoringSessionRecord
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
+import com.engineeringood.athena.runtime.GovernedEntityCreationPreviewRequest
+import com.engineeringood.athena.runtime.GovernedEntityCreationPreviewResult
+import com.engineeringood.athena.runtime.GovernedEntityCreationPreviewService
+import com.engineeringood.athena.authoring.SemanticAuthoringTransactionId
 
 /**
  * One line/character position inside an Athena-authored source edit payload.
@@ -33,18 +51,31 @@ data class AthenaAuthoringSourceRangePayload(
  */
 data class AthenaAuthoringSourceEditPayload(
     val uri: String,
+    val startOffset: Int? = null,
+    val endOffset: Int? = null,
     val range: AthenaAuthoringSourceRangePayload,
     val newText: String,
+    val selectionStartOffset: Int? = null,
+    val selectionEndOffset: Int? = null,
     val selectionRange: AthenaAuthoringSourceRangePayload? = null,
     val suggestedSemanticId: String? = null,
+    val revisionGuard: AthenaAuthoringRevisionGuardPayload? = null,
+    val appliedByAuthority: Boolean = false,
 )
 
-internal fun acceptedCreateComponentSourceEdit(
+data class AthenaAuthoringRevisionGuardPayload(
+    val semanticSnapshotId: String,
+    val sourceUri: String,
+    val documentVersion: Int,
+    val contentSha256: String,
+)
+
+internal fun acceptedCreateEntitySourceEdit(
     trackedDocument: AthenaTrackedDocument,
     record: AthenaAuthoringSessionRecord,
     componentKnowledge: AthenaComponentKnowledgeReady?,
 ): AthenaAuthoringSourceEditPayload? {
-    return createComponentSourceEdit(
+    return createEntitySourceEdit(
         trackedDocument = trackedDocument,
         record = record,
         componentKnowledge = componentKnowledge,
@@ -52,12 +83,12 @@ internal fun acceptedCreateComponentSourceEdit(
     )
 }
 
-internal fun previewCreateComponentSourceEdit(
+internal fun previewCreateEntitySourceEdit(
     trackedDocument: AthenaTrackedDocument,
     record: AthenaAuthoringSessionRecord,
     componentKnowledge: AthenaComponentKnowledgeReady?,
 ): AthenaAuthoringSourceEditPayload? {
-    return createComponentSourceEdit(
+    return createEntitySourceEdit(
         trackedDocument = trackedDocument,
         record = record,
         componentKnowledge = componentKnowledge,
@@ -65,7 +96,7 @@ internal fun previewCreateComponentSourceEdit(
     )
 }
 
-private fun createComponentSourceEdit(
+private fun createEntitySourceEdit(
     trackedDocument: AthenaTrackedDocument,
     record: AthenaAuthoringSessionRecord,
     componentKnowledge: AthenaComponentKnowledgeReady?,
@@ -74,24 +105,15 @@ private fun createComponentSourceEdit(
     if (record.preview.status != requiredStatus) {
         return null
     }
-    val intent = record.intent as? CreateComponentIntent ?: return null
-    val compilation = trackedDocument.compilation as? CompilerCompilationSuccess ?: return null
-    val insertOffset = trackedDocument.text.lastIndexOf('}')
-    if (insertOffset < 0) {
-        return null
+    val intent = record.intent as? CreateSemanticEntityIntent ?: return null
+    if (trackedDocument.compilation !is CompilerCompilationSuccess) return null
+    record.preview.entityCreationEvidence?.sourceEdit?.let { evidence ->
+        return evidence.toPayload(trackedDocument.text)
     }
-
-    val existingDeviceNames = compilation.source.ast.declarations
-        .filterIsInstance<DeviceDeclaration>()
-        .map(DeviceDeclaration::name)
-        .toSet()
-    val requestedName = intent.suggestedName
-        ?.takeIf(String::isNotBlank)
-        ?: defaultSuggestedComponentName(intent.conceptId.value)
-    val componentName = uniqueDeviceName(
-        requestedName = requestedName,
-        existingDeviceNames = existingDeviceNames,
-    )
+    if (ElectricalEntityCreationProjectionAuthority.supports(intent.conceptTemplateId.value)) return null
+    val template = electricalEngineeringConceptTemplates()
+        .singleOrNull { candidate -> candidate.templateId == intent.conceptTemplateId }
+        ?: return null
     val vendorPartNumber = componentKnowledge
         ?.availableComponents
         ?.asSequence()
@@ -99,114 +121,52 @@ private fun createComponentSourceEdit(
         ?.firstOrNull { implementation -> implementation.implementationId == intent.preferredImplementationId }
         ?.vendorPartNumber
         ?.value
-    val newText = buildCreateComponentSnippet(
-        componentName = componentName,
-        conceptId = intent.conceptId.value,
-        vendorPartNumber = vendorPartNumber,
-        typeSymbol = defaultAuthoredDeviceType(intent.conceptId.value),
+    val plannedIntent = intent.copy(
+        suggestedName = intent.suggestedName
+            ?.takeIf(String::isNotBlank)
+            ?: defaultSuggestedEntityName(intent.conceptId.value),
+        properties = intent.properties + listOfNotNull(
+            vendorPartNumber?.let { value ->
+                AuthoringPropertyName("vendorPartNumber") to AuthoringValue.Text(value)
+            },
+        ),
     )
-    val selectionRange = trackedDocument.text.selectionRangeAfterInsert(
-        insertOffset = insertOffset,
-        insertedText = newText,
+    val result = BackendAuthoringSourceEditPlanner().plan(
+        BackendEntityCreationPlanningRequest(
+            document = trackedDocument.toBackendSourceDocument(intent.revisionGuard) ?: return null,
+            revisionGuard = intent.revisionGuard,
+            intent = plannedIntent,
+            template = template,
+        ),
     )
+    return (result as? BackendAuthoringSourceEditPlanned)
+        ?.plan
+        ?.toPayload(trackedDocument.text)
+}
 
-    return AthenaAuthoringSourceEditPayload(
-        uri = trackedDocument.uri,
-        range = trackedDocument.text.zeroWidthRangeAt(insertOffset),
-        newText = newText,
-        selectionRange = selectionRange,
-        suggestedSemanticId = "component:$componentName",
+internal fun governedCreateEntityPreview(
+    trackedDocument: AthenaTrackedDocument,
+    intent: CreateSemanticEntityIntent,
+    previewId: AuthoringPreviewId,
+    capabilityEvidence: AuthoringCapabilityEvidence,
+): GovernedEntityCreationPreviewResult? {
+    if (!ElectricalEntityCreationProjectionAuthority.supports(intent.conceptTemplateId.value)) return null
+    val document = trackedDocument.toBackendSourceDocument(intent.revisionGuard) ?: return null
+    return GovernedEntityCreationPreviewService(
+        templates = electricalEngineeringConceptTemplates(),
+        projectionAuthority = ElectricalEntityCreationProjectionAuthority(),
+    ).preview(
+        GovernedEntityCreationPreviewRequest(
+            transactionId = SemanticAuthoringTransactionId("transaction:${intent.intentId.value}"),
+            previewId = previewId,
+            intent = intent,
+            capabilityEvidence = capabilityEvidence,
+            document = document,
+        ),
     )
 }
 
-private fun buildCreateComponentSnippet(
-    componentName: String,
-    conceptId: String,
-    vendorPartNumber: String?,
-    typeSymbol: String,
-): String {
-    val portTemplates = defaultPortTemplatesForConcept(
-        conceptId = conceptId,
-        componentName = componentName,
-    )
-    return buildString {
-        appendLine()
-        appendLine()
-        append("  device ")
-        append(componentName)
-        appendLine(" {")
-        append("    type ")
-        append(typeSymbol)
-        appendLine()
-        append("    componentRef \"")
-        append(conceptId)
-        appendLine("\"")
-        vendorPartNumber?.let { partNumber ->
-            append("    vendorPartNumber \"")
-            append(partNumber)
-            appendLine("\"")
-        }
-        append("    label \"")
-        append(componentName)
-        appendLine("\"")
-        portTemplates.forEach { template ->
-            appendLine()
-            append("    port ")
-            append(template.name)
-            appendLine(" {")
-            append("      direction ")
-            append(template.direction)
-            appendLine()
-            append("      signal ")
-            append(template.signal)
-            appendLine()
-            template.protocol?.let { protocol ->
-                append("      protocol ")
-                append(protocol)
-                appendLine()
-            }
-            appendLine("    }")
-        }
-        appendLine("  }")
-    }
-}
-
-private data class DefaultPortTemplate(
-    val name: String,
-    val direction: String,
-    val signal: String,
-    val protocol: String? = null,
-)
-
-private fun defaultPortTemplatesForConcept(
-    conceptId: String,
-    componentName: String,
-): List<DefaultPortTemplate> {
-    @Suppress("UNUSED_PARAMETER")
-    val ignored = componentName
-    return when (conceptId) {
-        "electrical.plc.cpu" -> listOf(
-            DefaultPortTemplate("lplus", "in", "Power24"),
-            DefaultPortTemplate("m", "in", "Common24"),
-            DefaultPortTemplate("pe", "in", "ProtectiveEarth"),
-            DefaultPortTemplate("mpi", "out", "MPIBus", protocol = "mpi"),
-        )
-
-        "electrical.power-supply.dc24" -> listOf(
-            DefaultPortTemplate("out", "out", "Power24"),
-            DefaultPortTemplate("m", "out", "Common24"),
-            DefaultPortTemplate("pe", "out", "ProtectiveEarth"),
-        )
-
-        "electrical.motor.ac" -> listOf(
-            DefaultPortTemplate("in", "in", "Digital"),
-        )
-
-        else -> emptyList()
-    }
-}
-
-private fun defaultSuggestedComponentName(conceptId: String): String {
+private fun defaultSuggestedEntityName(conceptId: String): String {
     val tokens = conceptId
         .split('.', '-', '_')
         .filter(String::isNotBlank)
@@ -216,26 +176,26 @@ private fun defaultSuggestedComponentName(conceptId: String): String {
             token.replaceFirstChar { character -> character.uppercase() }
         }
         .replace(Regex("[^A-Za-z0-9]"), "")
-        .ifBlank { "Component" }
+        .ifBlank { "Entity" }
     return if (base.firstOrNull()?.isLetter() == true) {
         base
     } else {
-        "Component$base"
+        "Entity$base"
     }
 }
 
-internal fun uniqueDeviceName(
+internal fun uniqueAuthoredEntityName(
     requestedName: String,
     existingDeviceNames: Set<String>,
 ): String {
     val normalizedBase = requestedName
         .replace(Regex("[^A-Za-z0-9]"), "")
-        .ifBlank { "Component" }
+        .ifBlank { "Entity" }
         .let { base ->
             if (base.firstOrNull()?.isLetter() == true) {
                 base
             } else {
-                "Component$base"
+                "Entity$base"
             }
         }
     if (normalizedBase !in existingDeviceNames) {
@@ -251,13 +211,81 @@ internal fun uniqueDeviceName(
     }
 }
 
-private fun defaultAuthoredDeviceType(conceptId: String): String {
-    return when (conceptId) {
-        "electrical.motor.ac" -> "Motor"
-        "electrical.plc.cpu", "electrical.power-supply.dc24" -> "Switch"
-        else -> "Switch"
-    }
+internal fun AthenaTrackedDocument.toBackendSourceDocument(
+    revisionGuard: AuthoringRevisionGuard,
+): BackendAuthoringSourceDocument? {
+    val compilation = compilation as? CompilerCompilationSuccess ?: return null
+    return BackendAuthoringSourceDocument(
+        sourceUri = uri,
+        documentVersion = version,
+        semanticSnapshotId = revisionGuard.semanticSnapshotId,
+        sourceText = text,
+        ast = compilation.source.ast,
+    )
 }
+
+internal fun BackendAuthoringSourceEditPlan.toPayload(sourceText: String): AthenaAuthoringSourceEditPayload {
+    return AthenaAuthoringSourceEditPayload(
+        uri = sourceUri,
+        startOffset = replacement.startOffset,
+        endOffset = replacement.endOffset,
+        range = AthenaAuthoringSourceRangePayload(
+            start = sourceText.positionAt(replacement.startOffset),
+            end = sourceText.positionAt(replacement.endOffset),
+        ),
+        newText = admittedText,
+        selectionStartOffset = selection?.startOffset,
+        selectionEndOffset = selection?.endOffset,
+        selectionRange = selection?.let { selected ->
+            val updatedText = sourceText.substring(0, replacement.startOffset) +
+                admittedText + sourceText.substring(replacement.endOffset)
+            AthenaAuthoringSourceRangePayload(
+                start = updatedText.positionAt(selected.startOffset),
+                end = updatedText.positionAt(selected.endOffset),
+            )
+        },
+        suggestedSemanticId = affectedSemanticIds.firstOrNull { semanticId -> semanticId.startsWith("component:") }
+            ?: affectedSemanticIds.singleOrNull(),
+        revisionGuard = revisionGuard.toPayload(),
+    )
+}
+
+internal fun AuthoringSourceEditEvidence.toPayload(sourceText: String): AthenaAuthoringSourceEditPayload {
+    val updatedText = sourceText.substring(0, startOffset) + admittedText + sourceText.substring(endOffset)
+    val selectedStart = selectionStartOffset
+    val selectedEnd = selectionEndOffset
+    return AthenaAuthoringSourceEditPayload(
+        uri = sourceUri,
+        startOffset = startOffset,
+        endOffset = endOffset,
+        range = AthenaAuthoringSourceRangePayload(
+            start = sourceText.positionAt(startOffset),
+            end = sourceText.positionAt(endOffset),
+        ),
+        newText = admittedText,
+        selectionStartOffset = selectedStart,
+        selectionEndOffset = selectedEnd,
+        selectionRange = if (selectedStart == null || selectedEnd == null) {
+            null
+        } else {
+            AthenaAuthoringSourceRangePayload(
+                start = updatedText.positionAt(selectedStart),
+                end = updatedText.positionAt(selectedEnd),
+            )
+        },
+        suggestedSemanticId = affectedSemanticIds.firstOrNull { semanticId -> semanticId.startsWith("component:") }
+            ?: affectedSemanticIds.singleOrNull(),
+        revisionGuard = revisionGuard.toPayload(),
+    )
+}
+
+internal fun AuthoringRevisionGuard.toPayload(): AthenaAuthoringRevisionGuardPayload =
+    AthenaAuthoringRevisionGuardPayload(
+        semanticSnapshotId = semanticSnapshotId,
+        sourceUri = sourceUri,
+        documentVersion = documentVersion,
+        contentSha256 = contentSha256,
+    )
 
 internal fun String.zeroWidthRangeAt(offset: Int): AthenaAuthoringSourceRangePayload {
     val position = positionAt(offset)
@@ -265,6 +293,18 @@ internal fun String.zeroWidthRangeAt(offset: Int): AthenaAuthoringSourceRangePay
         start = position,
         end = position,
     )
+}
+
+internal fun AuthoringSurface.toInteractionOriginSurface(): InteractionOriginSurface = when (this) {
+    AuthoringSurface.GRAPH -> InteractionOriginSurface.GRAPH
+    AuthoringSurface.DSL -> InteractionOriginSurface.SOURCE
+    AuthoringSurface.INSPECTOR -> InteractionOriginSurface.INSPECTOR
+    AuthoringSurface.FORM -> InteractionOriginSurface.PROBLEMS
+    AuthoringSurface.PALETTE,
+    AuthoringSurface.TEMPLATE,
+    -> InteractionOriginSurface.PALETTE
+    AuthoringSurface.AI -> InteractionOriginSurface.AI
+    AuthoringSurface.API -> InteractionOriginSurface.API
 }
 
 internal fun String.selectionRangeAfterInsert(

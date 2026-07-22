@@ -2,6 +2,7 @@ package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionCrossReference
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionCrossReferenceLink
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionDiagnostic
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalAnchor
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalConnectionEndpoint
@@ -13,6 +14,7 @@ import com.engineeringood.athena.runtime.AthenaRuntimeProjectionReadySnapshot
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionRenderContribution
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSession
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheet
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetPolicyEvidence
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayout
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayoutFrame
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayoutLabelLayout
@@ -193,8 +195,19 @@ private fun AthenaRuntimeProjectionSheet.toPayload(): AthenaProjectionSheetPaylo
         previousSheetId = previousSheetId,
         nextSheetId = nextSheetId,
         subjectSemanticIds = subjectSemanticIds,
+        policyEvidence = policyEvidence?.toPayload(),
         publication = publication.toPayload(),
         composition = composition.toPayload(),
+    )
+}
+
+private fun AthenaRuntimeProjectionSheetPolicyEvidence.toPayload(): AthenaProjectionSheetPolicyEvidencePayload {
+    return AthenaProjectionSheetPolicyEvidencePayload(
+        policyId = policyId,
+        policyVersion = policyVersion,
+        policyDeterministicIdentity = policyDeterministicIdentity,
+        sheetViewRole = sheetViewRole,
+        sheetViewRoleOrder = sheetViewRoleOrder,
     )
 }
 
@@ -320,8 +333,21 @@ private fun AthenaRuntimeProjectionCrossReference.toPayload(): AthenaProjectionC
     return AthenaProjectionCrossReferencePayload(
         semanticId = semanticId,
         kind = kind,
+        crossReferenceId = crossReferenceId,
         sheetIds = sheetIds,
         occurrenceIds = occurrenceIds,
+        links = links.map(AthenaRuntimeProjectionCrossReferenceLink::toPayload),
+    )
+}
+
+private fun AthenaRuntimeProjectionCrossReferenceLink.toPayload(): AthenaProjectionCrossReferenceLinkPayload {
+    return AthenaProjectionCrossReferenceLinkPayload(
+        semanticId = semanticId,
+        sourceSheetId = sourceSheetId,
+        targetSheetId = targetSheetId,
+        sourceOccurrenceId = sourceOccurrenceId,
+        targetOccurrenceId = targetOccurrenceId,
+        compactNotation = compactNotation,
     )
 }
 

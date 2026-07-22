@@ -876,6 +876,88 @@
     white-space: pre-wrap;
 }
 
+.athena-graph-workbench__create-entity-panel {
+    position: absolute;
+    top: 62px;
+    right: 12px;
+    z-index: 3;
+    width: min(560px, calc(100% - 24px));
+    max-height: calc(100% - 86px);
+    overflow: auto;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--athena-workbench-surface) 92%, transparent);
+    color: var(--athena-workbench-text);
+    pointer-events: auto;
+}
+
+.athena-graph-workbench__create-entity-header,
+.athena-graph-workbench__create-entity-preview-header,
+.athena-graph-workbench__create-entity-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.athena-graph-workbench__create-entity-header h3 {
+    margin: 2px 0 0;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.athena-graph-workbench__create-entity-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 1.4fr) minmax(100px, 1fr) minmax(100px, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.athena-graph-workbench__create-entity-grid label {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    color: var(--athena-workbench-muted);
+    font-size: 11px;
+}
+
+.athena-graph-workbench__create-entity-grid select,
+.athena-graph-workbench__create-entity-grid input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--athena-workbench-text) 16%, transparent);
+    background: color-mix(in srgb, var(--athena-workbench-panel) 92%, transparent);
+    color: var(--athena-workbench-text);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.athena-graph-workbench__create-entity-actions {
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.athena-graph-workbench__create-entity-message,
+.athena-graph-workbench__create-entity-diagnostics {
+    margin: 8px 0 0;
+    color: var(--athena-workbench-muted);
+    font-size: 12px;
+}
+
+.athena-graph-workbench__create-entity-preview {
+    margin-top: 10px;
+}
+
+.athena-graph-workbench__create-entity-source {
+    max-height: 150px;
+    margin: 8px 0 0;
+    overflow: auto;
+    color: var(--athena-workbench-muted);
+    font-size: 11px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+
 .athena-graph-workbench__info-table {
     width: 100%;
     table-layout: fixed;

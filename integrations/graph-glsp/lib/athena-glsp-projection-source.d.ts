@@ -63,7 +63,15 @@ export type AthenaGLSPSheetSource = {
     previousSheetId?: string;
     nextSheetId?: string;
     subjectSemanticIds: string[];
+    policyEvidence?: AthenaGLSPSheetPolicyEvidenceSource;
     publication?: AthenaGLSPSheetPublicationSource;
+};
+export type AthenaGLSPSheetPolicyEvidenceSource = {
+    policyId: string;
+    policyVersion: string;
+    policyDeterministicIdentity: string;
+    sheetViewRole: string;
+    sheetViewRoleOrder: number;
 };
 export type AthenaGLSPSheetPublicationSource = {
     pageSize: AthenaGLSPSheetPageSizeSource;
@@ -114,8 +122,18 @@ export type AthenaGLSPNotationPackSource = {
 export type AthenaGLSPCrossReferenceSource = {
     semanticId: string;
     kind: string;
+    crossReferenceId?: string;
     sheetIds: string[];
     occurrenceIds: string[];
+    links?: AthenaGLSPCrossReferenceLinkSource[];
+};
+export type AthenaGLSPCrossReferenceLinkSource = {
+    semanticId: string;
+    sourceSheetId: string;
+    targetSheetId: string;
+    sourceOccurrenceId: string;
+    targetOccurrenceId: string;
+    compactNotation: string;
 };
 export type AthenaGLSPElectricalAnchorSource = {
     anchorId: string;

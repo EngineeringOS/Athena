@@ -33,14 +33,17 @@ class AthenaRuntimeProjectionDepthTest {
         assertEquals("electrical/documentation", documentation.familyId)
         assertEquals(
             listOf(
-                "documentation/sheet/01-power-distribution",
-                "documentation/sheet/02-control-and-plc-logic",
-                "documentation/sheet/03-field-wiring-and-terminal-transition",
+                "documentation/sheet/01-control",
+                "documentation/sheet/02-field-device",
             ),
             documentation.sheets.map { sheet -> sheet.sheetId },
         )
         assertTrue(documentation.crossReferences.size >= 12)
-        assertEquals(2, documentation.scene.components.count { component -> component.semanticId == "component:M1" })
+        assertEquals(1, documentation.scene.components.count { component -> component.semanticId == "component:M1" })
+        assertTrue(
+            documentation.scene.components.none { component -> component.projectionId.endsWith("_reference") },
+            "Runtime documentation projection must not surface duplicate off-sheet reference components.",
+        )
         assertEquals("electrical-notation/documentation/default-v1", documentation.notationPack?.packId)
         assertTrue(documentation.crossReferences.any { crossReference -> crossReference.sheetIds.size >= 2 })
     }

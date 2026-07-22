@@ -3,6 +3,7 @@
 }
 
 dependencies {
+    implementation(project(":kernel:authoring-model"))
     implementation(project(":kernel:plugins:plugin-api"))
     implementation(project(":kernel:plugins:plugin-host"))
     implementation(project(":kernel:component-model"))
@@ -14,6 +15,7 @@ dependencies {
     implementation(project(":kernel:layout-model"))
     implementation(project(":kernel:part-model"))
     implementation(project(":kernel:physical-model"))
+    implementation(project(":kernel:document-projection-model"))
     implementation(project(":kernel:presentation-model"))
     implementation(project(":kernel:presentation-policy-model"))
     implementation(project(":kernel:projection-model"))

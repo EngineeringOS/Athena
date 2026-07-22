@@ -165,35 +165,33 @@ class AthenaRuntimeProjectionSessionTest {
         val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(success.session.activeProjection)
         assertEquals("documentation", ready.viewId)
         assertEquals("electrical/documentation", ready.familyId)
-        assertEquals("documentation/sheet/01-power-distribution", ready.activeSheetId)
+        assertEquals("documentation/sheet/01-control", ready.activeSheetId)
         assertEquals(
             listOf(
-                "documentation/sheet/01-power-distribution",
-                "documentation/sheet/02-control-and-plc-logic",
-                "documentation/sheet/03-field-wiring-and-terminal-transition",
+                "documentation/sheet/01-control",
+                "documentation/sheet/02-field-device",
             ),
             ready.sheets.map { sheet -> sheet.sheetId },
         )
-        assertEquals("documentation/sheet/02-control-and-plc-logic", ready.sheets.first().nextSheetId)
-        assertEquals("documentation/sheet/02-control-and-plc-logic", ready.sheets.last().previousSheetId)
+        assertEquals("documentation/sheet/02-field-device", ready.sheets.first().nextSheetId)
+        assertEquals("documentation/sheet/01-control", ready.sheets.last().previousSheetId)
         assertTrue(ready.sheets.first().subjectSemanticIds.contains("component:PLC1"))
-        assertTrue(ready.sheets[1].subjectSemanticIds.contains("component:PLC1"))
         assertTrue(ready.sheets.last().subjectSemanticIds.contains("component:M1"))
         assertEquals("schematic-sheet", ready.sheets.first().composition.representationFamilyId)
-        assertEquals("Power Distribution", ready.sheets.first().publication.titleBlock.sheetTitle)
-        assertEquals("01-power-distribution", ready.sheets.first().publication.titleBlock.sheetNumber)
+        assertEquals("Control", ready.sheets.first().publication.titleBlock.sheetTitle)
+        assertEquals("01-control", ready.sheets.first().publication.titleBlock.sheetNumber)
         assertEquals("documentation", ready.sheets.first().publication.viewComposition.primaryViewId)
         assertEquals(0, ready.sheets.first().publication.viewComposition.primarySheetOrder)
         assertEquals(ready.sheets.first().subjectSemanticIds, ready.sheets.first().composition.subjectSemanticIds)
         assertEquals("schematic-sheet", ready.sheets.last().composition.representationFamilyId)
-        assertEquals("Field Wiring And Terminal Transition", ready.sheets.last().publication.titleBlock.sheetTitle)
-        assertEquals("03-field-wiring-and-terminal-transition", ready.sheets.last().publication.titleBlock.sheetNumber)
+        assertEquals("Field Device", ready.sheets.last().publication.titleBlock.sheetTitle)
+        assertEquals("02-field-device", ready.sheets.last().publication.titleBlock.sheetNumber)
         assertEquals("documentation", ready.sheets.last().publication.viewComposition.primaryViewId)
-        assertEquals(2, ready.sheets.last().publication.viewComposition.primarySheetOrder)
+        assertEquals(1, ready.sheets.last().publication.viewComposition.primarySheetOrder)
         assertEquals(ready.sheets.last().subjectSemanticIds, ready.sheets.last().composition.subjectSemanticIds)
         val sheetLayout = assertNotNull(ready.sheetLayout)
-        assertEquals("documentation/sheet/01-power-distribution", sheetLayout.sheetId)
-        assertEquals("Power Distribution", sheetLayout.displayName)
+        assertEquals("documentation/sheet/01-control", sheetLayout.sheetId)
+        assertEquals("Control", sheetLayout.displayName)
         assertEquals(0, sheetLayout.order)
         assertEquals("schematic-sheet", sheetLayout.representationFamilyId)
         assertEquals(ready.sheets.first().subjectSemanticIds, sheetLayout.subjectSemanticIds)
@@ -202,14 +200,107 @@ class AthenaRuntimeProjectionSessionTest {
         assertEquals(ready.scene.components.size, sheetLayout.placements.size)
         assertEquals(ready.scene.labels.size, sheetLayout.labelLayouts.size)
         assertEquals(ready.electricalRoutingCorridors.size, sheetLayout.routingGuidance.size)
-        assertEquals(2, ready.scene.components.count { component -> component.semanticId == "component:PLC1" })
+        assertEquals(1, ready.scene.components.count { component -> component.semanticId == "component:PLC1" })
+        assertTrue(
+            ready.scene.components.none { component -> component.projectionId.endsWith("_reference") },
+            "Sheet layout must not depend on duplicate off-sheet reference components.",
+        )
         assertEquals(
-            2,
+            1,
             ready.scene.components
                 .filter { component -> component.semanticId == "component:PLC1" }
                 .map { component -> component.projectionId }
                 .distinct()
                 .size,
+        )
+    }
+
+    @Test
+    fun `m31 customer documentation projection publishes two stable policy backed sheets after reopen`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val firstContext = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+
+        val firstReady = assertIs<AthenaRuntimeProjectionReadySnapshot>(
+            assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+                firstContext.switchActiveProjectionView("documentation"),
+            ).session.activeProjection,
+        )
+        val reopenedContext = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+        val reopenedReady = assertIs<AthenaRuntimeProjectionReadySnapshot>(
+            assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+                reopenedContext.switchActiveProjectionView("documentation"),
+            ).session.activeProjection,
+        )
+
+        assertEquals(
+            listOf("documentation/sheet/01-control", "documentation/sheet/02-field-device"),
+            firstReady.sheets.map { sheet -> sheet.sheetId },
+        )
+        assertEquals(firstReady.sheets.map { sheet -> sheet.sheetId }, reopenedReady.sheets.map { sheet -> sheet.sheetId })
+        assertEquals(firstReady.sheets.map { sheet -> sheet.order }, reopenedReady.sheets.map { sheet -> sheet.order })
+        assertEquals(firstReady.sheets.map { sheet -> sheet.publication }, reopenedReady.sheets.map { sheet -> sheet.publication })
+        assertEquals(
+            firstReady.scene.components.map { component -> component.semanticId to component.projectionId },
+            reopenedReady.scene.components.map { component -> component.semanticId to component.projectionId },
+            "Reopening must preserve semantic component ids and projection occurrence ids.",
+        )
+        assertEquals(
+            firstReady.scene.connections.map { connection -> connection.semanticId to connection.projectionId },
+            reopenedReady.scene.connections.map { connection -> connection.semanticId to connection.projectionId },
+            "Reopening must preserve semantic relationship ids and projection connection ids.",
+        )
+        assertEquals(
+            firstReady.electricalRoutingCorridors.map { corridor ->
+                corridor.connectionSemanticId to corridor.corridorId
+            },
+            reopenedReady.electricalRoutingCorridors.map { corridor ->
+                corridor.connectionSemanticId to corridor.corridorId
+            },
+            "Reopening must preserve governed route ids.",
+        )
+        assertEquals(
+            listOf("control-and-plc-logic", "field-wiring-and-terminal-transition"),
+            firstReady.sheets.map { sheet -> sheet.policyEvidence?.sheetViewRole },
+        )
+        assertEquals(
+            listOf("athena-m31-customer-projection-v0"),
+            firstReady.sheets.mapNotNull { sheet -> sheet.policyEvidence?.policyId }.distinct(),
+        )
+        assertEquals(
+            firstReady.presentation?.occurrences?.map { occurrence -> occurrence.occurrenceId.value },
+            reopenedReady.presentation?.occurrences?.map { occurrence -> occurrence.occurrenceId.value },
+        )
+        val firstReference = firstReady.crossReferences.first { reference -> reference.links.isNotEmpty() }
+        val firstLink = firstReference.links.first()
+        assertTrue(firstReference.crossReferenceId.isNotBlank(), "Runtime cross-reference id must be stable and inspectable.")
+        assertEquals(
+            "documentation/sheet/01-control",
+            firstLink.sourceSheetId,
+            "Runtime cross-reference link must preserve source sheet identity.",
+        )
+        assertEquals(
+            "documentation/sheet/02-field-device",
+            firstLink.targetSheetId,
+            "Runtime cross-reference link must preserve target sheet identity.",
+        )
+        assertTrue(firstLink.sourceOccurrenceId.isNotBlank(), "Runtime cross-reference link must preserve source occurrence identity.")
+        assertTrue(firstLink.targetOccurrenceId.isNotBlank(), "Runtime cross-reference link must preserve target occurrence identity.")
+        assertEquals(
+            "01-control -> 02-field-device",
+            firstLink.compactNotation,
+            "Runtime compact notation must be transported from governed projection facts.",
+        )
+        assertEquals(
+            firstReady.crossReferences,
+            reopenedReady.crossReferences,
+            "Reopening an unchanged project must preserve cross-reference identity and typed links.",
         )
     }
 
@@ -223,23 +314,49 @@ class AthenaRuntimeProjectionSessionTest {
         )
         val baselineDocument = assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document
 
-        val switchResult = context.switchActiveProjectionView("documentation/sheet/02-control-and-plc-logic")
+        val switchResult = context.switchActiveProjectionView("documentation/sheet/02-field-device")
 
         val success = assertIs<AthenaRuntimeProjectionSwitchSuccess>(switchResult)
-        assertEquals("documentation/sheet/02-control-and-plc-logic", success.requestedViewId)
+        assertEquals("documentation/sheet/02-field-device", success.requestedViewId)
         assertEquals("documentation", success.session.activeViewId)
         val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(success.session.activeProjection)
         assertEquals("documentation", ready.viewId)
-        assertEquals("documentation/sheet/02-control-and-plc-logic", ready.activeSheetId)
+        assertEquals("documentation/sheet/02-field-device", ready.activeSheetId)
         val sheetLayout = assertNotNull(ready.sheetLayout)
-        assertEquals("documentation/sheet/02-control-and-plc-logic", sheetLayout.sheetId)
-        assertEquals("Control And PLC Logic", sheetLayout.displayName)
+        assertEquals("documentation/sheet/02-field-device", sheetLayout.sheetId)
+        assertEquals("Field Device", sheetLayout.displayName)
         assertEquals(1, sheetLayout.order)
         assertEquals(
             ready.sheets[1].subjectSemanticIds,
             sheetLayout.subjectSemanticIds,
         )
         assertEquals(baselineDocument, assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document)
+    }
+
+    @Test
+    fun `documentation sheet selection survives cabinet round trip`() {
+        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val runtime = AthenaRuntime()
+        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
+            projectName = "demo-cabinet",
+            sourcePath = sourcePath,
+        )
+
+        assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+            context.switchActiveProjectionView("documentation/sheet/02-field-device"),
+        )
+        val cabinet = assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+            context.switchActiveProjectionView("cabinet"),
+        )
+        assertEquals("cabinet", cabinet.session.activeViewId)
+
+        val documentation = assertIs<AthenaRuntimeProjectionSwitchSuccess>(
+            context.switchActiveProjectionView("documentation"),
+        )
+        val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(documentation.session.activeProjection)
+
+        assertEquals("documentation/sheet/02-field-device", ready.activeSheetId)
+        assertEquals("Field Device", ready.sheetLayout?.displayName)
     }
 
     @Test
@@ -251,11 +368,11 @@ class AthenaRuntimeProjectionSessionTest {
             sourcePath = sourcePath,
         )
 
-        val switchResult = context.switchActiveProjectionView("documentation/sheet/03-field-wiring-and-terminal-transition")
+        val switchResult = context.switchActiveProjectionView("documentation/sheet/02-field-device")
 
         val success = assertIs<AthenaRuntimeProjectionSwitchSuccess>(switchResult)
         val ready = assertIs<AthenaRuntimeProjectionReadySnapshot>(success.session.activeProjection)
-        assertEquals("documentation/sheet/03-field-wiring-and-terminal-transition", ready.activeSheetId)
+        assertEquals("documentation/sheet/02-field-device", ready.activeSheetId)
         assertTrue(
             ready.scene.components.any { component -> component.semanticId == "component:FieldTerminalXT1" },
             "M27 field sheet must render the terminal transition subject from the active projected system.",

@@ -155,6 +155,17 @@ data class AthenaRuntimeProjectionSheetComposition(
 }
 
 /**
+ * Runtime-owned structured evidence for the document projection policy that produced one sheet.
+ */
+data class AthenaRuntimeProjectionSheetPolicyEvidence(
+    val policyId: String,
+    val policyVersion: String,
+    val policyDeterministicIdentity: String,
+    val sheetViewRole: String,
+    val sheetViewRoleOrder: Int,
+)
+
+/**
  * Runtime-owned governed layout facts for the active sheet.
  */
 data class AthenaRuntimeProjectionSheetLayout(
@@ -277,6 +288,7 @@ data class AthenaRuntimeProjectionSheet(
     val previousSheetId: String? = null,
     val nextSheetId: String? = null,
     val subjectSemanticIds: List<String> = emptyList(),
+    val policyEvidence: AthenaRuntimeProjectionSheetPolicyEvidence? = null,
     val publication: AthenaRuntimeProjectionSheetPublication = AthenaRuntimeProjectionSheetPublication.fromProjectionState(
         sheetId = sheetId,
         displayName = displayName,
@@ -317,8 +329,19 @@ data class AthenaRuntimeProjectionNotationPack(
 data class AthenaRuntimeProjectionCrossReference(
     val semanticId: String,
     val kind: String,
+    val crossReferenceId: String,
     val sheetIds: List<String> = emptyList(),
     val occurrenceIds: List<String> = emptyList(),
+    val links: List<AthenaRuntimeProjectionCrossReferenceLink> = emptyList(),
+)
+
+data class AthenaRuntimeProjectionCrossReferenceLink(
+    val semanticId: String,
+    val sourceSheetId: String,
+    val targetSheetId: String,
+    val sourceOccurrenceId: String,
+    val targetOccurrenceId: String,
+    val compactNotation: String,
 )
 
 /**

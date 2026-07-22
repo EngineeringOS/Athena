@@ -16,6 +16,17 @@ data class ProjectionSheetSubject(
 )
 
 /**
+ * Structured policy evidence for one governed projection sheet.
+ */
+data class ProjectionSheetPolicyEvidence(
+    val policyId: String,
+    val policyVersion: String,
+    val policyDeterministicIdentity: String,
+    val sheetViewRole: String,
+    val sheetViewRoleOrder: Int,
+)
+
+/**
  * Governed publication semantics for one projection sheet.
  */
 data class ProjectionSheetPublication(
@@ -179,6 +190,7 @@ data class ProjectionSheet(
     val previousSheetId: ProjectionSheetId? = null,
     val nextSheetId: ProjectionSheetId? = null,
     val subjects: List<ProjectionSheetSubject> = emptyList(),
+    val policyEvidence: ProjectionSheetPolicyEvidence? = null,
     val publication: ProjectionSheetPublication = ProjectionSheetPublication.fromProjectionState(
         sheetId = sheetId,
         displayName = displayName,

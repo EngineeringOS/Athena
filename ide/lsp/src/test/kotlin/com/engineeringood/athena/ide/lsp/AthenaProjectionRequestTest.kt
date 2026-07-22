@@ -16,6 +16,7 @@ import org.eclipse.lsp4j.TextDocumentItem
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
 import kotlin.io.path.writeText
 
+@Suppress("DEPRECATION")
 class AthenaProjectionRequestTest {
     @Test
     @Suppress("DEPRECATION")
@@ -37,6 +38,17 @@ class AthenaProjectionRequestTest {
                     },
                 ).get()
 
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            repository.seedSourcePath.toUri().toString(),
+                            "athena",
+                            1,
+                            demoCabinetSource,
+                        ),
+                    ),
+                )
+
                 val payload = server.graphCommandIntent(
                     AthenaGraphCommandIntentParams(
                         intentId = "adjust-layout-placement",
@@ -48,6 +60,16 @@ class AthenaProjectionRequestTest {
                         requestedPlacement = AthenaGraphPlacementPayload(
                             x = 180,
                             y = 120,
+                        ),
+                        authoredLayoutIntent = AthenaAuthoredLayoutIntentPayload(
+                            viewFamily = "cabinet",
+                            statements = listOf(
+                                AthenaAuthoredLayoutIntentStatementPayload(
+                                    subject = "PLC1",
+                                    relation = "near",
+                                    target = "PLC1",
+                                ),
+                            ),
                         ),
                     ),
                 ).get()
@@ -61,6 +83,10 @@ class AthenaProjectionRequestTest {
                 assertEquals("component", payload.target.subjectKind)
                 assertEquals(180, payload.requestedPlacement?.x)
                 assertEquals(120, payload.requestedPlacement?.y)
+                val sourceEdit = assertNotNull(payload.sourceEdit)
+                assertTrue(sourceEdit.newText.contains("layout cabinet"))
+                assertTrue(sourceEdit.newText.contains("place PLC1 near PLC1"))
+                assertNotNull(sourceEdit.revisionGuard)
                 assertNull(payload.reason)
 
                 val refreshedProjection = server.projectionSession(AthenaProjectionSessionParams()).get()
@@ -68,6 +94,80 @@ class AthenaProjectionRequestTest {
                 val plc = readyProjection.components.first { component -> component.semanticId == "component:PLC1" }
                 assertEquals(180, plc.x)
                 assertEquals(120, plc.y)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `graph command intent rejects authored layout when backend planning produces no source edit`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-graph-intent-layout-plan-rejected-",
+            sourceFileName = "demo-cabinet.athena",
+            sourceText = demoCabinetSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                server.textDocumentService.didOpen(
+                    DidOpenTextDocumentParams(
+                        TextDocumentItem(
+                            repository.seedSourcePath.toUri().toString(),
+                            "athena",
+                            1,
+                            demoCabinetSource,
+                        ),
+                    ),
+                )
+
+                val payload = server.graphCommandIntent(
+                    AthenaGraphCommandIntentParams(
+                        intentId = "adjust-layout-placement",
+                        viewId = "cabinet",
+                        target = AthenaGraphCommandTargetPayload(
+                            semanticId = "component:PLC1",
+                            subjectKind = "component",
+                        ),
+                        requestedPlacement = AthenaGraphPlacementPayload(
+                            x = 777,
+                            y = 666,
+                        ),
+                        authoredLayoutIntent = AthenaAuthoredLayoutIntentPayload(
+                            viewFamily = "cabinet",
+                            statements = listOf(
+                                AthenaAuthoredLayoutIntentStatementPayload(
+                                    subject = "PLC1",
+                                    relation = "over",
+                                    target = "PLC1",
+                                ),
+                            ),
+                        ),
+                    ),
+                ).get()
+
+                assertNotNull(payload)
+                assertEquals("rejected", payload.status)
+                assertNull(payload.sourceEdit)
+                assertTrue(payload.reason.orEmpty().contains("source edit", ignoreCase = true))
+
+                val refreshedProjection = server.projectionSession(AthenaProjectionSessionParams()).get()
+                val readyProjection = assertNotNull(refreshedProjection?.readyProjection)
+                val plc = readyProjection.components.first { component -> component.semanticId == "component:PLC1" }
+                assertNotEquals(777, plc.x)
+                assertNotEquals(666, plc.y)
             } finally {
                 server.shutdown().get()
             }
@@ -290,6 +390,72 @@ class AthenaProjectionRequestTest {
     }
 
     @Test
+    fun `projection session payload exposes typed m31 customer sheet policy evidence`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-projection-session-m31-sheet-policy-",
+            sourceFileName = "demo-cabinet.athena",
+            sourceText = demoCabinetSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                server.projectionCommand(
+                    AthenaProjectionCommandParams(
+                        commandId = "switch-active-view",
+                        viewId = "documentation",
+                    ),
+                ).get()
+
+                val payload = server.projectionSession(AthenaProjectionSessionParams()).get()
+                val ready = assertNotNull(payload?.readyProjection)
+
+                assertEquals(
+                    listOf("documentation/sheet/01-control", "documentation/sheet/02-field-device"),
+                    ready.sheets.map { sheet -> sheet.sheetId },
+                )
+                assertEquals(
+                    listOf("control-and-plc-logic", "field-wiring-and-terminal-transition"),
+                    ready.sheets.map { sheet -> sheet.policyEvidence?.sheetViewRole },
+                )
+                assertEquals(
+                    listOf("athena-m31-customer-projection-v0"),
+                    ready.sheets.mapNotNull { sheet -> sheet.policyEvidence?.policyId }.distinct(),
+                )
+                assertEquals(
+                    ready.sheets.map { sheet -> sheet.subjectSemanticIds },
+                    ready.sheets.map { sheet -> sheet.publication.viewComposition.subjectSemanticIds },
+                )
+                val crossReference = ready.crossReferences.first { reference -> reference.links.isNotEmpty() }
+                val crossReferenceLink = crossReference.links.first()
+                assertTrue(crossReference.crossReferenceId.isNotBlank(), "LSP payload must expose stable cross-reference identity.")
+                assertEquals(
+                    crossReference.semanticId,
+                    crossReferenceLink.semanticId,
+                    "LSP cross-reference link must preserve canonical semantic identity.",
+                )
+                assertEquals("documentation/sheet/01-control", crossReferenceLink.sourceSheetId)
+                assertEquals("documentation/sheet/02-field-device", crossReferenceLink.targetSheetId)
+                assertTrue(crossReferenceLink.sourceOccurrenceId.isNotBlank())
+                assertTrue(crossReferenceLink.targetOccurrenceId.isNotBlank())
+                assertEquals("01-control -> 02-field-device", crossReferenceLink.compactNotation)
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `projection session payload renders terminal anchor route facts instead of legacy graph edges`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-projection-route-facts-",
@@ -343,7 +509,7 @@ class AthenaProjectionRequestTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `graph command intent request executes semantic connect ports through runtime and refreshes projection state`() {
+    fun `graph command intent rejects semantic relationship mutation bypass`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-graph-intent-connect-accepted-",
             sourceFileName = "operator-proof.athena",
@@ -363,7 +529,7 @@ class AthenaProjectionRequestTest {
 
                 val payload = server.graphCommandIntent(
                     AthenaGraphCommandIntentParams(
-                        intentId = "connect-ports",
+                        intentId = "create-semantic-relationship",
                         viewId = "cabinet",
                         source = AthenaGraphCommandTargetPayload(
                             semanticId = "port:PLC1.out",
@@ -377,35 +543,17 @@ class AthenaProjectionRequestTest {
                 ).get()
 
                 assertNotNull(payload)
-                assertEquals("accepted", payload.status)
-                assertEquals("connect-ports", payload.intentId)
-                assertEquals("semantic-mutation", payload.mutationCategory)
+                assertEquals("rejected", payload.status)
+                assertEquals("create-semantic-relationship", payload.intentId)
+                assertEquals("projection-mutation", payload.mutationCategory)
                 assertEquals("port:PLC1.out", payload.source?.semanticId)
                 assertEquals("port:M1.in", payload.target.semanticId)
-                assertEquals("connect-ports", payload.intentId)
-                val execution = assertNotNull(payload.execution)
-                assertEquals("connect-ports", execution.commandKind)
-                assertEquals("accepted", execution.outcome)
-                assertTrue(execution.changedSemanticIds.contains("connection:PLC1.out->M1.in"))
-                val inspection = assertNotNull(payload.inspection)
-                assertEquals("command", inspection.source)
-                assertTrue(inspection.historyConsequences.isNotEmpty())
-                val semanticReview = assertNotNull(payload.semanticReview)
-                assertEquals(1, semanticReview.authoredChangeCount)
-                assertTrue(semanticReview.reviewSummary.entryCount > 0)
-                assertTrue(semanticReview.commitIntent.entryCount > 0)
-                assertTrue(
-                    semanticReview.reviewSummary.entries.none { entry ->
-                        entry.message.contains("cabinet", ignoreCase = true) ||
-                            entry.message.contains("wiring", ignoreCase = true) ||
-                            entry.message.contains("renderer", ignoreCase = true)
-                    },
-                )
+                assertNull(payload.execution)
+                assertTrue(payload.reason.orEmpty().contains("invalid", ignoreCase = true))
 
                 val refreshedProjection = server.projectionSession(AthenaProjectionSessionParams()).get()
                 val readyProjection = assertNotNull(refreshedProjection?.readyProjection)
-                assertEquals(1, readyProjection.connections.size)
-                assertEquals("connection:PLC1.out->M1.in", readyProjection.connections.single().semanticId)
+                assertTrue(readyProjection.connections.isEmpty())
             } finally {
                 server.shutdown().get()
             }
@@ -416,7 +564,7 @@ class AthenaProjectionRequestTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `source and graph mutations publish compatible semantic review facts for the same engineering change`() {
+    fun `source mutation review remains available while direct relationship graph mutation is rejected`() {
         val sourceRepository = createGovernedTestRepository(
             prefix = "athena-lsp-m8-source-review-",
             sourceFileName = "operator-proof.athena",
@@ -501,7 +649,7 @@ class AthenaProjectionRequestTest {
                 val graphPayload = assertNotNull(
                     graphServer.graphCommandIntent(
                         AthenaGraphCommandIntentParams(
-                            intentId = "connect-ports",
+                            intentId = "create-semantic-relationship",
                             viewId = "cabinet",
                             source = AthenaGraphCommandTargetPayload(
                                 semanticId = "port:PLC1.out",
@@ -516,17 +664,9 @@ class AthenaProjectionRequestTest {
                 )
 
                 val sourceReview = assertNotNull(sourcePayload.semanticReview)
-                val graphReview = assertNotNull(graphPayload.semanticReview)
-                assertEquals(sourceReview.authoredChangeCount, graphReview.authoredChangeCount)
-                assertEquals(sourceReview.derivedConsequenceCount, graphReview.derivedConsequenceCount)
-                assertEquals(
-                    sourceReview.reviewSummary.entries.map { entry -> entry.kind to entry.message },
-                    graphReview.reviewSummary.entries.map { entry -> entry.kind to entry.message },
-                )
-                assertEquals(
-                    sourceReview.commitIntent.entries.map { entry -> entry.kind to entry.message },
-                    graphReview.commitIntent.entries.map { entry -> entry.kind to entry.message },
-                )
+                assertTrue(sourceReview.authoredChangeCount > 0)
+                assertEquals("rejected", graphPayload.status)
+                assertNull(graphPayload.semanticReview)
             } finally {
                 sourceServer.shutdown().get()
                 graphServer.shutdown().get()
@@ -534,61 +674,6 @@ class AthenaProjectionRequestTest {
         } finally {
             sourceRepository.repositoryRoot.toFile().deleteRecursively()
             graphRepository.repositoryRoot.toFile().deleteRecursively()
-        }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
-    fun `graph command intent request rejects semantic connect ports from inspect only views`() {
-        val repository = createGovernedTestRepository(
-            prefix = "athena-lsp-graph-intent-connect-rejected-",
-            sourceFileName = "demo-cabinet.athena",
-            sourceText = demoCabinetSource,
-        )
-        val repositoryRoot = repository.repositoryRoot
-        try {
-            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
-
-            val server = AthenaLanguageServer()
-            try {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = repositoryRoot.toUri().toString()
-                    },
-                ).get()
-
-                server.projectionCommand(
-                    AthenaProjectionCommandParams(
-                        commandId = "switch-active-view",
-                        viewId = "wiring",
-                    ),
-                ).get()
-
-                val payload = server.graphCommandIntent(
-                    AthenaGraphCommandIntentParams(
-                        intentId = "connect-ports",
-                        viewId = "wiring",
-                        source = AthenaGraphCommandTargetPayload(
-                            semanticId = "port:PLC1.out",
-                            subjectKind = "port",
-                        ),
-                        target = AthenaGraphCommandTargetPayload(
-                            semanticId = "port:M1.in",
-                            subjectKind = "port",
-                        ),
-                    ),
-                ).get()
-
-                assertNotNull(payload)
-                assertEquals("rejected", payload.status)
-                assertEquals("connect-ports", payload.intentId)
-                assertEquals("semantic-mutation", payload.mutationCategory)
-                assertTrue(payload.reason.orEmpty().contains("inspect", ignoreCase = true))
-            } finally {
-                server.shutdown().get()
-            }
-        } finally {
-            repositoryRoot.toFile().deleteRecursively()
         }
     }
 
@@ -642,7 +727,7 @@ class AthenaProjectionRequestTest {
                     cabinetView.ownershipContract.displayScopes,
                 )
                 assertEquals(
-                    listOf("connect-ports"),
+                    listOf("create-semantic-relationship"),
                     cabinetView.ownershipContract.semanticCommandIds,
                 )
                 assertEquals(
@@ -818,23 +903,25 @@ class AthenaProjectionRequestTest {
                 val readyProjection = assertNotNull(session.readyProjection)
                 assertEquals("documentation", session.activeViewId)
                 assertEquals("electrical/documentation", readyProjection.familyId)
-                assertEquals("documentation/sheet/01-power-distribution", readyProjection.activeSheetId)
+                assertEquals("documentation/sheet/01-control", readyProjection.activeSheetId)
                 assertEquals(
                     listOf(
-                        "documentation/sheet/01-power-distribution",
-                        "documentation/sheet/02-control-and-plc-logic",
-                        "documentation/sheet/03-field-wiring-and-terminal-transition",
+                        "documentation/sheet/01-control",
+                        "documentation/sheet/02-field-device",
                     ),
                     readyProjection.sheets.map { sheet -> sheet.sheetId },
                 )
-                assertEquals("documentation/sheet/02-control-and-plc-logic", readyProjection.sheets.first().nextSheetId)
-                assertEquals("documentation/sheet/02-control-and-plc-logic", readyProjection.sheets.last().previousSheetId)
+                assertEquals("documentation/sheet/02-field-device", readyProjection.sheets.first().nextSheetId)
+                assertEquals("documentation/sheet/01-control", readyProjection.sheets.last().previousSheetId)
                 assertTrue(readyProjection.sheets.first().subjectSemanticIds.contains("component:PLC1"))
-                assertTrue(readyProjection.sheets[1].subjectSemanticIds.contains("component:PLC1"))
                 assertTrue(readyProjection.sheets.last().subjectSemanticIds.contains("component:M1"))
-                assertEquals(2, readyProjection.components.count { component -> component.semanticId == "component:PLC1" })
+                assertEquals(1, readyProjection.components.count { component -> component.semanticId == "component:PLC1" })
+                assertTrue(
+                    readyProjection.components.none { component -> component.projectionId.endsWith("_reference") },
+                    "Documentation sheet payload must not carry duplicate off-sheet reference components.",
+                )
                 assertEquals(
-                    2,
+                    1,
                     readyProjection.components
                         .filter { component -> component.semanticId == "component:PLC1" }
                         .map { component -> component.projectionId }

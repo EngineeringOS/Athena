@@ -18,12 +18,10 @@ test('graph workbench applies approved layout preview as reviewable source edit'
     const widgetSource = readRepoFile('ide/theia-frontend/src/browser/athena-graph-workbench-widget.tsx');
     const usage = readRepoFile('docs/usages/m22-proof-usage.md');
 
-    assert.match(modelSource, /buildAthenaGraphLayoutSourceEdit/);
-    assert.match(modelSource, /suggestedSemanticId:\s*preview\.subjectSemanticId/);
-    assert.match(modelSource, /serializeAthenaGraphAuthoredLayoutIntent\(preview\.authoredIntent\)/);
+    assert.match(modelSource, /sourceEdit:\s*AthenaAuthoringSourceEditPayload/);
+    assert.match(modelSource, /sourceEdit\.newText\.trim\(\)/);
     assert.match(widgetSource, /acceptLayoutMutationPreview/);
-    assert.match(widgetSource, /buildAthenaGraphLayoutSourceEdit/);
-    assert.match(widgetSource, /applyAuthoringSourceEdit\(sourceEdit\)/);
+    assert.match(widgetSource, /applyAuthoringSourceEdit\(preview\.sourceEdit\)/);
     assert.match(widgetSource, /this\.layoutMutationPreview = undefined/);
     assert.match(widgetSource, /this\.scheduleRefresh\(\)/);
     assert.doesNotMatch(widgetSource, /localStorage|sessionStorage|indexedDB/);

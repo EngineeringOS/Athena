@@ -2270,7 +2270,7 @@ class AthenaCompilerTest {
                     "electrical-routing-corridors",
                 ),
                 semanticCommandIds = listOf(
-                    "connect-ports",
+                    "create-semantic-relationship",
                 ),
                 projectionCommandIds = listOf(
                     "adjust-layout-placement",

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const designPath = '_bmad-output/implementation-artifacts/m30/qet-offline-converter-design.md';
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
+const designPath = `${repoRoot}_bmad-output/implementation-artifacts/m30/qet-offline-converter-design.md`;
 
 async function readDesign() {
   return readFile(designPath, 'utf8');

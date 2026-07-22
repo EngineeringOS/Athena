@@ -74,6 +74,19 @@ fun M30DemoRepresentationBindingProof.toBindingStatusPayload(): Map<String, Stri
     "missingBindingDiagnosticCount" to diagnostics.count { diagnostic ->
         diagnostic.code in MISSING_BINDING_DIAGNOSTIC_CODES
     }.toString(),
+    "deviceSymbolIds" to deviceOccurrences
+        .map { occurrence -> occurrence.symbolId.value }
+        .distinct()
+        .sorted()
+        .joinToString(","),
+    "occurrenceRoles" to (deviceOccurrences + referenceOccurrences)
+        .map { occurrence -> occurrence.occurrenceRole.name }
+        .distinct()
+        .sorted()
+        .joinToString(","),
+    "compositionMembershipCount" to (deviceOccurrences + referenceOccurrences)
+        .sumOf { occurrence -> occurrence.compositionIntentMembership.size }
+        .toString(),
 )
 
 object RepresentationFallbackGuard {

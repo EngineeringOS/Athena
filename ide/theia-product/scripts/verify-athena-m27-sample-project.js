@@ -119,7 +119,7 @@ async function main() {
     assertDensityProof(graphWorkbenchProof.densityProof);
     assertVisualProof(graphWorkbenchProof.visualProof);
     assertNoOrphanRouteEndpointNodes(graphWorkbenchProof.routeProof, graphWorkbenchProof.visualProof);
-    assertAllSheetVisualProof(graphWorkbenchProof.allSheetVisualProof);
+    assertAllSheetVisualProof(graphWorkbenchProof.allSheetVisualProof, graphWorkbenchProof.documentProjectionProof);
     assertSheetSelectorPersistenceProof(graphWorkbenchProof.sheetSelectorPersistenceProof);
     assertGraphWorkbenchScreenshot(graphWorkbenchScreenshot, screenshotPath);
 
@@ -175,8 +175,9 @@ function assertVisualProof(visualProof) {
     }
 }
 
-function assertAllSheetVisualProof(allSheetVisualProof) {
-    if (!Array.isArray(allSheetVisualProof) || allSheetVisualProof.length < 3) {
+function assertAllSheetVisualProof(allSheetVisualProof, documentProjectionProof) {
+    const expectedSheetCount = documentProjectionProof?.sheetViewOptionCount ?? 1;
+    if (!Array.isArray(allSheetVisualProof) || allSheetVisualProof.length !== expectedSheetCount) {
         throw new Error(`Athena M27 smoke did not inspect every document sheet projection.\n${JSON.stringify(allSheetVisualProof, null, 2)}`);
     }
     const failures = [];

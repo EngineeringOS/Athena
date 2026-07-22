@@ -79,14 +79,17 @@ class AthenaProjectionM11DepthRequestTest {
             assertEquals("electrical/documentation", documentation.familyId)
             assertEquals(
                 listOf(
-                    "documentation/sheet/01-power-distribution",
-                    "documentation/sheet/02-control-and-plc-logic",
-                    "documentation/sheet/03-field-wiring-and-terminal-transition",
+                    "documentation/sheet/01-control",
+                    "documentation/sheet/02-field-device",
                 ),
                 documentation.sheets.map { sheet -> sheet.sheetId },
             )
             assertTrue(documentation.crossReferences.size >= 12)
-            assertEquals(2, documentation.components.count { component -> component.semanticId == "component:M1" })
+            assertEquals(1, documentation.components.count { component -> component.semanticId == "component:M1" })
+            assertTrue(
+                documentation.components.none { component -> component.projectionId.endsWith("_reference") },
+                "LSP documentation payload must not transport duplicate off-sheet reference components.",
+            )
             assertTrue(documentation.crossReferences.any { crossReference -> crossReference.sheetIds.size >= 2 })
         } finally {
             server.shutdown().get()
@@ -162,7 +165,11 @@ class AthenaProjectionM11DepthRequestTest {
                 )
                 val documentation = assertNotNull(documentationPayload.session?.readyProjection)
                 assertTrue(documentation.crossReferences.any { crossReference -> crossReference.semanticId == "component:M1" })
-                assertEquals(2, documentation.components.count { component -> component.semanticId == "component:M1" })
+                assertEquals(1, documentation.components.count { component -> component.semanticId == "component:M1" })
+                assertTrue(
+                    documentation.components.none { component -> component.projectionId.endsWith("_reference") },
+                    "Source mutation reprojection must not reintroduce duplicate off-sheet reference components.",
+                )
             } finally {
                 server.shutdown().get()
             }

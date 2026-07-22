@@ -131,4 +131,40 @@ object BuiltInDocumentProjectionPolicies {
             ),
         ),
     )
+
+    fun athenaM31CustomerProjectionV0(): DocumentProjectionPolicy = DocumentProjectionPolicy(
+        policyId = DocumentProjectionPolicyId("athena-m31-customer-projection-v0"),
+        policyVersion = DocumentProjectionPolicyVersion("0"),
+        supportedSheetViewRoles = listOf(
+            DocumentProjectionSheetViewRole(
+                role = SheetViewRole.CONTROL_AND_PLC_LOGIC,
+                displayTitle = "Control",
+                order = 0,
+            ),
+            DocumentProjectionSheetViewRole(
+                role = SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION,
+                displayTitle = "Field Device",
+                order = 1,
+            ),
+        ),
+        supportedArtifactKinds = listOf(
+            DocumentProjectionArtifactSupport(
+                artifactKind = DocumentProjectionArtifactKind.SCHEMATIC_SHEET_VIEW,
+                availability = DocumentProjectionArtifactAvailability.SUPPORTED,
+            ),
+            DocumentProjectionArtifactSupport(
+                artifactKind = DocumentProjectionArtifactKind.TERMINAL_REPORT_RESERVED,
+                availability = DocumentProjectionArtifactAvailability.RESERVED,
+            ),
+        ),
+        occurrenceIdentityRecipe = DocumentOccurrenceIdentityRecipe(
+            segments = listOf(
+                DocumentOccurrenceIdentityRecipeSegment.DOCUMENT_PROJECTION_ID,
+                DocumentOccurrenceIdentityRecipeSegment.SHEET_VIEW_ID,
+                DocumentOccurrenceIdentityRecipeSegment.CANONICAL_SUBJECT_ID,
+                DocumentOccurrenceIdentityRecipeSegment.OCCURRENCE_ROLE,
+                DocumentOccurrenceIdentityRecipeSegment.DETAIL_ROLE,
+            ),
+        ),
+    )
 }

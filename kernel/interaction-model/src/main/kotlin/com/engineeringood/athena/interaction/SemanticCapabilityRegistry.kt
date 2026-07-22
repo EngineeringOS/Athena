@@ -62,6 +62,71 @@ data class SemanticCapabilityRegistry(
         )
     }
 
+    fun discoverAuthoringCapabilities(
+        subjectKey: InteractionSubjectKey,
+        requestedBy: InteractionProvenance,
+        intentKind: AuthoringIntentKind? = null,
+    ): AuthoringCapabilityDiscoveryResult {
+        val subject = runCatching { requireSubject(subjectKey) }.getOrElse {
+            return AuthoringCapabilityDiscoveryResult(
+                evidence = emptyList(),
+                diagnostics = listOf(
+                    InteractionDiagnostic(
+                        code = InteractionDiagnosticCode.SUBJECT_UNRESOLVED,
+                        severity = InteractionDiagnosticSeverity.ERROR,
+                        message = "Interaction subject ${subjectKey.canonicalSubjectId} is not registered.",
+                        subject = subjectKey,
+                        retryable = false,
+                    ),
+                ),
+            )
+        }
+        val evidence = mutableListOf<AuthoringCapabilityEvidence>()
+        val diagnostics = mutableListOf<InteractionDiagnostic>()
+        subject.capabilities
+            .filter { capability -> capability.authoring != null }
+            .filter { capability -> intentKind == null || capability.authoring?.intentKind == intentKind }
+            .forEach { capability ->
+                val authoring = requireNotNull(capability.authoring)
+                val unavailableMessage = when {
+                    !capability.enabled -> capability.disabledReason?.message
+                        ?: "Authoring capability ${capability.capabilityId} is disabled."
+
+                    requestedBy.originSurface !in authoring.allowedOrigins ->
+                        "Authoring capability ${capability.capabilityId} is unavailable for the actor policy at ${requestedBy.originSurface.name.lowercase()}."
+
+                    else -> authoring.requirements
+                        .firstOrNull { requirement -> !requirement.satisfied }
+                        ?.let { requirement ->
+                            val requirementName = requirement.kind.name.lowercase().replace('_', ' ')
+                            "Authoring capability ${capability.capabilityId} has an unavailable $requirementName requirement `${requirement.identifier}`: ${requirement.reason}"
+                        }
+                }
+                if (unavailableMessage != null) {
+                    diagnostics += InteractionDiagnostic(
+                        code = InteractionDiagnosticCode.AUTHORING_CAPABILITY_UNAVAILABLE,
+                        severity = InteractionDiagnosticSeverity.WARNING,
+                        message = unavailableMessage,
+                        subject = subjectKey,
+                        retryable = false,
+                    )
+                } else {
+                    evidence += AuthoringCapabilityEvidence(
+                        capabilityId = capability.capabilityId,
+                        intentKind = authoring.intentKind,
+                        subject = subjectKey,
+                        actorOrigin = requestedBy.originSurface,
+                        satisfiedRequirements = authoring.requirements,
+                    )
+                }
+            }
+
+        return AuthoringCapabilityDiscoveryResult(
+            evidence = evidence,
+            diagnostics = diagnostics,
+        )
+    }
+
     companion object {
         fun build(input: InteractionRegistryInput): SemanticCapabilityRegistry {
             val occurrenceFactsBySubject = input.occurrences.groupBy { occurrence ->

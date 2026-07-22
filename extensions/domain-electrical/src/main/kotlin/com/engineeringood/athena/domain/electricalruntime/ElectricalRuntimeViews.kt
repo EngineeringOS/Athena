@@ -27,7 +27,7 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
                 "electrical-anchors",
                 "electrical-routing-corridors",
             ),
-            semanticCommandIds = listOf("connect-ports"),
+            semanticCommandIds = listOf("create-semantic-relationship"),
             projectionCommandIds = listOf(
                 "adjust-layout-placement",
                 "adjust-layout-grouping",

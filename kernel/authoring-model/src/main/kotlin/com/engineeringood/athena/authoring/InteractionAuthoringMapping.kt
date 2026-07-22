@@ -1,7 +1,9 @@
 package com.engineeringood.athena.authoring
 
+import com.engineeringood.athena.component.EngineeringConceptTemplateId
 import com.engineeringood.athena.component.EngineeringConceptId
 import com.engineeringood.athena.interaction.InteractionOriginSurface
+import com.engineeringood.athena.interaction.InteractionSubjectKind
 import com.engineeringood.athena.interaction.SemanticActionIntent
 import com.engineeringood.athena.part.PartImplementationId
 
@@ -9,7 +11,8 @@ private const val RELATIONSHIP_TYPE = "relationshipType"
 private const val PROJECTION_VIEW_ID = "projectionViewId"
 private const val PROJECTION_OCCURRENCE_ID = "projectionOccurrenceId"
 private const val PERSISTENCE_SOURCE_URI = "persistenceSourceUri"
-private const val COMPONENT_CONCEPT_ID = "componentConceptId"
+private const val CONCEPT_TEMPLATE_ID = "conceptTemplateId"
+private const val CONCEPT_ID = "conceptId"
 private const val PREFERRED_IMPLEMENTATION_ID = "preferredImplementationId"
 private const val SUGGESTED_NAME = "suggestedName"
 
@@ -18,6 +21,9 @@ fun SemanticActionIntent.toSemanticRelationshipIntent(): SemanticRelationshipInt
         ?: ElectricalConnectionRelationship
     val targetSubject = requireNotNull(targetSubjects.singleOrNull()) {
         "Semantic relationship mutation requires exactly one target subject."
+    }
+    require(subject.subjectKind == InteractionSubjectKind.PORT && targetSubject.subjectKind == InteractionSubjectKind.PORT) {
+        "Semantic relationship mutation requires canonical port or terminal subjects."
     }
 
     return SemanticRelationshipIntent(
@@ -37,18 +43,31 @@ fun SemanticActionIntent.toSemanticRelationshipIntent(): SemanticRelationshipInt
     )
 }
 
-fun SemanticActionIntent.toCreateComponentIntent(): CreateComponentIntent {
-    val conceptId = requireNotNull(parameters[COMPONENT_CONCEPT_ID]) {
-        "Component creation requires parameter '$COMPONENT_CONCEPT_ID'."
+fun SemanticActionIntent.toCreateSemanticEntityIntent(
+    revisionGuard: AuthoringRevisionGuard,
+    provenance: AuthoringTransactionProvenance,
+): CreateSemanticEntityIntent {
+    val conceptTemplateId = requireNotNull(parameters[CONCEPT_TEMPLATE_ID]) {
+        "Semantic entity creation requires parameter '$CONCEPT_TEMPLATE_ID'."
     }
+    val conceptId = requireNotNull(parameters[CONCEPT_ID]) {
+        "Semantic entity creation requires parameter '$CONCEPT_ID'."
+    }
+    val origin = AuthoringOrigin(requestedBy.originSurface.toAuthoringSurface())
 
-    return CreateComponentIntent(
+    return CreateSemanticEntityIntent(
         intentId = AuthoringIntentId(actionIntentId),
-        origin = AuthoringOrigin(requestedBy.originSurface.toAuthoringSurface()),
-        parentIdentity = subject.canonicalSubjectId,
+        origin = origin,
+        creationContext = SemanticEntityCreationContext(
+            parentSubjectId = subject.canonicalSubjectId,
+            sourceUri = parameters[PERSISTENCE_SOURCE_URI],
+        ),
+        conceptTemplateId = EngineeringConceptTemplateId(conceptTemplateId),
         conceptId = EngineeringConceptId(conceptId),
         preferredImplementationId = parameters[PREFERRED_IMPLEMENTATION_ID]?.let(::PartImplementationId),
         suggestedName = parameters[SUGGESTED_NAME],
+        revisionGuard = revisionGuard,
+        provenance = provenance.copy(origin = origin),
     )
 }
 

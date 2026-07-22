@@ -43,6 +43,7 @@ test('buildAthenaComponentPanelGroups groups available components in professiona
     const groups = buildAthenaComponentPanelGroups([
         {
             conceptId: 'electrical.motor.ac',
+            authoringTemplateIds: ['electrical.motor.ac.default'],
             displayName: 'AC motor',
             classificationKeys: ['electrical', 'load', 'motor', 'ac'],
             summary: 'Motor',
@@ -55,6 +56,7 @@ test('buildAthenaComponentPanelGroups groups available components in professiona
         },
         {
             conceptId: 'electrical.plc.cpu',
+            authoringTemplateIds: ['electrical.plc.cpu.default'],
             displayName: 'PLC CPU',
             classificationKeys: ['electrical', 'control', 'plc', 'cpu'],
             summary: 'Controller',
@@ -67,6 +69,7 @@ test('buildAthenaComponentPanelGroups groups available components in professiona
         },
         {
             conceptId: 'electrical.contactor.power',
+            authoringTemplateIds: ['electrical.contactor.power.default'],
             displayName: 'Power contactor',
             classificationKeys: ['electrical', 'power-control', 'contactor'],
             summary: 'Contactor',
@@ -81,6 +84,7 @@ test('buildAthenaComponentPanelGroups groups available components in professiona
 
     assert.deepEqual(groups.map(group => group.label), ['PLC', 'Motor', 'Contactor']);
     assert.equal(groups[0].items[0].displayName, 'PLC CPU');
+    assert.equal(groups[0].items[0].conceptTemplateId, 'electrical.plc.cpu.default');
     assert.equal(groups[0].items[0].preferredImplementation?.vendorPartNumber, 'proof.cpu.313c');
     assert.equal(groups[2].items[0].conceptId, 'electrical.contactor.power');
 });

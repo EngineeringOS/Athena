@@ -8,6 +8,7 @@ export type AthenaAvailableComponentImplementationPayload = {
 
 export type AthenaAvailableComponentPayload = {
     conceptId: string;
+    authoringTemplateIds: string[];
     displayName: string;
     classificationKeys: string[];
     summary?: string;

@@ -90,6 +90,7 @@ data class AthenaProjectionSheetPayload(
     val previousSheetId: String? = null,
     val nextSheetId: String? = null,
     val subjectSemanticIds: List<String> = emptyList(),
+    val policyEvidence: AthenaProjectionSheetPolicyEvidencePayload? = null,
     val publication: AthenaProjectionSheetPublicationPayload = AthenaProjectionSheetPublicationPayload.fromProjectionState(
         sheetId = sheetId,
         displayName = displayName,
@@ -103,6 +104,17 @@ data class AthenaProjectionSheetPayload(
         subjectSemanticIds = subjectSemanticIds,
         publication = publication,
     ),
+)
+
+/**
+ * Structured policy evidence for one governed sheet exposed through the Athena LSP boundary.
+ */
+data class AthenaProjectionSheetPolicyEvidencePayload(
+    val policyId: String,
+    val policyVersion: String,
+    val policyDeterministicIdentity: String,
+    val sheetViewRole: String,
+    val sheetViewRoleOrder: Int,
 )
 
 /**
@@ -346,8 +358,19 @@ data class AthenaProjectionNotationPackPayload(
 data class AthenaProjectionCrossReferencePayload(
     val semanticId: String,
     val kind: String,
+    val crossReferenceId: String,
     val sheetIds: List<String> = emptyList(),
     val occurrenceIds: List<String> = emptyList(),
+    val links: List<AthenaProjectionCrossReferenceLinkPayload> = emptyList(),
+)
+
+data class AthenaProjectionCrossReferenceLinkPayload(
+    val semanticId: String,
+    val sourceSheetId: String,
+    val targetSheetId: String,
+    val sourceOccurrenceId: String,
+    val targetOccurrenceId: String,
+    val compactNotation: String,
 )
 
 /**

@@ -14,7 +14,7 @@ function readRepoFile(path) {
 }
 
 function methodBody(source, methodName) {
-    const start = source.indexOf(`protected ${methodName}`);
+    const start = source.search(new RegExp(`protected (?:async )?${methodName}`));
     assert.notEqual(start, -1, `${methodName} should exist`);
     const nextMethod = source.indexOf('\n    protected ', start + methodName.length);
     return source.slice(start, nextMethod === -1 ? source.length : nextMethod);
@@ -27,11 +27,12 @@ test('M23 preserves active-source refresh and accepted canvas behavior while add
     const sourceEditTest = readRepoFile('ide/theia-frontend/scripts/athena-m23-layout-source-edit.test.mjs');
 
     assert.match(bridgeSource, /lastAthenaEditorWidget/);
-    assert.match(widgetSource, /onDocumentContentChanged\(\(\) => this\.scheduleRefresh\(\)\)/);
-    assert.match(methodBody(widgetSource, 'acceptLayoutMutationPreview'), /documentText/);
+    assert.match(widgetSource, /onDocumentContentChanged\(\(\) => \{[\s\S]*this\.scheduleRefresh\(\);[\s\S]*\}\)/);
+    assert.doesNotMatch(methodBody(widgetSource, 'acceptLayoutMutationPreview'), /documentText/);
     assert.match(methodBody(widgetSource, 'acceptLayoutMutationPreview'), /this\.scheduleRefresh\(\)/);
-    assert.match(methodBody(widgetSource, 'acceptLayoutMutationPreview'), /applyAuthoringSourceEdit\(sourceEdit\)/);
-    assert.match(sourceEditTest, /inserts layout block inside the active system scope/);
+    assert.match(methodBody(widgetSource, 'acceptLayoutMutationPreview'), /applyAuthoringSourceEdit\(preview\.sourceEdit\)/);
+    assert.match(methodBody(widgetSource, 'acceptLayoutMutationPreview'), /await this\.lspEditorBridgeService\.applyAuthoringSourceEdit/);
+    assert.match(sourceEditTest, /system-scope insertion moved to the AST-aware backend planner/);
 
     assert.match(css, /\.athena-graph-workbench__stage\s*\{[\s\S]*linear-gradient/);
     assert.match(css, /\.athena-graph-workbench__sheet\s*\{[\s\S]*background:\s*transparent/);

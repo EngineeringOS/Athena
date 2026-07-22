@@ -1,0 +1,177 @@
+package com.engineeringood.m31.sample
+
+system RollingShutterGovernedAuthoringProof {
+  device MainPowerSupplyPS31 {
+    type Switch
+    model "24VDC-PSU"
+
+    port lplus {
+      direction out
+      signal Digital
+    }
+  }
+
+  device MainBreakerQF31 {
+    type Switch
+    model "QF"
+
+    port line {
+      direction in
+      signal Digital
+    }
+
+    port load {
+      direction out
+      signal Digital
+    }
+  }
+
+  device WallSwitchS31 {
+    type Switch
+    model "UP-DOWN"
+
+    port up {
+      direction out
+      signal Digital
+    }
+
+    port down {
+      direction out
+      signal Digital
+    }
+  }
+
+  device ControlRelayK31 {
+    type Switch
+    model "K31"
+
+    port supply {
+      direction in
+      signal Digital
+    }
+
+    port upCommand {
+      direction in
+      signal Digital
+    }
+
+    port downCommand {
+      direction in
+      signal Digital
+    }
+
+    port upOut {
+      direction out
+      signal Digital
+    }
+
+    port downOut {
+      direction out
+      signal Digital
+    }
+
+    port status {
+      direction out
+      signal Digital
+    }
+
+    port spareOut {
+      direction out
+      signal Digital
+    }
+  }
+
+  device FieldTerminalXT31 {
+    type Switch
+    model "XT31"
+
+    port controlUp {
+      direction in
+      signal Digital
+    }
+
+    port controlDown {
+      direction in
+      signal Digital
+    }
+
+    port motorUp {
+      direction out
+      signal Digital
+    }
+
+    port motorDown {
+      direction out
+      signal Digital
+    }
+  }
+
+  device ShutterMotorM31 {
+    type Motor
+    model "ROLLING-SHUTTER"
+
+    port up {
+      direction in
+      signal Digital
+    }
+
+    port down {
+      direction in
+      signal Digital
+    }
+  }
+
+  device PilotLampHL31 {
+    type Lamp
+    model "STATUS"
+
+    port status {
+      direction in
+      signal Digital
+    }
+  }
+
+  device SpareTerminalXT31 {
+    type Switch
+    model "SPARE-XT"
+
+    port in1 {
+      direction in
+      signal Digital
+    }
+  }
+
+  connect supply_feed {
+    MainPowerSupplyPS31.lplus -> MainBreakerQF31.line
+    MainBreakerQF31.load -> ControlRelayK31.supply
+  }
+
+  connect operator_commands {
+    WallSwitchS31.up -> ControlRelayK31.upCommand
+    WallSwitchS31.down -> ControlRelayK31.downCommand
+  }
+
+  connect motor_drive {
+    ControlRelayK31.upOut -> FieldTerminalXT31.controlUp
+    ControlRelayK31.downOut -> FieldTerminalXT31.controlDown
+    FieldTerminalXT31.motorUp -> ShutterMotorM31.up
+    FieldTerminalXT31.motorDown -> ShutterMotorM31.down
+  }
+
+  connect ControlRelayK31.status -> PilotLampHL31.status
+
+  layout schematic-sheet {
+    place MainBreakerQF31 near MainPowerSupplyPS31
+    place ControlRelayK31 below MainBreakerQF31
+    place WallSwitchS31 near ControlRelayK31
+    place FieldTerminalXT31 near ControlRelayK31
+    place ShutterMotorM31 below FieldTerminalXT31
+    place PilotLampHL31 near WallSwitchS31
+    place SpareTerminalXT31 below PilotLampHL31
+    align ControlRelayK31 aligned-with MainBreakerQF31 axis vertical
+    align ShutterMotorM31 aligned-with FieldTerminalXT31 axis vertical
+    group WallSwitchS31 grouped-with ControlRelayK31
+    group ShutterMotorM31 grouped-with FieldTerminalXT31
+    group SpareTerminalXT31 grouped-with PilotLampHL31
+  }
+}

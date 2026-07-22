@@ -7,17 +7,16 @@ export type AthenaAuthoringValuePayload = {
 
 export type AthenaAuthoringPreviewParams = {
     intentId: string;
-    intentKind: 'create-component' | 'update-component-properties' | 'connect-ports' | 'semantic-relationship' | 'reveal-subject';
+    intentKind: 'create-entity' | 'update-entity-properties' | 'remove-entity' | 'semantic-relationship' | 'remove-semantic-relationship' | 'reveal-subject';
     originSurface: 'palette' | 'inspector' | 'graph' | 'form' | 'template' | 'ai' | 'api' | 'dsl';
     originDetail?: string;
-    parentIdentity?: string;
+    parentSubjectId?: string;
+    conceptTemplateId?: string;
     conceptId?: string;
     preferredImplementationId?: string;
     suggestedName?: string;
-    componentId?: string;
+    entitySubjectId?: string;
     properties?: Record<string, AthenaAuthoringValuePayload>;
-    sourcePortId?: string;
-    targetPortId?: string;
     relationshipType?: string;
     sourceSubjectId?: string;
     targetSubjectId?: string;
@@ -25,6 +24,7 @@ export type AthenaAuthoringPreviewParams = {
     projectionOccurrenceId?: string;
     persistenceSourceUri?: string;
     provenance?: string;
+    actor?: string;
     subjectId?: string;
     revealTargets?: Array<'source' | 'graph' | 'inspector' | 'semantic-scm'>;
 };
@@ -36,6 +36,74 @@ export type AthenaAuthoringPreviewChangePayload = {
     affectedSubjectIdentities: string[];
 };
 
+export type AthenaAuthoringRevisionGuardPayload = {
+    semanticSnapshotId: string;
+    sourceUri: string;
+    documentVersion: number;
+    contentSha256: string;
+};
+
+export type AthenaAuthoringNestedPortEvidencePayload = {
+    name: string;
+    direction: string;
+    signalOrMedium: string;
+    semanticId: string;
+};
+
+export type AthenaAuthoringSourceEditEvidencePayload = {
+    uri: string;
+    startOffset: number;
+    endOffset: number;
+    admittedText: string;
+    selectionStartOffset: number | null;
+    selectionEndOffset: number | null;
+    affectedSemanticIds: string[];
+    revisionGuard: AthenaAuthoringRevisionGuardPayload;
+};
+
+export type AthenaAuthoringEntityCreationEvidencePayload = {
+    canonicalTag: string;
+    semanticType: string;
+    model: string | null;
+    nestedPorts: AthenaAuthoringNestedPortEvidencePayload[];
+    affectedSemanticIds: string[];
+    sourceEdit: AthenaAuthoringSourceEditEvidencePayload;
+    representationId: string;
+    compositionTargetId: string;
+    projectionOccurrenceIds: string[];
+};
+
+export type AthenaAuthoringRelationshipRoutePreviewPayload = {
+    routeId: string;
+    quality: string;
+    sourceAnchorId: string | null;
+    targetAnchorId: string | null;
+    pointCount: number;
+};
+
+export type AthenaAuthoringRelationshipEvidencePayload = {
+    sourceSubjectId: string;
+    targetSubjectId: string;
+    relationshipType: string;
+    compatibility: 'compatible' | 'incompatible' | 'not-evaluated';
+    affectedSemanticIds: string[];
+    sourceEdit?: AthenaAuthoringSourceEditEvidencePayload;
+    routePreview?: AthenaAuthoringRelationshipRoutePreviewPayload;
+};
+
+export type AthenaAuthoringDiagnosticPayload = {
+    code: string;
+    message: string;
+    authority: string;
+    lifecycleStage: string;
+    recoveryAction?: string;
+};
+
+export const AthenaAuthoringLifecycleDiagnosticCodes = {
+    stopDownstream: 'authoring.validation.stop-downstream',
+    projectionFailedAfterCommit: 'authoring.projection.failed-after-commit',
+} as const;
+
 export type AthenaAuthoringPreviewPayload = {
     previewId: string;
     intentId: string;
@@ -45,7 +113,13 @@ export type AthenaAuthoringPreviewPayload = {
     status: string;
     title: string;
     changes: AthenaAuthoringPreviewChangePayload[];
+    revisionGuard?: AthenaAuthoringRevisionGuardPayload;
     warnings: string[];
+    sourceImpact?: AthenaAuthoringSourceEditPayload;
+    acceptanceEligible: boolean;
+    diagnostics: AthenaAuthoringDiagnosticPayload[];
+    entityCreationEvidence?: AthenaAuthoringEntityCreationEvidencePayload;
+    relationshipEvidence?: AthenaAuthoringRelationshipEvidencePayload;
 };
 
 export type AthenaAuthoringPreviewSubmissionPayload = {
@@ -67,16 +141,22 @@ export type AthenaAuthoringSourceRangePayload = {
 
 export type AthenaAuthoringSourceEditPayload = {
     uri: string;
+    startOffset?: number;
+    endOffset?: number;
     range: AthenaAuthoringSourceRangePayload;
     newText: string;
+    selectionStartOffset?: number | null;
+    selectionEndOffset?: number | null;
     selectionRange?: AthenaAuthoringSourceRangePayload;
     suggestedSemanticId?: string;
+    revisionGuard?: AthenaAuthoringRevisionGuardPayload;
+    appliedByAuthority?: boolean;
 };
 
 export type AthenaAuthoringDecisionParams = {
     previewId: string;
     intentId: string;
-    decision: 'accept' | 'accepted' | 'reject' | 'rejected';
+    decision: 'accept' | 'accepted' | 'reject' | 'rejected' | 'cancel' | 'cancelled';
     note?: string;
 };
 
@@ -86,31 +166,61 @@ export type AthenaAuthoringPreviewDecisionPayload = {
     status: string;
     preview?: AthenaAuthoringPreviewPayload;
     sourceEdit?: AthenaAuthoringSourceEditPayload;
+    transactionResult?: AthenaAuthoringTransactionResultPayload;
     reason?: string;
 };
 
-export function buildCreateComponentPreviewRequest(input: {
+export type AthenaAuthoringTransactionResultPayload = {
+    lifecycleState: string;
+    committedRevision?: AthenaAuthoringRevisionGuardPayload;
+    mutationId?: string;
+    affectedSemanticIds: string[];
+    projectionOccurrenceIds: string[];
+    diagnostics: AthenaAuthoringDiagnosticPayload[];
+};
+
+export type AthenaAuthoringDecisionGuardPayload = {
+    status?: string;
+    transactionResult?: {
+        lifecycleState?: string;
+        diagnostics?: AthenaAuthoringDiagnosticPayload[];
+    };
+    reason?: string;
+};
+
+export function buildCreateEntityPreviewRequest(input: {
     systemSemanticId: string;
+    conceptTemplateId: string;
     conceptId: string;
+    actor: string;
     preferredImplementationId?: string;
     suggestedName?: string;
+    model?: string;
+    originSurface?: AthenaAuthoringPreviewParams['originSurface'];
     originDetail?: string;
     intentId?: string;
 }): AthenaAuthoringPreviewParams {
+    const properties = Object.fromEntries([
+        toOptionalPreviewProperty('model', input.model, 'text'),
+    ].filter((entry): entry is [string, AthenaAuthoringValuePayload] => !!entry));
     return {
         intentId: input.intentId ?? `intent-${Date.now()}`,
-        intentKind: 'create-component',
-        originSurface: 'palette',
+        intentKind: 'create-entity',
+        originSurface: input.originSurface ?? 'palette',
         originDetail: input.originDetail,
-        parentIdentity: input.systemSemanticId,
+        parentSubjectId: input.systemSemanticId,
+        conceptTemplateId: input.conceptTemplateId,
         conceptId: input.conceptId,
+        actor: input.actor,
         preferredImplementationId: input.preferredImplementationId,
         suggestedName: input.suggestedName,
+        ...(Object.keys(properties).length > 0 ? { properties } : {}),
     };
 }
 
-export function buildUpdateComponentPropertiesPreviewRequest(input: {
-    componentId: string;
+export function buildUpdateEntityPropertiesPreviewRequest(input: {
+    entitySubjectId: string;
+    actor: string;
     name?: string;
     label?: string;
     description?: string;
@@ -127,27 +237,12 @@ export function buildUpdateComponentPropertiesPreviewRequest(input: {
 
     return {
         intentId: input.intentId ?? `intent-${Date.now()}`,
-        intentKind: 'update-component-properties',
+        intentKind: 'update-entity-properties',
         originSurface: 'inspector',
         originDetail: input.originDetail,
-        componentId: input.componentId,
+        entitySubjectId: input.entitySubjectId,
+        actor: input.actor,
         properties,
-    };
-}
-
-export function buildConnectPortsPreviewRequest(input: {
-    sourcePortId: string;
-    targetPortId: string;
-    originDetail?: string;
-    intentId?: string;
-}): AthenaAuthoringPreviewParams {
-    return {
-        intentId: input.intentId ?? `intent-${Date.now()}`,
-        intentKind: 'connect-ports',
-        originSurface: 'graph',
-        originDetail: input.originDetail,
-        sourcePortId: input.sourcePortId,
-        targetPortId: input.targetPortId,
     };
 }
 
@@ -180,7 +275,7 @@ export function buildSemanticRelationshipPreviewRequest(input: {
 export function buildAuthoringDecisionRequest(input: {
     previewId: string;
     intentId: string;
-    decision: 'accept' | 'accepted' | 'reject' | 'rejected';
+    decision: 'accept' | 'accepted' | 'reject' | 'rejected' | 'cancel' | 'cancelled';
     note?: string;
 }): AthenaAuthoringDecisionParams {
     return {
@@ -189,6 +284,59 @@ export function buildAuthoringDecisionRequest(input: {
         decision: input.decision,
         note: input.note,
     };
+}
+
+export function isAuthoringDecisionCommitted(decision: AthenaAuthoringDecisionGuardPayload | undefined): boolean {
+    const lifecycleState = decision?.transactionResult?.lifecycleState?.trim().toLowerCase();
+    const diagnostics = decision?.transactionResult?.diagnostics ?? [];
+    const committedLifecycle = lifecycleState === 'committed' ||
+        lifecycleState === 'reprojected' ||
+        lifecycleState === 'projection-failed';
+    return decision?.status === 'updated' && committedLifecycle &&
+        diagnostics.every(diagnostic => diagnostic.code === AthenaAuthoringLifecycleDiagnosticCodes.projectionFailedAfterCommit);
+}
+
+export function collectAuthoringDecisionDiagnostics(
+    decision: AthenaAuthoringDecisionGuardPayload | undefined,
+): string {
+    const diagnostics = decision?.transactionResult?.diagnostics ?? [];
+    const diagnosticMessage = diagnostics
+        .map(diagnostic => {
+            const recovery = diagnostic.recoveryAction ? ` Recovery: ${diagnostic.recoveryAction}` : '';
+            return `${diagnostic.code} [${diagnostic.authority}/${diagnostic.lifecycleStage}]: ${diagnostic.message}${recovery}`;
+        })
+        .join('; ');
+    return [diagnosticMessage, decision?.reason]
+        .filter((message): message is string => !!message?.trim())
+        .join('; ');
+}
+
+export function sourceEditMatchesPreviewEvidence(
+    sourceEdit: AthenaAuthoringSourceEditPayload | undefined,
+    previewEvidence: AthenaAuthoringSourceEditEvidencePayload | undefined,
+): boolean {
+    if (!sourceEdit || !previewEvidence) {
+        return false;
+    }
+    return sourceEdit.uri === previewEvidence.uri &&
+        sourceEdit.newText === previewEvidence.admittedText &&
+        sourceEdit.startOffset === previewEvidence.startOffset &&
+        sourceEdit.endOffset === previewEvidence.endOffset &&
+        (sourceEdit.selectionStartOffset ?? null) === previewEvidence.selectionStartOffset &&
+        (sourceEdit.selectionEndOffset ?? null) === previewEvidence.selectionEndOffset &&
+        revisionGuardsMatch(sourceEdit.revisionGuard, previewEvidence.revisionGuard) &&
+        (!sourceEdit.suggestedSemanticId || previewEvidence.affectedSemanticIds.includes(sourceEdit.suggestedSemanticId));
+}
+
+function revisionGuardsMatch(
+    left: AthenaAuthoringRevisionGuardPayload | undefined,
+    right: AthenaAuthoringRevisionGuardPayload | undefined,
+): boolean {
+    return !!left && !!right &&
+        left.semanticSnapshotId === right.semanticSnapshotId &&
+        left.sourceUri === right.sourceUri &&
+        left.documentVersion === right.documentVersion &&
+        left.contentSha256 === right.contentSha256;
 }
 
 function toOptionalPreviewProperty(

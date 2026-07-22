@@ -35,12 +35,17 @@ function translateProjectionSessionToGLSPDiagram(projection) {
         presentation: readyProjection?.presentation
             ? normalizePresentationDocument(readyProjection.presentation)
             : undefined,
-        sheets: normalizeArray(readyProjection?.sheets).map(sheet => ({
-            ...sheet,
-            role: sheet.role ?? resolveSheetViewRole(sheet.displayName),
-            subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
-            ...(sheet.publication ? { publication: normalizeSheetPublication(sheet.publication) } : {}),
-        })),
+        sheets: normalizeArray(readyProjection?.sheets).map(sheet => {
+            const { policyEvidence: rawPolicyEvidence, ...sheetWithoutPolicyEvidence } = sheet;
+            const policyEvidence = normalizeSheetPolicyEvidence(rawPolicyEvidence);
+            return {
+                ...sheetWithoutPolicyEvidence,
+                role: sheet.role ?? policyEvidence?.sheetViewRole ?? (rawPolicyEvidence ? undefined : resolveSheetViewRole(sheet.displayName)),
+                subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
+                ...(policyEvidence ? { policyEvidence } : {}),
+                ...(sheet.publication ? { publication: normalizeSheetPublication(sheet.publication) } : {}),
+            };
+        }),
         notationPack: readyProjection?.notationPack
             ? {
                 ...readyProjection.notationPack,
@@ -54,6 +59,7 @@ function translateProjectionSessionToGLSPDiagram(projection) {
             ...crossReference,
             sheetIds: [...normalizeArray(crossReference.sheetIds)],
             occurrenceIds: [...normalizeArray(crossReference.occurrenceIds)],
+            links: normalizeArray(crossReference.links).map(link => ({ ...link })),
         })),
         electricalAnchors,
         electricalConnectionEndpoints,
@@ -79,6 +85,19 @@ function resolveSheetViewRole(displayName) {
         return 'field_wiring';
     }
     return undefined;
+}
+function normalizeSheetPolicyEvidence(policyEvidence) {
+    if (!policyEvidence) {
+        return undefined;
+    }
+    if (typeof policyEvidence.policyId !== 'string' ||
+        typeof policyEvidence.policyVersion !== 'string' ||
+        typeof policyEvidence.policyDeterministicIdentity !== 'string' ||
+        typeof policyEvidence.sheetViewRole !== 'string' ||
+        typeof policyEvidence.sheetViewRoleOrder !== 'number') {
+        return undefined;
+    }
+    return { ...policyEvidence };
 }
 function toGraph(args) {
     const { projection, electricalConnectionEndpoints, electricalRoutingCorridors } = args;

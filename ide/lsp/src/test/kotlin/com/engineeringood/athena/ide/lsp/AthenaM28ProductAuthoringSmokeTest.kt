@@ -102,9 +102,12 @@ class AthenaM28ProductAuthoringSmokeTest {
                         targetSubjectId = subjects.second,
                         documentUri = documentUri,
                     )
-                    assertFalse(
-                        invalidSubmission.preview.changes.single().title.contains("ControllerPLC1.do1 -> OperatorHMI1.status"),
-                        "$caseName must not infer relationship identity from visible DOM text.",
+                    assertFalse(invalidSubmission.preview.acceptanceEligible, caseName)
+                    assertTrue(invalidSubmission.preview.changes.isEmpty(), caseName)
+                    assertEquals(
+                        "authoring.relationship.incompatible",
+                        invalidSubmission.preview.diagnostics.single().code,
+                        caseName,
                     )
                     val rejected = decide(
                         server = server,
@@ -126,6 +129,7 @@ class AthenaM28ProductAuthoringSmokeTest {
                         ),
                         decision = "accepted",
                     )
+                    assertEquals("unavailable", acceptedInvalid.status, caseName)
                     assertNull(acceptedInvalid.sourceEdit, "$caseName accepted invalid attempt must still be blocked at the backend edit gate.")
                 }
                 assertEquals(sourceBeforeInvalidAttempts, currentSource)

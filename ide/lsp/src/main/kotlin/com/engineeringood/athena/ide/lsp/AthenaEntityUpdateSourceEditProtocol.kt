@@ -3,7 +3,7 @@ package com.engineeringood.athena.ide.lsp
 import com.engineeringood.athena.authoring.AuthoringPropertyName
 import com.engineeringood.athena.authoring.AuthoringPreviewStatus
 import com.engineeringood.athena.authoring.AuthoringValue
-import com.engineeringood.athena.authoring.UpdateComponentPropertiesIntent
+import com.engineeringood.athena.authoring.UpdateSemanticEntityPropertiesIntent
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
@@ -17,7 +17,7 @@ import com.engineeringood.athena.runtime.AthenaAuthoringSessionRecord
 import com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
 
 /**
- * Computes the accepted "update component properties" source edit anchored to authored AST spans.
+ * Computes an accepted semantic-entity property update anchored to authored AST spans.
  *
  * M17 migration-continuity guardrail (AD-109 / AD-106): this edit is computed from
  * `DeviceDeclaration.span`, `PortDeclaration.qualifiedName.span`, and `ConnectionDeclaration.from`/`to`
@@ -28,7 +28,7 @@ import com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
  * spans are populated correctly; Epic 3's Tree-sitter integration must not become an alternative
  * source-edit range computation path.
  */
-internal fun acceptedUpdateComponentPropertiesSourceEdit(
+internal fun acceptedUpdateSemanticEntityPropertiesSourceEdit(
     trackedDocument: AthenaTrackedDocument,
     record: AthenaAuthoringSessionRecord,
     componentKnowledge: AthenaComponentKnowledgeReady?,
@@ -36,19 +36,27 @@ internal fun acceptedUpdateComponentPropertiesSourceEdit(
     if (record.preview.status != AuthoringPreviewStatus.ACCEPTED) {
         return null
     }
-    val intent = record.intent as? UpdateComponentPropertiesIntent ?: return null
+    val intent = record.intent as? UpdateSemanticEntityPropertiesIntent ?: return null
+    val previewGuard = record.preview.revisionGuard ?: intent.revisionGuard
+    val activeGuard = trackedDocument.toAuthoringRevisionGuard()
+    if (previewGuard.sourceUri != activeGuard.sourceUri ||
+        previewGuard.documentVersion != activeGuard.documentVersion ||
+        previewGuard.contentSha256 != activeGuard.contentSha256
+    ) {
+        return null
+    }
     val compilation = trackedDocument.compilation as? CompilerCompilationSuccess ?: return null
-    val currentComponentName = intent.componentId.value.deviceNameOrNull() ?: return null
+    val currentEntityName = intent.subjectId.value.deviceNameOrNull() ?: return null
     val declaration = compilation.source.ast.declarations
         .filterIsInstance<DeviceDeclaration>()
-        .firstOrNull { authoredDeclaration -> authoredDeclaration.name == currentComponentName }
+        .firstOrNull { authoredDeclaration -> authoredDeclaration.name == currentEntityName }
         ?: return null
 
     val updatedName = intent.properties[AUTHORING_PROPERTY_NAME]
         ?.asRequestedText()
         ?.takeIf(String::isNotBlank)
         ?.let { requestedName ->
-            uniqueDeviceName(
+            uniqueAuthoredEntityName(
                 requestedName = requestedName,
                 existingDeviceNames = compilation.source.ast.declarations
                     .filterIsInstance<DeviceDeclaration>()
@@ -102,7 +110,7 @@ internal fun acceptedUpdateComponentPropertiesSourceEdit(
 
     val newText = buildDeviceDeclarationSnippet(
         declaration = declaration,
-        componentName = updatedName,
+        entityName = updatedName,
         fields = rewrittenFields,
     )
     val existingDeclarationText = trackedDocument.text.substring(
@@ -113,11 +121,11 @@ internal fun acceptedUpdateComponentPropertiesSourceEdit(
         return null
     }
 
-    val sourceEdit = trackedDocument.text.rewriteAffectedComponentSlice(
+    val sourceEdit = trackedDocument.text.rewriteAffectedEntitySlice(
         declaration = declaration,
         updatedDeclarationText = newText,
-        currentComponentName = declaration.name,
-        updatedComponentName = updatedName,
+        currentEntityName = declaration.name,
+        updatedEntityName = updatedName,
         portDeclarations = compilation.source.ast.declarations.filterIsInstance<PortDeclaration>(),
         connectionDeclarations = compilation.source.ast.declarations.filterIsInstance<ConnectionDeclaration>(),
     ) ?: return null
@@ -128,12 +136,20 @@ internal fun acceptedUpdateComponentPropertiesSourceEdit(
         newText = sourceEdit.newText,
         selectionRange = sourceEdit.selectionRange,
         suggestedSemanticId = "component:$updatedName",
+        revisionGuard = trackedDocument.toAuthoringRevisionGuard().let { guard ->
+            AthenaAuthoringRevisionGuardPayload(
+                semanticSnapshotId = guard.semanticSnapshotId,
+                sourceUri = guard.sourceUri,
+                documentVersion = guard.documentVersion,
+                contentSha256 = guard.contentSha256,
+            )
+        },
     )
 }
 
 private fun buildDeviceDeclarationSnippet(
     declaration: DeviceDeclaration,
-    componentName: String,
+    entityName: String,
     fields: List<EditableDeclarationField>,
 ): String {
     val declarationIndent = " ".repeat((declaration.span.start.column - 1).coerceAtLeast(0))
@@ -144,7 +160,7 @@ private fun buildDeviceDeclarationSnippet(
     return buildString {
         append(declarationIndent)
         append("device ")
-        append(componentName)
+        append(entityName)
         appendLine(" {")
         fields.forEach { field ->
             append(fieldIndent)
@@ -281,14 +297,14 @@ private fun SourceSpan.toAuthoringRangePayload(): AthenaAuthoringSourceRangePayl
     )
 }
 
-private fun String.rewriteAffectedComponentSlice(
+private fun String.rewriteAffectedEntitySlice(
     declaration: DeviceDeclaration,
     updatedDeclarationText: String,
-    currentComponentName: String,
-    updatedComponentName: String,
+    currentEntityName: String,
+    updatedEntityName: String,
     portDeclarations: List<PortDeclaration>,
     connectionDeclarations: List<ConnectionDeclaration>,
-): RewrittenComponentSlice? {
+): RewrittenEntitySlice? {
     val replacements = buildList {
         add(
             SourceTextReplacement(
@@ -297,34 +313,34 @@ private fun String.rewriteAffectedComponentSlice(
                 replacementText = updatedDeclarationText,
             ),
         )
-        if (updatedComponentName != currentComponentName) {
+        if (updatedEntityName != currentEntityName) {
             portDeclarations
-                .filter { port -> port.qualifiedName.parts.firstOrNull() == currentComponentName }
+                .filter { port -> port.qualifiedName.parts.firstOrNull() == currentEntityName }
                 .forEach { port ->
                     add(
                         SourceTextReplacement(
                             startOffset = port.qualifiedName.ownerSpan().start.offset,
                             endOffset = port.qualifiedName.ownerSpan().end.offset,
-                            replacementText = updatedComponentName,
+                            replacementText = updatedEntityName,
                         ),
                     )
                 }
             connectionDeclarations.forEach { connection ->
-                if (connection.from.parts.firstOrNull() == currentComponentName) {
+                if (connection.from.parts.firstOrNull() == currentEntityName) {
                     add(
                         SourceTextReplacement(
                             startOffset = connection.from.ownerSpan().start.offset,
                             endOffset = connection.from.ownerSpan().end.offset,
-                            replacementText = updatedComponentName,
+                            replacementText = updatedEntityName,
                         ),
                     )
                 }
-                if (connection.to.parts.firstOrNull() == currentComponentName) {
+                if (connection.to.parts.firstOrNull() == currentEntityName) {
                     add(
                         SourceTextReplacement(
                             startOffset = connection.to.ownerSpan().start.offset,
                             endOffset = connection.to.ownerSpan().end.offset,
-                            replacementText = updatedComponentName,
+                            replacementText = updatedEntityName,
                         ),
                     )
                 }
@@ -345,7 +361,7 @@ private fun String.rewriteAffectedComponentSlice(
         }
     val updatedDocumentText = substring(0, rangeStart) + rewrittenSlice + substring(rangeEnd)
     val selectionOffset = updatedDocumentText.indexOf(updatedDeclarationText, startIndex = rangeStart)
-    return RewrittenComponentSlice(
+    return RewrittenEntitySlice(
         range = rangeBetween(rangeStart, rangeEnd),
         newText = rewrittenSlice,
         selectionRange = if (selectionOffset >= 0) {
@@ -365,7 +381,7 @@ private data class SourceTextReplacement(
     val replacementText: String,
 )
 
-private data class RewrittenComponentSlice(
+private data class RewrittenEntitySlice(
     val range: AthenaAuthoringSourceRangePayload,
     val newText: String,
     val selectionRange: AthenaAuthoringSourceRangePayload?,

@@ -3,10 +3,9 @@ import test from 'node:test';
 
 const {
     ADJUST_LAYOUT_PLACEMENT_INTENT_ID,
-    CONNECT_PORTS_INTENT_ID,
+    CREATE_SEMANTIC_RELATIONSHIP_INTENT_ID,
     buildAdjustLayoutPlacementIntentRequest,
-    buildConnectPortsIntentRequest,
-    supportsConnectPortsIntent,
+    supportsCreateSemanticRelationshipIntent,
     supportsAdjustLayoutPlacementIntent
 } = await import('../lib/browser/athena-graph-command-intent-protocol.js');
 
@@ -57,47 +56,20 @@ test('supportsAdjustLayoutPlacementIntent follows the projection ownership contr
     }), false);
 });
 
-test('buildConnectPortsIntentRequest keeps the Athena semantic graph intent contract and current editor model', async () => {
-    const model = {
-        id: 'current-athena-model'
-    };
-    const request = buildConnectPortsIntentRequest({
-        viewId: 'cabinet',
-        sourceSemanticId: 'port:PLC1.out',
-        targetSemanticId: 'port:M1.in',
-        model
-    });
-
-    assert.equal(request.method, 'athena/graphCommandIntent');
-    assert.deepEqual(request.params, {
-        intentId: CONNECT_PORTS_INTENT_ID,
-        viewId: 'cabinet',
-        source: {
-            semanticId: 'port:PLC1.out',
-            subjectKind: 'port'
-        },
-        target: {
-            semanticId: 'port:M1.in',
-            subjectKind: 'port'
-        }
-    });
-    assert.equal(request.model, model);
-});
-
-test('supportsConnectPortsIntent follows semantic command ownership instead of graph-local capability', async () => {
-    assert.equal(supportsConnectPortsIntent({
+test('supportsCreateSemanticRelationshipIntent follows semantic command ownership instead of graph-local capability', async () => {
+    assert.equal(supportsCreateSemanticRelationshipIntent({
         viewId: 'cabinet',
         ownershipContract: {
             interactivity: 'interactive',
-            semanticCommandIds: ['connect-ports']
+            semanticCommandIds: ['create-semantic-relationship']
         }
     }), true);
 
-    assert.equal(supportsConnectPortsIntent({
+    assert.equal(supportsCreateSemanticRelationshipIntent({
         viewId: 'wiring',
         ownershipContract: {
             interactivity: 'inspect_only',
-            semanticCommandIds: ['connect-ports']
+            semanticCommandIds: ['create-semantic-relationship']
         }
     }), false);
 });

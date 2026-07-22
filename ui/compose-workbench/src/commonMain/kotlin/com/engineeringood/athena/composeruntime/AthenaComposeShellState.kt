@@ -76,17 +76,17 @@ sealed interface AthenaComposeShellIntent {
     data class SelectRenderedSemantic(val semanticId: String?) : AthenaComposeShellIntent
 
     /**
-     * Selects the source port for the pending connect-ports command.
+     * Selects the source port for the legacy Compose relationship control.
      */
     data class SelectSourcePort(val semanticId: String) : AthenaComposeShellIntent
 
     /**
-     * Selects the target port for the pending connect-ports command.
+     * Selects the target port for the legacy Compose relationship control.
      */
     data class SelectTargetPort(val semanticId: String) : AthenaComposeShellIntent
 
     /**
-     * Executes the first GUI-backed connect-ports command.
+     * Executes the legacy Compose relationship control pending Story 4.2 migration.
      */
     data object ExecuteConnectPorts : AthenaComposeShellIntent
 }

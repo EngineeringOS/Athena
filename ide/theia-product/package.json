@@ -75,8 +75,9 @@
     "start:m26": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m26/sample-project",
     "start:m27": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m27/sample-project --active-view documentation",
     "start:m28": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m28/sample-project --active-view documentation",
-    "start:m29": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m29/sample-project",
+    "start:m29": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m29/sample-project --active-view documentation",
     "start:m30": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m30/sample-project",
+    "start:m31": "electron scripts/athena-electron-open-workspace-main.js ../../examples/m31/sample-project",
     "start:smoke": "node scripts/verify-athena-start.js",
     "start:smoke:m21": "node scripts/verify-athena-m21-sample-project.js",
     "start:smoke:m22": "node scripts/verify-athena-m22-sample-project.js",
@@ -88,6 +89,7 @@
     "start:smoke:m28": "node scripts/verify-athena-m28-sample-project.js",
     "start:smoke:m29": "node scripts/verify-athena-m29-sample-project.js",
     "start:smoke:m30": "node scripts/verify-athena-m30-sample-project.js",
+    "start:smoke:m31": "node scripts/verify-athena-m31-sample-project.js",
     "start:smoke:tree-sitter": "node scripts/verify-athena-tree-sitter-highlighting.js",
     "start:smoke:reuse-catalog": "node scripts/verify-athena-reuse-catalog.js",
     "watch": "theia build --watch --mode development"

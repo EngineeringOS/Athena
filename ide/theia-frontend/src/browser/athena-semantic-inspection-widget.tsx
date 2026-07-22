@@ -6,7 +6,7 @@ import { inject, injectable, postConstruct } from '@theia/core/shared/inversify'
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import {
     buildAuthoringDecisionRequest,
-    buildUpdateComponentPropertiesPreviewRequest,
+    buildUpdateEntityPropertiesPreviewRequest,
     AthenaAuthoringPreviewPayload,
 } from './athena-authoring-protocol';
 import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
@@ -311,8 +311,9 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
         this.update();
         try {
             const submission = await this.lspEditorBridgeService.requestAuthoringPreview(
-                buildUpdateComponentPropertiesPreviewRequest({
-                    componentId: snapshot.semanticId,
+                buildUpdateEntityPropertiesPreviewRequest({
+                    entitySubjectId: snapshot.semanticId,
+                    actor: 'user:theia',
                     name: changes.name,
                     label: changes.label,
                     description: changes.description,
@@ -354,7 +355,7 @@ export class AthenaSemanticInspectionWidget extends ReactWidget {
             if (!decision?.sourceEdit) {
                 throw new Error('Athena accepted the inspector preview but did not return a governed source edit.');
             }
-            this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
+            await this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
             if (decision.sourceEdit.suggestedSemanticId) {
                 window.setTimeout(() => {
                     void this.semanticSelectionService.selectSemanticId(decision.sourceEdit!.suggestedSemanticId!).catch(error => {

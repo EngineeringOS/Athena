@@ -3,6 +3,7 @@ package com.engineeringood.athena.representation
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.io.InputStreamReader
 import java.util.Properties
 
 data class NativeRepresentationLibrary(
@@ -19,6 +20,20 @@ data class NativeRepresentationLibraryLoadResult(
 }
 
 class NativeRepresentationLibraryLoader {
+    fun loadBundled(
+        resourcePath: String = "representation-libraries/athena-native-iec-v0.properties",
+    ): NativeRepresentationLibraryLoadResult {
+        val stream = javaClass.classLoader.getResourceAsStream(resourcePath)
+            ?: return failed("Bundled native representation library `$resourcePath` was not found.")
+        val properties = Properties()
+        runCatching {
+            InputStreamReader(stream, StandardCharsets.UTF_8).use(properties::load)
+        }.getOrElse { exception ->
+            return failed("Could not read bundled native representation library: ${exception.message}")
+        }
+        return load(properties)
+    }
+
     fun load(path: Path): NativeRepresentationLibraryLoadResult {
         if (path.fileName.toString().endsWith(".elmt", ignoreCase = true)) {
             return failed("QET .elmt files are reference/import inputs only, not Athena runtime assets.")
@@ -34,6 +49,10 @@ class NativeRepresentationLibraryLoader {
             return failed("Could not read native representation library asset: ${exception.message}")
         }
 
+        return load(properties)
+    }
+
+    private fun load(properties: Properties): NativeRepresentationLibraryLoadResult {
         return runCatching {
             val libraryId = RepresentationLibraryId(properties.required("library.id"))
             val definitions = generateSequence(0) { index -> index + 1 }

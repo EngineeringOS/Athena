@@ -90,6 +90,9 @@ class RepresentationBindingStatusPayloadTest {
                 "referenceOccurrenceCount" to "1",
                 "diagnosticCount" to "0",
                 "missingBindingDiagnosticCount" to "0",
+                "deviceSymbolIds" to "iec.coil.compact,iec.lamp.compact,iec.motor.compact,iec.protective-device.compact,iec.supply-reference.compact,iec.switch-contact.no.compact,iec.terminal.compact",
+                "occurrenceRoles" to "COIL_ACTUATOR,FOLIO_REFERENCE,LAMP_INDICATOR,LOAD_SYMBOL,PROTECTIVE_DEVICE,SUPPLY_REFERENCE,SWITCH_CONTACT,TERMINAL",
+                "compositionMembershipCount" to "0",
             ),
             proof.toBindingStatusPayload(),
         )

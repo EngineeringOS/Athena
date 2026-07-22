@@ -71,9 +71,9 @@ SemanticActionIntent
   -> authoring/runtime/source-edit gate
 ```
 
-`ConnectPortsIntent` is retained only as compatibility inventory. New M29 story code must use
-`semantic-relationship` and the retained paths must stay listed in the M29 cleanup ledger until
-M30 removes or migrates them.
+M29 originally retained `ConnectPortsIntent` as compatibility inventory. M31 Story 2.4 completed
+the migration: active authoring code now uses `SemanticRelationshipIntent` and the generic
+`semantic-relationship` transport. The M29 cleanup ledger remains historical proof of that migration.
 
 ## Semantic Entity Creation
 
@@ -126,7 +126,7 @@ payloads before graph-workbench UI proof:
 - `entity-creation-preview`
 - `entity-creation-accept`
 - `preview-stale-clearing`
-- `legacy-connect-ports-inventory`
+- `legacy-connect-ports-inventory` (historical migration inventory, resolved by M31 Story 2.4)
 
 The proof treats `.athena` source and Interaction IR as semantic authority. It must not derive
 meaning from DOM text, SVG geometry, or CSS.

@@ -1,7 +1,6 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.runtime.AthenaAdjustLayoutPlacementIntent
-import com.engineeringood.athena.runtime.AthenaConnectPortsIntent
 import com.engineeringood.athena.runtime.AthenaGraphCommandIntent
 import com.engineeringood.athena.runtime.AthenaGraphCommandIntentAccepted
 import com.engineeringood.athena.runtime.AthenaGraphCommandIntentId
@@ -15,6 +14,12 @@ import com.engineeringood.athena.runtime.AthenaGraphCommandTarget
 import com.engineeringood.athena.runtime.AthenaGraphPlacement
 import com.engineeringood.athena.runtime.AthenaMutationCategory
 import com.engineeringood.athena.runtime.AthenaMutationValidationFeedback
+import com.engineeringood.athena.layout.AuthoredLayoutAxis
+import com.engineeringood.athena.layout.AuthoredLayoutIntent
+import com.engineeringood.athena.layout.AuthoredLayoutIntentPriority
+import com.engineeringood.athena.layout.AuthoredLayoutIntentRelation
+import com.engineeringood.athena.layout.AuthoredLayoutIntentStatement
+import com.engineeringood.athena.layout.LayoutSourceSpan
 
 /**
  * Parameters for one graph-originated Athena command-intent submission.
@@ -25,6 +30,20 @@ data class AthenaGraphCommandIntentParams(
     val source: AthenaGraphCommandTargetPayload? = null,
     val target: AthenaGraphCommandTargetPayload,
     val requestedPlacement: AthenaGraphPlacementPayload? = null,
+    val authoredLayoutIntent: AthenaAuthoredLayoutIntentPayload? = null,
+)
+
+data class AthenaAuthoredLayoutIntentPayload(
+    val viewFamily: String,
+    val statements: List<AthenaAuthoredLayoutIntentStatementPayload>,
+)
+
+data class AthenaAuthoredLayoutIntentStatementPayload(
+    val subject: String,
+    val relation: String,
+    val target: String,
+    val axis: String? = null,
+    val priority: String = "preference",
 )
 
 /**
@@ -60,6 +79,7 @@ data class AthenaGraphCommandIntentPayload(
     val inspection: AthenaSemanticDiffInspectionPayload? = null,
     val semanticReview: AthenaSemanticMutationReviewPayload? = null,
     val validationFeedback: List<AthenaMutationValidationFeedbackPayload> = emptyList(),
+    val sourceEdit: AthenaAuthoringSourceEditPayload? = null,
     val reason: String? = null,
 )
 
@@ -172,14 +192,49 @@ internal fun AthenaGraphCommandIntentParams.toRuntimeIntent(): AthenaGraphComman
             )
         }
 
-        AthenaGraphCommandIntentId.CONNECT_PORTS -> AthenaConnectPortsIntent(
-            viewId = viewId,
-            source = source?.toRuntimeTarget() ?: return null,
-            target = target.toRuntimeTarget() ?: return null,
-        )
 
         null -> null
     }
+}
+
+internal fun AthenaAuthoredLayoutIntentPayload.toBackendIntent(sourceUnitId: String): AuthoredLayoutIntent? {
+    if (viewFamily.isBlank() || statements.isEmpty()) return null
+    val span = LayoutSourceSpan(
+        sourceUnitId = sourceUnitId.ifBlank { "active.athena" },
+        startLine = 1,
+        startColumn = 1,
+        endLine = 1,
+        endColumn = 1,
+    )
+    val mappedStatements = statements.map { statement ->
+        val relation = when (statement.relation) {
+            "near" -> AuthoredLayoutIntentRelation.NEAR
+            "below" -> AuthoredLayoutIntentRelation.BELOW
+            "aligned-with" -> AuthoredLayoutIntentRelation.ALIGNED_WITH
+            "grouped-with" -> AuthoredLayoutIntentRelation.GROUPED_WITH
+            else -> return null
+        }
+        val axis = when (statement.axis) {
+            null -> null
+            "horizontal" -> AuthoredLayoutAxis.HORIZONTAL
+            "vertical" -> AuthoredLayoutAxis.VERTICAL
+            else -> return null
+        }
+        if (statement.priority != "preference") return null
+        AuthoredLayoutIntentStatement(
+            subject = statement.subject,
+            relation = relation,
+            target = statement.target,
+            axis = axis,
+            priority = AuthoredLayoutIntentPriority.PREFERENCE,
+            sourceSpan = span,
+        )
+    }
+    return AuthoredLayoutIntent(
+        viewFamily = viewFamily,
+        statements = mappedStatements,
+        sourceSpan = span,
+    )
 }
 
 private fun AthenaGraphCommandTargetPayload.toRuntimeTarget(): AthenaGraphCommandTarget? {
@@ -241,7 +296,6 @@ private fun String.toGraphIntentIdOrNull(): AthenaGraphCommandIntentId? {
 
 internal fun AthenaGraphCommandIntentParams.defaultMutationCategory(): AthenaMutationCategory {
     return when (intentId.toGraphIntentIdOrNull()) {
-        AthenaGraphCommandIntentId.CONNECT_PORTS -> AthenaMutationCategory.SEMANTIC_MUTATION
         AthenaGraphCommandIntentId.ADJUST_LAYOUT_PLACEMENT, null -> AthenaMutationCategory.PROJECTION_MUTATION
     }
 }

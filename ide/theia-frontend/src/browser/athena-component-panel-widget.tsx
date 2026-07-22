@@ -8,7 +8,7 @@ import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-
 import type { AthenaAuthoringPreviewPayload } from './athena-authoring-protocol';
 import {
     buildAuthoringDecisionRequest,
-    buildCreateComponentPreviewRequest
+    buildCreateEntityPreviewRequest
 } from './athena-authoring-protocol';
 import {
     AthenaComponentPanelGroup,
@@ -132,14 +132,21 @@ export class AthenaComponentPanelWidget extends ReactWidget {
         return !!widget && widget.editor.uri.toString().toLowerCase().endsWith('.athena');
     }
 
-    protected canPreviewInsert(): boolean {
-        return !!this.knowledge?.systemSemanticId && this.isAthenaEditor(this.editorManager.currentEditor);
+    protected canPreviewInsert(item?: AthenaComponentPanelItem): boolean {
+        return !!this.knowledge?.systemSemanticId
+            && this.isAthenaEditor(this.editorManager.currentEditor)
+            && (!item || !!item.conceptTemplateId);
     }
 
     protected async previewComponentInsertion(item: AthenaComponentPanelItem): Promise<void> {
         const knowledge = this.knowledge;
         if (!knowledge?.systemSemanticId) {
             this.previewMessage = 'Athena cannot preview insertion until the active system semantic identity is available.';
+            this.update();
+            return;
+        }
+        if (!item.conceptTemplateId) {
+            this.previewMessage = 'No governed Engineering Concept Template is available for this component.';
             this.update();
             return;
         }
@@ -150,9 +157,11 @@ export class AthenaComponentPanelWidget extends ReactWidget {
 
         try {
             const submission = await this.lspEditorBridgeService.requestAuthoringPreview(
-                buildCreateComponentPreviewRequest({
+                buildCreateEntityPreviewRequest({
                     systemSemanticId: knowledge.systemSemanticId,
+                    conceptTemplateId: item.conceptTemplateId,
                     conceptId: item.conceptId,
+                    actor: 'user:theia',
                     preferredImplementationId: item.preferredImplementation?.implementationId,
                     originDetail: `component-panel:${item.conceptId}`,
                 }),
@@ -191,7 +200,7 @@ export class AthenaComponentPanelWidget extends ReactWidget {
             if (!decision?.sourceEdit) {
                 throw new Error('Athena accepted the preview but did not return a governed source edit.');
             }
-            this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
+            await this.lspEditorBridgeService.applyAuthoringSourceEdit(decision.sourceEdit);
             if (decision.sourceEdit.suggestedSemanticId) {
                 window.setTimeout(() => {
                     void this.semanticSelectionService.selectSemanticId(decision.sourceEdit!.suggestedSemanticId!).catch(error => {
@@ -400,7 +409,7 @@ export class AthenaComponentPanelWidget extends ReactWidget {
                 <button
                     className='athena-component-panel__action'
                     type='button'
-                    disabled={!this.canPreviewInsert() || previewing || this.applyingDecision}
+                    disabled={!this.canPreviewInsert(item) || previewing || this.applyingDecision}
                     onClick={() => void this.previewComponentInsertion(item)}
                 >
                     {previewing ? 'Previewing...' : 'Preview insert'}

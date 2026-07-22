@@ -10,6 +10,7 @@ const ATHENA_WORKSPACE_OPENED_SENTINEL = 'ATHENA_WORKSPACE_OPENED=';
 const ATHENA_WORKSPACE_OPEN_FAILURE_SENTINEL = 'ATHENA_WORKSPACE_OPEN_FAILURE=';
 const ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_PROOF=';
 const ATHENA_GRAPH_WORKBENCH_SCREENSHOT_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_SCREENSHOT=';
+const ATHENA_SMOKE_STEP_SENTINEL = 'ATHENA_SMOKE_STEP=';
 const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED';
 const SHOULD_EXIT_ON_WORKSPACE_OPEN = process.env.ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN === '1';
@@ -91,6 +92,9 @@ async function openWorkspace(window) {
             const requireElement = async (selector, description) => {
                 return waitFor(() => document.querySelector(selector), description);
             };
+            const smokeStep = step => {
+                console.log(${JSON.stringify(ATHENA_SMOKE_STEP_SENTINEL)} + step);
+            };
             const visibleElement = element => {
                 if (!element) {
                     return false;
@@ -111,12 +115,14 @@ async function openWorkspace(window) {
             };
 
             await waitFor(() => window.theia?.container, 'theia container');
+            smokeStep('theia-container');
             const target = ${JSON.stringify(targetWorkspace)};
             const normalizedTarget = normalizePath(target);
             await waitFor(() => {
                 const normalizedHash = normalizePath(window.location.hash);
                 return normalizedHash === normalizedTarget ? target : undefined;
             }, 'target workspace URL fragment');
+            smokeStep('workspace-fragment');
 
             const electronRequire = await waitFor(
                 () => typeof require === 'function' ? require : undefined,
@@ -131,6 +137,7 @@ async function openWorkspace(window) {
             const outlineProof = ${JSON.stringify(SKIP_SMOKE_OUTLINE)}
                 ? { skipped: true, reason: 'ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE=1' }
                 : await collectOutlineProof(target);
+            smokeStep('outline-proof');
             if (athenaWorkbenchSmoke) {
                 await Promise.race([
                     athenaWorkbenchSmoke(),
@@ -154,6 +161,7 @@ async function openWorkspace(window) {
             }
 
             const workbench = await requireElement('.athena-graph-workbench', 'graph workbench root');
+            smokeStep('graph-workbench-root');
             const stage = await requireElement('.athena-graph-workbench__stage', 'graph workbench stage');
             const smokeActiveView = ${JSON.stringify(REQUESTED_ACTIVE_VIEW)};
             if (smokeActiveView) {
@@ -183,6 +191,7 @@ async function openWorkspace(window) {
                 }
                 return undefined;
             }, 'graph workbench viewport');
+            smokeStep('graph-workbench-viewport');
             const sheet = await requireElement('.athena-graph-workbench__sheet', 'graph workbench sheet');
             const canvas = await requireElement('.athena-graph-workbench__canvas', 'graph workbench canvas');
             const floatingBar = await requireElement('.athena-graph-workbench__floating-bar', 'graph workbench floating bar');
@@ -237,6 +246,7 @@ async function openWorkspace(window) {
                     () => window.__athenaWorkbenchSmoke?.revealOutlineForSource,
                     'Athena outline smoke command hook'
                 );
+                smokeStep('outline-hook');
                 const proof = await Promise.race([
                     revealOutlineForSource(sourceUri),
                     new Promise((_, reject) => setTimeout(
@@ -244,6 +254,7 @@ async function openWorkspace(window) {
                         60000
                     ))
                 ]);
+                smokeStep('outline-hook-result');
                 const expectedOutlinePath = ${JSON.stringify(SMOKE_OUTLINE_EXPECTED_PATH)};
                 await waitFor(() => {
                     const paths = Array.isArray(proof.paths) ? proof.paths : [];

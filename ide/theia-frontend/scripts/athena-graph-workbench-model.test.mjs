@@ -689,10 +689,11 @@ test('preserves document sheet selector across projection view changes from shee
 
     const documentationDiagram = JSON.parse(JSON.stringify(readyDiagram));
     documentationDiagram.activeViewId = 'documentation';
-    documentationDiagram.activeSheetId = 'documentation/sheet/02-control';
+    documentationDiagram.activeSheetId = 'documentation/sheet/01-control';
     documentationDiagram.sourceFiles = [
         'src/01-main.athena',
         'src/02-library.athena',
+        'src/03-field.athena',
     ];
     documentationDiagram.supportedViews = [
         ...readyDiagram.supportedViews,
@@ -706,33 +707,44 @@ test('preserves document sheet selector across projection view changes from shee
     ];
     documentationDiagram.sheets = [
         {
-            sheetId: 'documentation/sheet/01-power',
-            displayName: 'Power Distribution',
-            role: 'power_distribution',
+            sheetId: 'documentation/sheet/01-control',
+            displayName: 'Control',
             order: 0,
-            subjectSemanticIds: ['component:PSU1'],
+            nextSheetId: 'documentation/sheet/02-field-device',
+            subjectSemanticIds: ['component:PSU1', 'component:PLC1', 'component:HMI1'],
+            policyEvidence: {
+                policyId: 'athena-m31-customer-projection-v0',
+                policyVersion: '0',
+                policyDeterministicIdentity: 'policy:m31:test',
+                sheetViewRole: 'control-and-plc-logic',
+                sheetViewRoleOrder: 0,
+            },
         },
         {
-            sheetId: 'documentation/sheet/02-control',
-            displayName: 'Control Logic',
-            role: 'control_logic',
+            sheetId: 'documentation/sheet/02-field-device',
+            displayName: 'Field Device',
             order: 1,
-            subjectSemanticIds: ['component:PLC1', 'component:HMI1'],
-        },
-        {
-            sheetId: 'documentation/sheet/03-field',
-            displayName: 'Field Wiring',
-            role: 'field_wiring',
-            order: 2,
+            previousSheetId: 'documentation/sheet/01-control',
             subjectSemanticIds: ['component:XT1'],
+            policyEvidence: {
+                policyId: 'athena-m31-customer-projection-v0',
+                policyVersion: '0',
+                policyDeterministicIdentity: 'policy:m31:test',
+                sheetViewRole: 'field-wiring-and-terminal-transition',
+                sheetViewRoleOrder: 1,
+            },
         },
     ];
     const documentationModel = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(documentationDiagram);
     const cabinetModel = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(readyDiagram);
 
-    assert.equal(documentationModel.sheetViewSelector.entries.length, 3);
+    assert.equal(documentationModel.sheetViewSelector.entries.length, 2);
     assert.equal(documentationModel.sheetViewSelector.entries.length, documentationDiagram.sheets.length);
     assert.notEqual(documentationModel.sheetViewSelector.entries.length, documentationDiagram.sourceFiles.length);
+    assert.deepEqual(
+        documentationModel.sheetViewSelector.entries.map(entry => entry.role),
+        ['control-and-plc-logic', 'field-wiring-and-terminal-transition'],
+    );
     assert.deepEqual(
         graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(cabinetModel, documentationModel.sheetViewSelector),
         documentationModel.sheetViewSelector,
@@ -807,6 +819,160 @@ test('resolves reference marker navigation through target occurrence identity', 
             requiresSheetSwitch: true,
             displayNotation: '2-B2'
         }
+    );
+});
+
+test('resolves m31 typed cross reference links without presentation marker inference', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.activeSheetId = 'documentation/sheet/01-control';
+    diagram.sheets = [
+        {
+            sheetId: 'documentation/sheet/01-control',
+            displayName: 'Control',
+            role: 'control-and-plc-logic',
+            order: 0,
+            subjectSemanticIds: ['connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp']
+        },
+        {
+            sheetId: 'documentation/sheet/02-field-device',
+            displayName: 'Field Device',
+            role: 'field-wiring-and-terminal-transition',
+            order: 1,
+            subjectSemanticIds: ['connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp']
+        }
+    ];
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: []
+    };
+    diagram.crossReferences = [
+        {
+            semanticId: 'connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp',
+            kind: 'repeated_reference',
+            crossReferenceId: 'cross-reference:connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp',
+            sheetIds: ['documentation/sheet/01-control', 'documentation/sheet/02-field-device'],
+            occurrenceIds: ['documentation/projection/connection/connection_ControlRelayK30_upOut_FieldTerminalXT30_controlUp'],
+            links: [
+                {
+                    semanticId: 'connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp',
+                    sourceSheetId: 'documentation/sheet/01-control',
+                    targetSheetId: 'documentation/sheet/02-field-device',
+                    sourceOccurrenceId: 'documentation/projection/connection/connection_ControlRelayK30_upOut_FieldTerminalXT30_controlUp',
+                    targetOccurrenceId: 'documentation/projection/connection/connection_ControlRelayK30_upOut_FieldTerminalXT30_controlUp',
+                    compactNotation: '01-control -> 02-field-device'
+                }
+            ]
+        }
+    ];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const marker = model.referenceMarkers.find(candidate =>
+        candidate.markerId === 'cross-reference:connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp:documentation/sheet/01-control->documentation/sheet/02-field-device'
+    );
+
+    assert.equal(marker?.sourceIdentity, 'connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp');
+    assert.equal(marker?.targetIdentity, 'connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp');
+    assert.equal(marker?.sourceDocumentLocation.sheetViewId, 'documentation/sheet/01-control');
+    assert.equal(marker?.targetDocumentLocation.sheetViewId, 'documentation/sheet/02-field-device');
+    assert.equal(marker?.compactNotation, '01-control -> 02-field-device');
+    assert.equal(marker?.sourceOccurrenceId.includes('_reference'), false);
+    assert.equal(marker?.targetOccurrenceId.includes('_reference'), false);
+    assert.deepEqual(
+        graphWorkbenchModel.resolveAthenaGraphReferenceMarkerNavigation(model, marker.markerId),
+        {
+            status: 'ready',
+            markerId: marker.markerId,
+            relationType: 'repeated_reference',
+            targetSheetViewId: 'documentation/sheet/02-field-device',
+            targetOccurrenceId: 'documentation/projection/connection/connection_ControlRelayK30_upOut_FieldTerminalXT30_controlUp',
+            targetCanonicalId: 'connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp',
+            requiresSheetSwitch: true,
+            displayNotation: '01-control -> 02-field-device'
+        }
+    );
+});
+
+test('rejects malformed m31 typed cross reference links without fallback marker inference', () => {
+    const baseDiagram = JSON.parse(JSON.stringify(readyDiagram));
+    baseDiagram.activeSheetId = 'documentation/sheet/01-control';
+    baseDiagram.sheets = [
+        {
+            sheetId: 'documentation/sheet/01-control',
+            displayName: 'Control',
+            role: 'control-and-plc-logic',
+            order: 0,
+            subjectSemanticIds: ['connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp']
+        },
+        {
+            sheetId: 'documentation/sheet/02-field-device',
+            displayName: 'Field Device',
+            role: 'field-wiring-and-terminal-transition',
+            order: 1,
+            subjectSemanticIds: ['connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp']
+        }
+    ];
+    baseDiagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: []
+    };
+
+    function buildModelWithLink(link, occurrenceIds = [
+        'documentation/projection/connection/connection_ControlRelayK30_upOut_FieldTerminalXT30_controlUp'
+    ]) {
+        const diagram = JSON.parse(JSON.stringify(baseDiagram));
+        diagram.crossReferences = [
+            {
+                semanticId: 'connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp',
+                kind: 'repeated_reference',
+                crossReferenceId: 'cross-reference:connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp',
+                sheetIds: ['documentation/sheet/01-control', 'documentation/sheet/02-field-device'],
+                occurrenceIds,
+                links: [link]
+            }
+        ];
+        return graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    }
+
+    const validLink = {
+        semanticId: 'connection:ControlRelayK30.upOut->FieldTerminalXT30.controlUp',
+        sourceSheetId: 'documentation/sheet/01-control',
+        targetSheetId: 'documentation/sheet/02-field-device',
+        sourceOccurrenceId: 'documentation/projection/connection/connection_ControlRelayK30_upOut_FieldTerminalXT30_controlUp',
+        targetOccurrenceId: 'documentation/projection/connection/connection_ControlRelayK30_upOut_FieldTerminalXT30_controlUp',
+        compactNotation: '01-control -> 02-field-device'
+    };
+
+    assert.equal(
+        buildModelWithLink({
+            ...validLink,
+            targetSheetId: 'documentation/sheet/99-missing'
+        }).referenceMarkers.length,
+        0,
+        'missing target sheet must not create a fallback reference marker',
+    );
+    assert.equal(
+        buildModelWithLink({
+            ...validLink,
+            targetOccurrenceId: 'documentation/projection/connection/missing'
+        }).referenceMarkers.length,
+        0,
+        'missing target occurrence must not create a fallback reference marker',
+    );
+    assert.equal(
+        buildModelWithLink({
+            ...validLink,
+            compactNotation: '01-control to 02-field-device'
+        }).referenceMarkers.length,
+        0,
+        'malformed compact notation must not be split through fallback parsing',
     );
 });
 

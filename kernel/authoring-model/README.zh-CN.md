@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-`:kernel:authoring-model` 模块定义 Athena 在 M15 的第一层平台级 guided authoring contract。
+`:kernel:authoring-model` 模块定义 Athena 平台级的语义创作 contract。
 
 这个模块把所有权链路固定为：
 
@@ -12,16 +12,19 @@
 
 - 通过 `AuthoringIntentId` 发布稳定的 authoring intent identity。
 - 通过 `AuthoringIntent` 发布与具体界面无关的 guided authoring request。
-- 通过以下类型发布第一批窄范围 intent：
-  - `CreateComponentIntent`
-  - `UpdateComponentPropertiesIntent`
-  - `ConnectPortsIntent`
+- 通过以下类型发布语义实体和关系 intent：
+  - `CreateSemanticEntityIntent`
+  - `UpdateSemanticEntityPropertiesIntent`
+  - `RemoveSemanticEntityIntent`
+  - `SemanticRelationshipIntent`
+  - `RemoveSemanticRelationshipIntent`（仅提供预览和依赖影响准备；接受删除仍延后）
   - `RevealSubjectIntent`
 - 通过以下类型发布 review-first preview 与 decision contract：
   - `AuthoringPreview`
   - `AuthoringPreviewChange`
   - `AcceptAuthoringPreviewDecision`
   - `RejectAuthoringPreviewDecision`
+- 发布 revision-safe transaction、validation stage、lifecycle、diagnostic、dependency impact 与 eligibility contract。
 - 通过 `AuthoringValue` 发布可传输、可预览的 value contract。
 - 保持 guided authoring 位于 M8 之上，并且不是第二条 mutation authority。
 
@@ -34,6 +37,9 @@
 - `AuthoringRevealTarget`
 - `AuthoringValue`
 - `AuthoringIntent`
+- `MutableSemanticEntityIntent`
+- `SemanticAuthoringTransaction`
+- `AuthoringRevisionGuard`
 - `AuthoringPreviewId`
 - `AuthoringPreviewChangeKind`
 - `AuthoringPreviewStatus`
@@ -47,6 +53,7 @@
 
 - `:kernel:engineering-model`，通过 `StableSemanticIdentity` 复用 canonical semantic identity
 - `:kernel:component-model`，通过 `EngineeringConceptId` 复用 vendor-neutral component concept
+- `:kernel:component-model`，通过 `EngineeringConceptTemplateId` 复用 semantic creation template
 - `:kernel:part-model`，通过 `PartImplementationId` 支持可选 implementation targeting
 
 ## 边界

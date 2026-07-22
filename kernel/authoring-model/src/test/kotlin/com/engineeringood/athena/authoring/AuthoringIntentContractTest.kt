@@ -1,5 +1,6 @@
 package com.engineeringood.athena.authoring
 
+import com.engineeringood.athena.component.EngineeringConceptTemplateId
 import com.engineeringood.athena.component.EngineeringConceptId
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.part.PartImplementationId
@@ -12,28 +13,39 @@ import kotlin.test.assertTrue
 class AuthoringIntentContractTest {
     @Test
     fun `authoring intents stay platform owned and surface agnostic`() {
-        val createIntent = CreateComponentIntent(
+        val guard = revisionGuard()
+        val createOrigin = AuthoringOrigin(AuthoringSurface.PALETTE)
+        val createIntent = CreateSemanticEntityIntent(
             intentId = AuthoringIntentId("intent:create-plc"),
-            origin = AuthoringOrigin(AuthoringSurface.PALETTE),
-            parentIdentity = StableSemanticIdentity("system:factory-line"),
+            origin = createOrigin,
+            creationContext = SemanticEntityCreationContext(
+                parentSubjectId = StableSemanticIdentity("system:factory-line"),
+            ),
+            conceptTemplateId = EngineeringConceptTemplateId("electrical.plc.cpu.default"),
             conceptId = EngineeringConceptId("electrical.plc.cpu"),
             preferredImplementationId = PartImplementationId("siemens.cpu.313c"),
             suggestedName = "PLC1",
+            revisionGuard = guard,
+            provenance = AuthoringTransactionProvenance("user:test", createOrigin),
         )
-        val updateIntent = UpdateComponentPropertiesIntent(
+        val updateOrigin = AuthoringOrigin(AuthoringSurface.INSPECTOR)
+        val updateIntent = UpdateSemanticEntityPropertiesIntent(
             intentId = AuthoringIntentId("intent:update-plc"),
-            origin = AuthoringOrigin(AuthoringSurface.INSPECTOR),
-            componentId = StableSemanticIdentity("component:PLC1"),
+            origin = updateOrigin,
+            subjectId = StableSemanticIdentity("component:PLC1"),
             properties = mapOf(
                 AuthoringPropertyName("tag") to AuthoringValue.Text("PLC1"),
                 AuthoringPropertyName("description") to AuthoringValue.Text("Main PLC CPU"),
             ),
+            revisionGuard = guard,
+            provenance = AuthoringTransactionProvenance("user:test", updateOrigin),
         )
-        val connectIntent = ConnectPortsIntent(
-            intentId = AuthoringIntentId("intent:connect-mpi"),
+        val relationshipIntent = SemanticRelationshipIntent(
+            intentId = AuthoringIntentId("intent:relate-mpi"),
             origin = AuthoringOrigin(AuthoringSurface.GRAPH),
-            sourcePortId = StableSemanticIdentity("port:PLC1.MPI"),
-            targetPortId = StableSemanticIdentity("port:HMI1.MPI"),
+            relationshipType = ElectricalConnectionRelationship,
+            sourceSubjectId = StableSemanticIdentity("port:PLC1.MPI"),
+            targetSubjectId = StableSemanticIdentity("port:HMI1.MPI"),
         )
         val revealIntent = RevealSubjectIntent(
             intentId = AuthoringIntentId("intent:reveal-plc"),
@@ -44,27 +56,30 @@ class AuthoringIntentContractTest {
 
         assertIs<AuthoringIntent>(createIntent)
         assertIs<AuthoringIntent>(updateIntent)
-        assertIs<AuthoringIntent>(connectIntent)
+        assertIs<AuthoringIntent>(relationshipIntent)
         assertIs<AuthoringIntent>(revealIntent)
         assertEquals(AuthoringSurface.PALETTE, createIntent.origin.surface)
         assertEquals(AuthoringSurface.INSPECTOR, updateIntent.origin.surface)
-        assertEquals(AuthoringSurface.GRAPH, connectIntent.origin.surface)
+        assertEquals(AuthoringSurface.GRAPH, relationshipIntent.origin.surface)
         assertEquals(AuthoringSurface.FORM, revealIntent.origin.surface)
     }
 
     @Test
     fun `authoring intent identities stay separate from canonical subject identities`() {
         val componentId = StableSemanticIdentity("component:PLC1")
-        val intent = UpdateComponentPropertiesIntent(
+        val origin = AuthoringOrigin(AuthoringSurface.INSPECTOR)
+        val intent = UpdateSemanticEntityPropertiesIntent(
             intentId = AuthoringIntentId("intent:update-tag"),
-            origin = AuthoringOrigin(AuthoringSurface.INSPECTOR),
-            componentId = componentId,
+            origin = origin,
+            subjectId = componentId,
             properties = mapOf(AuthoringPropertyName("tag") to AuthoringValue.Text("PLC_MAIN")),
+            revisionGuard = revisionGuard(),
+            provenance = AuthoringTransactionProvenance("user:test", origin),
         )
 
         assertEquals("intent:update-tag", intent.intentId.value)
-        assertEquals("component:PLC1", intent.componentId.value)
-        assertNotEquals(intent.intentId.value, intent.componentId.value)
+        assertEquals("component:PLC1", intent.subjectId.value)
+        assertNotEquals(intent.intentId.value, intent.subjectId.value)
     }
 
     @Test
@@ -89,28 +104,25 @@ class AuthoringIntentContractTest {
     }
 
     @Test
-    fun `legacy connect ports intent lifts into electrical semantic relationship intent`() {
-        val legacyIntent = ConnectPortsIntent(
-            intentId = AuthoringIntentId("intent:connect-mpi"),
+    fun `relationship removal remains typed validation readiness without endpoint deletion`() {
+        val removalIntent = RemoveSemanticRelationshipIntent(
+            intentId = AuthoringIntentId("intent:remove-mpi"),
             origin = AuthoringOrigin(AuthoringSurface.GRAPH),
-            sourcePortId = StableSemanticIdentity("port:PLC1.MPI"),
-            targetPortId = StableSemanticIdentity("port:HMI1.MPI"),
-        )
-
-        val relationshipIntent = legacyIntent.toSemanticRelationshipIntent(
+            relationshipType = ElectricalConnectionRelationship,
+            sourceSubjectId = StableSemanticIdentity("port:PLC1.MPI"),
+            targetSubjectId = StableSemanticIdentity("port:HMI1.MPI"),
             projectionContext = SemanticRelationshipProjectionContext(viewId = "schematic"),
             persistenceTarget = SemanticRelationshipPersistenceTarget(sourceUri = "main.athena"),
-            provenance = "legacy graph connection action",
+            provenance = "relationship impact inspection",
         )
 
-        assertEquals(legacyIntent.intentId, relationshipIntent.intentId)
-        assertEquals(legacyIntent.origin, relationshipIntent.origin)
-        assertEquals(ElectricalConnectionRelationship, relationshipIntent.relationshipType)
-        assertEquals(legacyIntent.sourcePortId, relationshipIntent.sourceSubjectId)
-        assertEquals(legacyIntent.targetPortId, relationshipIntent.targetSubjectId)
-        assertEquals("schematic", relationshipIntent.projectionContext.viewId)
-        assertEquals("main.athena", relationshipIntent.persistenceTarget.sourceUri)
-        assertEquals("legacy graph connection action", relationshipIntent.provenance)
+        assertIs<AuthoringIntent>(removalIntent)
+        assertEquals(ElectricalConnectionRelationship, removalIntent.relationshipType)
+        assertEquals("port:PLC1.MPI", removalIntent.sourceSubjectId.value)
+        assertEquals("port:HMI1.MPI", removalIntent.targetSubjectId.value)
+        assertEquals("schematic", removalIntent.projectionContext.viewId)
+        assertEquals("main.athena", removalIntent.persistenceTarget.sourceUri)
+        assertEquals("relationship impact inspection", removalIntent.provenance)
     }
 
     @Test
@@ -127,4 +139,11 @@ class AuthoringIntentContractTest {
         assertTrue(values.any { value -> value is AuthoringValue.BooleanValue })
         assertTrue(values.any { value -> value is AuthoringValue.IntegerValue })
     }
+
+    private fun revisionGuard(): AuthoringRevisionGuard = AuthoringRevisionGuard.from(
+        semanticSnapshotId = "snapshot:test",
+        sourceUri = "file:///workspace/main.athena",
+        documentVersion = 1,
+        sourceText = "system Test {}",
+    )
 }

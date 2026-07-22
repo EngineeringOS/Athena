@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const retrospectivePath = '_bmad-output/implementation-artifacts/m30/m30-retrospective.md';
-const cleanupLedgerPath = '_bmad-output/implementation-artifacts/m30/cleanup-ledger.md';
+const repoRoot = fileURLToPath(new URL('../../../', import.meta.url));
+const retrospectivePath = `${repoRoot}_bmad-output/implementation-artifacts/m30/m30-retrospective.md`;
+const cleanupLedgerPath = `${repoRoot}_bmad-output/implementation-artifacts/m30/cleanup-ledger.md`;
 
 test('M30 retrospective records visual credibility failure causes and renderer lesson', async () => {
   const retrospective = await readFile(retrospectivePath, 'utf8');

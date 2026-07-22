@@ -2,9 +2,7 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.runtime.AthenaGraphCommandIntentId.ADJUST_LAYOUT_PLACEMENT
-import com.engineeringood.athena.runtime.AthenaGraphCommandIntentId.CONNECT_PORTS
 import com.engineeringood.athena.runtime.AthenaGraphCommandSubjectKind.COMPONENT
-import com.engineeringood.athena.runtime.AthenaGraphCommandSubjectKind.PORT
 
 /**
  * Stable Athena-owned graph command intent identifiers.
@@ -14,7 +12,6 @@ import com.engineeringood.athena.runtime.AthenaGraphCommandSubjectKind.PORT
  */
 enum class AthenaGraphCommandIntentId {
     ADJUST_LAYOUT_PLACEMENT,
-    CONNECT_PORTS,
 }
 
 /**
@@ -89,19 +86,6 @@ data class AthenaAdjustLayoutPlacementIntent(
 ) : AthenaGraphCommandIntent {
     override val intentId: AthenaGraphCommandIntentId = ADJUST_LAYOUT_PLACEMENT
     override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.PROJECTION_MUTATION
-}
-
-/**
- * Graph-originated request to connect two existing ports through the runtime-owned semantic command path.
- */
-data class AthenaConnectPortsIntent(
-    override val viewId: String,
-    override val source: AthenaGraphCommandTarget,
-    override val target: AthenaGraphCommandTarget,
-) : AthenaGraphCommandIntent {
-    override val intentId: AthenaGraphCommandIntentId = CONNECT_PORTS
-    override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION
-    override val requestedPlacement: AthenaGraphPlacement? = null
 }
 
 /**
@@ -309,12 +293,6 @@ class AthenaGraphCommandIntentRuntimeService internal constructor() {
                 intent = intent,
             )
 
-            is AthenaConnectPortsIntent -> executeConnectPorts(
-                context = context,
-                projectName = projectName,
-                supportedView = supportedView,
-                intent = intent,
-            )
         }
     }
 
@@ -394,130 +372,8 @@ class AthenaGraphCommandIntentRuntimeService internal constructor() {
         )
     }
 
-    private fun executeConnectPorts(
-        context: AthenaExecutionContext,
-        projectName: String,
-        supportedView: AthenaRuntimeProjectionView,
-        intent: AthenaConnectPortsIntent,
-    ): AthenaGraphCommandIntentResult {
-        if (!supportedView.ownershipContract.isInteractive) {
-            return AthenaGraphCommandIntentRejected(
-                projectName = projectName,
-                intentId = intent.intentId,
-                mutationCategory = intent.mutationCategory,
-                source = intent.source,
-                viewId = intent.viewId,
-                target = intent.target,
-                reason = "Projection view `${intent.viewId}` is inspect-only and cannot emit `connect-ports`.",
-            )
-        }
-
-        if (!supportedView.ownershipContract.mayEmitSemanticCommand("connect-ports")) {
-            return AthenaGraphCommandIntentRejected(
-                projectName = projectName,
-                intentId = intent.intentId,
-                mutationCategory = intent.mutationCategory,
-                source = intent.source,
-                viewId = intent.viewId,
-                target = intent.target,
-                reason = "Projection view `${intent.viewId}` does not own the `connect-ports` command intent.",
-            )
-        }
-
-        if (intent.source.subjectKind != PORT || intent.target.subjectKind != PORT) {
-            return AthenaGraphCommandIntentRejected(
-                projectName = projectName,
-                intentId = intent.intentId,
-                mutationCategory = intent.mutationCategory,
-                source = intent.source,
-                viewId = intent.viewId,
-                target = intent.target,
-                reason = "Semantic connect intent currently supports only `${PORT.name.lowercase()}` subjects.",
-            )
-        }
-
-        return when (
-            val execution = context.commandRuntime().execute(
-                context = context,
-                command = AthenaConnectPortsCommand(
-                    sourcePortSemanticId = intent.source.semanticId,
-                    targetPortSemanticId = intent.target.semanticId,
-                ),
-            )
-        ) {
-            is AthenaCommandExecutionSuccess -> AthenaGraphCommandIntentAccepted(
-                projectName = projectName,
-                intentId = intent.intentId,
-                mutationCategory = intent.mutationCategory,
-                source = intent.source,
-                viewId = intent.viewId,
-                target = intent.target,
-                execution = AthenaGraphCommandExecution(
-                    commandKind = execution.commandKind,
-                    outcome = execution.outcome,
-                    commandId = execution.commandId,
-                    changedSemanticIds = execution.changedSemanticIds.sorted(),
-                ),
-                inspection = context.latestSemanticDiffInspection(),
-                semanticReview = context.semanticMutationReviews().summarizeAcceptedMutation(
-                    context = context,
-                    beforeDocument = execution.beforeDocument,
-                    afterDocument = execution.afterDocument,
-                ),
-            )
-
-            is AthenaCommandExecutionRejected -> AthenaGraphCommandIntentRejected(
-                projectName = projectName,
-                intentId = intent.intentId,
-                mutationCategory = intent.mutationCategory,
-                source = intent.source,
-                viewId = intent.viewId,
-                target = intent.target,
-                execution = AthenaGraphCommandExecution(
-                    commandKind = execution.commandKind,
-                    outcome = execution.outcome,
-                    changedSemanticIds = execution.changedSemanticIds.sorted(),
-                ),
-                reason = execution.reason,
-            )
-
-            is AthenaCommandExecutionValidationFeedback -> AthenaGraphCommandIntentValidationFeedback(
-                projectName = projectName,
-                intentId = intent.intentId,
-                mutationCategory = intent.mutationCategory,
-                source = intent.source,
-                viewId = intent.viewId,
-                target = intent.target,
-                execution = AthenaGraphCommandExecution(
-                    commandKind = execution.commandKind,
-                    outcome = execution.outcome,
-                    changedSemanticIds = execution.changedSemanticIds.sorted(),
-                    validationFeedback = execution.validationFeedback,
-                ),
-                validationFeedback = execution.validationFeedback,
-            )
-
-            is AthenaCommandExecutionUnavailable -> AthenaGraphCommandIntentUnavailable(
-                projectName = projectName,
-                intentId = intent.intentId,
-                mutationCategory = intent.mutationCategory,
-                source = intent.source,
-                viewId = intent.viewId,
-                target = intent.target,
-                execution = AthenaGraphCommandExecution(
-                    commandKind = execution.commandKind,
-                    outcome = execution.outcome,
-                ),
-                reason = execution.reason,
-            )
-        }
-    }
 }
 
 private fun ProjectionOwnershipContract.mayEmitProjectionCommand(commandId: String): Boolean {
     return isInteractive && projectionCommandIds.contains(commandId)
-}
-
-private fun ProjectionOwnershipContract.mayEmitSemanticCommand(commandId: String): Boolean {
-    return isInteractive && semanticCommandIds.contains(commandId)
 }

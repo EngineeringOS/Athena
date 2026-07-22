@@ -17,6 +17,7 @@ import {
     resolvePresentationReferenceMarkers,
     AthenaGraphResolvedPresentationRepresentation
 } from './athena-graph-presentation-model';
+import type { AthenaAuthoringSourceEditPayload } from './athena-authoring-protocol';
 
 export type AthenaGraphSceneBounds = {
     minX: number;
@@ -86,21 +87,8 @@ export type AthenaGraphLayoutMutationPreview = {
     title: string;
     authoredIntent: AthenaGraphAuthoredLayoutIntent;
     layoutBlockSnippet: string;
+    sourceEdit: AthenaAuthoringSourceEditPayload;
     persisted: false;
-};
-
-export type AthenaGraphLayoutSourceEdit = {
-    uri: string;
-    range: {
-        start: { line: number; character: number };
-        end: { line: number; character: number };
-    };
-    newText: string;
-    selectionRange?: {
-        start: { line: number; character: number };
-        end: { line: number; character: number };
-    };
-    suggestedSemanticId?: string;
 };
 
 /** Pure presentation model used by the first Athena graphical workbench panel. */
@@ -180,6 +168,14 @@ export type AthenaGraphWorkbenchSheetViewSelectorEntry = {
     subjectCount: number;
     isActive: boolean;
     label: string;
+};
+
+export type AthenaGraphWorkbenchSheetPolicyEvidence = {
+    policyId: string;
+    policyVersion: string;
+    policyDeterministicIdentity: string;
+    sheetViewRole: string;
+    sheetViewRoleOrder: number;
 };
 
 export type AthenaGraphWorkbenchSheetFrame = {
@@ -726,9 +722,9 @@ export function captureAthenaGraphLayoutAdjustmentIntent(args: {
 
 export function buildAthenaGraphLayoutMutationPreview(
     intent: AthenaGraphLayoutAdjustmentIntent,
+    sourceEdit: AthenaAuthoringSourceEditPayload,
 ): AthenaGraphLayoutMutationPreview {
     const authoredIntent = buildAthenaGraphAuthoredLayoutIntent(intent);
-    const layoutBlockSnippet = serializeAthenaGraphAuthoredLayoutIntent(authoredIntent);
     const statement = authoredIntent.statements[0];
     const subject = statement?.subject ?? semanticIdToAuthoredName(intent.subjectSemanticId);
     const relation = intent.relation ?? (
@@ -741,7 +737,8 @@ export function buildAthenaGraphLayoutMutationPreview(
         sourceUri: intent.sourceUri,
         title: `Layout ${intent.kind} preview for ${subject}`,
         authoredIntent,
-        layoutBlockSnippet,
+        layoutBlockSnippet: sourceEdit.newText.trim(),
+        sourceEdit,
         persisted: false,
     };
 }
@@ -764,98 +761,6 @@ export function buildAthenaGraphAuthoredLayoutIntent(
             },
         ],
     };
-}
-
-export function serializeAthenaGraphAuthoredLayoutIntent(intent: AthenaGraphAuthoredLayoutIntent): string {
-    return [
-        `layout ${intent.viewFamily} {`,
-        ...intent.statements.map(statement => `  ${serializeAthenaGraphAuthoredLayoutIntentStatement(statement)}`),
-        `}`,
-    ].join('\n');
-}
-
-function serializeAthenaGraphAuthoredLayoutIntentStatement(statement: AthenaGraphAuthoredLayoutIntentStatement): string {
-    if (statement.priority !== 'preference') {
-        throw new Error('M23 source syntax admits only default preference layout hints.');
-    }
-    const subject = semanticIdToAuthoredName(statement.subject);
-    const target = semanticIdToAuthoredName(statement.target);
-    switch (statement.relation) {
-        case 'near':
-            return `place ${subject} near ${target}`;
-        case 'below':
-            return `place ${subject} below ${target}`;
-        case 'aligned-with':
-            return `align ${subject} aligned-with ${target} axis ${statement.axis ?? 'vertical'}`;
-        case 'grouped-with':
-            return `group ${subject} grouped-with ${target}`;
-    }
-}
-
-export function buildAthenaGraphLayoutSourceEdit(args: {
-    preview: AthenaGraphLayoutMutationPreview;
-    documentText?: string;
-    insertionLine: number;
-    insertionCharacter: number;
-}): AthenaGraphLayoutSourceEdit {
-    const preview = args.preview;
-    const position = args.documentText
-        ? resolveSystemScopedLayoutInsertionPosition(args.documentText, args.insertionLine, args.insertionCharacter)
-        : {
-            line: Math.max(0, args.insertionLine),
-            character: Math.max(0, args.insertionCharacter),
-        };
-    const layoutSource = indentLayoutBlock(
-        serializeAthenaGraphAuthoredLayoutIntent(preview.authoredIntent),
-        '  ',
-    );
-    return {
-        uri: preview.sourceUri,
-        range: {
-            start: position,
-            end: position,
-        },
-        newText: `
-
-${layoutSource}
-`,
-        selectionRange: {
-            start: position,
-            end: position,
-        },
-        suggestedSemanticId: preview.subjectSemanticId,
-    };
-}
-
-function resolveSystemScopedLayoutInsertionPosition(
-    documentText: string,
-    fallbackLine: number,
-    fallbackCharacter: number,
-): { line: number; character: number } {
-    const systemCloseOffset = documentText.lastIndexOf('}');
-    if (systemCloseOffset < 0) {
-        return {
-            line: Math.max(0, fallbackLine),
-            character: Math.max(0, fallbackCharacter),
-        };
-    }
-    return offsetToPosition(documentText, systemCloseOffset);
-}
-
-function offsetToPosition(text: string, offset: number): { line: number; character: number } {
-    const beforeOffset = text.slice(0, Math.max(0, offset));
-    const lines = beforeOffset.split(/\r\n|\r|\n/);
-    return {
-        line: Math.max(0, lines.length - 1),
-        character: lines.at(-1)?.length ?? 0,
-    };
-}
-
-function indentLayoutBlock(source: string, indent: string): string {
-    return source
-        .split('\n')
-        .map(line => `${indent}${line}`)
-        .join('\n');
 }
 
 function resolveLayoutViewFamily(viewId: string): string {
@@ -914,7 +819,22 @@ export function resolveVisibleAthenaGraphSheetViewSelector(
     model: Pick<AthenaGraphWorkbenchModel, 'sheetViewSelector'>,
     previousDocumentSelector: AthenaGraphWorkbenchSheetViewSelector | undefined,
 ): AthenaGraphWorkbenchSheetViewSelector | undefined {
-    return model.sheetViewSelector ?? previousDocumentSelector;
+    if (model.sheetViewSelector) {
+        return isGovernedM31TwoSheetSelector(model.sheetViewSelector) ? model.sheetViewSelector : undefined;
+    }
+    return isGovernedM31TwoSheetSelector(previousDocumentSelector) ? previousDocumentSelector : undefined;
+}
+
+function isGovernedM31TwoSheetSelector(
+    selector: AthenaGraphWorkbenchSheetViewSelector | undefined,
+): selector is AthenaGraphWorkbenchSheetViewSelector {
+    if (!selector || selector.entries.length !== 2) {
+        return false;
+    }
+    const roles = selector.entries.map(entry => entry.role).filter(Boolean).sort();
+    return roles.length === 2 &&
+        roles[0] === 'control-and-plc-logic' &&
+        roles[1] === 'field-wiring-and-terminal-transition';
 }
 
 export function resolveAthenaGraphReferenceMarkerNavigation(
@@ -982,7 +902,8 @@ export function buildAthenaGraphDocumentReferenceInspection(
 function resolveWorkbenchReferenceMarkers(
     diagram: AthenaGLSPDiagram,
 ): AthenaGraphWorkbenchReferenceMarker[] {
-    return resolvePresentationReferenceMarkers(diagram)
+    return [
+        ...resolvePresentationReferenceMarkers(diagram)
         .map(marker => ({
             markerId: marker.markerId,
             markerKind: marker.markerKind,
@@ -996,8 +917,76 @@ function resolveWorkbenchReferenceMarkers(
             targetDocumentLocation: { ...marker.targetDocumentLocation },
             compactNotation: marker.compactNotation,
             sourceProjectionIds: [...marker.sourceProjectionIds],
-        }))
+        })),
+        ...resolveCrossReferenceLinkMarkers(diagram),
+    ]
         .sort(compareReferenceMarkers);
+}
+
+function resolveCrossReferenceLinkMarkers(
+    diagram: AthenaGLSPDiagram,
+): AthenaGraphWorkbenchReferenceMarker[] {
+    const sheetIds = new Set(normalizeArray(diagram.sheets).map(sheet => sheet.sheetId).filter(isNonBlankString));
+    return normalizeArray(diagram.crossReferences)
+        .flatMap(reference => {
+            const referenceId = reference.crossReferenceId;
+            if (!isNonBlankString(referenceId)) {
+                return [];
+            }
+            const occurrenceIds = new Set(normalizeArray(reference.occurrenceIds).filter(isNonBlankString));
+            return normalizeArray(reference.links)
+                .map(link => {
+                    if (!isValidCrossReferenceLink(link, sheetIds, occurrenceIds)) {
+                        return undefined;
+                    }
+                    const [sourceNotation, targetNotation] = link.compactNotation
+                        .split('->')
+                        .map(part => part.trim());
+                    return {
+                        markerId: `${referenceId}:${link.sourceSheetId}->${link.targetSheetId}`,
+                        markerKind: 'cross_reference',
+                        relationType: reference.kind,
+                        selectedSheetViewId: link.sourceSheetId,
+                        sourceOccurrenceId: link.sourceOccurrenceId,
+                        targetOccurrenceId: link.targetOccurrenceId,
+                        sourceIdentity: link.semanticId,
+                        targetIdentity: link.semanticId,
+                        sourceDocumentLocation: {
+                            sheetViewId: link.sourceSheetId,
+                            displayNotation: sourceNotation,
+                        },
+                        targetDocumentLocation: {
+                            sheetViewId: link.targetSheetId,
+                            displayNotation: targetNotation,
+                        },
+                        compactNotation: link.compactNotation,
+                        sourceProjectionIds: [referenceId],
+                    } satisfies AthenaGraphWorkbenchReferenceMarker;
+                })
+                .filter((marker): marker is AthenaGraphWorkbenchReferenceMarker => marker !== undefined);
+        });
+}
+
+function isValidCrossReferenceLink(
+    link: NonNullable<AthenaGLSPDiagram['crossReferences'][number]['links']>[number],
+    sheetIds: ReadonlySet<string>,
+    occurrenceIds: ReadonlySet<string>,
+): boolean {
+    return isNonBlankString(link.semanticId) &&
+        isNonBlankString(link.sourceSheetId) &&
+        isNonBlankString(link.targetSheetId) &&
+        isNonBlankString(link.sourceOccurrenceId) &&
+        isNonBlankString(link.targetOccurrenceId) &&
+        isNonBlankString(link.compactNotation) &&
+        link.compactNotation.split('->').length === 2 &&
+        sheetIds.has(link.sourceSheetId) &&
+        sheetIds.has(link.targetSheetId) &&
+        occurrenceIds.has(link.sourceOccurrenceId) &&
+        occurrenceIds.has(link.targetOccurrenceId);
+}
+
+function isNonBlankString(value: unknown): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
 }
 
 export function clampAthenaGraphZoom(zoom: number): number {
@@ -1420,10 +1409,11 @@ function buildSheetSummary(
     activeSheetId: string | undefined,
 ): AthenaGraphWorkbenchSheetSummary {
     const subjectSemanticIds = normalizeArray(sheet.subjectSemanticIds);
+    const role = sheet.role ?? sheet.policyEvidence?.sheetViewRole;
     return {
         sheetId: sheet.sheetId,
         displayName: sheet.displayName,
-        ...(sheet.role ? { role: sheet.role } : {}),
+        ...(role ? { role } : {}),
         order: sheet.order,
         subjectSemanticIds,
         subjectCount: subjectSemanticIds.length,

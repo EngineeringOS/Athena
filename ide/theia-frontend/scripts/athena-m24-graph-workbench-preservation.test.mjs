@@ -21,7 +21,9 @@ function cssRule(source, selector) {
 }
 
 function methodBody(source, methodName) {
-    const start = source.indexOf(`protected ${methodName}`);
+    const methodPattern = new RegExp(`protected\\s+(?:async\\s+)?${methodName}\\b`);
+    const match = source.match(methodPattern);
+    const start = match?.index ?? -1;
     assert.notEqual(start, -1, `${methodName} should exist`);
     const nextMethod = source.indexOf('\n    protected ', start + methodName.length);
     return source.slice(start, nextMethod === -1 ? source.length : nextMethod);
@@ -49,13 +51,17 @@ test('M24 preserves accepted graph workbench behavior while adding route renderi
     assert.match(widgetSource, /resolveAthenaGraphReferenceMarkerNavigation/);
     assert.match(widgetSource, /buildAthenaGraphDocumentReferenceInspection/);
     assert.match(widgetSource, /document-reference-relation/);
+    assert.match(methodBody(widgetSource, 'switchActiveView'), /Promise<boolean>/);
+    assert.match(methodBody(widgetSource, 'switchActiveSheetView'), /Promise<boolean>/);
+    assert.match(methodBody(widgetSource, 'handleReferenceMarkerClick'), /const switched = await this\.switchActiveSheetView/);
+    assert.match(methodBody(widgetSource, 'handleReferenceMarkerClick'), /if \(!switched\) \{\s*return;\s*\}/);
     assert.match(methodBody(widgetSource, 'handleWorkbenchClick'), /this\.closeInfoPopover\(\)/);
     assert.doesNotMatch(methodBody(widgetSource, 'renderBottomDock'), /Cabinet Main/);
     assert.doesNotMatch(methodBody(widgetSource, 'renderSheetChrome'), /Cabinet Main/);
     assert.doesNotMatch(widgetSource, /DocumentExplorer|document explorer/i);
 
     assert.match(bridgeSource, /lastAthenaEditorWidget/);
-    assert.match(widgetSource, /onDocumentContentChanged\(\(\) => this\.scheduleRefresh\(\)\)/);
+    assert.match(widgetSource, /onDocumentContentChanged\(\(\) => \{[\s\S]*this\.scheduleRefresh\(\);[\s\S]*\}\)/);
     assert.match(modelSource, /No governed route fact is available/);
     assert.doesNotMatch(modelSource, /localStorage|sessionStorage|indexedDB|canvasCoordinates/);
     assert.doesNotMatch(sprint, /desktop-viewer|apps\/desktop-viewer|Compose desktop/i);

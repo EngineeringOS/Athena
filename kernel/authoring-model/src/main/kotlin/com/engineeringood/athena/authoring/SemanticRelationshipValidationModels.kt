@@ -55,6 +55,28 @@ class ElectricalSemanticRelationshipCompatibilityValidator {
             )
         }
 
+        if (request.intent.sourceSubjectId.value.isBlank() || request.intent.targetSubjectId.value.isBlank()) {
+            return rejected(
+                request,
+                SemanticRelationshipValidationDiagnostic(
+                    code = "semantic.relationship.subject.malformed",
+                    message = "Relationship subjects must use non-blank canonical semantic identities.",
+                    subjectIds = request.subjectIds(),
+                ),
+            )
+        }
+
+        if (request.intent.sourceSubjectId == request.intent.targetSubjectId) {
+            return rejected(
+                request,
+                SemanticRelationshipValidationDiagnostic(
+                    code = "semantic.relationship.self",
+                    message = "A semantic relationship cannot connect one subject to itself.",
+                    subjectIds = request.subjectIds(),
+                ),
+            )
+        }
+
         val sourcePort = request.document.portById(request.intent.sourceSubjectId)
         val targetPort = request.document.portById(request.intent.targetSubjectId)
         if (sourcePort == null || targetPort == null) {

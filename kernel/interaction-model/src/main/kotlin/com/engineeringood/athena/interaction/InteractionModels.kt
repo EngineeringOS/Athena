@@ -73,7 +73,7 @@ enum class InteractionDiagnosticCode(val value: String) {
     REVEAL_MISSING_TARGET("interaction.reveal.missing-target"),
     REGISTRY_STALE("interaction.registry.stale"),
     TRANSPORT_UNSUPPORTED_VERSION("interaction.transport.unsupported-version"),
-    LEGACY_CONNECT_PORTS_REJECTED("interaction.legacy-connect-ports.rejected"),
+    AUTHORING_CAPABILITY_UNAVAILABLE("authoring.capability.unavailable"),
 }
 
 enum class InteractionRevealSurface {
@@ -120,6 +120,7 @@ data class SemanticCapability(
     val enabled: Boolean,
     val parameters: Map<String, String> = emptyMap(),
     val disabledReason: InteractionDiagnostic? = null,
+    val authoring: AuthoringCapability? = null,
 )
 
 data class InteractionSubject(

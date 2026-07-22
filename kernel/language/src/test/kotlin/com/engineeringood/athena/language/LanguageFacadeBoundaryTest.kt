@@ -32,6 +32,7 @@ class LanguageFacadeBoundaryTest {
             "DeviceDeclaration",
             "PortDeclaration",
             "ConnectionDeclaration",
+            "ConnectionGroupDeclaration",
             "LayoutDeclaration",
             "LayoutStatement",
             "LayoutAxis",

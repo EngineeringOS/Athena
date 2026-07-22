@@ -521,6 +521,59 @@ class DocumentProjectionModelContractTest {
     }
 
     @Test
+    fun `m31 customer projection policy exposes exactly control and field device sheet roles`() {
+        val first = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
+        val second = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
+
+        assertEquals(DocumentProjectionPolicyId("athena-m31-customer-projection-v0"), first.policyId)
+        assertEquals(DocumentProjectionPolicyVersion("0"), first.policyVersion)
+        assertEquals(first.deterministicIdentity, second.deterministicIdentity)
+        assertEquals(
+            listOf(
+                SheetViewRole.CONTROL_AND_PLC_LOGIC to "Control",
+                SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION to "Field Device",
+            ),
+            first.supportedSheetViewRoles.map { role -> role.role to role.displayTitle },
+        )
+        assertEquals(listOf(0, 1), first.supportedSheetViewRoles.map { role -> role.order })
+    }
+
+    @Test
+    fun `m31 customer projection sheet views do not derive from source file count`() {
+        val policy = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
+        val singleSource = DocumentProjectionWorkspaceSemanticSnapshot(
+            semanticGraphId = "graph:m31-customer-policy",
+            sourceUnits = listOf(DocumentProjectionSourceUnitSummary("source:main", "src/01-main.athena")),
+        )
+        val multiSource = singleSource.copy(
+            sourceUnits = listOf(
+                DocumentProjectionSourceUnitSummary("source:main", "src/01-main.athena"),
+                DocumentProjectionSourceUnitSummary("source:devices", "src/02-devices.athena"),
+                DocumentProjectionSourceUnitSummary("source:relationships", "src/03-relationships.athena"),
+            ),
+        )
+
+        val singleSourceSnapshot = DocumentProjectionEntryPoint.projectWorkspace(singleSource, policy)
+        val multiSourceSnapshot = DocumentProjectionEntryPoint.projectWorkspace(multiSource, policy)
+
+        assertEquals(
+            listOf("sheet-view:control-and-plc-logic", "sheet-view:field-wiring-and-terminal-transition"),
+            singleSourceSnapshot.sheetViews.map { sheetView -> sheetView.sheetViewId.value },
+        )
+        assertEquals(singleSourceSnapshot.sheetViews, multiSourceSnapshot.sheetViews)
+        assertEquals(singleSourceSnapshot.policyDeterministicIdentity, multiSourceSnapshot.policyDeterministicIdentity)
+        assertFalse(
+            multiSourceSnapshot.sheetViews.any { sheetView ->
+                multiSource.sourceUnits.any { sourceUnit ->
+                    sheetView.sheetViewId.value.contains(sourceUnit.sourceRootRelativePath) ||
+                        sheetView.title.contains(sourceUnit.sourceRootRelativePath)
+                }
+            },
+            "M31 customer sheet views must not encode source file paths.",
+        )
+    }
+
+    @Test
     fun `built in policy exposes supported and reserved artifact kinds explicitly`() {
         val policy = BuiltInDocumentProjectionPolicies.athenaDocumentProjectionV0()
 

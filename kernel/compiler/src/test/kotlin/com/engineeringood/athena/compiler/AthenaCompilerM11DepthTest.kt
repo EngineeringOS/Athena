@@ -34,14 +34,17 @@ class AthenaCompilerM11DepthTest {
         val documentation = success.projections.first { projection -> projection.view.id == "documentation" }
         assertEquals(
             listOf(
-                "documentation/sheet/01-power-distribution",
-                "documentation/sheet/02-control-and-plc-logic",
-                "documentation/sheet/03-field-wiring-and-terminal-transition",
+                "documentation/sheet/01-control",
+                "documentation/sheet/02-field-device",
             ),
             documentation.sheets.map { sheet -> sheet.sheetId.value },
         )
         assertTrue(documentation.crossReferences.size >= 12)
-        assertEquals(2, documentation.nodes.count { node -> node.semanticId.value == "component:M1" })
+        assertEquals(1, documentation.nodes.count { node -> node.semanticId.value == "component:M1" })
+        assertTrue(
+            documentation.nodes.none { node -> node.projectionId.value.endsWith("_reference") },
+            "Documentation depth must come from cross-reference facts, not duplicate off-sheet nodes.",
+        )
         assertTrue(documentation.crossReferences.any { crossReference -> crossReference.sheetIds.size >= 2 })
         assertContains(
             success.validationBreakdown.engineeringSufficiencyDiagnostics.map { diagnostic -> diagnostic.ruleId.value },

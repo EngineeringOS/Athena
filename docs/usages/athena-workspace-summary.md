@@ -170,7 +170,7 @@ Epic 2 proved that the graph workbench can become a real editing surface without
 Delivered:
 
 - graph gestures translated into Athena-owned command intents
-- first real graph semantic mutation path through `connect-ports`
+- first historical graph semantic mutation path, later migrated to governed semantic relationship authoring
 - first real graph projection mutation path through governed cabinet placement
 - deterministic refresh from canonical semantic state or runtime-owned projection metadata after accepted graph mutation
 
@@ -717,12 +717,12 @@ yarn --cwd ide/theia-frontend test
 yarn --cwd ide verify:m8
 ```
 
-Current M8 interactive proof inside the Athena shell:
+Historical M8 interactive proof inside the Athena shell:
 
 1. Open the repository fixture at `examples/m4/open-repository-proof`.
 2. Open `src/factory-line.athena`.
 3. Reveal `Graphical View` and `Semantic SCM`.
-4. Use the cabinet graph to prove the supported `connect-ports` semantic mutation path.
+4. Use the cabinet graph to prove the original graph semantic mutation path (superseded by M31 governed semantic relationship authoring).
 5. Drag a supported cabinet placement target to prove the governed projection mutation path.
 6. Click changed subjects from source, graph, or semantic SCM and confirm reveal coherence across all three surfaces.
 

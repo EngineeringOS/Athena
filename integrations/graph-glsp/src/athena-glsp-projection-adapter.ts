@@ -3,6 +3,7 @@ import {
     AthenaGLSPGraph,
     AthenaGLSPProjectionSource,
     AthenaGLSPReadyProjectionSource,
+    AthenaGLSPSheetPolicyEvidenceSource,
 } from './athena-glsp-diagram-model';
 
 /** Converts Athena-owned projection payloads into a disposable GLSP-shaped graph snapshot. */
@@ -41,12 +42,19 @@ export function translateProjectionSessionToGLSPDiagram(
         presentation: readyProjection?.presentation
             ? normalizePresentationDocument(readyProjection.presentation)
             : undefined,
-        sheets: normalizeArray(readyProjection?.sheets).map(sheet => ({
-            ...sheet,
-            role: sheet.role ?? resolveSheetViewRole(sheet.displayName),
-            subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
-            ...(sheet.publication ? { publication: normalizeSheetPublication(sheet.publication) } : {}),
-        })),
+        sheets: normalizeArray(readyProjection?.sheets).map(sheet => {
+            const { policyEvidence: rawPolicyEvidence, ...sheetWithoutPolicyEvidence } = sheet;
+            const policyEvidence = normalizeSheetPolicyEvidence(rawPolicyEvidence);
+            return {
+                ...sheetWithoutPolicyEvidence,
+                role: sheet.role ?? policyEvidence?.sheetViewRole ?? (
+                    rawPolicyEvidence ? undefined : resolveSheetViewRole(sheet.displayName)
+                ),
+                subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
+                ...(policyEvidence ? { policyEvidence } : {}),
+                ...(sheet.publication ? { publication: normalizeSheetPublication(sheet.publication) } : {}),
+            };
+        }),
         notationPack: readyProjection?.notationPack
             ? {
                 ...readyProjection.notationPack,
@@ -60,6 +68,7 @@ export function translateProjectionSessionToGLSPDiagram(
             ...crossReference,
             sheetIds: [...normalizeArray(crossReference.sheetIds)],
             occurrenceIds: [...normalizeArray(crossReference.occurrenceIds)],
+            links: normalizeArray(crossReference.links).map(link => ({ ...link })),
         })),
         electricalAnchors,
         electricalConnectionEndpoints,
@@ -86,6 +95,24 @@ function resolveSheetViewRole(displayName: string): string | undefined {
         return 'field_wiring';
     }
     return undefined;
+}
+
+function normalizeSheetPolicyEvidence(
+    policyEvidence: AthenaGLSPSheetPolicyEvidenceSource | undefined,
+): AthenaGLSPSheetPolicyEvidenceSource | undefined {
+    if (!policyEvidence) {
+        return undefined;
+    }
+    if (
+        typeof policyEvidence.policyId !== 'string' ||
+        typeof policyEvidence.policyVersion !== 'string' ||
+        typeof policyEvidence.policyDeterministicIdentity !== 'string' ||
+        typeof policyEvidence.sheetViewRole !== 'string' ||
+        typeof policyEvidence.sheetViewRoleOrder !== 'number'
+    ) {
+        return undefined;
+    }
+    return { ...policyEvidence };
 }
 
 function toGraph(args: {
