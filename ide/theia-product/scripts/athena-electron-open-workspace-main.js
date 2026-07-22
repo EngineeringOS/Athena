@@ -17,6 +17,7 @@ const SHOULD_EXIT_ON_WORKSPACE_OPEN = process.env.ATHENA_ELECTRON_SMOKE_EXIT_ON_
 const REQUESTED_ACTIVE_VIEW = resolveRequestedActiveView();
 const GRAPH_VIEW_SCREENSHOT_PATH = process.env.ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT || '';
 const SKIP_SMOKE_OUTLINE = process.env.ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE === '1';
+const COLLECT_EDITOR_SYNTAX_COLOR_PROOF = process.env.ATHENA_ELECTRON_SMOKE_EDITOR_SYNTAX_COLORS === '1';
 const SMOKE_OUTLINE_SOURCE_RELATIVE = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE
     || 'src/01-interaction-authoring-source.athena';
 const SMOKE_OUTLINE_EXPECTED_PATH = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH
@@ -234,6 +235,7 @@ async function openWorkspace(window) {
                     visualProof: collectVisualProof(),
                     allSheetVisualProof: await collectAllSheetVisualProofs(sheetViewSelector),
                     sheetSelectorPersistenceProof: await collectSheetSelectorPersistenceProof(sheetViewSelector),
+                    editorSyntaxColorProof: await collectEditorSyntaxColorProof(target),
                     outlineProof
                 }
             };
@@ -601,6 +603,109 @@ async function openWorkspace(window) {
                 }
                 selector.dispatchEvent(new Event('input', { bubbles: true }));
                 selector.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            async function collectEditorSyntaxColorProof(target) {
+                if (!${JSON.stringify(COLLECT_EDITOR_SYNTAX_COLOR_PROOF)}) {
+                    return {
+                        skipped: true,
+                        reason: 'ATHENA_ELECTRON_SMOKE_EDITOR_SYNTAX_COLORS not enabled'
+                    };
+                }
+                const sourceRelative = ${JSON.stringify(SMOKE_OUTLINE_SOURCE_RELATIVE)};
+                const sourcePath = target.replace(/\\\\/g, '/') + '/' + sourceRelative.replace(/^\\/+/, '');
+                const sourceUri = 'file:///' + sourcePath.replace(/^\\/?([A-Za-z]:)/, '$1');
+                const revealOutlineForSource = await waitFor(
+                    () => window.__athenaWorkbenchSmoke?.revealOutlineForSource,
+                    'Athena editor syntax color source reveal hook'
+                );
+                await Promise.race([
+                    revealOutlineForSource(sourceUri),
+                    new Promise((_, reject) => setTimeout(
+                        () => reject(new Error('Timed out waiting for Athena source editor syntax color proof for ' + sourceUri)),
+                        60000
+                    ))
+                ]);
+                const sourceEditorProof = await waitFor(
+                    () => window.__athenaWorkbenchSmoke?.openSourceEditorForSmoke,
+                    'Athena source editor smoke command hook'
+                ).then(openSourceEditorForSmoke => openSourceEditorForSmoke(sourceUri));
+                if (!sourceEditorProof.currentEditorWidgetId) {
+                    throw new Error('Athena source editor smoke hook did not activate an editor: ' + JSON.stringify(sourceEditorProof));
+                }
+                await waitFor(() => {
+                    const visibleLines = Array.from(document.querySelectorAll('.monaco-editor .view-line'))
+                        .filter(visibleElement);
+                    return visibleLines.length > 0 ? visibleLines : undefined;
+                }, 'visible Monaco source editor lines for syntax color proof');
+                const observed = {};
+                const revealSourceLineForSmoke = await waitFor(
+                    () => window.__athenaWorkbenchSmoke?.revealSourceLineForSmoke,
+                    'Athena source editor line reveal smoke command hook'
+                );
+                await revealEditorLine(revealSourceLineForSmoke, 2);
+                collectVisibleTokenColors(observed);
+                await revealEditorLine(revealSourceLineForSmoke, 8);
+                collectVisibleTokenColors(observed);
+                await revealEditorLine(revealSourceLineForSmoke, 144);
+                collectVisibleTokenColors(observed);
+                await revealEditorLine(revealSourceLineForSmoke, 161);
+                collectVisibleTokenColors(observed);
+                await revealEditorLine(revealSourceLineForSmoke, 163);
+                collectVisibleTokenColors(observed);
+                await revealEditorLine(revealSourceLineForSmoke, 171);
+                collectVisibleTokenColors(observed);
+                await revealEditorLine(revealSourceLineForSmoke, 173);
+                collectVisibleTokenColors(observed);
+
+                const selected = {};
+                [
+                    'system',
+                    'device',
+                    'direction',
+                    'out',
+                    'connect',
+                    '->',
+                    'layout',
+                    'place',
+                    'near',
+                    'align',
+                    'aligned-with',
+                    'axis',
+                    'vertical',
+                    'group',
+                    'grouped-with'
+                ].forEach(token => {
+                    selected[token] = observed[token] || '';
+                });
+                return {
+                    skipped: false,
+                    sourceUri,
+                    sourceEditorProof,
+                    selected,
+                    distinctCategoryColorCount: new Set([
+                        selected.system,
+                        selected.direction,
+                        selected.connect,
+                        selected.layout,
+                        selected['aligned-with']
+                    ].filter(Boolean)).size
+                };
+            }
+
+            async function revealEditorLine(revealSourceLineForSmoke, lineNumber) {
+                await revealSourceLineForSmoke(lineNumber);
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            }
+
+            function collectVisibleTokenColors(target) {
+                Array.from(document.querySelectorAll('.monaco-editor .view-line span')).forEach(span => {
+                    const text = (span.textContent || '').trim();
+                    if (!text || target[text]) {
+                        return;
+                    }
+                    target[text] = window.getComputedStyle(span).color;
+                });
             }
 
             function collectVisualProof() {

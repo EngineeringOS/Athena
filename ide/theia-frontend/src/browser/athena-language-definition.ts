@@ -2,11 +2,44 @@ import * as monaco from '@theia/monaco-editor-core';
 
 export const ATHENA_LANGUAGE_ID = 'athena';
 
-const ATHENA_KEYWORDS = [
+const ATHENA_DECLARATION_KEYWORDS = [
+    'package',
+    'import',
     'system',
     'device',
     'port',
+    'type',
+    'model'
+] as const;
+
+const ATHENA_PORT_KEYWORDS = [
+    'direction',
+    'signal',
+    'in',
+    'out'
+] as const;
+
+const ATHENA_RELATIONSHIP_KEYWORDS = [
     'connect'
+] as const;
+
+const ATHENA_LAYOUT_KEYWORDS = [
+    'layout',
+    'place',
+    'align',
+    'group',
+    'near',
+    'below',
+    'axis',
+    'vertical',
+    'horizontal'
+] as const;
+
+const ATHENA_KEYWORDS = [
+    ...ATHENA_DECLARATION_KEYWORDS,
+    ...ATHENA_PORT_KEYWORDS,
+    ...ATHENA_RELATIONSHIP_KEYWORDS,
+    ...ATHENA_LAYOUT_KEYWORDS
 ] as const;
 
 /**
@@ -43,17 +76,26 @@ export const athenaLanguageConfiguration: monaco.languages.LanguageConfiguration
 export const athenaMonarchLanguage: monaco.languages.IMonarchLanguage = {
     defaultToken: 'invalid',
     keywords: ATHENA_KEYWORDS,
+    declarationKeywords: ATHENA_DECLARATION_KEYWORDS,
+    portKeywords: ATHENA_PORT_KEYWORDS,
+    relationshipKeywords: ATHENA_RELATIONSHIP_KEYWORDS,
+    layoutKeywords: ATHENA_LAYOUT_KEYWORDS,
     tokenizer: {
         root: [
             [/\s+/, 'white'],
-            [/->/, 'operator'],
+            [/->/, 'operator.athena-relationship'],
+            [/(?:aligned-with|grouped-with)\b/, 'operator.athena-layout'],
             [/[{}]/, 'delimiter.bracket'],
             [/\./, 'delimiter'],
             [/"/, { token: 'string.quote', bracket: '@open', next: '@string' }],
             [/[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+/, 'type.identifier'],
+            [/[A-Za-z_][A-Za-z0-9_]*(?:-[A-Za-z_][A-Za-z0-9_]*)+/, 'type.identifier'],
             [/[A-Za-z_][A-Za-z0-9_]*/, {
                 cases: {
-                    '@keywords': 'keyword',
+                    '@declarationKeywords': 'keyword.athena-declaration',
+                    '@portKeywords': 'keyword.athena-port',
+                    '@relationshipKeywords': 'keyword.athena-relationship',
+                    '@layoutKeywords': 'keyword.athena-layout',
                     '@default': 'identifier'
                 }
             }]

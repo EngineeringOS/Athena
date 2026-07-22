@@ -35,6 +35,7 @@ function verifyDesktopStartup() {
 
 function verifyBundledAssetsExist() {
     const expectedAssets = [
+        path.join(frontendAssetRoot, 'web-tree-sitter.wasm'),
         path.join(frontendAssetRoot, 'tree-sitter-athena.wasm'),
         path.join(frontendAssetRoot, 'athena-tree-sitter-highlights.scm')
     ];
@@ -58,6 +59,10 @@ async function verifyBundledTreeSitterTokens() {
         path.join(workspaceRoot, 'examples', 'm4', 'open-repository-proof', 'src', 'factory-line.athena'),
         'utf8'
     );
+    const m31Source = fs.readFileSync(
+        path.join(workspaceRoot, 'examples', 'm31', 'sample-project', 'src', '01-governed-authoring-customer-source.athena'),
+        'utf8'
+    );
     const incompleteSource = fs.readFileSync(
         path.join(workspaceRoot, 'examples', 'm17', 'invalid-and-incomplete-proof', 'incomplete-brace.athena'),
         'utf8'
@@ -68,10 +73,22 @@ async function verifyBundledTreeSitterTokens() {
     assert.ok(validTokens.data.length > 0, 'expected bundled Tree-sitter semantic token payload to be non-empty');
 
     const tokenKinds = decodeTokenKinds(validTokens.data);
-    assert.ok(tokenKinds.includes('keyword'), 'expected bundled Tree-sitter semantic tokens to include keywords');
+    assert.ok(
+        tokenKinds.includes('athenaDeclarationKeyword'),
+        'expected bundled Tree-sitter semantic tokens to include declaration keywords'
+    );
     assert.ok(tokenKinds.includes('variable'), 'expected bundled Tree-sitter semantic tokens to include variables');
     assert.ok(tokenKinds.includes('property'), 'expected bundled Tree-sitter semantic tokens to include properties');
     assert.equal(service.getLastFailureMessage(), undefined, 'expected no Tree-sitter load failure for valid source');
+
+    const m31Tokens = await service.provideDocumentSemanticTokens({ getValue: () => m31Source });
+    assert.ok(m31Tokens, 'expected bundled Tree-sitter assets to produce semantic tokens for M31 source');
+    const m31TokenKinds = decodeTokenKinds(m31Tokens.data);
+    assert.ok(m31TokenKinds.includes('athenaDeclarationKeyword'), 'expected M31 source to include declaration keywords');
+    assert.ok(m31TokenKinds.includes('athenaPortKeyword'), 'expected M31 source to include port keywords');
+    assert.ok(m31TokenKinds.includes('athenaRelationshipKeyword'), 'expected M31 source to include relationship keywords');
+    assert.ok(m31TokenKinds.includes('athenaLayoutKeyword'), 'expected M31 source to include layout keywords');
+    assert.ok(m31TokenKinds.includes('athenaLayoutOperator'), 'expected M31 source to include layout operators');
 
     const incompleteTokens = await service.provideDocumentSemanticTokens({ getValue: () => incompleteSource });
     assert.ok(incompleteTokens, 'expected bundled Tree-sitter assets to stay usable on incomplete Athena source');

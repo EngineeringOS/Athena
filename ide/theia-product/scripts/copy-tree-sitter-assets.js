@@ -4,8 +4,13 @@ const path = require('node:path');
 const productRoot = path.resolve(__dirname, '..');
 const frontendAssetRoot = path.join(productRoot, 'lib', 'frontend');
 const grammarRoot = path.dirname(require.resolve('@engineeringood/athena-tree-sitter-grammar/package.json'));
+const webTreeSitterRoot = path.dirname(require.resolve('web-tree-sitter'));
 
 const assets = [
+    {
+        source: path.join(webTreeSitterRoot, 'web-tree-sitter.wasm'),
+        destination: path.join(frontendAssetRoot, 'web-tree-sitter.wasm')
+    },
     {
         source: path.join(grammarRoot, 'tree-sitter-athena.wasm'),
         destination: path.join(frontendAssetRoot, 'tree-sitter-athena.wasm')

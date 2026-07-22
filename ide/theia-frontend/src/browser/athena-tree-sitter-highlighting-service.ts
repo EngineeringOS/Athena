@@ -16,7 +16,19 @@ type WebTreeSitterModule = typeof import('web-tree-sitter');
 type TreeSitterLanguage = import('web-tree-sitter').Language;
 type TreeSitterQuery = import('web-tree-sitter').Query;
 
-const ATHENA_SEMANTIC_TOKEN_TYPES = ['keyword', 'namespace', 'operator', 'variable', 'property', 'string'] as const;
+const ATHENA_SEMANTIC_TOKEN_TYPES = [
+    'keyword',
+    'namespace',
+    'operator',
+    'variable',
+    'property',
+    'string',
+    'athenaDeclarationKeyword',
+    'athenaPortKeyword',
+    'athenaRelationshipKeyword',
+    'athenaLayoutKeyword',
+    'athenaLayoutOperator'
+] as const;
 export type AthenaSemanticTokenType = typeof ATHENA_SEMANTIC_TOKEN_TYPES[number];
 
 export const athenaSemanticTokensLegend: monaco.languages.SemanticTokensLegend = {
@@ -30,7 +42,12 @@ const CAPTURE_NAME_TO_TOKEN_TYPE: Readonly<Record<string, AthenaSemanticTokenTyp
     operator: 'operator',
     variable: 'variable',
     property: 'property',
-    string: 'string'
+    string: 'string',
+    athenaDeclarationKeyword: 'athenaDeclarationKeyword',
+    athenaPortKeyword: 'athenaPortKeyword',
+    athenaRelationshipKeyword: 'athenaRelationshipKeyword',
+    athenaLayoutKeyword: 'athenaLayoutKeyword',
+    athenaLayoutOperator: 'athenaLayoutOperator'
 };
 
 type AthenaTreeSitterContext = {
@@ -41,17 +58,21 @@ type AthenaTreeSitterContext = {
 
 export type AthenaTreeSitterAssetLocator = (assetFileName: string) => Promise<string> | string;
 
+type AthenaTreeSitterInitOptions = {
+    locateFile: (scriptName: string) => string;
+    wasmBinary?: Uint8Array;
+};
+
 /**
- * Default asset resolution: bare relative file names, matching the copied layout under
- * `ide/theia-product/lib/frontend/` (see `scripts/copy-tree-sitter-assets.js`), the same
- * directory the running product already serves worker/asset files from (e.g. `editor.worker.js`).
- * In a Node test/host context (no `window`), assets are resolved from disk instead.
+ * Default asset resolution: product frontend assets in Electron/browser, package assets in Node.
+ * The Electron renderer loads local file assets through Node `fs` below; URL resolution is the
+ * browser fallback.
  */
 function defaultAssetLocator(assetFileName: string): string {
     if (typeof window === 'undefined') {
         return resolveNodeAssetPath(assetFileName);
     }
-    return assetFileName;
+    return new URL(assetFileName, document.currentScript?.getAttribute('src') || window.location.href).toString();
 }
 
 function resolveNodeAssetPath(assetFileName: string): string {
@@ -173,12 +194,16 @@ export class AthenaTreeSitterHighlightingService {
     protected async initialize(): Promise<AthenaTreeSitterContext> {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const module: WebTreeSitterModule = await import('web-tree-sitter');
+        const runtimeWasmBinary = await this.loadBinaryAsset('web-tree-sitter.wasm');
         await module.Parser.init({
-            locateFile: (scriptName: string) => this.resolveAssetSync(scriptName)
-        });
+            locateFile: (scriptName: string) => this.resolveAssetSync(scriptName),
+            ...(runtimeWasmBinary ? { wasmBinary: runtimeWasmBinary } : {})
+        } as AthenaTreeSitterInitOptions);
 
-        const grammarWasmPath = await this.assetLocator('tree-sitter-athena.wasm');
-        const language = await module.Language.load(grammarWasmPath);
+        const grammarWasmBinary = await this.loadBinaryAsset('tree-sitter-athena.wasm');
+        const language = await module.Language.load(
+            grammarWasmBinary ?? await this.assetLocator('tree-sitter-athena.wasm')
+        );
 
         const highlightsQuerySource = await this.loadHighlightsQuerySource();
         const query = new module.Query(language, highlightsQuerySource);
@@ -193,19 +218,44 @@ export class AthenaTreeSitterHighlightingService {
         return typeof result === 'string' ? result : scriptName;
     }
 
-    protected async loadHighlightsQuerySource(): Promise<string> {
-        const highlightsPath = await this.assetLocator('athena-tree-sitter-highlights.scm');
-        if (typeof window === 'undefined') {
+    protected async loadBinaryAsset(assetFileName: string): Promise<Uint8Array | undefined> {
+        const assetPath = await this.assetLocator(assetFileName);
+        if (typeof window === 'undefined' || typeof require === 'function') {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
             const nodeRequire: NodeJS.Require = require;
             const fs: typeof import('node:fs') = nodeRequire('node:fs');
-            return fs.readFileSync(highlightsPath, 'utf8');
+            return fs.readFileSync(this.toNodeReadablePath(assetPath));
+        }
+        const response = await fetch(assetPath);
+        if (!response.ok) {
+            throw new Error(`Failed to load Athena Tree-sitter binary asset from ${assetPath}`);
+        }
+        return new Uint8Array(await response.arrayBuffer());
+    }
+
+    protected async loadHighlightsQuerySource(): Promise<string> {
+        const highlightsPath = await this.assetLocator('athena-tree-sitter-highlights.scm');
+        if (typeof window === 'undefined' || typeof require === 'function') {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const nodeRequire: NodeJS.Require = require;
+            const fs: typeof import('node:fs') = nodeRequire('node:fs');
+            return fs.readFileSync(this.toNodeReadablePath(highlightsPath), 'utf8');
         }
         const response = await fetch(highlightsPath);
         if (!response.ok) {
             throw new Error(`Failed to load Athena Tree-sitter highlight query from ${highlightsPath}`);
         }
         return response.text();
+    }
+
+    protected toNodeReadablePath(value: string): string {
+        if (!value.startsWith('file:')) {
+            return value;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const nodeRequire: NodeJS.Require = require;
+        const { fileURLToPath }: typeof import('node:url') = nodeRequire('node:url');
+        return fileURLToPath(value);
     }
 
     protected reportFailure(error: unknown): void {

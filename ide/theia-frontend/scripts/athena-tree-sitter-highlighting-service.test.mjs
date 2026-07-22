@@ -25,13 +25,13 @@ test('AthenaTreeSitterHighlightingService produces semantic tokens from the chec
     assert.ok(tokens.data.length > 0, 'expected non-empty semantic token payload');
 
     const tokenKinds = decodeTokenKinds(tokens.data);
-    assert.ok(tokenKinds.includes('keyword'));
+    assert.ok(tokenKinds.includes('athenaDeclarationKeyword'));
     assert.ok(tokenKinds.includes('variable'));
     assert.ok(tokenKinds.includes('property'));
     assert.ok(tokenKinds.includes('string'));
     const decodedTokens = decodeTokens(source, tokens.data);
-    assert.ok(decodedTokens.some(token => token.text === 'package' && token.kind === 'keyword'));
-    assert.ok(decodedTokens.some(token => token.text === 'import' && token.kind === 'keyword'));
+    assert.ok(decodedTokens.some(token => token.text === 'package' && token.kind === 'athenaDeclarationKeyword'));
+    assert.ok(decodedTokens.some(token => token.text === 'import' && token.kind === 'athenaDeclarationKeyword'));
     assert.ok(decodedTokens.some(token => token.text === 'com.engineeringood.root' && token.kind === 'namespace'));
     assert.ok(decodedTokens.some(token => token.text === 'com.engineeringood.controls' && token.kind === 'namespace'));
     assert.equal(service.getLastFailureMessage(), undefined);
@@ -45,7 +45,57 @@ test('AthenaTreeSitterHighlightingService preserves system highlighting after a 
 
     assert.ok(tokens, 'expected syntax tokens for recoverable bare import source');
     const decodedTokens = decodeTokens(source, tokens.data);
-    assert.ok(decodedTokens.some(token => token.text === 'system' && token.kind === 'keyword'));
+    assert.ok(decodedTokens.some(token => token.text === 'system' && token.kind === 'athenaDeclarationKeyword'));
+    assert.equal(service.getLastFailureMessage(), undefined);
+});
+
+test('AthenaTreeSitterHighlightingService highlights layout and port authoring syntax', async () => {
+    const service = new AthenaTreeSitterHighlightingService();
+    const source = [
+        'system Demo {',
+        '  device OperatorHMI1 {',
+        '    type Lamp',
+        '    model "HMI"',
+        '    port status {',
+        '      direction in',
+        '      signal Digital',
+        '    }',
+        '  }',
+        '  connect MainPowerSupplyPS31.lplus -> MainBreakerQF31.line',
+        '  layout schematic-sheet {',
+        '    place MainBreakerQF31 near MainPowerSupplyPS31',
+        '    align ControlRelayK31 aligned-with MainBreakerQF31 axis vertical',
+        '    group WallSwitchS31 grouped-with ControlRelayK31',
+        '  }',
+        '}'
+    ].join('\n');
+
+    const tokens = await service.provideDocumentSemanticTokens({ getValue: () => source });
+
+    assert.ok(tokens, 'expected syntax tokens for M31 authoring source');
+    const decodedTokens = decodeTokens(source, tokens.data);
+    [
+        ['direction', 'athenaPortKeyword'],
+        ['in', 'athenaPortKeyword'],
+        ['signal', 'athenaPortKeyword'],
+        ['connect', 'athenaRelationshipKeyword'],
+        ['->', 'operator'],
+        ['layout', 'athenaLayoutKeyword'],
+        ['schematic-sheet', 'namespace'],
+        ['place', 'athenaLayoutKeyword'],
+        ['near', 'athenaLayoutKeyword'],
+        ['align', 'athenaLayoutKeyword'],
+        ['aligned-with', 'athenaLayoutOperator'],
+        ['axis', 'athenaLayoutKeyword'],
+        ['vertical', 'athenaLayoutKeyword'],
+        ['group', 'athenaLayoutKeyword'],
+        ['grouped-with', 'athenaLayoutOperator']
+    ].forEach(([text, kind]) => {
+        assert.ok(
+            decodedTokens.some(token => token.text === text && token.kind === kind),
+            `expected ${text} to be highlighted as ${kind}`
+        );
+    });
     assert.equal(service.getLastFailureMessage(), undefined);
 });
 

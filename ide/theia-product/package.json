@@ -19,7 +19,8 @@
         "preferences": {
           "toolbar.showToolbar": true,
           "editor.enablePreview": false,
-          "workbench.editor.revealIfOpen": true
+          "workbench.editor.revealIfOpen": true,
+          "editor.semanticHighlighting.enabled": true
         }
       }
     },
@@ -90,6 +91,7 @@
     "start:smoke:m29": "node scripts/verify-athena-m29-sample-project.js",
     "start:smoke:m30": "node scripts/verify-athena-m30-sample-project.js",
     "start:smoke:m31": "node scripts/verify-athena-m31-sample-project.js",
+    "start:smoke:syntax-colors": "node scripts/verify-athena-editor-syntax-colors.js",
     "start:smoke:tree-sitter": "node scripts/verify-athena-tree-sitter-highlighting.js",
     "start:smoke:reuse-catalog": "node scripts/verify-athena-reuse-catalog.js",
     "watch": "theia build --watch --mode development"

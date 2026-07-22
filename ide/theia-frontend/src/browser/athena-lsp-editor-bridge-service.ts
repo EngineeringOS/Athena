@@ -16,6 +16,7 @@ import {
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
+import { MonacoThemeRegistry } from '@theia/monaco/lib/browser/textmate/monaco-theme-registry';
 import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
 import type {
     AthenaAuthoringDecisionParams,
@@ -58,6 +59,31 @@ import type {
 } from './athena-graph-command-intent-protocol';
 import { toAthenaBackendUrl } from './athena-backend-endpoint';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
+
+const ATHENA_LIGHT_TOKEN_COLORS = {
+    declaration: '0B5CAD',
+    port: '197A3A',
+    relationship: 'B35C00',
+    layout: '7A3EA1',
+    layoutOperator: 'C43C84',
+    relationshipOperator: '6B7280'
+} as const;
+
+const ATHENA_DARK_TOKEN_COLORS = {
+    declaration: '7DB7FF',
+    port: '7EE787',
+    relationship: 'FFB454',
+    layout: 'D8B4FE',
+    layoutOperator: 'FF8FCB',
+    relationshipOperator: 'B8C0CC'
+} as const;
+
+type AthenaTokenColorPalette = Record<keyof typeof ATHENA_LIGHT_TOKEN_COLORS, string>;
+type AthenaThemeDataWithSemanticTokens = monaco.editor.IStandaloneThemeData & {
+    settings?: unknown[];
+    semanticHighlighting?: boolean;
+    semanticTokenColors?: Record<string, unknown>;
+};
 
 type AthenaLspTransportEnvelope = {
     method: string;
@@ -666,6 +692,9 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     @inject(AthenaTreeSitterHighlightingService)
     protected readonly treeSitterHighlightingService: AthenaTreeSitterHighlightingService;
 
+    @inject(MonacoThemeRegistry)
+    protected readonly monacoThemeRegistry: MonacoThemeRegistry;
+
     protected readonly openedDocumentVersions = new Map<string, number>();
     protected readonly documentSyncOperations = new Map<string, Promise<void>>();
     protected readonly documentSymbolProviderDidChangeEmitter = new monaco.Emitter<void>();
@@ -708,6 +737,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             });
         }
         monaco.languages.setLanguageConfiguration(ATHENA_LANGUAGE_ID, athenaLanguageConfiguration);
+        this.registerAthenaTokenThemeRules();
         this.languageProviderListeners.push(monaco.editor.onDidCreateModel(model => {
             this.ensureAthenaModelLanguage(model);
         }));
@@ -715,6 +745,52 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             this.ensureAthenaModelLanguage(model);
         });
         this.registerAthenaLanguageProviders();
+    }
+
+    protected registerAthenaTokenThemeRules(): void {
+        this.patchAthenaTheme(MonacoThemeRegistry.LIGHT_DEFAULT_THEME, 'vs', ATHENA_LIGHT_TOKEN_COLORS);
+        this.patchAthenaTheme(MonacoThemeRegistry.DARK_DEFAULT_THEME, 'vs-dark', ATHENA_DARK_TOKEN_COLORS);
+        this.patchAthenaTheme(MonacoThemeRegistry.HC_DEFAULT_THEME, 'hc-black', ATHENA_DARK_TOKEN_COLORS);
+        this.patchAthenaTheme(MonacoThemeRegistry.HC_LIGHT_THEME, 'hc-light', ATHENA_LIGHT_TOKEN_COLORS);
+    }
+
+    protected patchAthenaTheme(
+        themeName: string,
+        fallbackBase: monaco.editor.BuiltinTheme,
+        colors: AthenaTokenColorPalette
+    ): void {
+        const existingTheme = this.monacoThemeRegistry.getThemeData(themeName) as AthenaThemeDataWithSemanticTokens | undefined;
+        const rules = (existingTheme?.rules ?? [])
+            .filter(rule => !String(rule.token ?? '').includes('athena'));
+        const data: AthenaThemeDataWithSemanticTokens = {
+            ...(existingTheme ?? {
+                settings: [],
+                base: fallbackBase,
+                inherit: true,
+                colors: {},
+                rules: []
+            }),
+            rules: [
+                ...rules,
+                { token: 'keyword.athena-declaration', foreground: colors.declaration, fontStyle: 'bold' },
+                { token: 'keyword.athena-port', foreground: colors.port, fontStyle: 'bold' },
+                { token: 'keyword.athena-relationship', foreground: colors.relationship, fontStyle: 'bold' },
+                { token: 'keyword.athena-layout', foreground: colors.layout, fontStyle: 'bold' },
+                { token: 'operator.athena-layout', foreground: colors.layoutOperator, fontStyle: 'bold' },
+                { token: 'operator.athena-relationship', foreground: colors.relationshipOperator, fontStyle: 'bold' }
+            ],
+            semanticHighlighting: true,
+            semanticTokenColors: {
+                ...existingTheme?.semanticTokenColors,
+                athenaDeclarationKeyword: { foreground: colors.declaration, bold: true },
+                athenaPortKeyword: { foreground: colors.port, bold: true },
+                athenaRelationshipKeyword: { foreground: colors.relationship, bold: true },
+                athenaLayoutKeyword: { foreground: colors.layout, bold: true },
+                athenaLayoutOperator: { foreground: colors.layoutOperator, bold: true },
+                operator: colors.relationshipOperator
+            }
+        };
+        this.monacoThemeRegistry.setTheme(themeName, data as Parameters<MonacoThemeRegistry['setTheme']>[1]);
     }
 
     protected registerAthenaLanguageProviders(): void {

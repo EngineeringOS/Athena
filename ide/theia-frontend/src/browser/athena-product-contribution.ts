@@ -21,6 +21,8 @@ declare global {
         __athenaWorkbenchSmoke?: {
             revealGraphicalView: () => Promise<void>;
             revealOutlineForSource: (sourceUri: string) => Promise<AthenaOutlineSmokeProof>;
+            openSourceEditorForSmoke: (sourceUri: string) => Promise<AthenaSourceEditorSmokeProof>;
+            revealSourceLineForSmoke: (lineNumber: number) => Promise<void>;
         };
     }
 }
@@ -31,6 +33,16 @@ export interface AthenaOutlineSmokeProof {
     readonly nodeNames: string[];
     readonly paths: string[];
 }
+
+export interface AthenaSourceEditorSmokeProof {
+    readonly widgetId: string;
+    readonly resourceUri: string;
+    readonly currentEditorWidgetId: string;
+}
+
+type AthenaOpenableEditorWidget = {
+    id?: string;
+};
 
 @injectable()
 export class AthenaProductContribution extends AbstractViewContribution<AthenaHomeWidget>
@@ -84,7 +96,9 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         if (typeof window !== 'undefined') {
             window.__athenaWorkbenchSmoke = {
                 revealGraphicalView: () => commands.executeCommand(AthenaCommands.REVEAL_GRAPHICAL_VIEW.id),
-                revealOutlineForSource: sourceUri => this.revealOutlineForSource(commands, sourceUri)
+                revealOutlineForSource: sourceUri => this.revealOutlineForSource(commands, sourceUri),
+                openSourceEditorForSmoke: sourceUri => this.openSourceEditorForSmoke(sourceUri),
+                revealSourceLineForSmoke: lineNumber => this.revealSourceLineForSmoke(lineNumber)
             };
         }
     }
@@ -209,6 +223,36 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
             nodeNames: this.collectOutlineNodeNames(root),
             paths: this.collectOutlinePaths(tree)
         };
+    }
+
+    protected async openSourceEditorForSmoke(sourceUri: string): Promise<AthenaSourceEditorSmokeProof> {
+        const widget = await open(this.openerService, new URI(sourceUri)) as AthenaOpenableEditorWidget | undefined;
+        if (widget?.id) {
+            await this.shell.activateWidget(widget.id).catch(() => undefined);
+        }
+        const editorWidget = this.editorManager.currentEditor;
+        if (editorWidget?.id) {
+            await this.shell.activateWidget(editorWidget.id).catch(() => undefined);
+        }
+        return {
+            widgetId: widget?.id ?? '',
+            resourceUri: editorWidget?.getResourceUri()?.toString() ?? '',
+            currentEditorWidgetId: editorWidget?.id ?? ''
+        };
+    }
+
+    protected async revealSourceLineForSmoke(lineNumber: number): Promise<void> {
+        const editorWidget = this.editorManager.currentEditor;
+        if (!editorWidget) {
+            return;
+        }
+        editorWidget.editor.cursor = { line: Math.max(0, lineNumber - 1), character: 0 };
+        editorWidget.editor.revealPosition(
+            { line: Math.max(0, lineNumber - 1), character: 0 },
+            { vertical: 'center', horizontal: true }
+        );
+        editorWidget.editor.focus();
+        await new Promise(resolve => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
     }
 
     protected async waitForOutlineRoot(
