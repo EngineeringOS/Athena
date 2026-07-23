@@ -1,0 +1,9 @@
+{
+  "packageId": "com.athena.sample.engineering.motion.shutter-motor",
+  "kind": "engineering-catalog",
+  "version": "1.0.0",
+  "concepts": ["ShutterMotor"],
+  "products": ["M32DemoShutterMotor"],
+  "provenance": "athena-owned-m32-sample",
+  "representationAuthority": false
+}

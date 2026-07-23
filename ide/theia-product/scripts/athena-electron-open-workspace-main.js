@@ -16,7 +16,10 @@ const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED';
 const SHOULD_EXIT_ON_WORKSPACE_OPEN = process.env.ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN === '1';
 const REQUESTED_ACTIVE_VIEW = resolveRequestedActiveView();
 const GRAPH_VIEW_SCREENSHOT_PATH = process.env.ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT || '';
+const CAPTURE_CREATE_ENTITY_PANEL = process.env.ATHENA_ELECTRON_SMOKE_CAPTURE_CREATE_ENTITY_PANEL === '1';
 const SKIP_SMOKE_OUTLINE = process.env.ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE === '1';
+const SMOKE_CREATE_ENTITY_TAG = process.env.ATHENA_ELECTRON_SMOKE_CREATE_ENTITY_TAG || '';
+const SMOKE_EXPECT_SEMANTIC_ID = process.env.ATHENA_ELECTRON_SMOKE_EXPECT_SEMANTIC_ID || '';
 const COLLECT_EDITOR_SYNTAX_COLOR_PROOF = process.env.ATHENA_ELECTRON_SMOKE_EDITOR_SYNTAX_COLORS === '1';
 const SMOKE_OUTLINE_SOURCE_RELATIVE = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE
     || 'src/01-interaction-authoring-source.athena';
@@ -139,6 +142,7 @@ async function openWorkspace(window) {
                 ? { skipped: true, reason: 'ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE=1' }
                 : await collectOutlineProof(target);
             smokeStep('outline-proof');
+            smokeStep('graph-reveal-start');
             if (athenaWorkbenchSmoke) {
                 await Promise.race([
                     athenaWorkbenchSmoke(),
@@ -160,6 +164,7 @@ async function openWorkspace(window) {
             } else {
                 await revealGraphicalViewThroughDom();
             }
+            smokeStep('graph-reveal-end');
 
             const workbench = await requireElement('.athena-graph-workbench', 'graph workbench root');
             smokeStep('graph-workbench-root');
@@ -194,20 +199,48 @@ async function openWorkspace(window) {
             }, 'graph workbench viewport');
             smokeStep('graph-workbench-viewport');
             const sheet = await requireElement('.athena-graph-workbench__sheet', 'graph workbench sheet');
+            smokeStep('graph-workbench-sheet');
             const canvas = await requireElement('.athena-graph-workbench__canvas', 'graph workbench canvas');
+            smokeStep('graph-workbench-canvas');
             const floatingBar = await requireElement('.athena-graph-workbench__floating-bar', 'graph workbench floating bar');
             const bottomDock = await requireElement('.athena-graph-workbench__bottom-dock', 'graph workbench bottom dock');
             const zoomDock = await requireElement('.athena-graph-workbench__zoom-dock', 'graph workbench zoom dock');
             const sheetFrame = await requireElement('.athena-graph-workbench__sheet-frame', 'graph workbench sheet frame');
+            smokeStep('graph-workbench-chrome');
             const infoButton = await requireElement('[data-athena-info-button="true"]', 'graph workbench info button');
-            const sheetViewSelector = document.querySelector('.athena-graph-workbench__sheet-view-selector select');
+            const createEntityButton = await requireElement('[data-athena-create-entity-button="true"]', 'graph workbench create entity button');
             const referenceMarkerButtons = Array.from(document.querySelectorAll('[data-athena-reference-marker="true"]'));
+            const projectionViewProof = collectProjectionViewProof();
+            smokeStep('graph-workbench-controls');
 
             infoButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
             const infoPopover = await requireElement('[data-athena-info-popover="true"]', 'graph workbench info popover');
             const popoverText = infoPopover.textContent || '';
             stage.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
             await waitFor(() => !document.querySelector('[data-athena-info-popover="true"]'), 'graph workbench info popover close');
+            smokeStep('graph-workbench-info-popover');
+            const captureCreateEntityPanel = ${JSON.stringify(CAPTURE_CREATE_ENTITY_PANEL)};
+            const createEntityPanelProof = await collectCreateEntityPanelProof(createEntityButton, captureCreateEntityPanel);
+            smokeStep('graph-workbench-create-panel');
+            if (captureCreateEntityPanel) {
+                return {
+                    workspace: target,
+                    graphWorkbench: {
+                        root: !!workbench,
+                        stage: !!stage,
+                        viewport: !!viewport,
+                        sheet: !!sheet,
+                        canvas: !!canvas,
+                        activeViewId: collectActiveProjectionViewId(),
+                        createEntityPanelProof
+                    }
+                };
+            }
+            const expectedSemanticProof = await collectExpectedSemanticProof();
+            const documentProjectionProof = await collectWithSmokeStep(
+                'documentation-compatibility-proof',
+                collectDocumentationCompatibilityProof
+            );
 
             return {
                 workspace: target,
@@ -225,20 +258,236 @@ async function openWorkspace(window) {
                     sheetFrame: !!sheetFrame,
                     sheetChromeVisualProof: collectSheetChromeVisualProof(sheet, sheetFrame),
                     stageHasGrid: window.getComputedStyle(stage).backgroundImage.includes('linear-gradient'),
-                    infoPopoverOpened: popoverText.includes('Cabinet Main'),
+                    infoPopoverOpened: popoverText.includes('Projection Information'),
                     infoPopoverClosedOnWhitespace: !document.querySelector('[data-athena-info-popover="true"]'),
-                    documentProjectionProof: collectDocumentProjectionProof(sheetViewSelector, referenceMarkerButtons),
+                    projectionViewProof,
+                    createEntityPanelProof,
+                    expectedSemanticProof,
+                    documentProjectionProof,
                     sheetSurfaceProof: collectSheetSurfaceProof(sheetFrame),
                     densityProof: collectDensityProof(referenceMarkerButtons),
                     routeProof: collectRouteProof(),
                     representationProof: collectRepresentationProof(),
                     visualProof: collectVisualProof(),
-                    allSheetVisualProof: await collectAllSheetVisualProofs(sheetViewSelector),
-                    sheetSelectorPersistenceProof: await collectSheetSelectorPersistenceProof(sheetViewSelector),
-                    editorSyntaxColorProof: await collectEditorSyntaxColorProof(target),
+                    editorSyntaxColorProof: await collectWithSmokeStep('editor-syntax-color-proof', () => collectEditorSyntaxColorProof(target)),
                     outlineProof
                 }
             };
+
+            async function collectWithSmokeStep(step, collector) {
+                smokeStep(step + '-start');
+                const result = await collector();
+                smokeStep(step + '-end');
+                return result;
+            }
+
+            function collectProjectionViewProof() {
+                const viewSwitches = document.querySelector('.athena-graph-workbench__view-switches');
+                const visibleButtons = Array.from(document.querySelectorAll('[data-athena-projection-view-id]'));
+                return {
+                    visibleViewIds: visibleButtons
+                        .map(button => button.getAttribute('data-athena-projection-view-id') || '')
+                        .filter(Boolean),
+                    visibleViewButtonCount: visibleButtons.length,
+                    activeViewIds: visibleButtons
+                        .filter(button => button.disabled)
+                        .map(button => button.getAttribute('data-athena-projection-view-id') || '')
+                        .filter(Boolean),
+                    compatibilityViewCount: Number(viewSwitches?.getAttribute('data-athena-compatibility-projection-view-count') || 0),
+                    visibleViewCountAttribute: Number(viewSwitches?.getAttribute('data-athena-visible-projection-view-count') || 0)
+                };
+            }
+
+            async function collectCreateEntityPanelProof(createEntityButton, keepOpen = false) {
+                const buttonWasDisabled = !!createEntityButton.disabled;
+                if (!buttonWasDisabled) {
+                    createEntityButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                }
+                const panel = await requireElement('[data-athena-create-entity-panel="true"]', 'graph workbench create entity panel');
+                const panelRect = roundedClientRect(panel);
+                const panelText = (panel.textContent || '').replace(/\\s+/g, ' ').trim();
+                const conceptSelect = panel.querySelector('select');
+                const tagInput = panel.querySelector('input[placeholder="ShutterMotorM31"]');
+                const modelInput = panel.querySelector('input[placeholder="SPARE-XT"]');
+                const previewButton = panel.querySelector('button[aria-label="Preview device creation"]');
+                const closeButton = panel.querySelector('button[aria-label="Close create entity controls"]');
+                const panelCenterX = panelRect.left + panelRect.width / 2;
+                const panelCenterY = panelRect.top + panelRect.height / 2;
+                const frontmostElement = document.elementFromPoint(panelCenterX, panelCenterY);
+                const preloadOverlay = document.querySelector('.theia-preload');
+                const preloadRect = preloadOverlay ? roundedClientRect(preloadOverlay) : undefined;
+                const preloadStyle = preloadOverlay ? window.getComputedStyle(preloadOverlay) : undefined;
+                const reachableControls = [conceptSelect, tagInput, modelInput, previewButton, closeButton]
+                    .filter(Boolean)
+                    .map(control => roundedClientRect(control));
+                const proof = {
+                    buttonPresent: !!createEntityButton,
+                    buttonDisabledBeforeClick: buttonWasDisabled,
+                    opened: visibleElement(panel),
+                    panelWidth: panelRect.width,
+                    panelHeight: panelRect.height,
+                    panelLeft: panelRect.left,
+                    panelTop: panelRect.top,
+                    panelRight: panelRect.right,
+                    panelBottom: panelRect.bottom,
+                    viewportWidth: window.innerWidth,
+                    viewportHeight: window.innerHeight,
+                    withinViewport: panelRect.left >= 0 &&
+                        panelRect.top >= 0 &&
+                        panelRect.right <= window.innerWidth &&
+                        panelRect.bottom <= window.innerHeight,
+                    frontmostAtCenter: !!frontmostElement && (frontmostElement === panel || panel.contains(frontmostElement)),
+                    centerHitTagName: frontmostElement?.tagName || '',
+                    centerHitClassName: String(frontmostElement?.className || ''),
+                    preloadOverlayPresent: !!preloadOverlay,
+                    preloadOverlayDisplay: preloadStyle?.display || '',
+                    preloadOverlayVisibility: preloadStyle?.visibility || '',
+                    preloadOverlayOpacity: preloadStyle?.opacity || '',
+                    preloadOverlayPointerEvents: preloadStyle?.pointerEvents || '',
+                    preloadOverlayZIndex: preloadStyle?.zIndex || '',
+                    preloadOverlayLeft: preloadRect?.left ?? 0,
+                    preloadOverlayTop: preloadRect?.top ?? 0,
+                    preloadOverlayRight: preloadRect?.right ?? 0,
+                    preloadOverlayBottom: preloadRect?.bottom ?? 0,
+                    preloadOverlayContainsCenter: !!preloadRect &&
+                        panelCenterX >= preloadRect.left &&
+                        panelCenterX <= preloadRect.right &&
+                        panelCenterY >= preloadRect.top &&
+                        panelCenterY <= preloadRect.bottom,
+                    reachableControlCount: reachableControls.filter(rect => rect.width > 0 && rect.height > 0).length,
+                    hasConceptSelect: !!conceptSelect,
+                    hasTagInput: !!tagInput,
+                    hasModelInput: !!modelInput,
+                    previewButtonPresent: !!previewButton,
+                    previewButtonDisabled: !!previewButton?.disabled,
+                    textIncludesCreateEntity: panelText.includes('Create Device'),
+                    textIncludesSourceEditorGuidance: panelText.includes('Open an Athena source editor before previewing a source-backed create action.'),
+                };
+                const createEntityTag = ${JSON.stringify(SMOKE_CREATE_ENTITY_TAG)};
+                if (createEntityTag) {
+                    const graphFirstAuthoringProof = await createEntityFromGraphPanel(createEntityTag, {
+                        conceptSelect,
+                        tagInput,
+                        modelInput,
+                        previewButton,
+                    });
+                    return {
+                        ...proof,
+                        closed: !document.querySelector('[data-athena-create-entity-panel="true"]'),
+                        graphFirstAuthoringProof,
+                    };
+                }
+                if (keepOpen) {
+                    return {
+                        ...proof,
+                        closed: false
+                    };
+                }
+                closeButton?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                await waitFor(
+                    () => !document.querySelector('[data-athena-create-entity-panel="true"]'),
+                    'graph workbench create entity panel close'
+                );
+                return {
+                    ...proof,
+                    closed: !document.querySelector('[data-athena-create-entity-panel="true"]')
+                };
+            }
+
+            async function createEntityFromGraphPanel(createEntityTag, controls) {
+                const { conceptSelect, tagInput, modelInput, previewButton } = controls;
+                if (!conceptSelect || !tagInput || !modelInput || !previewButton) {
+                    throw new Error('Graph-first create proof requires all Create Device controls.');
+                }
+                const motorOption = Array.from(conceptSelect.options).find(option =>
+                    /motor/i.test(option.value) || /motor/i.test(option.textContent || '')
+                );
+                if (motorOption) {
+                    conceptSelect.value = motorOption.value;
+                    conceptSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    await new Promise(resolve => requestAnimationFrame(resolve));
+                }
+                const currentTagInput = await waitFor(
+                    () => document.querySelector('[data-athena-create-entity-panel="true"] input[placeholder="ShutterMotorM31"]'),
+                    'graph-first create tag input'
+                );
+                const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+                valueSetter?.call(currentTagInput, createEntityTag);
+                currentTagInput.dispatchEvent(new Event('input', { bubbles: true }));
+                currentTagInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+                const activePreviewButton = await waitFor(() => {
+                    const button = document.querySelector('button[aria-label="Preview device creation"]');
+                    return button && !button.disabled ? button : undefined;
+                }, 'enabled graph-first create preview button');
+                activePreviewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+                const acceptButton = await waitFor(() => {
+                    const button = document.querySelector('button[aria-label="Accept device creation"]');
+                    return button && !button.disabled ? button : undefined;
+                }, 'acceptance-eligible graph-first create preview', 60000);
+                const previewPanelText = (document.querySelector('[data-athena-create-entity-panel="true"]')?.textContent || '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                smokeStep('graph-create-preview-eligible');
+                acceptButton.click();
+                smokeStep('graph-create-accept-requested');
+
+                const semanticId = 'component:' + createEntityTag;
+                await waitFor(() => {
+                    const occurrence = document.querySelector('[data-athena-semantic-id="' + semanticId + '"]');
+                    return occurrence && !document.querySelector('[data-athena-create-entity-panel="true"]')
+                        ? occurrence
+                        : undefined;
+                }, 'created semantic occurrence ' + semanticId, 60000).catch(error => {
+                    const panel = document.querySelector('[data-athena-create-entity-panel="true"]');
+                    const renderedSemanticIds = Array.from(document.querySelectorAll('[data-athena-semantic-id]'))
+                        .map(element => element.getAttribute('data-athena-semantic-id') || '')
+                        .filter(Boolean);
+                    const emptyText = (document.querySelector('.athena-graph-workbench__empty')?.textContent || '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    const loadingClasses = Array.from(document.querySelectorAll('.codicon-loading, .codicon-modifier-spin, .theia-loading, .theia-preload'))
+                        .map(element => String(element.className || ''));
+                    throw new Error(error.message + ': ' + JSON.stringify({
+                        activeViewId: collectActiveProjectionViewId(),
+                        panelPresent: !!panel,
+                        panelText: (panel?.textContent || '').replace(/\s+/g, ' ').trim(),
+                        renderedSemanticIds,
+                        emptyText,
+                        loadingClasses
+                    }));
+                });
+                smokeStep('graph-create-projected');
+                return {
+                    requested: true,
+                    tag: createEntityTag,
+                    semanticId,
+                    previewEligible: true,
+                    previewTextIncludesTag: previewPanelText.includes(createEntityTag),
+                    accepted: true,
+                    projected: true,
+                    outlineSkipped: ${JSON.stringify(SKIP_SMOKE_OUTLINE)},
+                };
+            }
+
+            async function collectExpectedSemanticProof() {
+                const expectedSemanticId = ${JSON.stringify(SMOKE_EXPECT_SEMANTIC_ID)};
+                if (!expectedSemanticId) {
+                    return { requested: false };
+                }
+                const occurrence = await waitFor(
+                    () => document.querySelector('[data-athena-semantic-id="' + expectedSemanticId + '"]'),
+                    'reopened semantic occurrence ' + expectedSemanticId,
+                    60000
+                );
+                return {
+                    requested: true,
+                    semanticId: expectedSemanticId,
+                    present: !!occurrence,
+                    outlineSkipped: ${JSON.stringify(SKIP_SMOKE_OUTLINE)},
+                };
+            }
 
             async function collectOutlineProof(target) {
                 const outlineSourceRelative = ${JSON.stringify(SMOKE_OUTLINE_SOURCE_RELATIVE)};
@@ -296,6 +545,63 @@ async function openWorkspace(window) {
                     markerTargetIds: referenceMarkerButtons
                         .map(button => button.getAttribute('data-athena-reference-marker-id') || '')
                         .filter(Boolean)
+                };
+            }
+
+            async function collectDocumentationCompatibilityProof() {
+                await switchGraphWorkbenchProjectionView('documentation');
+                let proof;
+                try {
+                    const initialNavigation = await requireElement(
+                        '.athena-graph-workbench__document-navigation',
+                        'contextual Documentation navigation'
+                    );
+                    const initialSelector = initialNavigation.querySelector('.athena-graph-workbench__sheet-view-selector select');
+                    const sheetViewIds = initialSelector
+                        ? Array.from(initialSelector.options).map(option => option.value).filter(Boolean)
+                        : [];
+                    const selectedSheetViewId = sheetViewIds[1] || initialSelector?.value || '';
+                    if (selectedSheetViewId) {
+                        await switchSheetView(selectedSheetViewId);
+                    }
+                    const selectedSheetViewIdBeforeProjectionSwitch = document.querySelector(
+                        '.athena-graph-workbench__document-navigation .athena-graph-workbench__sheet-view-selector select'
+                    )?.value || '';
+
+                    await switchGraphWorkbenchProjectionView('cabinet');
+                    await switchGraphWorkbenchProjectionView('documentation');
+
+                    const contextualNavigation = await requireElement(
+                        '.athena-graph-workbench__document-navigation',
+                        'restored contextual Documentation navigation'
+                    );
+                    const selector = contextualNavigation.querySelector('.athena-graph-workbench__sheet-view-selector select');
+                    const restoredSheetViewId = selector?.value || '';
+                    const markers = Array.from(contextualNavigation.querySelectorAll('[data-athena-reference-marker="true"]'));
+                    const toolGroup = document.querySelector('.athena-graph-workbench__tool-group');
+                    const documentControlSelector = '.athena-graph-workbench__sheet-view-selector, [data-athena-reference-marker="true"]';
+                    proof = {
+                        ...collectDocumentProjectionProof(selector, markers),
+                        compatibilityActivated: true,
+                        contextualNavigationPresent: visibleElement(contextualNavigation),
+                        contextualDocumentControlCount: contextualNavigation.querySelectorAll(documentControlSelector).length,
+                        globalToolbarDocumentControlCount: toolGroup?.querySelectorAll(documentControlSelector).length ?? 0,
+                        selectedSheetViewIdBeforeProjectionSwitch,
+                        restoredSheetViewId,
+                        sheetSelectionRestored: !!selectedSheetViewIdBeforeProjectionSwitch &&
+                            restoredSheetViewId === selectedSheetViewIdBeforeProjectionSwitch
+                    };
+                } finally {
+                    await switchGraphWorkbenchProjectionView('cabinet');
+                }
+                await waitFor(() => {
+                    const cabinetButton = document.querySelector('[data-athena-projection-view-id="cabinet"]');
+                    return cabinetButton?.disabled ? cabinetButton : undefined;
+                }, 'restored Cabinet projection after Documentation compatibility proof');
+                return {
+                    ...proof,
+                    restoredActiveViewId: collectActiveProjectionViewId(),
+                    contextualNavigationPresentAfterRestore: !!document.querySelector('.athena-graph-workbench__document-navigation')
                 };
             }
 
@@ -422,7 +728,19 @@ async function openWorkspace(window) {
                 const representationStates = representations.map(representation => ({
                     representationId: representation.getAttribute('data-athena-representation-id') || '',
                     fallback: representation.getAttribute('data-athena-render-fallback') === 'true',
-                    semanticId: representation.getAttribute('data-athena-semantic-id') || ''
+                    semanticId: representation.getAttribute('data-athena-semantic-id') || '',
+                    engineeringPackageId: representation.getAttribute('data-athena-engineering-package-id') || '',
+                    presentationProfileId: representation.getAttribute('data-athena-presentation-profile-id') || '',
+                    bindingManifestId: representation.getAttribute('data-athena-binding-manifest-id') || '',
+                    representationPackageId: representation.getAttribute('data-athena-representation-package-id') || '',
+                    descriptorId: representation.getAttribute('data-athena-representation-descriptor-id') || '',
+                    graphicResourceId: representation.getAttribute('data-athena-graphic-resource-id') || '',
+                    anchorMapSummary: (representation.getAttribute('data-athena-representation-anchor-map') || '')
+                        .split(';')
+                        .filter(Boolean),
+                    labelBindingSummary: (representation.getAttribute('data-athena-representation-label-binding') || '')
+                        .split(';')
+                        .filter(Boolean)
                 }));
                 return {
                     representationCount: representations.length,
@@ -436,6 +754,14 @@ async function openWorkspace(window) {
                         .filter(Boolean),
                     representationIds: representationStates.map(representation => representation.representationId).filter(Boolean),
                     semanticIds: representationStates.map(representation => representation.semanticId).filter(Boolean),
+                    engineeringPackageIds: representationStates.map(representation => representation.engineeringPackageId).filter(Boolean),
+                    presentationProfileIds: representationStates.map(representation => representation.presentationProfileId).filter(Boolean),
+                    bindingManifestIds: representationStates.map(representation => representation.bindingManifestId).filter(Boolean),
+                    representationPackageIds: representationStates.map(representation => representation.representationPackageId).filter(Boolean),
+                    descriptorIds: representationStates.map(representation => representation.descriptorId).filter(Boolean),
+                    graphicResourceIds: representationStates.map(representation => representation.graphicResourceId).filter(Boolean),
+                    anchorMapSummary: representationStates.flatMap(representation => representation.anchorMapSummary),
+                    labelBindingSummary: representationStates.flatMap(representation => representation.labelBindingSummary),
                     fallbackRepresentationIds: representationStates
                         .filter(representation => representation.fallback)
                         .map(representation => representation.representationId || representation.semanticId || '<unknown>'),
@@ -499,50 +825,6 @@ async function openWorkspace(window) {
                 return results;
             }
 
-            async function collectSheetSelectorPersistenceProof(sheetViewSelector) {
-                if (!sheetViewSelector) {
-                    return {
-                        skipped: true,
-                        reason: 'no sheet selector available before projection view switch'
-                    };
-                }
-                const originalSheetViewId = sheetViewSelector.value;
-                const originalOptionCount = sheetViewSelector.options.length;
-                const alternateViewButton = Array.from(document.querySelectorAll('[data-athena-projection-view-id]'))
-                    .find(button => {
-                        const viewId = button.getAttribute('data-athena-projection-view-id') || '';
-                        return viewId
-                            && viewId !== 'documentation'
-                            && !viewId.includes('/sheet/')
-                            && !button.disabled;
-                    });
-                if (!alternateViewButton) {
-                    return {
-                        skipped: true,
-                        reason: 'no alternate projection view button available'
-                    };
-                }
-
-                const alternateViewId = alternateViewButton.getAttribute('data-athena-projection-view-id') || '';
-                alternateViewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-                await waitFor(() => {
-                    const activeButton = document.querySelector('[data-athena-projection-view-id="' + alternateViewId + '"]');
-                    return activeButton?.disabled ? activeButton : undefined;
-                }, 'alternate projection view ' + alternateViewId, 30000);
-                const selectorAfterViewSwitch = document.querySelector('.athena-graph-workbench__sheet-view-selector select');
-                const optionCountAfterViewSwitch = selectorAfterViewSwitch?.options.length ?? 0;
-                await switchSheetView(originalSheetViewId, true);
-                const restoredSelector = document.querySelector('.athena-graph-workbench__sheet-view-selector select');
-                return {
-                    skipped: false,
-                    alternateViewId,
-                    selectorVisibleAfterViewSwitch: !!selectorAfterViewSwitch,
-                    optionCountBeforeViewSwitch: originalOptionCount,
-                    optionCountAfterViewSwitch,
-                    restoredSheetViewId: restoredSelector?.value || ''
-                };
-            }
-
             async function switchSheetView(sheetViewId, force = false) {
                 const selector = document.querySelector('.athena-graph-workbench__sheet-view-selector select');
                 if (!selector || (selector.value === sheetViewId && !force)) {
@@ -588,6 +870,29 @@ async function openWorkspace(window) {
                         5000
                     ))
                 ]);
+            }
+
+            async function switchGraphWorkbenchProjectionView(viewId) {
+                const switchProjectionView = await waitFor(
+                    () => window.__athenaWorkbenchSmoke?.switchProjectionView,
+                    'Athena projection compatibility smoke hook'
+                );
+                const switched = await Promise.race([
+                    switchProjectionView(viewId),
+                    new Promise((_, reject) => setTimeout(
+                        () => reject(new Error('Timed out waiting for graph widget projection switch ' + viewId)),
+                        10000
+                    ))
+                ]);
+                if (!switched) {
+                    throw new Error('Graph widget rejected projection compatibility switch ' + viewId);
+                }
+                await waitFor(() => {
+                    const routeCount = document.querySelectorAll('[data-athena-route-fact="true"]').length;
+                    const nodeBoxCount = document.querySelectorAll('.athena-graph-workbench__node-hitbox').length;
+                    return routeCount > 0 && nodeBoxCount > 0 ? true : undefined;
+                }, 'rendered projection compatibility view ' + viewId, 30000);
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             }
 
             function dispatchNativeSheetSelectorChange(sheetViewId) {
@@ -910,6 +1215,7 @@ async function captureGraphWorkbenchScreenshot(window) {
                 }
                 throw new Error('Timed out waiting for screenshot-ready graph workbench: ' + description);
             };
+            let lastReadinessState;
             await waitFor(() => {
                 const workbench = document.querySelector('.athena-graph-workbench');
                 const viewport = document.querySelector('.athena-graph-workbench__viewport');
@@ -923,6 +1229,25 @@ async function captureGraphWorkbenchScreenshot(window) {
                 const workbenchRect = workbench?.getBoundingClientRect();
                 const viewportRect = viewport?.getBoundingClientRect();
                 const sheetRect = sheet?.getBoundingClientRect();
+                const spinnerStyle = activeSpinner ? window.getComputedStyle(activeSpinner) : undefined;
+                lastReadinessState = {
+                    workbench: !!workbench,
+                    viewportPresent: !!viewport,
+                    sheet: !!sheet,
+                    sheetFrame: !!sheetFrame,
+                    routeCount,
+                    emptyText,
+                    activeSpinnerClass: activeSpinner?.className || '',
+                    activeSpinnerDisplay: spinnerStyle?.display || '',
+                    activeSpinnerVisibility: spinnerStyle?.visibility || '',
+                    activeSpinnerOpacity: spinnerStyle?.opacity || '',
+                    workbenchWidth: workbenchRect?.width || 0,
+                    workbenchHeight: workbenchRect?.height || 0,
+                    viewportWidth: viewportRect?.width || 0,
+                    viewportHeight: viewportRect?.height || 0,
+                    sheetWidth: sheetRect?.width || 0,
+                    sheetHeight: sheetRect?.height || 0
+                };
                 return workbench
                     && viewport
                     && sheet
@@ -936,7 +1261,9 @@ async function captureGraphWorkbenchScreenshot(window) {
                     && viewportRect?.height > 0
                     && sheetRect?.width > 0
                     && sheetRect?.height > 0;
-            }, 'visible routed sheet');
+            }, 'visible routed sheet').catch(error => {
+                throw new Error(error.message + ': ' + JSON.stringify(lastReadinessState));
+            });
             await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             const rect = document.querySelector('.athena-graph-workbench').getBoundingClientRect();
             return {

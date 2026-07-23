@@ -1,0 +1,8 @@
+{
+  "manifestId": "binding.m32.motion-shutter-motor",
+  "engineeringPackageId": "com.athena.sample.engineering.motion.shutter-motor",
+  "conceptId": "ShutterMotor",
+  "defaultRepresentationPackageId": "com.athena.sample.representation.motion.motor.iec",
+  "alternativeRepresentationPackageIds": ["com.athena.sample.representation.motion.motor.compact"],
+  "compatibleProfileTags": ["m32-iec", "m32-compact"]
+}

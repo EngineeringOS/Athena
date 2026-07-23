@@ -31,7 +31,7 @@ test('M21 graph workbench visual proof keeps the accepted canvas contract visibl
     const usage = readRepoFile('docs/usages/m21-proof-usage.md');
 
     assert.match(widget, /renderStageChrome\(/);
-    assert.match(widget, /renderCabinetMainPopover\(/);
+    assert.match(widget, /renderProjectionInfoPopover\(/);
     assert.match(widget, /renderBottomDock\(/);
     assert.match(widget, /handleWorkbenchClick/);
     assert.match(widget, /data-athena-info-button='true'/);

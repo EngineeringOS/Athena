@@ -751,6 +751,81 @@ test('preserves document sheet selector across projection view changes from shee
     );
 });
 
+test('keeps non-M31 package sheet selector visible across projection view changes', () => {
+    assert.equal(typeof graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector, 'function');
+
+    const packageSelector = {
+        activeSheetViewId: 'm32/sheet/01-power',
+        hasMultipleSheetViews: true,
+        entries: [
+            {
+                sheetViewId: 'm32/sheet/01-power',
+                displayOrder: 1,
+                title: 'Power',
+                role: 'power-distribution',
+                subjectCount: 3,
+                isActive: true,
+                label: '1 - Power',
+            },
+            {
+                sheetViewId: 'm32/sheet/02-control',
+                displayOrder: 2,
+                title: 'Control',
+                role: 'control-logic',
+                subjectCount: 4,
+                isActive: false,
+                label: '2 - Control',
+            },
+            {
+                sheetViewId: 'm32/sheet/03-field',
+                displayOrder: 3,
+                title: 'Field',
+                role: 'field-terminal-transition',
+                subjectCount: 5,
+                isActive: false,
+                label: '3 - Field',
+            },
+        ],
+    };
+    const modelWithPackageSheets = { sheetViewSelector: packageSelector };
+    const modelWithoutSheets = { sheetViewSelector: undefined };
+
+    assert.equal(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(modelWithPackageSheets, undefined),
+        packageSelector,
+    );
+    assert.equal(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(modelWithoutSheets, packageSelector),
+        packageSelector,
+    );
+});
+
+test('intentionally hides sheet selector for single-sheet or empty selector state', () => {
+    const singleSheetSelector = {
+        activeSheetViewId: 'm32/sheet/only',
+        hasMultipleSheetViews: false,
+        entries: [
+            {
+                sheetViewId: 'm32/sheet/only',
+                displayOrder: 1,
+                title: 'Only Sheet',
+                subjectCount: 1,
+                isActive: true,
+                label: '1 - Only Sheet',
+            },
+        ],
+    };
+
+    assert.equal(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: singleSheetSelector }, undefined),
+        undefined,
+    );
+    assert.equal(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: undefined }, undefined),
+        undefined,
+    );
+});
+
 test('resolves reference marker navigation through target occurrence identity', () => {
     assert.equal(typeof graphWorkbenchModel.resolveAthenaGraphReferenceMarkerNavigation, 'function');
 

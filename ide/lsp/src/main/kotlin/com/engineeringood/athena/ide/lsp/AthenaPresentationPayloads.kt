@@ -201,6 +201,23 @@ data class AthenaPresentationRepresentationFactPayload(
     val anatomy: AthenaPresentationAnatomyPayload,
     val terminals: List<AthenaPresentationTerminalFactPayload>,
     val labels: List<AthenaPresentationLabelFactPayload>,
+    val packageEvidence: AthenaPresentationPackageEvidencePayload? = null,
+)
+
+data class AthenaPresentationPackageEvidencePayload(
+    val engineeringPackageId: String,
+    val engineeringPackageVersion: String,
+    val presentationProfileId: String,
+    val bindingManifestId: String,
+    val representationPackageId: String,
+    val representationPackageVersion: String,
+    val descriptorId: String,
+    val graphicResourceId: String,
+    val variant: String,
+    val anchorMapSummary: List<String>,
+    val labelBindingSummary: List<String>,
+    val resolverStage: String,
+    val rendererFallbackAccepted: Boolean,
 )
 
 data class AthenaPresentationSymbolAnatomyPayload(

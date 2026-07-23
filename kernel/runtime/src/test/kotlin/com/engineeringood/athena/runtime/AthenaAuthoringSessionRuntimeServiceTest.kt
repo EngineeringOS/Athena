@@ -182,6 +182,19 @@ class AthenaAuthoringSessionRuntimeServiceTest {
     }
 
     @Test
+    fun `preview session compatibility is explicitly versioned as read only legacy API`() {
+        val contract = AthenaAuthoringSessionRuntimeService().compatibilityContract()
+
+        assertEquals("legacy-preview-readonly-v1", contract.apiVersion)
+        assertEquals(false, contract.mutableSourceAuthority)
+        assertEquals(true, contract.acceptanceRequiresGovernedAuthorities)
+        assertEquals(
+            listOf("submit", "state", "snapshot", "restoreSession", "applyDecision"),
+            contract.retainedMethods,
+        )
+    }
+
+    @Test
     fun `governed acceptance executes the stored transaction exactly once`() {
         val sourcePath = writeProject(authoringFixture())
 

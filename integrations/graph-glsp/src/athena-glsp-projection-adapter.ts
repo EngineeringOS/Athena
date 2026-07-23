@@ -47,9 +47,7 @@ export function translateProjectionSessionToGLSPDiagram(
             const policyEvidence = normalizeSheetPolicyEvidence(rawPolicyEvidence);
             return {
                 ...sheetWithoutPolicyEvidence,
-                role: sheet.role ?? policyEvidence?.sheetViewRole ?? (
-                    rawPolicyEvidence ? undefined : resolveSheetViewRole(sheet.displayName)
-                ),
+                role: sheet.role ?? policyEvidence?.sheetViewRole,
                 subjectSemanticIds: [...normalizeArray(sheet.subjectSemanticIds)],
                 ...(policyEvidence ? { policyEvidence } : {}),
                 ...(sheet.publication ? { publication: normalizeSheetPublication(sheet.publication) } : {}),
@@ -81,20 +79,6 @@ export function translateProjectionSessionToGLSPDiagram(
             electricalRoutingCorridors,
         }),
     };
-}
-
-function resolveSheetViewRole(displayName: string): string | undefined {
-    const normalized = displayName.toLowerCase();
-    if (normalized.includes('power distribution')) {
-        return 'power_distribution';
-    }
-    if (normalized.includes('control') || normalized.includes('plc')) {
-        return 'control_logic';
-    }
-    if (normalized.includes('field wiring') || normalized.includes('terminal')) {
-        return 'field_wiring';
-    }
-    return undefined;
 }
 
 function normalizeSheetPolicyEvidence(
@@ -393,6 +377,23 @@ function normalizePresentationDocument(
                     point: { ...label.anchor.point },
                 },
             })),
+            ...(fact.packageEvidence ? {
+                packageEvidence: {
+                    engineeringPackageId: fact.packageEvidence.engineeringPackageId,
+                    engineeringPackageVersion: fact.packageEvidence.engineeringPackageVersion,
+                    presentationProfileId: fact.packageEvidence.presentationProfileId,
+                    bindingManifestId: fact.packageEvidence.bindingManifestId,
+                    representationPackageId: fact.packageEvidence.representationPackageId,
+                    representationPackageVersion: fact.packageEvidence.representationPackageVersion,
+                    descriptorId: fact.packageEvidence.descriptorId,
+                    graphicResourceId: fact.packageEvidence.graphicResourceId,
+                    variant: fact.packageEvidence.variant,
+                    anchorMapSummary: [...normalizeArray(fact.packageEvidence.anchorMapSummary)],
+                    labelBindingSummary: [...normalizeArray(fact.packageEvidence.labelBindingSummary)],
+                    resolverStage: fact.packageEvidence.resolverStage,
+                    rendererFallbackAccepted: fact.packageEvidence.rendererFallbackAccepted === true,
+                },
+            } : {}),
         })),
     };
 }

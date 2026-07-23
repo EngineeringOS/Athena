@@ -36,11 +36,17 @@ test('M31 relationship preview keeps generic semantic relationship transport onl
 
 test('Graphical View relationship candidates are capability-derived adapter evidence', () => {
     const nodeBody = methodBody(graphWorkbenchSource, 'renderGraphNode');
+    const connectableBody = methodBody(graphWorkbenchSource, 'isConnectablePortNode');
+    const candidateBody = methodBody(graphWorkbenchSource, 'isRelationshipCandidateNode');
     assert.match(graphWorkbenchSource, /isRelationshipCandidateNode/);
     assert.match(graphWorkbenchSource, /relationshipCandidateReason/);
     assert.match(graphWorkbenchSource, /relationship compatibility evidence/i);
+    assert.match(graphWorkbenchSource, /relationshipCandidateEvidence/);
     assert.match(nodeBody, /this\.isRelationshipCandidateNode\(node\)/);
     assert.doesNotMatch(nodeBody, /!!this\.connectPortsSource\s*&&\s*isConnectablePort\s*&&/);
+    assert.doesNotMatch(connectableBody, /startsWith\(['"]port:/);
+    assert.doesNotMatch(candidateBody, /startsWith\(['"]port:/);
+    assert.match(candidateBody, /relationshipCandidateEvidence/);
     assert.doesNotMatch(graphWorkbenchSource, /document\.querySelector|querySelector|canvasCoordinates|textContent|innerText|visibleLabel|svgId|classList/i);
 });
 

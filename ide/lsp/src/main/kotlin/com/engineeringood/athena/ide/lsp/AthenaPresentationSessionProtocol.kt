@@ -10,6 +10,7 @@ import com.engineeringood.athena.presentation.PresentationCompositePart
 import com.engineeringood.athena.presentation.PresentationConnector
 import com.engineeringood.athena.presentation.PresentationDocument
 import com.engineeringood.athena.presentation.PresentationOccurrence
+import com.engineeringood.athena.presentation.PresentationPackageEvidence
 import com.engineeringood.athena.presentation.PresentationPrimitiveDefinition
 import com.engineeringood.athena.presentation.PresentationPrimitiveOccurrenceReference
 import com.engineeringood.athena.presentation.PresentationPrimitivePack
@@ -254,8 +255,26 @@ private fun PresentationRepresentationFact.toPayload(): AthenaPresentationRepres
         anatomy = anatomy.toPayload(),
         terminals = terminals.map(PresentationTerminalFact::toPayload),
         labels = labels.map(LabelFact::toPayload),
+        packageEvidence = packageEvidence?.toPayload(),
     )
 }
+
+private fun PresentationPackageEvidence.toPayload(): AthenaPresentationPackageEvidencePayload =
+    AthenaPresentationPackageEvidencePayload(
+        engineeringPackageId = engineeringPackageId,
+        engineeringPackageVersion = engineeringPackageVersion,
+        presentationProfileId = presentationProfileId,
+        bindingManifestId = bindingManifestId,
+        representationPackageId = representationPackageId,
+        representationPackageVersion = representationPackageVersion,
+        descriptorId = descriptorId,
+        graphicResourceId = graphicResourceId,
+        variant = variant,
+        anchorMapSummary = anchorMapSummary,
+        labelBindingSummary = labelBindingSummary,
+        resolverStage = resolverStage,
+        rendererFallbackAccepted = rendererFallbackAccepted,
+    )
 
 private fun SymbolAnatomy.toPayload(): AthenaPresentationSymbolAnatomyPayload {
     return AthenaPresentationSymbolAnatomyPayload(

@@ -1,0 +1,9 @@
+{
+  "packageId": "com.athena.sample.representation.control.relay.iec",
+  "profile": "m32-iec",
+  "descriptorId": "descriptor.relay.iec",
+  "resourceId": "resource.relay.iec",
+  "anchors": ["supply"],
+  "labelSlots": ["device-tag"],
+  "engineeringAuthority": false
+}

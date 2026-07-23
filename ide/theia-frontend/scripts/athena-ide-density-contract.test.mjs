@@ -39,13 +39,13 @@ test('Athena inspection, repository graph, and SCM views expose dense summary ro
     assert.match(semanticScmSource, /athena-semantic-scm__control-grid/);
 });
 
-test('Athena graph workbench keeps controls in the bottom dock and Cabinet Main info in a top popover', () => {
+test('Athena graph workbench keeps controls in the bottom dock and projection info in a top popover', () => {
     const source = readBrowserSource('athena-graph-workbench-widget.tsx');
     const presentationSource = readBrowserSource('athena-graph-workbench-presentation-node.tsx');
 
     assert.match(source, /renderBottomDock\(/);
-    assert.match(source, /renderCabinetMainPopover\(/);
-    assert.match(source, /buildCabinetMainInfoRows\(/);
+    assert.match(source, /renderProjectionInfoPopover\(/);
+    assert.match(source, /buildProjectionInfoRows\(/);
     assert.match(source, /athena-graph-workbench__bottom-dock/);
     assert.match(source, /athena-graph-workbench__info-popover/);
     assert.match(source, /athena-graph-workbench__info-table/);
@@ -53,7 +53,7 @@ test('Athena graph workbench keeps controls in the bottom dock and Cabinet Main 
     assert.match(source, /athena-graph-workbench__status-icon/);
     assert.match(source, /codicon-info/);
     assert.match(source, /aria-label='Canvas controls'/);
-    assert.match(source, /aria-label='Cabinet Main information'/);
+    assert.match(source, /aria-label='Projection information'/);
     assert.match(source, /handleWorkbenchClick/);
     assert.match(source, /data-athena-info-button='true'/);
     assert.match(source, /data-athena-info-popover='true'/);
@@ -79,6 +79,8 @@ test('Athena graph workbench keeps controls in the bottom dock and Cabinet Main 
     assert.doesNotMatch(source, /athena-graph-workbench__sheet-cross-reference-marker/);
     assert.doesNotMatch(source, /titleBlock\.displayName/);
     assert.doesNotMatch(source, /aria-label='Cabinet Main'/);
+    assert.doesNotMatch(source, /Cabinet\s+Main\s+information/);
+    assert.doesNotMatch(source, /Document\s+projection\s+sheet\s+view/);
     assert.match(presentationSource, /const fill = 'transparent'/);
     assert.doesNotMatch(presentationSource, /resolveToken\(args\.tokenDefaults,\s*args\.tokenOverrides,\s*command\.fillTokenKey/);
 });

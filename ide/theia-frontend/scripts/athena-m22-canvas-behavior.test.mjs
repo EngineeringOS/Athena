@@ -45,11 +45,11 @@ test('M22 preserves accepted graph workbench canvas behavior while layout previe
 
     assert.match(widgetSource, /data-athena-info-button='true'/);
     assert.match(widgetSource, /data-athena-info-popover='true'/);
-    assert.match(methodBody(widgetSource, 'renderCabinetMainPopover'), /Cabinet Main/);
-    assert.doesNotMatch(methodBody(widgetSource, 'renderBottomDock'), /Cabinet Main/);
-    assert.doesNotMatch(methodBody(widgetSource, 'renderSheetChrome'), /Cabinet Main/);
+    assert.match(methodBody(widgetSource, 'renderProjectionInfoPopover'), /Projection Information/);
+    assert.doesNotMatch(methodBody(widgetSource, 'renderBottomDock'), /Projection Information/);
+    assert.doesNotMatch(methodBody(widgetSource, 'renderSheetChrome'), /Projection Information/);
     assert.match(methodBody(widgetSource, 'renderLayoutMutationPreview'), /layoutBlockSnippet/);
-    assert.doesNotMatch(methodBody(widgetSource, 'renderLayoutMutationPreview'), /Cabinet Main/);
+    assert.doesNotMatch(methodBody(widgetSource, 'renderLayoutMutationPreview'), /Projection Information/);
 
     [
         'stageHasGrid',
@@ -64,7 +64,7 @@ test('M22 preserves accepted graph workbench canvas behavior while layout previe
     });
 
     assert.match(usage, /stage grid remains the coordinate surface/i);
-    assert.match(usage, /Cabinet Main.*top information popover/i);
+    assert.match(usage, /Projection Information.*top information popover/i);
     assert.match(usage, /floating bottom controls/i);
     assert.match(usage, /transparent/i);
 });

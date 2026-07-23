@@ -440,6 +440,23 @@ export type AthenaGLSPPresentationRepresentationFactSource = {
     anatomy: AthenaGLSPPresentationAnatomySource;
     terminals: AthenaGLSPPresentationTerminalFactSource[];
     labels: AthenaGLSPLabelFactSource[];
+    packageEvidence?: AthenaGLSPPresentationPackageEvidenceSource;
+};
+
+export type AthenaGLSPPresentationPackageEvidenceSource = {
+    engineeringPackageId: string;
+    engineeringPackageVersion: string;
+    presentationProfileId: string;
+    bindingManifestId: string;
+    representationPackageId: string;
+    representationPackageVersion: string;
+    descriptorId: string;
+    graphicResourceId: string;
+    variant: string;
+    anchorMapSummary: string[];
+    labelBindingSummary: string[];
+    resolverStage: string;
+    rendererFallbackAccepted: boolean;
 };
 
 export type AthenaGLSPSymbolAnatomySource = {

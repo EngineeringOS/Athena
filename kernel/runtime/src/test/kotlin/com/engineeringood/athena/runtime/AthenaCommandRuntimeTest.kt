@@ -1,5 +1,6 @@
 package com.engineeringood.athena.runtime
 
+import com.engineeringood.athena.authoring.SemanticRelationshipIntent
 import com.engineeringood.athena.compiler.CompilerIncrementalPassMode
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.geometry.GeometryElementKind
@@ -377,6 +378,28 @@ class AthenaCommandRuntimeTest {
         assertEquals(AthenaMutationOutcome.VALIDATION_FEEDBACK, historyFeedback.outcome)
         assertEquals(listOf(feedback), historyFeedback.validationFeedback)
         assertEquals(listOf("command-0001"), historyFeedback.affectedCommandIds)
+    }
+
+    @Test
+    fun `connect ports command publishes legacy runtime compatibility contract against semantic relationship intent`() {
+        val command = AthenaConnectPortsCommand(
+            sourcePortSemanticId = "port:PLC1.out",
+            targetPortSemanticId = "port:M1.in",
+        )
+
+        val contract = command.compatibilityContract()
+
+        assertEquals("legacy-connect-ports-runtime-command-v1", contract.contractId)
+        assertEquals(AthenaCommandKind.CONNECT_PORTS, contract.retainedCommandKind)
+        assertEquals(AthenaConnectPortsCommand::class.qualifiedName, contract.retainedRuntimeCommandClass)
+        assertEquals(SemanticRelationshipIntent::class.qualifiedName, contract.productAuthoringIntentClass)
+        assertEquals(false, contract.mutableSourceAuthority)
+        assertEquals(
+            setOf("cli", "desktop-compose", "domain-electrical-runtime"),
+            contract.retainedSurfaces,
+        )
+        assertContains(contract.retainedSurfacePolicy, "runtime-owned")
+        assertContains(contract.retainedSurfacePolicy, "not a product authoring contract")
     }
 
     private fun writeProject(source: String): Path {

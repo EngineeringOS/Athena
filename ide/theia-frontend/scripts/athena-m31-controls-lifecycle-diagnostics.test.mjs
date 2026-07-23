@@ -43,13 +43,13 @@ function selector(entries, activeSheetViewId = entries[0]?.sheetViewId) {
     };
 }
 
-test('M31 visible sheet selector preserves only the governed two-sheet policy through mode switches', () => {
+test('M31 visible sheet selector preserves governed multi-sheet policy through mode switches', () => {
     const emptyModeModel = { sheetViewSelector: undefined };
     const m31Selector = selector([
         { sheetViewId: 'm31/sheet/control', title: 'Control', role: 'control-and-plc-logic' },
         { sheetViewId: 'm31/sheet/field-device', title: 'Field Device', role: 'field-wiring-and-terminal-transition' },
     ]);
-    const staleThreeSheetSelector = selector([
+    const governedThreeSheetSelector = selector([
         { sheetViewId: 'legacy/sheet/source-a', title: 'Source A', role: 'source_file' },
         { sheetViewId: 'legacy/sheet/source-b', title: 'Source B', role: 'source_file' },
         { sheetViewId: 'legacy/sheet/source-c', title: 'Source C', role: 'source_file' },
@@ -64,12 +64,12 @@ test('M31 visible sheet selector preserves only the governed two-sheet policy th
         ['control-and-plc-logic', 'field-wiring-and-terminal-transition'],
     );
     assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(emptyModeModel, staleThreeSheetSelector),
-        undefined,
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(emptyModeModel, governedThreeSheetSelector).entries.length,
+        3,
     );
-    assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: staleThreeSheetSelector }, m31Selector),
-        undefined,
+    assert.deepEqual(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: governedThreeSheetSelector }, m31Selector).entries.map(entry => entry.sheetViewId),
+        ['legacy/sheet/source-a', 'legacy/sheet/source-b', 'legacy/sheet/source-c'],
     );
 });
 

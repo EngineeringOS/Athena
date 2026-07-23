@@ -59,6 +59,8 @@ include(
     ":kernel:routing-model",
     ":kernel:document-projection-model",
     ":kernel:representation-model",
+    ":kernel:package-model",
+    ":kernel:package-runtime",
     ":kernel:presentation-policy-model",
     ":kernel:geometry-model",
     ":kernel:projection-model",

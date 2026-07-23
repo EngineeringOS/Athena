@@ -1,0 +1,48 @@
+system M32PackagePlatformDemo {
+  device MainPowerSupplyPS32 {
+    type Switch
+    model "ATHENA-PS24-SYNTH"
+
+    port lplus {
+      direction out
+      signal Power
+    }
+  }
+
+  device ControlRelayK32 {
+    type Switch
+    model "ATHENA-ROLLER-RELAY-SYNTH"
+
+    port supply {
+      direction in
+      signal Power
+    }
+
+    port upOut {
+      direction out
+      signal Digital
+    }
+  }
+
+  device ShutterMotorM32 {
+    type Motor
+    model "ATHENA-SHUTTER-MOTOR-SYNTH"
+
+    port up {
+      direction in
+      signal Digital
+    }
+  }
+
+  connect con_m32_power {
+    MainPowerSupplyPS32.lplus -> ControlRelayK32.supply
+    ControlRelayK32.upOut -> ShutterMotorM32.up
+  }
+
+  layout schematic-sheet {
+    place ControlRelayK32 near MainPowerSupplyPS32
+    place ShutterMotorM32 below ControlRelayK32
+    align ShutterMotorM32 aligned-with ControlRelayK32 axis vertical
+    group MainPowerSupplyPS32 grouped-with ControlRelayK32
+  }
+}

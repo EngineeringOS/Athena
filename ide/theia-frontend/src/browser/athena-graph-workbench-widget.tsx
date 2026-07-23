@@ -1,4 +1,5 @@
 import * as React from '@theia/core/shared/react';
+import * as ReactDOM from '@theia/core/shared/react-dom';
 
 import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { Disposable, DisposableCollection } from '@theia/core/lib/common/disposable';
@@ -13,6 +14,7 @@ import {
     keepAthenaGraphViewportFocusedOnSelection,
     type AthenaGraphLayoutAdjustmentIntent,
     type AthenaGraphLayoutMutationPreview,
+    type AthenaGraphWorkbenchModel,
     type AthenaGraphWorkbenchEdge,
     type AthenaGraphWorkbenchNode,
     type AthenaGraphWorkbenchSheetViewSelector,
@@ -69,6 +71,14 @@ type AthenaGraphCreateEntityDraft = {
     conceptTemplateId: string;
     suggestedName: string;
     model: string;
+};
+
+type AthenaGraphRelationshipCandidateEvidence = {
+    authority: 'semantic-inspection-compatibility';
+    compatibility: 'candidate' | 'rejected';
+    sourceSemanticId: string;
+    targetSemanticId: string;
+    reason: string;
 };
 
 /** Graph-first Athena workbench surface with a pannable and zoomable renderer viewport. */
@@ -350,7 +360,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const zoomPercent = Math.round(renderViewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
         this.rememberDocumentSheetViewSelector(model);
-        const cabinetMainRows = this.buildCabinetMainInfoRows(
+        const projectionInfoRows = this.buildProjectionInfoRows(
             model,
             selectedSemantic,
             selectedSemanticId,
@@ -365,6 +375,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             transform: `translate(${renderViewportTransform.offsetX + (model.sceneBounds.minX * renderViewportTransform.zoom)}px, ${renderViewportTransform.offsetY + (model.sceneBounds.minY * renderViewportTransform.zoom)}px) scale(${renderViewportTransform.zoom})`,
             transformOrigin: '0 0',
         };
+        const createEntityControls = this.createEntityControlsOpen && typeof document !== 'undefined'
+            ? ReactDOM.createPortal(this.renderCreateEntityControls(), document.body)
+            : undefined;
 
         const stageClassName = [
             'athena-graph-workbench__stage',
@@ -384,7 +397,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                             <p>{model.emptyState.message}</p>
                         </div>)
                         : <>
-                            {this.renderStageChrome(model, connectPortsSupported, cabinetMainRows)}
+                            {this.renderStageChrome(model, connectPortsSupported, projectionInfoRows)}
                             <div
                                 className='athena-graph-workbench__viewport'
                                 ref={this.bindViewportElement}
@@ -418,6 +431,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                         </>
                     }
                 </section>
+                {createEntityControls}
             </div>
         </div>;
     }
@@ -438,7 +452,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         };
     }
 
-    protected buildCabinetMainInfoRows(
+    protected buildProjectionInfoRows(
         model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
         selectedSemantic: AthenaActiveSemanticSelection | undefined,
         selectedSemanticId: string | undefined,
@@ -540,8 +554,10 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected renderStageChrome(
         model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
         connectPortsSupported: boolean,
-        cabinetMainRows: Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }>,
+        projectionInfoRows: Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }>,
     ): React.ReactNode {
+        const visibleProjectionViews = this.resolveVisibleProjectionViews(model);
+        const compatibilityProjectionViewCount = Math.max(0, model.supportedViews.length - visibleProjectionViews.length);
         return <div className='athena-graph-workbench__overlay athena-graph-workbench__overlay--top'>
             <div className='athena-graph-workbench__floating-bar'>
                 <div className='athena-graph-workbench__identity'>
@@ -551,11 +567,13 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     </div>
                 </div>
                 <div className='athena-graph-workbench__tool-group'>
-                    {this.resolveVisibleSheetViewSelector(model) ? this.renderSheetViewSelector(model) : undefined}
                     {this.renderCreateEntityActionButton()}
-                    {model.referenceMarkers.length > 0 ? this.renderReferenceMarkerControls(model) : undefined}
-                    <div className='athena-graph-workbench__view-switches'>
-                        {model.supportedViews.map(view => <button
+                    <div
+                        className='athena-graph-workbench__view-switches'
+                        data-athena-visible-projection-view-count={visibleProjectionViews.length}
+                        data-athena-compatibility-projection-view-count={compatibilityProjectionViewCount}
+                    >
+                        {visibleProjectionViews.map(view => <button
                             key={view.viewId}
                             className={`athena-graph-workbench__tool-button athena-graph-workbench__tool-button--view ${view.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`}
                             title={this.viewAriaLabel(view)}
@@ -584,8 +602,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                         className={`athena-graph-workbench__tool-button ${this.infoPopoverOpen ? 'athena-graph-workbench__tool-button--active' : ''}`}
                         data-athena-info-button='true'
                         type='button'
-                        title='Cabinet Main information'
-                        aria-label='Cabinet Main information'
+                        title='Projection information'
+                        aria-label='Projection information'
                         aria-expanded={this.infoPopoverOpen}
                         onClick={() => this.toggleInfoPopover()}
                     >
@@ -600,24 +618,39 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     </div>
                 </div>
             </div>
-            {this.createEntityControlsOpen ? this.renderCreateEntityControls() : undefined}
+            {this.renderContextualDocumentNavigation(model)}
             {this.connectPreview || this.connectPreviewMessage ? this.renderSemanticRelationshipPreview() : undefined}
-            {this.infoPopoverOpen ? this.renderCabinetMainPopover(cabinetMainRows) : undefined}
+            {this.infoPopoverOpen ? this.renderProjectionInfoPopover(projectionInfoRows) : undefined}
         </div>;
+    }
+
+    protected renderContextualDocumentNavigation(
+        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
+    ): React.ReactNode {
+        const hasSheetSelector = !!this.resolveVisibleSheetViewSelector(model);
+        const hasReferenceMarkers = model.referenceMarkers.length > 0;
+        if (!hasSheetSelector && !hasReferenceMarkers) {
+            return undefined;
+        }
+        return <nav
+            className='athena-graph-workbench__document-navigation'
+            aria-label='Document navigation'
+        >
+            {hasSheetSelector ? this.renderSheetViewSelector(model) : undefined}
+            {hasReferenceMarkers ? this.renderReferenceMarkerControls(model) : undefined}
+        </nav>;
     }
 
     protected renderCreateEntityActionButton(): React.ReactNode {
         const availableItems = this.resolveCreateEntityItems();
-        const disabled = availableItems.length === 0 ||
-            !this.componentKnowledge?.systemSemanticId ||
-            !this.isAthenaEditor(this.editorManager.currentEditor) ||
-            this.createEntityPreviewing ||
+        const disabled = this.createEntityPreviewing ||
             this.createEntityApplyingDecision;
         return <button
             className={`athena-graph-workbench__tool-button ${this.createEntityControlsOpen || this.createEntityPreview ? 'athena-graph-workbench__tool-button--active' : ''}`}
+            data-athena-create-entity-button='true'
             type='button'
-            title='Create governed entity'
-            aria-label='Create governed entity'
+            title='Create device'
+            aria-label='Create device'
             aria-expanded={this.createEntityControlsOpen}
             disabled={disabled}
             onClick={() => this.toggleCreateEntityControls()}
@@ -626,26 +659,38 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         </button>;
     }
 
+    protected resolveVisibleProjectionViews(
+        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
+    ): AthenaGraphWorkbenchModel['supportedViews'] {
+        const cabinetView = model.supportedViews.find(view => view.viewId === 'cabinet');
+        if (cabinetView) {
+            return [cabinetView];
+        }
+        const activeView = model.supportedViews.find(view => view.isActive);
+        return activeView ? [activeView] : model.supportedViews.slice(0, 1);
+    }
+
     protected renderCreateEntityControls(): React.ReactNode {
         const items = this.resolveCreateEntityItems();
         const draft = this.resolveCreateEntityDraft(items);
         const selectedItem = this.resolveSelectedCreateEntityItem(items, draft);
         const preview = this.createEntityPreview;
         const evidence = preview?.entityCreationEvidence;
+        const createEntityCapabilityReady = !!this.componentKnowledge?.systemSemanticId && items.length > 0;
         const canPreview = !!selectedItem?.conceptTemplateId && !!this.componentKnowledge?.systemSemanticId &&
-            this.isAthenaEditor(this.editorManager.currentEditor) &&
             !this.createEntityPreviewing &&
             !this.createEntityApplyingDecision;
         const canAccept = !!preview?.acceptanceEligible && !!evidence?.sourceEdit && !this.createEntityApplyingDecision;
 
         return <section
             className='athena-graph-workbench__create-entity-panel'
-            aria-label='Create governed entity transaction'
+            data-athena-create-entity-panel='true'
+            aria-label='Create device'
         >
             <div className='athena-graph-workbench__create-entity-header'>
                 <div>
-                    <span className='athena-graph-workbench__info-popover-eyebrow'>Semantic authoring</span>
-                    <h3>Create Entity</h3>
+                    <span className='athena-graph-workbench__info-popover-eyebrow'>Authoring</span>
+                    <h3>Create Device</h3>
                 </div>
                 <button
                     className='athena-graph-workbench__tool-button'
@@ -657,6 +702,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     <span className='codicon codicon-close' />
                 </button>
             </div>
+            {!createEntityCapabilityReady ? <p className='athena-graph-workbench__create-entity-message'>
+                Create Device is a placeholder until governed concept evidence is available.
+            </p> : undefined}
             <div className='athena-graph-workbench__create-entity-grid'>
                 <label>
                     <span>Concept</span>
@@ -693,8 +741,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 <button
                     className='athena-graph-workbench__tool-button'
                     type='button'
-                    title='Preview governed entity creation'
-                    aria-label='Preview governed entity creation'
+                    title='Preview device creation'
+                    aria-label='Preview device creation'
                     disabled={!canPreview}
                     onClick={() => void this.previewCreateEntityTransaction()}
                 >
@@ -703,8 +751,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 <button
                     className='athena-graph-workbench__tool-button'
                     type='button'
-                    title='Accept governed entity creation'
-                    aria-label='Accept governed entity creation'
+                    title='Accept device creation'
+                    aria-label='Accept device creation'
                     disabled={!canAccept}
                     onClick={() => void this.acceptCreateEntityPreview()}
                 >
@@ -713,8 +761,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 <button
                     className='athena-graph-workbench__tool-button'
                     type='button'
-                    title='Reject governed entity creation'
-                    aria-label='Reject governed entity creation'
+                    title='Reject device creation'
+                    aria-label='Reject device creation'
                     disabled={!preview || this.createEntityApplyingDecision}
                     onClick={() => void this.rejectCreateEntityPreview()}
                 >
@@ -782,12 +830,12 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
         return <label
             className='athena-graph-workbench__sheet-view-selector'
-            title='Document projection sheet view'
+            title='Sheet'
         >
             <span className='codicon codicon-layout' aria-hidden='true' />
             <select
                 value={selector.activeSheetViewId ?? ''}
-                aria-label='Document projection sheet view'
+                aria-label='Sheet'
                 disabled={this.switchingView}
                 onChange={event => void this.switchActiveSheetView(event.currentTarget.value)}
             >
@@ -811,6 +859,10 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected resolveVisibleSheetViewSelector(
         model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
     ): AthenaGraphWorkbenchSheetViewSelector | undefined {
+        const activeViewId = model.supportedViews.find(view => view.isActive)?.viewId;
+        if (activeViewId !== 'documentation') {
+            return undefined;
+        }
         return resolveVisibleAthenaGraphSheetViewSelector(model, this.lastDocumentSheetViewSelector);
     }
 
@@ -832,25 +884,25 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         </div>;
     }
 
-    protected renderCabinetMainPopover(
-        cabinetMainRows: Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }>,
+    protected renderProjectionInfoPopover(
+        projectionInfoRows: Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }>,
     ): React.ReactNode {
         return <section
             className='athena-graph-workbench__info-popover'
             data-athena-info-popover='true'
             role='dialog'
-            aria-label='Cabinet Main information'
+            aria-label='Projection information'
         >
             <div className='athena-graph-workbench__info-popover-header'>
                 <div>
-                    <span className='athena-graph-workbench__info-popover-eyebrow'>Cabinet Main</span>
+                    <span className='athena-graph-workbench__info-popover-eyebrow'>Sheet</span>
                     <h3>Projection Information</h3>
                 </div>
                 <button
                     className='athena-graph-workbench__tool-button'
                     type='button'
-                    title='Close Cabinet Main information'
-                    aria-label='Close Cabinet Main information'
+                    title='Close projection information'
+                    aria-label='Close projection information'
                     onClick={() => this.closeInfoPopover()}
                 >
                     <span className='codicon codicon-close' />
@@ -858,7 +910,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             </div>
             <table className='athena-graph-workbench__info-table'>
                 <tbody>
-                    {cabinetMainRows.map(row => <tr key={row.key}>
+                    {projectionInfoRows.map(row => <tr key={row.key}>
                         <th>{row.label}</th>
                         <td>{row.code ? <code>{row.value}</code> : row.value}</td>
                     </tr>)}
@@ -977,11 +1029,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     ): React.ReactNode {
         const selected = selectedSemanticId === node.semanticId
             || node.electricalAnchors.some(anchor => anchor.portSemanticId === selectedSemanticId);
-        const isConnectablePort = this.isConnectablePortNode(node.semanticId, node.kind);
+        const relationshipCandidateEvidence = this.relationshipCandidateEvidence(node);
         const isRelationshipCandidate = this.isRelationshipCandidateNode(node);
-        const relationshipCandidateReason = isRelationshipCandidate
-            ? 'Compatible semantic relationship compatibility evidence is available for this projection endpoint.'
-            : undefined;
+        const relationshipCandidateReason = relationshipCandidateEvidence?.reason;
         const labelClassName = [
             'athena-graph-workbench__node-label',
             `athena-graph-workbench__node-label--${node.renderVariant}`,
@@ -1002,6 +1052,14 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             data-athena-graph-interactive='true'
             data-athena-representation-fact={node.presentationRepresentation ? 'true' : undefined}
             data-athena-representation-id={node.presentationRepresentation?.representationId}
+            data-athena-engineering-package-id={node.presentationRepresentation?.packageEvidence?.engineeringPackageId}
+            data-athena-presentation-profile-id={node.presentationRepresentation?.packageEvidence?.presentationProfileId}
+            data-athena-binding-manifest-id={node.presentationRepresentation?.packageEvidence?.bindingManifestId}
+            data-athena-representation-package-id={node.presentationRepresentation?.packageEvidence?.representationPackageId}
+            data-athena-representation-descriptor-id={node.presentationRepresentation?.packageEvidence?.descriptorId}
+            data-athena-graphic-resource-id={node.presentationRepresentation?.packageEvidence?.graphicResourceId}
+            data-athena-representation-anchor-map={node.presentationRepresentation?.packageEvidence?.anchorMapSummary?.join(';')}
+            data-athena-representation-label-binding={node.presentationRepresentation?.packageEvidence?.labelBindingSummary?.join(';')}
             data-athena-semantic-id={node.semanticId}
             data-athena-relationship-candidate-reason={relationshipCandidateReason}
             data-athena-render-fallback={node.presentationRepresentation ? 'false' : undefined}
@@ -1242,16 +1300,16 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
     protected connectPortsButtonTitle(): string {
         if (this.connectApplyingDecision) {
-            return 'Applying semantic relationship preview decision';
+            return 'Applying relationship preview decision';
         }
         if (this.connectPortsPending) {
-            return 'Submitting semantic relationship request';
+            return 'Submitting relationship request';
         }
         if (this.connectPreview) {
-            return 'Review semantic relationship preview';
+            return 'Review relationship preview';
         }
         if (!this.connectPortsArmed) {
-            return 'Create semantic relationship';
+            return 'Create relationship';
         }
         if (!this.connectPortsSource) {
             return 'Select source terminal';
@@ -1467,13 +1525,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.update();
             return;
         }
-        if (!this.isAthenaEditor(this.editorManager.currentEditor)) {
-            this.createEntityPreviewMessage = 'Open an Athena source editor before requesting a governed create-entity preview.';
-            this.createEntityPreview = undefined;
-            this.update();
-            return;
-        }
-
         this.createEntityDraft = draft;
         this.createEntityPreviewing = true;
         this.createEntityPreviewMessage = undefined;
@@ -1521,12 +1572,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.update();
             return;
         }
-        if (!this.currentEditorMatchesCreateEntityPreview(preview)) {
-            this.clearCreateEntityPreview('Active Athena editor does not match the create-entity preview source. Request a fresh preview before accepting.');
-            this.update();
-            return;
-        }
-        if (!await this.lspEditorBridgeService.sourceEditMatchesActiveDocument(preview.entityCreationEvidence.sourceEdit.revisionGuard)) {
+        if (this.currentEditorMatchesCreateEntityPreview(preview) &&
+            !await this.lspEditorBridgeService.sourceEditMatchesActiveDocument(preview.entityCreationEvidence.sourceEdit.revisionGuard)
+        ) {
             this.clearCreateEntityPreview('Active Athena editor revision no longer matches the create-entity preview. Request a fresh preview before accepting.');
             this.update();
             return;
@@ -2291,15 +2339,101 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     }
 
     protected isConnectablePortNode(semanticId: string, kind: 'component' | 'label'): boolean {
-        return kind === 'label' && semanticId.startsWith('port:');
+        return kind === 'label' && !!this.semanticInspectionPort(semanticId);
     }
 
     protected isRelationshipCandidateNode(node: AthenaGraphWorkbenchNode): boolean {
+        return this.relationshipCandidateEvidence(node)?.compatibility === 'candidate';
+    }
+
+    protected relationshipCandidateEvidence(
+        node: AthenaGraphWorkbenchNode,
+    ): AthenaGraphRelationshipCandidateEvidence | undefined {
         if (!this.connectPortsSource || !this.diagram || !this.graphAdapterService.supportsCreateSemanticRelationshipIntent(this.diagram)) {
-            return false;
+            return undefined;
         }
-        return this.isConnectablePortNode(node.semanticId, node.kind) &&
-            node.semanticId !== this.connectPortsSource.semanticId;
+        if (!this.isConnectablePortNode(node.semanticId, node.kind) || node.semanticId === this.connectPortsSource.semanticId) {
+            return undefined;
+        }
+        return this.relationshipCandidateEvidenceFor(this.connectPortsSource.semanticId, node.semanticId);
+    }
+
+    protected relationshipCandidateEvidenceFor(
+        sourceSemanticId: string,
+        targetSemanticId: string,
+    ): AthenaGraphRelationshipCandidateEvidence | undefined {
+        const sourcePort = this.semanticInspectionPort(sourceSemanticId);
+        const targetPort = this.semanticInspectionPort(targetSemanticId);
+        if (!sourcePort || !targetPort) {
+            return undefined;
+        }
+
+        const sourceSignal = this.semanticInspectionPortProperty(sourceSemanticId, 'signal');
+        const targetSignal = this.semanticInspectionPortProperty(targetSemanticId, 'signal');
+        if (!sourceSignal || !targetSignal) {
+            return {
+                authority: 'semantic-inspection-compatibility',
+                compatibility: 'rejected',
+                sourceSemanticId,
+                targetSemanticId,
+                reason: 'Relationship compatibility evidence is missing signal-family facts for this projection endpoint.',
+            };
+        }
+        if (sourceSignal !== targetSignal) {
+            return {
+                authority: 'semantic-inspection-compatibility',
+                compatibility: 'rejected',
+                sourceSemanticId,
+                targetSemanticId,
+                reason: 'Relationship compatibility evidence rejects this endpoint because signal families differ.',
+            };
+        }
+
+        const sourceDirection = this.semanticInspectionPortProperty(sourceSemanticId, 'direction');
+        const targetDirection = this.semanticInspectionPortProperty(targetSemanticId, 'direction');
+        if (!sourceDirection || !targetDirection || !this.semanticDirectionsCompatible(sourceDirection, targetDirection)) {
+            return {
+                authority: 'semantic-inspection-compatibility',
+                compatibility: 'rejected',
+                sourceSemanticId,
+                targetSemanticId,
+                reason: 'Relationship compatibility evidence rejects this endpoint because semantic directions are incompatible.',
+            };
+        }
+
+        return {
+            authority: 'semantic-inspection-compatibility',
+            compatibility: 'candidate',
+            sourceSemanticId,
+            targetSemanticId,
+            reason: 'Compatible semantic relationship compatibility evidence is available for this projection endpoint.',
+        };
+    }
+
+    protected semanticInspectionPort(semanticId: string): AthenaSemanticInspectionPayload['ports'][number] | undefined {
+        return this.semanticInspection?.ports.find(port => port.semanticId === semanticId);
+    }
+
+    protected semanticInspectionPortProperty(semanticId: string, propertyName: string): string | undefined {
+        return this.semanticInspectionPort(semanticId)
+            ?.authoredProperties
+            .find(property => property.name === propertyName)
+            ?.valueText;
+    }
+
+    protected semanticDirectionsCompatible(sourceDirection: string, targetDirection: string): boolean {
+        const source = sourceDirection.toLowerCase();
+        const target = targetDirection.toLowerCase();
+        if (source === 'output' || source === 'out') {
+            return ['input', 'in', 'passive', 'bidirectional'].includes(target);
+        }
+        if (source === 'input' || source === 'in') {
+            return ['output', 'out', 'passive', 'bidirectional'].includes(target);
+        }
+        if (source === 'bidirectional') {
+            return ['output', 'out', 'input', 'in', 'bidirectional'].includes(target);
+        }
+        return source === 'passive';
     }
 
     protected async handleConnectablePortSelection(

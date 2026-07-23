@@ -1,0 +1,9 @@
+{
+  "packageId": "com.athena.sample.representation.motion.motor.iec",
+  "profile": "m32-iec",
+  "descriptorId": "descriptor.motor.iec",
+  "resourceId": "resource.motor.iec",
+  "anchors": ["up"],
+  "labelSlots": ["device-tag"],
+  "engineeringAuthority": false
+}

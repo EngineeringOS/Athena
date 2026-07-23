@@ -463,6 +463,31 @@ test('assigns stable M31 document sheet roles from typed policy evidence', () =>
     );
 });
 
+test('does not derive sheet role from displayName when typed policy evidence is absent', () => {
+    assert.equal(typeof adapter.translateProjectionSessionToGLSPDiagram, 'function');
+
+    const diagram = adapter.translateProjectionSessionToGLSPDiagram({
+        ...readyProjectionSession,
+        activeViewId: 'documentation',
+        readyProjection: {
+            ...readyProjectionSession.readyProjection,
+            viewId: 'documentation',
+            activeSheetId: 'documentation/sheet/01-control',
+            sheets: [
+                {
+                    sheetId: 'documentation/sheet/01-control',
+                    displayName: 'Control And PLC Logic',
+                    order: 0,
+                    subjectSemanticIds: ['component:ControllerPLC1'],
+                },
+            ],
+        },
+    });
+
+    assert.equal(diagram.sheets[0].role, undefined);
+    assert.equal(diagram.sheets[0].policyEvidence, undefined);
+});
+
 test('drops malformed sheet policy evidence instead of treating it as governed authority', () => {
     assert.equal(typeof adapter.translateProjectionSessionToGLSPDiagram, 'function');
 

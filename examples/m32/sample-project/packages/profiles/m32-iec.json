@@ -1,0 +1,8 @@
+{
+  "profileId": "m32-iec",
+  "version": "1.0.0",
+  "projectionContexts": ["schematic-sheet"],
+  "styleProfile": "industrial-iec",
+  "standardTags": ["iec"],
+  "fallbackPolicy": "fail-closed"
+}

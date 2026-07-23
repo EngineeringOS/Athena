@@ -1,0 +1,9 @@
+{
+  "packageId": "com.athena.sample.engineering.control.roller-relay",
+  "kind": "engineering-catalog",
+  "version": "1.0.0",
+  "concepts": ["RollerRelay"],
+  "products": ["M32DemoRollerRelay"],
+  "provenance": "athena-owned-m32-sample",
+  "representationAuthority": false
+}

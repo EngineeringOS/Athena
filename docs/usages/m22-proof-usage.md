@@ -79,9 +79,9 @@ In the IDE:
 - inspect source and Problems against the same canonical subject
 - confirm source, outline, Problems, and sheet identity remain coherent through the same canonical subject and occurrence identity
 - use outline navigation in the same editor tab for `.athena` files
-- use the top information icon to open the `Cabinet Main` popover
+- use the top information icon to open the `Projection Information` popover
 - use the floating bottom controls for zoom and canvas navigation
-- confirm the stage grid remains the coordinate surface, `Cabinet Main` stays in the top information popover, and floating controls remain transparent
+- confirm the stage grid remains the coordinate surface, `Projection Information` stays in the top information popover, and floating controls remain transparent
 - whitespace click closes the info popover
 - bottom controls remain icon-only and transparent
 

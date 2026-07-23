@@ -54,6 +54,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.Locale
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.system.measureTimeMillis
 
 /**
@@ -70,9 +71,11 @@ class AthenaLanguageServer(
     private var sessionSnapshot: AthenaLspSessionSnapshot? = null
     private var activeSession: AthenaLspSessionHostReady? = null
     private var languageFeatures: AthenaLanguageFeatures? = null
+    private val openDocumentUris = ConcurrentHashMap.newKeySet<String>()
 
     private val textDocumentService = AthenaTextDocumentService(
         onDidOpen = { documentUri, text, version ->
+            openDocumentUris += documentUri
             updateSnapshot(documentUri)
             publishDiagnostics(documentUri, text, version)
             languageClient?.logMessage(
@@ -86,6 +89,7 @@ class AthenaLanguageServer(
             publishDiagnostics(documentUri, text, version)
         },
         onDidClose = { documentUri ->
+            openDocumentUris -= documentUri
             languageFeatures?.closeDocument(documentUri)
             languageClient?.publishDiagnostics(
                 PublishDiagnosticsParams().apply {
@@ -128,6 +132,7 @@ class AthenaLanguageServer(
         return CompletableFuture.supplyAsync {
             val initializeStartedAt = System.nanoTime()
             sessionHost.shutdown()
+            openDocumentUris.clear()
 
             val repositoryRoot = resolveRepositoryRoot(params)
                 ?: throw ResponseErrorException(
@@ -202,6 +207,7 @@ class AthenaLanguageServer(
 
     override fun shutdown(): CompletableFuture<Any> {
         sessionHost.shutdown()
+        openDocumentUris.clear()
         activeSession = null
         languageFeatures = null
         sessionSnapshot = null
@@ -210,6 +216,7 @@ class AthenaLanguageServer(
 
     override fun exit() {
         sessionHost.shutdown()
+        openDocumentUris.clear()
         activeSession = null
         languageFeatures = null
         sessionSnapshot = null
@@ -573,18 +580,33 @@ class AthenaLanguageServer(
     fun authoringPreview(params: AthenaAuthoringPreviewParams): CompletableFuture<AthenaAuthoringPreviewSubmissionPayload?> {
         val activation = activeSession ?: return CompletableFuture.completedFuture(null)
         val semanticPath = sessionSnapshot?.semanticPath ?: "frontend -> LSP -> runtime/compiler"
-        val trackedDocument = sessionSnapshot
-            ?.sourcePath
-            ?.let { sourcePath -> languageFeatures?.trackedDocumentByPath(sourcePath) }
-        val revisionGuard = trackedDocument?.toAuthoringRevisionGuard() ?: run {
-            val sourcePath = activation.context.project.sourcePath
-            AuthoringRevisionGuard.from(
-                semanticSnapshotId = "project:${activation.context.project.name}",
-                sourceUri = sourcePath.toUri().toString(),
-                documentVersion = 0,
-                sourceText = Files.readString(sourcePath),
+        val sourcePath = sessionSnapshot?.sourcePath ?: activation.context.project.sourcePath
+        val trackedDocument = languageFeatures?.trackedDocumentByPath(sourcePath)
+            ?: run {
+                val sourceText = runCatching { Files.readString(sourcePath) }.getOrElse { failure ->
+                    return CompletableFuture.completedFuture(
+                        params.toInvalidSubmissionPayload(
+                            projectName = activation.context.project.name,
+                            semanticPath = semanticPath,
+                            reason = "Athena cannot read canonical source `$sourcePath`: ${failure.message ?: failure::class.simpleName}.",
+                        ),
+                    )
+                }
+                languageFeatures?.trackDocument(
+                    uri = sourcePath.toUri().toString(),
+                    path = sourcePath,
+                    version = 0,
+                    text = sourceText,
+                )
+            }
+        val revisionGuard = trackedDocument?.toAuthoringRevisionGuard()
+            ?: return CompletableFuture.completedFuture(
+                params.toInvalidSubmissionPayload(
+                    projectName = activation.context.project.name,
+                    semanticPath = semanticPath,
+                    reason = "Athena cannot activate canonical source `$sourcePath` for governed authoring.",
+                ),
             )
-        }
         val runtimeIntent = runCatching { params.toRuntimeIntent(revisionGuard) }.getOrElse { failure ->
             return CompletableFuture.completedFuture(
                 params.toInvalidSubmissionPayload(
@@ -599,7 +621,7 @@ class AthenaLanguageServer(
                 com.engineeringood.athena.domain.electricalruntime.ElectricalEntityCreationProjectionAuthority
                     .supports(runtimeIntent.conceptTemplateId.value)
             ) || runtimeIntent is com.engineeringood.athena.authoring.SemanticRelationshipIntent
-        val capabilityDiscovery = if (governedIntent && trackedDocument != null) {
+        val capabilityDiscovery = if (governedIntent) {
             discoverGovernedAuthoringCapability(trackedDocument, runtimeIntent)
         } else {
             null
@@ -617,7 +639,7 @@ class AthenaLanguageServer(
         val governedPreviewFactory: ((com.engineeringood.athena.authoring.AuthoringPreviewId) ->
             com.engineeringood.athena.runtime.AthenaGovernedAuthoringPreviewContext)? =
             if (runtimeIntent is com.engineeringood.athena.authoring.CreateSemanticEntityIntent &&
-                trackedDocument != null && capabilityEvidence != null
+                capabilityEvidence != null
             ) {
                 { previewId: com.engineeringood.athena.authoring.AuthoringPreviewId ->
                     requireNotNull(
@@ -630,7 +652,7 @@ class AthenaLanguageServer(
                     ).toSessionContext()
                 }
             } else if (runtimeIntent is com.engineeringood.athena.authoring.SemanticRelationshipIntent &&
-                trackedDocument != null && capabilityEvidence != null
+                capabilityEvidence != null
             ) {
                 { previewId: com.engineeringood.athena.authoring.AuthoringPreviewId ->
                     requireNotNull(governedSemanticRelationshipPreview(
@@ -658,7 +680,7 @@ class AthenaLanguageServer(
             .let { submission -> submission as AthenaAuthoringPreviewSubmitted }
         val componentKnowledge = activation.context.componentKnowledgeRuntime()
             .inspect(activation.context) as? com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
-        val sourceImpact = trackedDocument?.let { currentTrackedDocument ->
+        val sourceImpact = trackedDocument.let { currentTrackedDocument ->
             result.record.preview.relationshipEvidence?.sourceEdit?.toPayload(currentTrackedDocument.text)
                 ?: previewCreateEntitySourceEdit(
                 trackedDocument = currentTrackedDocument,
@@ -720,11 +742,13 @@ class AthenaLanguageServer(
                     compiler = activation.context.compiler(),
                     governedContext = governedContext,
                     sourceMutationAuthority = { sourceEdit, proposedSource ->
+                        val sourceIsOpen = currentTrackedDocument.uri in openDocumentUris
                         applyAuthoringWorkspaceMutation(
-                            client = languageClient,
+                            client = languageClient.takeIf { sourceIsOpen },
                             trackedDocument = currentTrackedDocument,
                             sourceEdit = sourceEdit,
                             proposedSource = proposedSource,
+                            validatePersistedSource = sourceIsOpen.not(),
                         )
                     },
                     onSourceMutated = { proposedSource ->

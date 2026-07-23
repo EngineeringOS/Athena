@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 44" role="img" aria-label="Athena M32 synthetic shutter motor compact">
+  <rect x="16" y="8" width="32" height="28" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <line x1="0" y1="22" x2="16" y2="22" stroke="currentColor" stroke-width="1.4"/>
+  <line x1="48" y1="22" x2="64" y2="22" stroke="currentColor" stroke-width="1.4"/>
+  <text x="26" y="26" font-size="9">M</text>
+</svg>

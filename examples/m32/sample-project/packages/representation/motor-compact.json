@@ -1,0 +1,9 @@
+{
+  "packageId": "com.athena.sample.representation.motion.motor.compact",
+  "profile": "m32-compact",
+  "descriptorId": "descriptor.motor.compact",
+  "resourceId": "resource.motor.compact",
+  "anchors": ["up"],
+  "labelSlots": ["device-tag"],
+  "engineeringAuthority": false
+}

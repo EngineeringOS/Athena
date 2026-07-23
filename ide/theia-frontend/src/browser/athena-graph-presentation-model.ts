@@ -70,6 +70,7 @@ export type AthenaGraphResolvedPresentationRepresentation = {
     symbolFamilyId: string;
     fallback: false;
     sourceProjectionIds: string[];
+    packageEvidence?: AthenaGLSPPresentationRepresentationFactSource['packageEvidence'];
     parts: AthenaGraphResolvedPresentationPart[];
     terminals: AthenaGLSPPresentationRepresentationFactSource['terminals'];
     labels: AthenaGLSPPresentationRepresentationFactSource['labels'];
@@ -146,6 +147,11 @@ export function resolvePresentationRepresentations(
         symbolFamilyId: fact.symbol.familyId,
         fallback: false,
         sourceProjectionIds: [...(fact.sourceProjectionIds ?? [])],
+        packageEvidence: fact.packageEvidence ? {
+            ...fact.packageEvidence,
+            anchorMapSummary: [...(fact.packageEvidence.anchorMapSummary ?? [])],
+            labelBindingSummary: [...(fact.packageEvidence.labelBindingSummary ?? [])],
+        } : undefined,
         parts: [
             resolveRepresentationPart(fact),
         ],

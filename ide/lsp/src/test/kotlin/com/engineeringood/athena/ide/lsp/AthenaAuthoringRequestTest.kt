@@ -80,6 +80,184 @@ class AthenaAuthoringRequestTest {
     }
 
     @Test
+    fun `graph create preview activates canonical source without didOpen`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-graph-create-without-editor-",
+            sourceText = authoringSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            val client = RejectingWorkspaceEditClient()
+            try {
+                server.connect(client)
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val submission = assertNotNull(
+                    server.authoringPreview(
+                        AthenaAuthoringPreviewParams(
+                            intentId = "intent-graph-create-no-editor",
+                            intentKind = "create-entity",
+                            originSurface = "graph",
+                            parentSubjectId = "system:FactoryLine",
+                            conceptTemplateId = "electrical.motor.ac.default",
+                            conceptId = "electrical.motor.ac",
+                            actor = "user:test",
+                            suggestedName = "GraphMotorM32",
+                        ),
+                    ).get(),
+                )
+
+                assertTrue(submission.preview.acceptanceEligible, submission.preview.diagnostics.toString())
+                val evidence = assertNotNull(submission.preview.entityCreationEvidence)
+                assertEquals(repository.seedSourcePath.toUri().toString(), evidence.sourceEdit.uri)
+                assertEquals("GraphMotorM32", evidence.canonicalTag)
+                assertTrue(evidence.sourceEdit.admittedText.contains("device GraphMotorM32"))
+                assertEquals(listOf("up", "down", "status"), evidence.nestedPorts.map { port -> port.name })
+
+                val decision = assertNotNull(
+                    server.authoringDecision(
+                        AthenaAuthoringDecisionParams(
+                            previewId = submission.preview.previewId,
+                            intentId = submission.preview.intentId,
+                            decision = "accepted",
+                            note = "Graph-first create without an open editor.",
+                        ),
+                    ).get(),
+                )
+                assertEquals("reprojected", assertNotNull(decision.transactionResult).lifecycleState)
+                assertTrue(assertNotNull(decision.sourceEdit).appliedByAuthority)
+                assertTrue(Files.readString(repository.seedSourcePath).contains("device GraphMotorM32"))
+                assertTrue(assertNotNull(server.trackedDocument(evidence.sourceEdit.uri)).text.contains("device GraphMotorM32"))
+                assertTrue(client.applyEditRequests.isEmpty(), "Unopened canonical source must not use editor workspace/applyEdit.")
+
+                val projection = assertNotNull(server.projectionSession(AthenaProjectionSessionParams()).get())
+                val readyProjection = assertNotNull(projection.readyProjection)
+                assertTrue(readyProjection.components.any { component ->
+                    component.semanticId == "component:GraphMotorM32"
+                })
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `graph create rejects unopened source changed on disk after preview`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-graph-create-stale-disk-",
+            sourceText = authoringSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+
+                val submission = assertNotNull(
+                    server.authoringPreview(
+                        AthenaAuthoringPreviewParams(
+                            intentId = "intent-graph-create-stale-disk",
+                            intentKind = "create-entity",
+                            originSurface = "graph",
+                            parentSubjectId = "system:FactoryLine",
+                            conceptTemplateId = "electrical.motor.ac.default",
+                            conceptId = "electrical.motor.ac",
+                            actor = "user:test",
+                            suggestedName = "GraphMotorM32",
+                        ),
+                    ).get(),
+                )
+                assertTrue(submission.preview.acceptanceEligible, submission.preview.diagnostics.toString())
+
+                val externallyChangedSource = authoringSource.replace("device M1", "device M2")
+                Files.writeString(repository.seedSourcePath, externallyChangedSource)
+
+                val decision = assertNotNull(
+                    server.authoringDecision(
+                        AthenaAuthoringDecisionParams(
+                            previewId = submission.preview.previewId,
+                            intentId = submission.preview.intentId,
+                            decision = "accepted",
+                        ),
+                    ).get(),
+                )
+
+                assertEquals("unavailable", decision.status)
+                assertEquals("blocked", decision.transactionResult?.lifecycleState)
+                assertEquals("mutation-authority", decision.transactionResult?.diagnostics?.single()?.authority)
+                assertNull(decision.sourceEdit)
+                assertEquals(externallyChangedSource, Files.readString(repository.seedSourcePath))
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `graph create returns governed rejection when canonical source is unreadable`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-graph-create-unreadable-source-",
+            sourceText = authoringSource,
+        )
+        val repositoryRoot = repository.repositoryRoot
+        try {
+            AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            val server = AthenaLanguageServer()
+            try {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+                Files.delete(repository.seedSourcePath)
+
+                val submission = assertNotNull(
+                    server.authoringPreview(
+                        AthenaAuthoringPreviewParams(
+                            intentId = "intent-graph-create-unreadable-source",
+                            intentKind = "create-entity",
+                            originSurface = "graph",
+                            parentSubjectId = "system:FactoryLine",
+                            conceptTemplateId = "electrical.motor.ac.default",
+                            conceptId = "electrical.motor.ac",
+                            actor = "user:test",
+                            suggestedName = "GraphMotorM32",
+                        ),
+                    ).get(),
+                )
+
+                assertEquals("blocked", submission.preview.status)
+                assertFalse(submission.preview.acceptanceEligible)
+                assertTrue(submission.preview.diagnostics.any { diagnostic ->
+                    diagnostic.message.contains("canonical source", ignoreCase = true)
+                })
+            } finally {
+                server.shutdown().get()
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     @Suppress("DEPRECATION")
     fun `guided authoring state and decisions stay inspectable through LSP`() {
         val repository = createGovernedTestRepository(
@@ -1268,7 +1446,10 @@ class AthenaAuthoringRequestTest {
                 var currentVersion = 1
 
                 fun applyDecision(decision: AthenaAuthoringPreviewDecisionPayload) {
-                    val sourceEdit = assertNotNull(decision.sourceEdit)
+                    val sourceEdit = assertNotNull(
+                        decision.sourceEdit,
+                        "${decision.reason}; ${decision.transactionResult?.diagnostics}",
+                    )
                     currentSource = applySourceEdit(
                         source = currentSource,
                         edit = sourceEdit,
@@ -1367,7 +1548,6 @@ class AthenaAuthoringRequestTest {
                         ).get(),
                     ),
                 )
-
                 val connect = assertNotNull(
                     server.authoringPreview(
                         AthenaAuthoringPreviewParams(

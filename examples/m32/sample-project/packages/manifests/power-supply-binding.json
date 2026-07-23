@@ -1,0 +1,8 @@
+{
+  "manifestId": "binding.m32.power-supply-24v",
+  "engineeringPackageId": "com.athena.sample.engineering.power.supply-24v",
+  "conceptId": "PowerSupply",
+  "defaultRepresentationPackageId": "com.athena.sample.representation.power.supply.iec",
+  "alternativeRepresentationPackageIds": [],
+  "compatibleProfileTags": ["m32-iec", "m32-compact"]
+}

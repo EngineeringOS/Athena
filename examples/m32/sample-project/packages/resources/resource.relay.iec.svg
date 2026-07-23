@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 64" role="img" aria-label="Athena M32 synthetic control relay">
+  <rect x="18" y="12" width="48" height="40" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <line x1="0" y1="32" x2="18" y2="32" stroke="currentColor" stroke-width="1.4"/>
+  <line x1="66" y1="22" x2="92" y2="22" stroke="currentColor" stroke-width="1.4"/>
+  <line x1="66" y1="42" x2="92" y2="42" stroke="currentColor" stroke-width="1.4"/>
+  <text x="31" y="36" font-size="10">K</text>
+</svg>

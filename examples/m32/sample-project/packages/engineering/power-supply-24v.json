@@ -1,0 +1,9 @@
+{
+  "packageId": "com.athena.sample.engineering.power.supply-24v",
+  "kind": "engineering-catalog",
+  "version": "1.0.0",
+  "concepts": ["PowerSupply"],
+  "products": ["M32DemoPowerSupply"],
+  "provenance": "athena-owned-m32-sample",
+  "representationAuthority": false
+}

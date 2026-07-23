@@ -14,6 +14,13 @@ import com.engineeringood.athena.authoring.AuthoringPreviewStatus
  * previews, records explicit review decisions, and invokes the sole supplied mutation authority for governed acceptance.
  */
 class AthenaAuthoringSessionRuntimeService internal constructor() {
+    fun compatibilityContract(): AthenaAuthoringPreviewCompatibilityContract = AthenaAuthoringPreviewCompatibilityContract(
+        apiVersion = "legacy-preview-readonly-v1",
+        mutableSourceAuthority = false,
+        acceptanceRequiresGovernedAuthorities = true,
+        retainedMethods = listOf("submit", "state", "snapshot", "restoreSession", "applyDecision"),
+    )
+
     /**
      * Records one runtime-owned preview for the supplied guided authoring intent.
      */
@@ -196,4 +203,11 @@ class AthenaAuthoringSessionRuntimeService internal constructor() {
 internal data class AthenaAuthoringSessionState(
     val records: List<AthenaAuthoringSessionRecord> = emptyList(),
     val nextPreviewOrdinal: Int = 1,
+)
+
+data class AthenaAuthoringPreviewCompatibilityContract(
+    val apiVersion: String,
+    val mutableSourceAuthority: Boolean,
+    val acceptanceRequiresGovernedAuthorities: Boolean,
+    val retainedMethods: List<String>,
 )

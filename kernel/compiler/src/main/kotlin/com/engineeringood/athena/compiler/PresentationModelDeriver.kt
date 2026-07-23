@@ -68,7 +68,9 @@ import com.engineeringood.athena.routing.TerminalSide
  * does not invent a second semantic core and it does not let frontend widgets become the first real
  * presentation contract.
  */
-class PresentationModelDeriver {
+class PresentationModelDeriver(
+    private val packageBackedFactDeriver: M32PackageBackedPresentationFactDeriver = M32PackageBackedPresentationFactDeriver(),
+) {
     /**
      * Materializes one rebuildable presentation document for one supported view.
      */
@@ -124,7 +126,10 @@ class PresentationModelDeriver {
         val routeFactSnapshot = projection.toRouteFactSnapshot(
             endpointsByConnectionId = endpointsByConnectionId,
         )
-        val representationFacts = document.toPresentationRepresentationFacts(projection)
+        val packageBackedRepresentationFacts = packageBackedFactDeriver.derive(projection)
+        val representationFacts = packageBackedRepresentationFacts.ifEmpty {
+            document.toPresentationRepresentationFacts(projection)
+        }
 
         return PresentationDocument(
             view = projection.view,

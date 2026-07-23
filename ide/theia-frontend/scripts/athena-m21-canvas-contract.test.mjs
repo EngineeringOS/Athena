@@ -28,7 +28,7 @@ test('M21 keeps the accepted M20 canvas contract explicit in source and docs', (
     const styles = readRepoFile('ide/theia-frontend/src/browser/style/index.css');
     const usage = readRepoFile('docs/usages/m21-proof-usage.md');
 
-    assert.match(widget, /renderCabinetMainPopover\(/);
+    assert.match(widget, /renderProjectionInfoPopover\(/);
     assert.match(widget, /renderBottomDock\(/);
     assert.match(widget, /handleWorkbenchClick/);
     assert.match(widget, /data-athena-info-button='true'/);

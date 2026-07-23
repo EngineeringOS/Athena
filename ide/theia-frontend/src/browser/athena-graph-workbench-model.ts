@@ -820,21 +820,19 @@ export function resolveVisibleAthenaGraphSheetViewSelector(
     previousDocumentSelector: AthenaGraphWorkbenchSheetViewSelector | undefined,
 ): AthenaGraphWorkbenchSheetViewSelector | undefined {
     if (model.sheetViewSelector) {
-        return isGovernedM31TwoSheetSelector(model.sheetViewSelector) ? model.sheetViewSelector : undefined;
+        return isGovernedMultiSheetSelector(model.sheetViewSelector) ? model.sheetViewSelector : undefined;
     }
-    return isGovernedM31TwoSheetSelector(previousDocumentSelector) ? previousDocumentSelector : undefined;
+    return isGovernedMultiSheetSelector(previousDocumentSelector) ? previousDocumentSelector : undefined;
 }
 
-function isGovernedM31TwoSheetSelector(
+function isGovernedMultiSheetSelector(
     selector: AthenaGraphWorkbenchSheetViewSelector | undefined,
 ): selector is AthenaGraphWorkbenchSheetViewSelector {
-    if (!selector || selector.entries.length !== 2) {
+    if (!selector || !selector.hasMultipleSheetViews || selector.entries.length <= 1) {
         return false;
     }
-    const roles = selector.entries.map(entry => entry.role).filter(Boolean).sort();
-    return roles.length === 2 &&
-        roles[0] === 'control-and-plc-logic' &&
-        roles[1] === 'field-wiring-and-terminal-transition';
+    const sheetViewIds = new Set(selector.entries.map(entry => entry.sheetViewId).filter(Boolean));
+    return sheetViewIds.size === selector.entries.length;
 }
 
 export function resolveAthenaGraphReferenceMarkerNavigation(

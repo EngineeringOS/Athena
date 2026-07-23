@@ -1,0 +1,8 @@
+{
+  "manifestId": "binding.m32.control-roller-relay",
+  "engineeringPackageId": "com.athena.sample.engineering.control.roller-relay",
+  "conceptId": "RollerRelay",
+  "defaultRepresentationPackageId": "com.athena.sample.representation.control.relay.iec",
+  "alternativeRepresentationPackageIds": [],
+  "compatibleProfileTags": ["m32-iec", "m32-compact"]
+}

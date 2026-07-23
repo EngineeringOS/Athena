@@ -1,5 +1,6 @@
 package com.engineeringood.athena.ide.lsp
 
+import com.engineeringood.athena.authoring.AuthoringRevisionGuard
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.TextEdit
 import org.eclipse.lsp4j.TextDocumentEdit
@@ -22,6 +23,7 @@ internal fun applyAuthoringWorkspaceMutation(
     trackedDocument: AthenaTrackedDocument,
     sourceEdit: AthenaAuthoringSourceEditPayload,
     proposedSource: String,
+    validatePersistedSource: Boolean = false,
 ): AthenaAuthoringWorkspaceMutationResult {
     val guard = sourceEdit.revisionGuard
         ?: return AthenaAuthoringWorkspaceMutationRejected("Governed source mutation requires a Revision Guard.")
@@ -37,6 +39,18 @@ internal fun applyAuthoringWorkspaceMutation(
 
     return runCatching {
         if (client == null) {
+            if (validatePersistedSource) {
+                val persistedSource = Files.readString(trackedDocument.path)
+                val persistedGuard = AuthoringRevisionGuard.from(
+                    semanticSnapshotId = guard.semanticSnapshotId,
+                    sourceUri = trackedDocument.uri,
+                    documentVersion = guard.documentVersion,
+                    sourceText = persistedSource,
+                )
+                check(persistedGuard.contentSha256 == guard.contentSha256) {
+                    "Canonical source changed on disk after preview; refresh the governed preview."
+                }
+            }
             Files.writeString(trackedDocument.path, proposedSource)
         } else {
             val workspaceEdit = WorkspaceEdit(

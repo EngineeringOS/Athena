@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 76 52" role="img" aria-label="Athena M32 synthetic power supply">
+  <rect x="12" y="8" width="44" height="36" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <line x1="0" y1="26" x2="12" y2="26" stroke="currentColor" stroke-width="1.4"/>
+  <line x1="56" y1="26" x2="76" y2="26" stroke="currentColor" stroke-width="1.4"/>
+  <text x="24" y="30" font-size="10">24V</text>
+</svg>

@@ -1,0 +1,12 @@
+{
+  "layoutId": "m32-demo-density-proof",
+  "governedMargin": 24,
+  "sheetNavigationBand": "visible",
+  "placements": [
+    { "semanticSubjectId": "device:MainPowerSupplyPS32", "x": 40, "y": 40 },
+    { "semanticSubjectId": "device:ControlRelayK32", "x": 160, "y": 40 },
+    { "semanticSubjectId": "device:ShutterMotorM32", "x": 160, "y": 140 }
+  ],
+  "normalChrome": "transparent",
+  "viewBoxAuthority": "derived-from-descriptor-bounds-plus-governed-margin"
+}

@@ -20,6 +20,7 @@ declare global {
     interface Window {
         __athenaWorkbenchSmoke?: {
             revealGraphicalView: () => Promise<void>;
+            switchProjectionView: (viewId: string) => Promise<boolean>;
             revealOutlineForSource: (sourceUri: string) => Promise<AthenaOutlineSmokeProof>;
             openSourceEditorForSmoke: (sourceUri: string) => Promise<AthenaSourceEditorSmokeProof>;
             revealSourceLineForSmoke: (lineNumber: number) => Promise<void>;
@@ -96,6 +97,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         if (typeof window !== 'undefined') {
             window.__athenaWorkbenchSmoke = {
                 revealGraphicalView: () => commands.executeCommand(AthenaCommands.REVEAL_GRAPHICAL_VIEW.id),
+                switchProjectionView: viewId => this.switchProjectionViewForSmoke(viewId),
                 revealOutlineForSource: sourceUri => this.revealOutlineForSource(commands, sourceUri),
                 openSourceEditorForSmoke: sourceUri => this.openSourceEditorForSmoke(sourceUri),
                 revealSourceLineForSmoke: lineNumber => this.revealSourceLineForSmoke(lineNumber)
@@ -202,6 +204,22 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         }
 
         await this.shell.activateWidget(extension.widgetId);
+    }
+
+    protected async switchProjectionViewForSmoke(viewId: string): Promise<boolean> {
+        const graphExtension = ATHENA_WORKBENCH_EXTENSIONS.find(extension =>
+            extension.widgetId === AthenaGraphWorkbenchWidget.ID
+        );
+        if (!graphExtension) {
+            return false;
+        }
+        await this.revealGraphWorkbench(graphExtension);
+        const widget = this.shell.getWidgetById(AthenaGraphWorkbenchWidget.ID)
+            ?? await this.widgetManager.getOrCreateWidget(AthenaGraphWorkbenchWidget.ID);
+        const smokeWidget = widget as unknown as {
+            switchActiveView: (requestedViewId: string) => Promise<boolean>;
+        };
+        return smokeWidget.switchActiveView(viewId);
     }
 
     protected async revealOutlineForSource(

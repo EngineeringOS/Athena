@@ -52,9 +52,35 @@ data class PresentationRepresentationFact(
     val terminals: List<PresentationTerminalFact>,
     val labels: List<LabelFact>,
     val sourceProjectionIds: List<String> = emptyList(),
+    val packageEvidence: PresentationPackageEvidence? = null,
 ) {
     init {
         require(symbol.anatomy == anatomy) { "Presentation representation fact symbol must wrap the same anatomy." }
+    }
+}
+
+data class PresentationPackageEvidence(
+    val engineeringPackageId: String,
+    val engineeringPackageVersion: String,
+    val presentationProfileId: String,
+    val bindingManifestId: String,
+    val representationPackageId: String,
+    val representationPackageVersion: String,
+    val descriptorId: String,
+    val graphicResourceId: String,
+    val variant: String,
+    val anchorMapSummary: List<String>,
+    val labelBindingSummary: List<String>,
+    val resolverStage: String,
+    val rendererFallbackAccepted: Boolean,
+) {
+    init {
+        require(engineeringPackageId.isNotBlank()) { "Engineering package evidence id must not be blank." }
+        require(presentationProfileId.isNotBlank()) { "Presentation profile evidence id must not be blank." }
+        require(bindingManifestId.isNotBlank()) { "Binding manifest evidence id must not be blank." }
+        require(representationPackageId.isNotBlank()) { "Representation package evidence id must not be blank." }
+        require(descriptorId.isNotBlank()) { "Representation descriptor evidence id must not be blank." }
+        require(graphicResourceId.isNotBlank()) { "Graphic resource evidence id must not be blank." }
     }
 }
 
