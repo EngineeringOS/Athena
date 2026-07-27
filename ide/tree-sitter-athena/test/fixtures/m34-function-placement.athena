@@ -1,0 +1,23 @@
+system FunctionPlacement {
+  device KM1 {
+    type Contactor
+    port A1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port A2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+    function coil {
+      role coil
+      ports (A1, KM1.A2)
+    }
+  }
+  layout schematic {
+    place KM1.coil at (7, 4) orientation vertical
+    place KM1 at (5, 2) orientation horizontal
+  }
+}

@@ -38,12 +38,54 @@ data class SourceSpan(
  * rather than on generated parse-tree types.
  */
 data class SourceFileAst(
-    val system: SystemDeclaration,
-    val declarations: List<Declaration>,
+    val unit: AthenaSourceUnit,
     val span: SourceSpan,
     val packageDeclaration: PackageDeclaration? = null,
     val imports: List<ImportDeclaration> = emptyList(),
-)
+) {
+    constructor(
+        system: SystemDeclaration,
+        declarations: List<Declaration>,
+        span: SourceSpan,
+        packageDeclaration: PackageDeclaration? = null,
+        imports: List<ImportDeclaration> = emptyList(),
+    ) : this(
+        unit = ProjectSourceUnit(system, declarations),
+        span = span,
+        packageDeclaration = packageDeclaration,
+        imports = imports,
+    )
+
+    val systemOrNull: SystemDeclaration?
+        get() = (unit as? ProjectSourceUnit)?.system
+
+    val system: SystemDeclaration
+        get() = requireNotNull(systemOrNull) { "Representation source does not contain a project system." }
+
+    val projectDeclarations: List<Declaration>
+        get() = (unit as? ProjectSourceUnit)?.declarations.orEmpty()
+
+    val declarations: List<Declaration>
+        get() = projectDeclarations
+
+    val representationDeclarations: List<RepresentationDeclaration>
+        get() = (unit as? RepresentationSourceUnit)?.declarations.orEmpty()
+}
+
+sealed interface AthenaSourceUnit
+
+data class ProjectSourceUnit(
+    val system: SystemDeclaration,
+    val declarations: List<Declaration>,
+) : AthenaSourceUnit
+
+data class RepresentationSourceUnit(
+    val declarations: List<RepresentationDeclaration>,
+) : AthenaSourceUnit {
+    init {
+        require(declarations.isNotEmpty()) { "Representation source requires at least one declaration." }
+    }
+}
 
 /**
  * Declares one file-level qualified target for later semantic graph resolution.
@@ -105,6 +147,207 @@ sealed interface Declaration {
     val span: SourceSpan
 }
 
+sealed interface RepresentationDeclaration {
+    val name: String
+    val span: SourceSpan
+}
+
+data class SymbolDeclaration(
+    override val name: String,
+    val identity: SymbolStringField?,
+    val version: SymbolStringField?,
+    val resources: List<RepresentationResourceDeclaration>,
+    val graphic: SymbolGraphicDeclaration?,
+    val anchors: List<SymbolAnchorDeclaration>,
+    override val span: SourceSpan,
+) : RepresentationDeclaration
+
+data class RepresentationResourceDeclaration(
+    val id: String,
+    val kind: RepresentationResourceKind,
+    val path: SymbolStringField,
+    val span: SourceSpan,
+)
+
+enum class RepresentationResourceKind {
+    SVG,
+}
+
+data class SymbolStringField(
+    val value: String,
+    val span: SourceSpan,
+)
+
+data class SymbolPoint(
+    val x: Double,
+    val y: Double,
+    val span: SourceSpan,
+)
+
+data class SymbolBounds(
+    val x: Double,
+    val y: Double,
+    val width: Double,
+    val height: Double,
+    val span: SourceSpan,
+)
+
+data class SymbolSize(
+    val width: Double,
+    val height: Double,
+    val span: SourceSpan,
+)
+
+data class SymbolGraphicDeclaration(
+    val bounds: SymbolBounds?,
+    val primitives: List<SymbolGraphicPrimitiveDeclaration>,
+    val labels: List<SymbolDynamicLabelDeclaration>,
+    val svgResource: SymbolIdentifierField? = null,
+    val span: SourceSpan,
+)
+
+sealed interface SymbolGraphicPrimitiveDeclaration {
+    val id: String
+    val style: String
+    val span: SourceSpan
+
+    data class Line(
+        override val id: String,
+        val from: SymbolPoint,
+        val to: SymbolPoint,
+        override val style: String,
+        override val span: SourceSpan,
+    ) : SymbolGraphicPrimitiveDeclaration
+
+    data class Polyline(
+        override val id: String,
+        val points: List<SymbolPoint>,
+        override val style: String,
+        override val span: SourceSpan,
+    ) : SymbolGraphicPrimitiveDeclaration
+
+    data class Arc(
+        override val id: String,
+        val center: SymbolPoint,
+        val radius: Double,
+        val startAngleDegrees: Double,
+        val sweepAngleDegrees: Double,
+        override val style: String,
+        override val span: SourceSpan,
+    ) : SymbolGraphicPrimitiveDeclaration
+
+    data class Circle(
+        override val id: String,
+        val center: SymbolPoint,
+        val radius: Double,
+        override val style: String,
+        override val span: SourceSpan,
+    ) : SymbolGraphicPrimitiveDeclaration
+
+    data class Rectangle(
+        override val id: String,
+        val origin: SymbolPoint,
+        val size: SymbolSize,
+        override val style: String,
+        override val span: SourceSpan,
+    ) : SymbolGraphicPrimitiveDeclaration
+}
+
+data class SymbolDynamicLabelDeclaration(
+    val id: String,
+    val origin: SymbolPoint,
+    val size: SymbolSize,
+    val role: SymbolIdentifierField,
+    val style: String,
+    val span: SourceSpan,
+)
+
+data class SymbolAnchorDeclaration(
+    val id: String,
+    val primitiveRef: SymbolIdentifierField?,
+    val point: SymbolPoint?,
+    val role: SymbolIdentifierField?,
+    val acceptedDirections: List<SymbolIdentifierField>,
+    val acceptedSignals: List<SymbolIdentifierField>,
+    val span: SourceSpan,
+)
+
+data class SymbolIdentifierField(
+    val value: String,
+    val span: SourceSpan,
+)
+
+data class ElementDeclaration(
+    override val name: String,
+    val identity: SymbolStringField?,
+    val version: SymbolStringField?,
+    val bounds: SymbolBounds?,
+    val resources: List<RepresentationResourceDeclaration>,
+    val graphic: SymbolGraphicDeclaration?,
+    val children: List<ElementChildDeclaration>,
+    val exportedAnchors: List<ElementAnchorExportDeclaration>,
+    val exportedLabels: List<ElementLabelExportDeclaration>,
+    override val span: SourceSpan,
+) : RepresentationDeclaration
+
+data class ElementNumberField(
+    val value: Double,
+    val span: SourceSpan,
+)
+
+data class ElementChildDeclaration(
+    val id: String,
+    val headerSpan: SourceSpan,
+    val symbolIdentity: SymbolStringField?,
+    val translate: SymbolPoint?,
+    val rotate: ElementNumberField?,
+    val scale: SymbolPoint?,
+    val zOrder: ElementNumberField?,
+    val span: SourceSpan,
+)
+
+data class ElementAnchorExportDeclaration(
+    val id: String,
+    val childId: SymbolIdentifierField,
+    val childAnchorId: SymbolIdentifierField,
+    val referenceSpan: SourceSpan,
+    val span: SourceSpan,
+)
+
+data class ElementLabelExportDeclaration(
+    val id: String,
+    val childId: SymbolIdentifierField,
+    val childLabelId: SymbolIdentifierField,
+    val referenceSpan: SourceSpan,
+    val span: SourceSpan,
+)
+
+enum class BindingSelectorKind {
+    Device,
+    Function,
+}
+
+data class ProfileDeclaration(
+    override val name: String,
+    val projection: SymbolIdentifierField?,
+    val standard: SymbolIdentifierField?,
+    val style: SymbolIdentifierField?,
+    val fallback: SymbolIdentifierField?,
+    override val span: SourceSpan,
+) : RepresentationDeclaration
+
+data class BindingDeclaration(
+    override val name: String,
+    val profile: SymbolIdentifierField?,
+    val priority: ElementNumberField?,
+    val selectorKind: BindingSelectorKind?,
+    val selectorFacts: List<PropertyAssignment>,
+    val useElement: SymbolStringField?,
+    val useVersion: SymbolStringField?,
+    val variant: SymbolStringField?,
+    override val span: SourceSpan,
+) : RepresentationDeclaration
+
 /**
  * Syntax node for a `device` declaration and its authored property fields.
  *
@@ -116,7 +359,16 @@ data class DeviceDeclaration(
     val fields: List<PropertyAssignment>,
     override val span: SourceSpan,
     val nestedPorts: List<PortDeclaration> = emptyList(),
+    val nestedFunctions: List<EngineeringFunctionDeclaration> = emptyList(),
 ) : Declaration
+
+/** Syntax-only functional partition of one authored physical device. */
+data class EngineeringFunctionDeclaration(
+    val name: String,
+    val role: SymbolIdentifierField,
+    val portReferences: List<QualifiedName>,
+    val span: SourceSpan,
+)
 
 /**
  * Syntax node for a `port` declaration addressed by a qualified authored name.
@@ -170,34 +422,50 @@ data class LayoutDeclaration(
 
 /** Syntax-only authored statements inside a [LayoutDeclaration]. */
 sealed interface LayoutStatement {
-    val subject: String
-    val target: String
     val span: SourceSpan
 
     data class PlaceNear(
-        override val subject: String,
-        override val target: String,
+        val subject: String,
+        val target: String,
         override val span: SourceSpan,
     ) : LayoutStatement
 
     data class PlaceBelow(
-        override val subject: String,
-        override val target: String,
+        val subject: String,
+        val target: String,
         override val span: SourceSpan,
     ) : LayoutStatement
 
     data class AlignWith(
-        override val subject: String,
-        override val target: String,
+        val subject: String,
+        val target: String,
         val axis: LayoutAxis,
         override val span: SourceSpan,
     ) : LayoutStatement
 
     data class GroupWith(
-        override val subject: String,
-        override val target: String,
+        val subject: String,
+        val target: String,
         override val span: SourceSpan,
     ) : LayoutStatement
+
+    data class PlaceAt(
+        val subject: QualifiedName,
+        val position: DrawingGridPosition,
+        val orientation: LayoutOrientation,
+        override val span: SourceSpan,
+    ) : LayoutStatement
+}
+
+data class DrawingGridPosition(
+    val column: Int,
+    val row: Int,
+    val span: SourceSpan,
+)
+
+enum class LayoutOrientation {
+    Horizontal,
+    Vertical,
 }
 
 enum class LayoutAxis {

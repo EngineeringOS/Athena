@@ -1,0 +1,6 @@
+package athena.vendor
+
+symbol vendor_drive_symbol {
+  identity "vendor.drive.symbol"
+  version "1.0.0"
+  graphic svg

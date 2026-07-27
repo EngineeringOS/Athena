@@ -1,0 +1,472 @@
+========================================
+Standalone Symbol with native geometry
+========================================
+
+package athena.iec
+
+symbol iec_switch_contact {
+  identity "iec.switch_contact"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 80)
+    line line from (40, 0) to (40, 20) style conductor
+    line load from (40, 60) to (40, 80) style conductor
+  }
+
+  anchor line {
+    primitiveRef line
+    point (40, 0)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor load {
+    primitiveRef load
+    point (40, 80)
+    role terminal
+    accepts direction out
+    accepts signal Power
+  }
+}
+
+---
+
+(source_file
+  (package_declaration
+    name: (package_name))
+  (symbol_declaration
+    name: (name)
+    (symbol_identity
+      value: (string
+        (string_content)))
+    (symbol_version
+      value: (string
+        (string_content)))
+    (graphic_declaration
+      (graphic_bounds
+        value: (bounds_literal
+          (number)
+          (number)
+          (number)
+          (number)))
+      (line_primitive
+        name: (name)
+        from: (point_literal
+          (number)
+          (number))
+        to: (point_literal
+          (number)
+          (number))
+        (style_reference
+          name: (profile_value_name)))
+      (line_primitive
+        name: (name)
+        from: (point_literal
+          (number)
+          (number))
+        to: (point_literal
+          (number)
+          (number))
+        (style_reference
+          name: (profile_value_name))))
+    (anchor_declaration
+      name: (name)
+      (primitive_reference
+        target: (identifier))
+      (anchor_point
+        value: (point_literal
+          (number)
+          (number)))
+      (anchor_role
+        value: (identifier))
+      (anchor_direction
+        value: (direction_name))
+      (anchor_signal
+        value: (identifier)))
+    (anchor_declaration
+      name: (name)
+      (primitive_reference
+        target: (identifier))
+      (anchor_point
+        value: (point_literal
+          (number)
+          (number)))
+      (anchor_role
+        value: (identifier))
+      (anchor_direction
+        value: (direction_name))
+      (anchor_signal
+        value: (identifier)))))
+
+========================================
+Mixed Symbol and Element with composition
+========================================
+
+package athena.iec
+
+symbol iec_switch_contact {
+  identity "iec.switch_contact"
+  version "1.0.0"
+}
+
+element iec_switch_module {
+  identity "iec.switch_module"
+  version "1.0.0"
+  bounds (0, 0, 180, 80)
+
+  child primary {
+    symbol "iec.switch_contact"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  child auxiliary {
+    symbol "iec.switch_contact"
+    translate (100, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 1
+  }
+
+  export anchor primaryLine from primary.line
+  export anchor primaryLoad from primary.load
+  export anchor auxiliaryLine from auxiliary.line
+  export anchor auxiliaryLoad from auxiliary.load
+}
+
+---
+
+(source_file
+  (package_declaration
+    name: (package_name))
+  (symbol_declaration
+    name: (name)
+    (symbol_identity
+      value: (string
+        (string_content)))
+    (symbol_version
+      value: (string
+        (string_content))))
+  (element_declaration
+    name: (name)
+    (element_identity
+      value: (string
+        (string_content)))
+    (element_version
+      value: (string
+        (string_content)))
+    (element_bounds
+      value: (bounds_literal
+        (number)
+        (number)
+        (number)
+        (number)))
+    (element_child
+      name: (name)
+      (child_symbol_reference
+        identity: (string
+          (string_content)))
+      (child_translate
+        value: (point_literal
+          (number)
+          (number)))
+      (child_rotate
+        value: (number))
+      (child_scale
+        value: (point_literal
+          (number)
+          (number)))
+      (child_z_order
+        value: (number)))
+    (element_child
+      name: (name)
+      (child_symbol_reference
+        identity: (string
+          (string_content)))
+      (child_translate
+        value: (point_literal
+          (number)
+          (number)))
+      (child_rotate
+        value: (number))
+      (child_scale
+        value: (point_literal
+          (number)
+          (number)))
+      (child_z_order
+        value: (number)))
+    (element_export_anchor
+      name: (name)
+      source: (qualified_name
+        (identifier)
+        (identifier)))
+    (element_export_anchor
+      name: (name)
+      source: (qualified_name
+        (identifier)
+        (identifier)))
+    (element_export_anchor
+      name: (name)
+      source: (qualified_name
+        (identifier)
+        (identifier)))
+    (element_export_anchor
+      name: (name)
+      source: (qualified_name
+        (identifier)
+        (identifier)))))
+
+========================================
+Symbol and Element with governed SVG graphic body
+========================================
+
+package athena.vendor
+
+symbol vendor_drive_symbol {
+  identity "vendor.drive.symbol"
+  version "1.0.0"
+
+  resource vendor_drive_svg {
+    kind svg
+    path "./vendor-drive.svg"
+  }
+
+  graphic svg resource vendor_drive_svg
+}
+
+element vendor_drive_element {
+  identity "vendor.drive.element"
+  version "1.0.0"
+  graphic svg resource vendor_drive_svg
+}
+
+---
+
+(source_file
+  (package_declaration
+    name: (package_name))
+  (symbol_declaration
+    name: (name)
+    (symbol_identity
+      value: (string
+        (string_content)))
+    (symbol_version
+      value: (string
+        (string_content)))
+    (resource_declaration
+      name: (name)
+      (resource_kind)
+      (resource_path
+        value: (string
+          (string_content))))
+    (graphic_declaration
+      resource: (identifier)))
+  (element_declaration
+    name: (name)
+    (element_identity
+      value: (string
+        (string_content)))
+    (element_version
+      value: (string
+        (string_content)))
+    (graphic_declaration
+      resource: (identifier))))
+
+========================================
+Complete M34 representation vocabulary
+========================================
+
+package athena.iec
+
+symbol coil {
+  identity "iec.coil.symbol"
+  version "1.0.0"
+  graphic {
+    bounds (0, 0, 80, 80)
+    line lead from (40, 0) to (40, 14) style conductor
+    polyline marker points ((10, 10), (20, 20), (30, 10)) style reference
+    arc winding center (40, 40) radius 12 from 180 sweep 180 style symbol
+    circle terminalMark center (40, 0) radius 2 style terminal
+    rectangle body at (20, 14) size (40, 52) style symbol
+    label deviceTag at (0, -14) size (80, 12) role device-tag style device-label
+  }
+}
+
+element coil_element {
+  identity "iec.coil.element"
+  version "1.0.0"
+  bounds (0, -14, 80, 94)
+  child glyph { symbol "iec.coil.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export label deviceTag from glyph.deviceTag
+}
+
+profile IECProfile {
+  projection schematic
+  standard IEC
+  style industrial-iec-v1
+  fallback fail-closed
+}
+
+binding CoilBinding {
+  profile IECProfile
+  priority 200
+  select function where { type Contactor role coil }
+  use element "iec.coil.element" version "1.0.0"
+  variant "standard"
+}
+
+---
+
+(source_file
+  (package_declaration
+    (package_name))
+  (symbol_declaration
+    (name)
+    (symbol_identity
+      (string
+        (string_content)))
+    (symbol_version
+      (string
+        (string_content)))
+    (graphic_declaration
+      (graphic_bounds
+        (bounds_literal
+          (number)
+          (number)
+          (number)
+          (number)))
+      (line_primitive
+        (name)
+        (point_literal
+          (number)
+          (number))
+        (point_literal
+          (number)
+          (number))
+        (style_reference
+          (profile_value_name)))
+      (polyline_primitive
+        (name)
+        (point_list
+          (point_literal
+            (number)
+            (number))
+          (point_literal
+            (number)
+            (number))
+          (point_literal
+            (number)
+            (number)))
+        (style_reference
+          (profile_value_name)))
+      (arc_primitive
+        (name)
+        (point_literal
+          (number)
+          (number))
+        (number)
+        (number)
+        (number)
+        (style_reference
+          (profile_value_name)))
+      (circle_primitive
+        (name)
+        (point_literal
+          (number)
+          (number))
+        (number)
+        (style_reference
+          (profile_value_name)))
+      (rectangle_primitive
+        (name)
+        (point_literal
+          (number)
+          (number))
+        (size_literal
+          (number)
+          (number))
+        (style_reference
+          (profile_value_name)))
+      (label_slot
+        (name)
+        (point_literal
+          (number)
+          (number))
+        (size_literal
+          (number)
+          (number))
+        (profile_value_name)
+        (style_reference
+          (profile_value_name)))))
+  (element_declaration
+    (name)
+    (element_identity
+      (string
+        (string_content)))
+    (element_version
+      (string
+        (string_content)))
+    (element_bounds
+      (bounds_literal
+        (number)
+        (number)
+        (number)
+        (number)))
+    (element_child
+      (name)
+      (child_symbol_reference
+        (string
+          (string_content)))
+      (child_translate
+        (point_literal
+          (number)
+          (number)))
+      (child_rotate
+        (number))
+      (child_scale
+        (point_literal
+          (number)
+          (number)))
+      (child_z_order
+        (number)))
+    (element_export_label
+      (name)
+      (qualified_name
+        (identifier)
+        (identifier))))
+  (profile_declaration
+    (name)
+    (profile_projection
+      (profile_value_name))
+    (profile_standard
+      (profile_value_name))
+    (profile_style
+      (profile_value_name))
+    (profile_fallback
+      (profile_value_name)))
+  (binding_declaration
+    (name)
+    (binding_profile
+      (identifier))
+    (binding_priority
+      (number))
+    (binding_select
+      (binding_subject_kind)
+      (property_assignment
+        (property_name)
+        (identifier))
+      (property_assignment
+        (property_name)
+        (identifier)))
+    (binding_use_element
+      (string
+        (string_content))
+      (string
+        (string_content)))
+    (binding_variant
+      (string
+        (string_content)))))

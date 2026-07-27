@@ -1,0 +1,19 @@
+package athena.vendor
+
+symbol vendor_drive_symbol {
+  identity "vendor.drive.symbol"
+  version "1.0.0"
+
+  resource vendor_drive_svg {
+    kind svg
+    path "./vendor-drive.svg"
+  }
+
+  graphic svg resource vendor_drive_svg
+}
+
+element vendor_drive_element {
+  identity "vendor.drive.element"
+  version "1.0.0"
+  graphic svg resource vendor_drive_svg
+}

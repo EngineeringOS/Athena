@@ -1,0 +1,15 @@
+package athena.iec
+
+symbol iec_switch_contact {
+  identity "iec.switch_contact"
+  version "1.0.0"
+}
+
+element iec_switch_module {
+  identity "iec.switch_module"
+  version "1.0.0"
+  bounds (0, 0, 180, 80)
+
+  child primary {
+    symbol "iec.switch_contact"
+    translate (0, 0)

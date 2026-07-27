@@ -35,6 +35,11 @@ const INCOMPLETE_FIXTURES = [
     'bare-import.athena.txt',
 ];
 
+const INCOMPLETE_SYMBOL_FIXTURES = [
+    'unclosed-symbol-anchor.athena.txt',
+    'unclosed-element-child.athena.txt',
+];
+
 let language;
 
 test.before(async () => {
@@ -99,6 +104,35 @@ for (const fixtureName of INCOMPLETE_FIXTURES) {
                 tree.rootNode.namedChildren.some(node => node?.type === 'incomplete_import_declaration'),
                 'expected explicit incomplete import structure'
             );
+        }
+    });
+}
+
+for (const fixtureName of INCOMPLETE_SYMBOL_FIXTURES) {
+    test(`${fixtureName} preserves the standalone Symbol prefix`, () => {
+        const source = readFileSync(path.join(incompleteDir, fixtureName), 'utf8');
+        const parser = new Parser();
+        parser.setLanguage(language);
+        const tree = parser.parse(source);
+
+        assert.ok(tree, `expected a non-null tree for ${fixtureName}`);
+        assert.equal(tree.rootNode.startIndex, 0);
+        assert.equal(tree.rootNode.endIndex, source.length);
+
+        if (fixtureName === 'unclosed-symbol-anchor.athena.txt') {
+            const symbolDeclaration = tree.rootNode.namedChildren.find(node => node?.type === 'symbol_declaration');
+            assert.ok(symbolDeclaration, `expected a real symbol_declaration node, got:\n${tree.rootNode.toString()}`);
+            assert.equal(symbolDeclaration.childForFieldName('name')?.text, 'iec_switch_contact');
+            assert.equal(symbolDeclaration.descendantsOfType('graphic_declaration').length, 1);
+            assert.equal(symbolDeclaration.descendantsOfType('anchor_declaration').length, 1);
+        }
+        if (fixtureName === 'unclosed-element-child.athena.txt') {
+            const elementDeclaration = tree.rootNode.namedChildren.find(node => node?.type === 'element_declaration');
+            assert.ok(elementDeclaration, `expected a real element_declaration node, got:\n${tree.rootNode.toString()}`);
+            assert.equal(elementDeclaration.childForFieldName('name')?.text, 'iec_switch_module');
+            assert.equal(elementDeclaration.descendantsOfType('element_child').length, 1);
+            assert.equal(elementDeclaration.descendantsOfType('child_symbol_reference').length, 1);
+            assert.equal(elementDeclaration.descendantsOfType('child_translate').length, 1);
         }
     });
 }

@@ -1,0 +1,13 @@
+package athena.iec
+symbol iec_switch_contact {
+  identity "iec.switch_contact"
+  version "1.0.0"
+  graphic {
+    bounds (0, 0, 80, 80)
+    line line from (40, 0) to (40, 20) style conductor
+  }
+  anchor line {
+    primitiveRef line
+    point (40, 0)
+    role terminal
+    accepts direction in

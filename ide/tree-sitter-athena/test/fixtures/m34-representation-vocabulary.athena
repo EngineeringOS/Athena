@@ -1,0 +1,61 @@
+package athena.iec
+
+symbol iec_contactor_coil {
+  identity "iec.contactor.coil.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 80)
+    line terminalA1 from (40, 0) to (40, 14) style conductor
+    polyline reference points ((56, 28), (64, 40), (56, 52)) style reference
+    arc coilMark center (40, 40) radius 12 from 180 sweep 180 style symbol
+    circle terminalMark center (40, 0) radius 2 style terminal
+    rectangle coilBody at (20, 14) size (40, 52) style symbol
+    label deviceTag at (0, -14) size (80, 12) role device-tag style device-label
+  }
+
+  anchor A1 {
+    primitiveRef terminalA1
+    point (40, 0)
+    role terminal
+    accepts direction in
+    accepts signal Control
+  }
+}
+
+element iec_contactor_coil_element {
+  identity "iec.contactor.coil.element"
+  version "1.0.0"
+  bounds (0, -14, 80, 94)
+
+  child glyph {
+    symbol "iec.contactor.coil.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor A1 from glyph.A1
+  export label deviceTag from glyph.deviceTag
+}
+
+profile ControlDrawingIEC {
+  projection schematic
+  standard IEC
+  style athena-industrial-iec-v1
+  fallback fail-closed
+}
+
+binding ContactorCoilIEC {
+  profile ControlDrawingIEC
+  priority 200
+
+  select function where {
+    type Contactor
+    role coil
+  }
+
+  use element "iec.contactor.coil.element" version "1.0.0"
+  variant "standard"
+}

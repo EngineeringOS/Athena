@@ -1,0 +1,55 @@
+package athena.iec
+
+symbol iec_switch_contact {
+  identity "iec.switch_contact"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 80)
+    line line from (40, 0) to (40, 20) style conductor
+    line load from (40, 60) to (40, 80) style conductor
+  }
+
+  anchor line {
+    primitiveRef line
+    point (40, 0)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor load {
+    primitiveRef load
+    point (40, 80)
+    role terminal
+    accepts direction out
+    accepts signal Power
+  }
+}
+
+element iec_switch_module {
+  identity "iec.switch_module"
+  version "1.0.0"
+  bounds (0, 0, 180, 80)
+
+  child primary {
+    symbol "iec.switch_contact"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  child auxiliary {
+    symbol "iec.switch_contact"
+    translate (100, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 1
+  }
+
+  export anchor primaryLine from primary.line
+  export anchor primaryLoad from primary.load
+  export anchor auxiliaryLine from auxiliary.line
+  export anchor auxiliaryLoad from auxiliary.load
+}
