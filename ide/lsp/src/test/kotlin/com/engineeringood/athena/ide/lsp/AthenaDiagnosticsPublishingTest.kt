@@ -29,6 +29,7 @@ import kotlin.io.path.isRegularFile
 import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -36,6 +37,53 @@ import kotlin.test.assertTrue
  * Verifies that Athena LSP publishes JVM-sourced diagnostics for open and change events.
  */
 class AthenaDiagnosticsPublishingTest {
+    @Test
+    @Suppress("DEPRECATION")
+    fun `repository package path diagnostics publish through lsp before initialization failure`() {
+        val repositoryRoot = createTempDirectory("athena-lsp-repository-package-path-")
+        val sourcePath = repositoryRoot.resolve("src/com/engineeringood/wrong/demo.athena")
+        val server = AthenaLanguageServer()
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            sourcePath.parent.createDirectories()
+            sourcePath.writeText(
+                """
+                    package com.engineeringood.demo
+
+                    system Demo { }
+                """.trimIndent(),
+            )
+
+            val client = AthenaRecordingLanguageClient()
+            server.connect(client)
+
+            assertFailsWith<java.util.concurrent.ExecutionException> {
+                server.initialize(
+                    InitializeParams().apply {
+                        rootUri = repositoryRoot.toUri().toString()
+                    },
+                ).get()
+            }
+
+            val published = client.publishedDiagnostics.single()
+            assertEquals(sourcePath.toUri().toString(), published.uri)
+            val diagnostic = published.diagnostics.single()
+            assertEquals("Athena repository", diagnostic.source)
+            assertEquals("repository.contract.package.path-mismatch", diagnostic.code.left)
+            assertEquals(DiagnosticSeverity.Error, diagnostic.severity)
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
     @Test
     @Suppress("DEPRECATION")
     fun `publish diagnostics for invalid open text and clear after valid change`() {
@@ -443,7 +491,7 @@ class AthenaDiagnosticsPublishingTest {
     fun `m20 sample project open publishes no diagnostics for boundary scope source`() {
         val repoRoot = resolveRepoRoot()
         val sampleProjectRoot = repoRoot.resolve("examples/m20/sample-project")
-        val sourcePath = sampleProjectRoot.resolve("src/04-boundary-scope.athena")
+        val sourcePath = sampleProjectRoot.resolve("src/com/engineeringood/m20/sample/04-boundary-scope.athena")
         val sourceText = Files.readString(sourcePath)
 
         AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
@@ -488,14 +536,64 @@ class AthenaDiagnosticsPublishingTest {
 
     @Test
     @Suppress("DEPRECATION")
+    fun `m34 cabinet sample project open publishes no problems diagnostics`() {
+        val repoRoot = resolveRepoRoot()
+        val sampleProjectRoot = repoRoot.resolve("examples/m34/sample-project")
+        val sourcePath = sampleProjectRoot.resolve("src/com/engineeringood/m34/sample/01-native-cabinet-proof.athena")
+        val sourceText = Files.readString(sourcePath)
+
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        server.connect(client)
+
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = sampleProjectRoot.toUri().toString()
+                },
+            ).get()
+
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        sourcePath.toUri().toString(),
+                        "athena",
+                        1,
+                        sourceText,
+                    ),
+                ),
+            )
+
+            val diagnostics = client.publishedDiagnostics.last().diagnostics
+            assertTrue(
+                diagnostics.isEmpty(),
+                buildString {
+                    appendLine("Published diagnostics for ${sourcePath.fileName}:")
+                    diagnostics.forEach { diagnostic ->
+                        appendLine("- ${diagnostic.severity} ${diagnostic.source} ${diagnostic.code.left}: ${diagnostic.message}")
+                    }
+                    val tracked = server.trackedDocument(sourcePath.toUri().toString())
+                    appendLine("Project semantic diagnostics:")
+                    tracked?.projectSemanticDiagnostics.orEmpty().forEach { diagnostic ->
+                        appendLine("- ${diagnostic.severity} ${diagnostic.code.value}: ${diagnostic.message}")
+                    }
+                },
+            )
+        } finally {
+            server.shutdown().get()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
     fun `m20 sample project showcase files open without diagnostics`() {
         val repoRoot = resolveRepoRoot()
         val sampleProjectRoot = repoRoot.resolve("examples/m20/sample-project")
         val sourcePaths = listOf(
-            sampleProjectRoot.resolve("src/01-schematic-sheet.athena"),
-            sampleProjectRoot.resolve("src/02-dense-sheet.athena"),
-            sampleProjectRoot.resolve("src/03-acceptance-sheet.athena"),
-            sampleProjectRoot.resolve("src/04-boundary-scope.athena"),
+            sampleProjectRoot.resolve("src/com/engineeringood/m20/sample/01-schematic-sheet.athena"),
+            sampleProjectRoot.resolve("src/com/engineeringood/m20/sample/02-dense-sheet.athena"),
+            sampleProjectRoot.resolve("src/com/engineeringood/m20/sample/03-acceptance-sheet.athena"),
+            sampleProjectRoot.resolve("src/com/engineeringood/m20/sample/04-boundary-scope.athena"),
         )
 
         AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
@@ -545,7 +643,7 @@ class AthenaDiagnosticsPublishingTest {
     fun `m23 sample project layout source opens without diagnostics`() {
         val repoRoot = resolveRepoRoot()
         val sampleProjectRoot = repoRoot.resolve("examples/m23/sample-project")
-        val sourcePath = sampleProjectRoot.resolve("src/01-layout-hints.athena")
+        val sourcePath = sampleProjectRoot.resolve("src/com/engineeringood/m23/sample/01-layout-hints.athena")
         val sourceText = Files.readString(sourcePath)
 
         AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
@@ -594,9 +692,9 @@ class AthenaDiagnosticsPublishingTest {
         val repoRoot = resolveRepoRoot()
         val sampleProjectRoot = repoRoot.resolve("examples/m24/sample-project")
         val sourcePaths = listOf(
-            sampleProjectRoot.resolve("src/01-control-route.athena"),
-            sampleProjectRoot.resolve("src/02-terminal-strip-routes.athena"),
-            sampleProjectRoot.resolve("src/03-power-protection-load.athena"),
+            sampleProjectRoot.resolve("src/com/engineeringood/m24/sample/01-control-route.athena"),
+            sampleProjectRoot.resolve("src/com/engineeringood/m24/sample/02-terminal-strip-routes.athena"),
+            sampleProjectRoot.resolve("src/com/engineeringood/m24/sample/03-power-protection-load.athena"),
         )
 
         AthenaCompiler().materializeRepositoryLock(sampleProjectRoot)
@@ -651,14 +749,34 @@ class AthenaDiagnosticsPublishingTest {
               device Local {}
             }
         """.trimIndent()
-        val repository = createGovernedTestRepository(
-            prefix = "athena-lsp-non-root-package-diagnostics-",
-            packageName = "com.engineeringood.factoryline",
-            sourceText = sourceText,
+        val repositoryRoot = createTempDirectory("athena-lsp-non-root-package-diagnostics-")
+        val sourcePath = repositoryRoot.resolve("src/com/vendor/vendor.athena")
+        repositoryRoot.resolve("athena.yaml").writeText(
+            """
+                primaryPackage:
+                  name: com.engineeringood.factoryline
+                  version: 0.1.0
+                  sourceRoot: src
+            """.trimIndent(),
         )
-        val repositoryRoot = repository.repositoryRoot
-        val sourcePath = repository.seedSourcePath
+        val rootSourcePath = repositoryRoot.resolve("src/com/engineeringood/factoryline/root.athena")
+        rootSourcePath.parent.createDirectories()
+        rootSourcePath.writeText(
+            """
+                package com.engineeringood.factoryline
+
+                system Root { }
+            """.trimIndent(),
+        )
+        val materialization = AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+        assertTrue(
+            materialization.diagnostics.isEmpty(),
+            "Lock materialization diagnostics: ${materialization.diagnostics.map { diagnostic -> diagnostic.code to diagnostic.message }}",
+        )
+        sourcePath.parent.createDirectories()
+        sourcePath.writeText(sourceText)
         AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+        assertTrue(repositoryRoot.resolve("athena.lock").isRegularFile())
 
         val client = AthenaRecordingLanguageClient()
         val server = AthenaLanguageServer()
@@ -686,8 +804,8 @@ class AthenaDiagnosticsPublishingTest {
                 ?.projectSemanticDiagnostics
                 ?.map { diagnostic -> diagnostic.code.value }
                 .orEmpty()
-            assertTrue("semantic.source.package.not-admitted" in projectCodes)
-            assertTrue("semantic.source.package.mismatch" !in projectCodes)
+            assertTrue("semantic.source.package.not-admitted" in projectCodes, "Project diagnostic codes: $projectCodes")
+            assertTrue("semantic.source.package.mismatch" !in projectCodes, "Project diagnostic codes: $projectCodes")
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
@@ -699,7 +817,8 @@ class AthenaDiagnosticsPublishingTest {
     fun `package aware diagnostics use governed sibling source units in the project snapshot`() {
         val repositoryRoot = createTempDirectory("athena-lsp-project-package-diagnostics-")
         val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-        val sourcePath = sourceRoot.resolve("consumer.athena")
+        val packageRoot = sourceRoot.resolve("com/root").createDirectories()
+        val sourcePath = packageRoot.resolve("consumer.athena")
         val sourceText = """
             package com.root
 
@@ -719,7 +838,7 @@ class AthenaDiagnosticsPublishingTest {
                 """.trimIndent(),
             )
             sourcePath.writeText(sourceText)
-            sourceRoot.resolve("shared.athena").writeText(
+            packageRoot.resolve("shared.athena").writeText(
                 """
                     package com.root
 
@@ -787,7 +906,7 @@ class AthenaDiagnosticsPublishingTest {
             sourceText = sourceText,
         )
         val repositoryRoot = repository.repositoryRoot
-        val sourceRoot = repository.sourceRoot
+        val sourceRoot = repository.sourceRoot.resolve("com/root").createDirectories()
         val sourcePath = repository.seedSourcePath
         try {
             sourceRoot.resolve("sibling.athena").writeText(
@@ -875,6 +994,26 @@ class AthenaDiagnosticsPublishingTest {
         assertEquals("Candidate declaration.", relatedInformation.message)
         assertEquals(1, relatedInformation.location.range.start.line)
         assertEquals(2, relatedInformation.location.range.start.character)
+    }
+
+    @Test
+    fun `project semantic info diagnostics are retained in snapshots but not published to problems`() {
+        val currentSourceUnitId = SourceUnitId("source:current")
+        val diagnostic = ProjectSemanticDiagnostic(
+            code = ProjectSemanticDiagnosticCode("semantic.capability.namespace.available"),
+            severity = ProjectSemanticDiagnosticSeverity.INFO,
+            message = "Namespace `athena.iec` admits governed capability `representation.symbol`.",
+            sourceUnitId = currentSourceUnitId,
+            sourceSpan = sourceSpan(0, 1, 1, 1, 10),
+        )
+
+        val lspDiagnostics = listOf(diagnostic).toLspDiagnostics(
+            documentUri = "file:///workspace/src/current.athena",
+            currentSourceUnitId = currentSourceUnitId,
+            sourceUnitUris = mapOf(currentSourceUnitId to "file:///workspace/src/current.athena"),
+        )
+
+        assertTrue(lspDiagnostics.isEmpty(), "INFO diagnostics must not appear in Problems: $lspDiagnostics")
     }
 }
 

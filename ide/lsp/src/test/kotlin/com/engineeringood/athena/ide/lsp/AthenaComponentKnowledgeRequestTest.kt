@@ -33,7 +33,7 @@ class AthenaComponentKnowledgeRequestTest {
                 )
 
                 assertEquals("ready", payload.status)
-                assertEquals("factory-line", payload.projectName)
+                assertEquals("factoryline", payload.projectName)
                 assertEquals("system:ComponentKnowledge", payload.systemSemanticId)
                 assertEquals("frontend -> LSP -> runtime/compiler", payload.semanticPath)
                 assertEquals(listOf("com.engineeringood.athena.domain.electrical-runtime"), payload.contributingPluginIds)

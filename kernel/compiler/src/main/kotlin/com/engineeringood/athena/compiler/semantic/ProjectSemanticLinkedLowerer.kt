@@ -43,7 +43,7 @@ class ProjectSemanticLinkedLowerer(
                 graphId = snapshot.graphId,
                 sourceUnitId = sourceUnit.sourceUnitId,
                 bindingIds = bindingIdsBySourceUnit[sourceUnit.sourceUnitId].orEmpty(),
-                document = lowerer.lower(source),
+                document = lowerer.lower(source, sourceUnit.sourceUnitId.value),
             )
         }.sortedBy { it.sourceUnitId.value }
         return ProjectSemanticLinkedLoweringResult(

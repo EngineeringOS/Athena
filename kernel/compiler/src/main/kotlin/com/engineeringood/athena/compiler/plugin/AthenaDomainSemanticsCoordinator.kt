@@ -72,6 +72,7 @@ class AthenaDomainSemanticsCoordinator(
                 components = aggregate.components + contribution.components,
                 ports = aggregate.ports + contribution.ports,
                 connections = aggregate.connections + contribution.connections,
+                functions = aggregate.functions + contribution.functions,
             )
         }
     }

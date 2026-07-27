@@ -92,7 +92,7 @@ Every `m0/*.athena` source is expected to have a matching `m0/*.expectation.txt`
 - `parser-parity-proof/` - valid standalone `.athena` fixtures with `.expectation.txt` sidecars covering the supported syntax subset (`system`, `device`, `port`, `connect`, qualified names, string literals, property assignments)
 - `parser-parity-proof/parity-cabinet.athena` - system/device/port/connect/property coverage mirroring `m0/demo-cabinet`
 - `parser-parity-proof/dense-qualified-names.athena` - denser qualified-name and string-literal-property coverage
-- `repository-parity-proof/` - governed repository fixture (`athena.yaml` / `athena.lock` / `src/parity-repo.athena`) exercised through real package resolution
+- `repository-parity-proof/` - governed repository fixture (`athena.yaml` / `athena.lock` / `src/com/engineeringood/m17/parity/parity-repo.athena`) exercised through real package resolution
 - `invalid-and-incomplete-proof/` - syntax-level malformed/incomplete fixtures (unterminated string, incomplete brace, missing connect arrow, over-qualified port) with extended `.expectation.txt` sidecars carrying `syntaxErrorLine=`/`syntaxErrorMessageContains=`
 - `README.md` - milestone-local proof corpus summary and two-track verification rule
 

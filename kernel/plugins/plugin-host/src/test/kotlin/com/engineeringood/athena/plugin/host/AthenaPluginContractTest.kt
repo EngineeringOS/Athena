@@ -202,11 +202,24 @@ class AthenaPluginContractTest {
 
         assertEquals("electrical-runtime", plugin.domainSchema.domainId)
         assertEquals(
-            listOf("Lamp", "Motor", "Switch"),
+            listOf(
+                "Breaker",
+                "Contactor",
+                "FuseDisconnector",
+                "Lamp",
+                "LimitSwitch",
+                "Motor",
+                "PowerSource",
+                "ProtectiveEarth",
+                "PushButton",
+                "Switch",
+                "Terminal",
+                "Transformer",
+            ),
             plugin.domainSchema.entities.map { entity -> entity.typeId },
         )
         assertEquals(
-            listOf("type", "direction", "signal"),
+            listOf("type", "direction", "signal", "terminal"),
             plugin.domainSchema.properties.map { property -> property.name },
         )
         assertEquals(listOf("electrical-port"), plugin.domainSchema.ports.map { port -> port.typeId })

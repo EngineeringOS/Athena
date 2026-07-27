@@ -21,13 +21,13 @@ class AthenaM18RepositoryProofCorpusTest {
         listOf(
             valid.resolve("athena.yaml"),
             valid.resolve("athena.lock"),
-            valid.resolve("src/single-package-success.athena"),
-            valid.resolve("src/cross-package-consumer.athena"),
-            valid.resolve("src/invalid-import.athena"),
-            valid.resolve("src/unresolved-symbol.athena"),
+            valid.resolve("src/com/engineeringood/m18/root/single-package-success.athena"),
+            valid.resolve("src/com/engineeringood/m18/root/cross-package-consumer.athena"),
+            valid.resolve("src/com/engineeringood/m18/root/invalid-import.athena"),
+            valid.resolve("src/com/engineeringood/m18/root/unresolved-symbol.athena"),
             valid.resolve("vendor/controls/athena.yaml"),
             valid.resolve("vendor/controls/athena.lock"),
-            valid.resolve("vendor/controls/src/vendor-controls.athena"),
+            valid.resolve("vendor/controls/src/com/engineeringood/m18/vendor/controls/vendor-controls.athena"),
             graphInvalid.resolve("athena.yaml"),
             graphInvalid.resolve("athena.lock"),
         ).forEach { path ->
@@ -54,7 +54,7 @@ class AthenaM18RepositoryProofCorpusTest {
         assertTrue(corpus.linked.bindings.any { binding ->
             val declaration = corpus.linked.declarations.single { it.declarationId == binding.resolvedDeclarationId }
             val sourceUnit = corpus.linked.sourceUnits.single { it.sourceUnitId == declaration.sourceUnitId }
-            sourceUnit.sourceRootRelativePath == "vendor-controls.athena"
+            sourceUnit.sourceRootRelativePath == "com/engineeringood/m18/vendor/controls/vendor-controls.athena"
         })
         assertTrue(
             corpus.linked.diagnostics.any { it.code.value == "semantic.import.namespace.unavailable" },

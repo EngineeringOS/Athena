@@ -37,10 +37,12 @@ data class PresentationDocument(
     val compositePacks: List<PresentationCompositePack>,
     val resolvedSubjects: List<PresentationResolvedSubject> = emptyList(),
     val occurrences: List<PresentationOccurrence>,
+    val graphicOccurrences: List<PresentationGraphicOccurrence> = emptyList(),
     val connectors: List<PresentationConnector> = emptyList(),
     val routeFactSnapshot: RouteFactSnapshot? = null,
     val representationFacts: List<PresentationRepresentationFact> = emptyList(),
     val referenceMarkers: List<PresentationReferenceMarkerFact> = emptyList(),
+    val drawingComposition: PresentationDrawingComposition? = null,
 )
 
 /** Renderer-facing representation fact carried by Presentation IR. */
@@ -105,6 +107,9 @@ fun PresentationDocument.scopedToProjectionMembership(
         occurrences = occurrences.filter { occurrence ->
             occurrence.semanticId.value in occurrenceSemanticIds ||
                 occurrence.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds }
+        },
+        graphicOccurrences = graphicOccurrences.filter { occurrence ->
+            occurrence.semanticSubjectId in occurrenceSemanticIds
         },
         connectors = connectors.filter { connector ->
             connector.semanticId.value in connectionSemanticIds ||

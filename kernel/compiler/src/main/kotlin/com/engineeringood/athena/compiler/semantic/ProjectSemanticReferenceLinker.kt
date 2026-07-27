@@ -1,6 +1,7 @@
 package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.QualifiedName
 
 class ProjectSemanticReferenceLinker {
@@ -28,7 +29,13 @@ class ProjectSemanticReferenceLinker {
                 .mapNotNull(declarationsById::get)
                 .filter { it.kind == PORT_DECLARATION_KIND }
             sourceUnit.authoredDeclarations
-                .filterIsInstance<ConnectionDeclaration>()
+                .flatMap { declaration ->
+                    when (declaration) {
+                        is ConnectionDeclaration -> listOf(declaration)
+                        is ConnectionGroupDeclaration -> declaration.connections
+                        else -> emptyList()
+                    }
+                }
                 .flatMap { connection ->
                     listOf(connection.from, connection.to).mapNotNull { reference ->
                         linkReference(sourceUnit.sourceUnitId, reference, availableDeclarations, diagnostics)

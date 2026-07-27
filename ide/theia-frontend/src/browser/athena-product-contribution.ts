@@ -21,6 +21,7 @@ declare global {
         __athenaWorkbenchSmoke?: {
             revealGraphicalView: () => Promise<void>;
             switchProjectionView: (viewId: string) => Promise<boolean>;
+            refreshProjectionView: () => Promise<boolean>;
             revealOutlineForSource: (sourceUri: string) => Promise<AthenaOutlineSmokeProof>;
             openSourceEditorForSmoke: (sourceUri: string) => Promise<AthenaSourceEditorSmokeProof>;
             revealSourceLineForSmoke: (lineNumber: number) => Promise<void>;
@@ -98,6 +99,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
             window.__athenaWorkbenchSmoke = {
                 revealGraphicalView: () => commands.executeCommand(AthenaCommands.REVEAL_GRAPHICAL_VIEW.id),
                 switchProjectionView: viewId => this.switchProjectionViewForSmoke(viewId),
+                refreshProjectionView: () => this.refreshProjectionForSmoke(),
                 revealOutlineForSource: sourceUri => this.revealOutlineForSource(commands, sourceUri),
                 openSourceEditorForSmoke: sourceUri => this.openSourceEditorForSmoke(sourceUri),
                 revealSourceLineForSmoke: lineNumber => this.revealSourceLineForSmoke(lineNumber)
@@ -189,16 +191,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         const existing = this.shell.getWidgetById(extension.widgetId);
         if (!existing) {
             const widget = await this.widgetManager.getOrCreateWidget(extension.widgetId);
-            const currentEditor = this.editorManager.currentEditor;
-            if (currentEditor) {
-                await this.shell.addWidget(widget, {
-                    area: 'main',
-                    mode: 'open-to-right',
-                    ref: currentEditor
-                });
-            } else {
-                await this.shell.addWidget(widget, { area: extension.area });
-            }
+            await this.shell.addWidget(widget, { area: extension.area });
         } else {
             await this.shell.revealWidget(extension.widgetId);
         }
@@ -220,6 +213,21 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
             switchActiveView: (requestedViewId: string) => Promise<boolean>;
         };
         return smokeWidget.switchActiveView(viewId);
+    }
+
+    protected async refreshProjectionForSmoke(): Promise<boolean> {
+        const graphExtension = ATHENA_WORKBENCH_EXTENSIONS.find(extension =>
+            extension.widgetId === AthenaGraphWorkbenchWidget.ID
+        );
+        if (!graphExtension) {
+            return false;
+        }
+        await this.revealGraphWorkbench(graphExtension);
+        const widget = this.shell.getWidgetById(AthenaGraphWorkbenchWidget.ID)
+            ?? await this.widgetManager.getOrCreateWidget(AthenaGraphWorkbenchWidget.ID);
+        const smokeWidget = widget as AthenaGraphWorkbenchWidget;
+        await smokeWidget.refreshProjection();
+        return true;
     }
 
     protected async revealOutlineForSource(

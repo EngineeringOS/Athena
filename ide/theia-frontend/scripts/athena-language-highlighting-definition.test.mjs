@@ -33,8 +33,52 @@ test('Athena Monaco fallback highlights current DSL keywords and operators', () 
         'near',
         'below',
         'axis',
+        'at',
+        'orientation',
         'vertical',
-        'horizontal'
+        'horizontal',
+        'function',
+        'role',
+        'ports',
+        'symbol',
+        'element',
+        'identity',
+        'version',
+        'graphic',
+        'svg',
+        'anchor',
+        'primitiveRef',
+        'accepts',
+        'child',
+        'translate',
+        'rotate',
+        'scale',
+        'zOrder',
+        'export',
+        'bounds',
+        'line',
+        'polyline',
+        'arc',
+        'circle',
+        'rectangle',
+        'label',
+        'points',
+        'center',
+        'radius',
+        'sweep',
+        'size',
+        'style',
+        'profile',
+        'projection',
+        'standard',
+        'fallback',
+        'fail-closed',
+        'binding',
+        'priority',
+        'select',
+        'where',
+        'use',
+        'variant'
     ].forEach(keyword => {
         assert.match(languageDefinition, new RegExp(`'${keyword}'`));
     });
@@ -45,6 +89,11 @@ test('Athena Monaco fallback highlights current DSL keywords and operators', () 
     assert.match(languageDefinition, /keyword\.athena-port/);
     assert.match(languageDefinition, /keyword\.athena-relationship/);
     assert.match(languageDefinition, /keyword\.athena-layout/);
+    assert.match(languageDefinition, /keyword\.athena-function/);
+    assert.match(languageDefinition, /keyword\.athena-representation/);
+    assert.match(languageDefinition, /keyword\.athena-primitive/);
+    assert.match(languageDefinition, /keyword\.athena-profile/);
+    assert.match(languageDefinition, /keyword\.athena-binding/);
     assert.match(languageDefinition, /aligned-with\|grouped-with/);
     assert.match(languageDefinition, /\?:-\[A-Za-z_\]/);
 });
@@ -56,6 +105,13 @@ test('Athena Tree-sitter syntax highlighting covers layout and port authoring to
         '(device_declaration "device" @athenaDeclarationKeyword)',
         '(layout_declaration "layout" @athenaLayoutKeyword)',
         '(place_statement "place" @athenaLayoutKeyword)',
+        '(function_declaration "function" @athenaFunctionKeyword)',
+        '(function_role "role" @athenaFunctionKeyword)',
+        '(function_ports "ports" @athenaFunctionKeyword)',
+        '(fixed_place_statement "place" @athenaLayoutKeyword)',
+        '(fixed_place_statement "at" @athenaLayoutKeyword)',
+        '(fixed_place_statement "orientation" @athenaLayoutKeyword)',
+        '(layout_orientation) @athenaLayoutKeyword',
         '(align_statement "align" @athenaLayoutKeyword)',
         '(group_statement "group" @athenaLayoutKeyword)',
         '(layout_placement_relation) @athenaLayoutKeyword',
@@ -86,13 +142,19 @@ test('Athena product exposes color rules for custom syntax token classes', () =>
         'keyword.athena-port',
         'keyword.athena-relationship',
         'keyword.athena-layout',
+        'keyword.athena-function',
         'operator.athena-layout',
         'operator.athena-relationship',
         'athenaDeclarationKeyword',
         'athenaPortKeyword',
+        'athenaFunctionKeyword',
         'athenaRelationshipKeyword',
         'athenaLayoutKeyword',
-        'athenaLayoutOperator'
+        'athenaLayoutOperator',
+        'athenaRepresentationKeyword',
+        'athenaPrimitiveKeyword',
+        'athenaProfileKeyword',
+        'athenaBindingKeyword'
     ].forEach(tokenType => {
         assert.match(lspEditorBridge, new RegExp(tokenType.replace('.', '\\.')));
     });

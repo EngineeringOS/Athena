@@ -1,6 +1,9 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-m35-lock-v2
+validatedLockStateDigest: lock-state/v1:285735910b3bb8ad485b52acf6241b450097686d057b8a413bfe3178e514bd5b
 primaryPackage:
   name: com.engineeringood.m17.parity
   version: 1.0.0
@@ -8,4 +11,9 @@ packages:
   - name: com.engineeringood.m17.parity
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot/v1:27b9d8704141e13a4ee91619b1d5c1d97b1b7f75342c56a17e22559c46ebef81
+    sourceHashes:
+      - path: com/engineeringood/m17/parity/parity-repo.athena
+        hash: sha256:249cfc9fa719ebc6920b7fbce82dc6d212cf8e9f5de2cc4e9feabe6c6eb0863b
+    resourceHashes: []
     dependencies: []

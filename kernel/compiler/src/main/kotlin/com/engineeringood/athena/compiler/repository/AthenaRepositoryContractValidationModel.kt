@@ -18,6 +18,7 @@ data class AthenaRepositoryContractValidationResult(
     val manifestPresent: Boolean,
     val lockPresent: Boolean,
     val repository: EngineeringRepository? = null,
+    val representationPackageRoots: Set<Path> = emptySet(),
     val diagnostics: List<RepositoryDiagnostic> = emptyList(),
 ) {
     /** Indicates whether the repository contract passed validation without error diagnostics. */
@@ -26,4 +27,3 @@ data class AthenaRepositoryContractValidationResult(
             diagnostic.severity == RepositoryDiagnosticSeverity.ERROR
         }
 }
-

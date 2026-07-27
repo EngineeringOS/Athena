@@ -60,6 +60,21 @@ class PackageBackedRepresentationOccurrenceFactoryTest {
     }
 
     @Test
+    fun `factory preserves optional function identity on a package backed occurrence`() {
+        val functionId = RepresentationSubjectId("function:DriveA.power-stage")
+        val result = PackageBackedRepresentationOccurrenceFactory().create(
+            request(evidence(), descriptor()).copy(
+                functionSemanticId = functionId,
+                subjectKind = RepresentationSubjectKind.FUNCTION,
+            ),
+        )
+
+        val occurrence = assertNotNull(result.occurrence)
+        assertEquals(RepresentationSubjectId("device:DriveA"), occurrence.canonicalSemanticId)
+        assertEquals(functionId, occurrence.functionSemanticId)
+    }
+
+    @Test
     fun `factory fails closed when binding evidence or descriptor facts are incomplete`() {
         val result = PackageBackedRepresentationOccurrenceFactory().create(
             request(

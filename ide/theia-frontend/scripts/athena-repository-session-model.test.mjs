@@ -10,7 +10,7 @@ test('isAthenaDocumentCoveredBySession accepts Athena files inside the active go
             repositoryRoot: 'D:/Aaron/workspace/projects/2026/eos/Athena/examples/m4/open-repository-proof',
             sourceRootPath: 'D:/Aaron/workspace/projects/2026/eos/Athena/examples/m4/open-repository-proof/src'
         },
-        'file:///d%3A/Aaron/workspace/projects/2026/eos/Athena/examples/m4/open-repository-proof/src/factory-line.athena'
+        'file:///d%3A/Aaron/workspace/projects/2026/eos/Athena/examples/m4/open-repository-proof/src/com/engineeringood/factoryline/factoryline.athena'
     );
 
     assert.equal(covered, true);
@@ -23,7 +23,7 @@ test('isAthenaDocumentCoveredBySession rejects Athena files outside the active r
             repositoryRoot: 'D:/Aaron/workspace/projects/2026/eos/Athena/examples/m5/repository-a',
             sourceRootPath: 'D:/Aaron/workspace/projects/2026/eos/Athena/examples/m5/repository-a/src'
         },
-        'file:///d%3A/Aaron/workspace/projects/2026/eos/Athena/examples/m4/open-repository-proof/src/factory-line.athena'
+        'file:///d%3A/Aaron/workspace/projects/2026/eos/Athena/examples/m4/open-repository-proof/src/com/engineeringood/factoryline/factoryline.athena'
     );
 
     assert.equal(covered, false);

@@ -18,7 +18,7 @@ class AthenaRepositoryResolverTest {
             repositoryRoot.resolve("athena.yaml").writeText(
                 """
                     primaryPackage:
-                      name: com.engineeringood.factory-line
+                      name: com.engineeringood.factoryline
                       version: 0.1.0
                       sourceRoot: src
                 """.trimIndent(),
@@ -27,20 +27,21 @@ class AthenaRepositoryResolverTest {
                 """
                     version: 1
                     primaryPackage:
-                      name: com.engineeringood.factory-line
+                      name: com.engineeringood.factoryline
                       version: 0.1.0
                     packages:
-                      - name: com.engineeringood.factory-line
+                      - name: com.engineeringood.factoryline
                         version: 0.1.0
                         sourceRoot: src
                         dependencies: []
                 """.trimIndent(),
             )
             val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-            val firstSourcePath = sourceRoot.resolve("a-control.athena")
-            val secondSourcePath = sourceRoot.resolve("factory-line.athena")
-            firstSourcePath.writeText("system Control { }")
-            secondSourcePath.writeText("system FactoryLine { }")
+            val packageRoot = sourceRoot.resolve("com/engineeringood/factoryline").createDirectories()
+            val firstSourcePath = packageRoot.resolve("a-control.athena")
+            val secondSourcePath = packageRoot.resolve("factoryline.athena")
+            firstSourcePath.writeText(governedAthenaSource("system Control { }"))
+            secondSourcePath.writeText(governedAthenaSource("system FactoryLine { }"))
 
             val resolution = AthenaRepositoryResolver().resolve(repositoryRoot)
 
@@ -50,8 +51,8 @@ class AthenaRepositoryResolverTest {
             assertEquals(repositoryRoot.resolve("athena.lock").toAbsolutePath().normalize(), success.descriptor.lockPath)
             assertEquals(sourceRoot.toAbsolutePath().normalize(), success.descriptor.sourceRootPath)
             assertEquals(firstSourcePath.toAbsolutePath().normalize(), success.descriptor.sourcePath)
-            assertEquals("factory-line", success.descriptor.projectName)
-            assertEquals("com.engineeringood.factory-line", success.descriptor.primaryPackageName)
+            assertEquals("factoryline", success.descriptor.projectName)
+            assertEquals("com.engineeringood.factoryline", success.descriptor.primaryPackageName)
         } finally {
             repositoryRoot.toFile().deleteRecursively()
         }
@@ -64,19 +65,19 @@ class AthenaRepositoryResolverTest {
             repositoryRoot.resolve("athena.yaml").writeText(
                 """
                     primaryPackage:
-                      name: com.engineeringood.factory-line
+                      name: com.engineeringood.factoryline
                       version: 0.1.0
                       sourceRoot: src
                 """.trimIndent(),
             )
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("factory-line.athena").writeText("system FactoryLine { }")
+            val packageRoot = repositoryRoot.resolve("src/com/engineeringood/factoryline").createDirectories()
+            packageRoot.resolve("factoryline.athena").writeText(governedAthenaSource("system FactoryLine { }"))
 
             val resolution = AthenaRepositoryResolver().resolve(repositoryRoot)
 
             val success = assertIs<AthenaRepositoryResolutionSuccess>(resolution)
             assertEquals(repositoryRoot.resolve("athena.lock").toAbsolutePath().normalize(), success.descriptor.lockPath)
-            assertEquals("com.engineeringood.factory-line", success.descriptor.primaryPackageName)
+            assertEquals("com.engineeringood.factoryline", success.descriptor.primaryPackageName)
         } finally {
             repositoryRoot.toFile().deleteRecursively()
         }

@@ -37,8 +37,23 @@ data class AthenaDomainPortBlueprint(
     val provenance: SourceProvenance,
 )
 
+data class AthenaDomainFunctionPortBlueprint(
+    val path: List<String>,
+    val provenance: SourceProvenance,
+)
+
+data class AthenaDomainFunctionBlueprint(
+    val ownerPath: List<String>,
+    val ownerProvenance: SourceProvenance,
+    val name: String,
+    val role: String,
+    val portReferences: List<AthenaDomainFunctionPortBlueprint>,
+    val provenance: SourceProvenance,
+)
+
 /** Compiler-owned blueprint for one domain-contributed connection before core identity assignment and resolution. */
 data class AthenaDomainConnectionBlueprint(
+    val alias: String,
     val fromPath: List<String>,
     val fromProvenance: SourceProvenance,
     val toPath: List<String>,
@@ -51,6 +66,7 @@ data class AthenaDomainLoweringContribution(
     val components: List<AthenaDomainComponentBlueprint> = emptyList(),
     val ports: List<AthenaDomainPortBlueprint> = emptyList(),
     val connections: List<AthenaDomainConnectionBlueprint> = emptyList(),
+    val functions: List<AthenaDomainFunctionBlueprint> = emptyList(),
 ) {
     companion object {
         /** Empty contribution used when a plugin does not participate in lowering. */
@@ -136,6 +152,7 @@ data class AthenaDomainLoweringContext(
 
     /** Creates a domain connection blueprint using the provided authored semantics. */
     fun connection(
+        alias: String,
         fromPath: List<String>,
         fromProvenance: SourceProvenance = provenance(source.ast.system.span),
         toPath: List<String>,
@@ -143,6 +160,7 @@ data class AthenaDomainLoweringContext(
         provenance: SourceProvenance = provenance(source.ast.system.span),
     ): AthenaDomainConnectionBlueprint {
         return AthenaDomainConnectionBlueprint(
+            alias = alias,
             fromPath = fromPath,
             fromProvenance = fromProvenance,
             toPath = toPath,
@@ -150,6 +168,25 @@ data class AthenaDomainLoweringContext(
             provenance = provenance,
         )
     }
+
+    fun function(
+        ownerPath: List<String>,
+        ownerProvenance: SourceProvenance = provenance(source.ast.system.span),
+        name: String,
+        role: String,
+        portReferences: List<AthenaDomainFunctionPortBlueprint>,
+        provenance: SourceProvenance = provenance(source.ast.system.span),
+    ): AthenaDomainFunctionBlueprint = AthenaDomainFunctionBlueprint(
+        ownerPath = ownerPath,
+        ownerProvenance = ownerProvenance,
+        name = name,
+        role = role,
+        portReferences = portReferences,
+        provenance = provenance,
+    )
+
+    fun functionPort(path: List<String>, provenance: SourceProvenance): AthenaDomainFunctionPortBlueprint =
+        AthenaDomainFunctionPortBlueprint(path, provenance)
 }
 
 /** Plugin-facing context passed to active domain plugins during the semantic-enrichment stage. */

@@ -43,8 +43,7 @@ function selector(entries, activeSheetViewId = entries[0]?.sheetViewId) {
     };
 }
 
-test('M31 visible sheet selector preserves governed multi-sheet policy through mode switches', () => {
-    const emptyModeModel = { sheetViewSelector: undefined };
+test('M31 visible sheet selector exposes only current governed multi-sheet policy', () => {
     const m31Selector = selector([
         { sheetViewId: 'm31/sheet/control', title: 'Control', role: 'control-and-plc-logic' },
         { sheetViewId: 'm31/sheet/field-device', title: 'Field Device', role: 'field-wiring-and-terminal-transition' },
@@ -56,20 +55,24 @@ test('M31 visible sheet selector preserves governed multi-sheet policy through m
     ]);
 
     assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(emptyModeModel, m31Selector).entries.length,
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: m31Selector }).entries.length,
         2,
     );
     assert.deepEqual(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(emptyModeModel, m31Selector).entries.map(entry => entry.role),
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: m31Selector }).entries.map(entry => entry.role),
         ['control-and-plc-logic', 'field-wiring-and-terminal-transition'],
     );
     assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(emptyModeModel, governedThreeSheetSelector).entries.length,
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: governedThreeSheetSelector }).entries.length,
         3,
     );
     assert.deepEqual(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: governedThreeSheetSelector }, m31Selector).entries.map(entry => entry.sheetViewId),
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: governedThreeSheetSelector }).entries.map(entry => entry.sheetViewId),
         ['legacy/sheet/source-a', 'legacy/sheet/source-b', 'legacy/sheet/source-c'],
+    );
+    assert.equal(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: undefined }),
+        undefined,
     );
 });
 

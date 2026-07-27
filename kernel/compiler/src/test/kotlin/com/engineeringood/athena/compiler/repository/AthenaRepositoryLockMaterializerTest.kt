@@ -1,8 +1,11 @@
 package com.engineeringood.athena.compiler.repository
 
 import com.engineeringood.athena.compiler.AthenaCompiler
+import com.engineeringood.athena.packageplatform.PackageAdmissionLimitsV1
+import java.nio.file.Files
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.exists
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import kotlin.test.Test
@@ -18,6 +21,7 @@ class AthenaRepositoryLockMaterializerTest {
         try {
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
                 sourceFileName = "root.athena",
                 manifestBody = """
                     primaryPackage:
@@ -32,6 +36,7 @@ class AthenaRepositoryLockMaterializerTest {
             )
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot.resolve("vendor").resolve("alpha"),
+                packageName = "com.engineeringood.alpha",
                 sourceFileName = "alpha.athena",
                 manifestBody = """
                     primaryPackage:
@@ -51,9 +56,84 @@ class AthenaRepositoryLockMaterializerTest {
             assertEquals(first.renderedLock, second.renderedLock)
             assertEquals(firstBytes, secondBytes)
             assertEquals(first.renderedLock, firstBytes)
+            assertTrue(firstBytes.contains("version: 2"))
+            assertTrue(firstBytes.contains("schema: repository-lock-v2"))
+            assertTrue(firstBytes.contains("compilerSchema: athena-m35-lock-v2"))
+            assertTrue(firstBytes.contains("snapshotDigest: package-snapshot/v1:"))
+            assertTrue(firstBytes.contains("sourceHashes:"))
             assertTrue(firstBytes.contains("primaryPackage:"))
             assertTrue(firstBytes.contains("sourceRoot: vendor/alpha/src"))
             assertTrue(firstBytes.contains("dependencies: []"))
+            Files.newDirectoryStream(repositoryRoot, "athena.lock.tmp-*").use { stream ->
+                assertFalse(stream.iterator().hasNext(), "Atomic materialization must not leave temporary lock files after success.")
+            }
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `validate mode fails closed when athena lock is missing and does not write`() {
+        val repositoryRoot = createTempDirectory("athena-lock-missing-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      version: 1.0.0
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+
+            val result = AthenaCompiler().validateRepositoryLock(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertTrue(result.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.missing" })
+            assertFalse(repositoryRoot.resolve("athena.lock").exists(), "Validate mode must not write missing lock files.")
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `source content changes the admitted package snapshot digest independently from lock bytes`() {
+        val repositoryRoot = createTempDirectory("athena-lock-digest-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      version: 1.0.0
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            val first = AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+            repositoryRoot.resolve("athena.lock").writeText(first.renderedLock!!.replace("# Derived", "# Comment changed\n# Derived"))
+            val nonCanonical = AthenaCompiler().validateRepositoryLock(repositoryRoot)
+            val packageDirectory = repositoryRoot.resolve("src").resolve("com/engineeringood/root")
+            packageDirectory.resolve("root.athena").writeText(
+                """
+                    package com.engineeringood.root
+
+                    system RootChanged { }
+                """.trimIndent(),
+            )
+            val stale = AthenaCompiler().validateRepositoryLock(repositoryRoot)
+
+            assertFalse(nonCanonical.isValid)
+            assertTrue(nonCanonical.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.noncanonical" })
+            assertFalse(stale.isValid)
+            assertTrue(stale.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.stale" })
+            assertTrue(
+                stale.renderedExpectedLock!!.substringAfter("snapshotDigest: ") != first.renderedLock.substringAfter("snapshotDigest: "),
+                "Source bytes must affect package snapshot digest.",
+            )
         } finally {
             repositoryRoot.toFile().deleteRecursively()
         }
@@ -65,6 +145,7 @@ class AthenaRepositoryLockMaterializerTest {
         try {
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
                 sourceFileName = "root.athena",
                 manifestBody = """
                     primaryPackage:
@@ -79,6 +160,7 @@ class AthenaRepositoryLockMaterializerTest {
             )
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot.resolve("vendor").resolve("alpha"),
+                packageName = "com.engineeringood.alpha",
                 sourceFileName = "alpha.athena",
                 manifestBody = """
                     primaryPackage:
@@ -89,7 +171,10 @@ class AthenaRepositoryLockMaterializerTest {
             )
             repositoryRoot.resolve("athena.lock").writeText(
                 """
-                    version: 1
+                    version: 2
+                    schema: repository-lock-v2
+                    compilerSchema: athena-m35-lock-v2
+                    validatedLockStateDigest: lock-state/v1:stale
                     primaryPackage:
                       name: com.engineeringood.root
                       version: 1.0.0
@@ -97,6 +182,9 @@ class AthenaRepositoryLockMaterializerTest {
                       - name: com.engineeringood.root
                         version: 1.0.0
                         sourceRoot: src
+                        snapshotDigest: package-snapshot/v1:stale
+                        sourceHashes: []
+                        resourceHashes: []
                         dependencies: []
                 """.trimIndent(),
             )
@@ -106,7 +194,7 @@ class AthenaRepositoryLockMaterializerTest {
             assertFalse(result.isValid)
             assertTrue(
                 result.diagnostics.any { diagnostic ->
-                    diagnostic.code == "repository.lock.content.out-of-date"
+                    diagnostic.code == "repository.lock.stale"
                 },
                 result.diagnostics.joinToString(separator = "\n") { diagnostic -> "${diagnostic.code}: ${diagnostic.message}" },
             )
@@ -123,6 +211,7 @@ class AthenaRepositoryLockMaterializerTest {
         try {
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
                 sourceFileName = "root.athena",
                 manifestBody = """
                     primaryPackage:
@@ -145,8 +234,79 @@ class AthenaRepositoryLockMaterializerTest {
             assertFalse(result.isValid)
             assertTrue(
                 result.diagnostics.any { diagnostic ->
-                    diagnostic.code == "repository.lock.primary-package.block.missing"
+                    diagnostic.code == "repository.lock.schema-incompatible"
                 },
+                result.diagnostics.joinToString(separator = "\n") { diagnostic -> "${diagnostic.code}: ${diagnostic.message}" },
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `admission rejects escaped local path dependencies before lock materialization`() {
+        val repositoryRoot = createTempDirectory("athena-lock-escaped-dependency-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      version: 1.0.0
+                      sourceRoot: src
+                    dependencies:
+                      - name: com.engineeringood.alpha
+                        source: local-path
+                        locator: ../alpha
+                """.trimIndent(),
+            )
+
+            val result = AthenaCompiler().materializeRepositoryLock(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertTrue(
+                result.diagnostics.any { diagnostic -> diagnostic.code == "repository.contract.manifest.dependencies.locator.invalid" },
+                result.diagnostics.joinToString(separator = "\n") { diagnostic -> "${diagnostic.code}: ${diagnostic.message}" },
+            )
+            assertFalse(repositoryRoot.resolve("athena.lock").exists(), "Invalid admission input must not write a lock.")
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `admission rejects governed source unit budget excess`() {
+        val repositoryRoot = createTempDirectory("athena-lock-source-budget-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      version: 1.0.0
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            val packageDirectory = repositoryRoot.resolve("src").resolve("com/engineeringood/root")
+            packageDirectory.resolve("second.athena").writeText(
+                """
+                    package com.engineeringood.root
+
+                    system Second { }
+                """.trimIndent(),
+            )
+
+            val result = AthenaRepositoryLockMaterializer(
+                admissionLimits = PackageAdmissionLimitsV1.STANDARD.copy(maxGovernedSourceUnitsPerPackage = 1),
+            ).materialize(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertTrue(
+                result.diagnostics.any { diagnostic -> diagnostic.code == "repository.admission.budget.source-units-exceeded" },
                 result.diagnostics.joinToString(separator = "\n") { diagnostic -> "${diagnostic.code}: ${diagnostic.message}" },
             )
         } finally {
@@ -157,14 +317,18 @@ class AthenaRepositoryLockMaterializerTest {
 
 private fun writeGovernedRepository(
     repositoryRoot: java.nio.file.Path,
+    packageName: String,
     sourceFileName: String,
     manifestBody: String,
 ) {
     repositoryRoot.createDirectories()
     repositoryRoot.resolve("athena.yaml").writeText(manifestBody)
-    repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve(sourceFileName).writeText(
-        "system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }",
+    val packageDirectory = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/')).createDirectories()
+    packageDirectory.resolve(sourceFileName).writeText(
+        """
+            package $packageName
+
+            system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }
+        """.trimIndent(),
     )
 }

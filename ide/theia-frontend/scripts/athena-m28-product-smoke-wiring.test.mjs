@@ -68,7 +68,7 @@ test('M28 product authoring path uses projection facts and generic semantic rela
             sourceSubjectId: source.semanticId,
             targetSubjectId: target.semanticId,
             projectionViewId: 'documentation',
-            persistenceSourceUri: 'file:///workspace/src/01-relationship-authoring-source.athena',
+            persistenceSourceUri: 'file:///workspace/src/com/engineeringood/m28/sample/01-relationship-authoring-source.athena',
             provenance: 'projection-fact-terminal',
             originDetail: 'graph:documentation',
             intentId: 'intent-m28-product-valid',
@@ -83,7 +83,7 @@ test('M28 product authoring path uses projection facts and generic semantic rela
             targetSubjectId: 'port:SpareTerminalXT99.in1',
             projectionViewId: 'documentation',
             projectionOccurrenceId: undefined,
-            persistenceSourceUri: 'file:///workspace/src/01-relationship-authoring-source.athena',
+            persistenceSourceUri: 'file:///workspace/src/com/engineeringood/m28/sample/01-relationship-authoring-source.athena',
             provenance: 'projection-fact-terminal',
         },
     );

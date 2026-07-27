@@ -1,0 +1,442 @@
+package athena.iec
+
+symbol iec_folio_continuation_reference_symbol {
+  identity "iec.folio-continuation-reference"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 42, 20)
+    line body from (0, 10) to (32, 10) style conductor
+    line head_upper from (32, 10) to (22, 4) style conductor
+    line head_lower from (32, 10) to (22, 16) style conductor
+  }
+
+  anchor continuation {
+    primitiveRef body
+    point (32, 10)
+    role reference
+  }
+}
+
+symbol cabinet_enclosure_symbol {
+  identity "cabinet.enclosure.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 600, 420)
+    line top from (0, 0) to (600, 0) style conductor
+    line right from (600, 0) to (600, 420) style conductor
+    line bottom from (600, 420) to (0, 420) style conductor
+    line left from (0, 420) to (0, 0) style conductor
+  }
+}
+
+element cabinet_enclosure_element {
+  identity "cabinet.enclosure.element"
+  version "1.0.0"
+  bounds (0, 0, 600, 420)
+
+  child shell {
+    symbol "cabinet.enclosure.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+}
+
+symbol cabinet_din_rail_symbol {
+  identity "cabinet.din_rail.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 520, 24)
+    line upper from (0, 8) to (520, 8) style conductor
+    line lower from (0, 16) to (520, 16) style conductor
+    line notch01 from (24, 4) to (24, 20) style conductor
+    line notch02 from (64, 4) to (64, 20) style conductor
+    line notch03 from (104, 4) to (104, 20) style conductor
+    line notch04 from (144, 4) to (144, 20) style conductor
+    line notch05 from (184, 4) to (184, 20) style conductor
+    line notch06 from (224, 4) to (224, 20) style conductor
+    line notch07 from (264, 4) to (264, 20) style conductor
+    line notch08 from (304, 4) to (304, 20) style conductor
+    line notch09 from (344, 4) to (344, 20) style conductor
+    line notch10 from (384, 4) to (384, 20) style conductor
+    line notch11 from (424, 4) to (424, 20) style conductor
+    line notch12 from (464, 4) to (464, 20) style conductor
+  }
+}
+
+element cabinet_din_rail_element {
+  identity "cabinet.din_rail.element"
+  version "1.0.0"
+  bounds (0, 0, 520, 24)
+
+  child rail {
+    symbol "cabinet.din_rail.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+}
+
+symbol cabinet_protective_device_symbol {
+  identity "cabinet.protective_device.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 72, 120)
+    line left from (12, 20) to (12, 100) style conductor
+    line right from (60, 20) to (60, 100) style conductor
+    line top from (12, 20) to (60, 20) style conductor
+    line bottom from (12, 100) to (60, 100) style conductor
+    line handle from (24, 52) to (48, 40) style conductor
+    line line from (36, 0) to (36, 20) style conductor
+    line load from (36, 100) to (36, 120) style conductor
+  }
+
+  anchor line {
+    primitiveRef line
+    point (36, 0)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor load {
+    primitiveRef load
+    point (36, 120)
+    role terminal
+    accepts direction out
+    accepts signal Power
+  }
+}
+
+element cabinet_protective_device_element {
+  identity "cabinet.protective_device.element"
+  version "1.0.0"
+  bounds (0, 0, 72, 120)
+
+  child body {
+    symbol "cabinet.protective_device.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor line from body.line
+  export anchor load from body.load
+}
+
+symbol cabinet_switch_control_symbol {
+  identity "cabinet.switch_control.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 88, 88)
+    line plate_top from (16, 16) to (72, 16) style conductor
+    line plate_right from (72, 16) to (72, 72) style conductor
+    line plate_bottom from (72, 72) to (16, 72) style conductor
+    line plate_left from (16, 72) to (16, 16) style conductor
+    line actuator_up from (32, 44) to (56, 32) style conductor
+    line actuator_down from (32, 56) to (56, 56) style conductor
+    line up from (44, 0) to (44, 16) style conductor
+    line down from (44, 72) to (44, 88) style conductor
+  }
+
+  anchor up {
+    primitiveRef up
+    point (44, 0)
+    role terminal
+    accepts direction out
+    accepts signal Digital
+  }
+
+  anchor down {
+    primitiveRef down
+    point (44, 88)
+    role terminal
+    accepts direction out
+    accepts signal Digital
+  }
+}
+
+element cabinet_switch_control_element {
+  identity "cabinet.switch_control.element"
+  version "1.0.0"
+  bounds (0, 0, 88, 88)
+
+  child body {
+    symbol "cabinet.switch_control.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor up from body.up
+  export anchor down from body.down
+}
+
+symbol cabinet_relay_contactor_symbol {
+  identity "cabinet.relay_contactor.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 92, 116)
+    line top from (16, 18) to (76, 18) style conductor
+    line right from (76, 18) to (76, 98) style conductor
+    line bottom from (76, 98) to (16, 98) style conductor
+    line left from (16, 98) to (16, 18) style conductor
+    line coil_a from (30, 50) to (62, 50) style conductor
+    line coil_b from (30, 66) to (62, 66) style conductor
+    line supply from (46, 0) to (46, 18) style conductor
+    line output from (46, 98) to (46, 116) style conductor
+  }
+
+  anchor supply {
+    primitiveRef supply
+    point (46, 0)
+    role terminal
+    accepts direction in
+    accepts signal Digital
+    accepts signal Power
+  }
+
+  anchor output {
+    primitiveRef output
+    point (46, 116)
+    role terminal
+    accepts direction out
+    accepts signal Digital
+    accepts signal Power
+  }
+}
+
+element cabinet_relay_contactor_element {
+  identity "cabinet.relay_contactor.element"
+  version "1.0.0"
+  bounds (0, 0, 92, 116)
+
+  child body {
+    symbol "cabinet.relay_contactor.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor supply from body.supply
+  export anchor output from body.output
+}
+
+symbol cabinet_terminal_block_symbol {
+  identity "cabinet.terminal_block.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 64, 92)
+    line top from (8, 12) to (56, 12) style conductor
+    line right from (56, 12) to (56, 80) style conductor
+    line bottom from (56, 80) to (8, 80) style conductor
+    line left from (8, 80) to (8, 12) style conductor
+    line separator from (8, 46) to (56, 46) style conductor
+    line field from (32, 0) to (32, 12) style conductor
+    line panel from (32, 80) to (32, 92) style conductor
+  }
+
+  anchor field {
+    primitiveRef field
+    point (32, 0)
+    role terminal
+    accepts direction in
+    accepts direction out
+    accepts signal Power
+    accepts signal Digital
+  }
+
+  anchor panel {
+    primitiveRef panel
+    point (32, 92)
+    role terminal
+    accepts direction in
+    accepts direction out
+    accepts signal Power
+    accepts signal Digital
+  }
+}
+
+element cabinet_terminal_block_element {
+  identity "cabinet.terminal_block.element"
+  version "1.0.0"
+  bounds (0, 0, 64, 92)
+
+  child body {
+    symbol "cabinet.terminal_block.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor field from body.field
+  export anchor panel from body.panel
+}
+
+symbol cabinet_power_supply_symbol {
+  identity "cabinet.power_supply.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 112, 96)
+    line top from (12, 12) to (100, 12) style conductor
+    line right from (100, 12) to (100, 84) style conductor
+    line bottom from (100, 84) to (12, 84) style conductor
+    line left from (12, 84) to (12, 12) style conductor
+    line ac from (28, 48) to (48, 48) style conductor
+    line dc from (64, 40) to (84, 40) style conductor
+    line dc_ref from (64, 56) to (84, 56) style conductor
+    line input from (56, 0) to (56, 12) style conductor
+    line output from (56, 84) to (56, 96) style conductor
+  }
+
+  anchor input {
+    primitiveRef input
+    point (56, 0)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor output {
+    primitiveRef output
+    point (56, 96)
+    role terminal
+    accepts direction out
+    accepts signal Power
+    accepts signal Digital
+  }
+}
+
+element cabinet_power_supply_element {
+  identity "cabinet.power_supply.element"
+  version "1.0.0"
+  bounds (0, 0, 112, 96)
+
+  child body {
+    symbol "cabinet.power_supply.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor input from body.input
+  export anchor output from body.output
+}
+
+symbol cabinet_actuator_load_symbol {
+  identity "cabinet.actuator_load.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 116, 92)
+    line body_a from (24, 20) to (92, 20) style conductor
+    line body_b from (92, 20) to (92, 72) style conductor
+    line body_c from (92, 72) to (24, 72) style conductor
+    line body_d from (24, 72) to (24, 20) style conductor
+    line winding_a from (40, 46) to (76, 46) style conductor
+    line winding_b from (58, 28) to (58, 64) style conductor
+    line up from (38, 0) to (38, 20) style conductor
+    line down from (78, 0) to (78, 20) style conductor
+  }
+
+  anchor up {
+    primitiveRef up
+    point (38, 0)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor down {
+    primitiveRef down
+    point (78, 0)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+}
+
+element cabinet_actuator_load_element {
+  identity "cabinet.actuator_load.element"
+  version "1.0.0"
+  bounds (0, 0, 116, 92)
+
+  child body {
+    symbol "cabinet.actuator_load.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor up from body.up
+  export anchor down from body.down
+}
+
+symbol cabinet_route_channel_symbol {
+  identity "cabinet.route_channel.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 500, 32)
+    line upper from (0, 8) to (500, 8) style conductor
+    line lower from (0, 24) to (500, 24) style conductor
+    line center from (0, 16) to (500, 16) style conductor
+  }
+}
+
+element cabinet_route_channel_element {
+  identity "cabinet.route_channel.element"
+  version "1.0.0"
+  bounds (0, 0, 500, 32)
+
+  child channel {
+    symbol "cabinet.route_channel.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+}
+
+symbol cabinet_label_symbol {
+  identity "cabinet.label.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 120, 24)
+    rectangle plate at (0, 0) size (120, 24) style symbol
+    label deviceTag at (6, 6) size (108, 12) role device-tag style device-label
+  }
+}
+
+element cabinet_label_element {
+  identity "cabinet.label.element"
+  version "1.0.0"
+  bounds (0, 0, 120, 24)
+
+  child label {
+    symbol "cabinet.label.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export label deviceTag from label.deviceTag
+}

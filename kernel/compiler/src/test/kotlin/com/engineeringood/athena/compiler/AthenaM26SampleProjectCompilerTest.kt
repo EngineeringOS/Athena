@@ -92,8 +92,8 @@ class AthenaM26SampleProjectCompilerTest {
     private fun sampleProjectSources(): List<Path> {
         val repoRoot = resolveRepoRoot()
         return listOf(
-            repoRoot.resolve("examples/m26/sample-project/src/01-workspace-semantic-source.athena"),
-            repoRoot.resolve("examples/m26/sample-project/src/02-field-assets-not-a-sheet.athena"),
+            repoRoot.resolve("examples/m26/sample-project/src/com/engineeringood/m26/sample/01-workspace-semantic-source.athena"),
+            repoRoot.resolve("examples/m26/sample-project/src/com/engineeringood/m26/sample/02-field-assets-not-a-sheet.athena"),
         )
     }
 

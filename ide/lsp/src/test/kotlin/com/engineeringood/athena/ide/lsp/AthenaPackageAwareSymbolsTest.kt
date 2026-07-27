@@ -32,7 +32,7 @@ class AthenaPackageAwareSymbolsTest {
         )
         val repositoryRoot = repository.repositoryRoot
         val consumerPath = repository.seedSourcePath
-        repository.sourceRoot.resolve("provider.athena").writeText(
+        repository.sourceRoot.resolve("com/root/provider.athena").writeText(
             """
                 package com.root
 

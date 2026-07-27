@@ -25,6 +25,7 @@ data class EngineeringDocument(
     val components: List<EngineeringComponent>,
     val ports: List<EngineeringPort>,
     val connections: List<EngineeringConnection>,
+    val functions: List<EngineeringFunction> = emptyList(),
 )
 
 /** Canonical semantic representation of the authored system root. */
@@ -51,6 +52,24 @@ data class EngineeringPort(
     val properties: List<EngineeringProperty>,
     val provenance: SourceProvenance,
 )
+
+/** Device-owned functional partition referencing canonical project ports. */
+data class EngineeringFunction(
+    val id: StableSemanticIdentity,
+    val ownerReference: EngineeringReference,
+    val name: String,
+    val role: EngineeringFunctionRole,
+    val portReferences: List<EngineeringReference>,
+    val provenance: SourceProvenance,
+)
+
+/** Extensible authored function role; domain plugins interpret known values. */
+@JvmInline
+value class EngineeringFunctionRole(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Engineering function role must not be blank" }
+    }
+}
 
 /** Canonical semantic relationship between two authored engineering references. */
 data class EngineeringConnection(

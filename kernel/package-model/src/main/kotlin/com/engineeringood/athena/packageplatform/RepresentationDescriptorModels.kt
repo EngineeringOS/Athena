@@ -52,10 +52,21 @@ enum class RepresentationLabelSlotRole {
     REFERENCE,
 }
 
+data class RepresentationLabelSlotPlacement(
+    val originX: Double,
+    val originY: Double,
+    val boundsX: Double,
+    val boundsY: Double,
+    val width: Double,
+    val height: Double,
+)
+
 data class RepresentationLabelSlotDefinition(
     val slotId: RepresentationLabelSlotId,
     val role: RepresentationLabelSlotRole,
     val required: Boolean,
+    val placement: RepresentationLabelSlotPlacement? = null,
+    val styleTokenRef: RepresentationStyleTokenRef? = null,
 )
 
 data class RepresentationHotspotDefinition(
@@ -101,6 +112,7 @@ data class RepresentationDescriptor(
     val styleTokenRefs: List<RepresentationStyleTokenRef> = emptyList(),
     val validationRuleRefs: List<RepresentationDescriptorValidationRuleRef> = emptyList(),
     val forbiddenSemanticAuthorityClaims: List<RepresentationDescriptorForbiddenSemanticAuthorityClaim> = emptyList(),
+    val representationPackageId: RepresentationPackageId? = null,
 )
 
 data class RepresentationDescriptorValidationContext(

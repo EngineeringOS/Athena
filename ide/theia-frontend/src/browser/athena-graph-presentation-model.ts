@@ -4,6 +4,7 @@ import {
     AthenaGLSPPresentationAnchorBindingSource,
     AthenaGLSPPresentationBoundsSource,
     AthenaGLSPPresentationCompositeDefinitionSource,
+    AthenaGLSPPresentationGraphicOccurrenceSource,
     AthenaGLSPPresentationOccurrenceSource,
     AthenaGLSPPresentationPrimitiveDefinitionSource,
     AthenaGLSPPresentationReferenceMarkerSource,
@@ -44,6 +45,10 @@ export type AthenaGraphResolvedPresentationOccurrence = {
         y: number;
         tokenKey: string;
     }>;
+    parts: AthenaGraphResolvedPresentationPart[];
+};
+
+export type AthenaGraphResolvedPresentationGraphicOccurrence = AthenaGLSPPresentationGraphicOccurrenceSource & {
     parts: AthenaGraphResolvedPresentationPart[];
 };
 
@@ -117,6 +122,41 @@ export function resolvePresentationOccurrences(
     });
 }
 
+export function resolvePresentationGraphicOccurrences(
+    diagram: AthenaGLSPDiagram,
+): AthenaGraphResolvedPresentationGraphicOccurrence[] {
+    return (diagram.presentation?.graphicOccurrences ?? []).map(occurrence => ({
+        ...occurrence,
+        bounds: { ...occurrence.bounds },
+        graphic: {
+            ...occurrence.graphic,
+            ...(occurrence.graphic.bounds ? { bounds: { ...occurrence.graphic.bounds } } : {}),
+            primitives: (occurrence.graphic.primitives ?? []).map(primitive => ({
+                ...primitive,
+                bounds: { ...primitive.bounds },
+                ...(primitive.start ? { start: { ...primitive.start } } : {}),
+                ...(primitive.end ? { end: { ...primitive.end } } : {}),
+                points: (primitive.points ?? []).map(point => ({ ...point })),
+                ...(primitive.center ? { center: { ...primitive.center } } : {}),
+                ...(primitive.origin ? { origin: { ...primitive.origin } } : {}),
+            })),
+            provenanceSources: [...(occurrence.graphic.provenanceSources ?? [])],
+            forbiddenAuthorityClaims: [...(occurrence.graphic.forbiddenAuthorityClaims ?? [])],
+        },
+        terminalBindings: (occurrence.terminalBindings ?? []).map(binding => ({
+            ...binding,
+            point: { ...binding.point },
+        })),
+        labels: (occurrence.labels ?? []).map(label => ({
+            ...label,
+            bounds: { ...label.bounds },
+        })),
+        sourceProvenance: [...(occurrence.sourceProvenance ?? [])],
+        authorities: { ...occurrence.authorities },
+        parts: [resolveGraphicOccurrencePart(occurrence)],
+    }));
+}
+
 export function resolvePresentationConnectors(
     diagram: AthenaGLSPDiagram,
 ): AthenaGraphResolvedPresentationConnector[] {
@@ -134,6 +174,142 @@ export function resolvePresentationConnectors(
         tokenOverrides: { ...(connector.tokenOverrides ?? {}) },
         sourceProjectionIds: [...(connector.sourceProjectionIds ?? [])],
     }));
+}
+
+function resolveGraphicOccurrencePart(
+    occurrence: AthenaGLSPPresentationGraphicOccurrenceSource,
+): AthenaGraphResolvedPresentationPart {
+    return {
+        partId: occurrence.graphic.documentId ?? occurrence.definitionId,
+        primitiveId: occurrence.definitionId,
+        bounds: { ...(occurrence.graphic.bounds ?? occurrence.bounds) },
+        commands: (occurrence.graphic.primitives ?? [])
+            .map(graphicPrimitiveToCommand)
+            .filter(isPresentationShapeCommand),
+        textSlots: [],
+        tokenDefaults: {
+            stroke: '#202020',
+            strokeWidth: '1.4',
+            label: '#202020',
+        },
+        tokenOverrides: {},
+    };
+}
+
+function graphicPrimitiveToCommand(
+    primitive: AthenaGLSPPresentationGraphicOccurrenceSource['graphic']['primitives'][number],
+): AthenaGLSPPresentationShapeCommandSource | undefined {
+    switch (primitive.kind) {
+        case 'line':
+            return primitive.start && primitive.end
+                ? {
+                    kind: 'stroke_line',
+                    start: { ...primitive.start },
+                    end: { ...primitive.end },
+                    strokeTokenKey: 'stroke',
+                    strokeWidthTokenKey: 'strokeWidth',
+                }
+                : undefined;
+        case 'rectangle':
+            return {
+                kind: 'stroke_rectangle',
+                bounds: { ...primitive.bounds },
+                radius: primitive.cornerRadius,
+                strokeTokenKey: 'stroke',
+                strokeWidthTokenKey: 'strokeWidth',
+            };
+        case 'circle':
+        case 'connection-dot':
+            return primitive.center && primitive.radius
+                ? {
+                    kind: 'circle',
+                    center: { ...primitive.center },
+                    radius: primitive.radius,
+                    strokeTokenKey: 'stroke',
+                    strokeWidthTokenKey: 'strokeWidth',
+                }
+                : undefined;
+        case 'polyline':
+            return {
+                kind: 'svg_path',
+                pathData: (primitive.points ?? [])
+                    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+                    .join(' '),
+                strokeTokenKey: 'stroke',
+                strokeWidthTokenKey: 'strokeWidth',
+            };
+        case 'arc':
+            return primitive.center && primitive.radius !== undefined &&
+                primitive.startAngleDegrees !== undefined && primitive.sweepAngleDegrees !== undefined
+                ? {
+                    kind: 'svg_path',
+                    pathData: arcPrimitivePathData(
+                        primitive.center,
+                        primitive.radius,
+                        primitive.startAngleDegrees,
+                        primitive.sweepAngleDegrees,
+                    ),
+                    strokeTokenKey: 'stroke',
+                    strokeWidthTokenKey: 'strokeWidth',
+                }
+                : undefined;
+        case 'text':
+            return primitive.origin && primitive.text
+                ? {
+                    kind: 'text',
+                    origin: { ...primitive.origin },
+                    text: primitive.text,
+                    fillTokenKey: 'label',
+                }
+                : undefined;
+        case 'marker':
+            return primitive.origin
+                ? {
+                    kind: 'circle',
+                    center: { ...primitive.origin },
+                    radius: Math.max(2, primitive.bounds.width / 2, primitive.bounds.height / 2),
+                    strokeTokenKey: 'stroke',
+                    strokeWidthTokenKey: 'strokeWidth',
+                }
+                : undefined;
+        case 'reference-arrow':
+            return primitive.start && primitive.end
+                ? {
+                    kind: 'stroke_line',
+                    start: { ...primitive.start },
+                    end: { ...primitive.end },
+                    strokeTokenKey: 'stroke',
+                    strokeWidthTokenKey: 'strokeWidth',
+                }
+                : undefined;
+        default:
+            return undefined;
+    }
+}
+
+function arcPrimitivePathData(
+    center: AthenaGLSPPoint,
+    radius: number,
+    startAngleDegrees: number,
+    sweepAngleDegrees: number,
+): string {
+    const startAngle = (startAngleDegrees * Math.PI) / 180;
+    const endAngle = ((startAngleDegrees + sweepAngleDegrees) * Math.PI) / 180;
+    const start = {
+        x: center.x + radius * Math.cos(startAngle),
+        y: center.y + radius * Math.sin(startAngle),
+    };
+    const end = {
+        x: center.x + radius * Math.cos(endAngle),
+        y: center.y + radius * Math.sin(endAngle),
+    };
+    const largeArc = Math.abs(sweepAngleDegrees) > 180 ? 1 : 0;
+    const sweep = sweepAngleDegrees >= 0 ? 1 : 0;
+    return `M ${roundPathNumber(start.x)} ${roundPathNumber(start.y)} A ${radius} ${radius} 0 ${largeArc} ${sweep} ${roundPathNumber(end.x)} ${roundPathNumber(end.y)}`;
+}
+
+function roundPathNumber(value: number): number {
+    return Math.round(value * 1000) / 1000;
 }
 
 export function resolvePresentationRepresentations(
@@ -353,6 +529,13 @@ function representationPrimitiveToCommand(
                 strokeTokenKey: 'stroke',
                 strokeWidthTokenKey: 'strokeWidth',
             };
+        case 'text':
+            return {
+                kind: 'text',
+                origin: { ...primitive.origin },
+                text: primitive.text,
+                fillTokenKey: 'label',
+            };
         default:
             return undefined;
     }
@@ -397,12 +580,19 @@ function scaleShapeCommand(
                 y: scaleY(command.center.y, primitive.viewBoxHeight, targetBounds),
             }
             : undefined,
+        origin: command.origin
+            ? {
+                x: scaleX(command.origin.x, primitive.viewBoxWidth, targetBounds),
+                y: scaleY(command.origin.y, primitive.viewBoxHeight, targetBounds),
+            }
+            : undefined,
         radius: command.radius
             ? Math.max(1, Math.round(command.radius * Math.min(
                 targetBounds.width / Math.max(primitive.viewBoxWidth, 1),
                 targetBounds.height / Math.max(primitive.viewBoxHeight, 1),
             )))
             : undefined,
+        text: command.text,
         strokeTokenKey: command.strokeTokenKey,
         strokeWidthTokenKey: command.strokeWidthTokenKey,
         fillTokenKey: command.fillTokenKey,

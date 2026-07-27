@@ -22,7 +22,20 @@ import com.engineeringood.athena.plugin.CoreVersionRange
 internal const val ELECTRICAL_DOMAIN_ID = "electrical-runtime"
 internal const val ELECTRICAL_VALIDATION_CONTRIBUTION_ID = "electrical-runtime.validation.component-and-port-rules"
 
-internal val VALID_DEVICE_TYPES = setOf("Lamp", "Motor", "Switch")
+internal val VALID_DEVICE_TYPES = setOf(
+    "Breaker",
+    "Contactor",
+    "FuseDisconnector",
+    "Lamp",
+    "LimitSwitch",
+    "Motor",
+    "PowerSource",
+    "ProtectiveEarth",
+    "PushButton",
+    "Switch",
+    "Terminal",
+    "Transformer",
+)
 
 internal val ELECTRICAL_RUNTIME_CAPABILITIES: Set<String> = setOf(ELECTRICAL_DOMAIN_ID)
 
@@ -47,30 +60,18 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
     description = "Reference real proof-domain schema for hosted electrical semantics on the Athena JVM-first path.",
     capabilities = setOf(ELECTRICAL_DOMAIN_ID),
     entities = listOf(
-        AthenaDomainEntitySchema(
-            typeId = "Lamp",
-            displayName = "Lamp",
-            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
-            description = "Electrical indicator or load component declared through the generic device surface.",
-            propertyNames = setOf("type"),
-            portTypeIds = setOf("electrical-port"),
-        ),
-        AthenaDomainEntitySchema(
-            typeId = "Motor",
-            displayName = "Motor",
-            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
-            description = "Electrical rotating load component declared through the generic device surface.",
-            propertyNames = setOf("type"),
-            portTypeIds = setOf("electrical-port"),
-        ),
-        AthenaDomainEntitySchema(
-            typeId = "Switch",
-            displayName = "Switch",
-            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
-            description = "Electrical switching or control component declared through the generic device surface.",
-            propertyNames = setOf("type"),
-            portTypeIds = setOf("electrical-port"),
-        ),
+        electricalComponent("Breaker", "Circuit protection and isolation device."),
+        electricalComponent("Contactor", "Electromagnetically operated switching device with partitioned functions."),
+        electricalComponent("FuseDisconnector", "Fused isolation device."),
+        electricalComponent("Lamp", "Electrical indicator or load component."),
+        electricalComponent("LimitSwitch", "Mechanically actuated position switch."),
+        electricalComponent("Motor", "Electrical rotating load component."),
+        electricalComponent("PowerSource", "Electrical supply source."),
+        electricalComponent("ProtectiveEarth", "Protective bonding endpoint."),
+        electricalComponent("PushButton", "Manually actuated control switch."),
+        electricalComponent("Switch", "Generic electrical switching component retained for existing projects."),
+        electricalComponent("Terminal", "Field or panel terminal assembly."),
+        electricalComponent("Transformer", "Electrical transformer with isolated winding ports."),
     ),
     properties = listOf(
         AthenaDomainPropertySchema(
@@ -99,13 +100,21 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
             required = false,
             description = "Optional signal metadata used to validate port compatibility and wiring intent.",
         ),
+        AthenaDomainPropertySchema(
+            name = "terminal",
+            displayName = "Physical terminal identity",
+            valueKind = AthenaDomainPropertyValueKind.TEXT,
+            appliesTo = setOf(AthenaDomainSchemaSubjectKind.PORT),
+            required = false,
+            description = "Authored terminal designation preserved as engineering truth.",
+        ),
     ),
     ports = listOf(
         AthenaDomainPortSchema(
             typeId = "electrical-port",
             displayName = "Electrical port",
             description = "Generic hosted electrical port for the first proof domain.",
-            propertyNames = setOf("direction", "signal"),
+            propertyNames = setOf("direction", "signal", "terminal"),
             allowedDirections = setOf("in", "out"),
         ),
     ),
@@ -118,6 +127,15 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
             targetPortTypeIds = setOf("electrical-port"),
         ),
     ),
+)
+
+private fun electricalComponent(typeId: String, description: String) = AthenaDomainEntitySchema(
+    typeId = typeId,
+    displayName = typeId,
+    subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+    description = description,
+    propertyNames = setOf("type"),
+    portTypeIds = setOf("electrical-port"),
 )
 
 internal val ELECTRICAL_VALIDATION_CONTRIBUTIONS = listOf(

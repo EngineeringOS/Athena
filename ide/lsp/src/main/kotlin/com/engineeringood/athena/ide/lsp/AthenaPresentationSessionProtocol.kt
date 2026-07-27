@@ -9,6 +9,11 @@ import com.engineeringood.athena.presentation.PresentationCompositePack
 import com.engineeringood.athena.presentation.PresentationCompositePart
 import com.engineeringood.athena.presentation.PresentationConnector
 import com.engineeringood.athena.presentation.PresentationDocument
+import com.engineeringood.athena.presentation.PresentationDrawingBounds
+import com.engineeringood.athena.presentation.PresentationGraphicLabel
+import com.engineeringood.athena.presentation.PresentationGraphicOccurrence
+import com.engineeringood.athena.presentation.PresentationGraphicOccurrenceAuthorities
+import com.engineeringood.athena.presentation.PresentationGraphicTerminalBinding
 import com.engineeringood.athena.presentation.PresentationOccurrence
 import com.engineeringood.athena.presentation.PresentationPackageEvidence
 import com.engineeringood.athena.presentation.PresentationPrimitiveDefinition
@@ -24,6 +29,10 @@ import com.engineeringood.athena.presentation.PresentationTextSlot
 import com.engineeringood.athena.presentation.connectorsForRendering
 import com.engineeringood.athena.presentation.representationFactsForRendering
 import com.engineeringood.athena.representation.LabelFact
+import com.engineeringood.athena.representation.GraphicBounds
+import com.engineeringood.athena.representation.GraphicPoint
+import com.engineeringood.athena.representation.GraphicPrimitive
+import com.engineeringood.athena.representation.GraphicPrimitiveDocument
 import com.engineeringood.athena.representation.PresentationAnatomy
 import com.engineeringood.athena.representation.PresentationLabelAnchor
 import com.engineeringood.athena.representation.PresentationPoint
@@ -34,6 +43,7 @@ import com.engineeringood.athena.representation.PresentationTerminalFact
 import com.engineeringood.athena.representation.PresentationTerminalPoint
 import com.engineeringood.athena.representation.SymbolAnatomy
 import com.engineeringood.athena.representation.TerminalNotation
+import kotlin.math.roundToInt
 
 internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload {
     return AthenaPresentationDocumentPayload(
@@ -42,10 +52,150 @@ internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload
         primitivePacks = primitivePacks.map(PresentationPrimitivePack::toPayload),
         compositePacks = compositePacks.map(PresentationCompositePack::toPayload),
         occurrences = occurrences.map(PresentationOccurrence::toPayload),
+        graphicOccurrences = graphicOccurrences.map(PresentationGraphicOccurrence::toPayload),
         connectors = connectorsForRendering().map(PresentationConnector::toPayload),
         representationFacts = representationFactsForRendering().map(PresentationRepresentationFact::toPayload),
         referenceMarkers = referenceMarkers.map(PresentationReferenceMarkerFact::toPayload),
+        drawingComposition = drawingComposition?.toPayload(),
     )
+}
+
+private fun PresentationGraphicOccurrence.toPayload(): AthenaPresentationGraphicOccurrencePayload =
+    AthenaPresentationGraphicOccurrencePayload(
+        occurrenceId = occurrenceId.value,
+        semanticSubjectId = semanticSubjectId,
+        physicalComponentId = physicalComponentId,
+        functionId = functionId,
+        bounds = bounds.toPayload(),
+        orientation = orientation.name.lowercase(),
+        deviceLabel = deviceLabel,
+        modelLabel = modelLabel,
+        packageId = packageId,
+        definitionId = definitionId,
+        bindingRuleId = bindingRuleId,
+        graphic = graphic.toPayload(),
+        terminalBindings = terminalBindings.map(PresentationGraphicTerminalBinding::toPayload),
+        labels = labels.map(PresentationGraphicLabel::toPayload),
+        sourceProvenance = sourceProvenance.sorted(),
+        authorities = authorities.toPayload(),
+    )
+
+private fun PresentationGraphicOccurrenceAuthorities.toPayload() =
+    AthenaPresentationGraphicOccurrenceAuthoritiesPayload(
+        graphic = graphic,
+        placement = placement,
+        material = material,
+    )
+
+private fun PresentationGraphicTerminalBinding.toPayload() =
+    AthenaPresentationGraphicTerminalBindingPayload(
+        portSemanticId = portSemanticId,
+        anchorId = anchorId,
+        terminalIdentity = terminalIdentity,
+        point = AthenaProjectionPointPayload(point.x, point.y),
+        side = side.name.lowercase(),
+    )
+
+private fun PresentationGraphicLabel.toPayload() =
+    AthenaPresentationGraphicLabelPayload(
+        labelId = labelId,
+        role = role,
+        value = value,
+        bounds = bounds.toPayload(),
+    )
+
+private fun GraphicPrimitiveDocument.toPayload() =
+    AthenaGraphicPrimitiveDocumentPayload(
+        documentId = documentId?.value,
+        bounds = bounds?.toPayload(),
+        primitives = primitives.flatMap(GraphicPrimitive::flattenForTransport).map(GraphicPrimitive::toPayload),
+        provenanceSources = provenanceSources.sorted(),
+        forbiddenAuthorityClaims = forbiddenAuthorityClaims.map { claim -> claim.name }.sorted(),
+    )
+
+private fun GraphicPrimitive.flattenForTransport(): List<GraphicPrimitive> = when (this) {
+    is GraphicPrimitive.Group -> children.flatMap(GraphicPrimitive::flattenForTransport)
+    is GraphicPrimitive.Transformed -> child.flattenForTransport()
+    else -> listOf(this)
+}
+
+private fun GraphicPrimitive.toPayload(): AthenaGraphicPrimitivePayload = when (this) {
+    is GraphicPrimitive.Line -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        start = start.toPayload(),
+        end = end.toPayload(),
+    )
+    is GraphicPrimitive.Polyline -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        points = points.map(GraphicPoint::toPayload),
+    )
+    is GraphicPrimitive.Arc -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        center = center.toPayload(),
+        radius = radius.roundToInt(),
+        startAngleDegrees = startAngleDegrees,
+        sweepAngleDegrees = sweepAngleDegrees,
+    )
+    is GraphicPrimitive.Circle -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        center = center.toPayload(),
+        radius = radius.roundToInt(),
+    )
+    is GraphicPrimitive.Rectangle -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        cornerRadius = cornerRadius.roundToInt(),
+    )
+    is GraphicPrimitive.Text -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        origin = origin.toPayload(),
+        text = text,
+    )
+    is GraphicPrimitive.Marker -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        origin = origin.toPayload(),
+        markerKind = markerKind.name.lowercase(),
+    )
+    is GraphicPrimitive.ConnectionDot -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        center = center.toPayload(),
+        radius = radius.roundToInt(),
+    )
+    is GraphicPrimitive.ReferenceArrow -> AthenaGraphicPrimitivePayload(
+        primitiveId = primitiveId.value,
+        kind = kind.wireValue,
+        bounds = bounds.toPayload(),
+        styleTokenId = styleTokenId.value,
+        start = start.toPayload(),
+        end = end.toPayload(),
+        headSize = headSize.roundToInt(),
+    )
+    is GraphicPrimitive.Group,
+    is GraphicPrimitive.Transformed,
+    -> error("Graphic group and transform primitives must be flattened before LSP transport.")
 }
 
 private fun PresentationPrimitivePack.toPayload(): AthenaPresentationPrimitivePackPayload {
@@ -107,6 +257,25 @@ private fun PresentationCompositePart.toPayload(): AthenaPresentationCompositePa
         orientation = orientation.name.lowercase(),
     )
 }
+
+private fun PresentationDrawingBounds.toPayload() = AthenaPresentationBoundsPayload(
+    x = x,
+    y = y,
+    width = width,
+    height = height,
+)
+
+private fun GraphicBounds.toPayload() = AthenaPresentationBoundsPayload(
+    x = x.roundToInt(),
+    y = y.roundToInt(),
+    width = width.roundToInt().coerceAtLeast(1),
+    height = height.roundToInt().coerceAtLeast(1),
+)
+
+private fun GraphicPoint.toPayload() = AthenaProjectionPointPayload(
+    x = x.roundToInt(),
+    y = y.roundToInt(),
+)
 
 private fun PresentationShapeCommand.toPayload(): AthenaPresentationShapeCommandPayload {
     return when (this) {
@@ -282,7 +451,7 @@ private fun SymbolAnatomy.toPayload(): AthenaPresentationSymbolAnatomyPayload {
     )
 }
 
-private fun PresentationAnatomy.toPayload(): AthenaPresentationAnatomyPayload {
+internal fun PresentationAnatomy.toPayload(): AthenaPresentationAnatomyPayload {
     return AthenaPresentationAnatomyPayload(
         representationId = representationId.value,
         context = context.name.lowercase(),
@@ -327,6 +496,13 @@ private fun PresentationPrimitive.toPayload(): AthenaPresentationAnatomyPrimitiv
             primitiveId = primitiveId.value,
             center = center.toPayload(),
             radius = radius.value,
+        )
+
+        is PresentationPrimitive.Text -> AthenaPresentationAnatomyPrimitivePayload(
+            kind = "text",
+            primitiveId = primitiveId.value,
+            origin = origin.toPayload(),
+            text = text,
         )
     }
 }

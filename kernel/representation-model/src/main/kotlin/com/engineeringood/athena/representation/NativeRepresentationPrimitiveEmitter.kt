@@ -42,6 +42,13 @@ object NativeRepresentationPrimitiveEmitter {
                 size.width.value,
                 size.height.value,
             ).joinToString(":")
+            is PresentationPrimitive.Text -> listOf(
+                "text",
+                primitiveId.value,
+                origin.x.value,
+                origin.y.value,
+                text,
+            ).joinToString(":")
         }
     }
 }

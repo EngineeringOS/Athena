@@ -2,6 +2,9 @@ package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.compiler.CompilerSourceDocument
+import com.engineeringood.athena.compiler.EngineeringIrLowerer
+import com.engineeringood.athena.compiler.GenericLoweringOnlyTestPlugin
+import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.ParseSuccess
@@ -16,7 +19,9 @@ class ProjectSemanticLinkedLowererTest {
     fun `lowers linked source units through the canonical lowerer with graph identity`() {
         val fixture = linkedLoweringFixture()
 
-        val result = ProjectSemanticLinkedLowerer().lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
+        val result = ProjectSemanticLinkedLowerer(
+            EngineeringIrLowerer(AthenaDomainSemanticsCoordinator(listOf(GenericLoweringOnlyTestPlugin()))),
+        ).lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
         val compilerResult = AthenaCompiler().lowerLinkedProjectSemanticSources(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
 
         assertEquals(
@@ -32,10 +37,62 @@ class ProjectSemanticLinkedLowererTest {
     fun `preserves source unit binding ids beside lowered documents`() {
         val fixture = linkedLoweringFixture()
 
-        val result = ProjectSemanticLinkedLowerer().lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
+        val result = ProjectSemanticLinkedLowerer(
+            EngineeringIrLowerer(AthenaDomainSemanticsCoordinator(listOf(GenericLoweringOnlyTestPlugin()))),
+        ).lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
         val consumerLowering = result.loweredSourceUnits.single { it.sourceUnitId == fixture.consumerSourceUnitId }
 
         assertEquals(fixture.linkedSnapshot.bindings.map { it.bindingId }, consumerLowering.bindingIds)
+    }
+
+    @Test
+    fun `lowers connection identity from source unit id and authored alias`() {
+        val fixture = linkedLoweringFixture()
+
+        val result = ProjectSemanticLinkedLowerer(
+            EngineeringIrLowerer(AthenaDomainSemanticsCoordinator(listOf(GenericLoweringOnlyTestPlugin()))),
+        ).lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
+        val consumerLowering = result.loweredSourceUnits.single { it.sourceUnitId == fixture.consumerSourceUnitId }
+
+        assertEquals(
+            listOf("connection:${fixture.consumerSourceUnitId.value}:provider_loop"),
+            consumerLowering.document.connections.map { it.id.value },
+        )
+    }
+
+    @Test
+    fun `reports duplicate connection aliases inside one source unit`() {
+        val rootId = PackageIdentifier("com.root", "1")
+        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
+        val parsed = parse(
+            "duplicate-connections.athena",
+            """
+            package com.root
+            system Root {
+              port PLC1.out {}
+              connect duplicate_alias PLC1.out -> PLC1.out
+              connect duplicate_alias PLC1.out -> PLC1.out
+            }
+            """.trimIndent(),
+        )
+        val sourceUnit = sourceUnit(rootKey, "duplicate-connections.athena", parsed.content, parsed.parsed.source.ast.declarations)
+        val namespace = ProjectSemanticNamespace(
+            CanonicalSemanticIdentityBuilder.namespaceId(rootKey, listOf("com", "root")),
+            rootKey,
+            listOf("com", "root"),
+            listOf(sourceUnit.sourceUnitId),
+            emptyList(),
+        )
+
+        val indexed = ProjectSemanticDeclarationIndexer().index(
+            snapshot(rootKey, listOf(ProjectSemanticPackage(rootId, rootKey, "src", emptyList())), listOf(sourceUnit), listOf(namespace)),
+        )
+
+        assertEquals(
+            listOf("semantic.connection.alias.duplicate"),
+            indexed.diagnostics.map { it.code.value },
+        )
+        assertEquals(sourceUnit.sourceUnitId, indexed.diagnostics.single().sourceUnitId)
     }
 
     @Test
@@ -92,10 +149,10 @@ class ProjectSemanticLinkedLowererTest {
         val providerSource = parse("provider.athena", "package com.root\nsystem Provider {\n  port PLC1.out {}\n}")
         val consumerSource = parse(
             "consumer.athena",
-            "package com.root\nsystem Consumer {\n  connect PLC1.out -> PLC1.out\n}",
+            "package com.root\nsystem Consumer {\n  connect provider_loop PLC1.out -> PLC1.out\n}",
         )
-        val providerUnit = sourceUnit(rootKey, "provider.athena", "provider", providerSource.source.ast.declarations)
-        val consumerUnit = sourceUnit(rootKey, "consumer.athena", "consumer", consumerSource.source.ast.declarations)
+        val providerUnit = sourceUnit(rootKey, "provider.athena", providerSource.content, providerSource.parsed.source.ast.declarations)
+        val consumerUnit = sourceUnit(rootKey, "consumer.athena", consumerSource.content, consumerSource.parsed.source.ast.declarations)
         val namespace = ProjectSemanticNamespace(
             CanonicalSemanticIdentityBuilder.namespaceId(rootKey, listOf("com", "root")),
             rootKey,
@@ -111,17 +168,18 @@ class ProjectSemanticLinkedLowererTest {
         return LinkedLoweringFixture(
             linked,
             mapOf(
-                providerUnit.sourceUnitId to providerSource.source,
-                consumerUnit.sourceUnitId to consumerSource.source,
+                providerUnit.sourceUnitId to providerSource.parsed.source,
+                consumerUnit.sourceUnitId to consumerSource.parsed.source,
             ),
             consumerUnit.sourceUnitId,
         )
     }
 
-    private fun parse(path: String, content: String): com.engineeringood.athena.compiler.CompilerParseSuccess {
-        return assertIs<com.engineeringood.athena.compiler.CompilerParseSuccess>(
+    private fun parse(path: String, content: String): ParsedSource {
+        val parsed = assertIs<com.engineeringood.athena.compiler.CompilerParseSuccess>(
             AthenaCompiler().parse(java.nio.file.Path.of(path), content),
         )
+        return ParsedSource(parsed, content)
     }
 
     private fun sourceUnit(
@@ -168,4 +226,9 @@ private data class LinkedLoweringFixture(
     val linkedSnapshot: ProjectSemanticGraphSnapshot,
     val documentsBySourceUnit: Map<SourceUnitId, CompilerSourceDocument>,
     val consumerSourceUnitId: SourceUnitId,
+)
+
+private data class ParsedSource(
+    val parsed: com.engineeringood.athena.compiler.CompilerParseSuccess,
+    val content: String,
 )

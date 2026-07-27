@@ -23,6 +23,7 @@ class ProjectSemanticDeclarationIndexerTest {
         assertEquals(indexed.declarations, compilerIndexed.declarations)
         assertEquals(
             listOf(
+                "connection:plc_self",
                 "port:PLC1.out",
                 "device:PLC1",
             ),
@@ -218,7 +219,7 @@ class ProjectSemanticDeclarationIndexerTest {
             system Root {
               device PLC1 {}
               port PLC1.out {}
-              connect PLC1.out -> PLC1.out
+              connect plc_self PLC1.out -> PLC1.out
             }
             """.trimIndent(),
         )

@@ -4,6 +4,7 @@ import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.layout.LayoutConstraintKind
+import com.engineeringood.athena.layout.SchematicLayoutRole
 import com.engineeringood.athena.repository.PackageIdentifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,6 +43,44 @@ class ProjectSemanticSchematicLayoutFactDeriverTest {
         assertEquals(3, first.placementFacts.size)
         assertEquals(3, first.appliedConstraintIds.size)
         assertTrue(first.groupFacts.isNotEmpty(), "Grouped-with constraints should surface as layout group facts.")
+    }
+
+    @Test
+    fun `classifies layout roles from authored type facts rather than identifier prefixes`() {
+        val content =
+            """
+            package com.root
+            system Root {
+              device QF1 {
+                type Motor
+              }
+              device M1 {
+                type Switch
+              }
+              device XT1 {
+                type Lamp
+              }
+              layout schematic-sheet {
+                place M1 near QF1
+                place XT1 below QF1
+              }
+            }
+            """.trimIndent()
+        val fixture = semanticFixture(
+            "typed-layout-facts.athena",
+            content,
+            declarations("typed-layout-facts.athena", content),
+        )
+        val bound = ProjectSemanticLayoutHintBinder().bind(ProjectSemanticDeclarationIndexer().index(fixture.snapshot))
+
+        val rolesByName = ProjectSemanticSchematicLayoutFactDeriver()
+            .derive(bound)
+            .placementFacts
+            .associate { fact -> fact.intentId.value.substringAfterLast(':') to fact.role }
+
+        assertEquals(SchematicLayoutRole.LOAD, rolesByName.getValue("QF1"))
+        assertEquals(SchematicLayoutRole.ANNOTATION, rolesByName.getValue("M1"))
+        assertEquals(SchematicLayoutRole.LOAD, rolesByName.getValue("XT1"))
     }
 
     private fun declarations(path: String, content: String): List<Declaration> {

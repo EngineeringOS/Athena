@@ -92,7 +92,7 @@ async function main() {
 
 async function verifyRepositorySession() {
     const repositoryRoot = path.resolve(__dirname, '..', '..', '..', 'examples', 'm4', 'open-repository-proof');
-    const documentPath = path.join(repositoryRoot, 'src', 'factory-line.athena');
+    const documentPath = path.join(repositoryRoot, 'src', 'com', 'engineeringood', 'factoryline', 'factoryline.athena');
     const documentUri = pathToFileURL(documentPath).toString();
     const manager = new AthenaRepositorySessionManager();
 

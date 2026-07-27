@@ -82,7 +82,7 @@ class AthenaM17ParserParityProofTest {
     @Test
     fun `m17 repository-parity fixture resolves cleanly through the governed repository graph seam`() {
         val repositoryRoot = resolveRepoRoot().resolve("examples/m17/repository-parity-proof")
-        val sourcePath = repositoryRoot.resolve("src/parity-repo.athena")
+        val sourcePath = repositoryRoot.resolve("src/com/engineeringood/m17/parity/parity-repo.athena")
         assertTrue(Files.exists(sourcePath), "Expected M17 repository-parity proof source at `$sourcePath`.")
 
         val contractValidation = compiler.validateRepositoryContract(repositoryRoot)

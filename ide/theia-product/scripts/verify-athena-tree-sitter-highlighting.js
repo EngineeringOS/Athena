@@ -56,7 +56,7 @@ async function verifyBundledTreeSitterTokens() {
     });
 
     const validSource = fs.readFileSync(
-        path.join(workspaceRoot, 'examples', 'm4', 'open-repository-proof', 'src', 'factory-line.athena'),
+        path.join(workspaceRoot, 'examples', 'm4', 'open-repository-proof', 'src', 'com', 'engineeringood', 'factoryline', 'factoryline.athena'),
         'utf8'
     );
     const m31Source = fs.readFileSync(

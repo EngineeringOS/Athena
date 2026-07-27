@@ -2,6 +2,7 @@ package com.engineeringood.athena.layout.engine
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
+import com.engineeringood.athena.layout.DrawingGridPosition
 import com.engineeringood.athena.layout.LayoutConstraintId
 import com.engineeringood.athena.layout.LayoutConstraintKind
 import com.engineeringood.athena.layout.LayoutConstraintSnapshot
@@ -9,6 +10,7 @@ import com.engineeringood.athena.layout.LayoutIntentId
 import com.engineeringood.athena.layout.LayoutIntentItem
 import com.engineeringood.athena.layout.LayoutIntentSnapshot
 import com.engineeringood.athena.layout.LayoutOccurrenceId
+import com.engineeringood.athena.layout.LayoutOrientation
 import com.engineeringood.athena.layout.LayoutPriority
 import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.layout.LayoutSourceSpan
@@ -92,6 +94,9 @@ data class SchematicPlacementFact(
     val position: SchematicLayoutPoint,
     val size: SchematicLayoutSize,
     val sourceSpan: LayoutSourceSpan? = null,
+    val functionId: StableSemanticIdentity? = null,
+    val gridPosition: DrawingGridPosition? = null,
+    val orientation: LayoutOrientation? = null,
 )
 
 /** Stable schematic region identity owned by Athena layout facts and scoped by snapshot id. */

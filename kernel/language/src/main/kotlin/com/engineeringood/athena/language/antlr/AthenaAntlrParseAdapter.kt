@@ -419,6 +419,8 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             "Expected qualified target reference in owner.port form after '->'",
         )
         return ConnectionDeclaration(
+            alias = context.ident().text,
+            aliasSpan = spanOfContext(context.ident().start, context.ident().stop),
             from = from,
             to = to,
             span = spanOfContext(context.start, context.stop),
@@ -443,6 +445,8 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             "Expected qualified target reference in owner.port form after '->'",
         )
         return ConnectionDeclaration(
+            alias = context.ident().text,
+            aliasSpan = spanOfContext(context.ident().start, context.ident().stop),
             from = from,
             to = to,
             span = spanOfContext(context.start, context.stop),

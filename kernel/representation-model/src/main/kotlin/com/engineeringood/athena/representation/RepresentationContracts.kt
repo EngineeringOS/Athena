@@ -97,6 +97,7 @@ enum class RepresentationSubjectKind {
     RELATIONSHIP,
     REFERENCE,
     SHEET_OCCURRENCE,
+    FUNCTION,
 }
 
 enum class RepresentationOccurrenceRole {
@@ -119,6 +120,7 @@ enum class RepresentationFallbackBehavior {
 }
 
 enum class RepresentationSymbolKind {
+    GENERIC,
     SUPPLY_REFERENCE,
     TERMINAL,
     SWITCH_CONTACT,
@@ -147,6 +149,9 @@ enum class RepresentationDiagnosticCode(val wireValue: String) {
     SYMBOL_MISSING("representation.symbol.missing"),
     SYMBOL_UNSUPPORTED_ROLE("representation.symbol.unsupported-role"),
     ANCHOR_MISSING("representation.anchor.missing"),
+    ANCHOR_DUPLICATE("representation.anchor.duplicate"),
+    COMPOSITION_CHILD_DUPLICATE("representation.composition-child.duplicate"),
+    GRAPHIC_BODY_INVALID("representation.graphic-body.invalid"),
     TERMINAL_INCOMPATIBLE("representation.terminal.incompatible"),
     LABEL_SLOT_MISSING("representation.label-slot.missing"),
     BINDING_AMBIGUOUS("representation.binding.ambiguous"),
@@ -155,6 +160,7 @@ enum class RepresentationDiagnosticCode(val wireValue: String) {
     POLICY_AMBIGUOUS("representation.policy.ambiguous"),
     POLICY_MISSING("representation.policy.missing"),
     LIFECYCLE_UNSUPPORTED("representation.lifecycle.unsupported"),
+    SOURCE_AUTHORITY_VIOLATION("representation.source-authority.violation"),
 }
 
 data class RepresentationPolicy(
@@ -182,68 +188,6 @@ data class RepresentationPolicy(
         "symbolFamilyId" to symbolFamilyId.value,
         "symbolId" to symbolId.value,
         "variant" to (variant?.value ?: ""),
-    )
-}
-
-data class RepresentationProvenance(
-    val source: String,
-) {
-    init {
-        require(source.isNotBlank()) { "Representation provenance source must not be blank." }
-    }
-}
-
-data class RepresentationLifecycle(
-    val state: RepresentationLifecycleState,
-    val provenance: RepresentationProvenance,
-    val supersededBy: RepresentationSymbolId? = null,
-    val migrationHint: String? = null,
-) {
-    init {
-        require(migrationHint == null || migrationHint.isNotBlank()) {
-            "Representation migration hint must be null or non-blank."
-        }
-    }
-}
-
-data class RepresentationStyleToken(
-    val name: String,
-    val value: String,
-) {
-    init {
-        require(name.isNotBlank()) { "Representation style token name must not be blank." }
-        require(value.isNotBlank()) { "Representation style token value must not be blank." }
-    }
-}
-
-data class RepresentationLabelSlot(
-    val slotId: RepresentationLabelSlotId,
-    val role: PresentationLabelRole,
-)
-
-data class RepresentationDefinition(
-    val symbolId: RepresentationSymbolId,
-    val libraryId: RepresentationLibraryId,
-    val version: RepresentationVersion,
-    val lifecycle: RepresentationLifecycle,
-    val kind: RepresentationSymbolKind,
-    val anatomy: PresentationAnatomy,
-    val labelSlots: List<RepresentationLabelSlot>,
-    val variants: List<RepresentationVariantId> = emptyList(),
-    val styleTokens: List<RepresentationStyleToken> = emptyList(),
-) {
-    init {
-        require(labelSlots.isNotEmpty()) { "Representation definition requires at least one label slot." }
-    }
-
-    fun toTransportMap(): Map<String, String> = linkedMapOf(
-        "kind" to kind.name,
-        "labelSlotCount" to labelSlots.size.toString(),
-        "libraryId" to libraryId.value,
-        "lifecycleState" to lifecycle.state.name,
-        "symbolId" to symbolId.value,
-        "variantCount" to variants.size.toString(),
-        "version" to version.value,
     )
 }
 
@@ -275,11 +219,13 @@ data class RepresentationOccurrence(
     val referenceBindings: List<RepresentationReferenceBinding> = emptyList(),
     val compositionIntentMembership: List<CompositionIntentMembershipId> = emptyList(),
     val diagnostics: List<RepresentationDiagnostic> = emptyList(),
+    val functionSemanticId: RepresentationSubjectId? = null,
 ) {
     fun toTransportMap(): Map<String, String> = linkedMapOf(
         "canonicalSemanticId" to canonicalSemanticId.value,
         "compositionMembershipCount" to compositionIntentMembership.size.toString(),
         "diagnosticCount" to diagnostics.size.toString(),
+        "functionSemanticId" to (functionSemanticId?.value ?: ""),
         "labelBindingCount" to labelBindings.size.toString(),
         "occurrenceId" to occurrenceId.value,
         "occurrenceRole" to occurrenceRole.name,
@@ -295,6 +241,7 @@ data class RepresentationDiagnostic(
     val code: RepresentationDiagnosticCode,
     val message: String,
     val subjectId: RepresentationSubjectId? = null,
+    val provenance: RepresentationProvenance? = null,
 ) {
     init {
         require(message.isNotBlank()) { "Representation diagnostic message must not be blank." }
@@ -304,5 +251,6 @@ data class RepresentationDiagnostic(
         put("code", code.wireValue)
         put("message", message)
         subjectId?.let { id -> put("subjectId", id.value) }
+        provenance?.let { source -> put("source", source.source) }
     }
 }

@@ -64,7 +64,12 @@ const ATHENA_LIGHT_TOKEN_COLORS = {
     declaration: '0B5CAD',
     port: '197A3A',
     relationship: 'B35C00',
+    function: '006A6A',
     layout: '7A3EA1',
+    representation: '5B4B8A',
+    primitive: '0F766E',
+    profile: '9A6700',
+    binding: '9F3653',
     layoutOperator: 'C43C84',
     relationshipOperator: '6B7280'
 } as const;
@@ -73,7 +78,12 @@ const ATHENA_DARK_TOKEN_COLORS = {
     declaration: '7DB7FF',
     port: '7EE787',
     relationship: 'FFB454',
+    function: '66D9D0',
     layout: 'D8B4FE',
+    representation: 'C4B5FD',
+    primitive: '5EEAD4',
+    profile: 'F6C85F',
+    binding: 'FDA4AF',
     layoutOperator: 'FF8FCB',
     relationshipOperator: 'B8C0CC'
 } as const;
@@ -775,7 +785,12 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
                 { token: 'keyword.athena-declaration', foreground: colors.declaration, fontStyle: 'bold' },
                 { token: 'keyword.athena-port', foreground: colors.port, fontStyle: 'bold' },
                 { token: 'keyword.athena-relationship', foreground: colors.relationship, fontStyle: 'bold' },
+                { token: 'keyword.athena-function', foreground: colors.function, fontStyle: 'bold' },
                 { token: 'keyword.athena-layout', foreground: colors.layout, fontStyle: 'bold' },
+                { token: 'keyword.athena-representation', foreground: colors.representation, fontStyle: 'bold' },
+                { token: 'keyword.athena-primitive', foreground: colors.primitive, fontStyle: 'bold' },
+                { token: 'keyword.athena-profile', foreground: colors.profile, fontStyle: 'bold' },
+                { token: 'keyword.athena-binding', foreground: colors.binding, fontStyle: 'bold' },
                 { token: 'operator.athena-layout', foreground: colors.layoutOperator, fontStyle: 'bold' },
                 { token: 'operator.athena-relationship', foreground: colors.relationshipOperator, fontStyle: 'bold' }
             ],
@@ -785,8 +800,13 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
                 athenaDeclarationKeyword: { foreground: colors.declaration, bold: true },
                 athenaPortKeyword: { foreground: colors.port, bold: true },
                 athenaRelationshipKeyword: { foreground: colors.relationship, bold: true },
+                athenaFunctionKeyword: { foreground: colors.function, bold: true },
                 athenaLayoutKeyword: { foreground: colors.layout, bold: true },
                 athenaLayoutOperator: { foreground: colors.layoutOperator, bold: true },
+                athenaRepresentationKeyword: { foreground: colors.representation, bold: true },
+                athenaPrimitiveKeyword: { foreground: colors.primitive, bold: true },
+                athenaProfileKeyword: { foreground: colors.profile, bold: true },
+                athenaBindingKeyword: { foreground: colors.binding, bold: true },
                 operator: colors.relationshipOperator
             }
         };

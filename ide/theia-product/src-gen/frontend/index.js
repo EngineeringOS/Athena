@@ -26,7 +26,8 @@ FrontendApplicationConfigProvider.set({
         "toolbar.showToolbar": true,
         "editor.enablePreview": false,
         "workbench.editor.revealIfOpen": true,
-        "editor.semanticHighlighting.enabled": true
+        "editor.semanticHighlighting.enabled": true,
+        "security.workspace.trust.enabled": false
     }
 });
 

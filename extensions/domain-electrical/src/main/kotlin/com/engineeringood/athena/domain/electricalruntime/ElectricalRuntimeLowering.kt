@@ -63,8 +63,9 @@ internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): Athen
             declaration.from.parts.firstOrNull() !in explicitForeignDeviceNames &&
                 declaration.to.parts.firstOrNull() !in explicitForeignDeviceNames
         }
-        .map { declaration ->
+            .map { declaration ->
             context.connection(
+                alias = declaration.alias,
                 fromPath = declaration.from.parts,
                 fromProvenance = context.provenance(declaration.from.span),
                 toPath = declaration.to.parts,
@@ -72,11 +73,31 @@ internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): Athen
                 provenance = context.provenance(declaration.span),
             )
         }
+    val functions = deviceDeclarations
+        .filter { declaration -> declaration.name in ownedDeviceNames }
+        .flatMap { device ->
+            device.nestedFunctions.map { function ->
+                context.function(
+                    ownerPath = listOf(device.name),
+                    ownerProvenance = context.provenance(device.span),
+                    name = function.name,
+                    role = function.role.value,
+                    portReferences = function.portReferences.map { reference ->
+                        context.functionPort(
+                            path = if (reference.parts.size == 1) listOf(device.name) + reference.parts else reference.parts,
+                            provenance = context.provenance(reference.span),
+                        )
+                    },
+                    provenance = context.provenance(function.span),
+                )
+            }
+        }
 
     return AthenaDomainLoweringContribution(
         components = components,
         ports = ports,
         connections = connections,
+        functions = functions,
     )
 }
 

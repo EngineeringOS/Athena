@@ -227,11 +227,11 @@ class AthenaSourceMutationRequestTest {
             sourceText = sourceMutationDemoCabinetSource,
         )
         val repositoryRoot = repository.repositoryRoot
-        val untrackedPath = repositoryRoot.resolve("src/untracked.athena")
+        val untrackedPath = repositoryRoot.resolve("src/com/engineeringood/factoryline/untracked.athena")
 
         try {
             Files.createDirectories(untrackedPath.parent)
-            Files.writeString(untrackedPath, sourceMutationDemoCabinetSource)
+            Files.writeString(untrackedPath, governedAthenaSource(sourceMutationDemoCabinetSource))
 
             val server = AthenaLanguageServer()
             try {
@@ -250,7 +250,7 @@ class AthenaSourceMutationRequestTest {
                 )
 
                 assertEquals(untrackedPath.toUri().toString(), payload.uri)
-                assertEquals("factory-line", payload.projectName)
+                assertEquals("factoryline", payload.projectName)
                 assertEquals("semantic-mutation", payload.mutationCategory)
                 assertEquals("unavailable", payload.outcome)
                 assertEquals(0, payload.version)

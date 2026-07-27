@@ -1,0 +1,39 @@
+package com.engineeringood.m35.standard.iec
+
+symbol protective_earth_symbol {
+  identity "iec.protective-earth.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 64, 64)
+    line stem from (32, 8) to (32, 36) style conductor
+    line bar_long from (16, 36) to (48, 36) style conductor
+    line bar_mid from (20, 44) to (44, 44) style conductor
+    line bar_short from (24, 52) to (40, 52) style conductor
+  }
+
+  anchor earth {
+    primitiveRef stem
+    point (32, 8)
+    role terminal
+    accepts direction in
+    accepts direction out
+    accepts signal Power
+  }
+}
+
+element protective_earth_element {
+  identity "iec.protective-earth.element"
+  version "1.0.0"
+  bounds (0, 0, 64, 64)
+
+  child earth {
+    symbol "iec.protective-earth.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor earth from earth.earth
+}

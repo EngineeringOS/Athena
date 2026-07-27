@@ -21,11 +21,14 @@ import com.engineeringood.athena.representation.PresentationSide
 import com.engineeringood.athena.representation.PresentationSize
 import com.engineeringood.athena.representation.PresentationTerminalId
 import com.engineeringood.athena.representation.PresentationTerminalPoint
+import com.engineeringood.athena.representation.PhysicalTerminalId
+import com.engineeringood.athena.representation.RepresentationAnchorRole
 import com.engineeringood.athena.representation.RepresentationBindingCompiler
 import com.engineeringood.athena.representation.RepresentationBindingRequest
 import com.engineeringood.athena.representation.RepresentationDefinition
 import com.engineeringood.athena.representation.RepresentationDiagnostic
 import com.engineeringood.athena.representation.RepresentationDiagnosticCode
+import com.engineeringood.athena.representation.RepresentationDirectionPredicate
 import com.engineeringood.athena.representation.RepresentationFallbackBehavior
 import com.engineeringood.athena.representation.RepresentationId
 import com.engineeringood.athena.representation.RepresentationLabelSlot
@@ -36,7 +39,9 @@ import com.engineeringood.athena.representation.RepresentationOccurrenceRole
 import com.engineeringood.athena.representation.RepresentationPolicy
 import com.engineeringood.athena.representation.RepresentationPolicyId
 import com.engineeringood.athena.representation.RepresentationPolicyPriority
+import com.engineeringood.athena.representation.RepresentationProjectPortFact
 import com.engineeringood.athena.representation.RepresentationProvenance
+import com.engineeringood.athena.representation.RepresentationSignalPredicate
 import com.engineeringood.athena.representation.RepresentationSubjectId
 import com.engineeringood.athena.representation.RepresentationSymbolId
 import com.engineeringood.athena.representation.RepresentationSymbolKind
@@ -94,8 +99,10 @@ class PackageBackedRepresentationOccurrenceFactory(
                 definition = definition,
                 labelValues = evidence.labelBindingSummary.toLabelValues(),
                 terminalPorts = evidence.anchorMapSummary.toTerminalPorts(),
+                projectPorts = evidence.anchorMapSummary.toProjectPortFacts(evidence.semanticSubjectId),
                 priority = RepresentationPolicyPriority(100),
                 compositionIntentMembership = listOf(CompositionIntentMembershipId("package:${evidence.resolverStage}")),
+                functionSemanticId = request.functionSemanticId,
             ),
         )
         return PackageBackedRepresentationOccurrenceResult(
@@ -233,6 +240,18 @@ class PackageBackedRepresentationOccurrenceFactory(
         parsePairs()
             .map { (semanticPortId, anchorId) -> PresentationTerminalId(anchorId) to SemanticPortId(semanticPortId) }
             .toMap()
+
+    private fun List<String>.toProjectPortFacts(semanticSubjectId: String): List<RepresentationProjectPortFact> =
+        parsePairs().map { (semanticPortId, anchorId) ->
+            RepresentationProjectPortFact(
+                semanticPortId = SemanticPortId(semanticPortId),
+                role = RepresentationAnchorRole.TERMINAL,
+                direction = RepresentationDirectionPredicate.BIDIRECTIONAL,
+                signal = RepresentationSignalPredicate("package-binding"),
+                terminal = PhysicalTerminalId(anchorId),
+                provenance = RepresentationProvenance("binding-evidence:$semanticSubjectId"),
+            )
+        }
 
     private fun List<String>.parsePairs(): Map<String, String> =
         mapNotNull { summary ->

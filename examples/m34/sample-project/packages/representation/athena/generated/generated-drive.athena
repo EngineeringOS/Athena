@@ -1,0 +1,13 @@
+package athena.generated
+
+element generated_vendor_drive {
+  identity "athena.generated.vendor_drive"
+  version "1.0.0"
+
+  resource generated_vendor_drive_svg {
+    kind svg
+    path "./generated-drive.svg"
+  }
+
+  graphic svg resource generated_vendor_drive_svg
+}

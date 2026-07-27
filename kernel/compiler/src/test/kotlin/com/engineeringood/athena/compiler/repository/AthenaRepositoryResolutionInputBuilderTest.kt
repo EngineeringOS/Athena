@@ -31,8 +31,14 @@ class AthenaRepositoryResolutionInputBuilderTest {
                 """.trimIndent(),
             )
             repositoryRoot.resolve("athena.lock").writeText("# lock")
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+            repositoryRoot.resolve("src/com/engineeringood/demo").createDirectories()
+            repositoryRoot.resolve("src/com/engineeringood/demo/demo.athena").writeText(
+                """
+                    package com.engineeringood.demo
+
+                    system Demo { }
+                """.trimIndent(),
+            )
 
             val first = AthenaCompiler().buildRepositoryResolutionInput(repositoryRoot)
             val second = AthenaCompiler().buildRepositoryResolutionInput(repositoryRoot)
@@ -67,7 +73,7 @@ class AthenaRepositoryResolutionInputBuilderTest {
                     dependencies:
                       - name: Invalid Package
                         source: remote-registry
-                      - name: com.engineeringood.blank-locator
+                      - name: com.engineeringood.blanklocator
                         source: local-path
                         locator:
                       - source: local-package

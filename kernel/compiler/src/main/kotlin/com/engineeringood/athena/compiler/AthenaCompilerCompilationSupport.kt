@@ -2,11 +2,20 @@ package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContextBuilder
 import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContributionSource
+import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
+import com.engineeringood.athena.compiler.semantic.GraphPackageIdentity
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclarationIndexer
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticLayoutHintBinder
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticNamespace
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticPackage
+import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceUnit
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.layout.ViewDefinition
+import com.engineeringood.athena.language.RepresentationSourceUnit
 import com.engineeringood.athena.presentation.PresentationCompositePack
 import com.engineeringood.athena.presentation.PresentationDocument
 import com.engineeringood.athena.presentation.PresentationPrimitivePack
@@ -25,6 +34,9 @@ import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticRuleId
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
+import com.engineeringood.athena.repository.PackageIdentifier
+import java.nio.file.Files
+import java.nio.file.Path
 
 internal class AthenaCompilerCompilationSupport(
     private val lowerer: EngineeringIrLowerer,
@@ -109,6 +121,38 @@ internal class AthenaCompilerCompilationSupport(
         return activeRenderContributionsFor(viewId, rendererTarget)
     }
 
+    private fun representationSourceCompilerBoundaryFailure(
+        source: CompilerSourceDocument,
+        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
+        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
+    ): CompilerCompilationParseFailure {
+        val span = source.ast.span
+        return CompilerCompilationParseFailure(
+            diagnostics = listOf(
+                CompilerSyntaxDiagnostic(
+                    file = source.file,
+                    line = span.start.line,
+                    column = span.start.column,
+                    endLine = span.end.line,
+                    endColumn = span.end.column,
+                    message = "Standalone representation source must be compiled by AthenaRepresentationSourceCompiler.",
+                ),
+            ),
+            knowledgeContext = knowledgeContext,
+            boundaryValidation = boundaryValidation,
+            pipeline = CompilerPipelineReport(
+                passes = listOf(
+                    CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.SUCCEEDED, "representation source unit"),
+                    skippedPassRecord(LOWER_PASS, "representation source uses the Symbol compiler boundary"),
+                    skippedPassRecord(SEMANTIC_ENRICHMENT_PASS, "representation source uses the Symbol compiler boundary"),
+                    skippedPassRecord(VALIDATE_PASS, "representation source uses the Symbol compiler boundary"),
+                    skippedPassRecord(BACKEND_PREPARATION_PASS, "representation source uses the Symbol compiler boundary"),
+                    skippedPassRecord(BACKEND_EMISSION_PASS, "representation source uses the Symbol compiler boundary"),
+                ),
+            ),
+        )
+    }
+
     fun compileParsedSource(
         parseResult: CompilerParseResult,
         knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
@@ -116,6 +160,13 @@ internal class AthenaCompilerCompilationSupport(
     ): CompilerCompilationResult {
         return when (parseResult) {
             is CompilerParseSuccess -> {
+                if (parseResult.source.ast.unit is RepresentationSourceUnit) {
+                    return representationSourceCompilerBoundaryFailure(
+                        parseResult.source,
+                        knowledgeContext,
+                        boundaryValidation,
+                    )
+                }
                 val parseRecord = CompilerPassRecord(
                     pass = PARSE_PASS,
                     status = CompilerPassExecutionStatus.SUCCEEDED,
@@ -241,10 +292,19 @@ internal class AthenaCompilerCompilationSupport(
             geometries = backendPreparation.geometries,
             knowledgeContext = effectiveKnowledgeContext,
         )
-        val presentations = deriveSupportedPresentations(
+        val derivedPresentations = deriveSupportedPresentations(
             document = document,
             projections = projections,
         )
+        val professionalControlDrawing = deriveProfessionalControlDrawing(source, document)
+        val presentations = if (professionalControlDrawing == null) {
+            derivedPresentations
+        } else {
+            derivedPresentations
+                .filterNot { presentation -> presentation.view.id == professionalControlDrawing.view.id }
+                .plus(professionalControlDrawing)
+                .sortedBy { presentation -> presentation.view.id }
+        }
         val knowledgeAttributions = buildKnowledgeAttributions(effectiveKnowledgeContext)
         return CompilerCompilationSuccess(
             source = source,
@@ -362,6 +422,90 @@ internal class AthenaCompilerCompilationSupport(
             mode = CompilerIncrementalPassMode.FULL_FALLBACK,
             scopedViewIds = emptyList(),
         )
+    }
+
+    private fun deriveProfessionalControlDrawing(
+        source: CompilerSourceDocument,
+        document: EngineeringDocument,
+    ): PresentationDocument? {
+        val sourcePath = runCatching { Path.of(source.file).toAbsolutePath().normalize() }.getOrNull() ?: return null
+        if (sourcePath.fileName.toString() != "01-control-drawing.athena") return null
+        val repositoryRoot = sourcePath.findRepositoryRoot() ?: return null
+        if (!repositoryRoot.isProfessionalControlDrawingRepository()) return null
+
+        val result = AthenaProfessionalDrawingCompiler().compile(
+            AthenaProfessionalDrawingRequest(
+                repositoryRoot = repositoryRoot,
+                document = document,
+                semanticSnapshot = professionalControlDrawingSemanticSnapshot(source, repositoryRoot),
+                policy = AthenaProfessionalDrawingPolicy.m34RollingShutter(),
+            ),
+        )
+        return result.presentation
+    }
+
+    private fun professionalControlDrawingSemanticSnapshot(
+        sourceDocument: CompilerSourceDocument,
+        repositoryRoot: Path,
+    ): ProjectSemanticGraphSnapshot {
+        val packageId = PackageIdentifier("com.engineeringood.m34.professional", "1.0.0")
+        val packageKey = CanonicalSemanticIdentityBuilder.packageKey(packageId)
+        val sourceRootRelativePath = runCatching {
+            repositoryRoot.resolve("src").toAbsolutePath().normalize()
+                .relativize(Path.of(sourceDocument.file).toAbsolutePath().normalize())
+                .joinToString(separator = "/") { segment -> segment.toString() }
+        }.getOrDefault("com/engineeringood/m34/professional/01-control-drawing.athena")
+        val sourceUnitId = CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, sourceRootRelativePath)
+        val source = ProjectSemanticSourceUnit(
+            sourceUnitId = sourceUnitId,
+            packageKey = packageKey,
+            sourceRootRelativePath = sourceRootRelativePath,
+            contentIdentity = CanonicalSemanticIdentityBuilder.sourceContentIdentity(sourceUnitId, sourceDocument.file),
+            authoredDeclarations = sourceDocument.ast.declarations,
+        )
+        val snapshot = ProjectSemanticGraphSnapshot.canonical(
+            graphId = CanonicalSemanticIdentityBuilder.graphId(
+                packageKey,
+                listOf(GraphPackageIdentity(packageKey, "src", emptyList())),
+                listOf(source.contentIdentity),
+            ),
+            rootPackageId = packageKey,
+            packages = listOf(ProjectSemanticPackage(packageId, packageKey, "src", emptyList())),
+            sourceUnits = listOf(source),
+            namespaces = listOf(
+                ProjectSemanticNamespace(
+                    namespaceId = CanonicalSemanticIdentityBuilder.namespaceId(
+                        packageKey,
+                        listOf("com", "engineeringood", "m34", "professional"),
+                    ),
+                    packageKey = packageKey,
+                    qualifiedName = listOf("com", "engineeringood", "m34", "professional"),
+                    sourceUnitIds = listOf(sourceUnitId),
+                    declarationIds = emptyList(),
+                ),
+            ),
+            declarations = emptyList(),
+            bindings = emptyList(),
+            diagnostics = emptyList(),
+        )
+        return ProjectSemanticLayoutHintBinder().bind(ProjectSemanticDeclarationIndexer().index(snapshot))
+    }
+
+    private fun Path.findRepositoryRoot(): Path? {
+        var current: Path? = parent
+        while (current != null) {
+            if (Files.isRegularFile(current.resolve("athena.yaml"))) return current
+            current = current.parent
+        }
+        return null
+    }
+
+    private fun Path.isProfessionalControlDrawingRepository(): Boolean {
+        val manifest = resolve("athena.yaml")
+        if (!Files.isRegularFile(manifest)) return false
+        return runCatching { Files.readString(manifest) }
+            .getOrDefault("")
+            .contains("name: com.engineeringood.m34.professional")
     }
 
     private fun systemIdentitySummary(source: CompilerSourceDocument): String {

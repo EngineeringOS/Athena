@@ -79,7 +79,7 @@ class AthenaReuseRequestTest {
                 )
 
                 assertEquals("ready", catalog.status)
-                assertEquals("factory-line", catalog.projectName)
+                assertEquals("factoryline", catalog.projectName)
                 assertEquals("frontend -> LSP -> runtime/compiler", catalog.semanticPath)
                 assertTrue(catalog.entries.isEmpty())
                 assertTrue(catalog.diagnostics.isEmpty())
@@ -105,7 +105,6 @@ class AthenaReuseRequestTest {
     fun `semantic macro catalog request returns governed entries from runtime owned repository context`() {
         val workspace = kotlin.io.path.createTempDirectory("athena-lsp-reuse-catalog-")
         val repositoryRoot = workspace.resolve("current")
-        val alphaRoot = workspace.resolve("alpha-catalog")
         try {
             repositoryRoot.createDirectories()
             repositoryRoot.resolve("athena.yaml").writeText(
@@ -114,26 +113,12 @@ class AthenaReuseRequestTest {
                       name: com.engineeringood.root
                       version: 0.1.0
                       sourceRoot: src
-                    dependencies:
-                      - name: com.engineeringood.alpha
-                        source: local-path
-                        locator: ../alpha-catalog
                 """.trimIndent(),
             )
-            repositoryRoot.resolve("athena.lock").writeText("# lock")
-            repositoryRoot.resolve("src").createDirectories().resolve("root.athena").writeText("system Root { }")
-
-            alphaRoot.createDirectories()
-            alphaRoot.resolve("athena.yaml").writeText(
-                """
-                    primaryPackage:
-                      name: com.engineeringood.alpha
-                      version: 0.1.0
-                      sourceRoot: src
-                """.trimIndent(),
-            )
-            alphaRoot.resolve("athena.lock").writeText("# lock")
-            alphaRoot.resolve("src").createDirectories().resolve("alpha.athena").writeText("system Alpha { }")
+            repositoryRoot.resolve("src/com/engineeringood/root")
+                .createDirectories()
+                .resolve("root.athena")
+                .writeText(governedAthenaSource("system Root { }", "com.engineeringood.root"))
 
             writeSemanticMacroManifest(
                 packageRoot = repositoryRoot,
@@ -143,20 +128,18 @@ class AthenaReuseRequestTest {
                     macro.root.displayName=Root Starter
                     macro.root.summary=Root governed starter
                     macro.root.definitionPath=macros/root-starter.macro
+                    macro.rootBackup.id=macro:root-backup
+                    macro.rootBackup.displayName=Root Backup
+                    macro.rootBackup.summary=Root governed backup
+                    macro.rootBackup.definitionPath=macros/root-backup.macro
                 """.trimIndent(),
                 definitionPath = "macros/root-starter.macro",
             )
-            writeSemanticMacroManifest(
-                packageRoot = alphaRoot,
-                body = """
-                    package.format.version=1
-                    macro.alpha.id=macro:alpha-starter
-                    macro.alpha.displayName=Alpha Starter
-                    macro.alpha.summary=Alpha governed starter
-                    macro.alpha.definitionPath=macros/alpha-starter.macro
-                """.trimIndent(),
-                definitionPath = "macros/alpha-starter.macro",
-            )
+            repositoryRoot.resolve("macros/root-backup.macro")
+                .parent
+                .createDirectories()
+            repositoryRoot.resolve("macros/root-backup.macro")
+                .writeText("# semantic macro definition placeholder")
 
             AthenaCompiler().materializeRepositoryLock(repositoryRoot)
 
@@ -178,7 +161,7 @@ class AthenaReuseRequestTest {
                 assertEquals("ready", first.status)
                 assertEquals(first, second)
                 assertEquals(
-                    listOf("macro:alpha-starter", "macro:root-starter"),
+                    listOf("macro:root-backup", "macro:root-starter"),
                     first.entries.map { entry -> entry.macroId },
                 )
                 assertTrue(first.diagnostics.isEmpty())

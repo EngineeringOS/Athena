@@ -24,7 +24,7 @@ class AthenaLanguageServerTest {
         repositoryRoot.resolve("athena.yaml").writeText(
             """
                 primaryPackage:
-                  name: com.engineeringood.factory-line
+                  name: com.engineeringood.factoryline
                   version: 0.1.0
                   sourceRoot: src
             """.trimIndent(),
@@ -33,20 +33,21 @@ class AthenaLanguageServerTest {
             """
                 version: 1
                 primaryPackage:
-                  name: com.engineeringood.factory-line
+                  name: com.engineeringood.factoryline
                   version: 0.1.0
                 packages:
-                  - name: com.engineeringood.factory-line
+                  - name: com.engineeringood.factoryline
                     version: 0.1.0
                     sourceRoot: src
                     dependencies: []
             """.trimIndent(),
         )
         val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-        val sourcePath = sourceRoot.resolve("a-control.athena")
-        val openedSourcePath = sourceRoot.resolve("factory-line.athena")
-        sourcePath.writeText("system Control { }")
-        openedSourcePath.writeText("system FactoryLine { }")
+        val packageRoot = sourceRoot.resolve("com/engineeringood/factoryline").createDirectories()
+        val sourcePath = packageRoot.resolve("a-control.athena")
+        val openedSourcePath = packageRoot.resolve("factoryline.athena")
+        sourcePath.writeText(governedAthenaSource("system Control { }"))
+        openedSourcePath.writeText(governedAthenaSource("system FactoryLine { }"))
 
         val server = AthenaLanguageServer()
         try {
@@ -62,8 +63,8 @@ class AthenaLanguageServerTest {
             assertEquals(repositoryRoot.resolve("athena.lock").toAbsolutePath().normalize().toString(), transportPayload["lockPath"])
             assertEquals(sourceRoot.toAbsolutePath().normalize().toString(), transportPayload["sourceRootPath"])
             assertEquals(sourcePath.toAbsolutePath().normalize().toString(), transportPayload["sourcePath"])
-            assertEquals("factory-line", transportPayload["projectName"])
-            assertEquals("com.engineeringood.factory-line", transportPayload["primaryPackageName"])
+            assertEquals("factoryline", transportPayload["projectName"])
+            assertEquals("com.engineeringood.factoryline", transportPayload["primaryPackageName"])
             assertNotNull(result.capabilities.textDocumentSync)
 
             server.textDocumentService.didOpen(
@@ -94,7 +95,7 @@ class AthenaLanguageServerTest {
         repositoryRoot.resolve("athena.yaml").writeText(
             """
                 primaryPackage:
-                  name: com.engineeringood.factory-line
+                  name: com.engineeringood.factoryline
                   version: 0.1.0
                   sourceRoot: src
             """.trimIndent(),

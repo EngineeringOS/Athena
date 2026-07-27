@@ -1,0 +1,125 @@
+package com.engineeringood.m34.control.control
+
+symbol iec_push_button_no {
+  identity "iec.push-button.no.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 88)
+    line commonLead from (40, 0) to (40, 30) style conductor
+    line switchedLead from (40, 58) to (40, 88) style conductor
+    circle fixedContact center (40, 30) radius 3 style terminal
+    circle movingPivot center (40, 58) radius 3 style terminal
+    line movingContact from (40, 54) to (54, 34) style symbol
+    line actuatorStem from (58, 18) to (58, 34) style symbol
+    line actuatorHead from (50, 18) to (66, 18) style symbol
+    label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
+  }
+
+  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control }
+  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control }
+}
+
+element iec_push_button_no_element {
+  identity "iec.push-button.no.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 88)
+
+  child glyph { symbol "iec.push-button.no.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor common from glyph.common
+  export anchor switched from glyph.switched
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_push_button_nc {
+  identity "iec.push-button.nc.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 88)
+    line commonLead from (40, 0) to (40, 30) style conductor
+    line switchedLead from (40, 58) to (40, 88) style conductor
+    circle fixedContact center (40, 30) radius 3 style terminal
+    circle movingPivot center (40, 58) radius 3 style terminal
+    line closedContact from (40, 54) to (40, 34) style symbol
+    line actuatorStem from (58, 18) to (58, 40) style symbol
+    line actuatorHead from (50, 18) to (66, 18) style symbol
+    line ncSlash from (30, 36) to (50, 52) style reference
+    label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
+  }
+
+  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control }
+  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control }
+}
+
+element iec_push_button_nc_element {
+  identity "iec.push-button.nc.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 88)
+
+  child glyph { symbol "iec.push-button.nc.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor common from glyph.common
+  export anchor switched from glyph.switched
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_limit_switch_nc {
+  identity "iec.limit-switch.nc.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 88, 88)
+    line commonLead from (40, 0) to (40, 30) style conductor
+    line switchedLead from (40, 58) to (40, 88) style conductor
+    circle fixedContact center (40, 30) radius 3 style terminal
+    circle movingPivot center (40, 58) radius 3 style terminal
+    line closedContact from (40, 54) to (40, 34) style symbol
+    line lever from (46, 44) to (70, 24) style symbol
+    circle roller center (74, 20) radius 5 style symbol
+    line ncSlash from (30, 36) to (50, 52) style reference
+    label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
+  }
+
+  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control }
+  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control }
+}
+
+element iec_limit_switch_nc_element {
+  identity "iec.limit-switch.nc.element"
+  version "1.0.0"
+  bounds (0, 0, 88, 88)
+
+  child glyph { symbol "iec.limit-switch.nc.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor common from glyph.common
+  export anchor switched from glyph.switched
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_lamp {
+  identity "iec.lamp.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 88)
+    line signalLead from (40, 0) to (40, 20) style conductor
+    line returnLead from (40, 68) to (40, 88) style conductor
+    circle lampBody center (40, 44) radius 24 style symbol
+    line filamentA from (24, 28) to (56, 60) style symbol
+    line filamentB from (56, 28) to (24, 60) style symbol
+    label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
+  }
+
+  anchor signal { primitiveRef signalLead point (40, 0) role terminal accepts direction in accepts signal Control }
+  anchor return { primitiveRef returnLead point (40, 88) role terminal accepts direction out accepts signal Control }
+}
+
+element iec_lamp_element {
+  identity "iec.lamp.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 88)
+
+  child glyph { symbol "iec.lamp.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor signal from glyph.signal
+  export anchor return from glyph.return
+  export label deviceTag from glyph.deviceTag
+}

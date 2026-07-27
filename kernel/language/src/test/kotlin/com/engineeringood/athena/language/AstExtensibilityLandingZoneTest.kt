@@ -16,6 +16,8 @@ class AstExtensibilityLandingZoneTest {
     fun `Declaration consumers see exactly the five current sealed variants`() {
         val span = SourceSpan(SourcePosition(0, 1, 1), SourcePosition(1, 1, 2))
         val connection = ConnectionDeclaration(
+            alias = "plc_to_motor",
+            aliasSpan = span,
             from = QualifiedName(listOf("PLC1", "out"), span),
             to = QualifiedName(listOf("M1", "in"), span),
             span = span,

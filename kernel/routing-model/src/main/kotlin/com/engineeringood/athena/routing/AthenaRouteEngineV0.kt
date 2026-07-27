@@ -85,10 +85,13 @@ class AthenaRouteEngineV0 {
                 ),
             )
             .map { request -> request.toRouteFact(input) }
+        val topology = deriveRouteTopology(facts)
         return RouteFactSnapshot.canonical(
             snapshotId = input.snapshotId,
             family = "schematic",
             routeFacts = facts,
+            junctionFacts = topology.junctions,
+            crossingFacts = topology.crossings,
         )
     }
 
@@ -332,5 +335,79 @@ class AthenaRouteEngineV0 {
             "Schematic route coordinates must stay within Int sheet coordinate bounds."
         }
         return toInt()
+    }
+}
+
+private data class DerivedRouteTopology(
+    val junctions: List<RouteJunctionFact>,
+    val crossings: List<RouteCrossingFact>,
+)
+
+private fun deriveRouteTopology(routeFacts: List<RouteFact>): DerivedRouteTopology {
+    val endpointUsages = routeFacts.flatMap { route ->
+        listOf(route.source, route.target).mapNotNull { endpoint ->
+            endpoint.portSemanticId?.value?.let { semanticPortId ->
+                Triple(semanticPortId, endpoint.point, route.routeId)
+            }
+        }
+    }
+    val junctions = endpointUsages
+        .groupBy { (semanticPortId, point, _) -> semanticPortId to point }
+        .mapNotNull { (key, usages) ->
+            val routeIds = usages.map { it.third }.distinct().sortedBy(SchematicRouteId::value)
+            if (routeIds.size < 2) {
+                null
+            } else {
+                RouteJunctionFact(
+                    junctionId = "junction:${key.first}:${key.second.x}:${key.second.y}",
+                    point = key.second,
+                    routeIds = routeIds,
+                    semanticPortId = key.first,
+                )
+            }
+        }
+    val junctionKeys = junctions.flatMap { junction ->
+        junction.routeIds.flatMapIndexed { index, routeId ->
+            junction.routeIds.drop(index + 1).map { other ->
+                Triple(junction.point, routeId.value, other.value)
+            }
+        }
+    }.toSet()
+    val crossings = buildList {
+        routeFacts.sortedBy { it.routeId.value }.forEachIndexed { index, left ->
+            routeFacts.sortedBy { it.routeId.value }.drop(index + 1).forEach { right ->
+                left.segments.forEach { leftSegment ->
+                    right.segments.forEach { rightSegment ->
+                        val point = orthogonalIntersection(leftSegment, rightSegment) ?: return@forEach
+                        val routeIds = listOf(left.routeId, right.routeId).sortedBy(SchematicRouteId::value)
+                        if (Triple(point, routeIds[0].value, routeIds[1].value) !in junctionKeys) {
+                            add(
+                                RouteCrossingFact(
+                                    crossingId = "crossing:${routeIds[0].value}:${routeIds[1].value}:${point.x}:${point.y}",
+                                    point = point,
+                                    routeIds = routeIds,
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }.distinctBy { crossing -> crossing.crossingId }
+    return DerivedRouteTopology(junctions = junctions, crossings = crossings)
+}
+
+private fun orthogonalIntersection(
+    first: SchematicRouteSegment,
+    second: SchematicRouteSegment,
+): SchematicRoutePoint? {
+    if (first.orientation == second.orientation) return null
+    val horizontal = if (first.orientation == SchematicRouteSegmentOrientation.HORIZONTAL) first else second
+    val vertical = if (first.orientation == SchematicRouteSegmentOrientation.VERTICAL) first else second
+    val x = vertical.start.x
+    val y = horizontal.start.y
+    return SchematicRoutePoint(x, y).takeIf {
+        x in minOf(horizontal.start.x, horizontal.end.x)..maxOf(horizontal.start.x, horizontal.end.x) &&
+            y in minOf(vertical.start.y, vertical.end.y)..maxOf(vertical.start.y, vertical.end.y)
     }
 }

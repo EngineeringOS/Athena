@@ -94,8 +94,8 @@ class AthenaM28SampleProjectCompilerTest {
     private fun sampleProjectSources(): List<Path> {
         val repoRoot = resolveRepoRoot()
         return listOf(
-            repoRoot.resolve("examples/m28/sample-project/src/01-relationship-authoring-source.athena"),
-            repoRoot.resolve("examples/m28/sample-project/src/02-relationship-candidates.athena"),
+            repoRoot.resolve("examples/m28/sample-project/src/com/engineeringood/m28/sample/01-relationship-authoring-source.athena"),
+            repoRoot.resolve("examples/m28/sample-project/src/com/engineeringood/m28/sample/02-relationship-candidates.athena"),
         )
     }
 

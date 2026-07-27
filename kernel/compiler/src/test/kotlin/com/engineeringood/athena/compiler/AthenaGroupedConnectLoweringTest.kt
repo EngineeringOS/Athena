@@ -39,8 +39,8 @@ class AthenaGroupedConnectLoweringTest {
                 signal Digital
               }
 
-              connect MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
-              connect MainBreakerQF30.load -> ControlRelayK30.supply
+              connect feed_in MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
+              connect relay_supply MainBreakerQF30.load -> ControlRelayK30.supply
             }
             """.trimIndent()
         val groupedSource =
@@ -74,28 +74,30 @@ class AthenaGroupedConnectLoweringTest {
               }
 
               connect con_01 {
-                MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
-                MainBreakerQF30.load -> ControlRelayK30.supply
+                feed_in MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
+                relay_supply MainBreakerQF30.load -> ControlRelayK30.supply
               }
             }
             """.trimIndent()
 
         val renamedGroupSource = groupedSource.replace("connect con_01", "connect customer_readability_group")
-        val flatConnections = lowerConnections("flat-connect.athena", flatSource)
-        val groupedConnections = lowerConnections("grouped-connect.athena", groupedSource)
-        val renamedGroupConnections = lowerConnections("renamed-group-connect.athena", renamedGroupSource)
+        val directory = Files.createTempDirectory("athena-grouped-connect-")
+        val fileName = "connections.athena"
+        val flatConnections = lowerConnections(directory, fileName, flatSource)
+        val groupedConnections = lowerConnections(directory, fileName, groupedSource)
+        val renamedGroupConnections = lowerConnections(directory, fileName, renamedGroupSource)
 
         assertEquals(flatConnections, groupedConnections)
         assertEquals(groupedConnections, renamedGroupConnections)
         assertEquals(
             listOf(
                 ConnectionProof(
-                    id = "connection:MainPowerSupplyPS30.lplus->MainBreakerQF30.line",
+                    id = "connection:${directory.resolve(fileName)}:feed_in",
                     sourceId = "port:MainPowerSupplyPS30.lplus",
                     targetId = "port:MainBreakerQF30.line",
                 ),
                 ConnectionProof(
-                    id = "connection:MainBreakerQF30.load->ControlRelayK30.supply",
+                    id = "connection:${directory.resolve(fileName)}:relay_supply",
                     sourceId = "port:MainBreakerQF30.load",
                     targetId = "port:ControlRelayK30.supply",
                 ),
@@ -108,21 +110,16 @@ class AthenaGroupedConnectLoweringTest {
         }
     }
 
-    private fun lowerConnections(fileName: String, source: String): List<ConnectionProof> {
-        val directory = Files.createTempDirectory("athena-grouped-connect-")
+    private fun lowerConnections(directory: java.nio.file.Path, fileName: String, source: String): List<ConnectionProof> {
         val path = directory.resolve(fileName)
         path.writeText(source)
-        return try {
-            val result = assertIs<CompilerLoweringSuccess>(AthenaCompiler().lower(path))
-            result.document.connections.map { connection ->
-                ConnectionProof(
-                    id = connection.id.value,
-                    sourceId = checkNotNull(connection.from.resolvedIdentity).value,
-                    targetId = checkNotNull(connection.to.resolvedIdentity).value,
-                )
-            }
-        } finally {
-            directory.toFile().deleteRecursively()
+        val result = assertIs<CompilerLoweringSuccess>(AthenaCompiler().lower(path))
+        return result.document.connections.map { connection ->
+            ConnectionProof(
+                id = connection.id.value,
+                sourceId = checkNotNull(connection.from.resolvedIdentity).value,
+                targetId = checkNotNull(connection.to.resolvedIdentity).value,
+            )
         }
     }
 

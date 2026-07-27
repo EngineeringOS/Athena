@@ -255,7 +255,7 @@ class AthenaM30SampleProjectCompilerTest {
     }
 
     private fun sampleProjectSource(): Path =
-        resolveRepoRoot().resolve("examples/m30/sample-project/src/01-rolling-shutter-control-source.athena")
+        resolveRepoRoot().resolve("examples/m30/sample-project/src/com/engineeringood/m30/sample/01-rolling-shutter-control-source.athena")
 
     private fun resolveRepoRoot(): Path {
         var current = Path.of("").toAbsolutePath()

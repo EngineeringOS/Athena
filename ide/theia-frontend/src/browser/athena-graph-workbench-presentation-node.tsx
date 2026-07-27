@@ -13,7 +13,8 @@ export function AthenaGraphWorkbenchPresentationNode(
 ): React.ReactNode {
     const { node, nodeClassName, labelClassName, selected } = props;
     const occurrence = node.presentationOccurrence;
-    if (!occurrence || node.presentationParts.length === 0) {
+    const graphicOccurrence = node.presentationGraphicOccurrence;
+    if ((!occurrence && !graphicOccurrence) || node.presentationParts.length === 0) {
         return undefined;
     }
     const hasPartTextSlots = node.presentationParts.some(part => part.textSlots.some(slot => !!slot.text));
@@ -43,7 +44,7 @@ export function AthenaGraphWorkbenchPresentationNode(
                 </text>
                 : undefined)}
         </React.Fragment>)}
-        {renderOccurrenceTextSlots ? occurrence.textSlots.map(slot => slot.text
+        {renderOccurrenceTextSlots && occurrence ? occurrence.textSlots.map(slot => slot.text
             ? <text
                 key={`${node.id}:occurrence:text:${slot.slotId}`}
                 className={labelClassName}
@@ -134,6 +135,23 @@ function renderPresentationCommand(
                 style={{ stroke, strokeWidth, fill }}
                 vectorEffect='non-scaling-stroke'
             />;
+
+        case 'text':
+            if (!command.origin || !command.text) {
+                return undefined;
+            }
+            return <text
+                key={args.key}
+                className='athena-graph-workbench__node-label athena-graph-workbench__node-label--drawing-symbol'
+                data-athena-render-authority='presentation-ir'
+                x={command.origin.x}
+                y={command.origin.y}
+                textAnchor='middle'
+                dominantBaseline='central'
+                style={{ fill: resolveToken(args.tokenDefaults, args.tokenOverrides, 'label', stroke) }}
+            >
+                {command.text}
+            </text>;
 
         default:
             return undefined;

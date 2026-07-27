@@ -18,12 +18,16 @@ import {
     type AthenaGraphWorkbenchEdge,
     type AthenaGraphWorkbenchNode,
     type AthenaGraphWorkbenchSheetViewSelector,
+    type AthenaGraphDrawingLayerItem,
     type AthenaGraphViewportSize,
     type AthenaGraphViewportTransform,
     buildAthenaGraphDocumentReferenceInspection,
     buildAthenaGraphRepresentationInspection,
     resolveAthenaGraphReferenceMarkerNavigation,
+    resolveAthenaGraphPrimaryProductSurface,
+    requiresAthenaControlDrawingProductActivation,
     resolveVisibleAthenaGraphSheetViewSelector,
+    buildAthenaGraphDrawingLayerModel,
     buildAthenaGraphRouteInspection,
     buildAthenaGraphWorkbenchModel,
     clampAthenaGraphZoom,
@@ -111,6 +115,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected loading = false;
     protected switchingView = false;
     protected refreshHandle: number | undefined;
+    protected diagramRequestToken = 0;
     protected viewportElement: HTMLDivElement | undefined;
     protected viewportObserver: ResizeObserver | undefined;
     protected viewportSize: AthenaGraphViewportSize = { width: 0, height: 0 };
@@ -139,7 +144,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     protected createEntityPreviewRequestToken = 0;
     protected revealingSelectionSemanticId: string | undefined;
     protected infoPopoverOpen = false;
-    protected lastDocumentSheetViewSelector: AthenaGraphWorkbenchSheetViewSelector | undefined;
 
     @postConstruct()
     protected init(): void {
@@ -166,6 +170,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             if (this.refreshHandle !== undefined) {
                 window.clearTimeout(this.refreshHandle);
             }
+            this.diagramRequestToken++;
             this.viewportObserver?.disconnect();
             this.viewportObserver = undefined;
             this.viewportElement = undefined;
@@ -228,6 +233,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
     }
 
     protected async refreshDiagram(): Promise<void> {
+        const requestToken = ++this.diagramRequestToken;
         const sessionState = this.repositorySessionService.state;
         const currentRepositoryRoot = sessionState.repositoryRoot;
 
@@ -236,7 +242,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.errorMessage = undefined;
             this.diagram = undefined;
             this.panState = undefined;
-            this.lastDocumentSheetViewSelector = undefined;
             this.update();
             return;
         }
@@ -247,12 +252,22 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
         try {
             const currentEditor = this.isAthenaEditor(this.editorManager.currentEditor) ? this.editorManager.currentEditor : undefined;
-            const [diagram, componentKnowledge, semanticInspection] = await Promise.all([
+            const [requestedDiagram, componentKnowledge, semanticInspection] = await Promise.all([
                 this.graphAdapterService.requestDiagram(),
                 this.lspEditorBridgeService.requestComponentKnowledgeSession(),
                 currentEditor ? this.lspEditorBridgeService.requestSemanticInspection(currentEditor) : Promise.resolve(undefined),
             ]);
-            if (this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
+            if (requestToken !== this.diagramRequestToken || this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
+                return;
+            }
+            let diagram = requestedDiagram;
+            if (diagram && requiresAthenaControlDrawingProductActivation(diagram.supportedViews, diagram.activeViewId)) {
+                diagram = await this.graphAdapterService.switchActiveView('schematic');
+                if (!diagram) {
+                    throw new Error('Athena did not return the Control Drawing product projection.');
+                }
+            }
+            if (requestToken !== this.diagramRequestToken || this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
                 return;
             }
             const nextDiagramViewportKey = this.diagramViewportKey(diagram);
@@ -283,7 +298,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 this.keepSelectionVisible(diagram);
             }
         } catch (error) {
-            if (this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
+            if (requestToken !== this.diagramRequestToken || this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
                 return;
             }
             this.errorMessage = error instanceof Error ? error.message : String(error);
@@ -291,11 +306,15 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             this.componentKnowledge = undefined;
             this.semanticInspection = undefined;
         } finally {
-            if (this.repositorySessionService.state.repositoryRoot === currentRepositoryRoot) {
+            if (requestToken === this.diagramRequestToken && this.repositorySessionService.state.repositoryRoot === currentRepositoryRoot) {
                 this.loading = false;
                 this.update();
             }
         }
+    }
+
+    public async refreshProjection(): Promise<void> {
+        await this.refreshDiagram();
     }
 
     protected render(): React.ReactNode {
@@ -359,7 +378,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const renderViewportTransform = this.resolveRenderViewportTransform(model);
         const zoomPercent = Math.round(renderViewportTransform.zoom * 100);
         const stageStyle = this.buildStageStyle(model);
-        this.rememberDocumentSheetViewSelector(model);
         const projectionInfoRows = this.buildProjectionInfoRows(
             model,
             selectedSemantic,
@@ -417,6 +435,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                                         role='img'
                                         aria-label='Athena graphical projection'
                                     >
+                                        {this.renderDrawingCompositionLayer(model)}
                                         <AthenaGraphWorkbenchEdgeLayer
                                             edges={model.edges}
                                             selectedSemanticId={selectedSemanticId}
@@ -556,8 +575,10 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         connectPortsSupported: boolean,
         projectionInfoRows: Array<{ key: string; label: string; value: React.ReactNode; code?: boolean }>,
     ): React.ReactNode {
-        const visibleProjectionViews = this.resolveVisibleProjectionViews(model);
-        const compatibilityProjectionViewCount = Math.max(0, model.supportedViews.length - visibleProjectionViews.length);
+        const primarySurface = resolveAthenaGraphPrimaryProductSurface(model.supportedViews);
+        const visibleProductSurfaceCount = primarySurface ? 1 : 0;
+        const compatibilityProjectionViewCount = Math.max(0, model.supportedViews.length - visibleProductSurfaceCount);
+        const activeProjectionViewId = model.supportedViews.find(view => view.isActive)?.viewId ?? '';
         return <div className='athena-graph-workbench__overlay athena-graph-workbench__overlay--top'>
             <div className='athena-graph-workbench__floating-bar'>
                 <div className='athena-graph-workbench__identity'>
@@ -570,21 +591,23 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     {this.renderCreateEntityActionButton()}
                     <div
                         className='athena-graph-workbench__view-switches'
-                        data-athena-visible-projection-view-count={visibleProjectionViews.length}
+                        data-athena-visible-projection-view-count={visibleProductSurfaceCount}
                         data-athena-compatibility-projection-view-count={compatibilityProjectionViewCount}
+                        data-athena-active-projection-view-id={activeProjectionViewId}
                     >
-                        {visibleProjectionViews.map(view => <button
-                            key={view.viewId}
-                            className={`athena-graph-workbench__tool-button athena-graph-workbench__tool-button--view ${view.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`}
-                            title={this.viewAriaLabel(view)}
-                            aria-label={this.viewAriaLabel(view)}
-                            data-athena-projection-view-id={view.viewId}
+                        {primarySurface ? <button
+                            className={`athena-graph-workbench__tool-button athena-graph-workbench__tool-button--primary-surface ${primarySurface.isActive ? 'athena-graph-workbench__tool-button--active' : ''}`}
+                            title={primarySurface.displayName}
+                            aria-label={primarySurface.displayName}
+                            data-athena-product-surface-id={primarySurface.surfaceId}
+                            data-athena-projection-view-id={primarySurface.backingViewId}
                             type='button'
-                            disabled={view.isActive || this.switchingView}
-                            onClick={() => void this.switchActiveView(view.viewId)}
+                            disabled={primarySurface.isActive || this.switchingView}
+                            onClick={() => void this.switchActiveView(primarySurface.backingViewId)}
                         >
-                            <span className={`codicon ${this.viewIconClass(view)}`} />
-                        </button>)}
+                            <span className='codicon codicon-type-hierarchy' />
+                            <span className='athena-graph-workbench__tool-label'>{primarySurface.displayName}</span>
+                        </button> : undefined}
                     </div>
                     {connectPortsSupported
                         ? <button
@@ -643,6 +666,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
     protected renderCreateEntityActionButton(): React.ReactNode {
         const availableItems = this.resolveCreateEntityItems();
+        if (!this.componentKnowledge?.systemSemanticId || availableItems.length === 0) {
+            return undefined;
+        }
         const disabled = this.createEntityPreviewing ||
             this.createEntityApplyingDecision;
         return <button
@@ -659,24 +685,12 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         </button>;
     }
 
-    protected resolveVisibleProjectionViews(
-        model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
-    ): AthenaGraphWorkbenchModel['supportedViews'] {
-        const cabinetView = model.supportedViews.find(view => view.viewId === 'cabinet');
-        if (cabinetView) {
-            return [cabinetView];
-        }
-        const activeView = model.supportedViews.find(view => view.isActive);
-        return activeView ? [activeView] : model.supportedViews.slice(0, 1);
-    }
-
     protected renderCreateEntityControls(): React.ReactNode {
         const items = this.resolveCreateEntityItems();
         const draft = this.resolveCreateEntityDraft(items);
         const selectedItem = this.resolveSelectedCreateEntityItem(items, draft);
         const preview = this.createEntityPreview;
         const evidence = preview?.entityCreationEvidence;
-        const createEntityCapabilityReady = !!this.componentKnowledge?.systemSemanticId && items.length > 0;
         const canPreview = !!selectedItem?.conceptTemplateId && !!this.componentKnowledge?.systemSemanticId &&
             !this.createEntityPreviewing &&
             !this.createEntityApplyingDecision;
@@ -702,9 +716,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     <span className='codicon codicon-close' />
                 </button>
             </div>
-            {!createEntityCapabilityReady ? <p className='athena-graph-workbench__create-entity-message'>
-                Create Device is a placeholder until governed concept evidence is available.
-            </p> : undefined}
             <div className='athena-graph-workbench__create-entity-grid'>
                 <label>
                     <span>Concept</span>
@@ -849,13 +860,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         </label>;
     }
 
-    protected rememberDocumentSheetViewSelector(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): void {
-        const selector = resolveVisibleAthenaGraphSheetViewSelector(model, undefined);
-        if (selector) {
-            this.lastDocumentSheetViewSelector = selector;
-        }
-    }
-
     protected resolveVisibleSheetViewSelector(
         model: ReturnType<typeof buildAthenaGraphWorkbenchModel>,
     ): AthenaGraphWorkbenchSheetViewSelector | undefined {
@@ -863,7 +867,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         if (activeViewId !== 'documentation') {
             return undefined;
         }
-        return resolveVisibleAthenaGraphSheetViewSelector(model, this.lastDocumentSheetViewSelector);
+        return resolveVisibleAthenaGraphSheetViewSelector(model);
     }
 
     protected renderReferenceMarkerControls(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
@@ -1023,6 +1027,72 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         </>;
     }
 
+    protected renderDrawingCompositionLayer(model: ReturnType<typeof buildAthenaGraphWorkbenchModel>): React.ReactNode {
+        const layer = buildAthenaGraphDrawingLayerModel(model.drawingComposition);
+        if (layer.items.length === 0) {
+            return undefined;
+        }
+        return <g className='athena-graph-workbench__drawing-layer' data-athena-drawing-layer='true'>
+            {layer.items.map(item => this.renderDrawingLayerItem(item))}
+        </g>;
+    }
+
+    protected renderDrawingLayerItem(item: AthenaGraphDrawingLayerItem): React.ReactNode {
+        const commonProps = {
+            key: item.id,
+            'data-athena-drawing-layer-kind': item.kind,
+            'data-athena-drawing-layer-authority': item.authority,
+            'data-athena-drawing-layer-id': item.id,
+        };
+        if (item.kind === 'rail' && item.start && item.end) {
+            return <line
+                {...commonProps}
+                className='athena-graph-workbench__drawing-rail'
+                x1={item.start.x}
+                y1={item.start.y}
+                x2={item.end.x}
+                y2={item.end.y}
+                vectorEffect='non-scaling-stroke'
+            />;
+        }
+        if (!item.bounds) {
+            return undefined;
+        }
+        if (item.kind === 'title-field') {
+            return <text
+                {...commonProps}
+                className='athena-graph-workbench__drawing-title-field'
+                x={item.bounds.x + 12}
+                y={item.bounds.y + 24}
+            >
+                {item.label}
+            </text>;
+        }
+        if (item.kind === 'reference-marker') {
+            const midY = item.bounds.y + item.bounds.height / 2;
+            return <g
+                {...commonProps}
+                className='athena-graph-workbench__drawing-reference-marker'
+                data-athena-drawing-reference-identity={item.identity}
+            >
+                <path
+                    d={`M ${item.bounds.x} ${item.bounds.y} L ${item.bounds.x + item.bounds.width} ${midY} L ${item.bounds.x} ${item.bounds.y + item.bounds.height} Z`}
+                    vectorEffect='non-scaling-stroke'
+                />
+                <text x={item.bounds.x - 6} y={midY + 4}>{item.label}</text>
+            </g>;
+        }
+        return <rect
+            {...commonProps}
+            className={`athena-graph-workbench__drawing-${item.kind}`}
+            x={item.bounds.x}
+            y={item.bounds.y}
+            width={item.bounds.width}
+            height={item.bounds.height}
+            vectorEffect='non-scaling-stroke'
+        />;
+    }
+
     protected renderGraphNode(
         node: AthenaGraphWorkbenchNode,
         selectedSemanticId: string | undefined,
@@ -1052,6 +1122,15 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             data-athena-graph-interactive='true'
             data-athena-representation-fact={node.presentationRepresentation ? 'true' : undefined}
             data-athena-representation-id={node.presentationRepresentation?.representationId}
+            data-athena-graphic-occurrence={node.presentationGraphicOccurrence ? 'true' : undefined}
+            data-athena-graphic-occurrence-id={node.presentationGraphicOccurrence?.occurrenceId}
+            data-athena-graphic-definition-id={node.presentationGraphicOccurrence?.definitionId}
+            data-athena-graphic-package-id={node.presentationGraphicOccurrence?.packageId}
+            data-athena-graphic-binding-rule-id={node.presentationGraphicOccurrence?.bindingRuleId}
+            data-athena-graphic-physical-component-id={node.presentationGraphicOccurrence?.physicalComponentId}
+            data-athena-graphic-authority={node.presentationGraphicOccurrence?.authorities?.graphic}
+            data-athena-placement-authority={node.presentationGraphicOccurrence?.authorities?.placement}
+            data-athena-material-authority={node.presentationGraphicOccurrence?.authorities?.material}
             data-athena-engineering-package-id={node.presentationRepresentation?.packageEvidence?.engineeringPackageId}
             data-athena-presentation-profile-id={node.presentationRepresentation?.packageEvidence?.presentationProfileId}
             data-athena-binding-manifest-id={node.presentationRepresentation?.packageEvidence?.bindingManifestId}
@@ -1062,7 +1141,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             data-athena-representation-label-binding={node.presentationRepresentation?.packageEvidence?.labelBindingSummary?.join(';')}
             data-athena-semantic-id={node.semanticId}
             data-athena-relationship-candidate-reason={relationshipCandidateReason}
-            data-athena-render-fallback={node.presentationRepresentation ? 'false' : undefined}
+            data-athena-render-fallback={node.presentationRepresentation || node.presentationGraphicOccurrence ? 'false' : undefined}
             role='button'
             tabIndex={0}
             transform={node.kind === 'component' ? this.graphNodeTransform(node.semanticId) : undefined}
@@ -1092,7 +1171,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         labelClassName: string,
         selected: boolean,
     ): React.ReactNode {
-        if (node.presentationParts.length > 0 && node.presentationOccurrence) {
+        if (node.presentationParts.length > 0 && (node.presentationOccurrence || node.presentationGraphicOccurrence)) {
             return <>
                 <AthenaGraphWorkbenchPresentationNode
                     node={node}
@@ -1273,29 +1352,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             default:
                 return { x: 0, y: 0 };
         }
-    }
-
-    protected abbreviateViewLabel(displayName: string): string {
-        const words = displayName.split(/[\s_-]+/).filter(Boolean);
-        if (words.length >= 2) {
-            return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase();
-        }
-        return displayName.slice(0, 2).toUpperCase();
-    }
-
-    protected viewIconClass(view: { viewId: string; familyId?: string }): string {
-        const normalizedFamilyId = view.familyId?.toLowerCase();
-        if (normalizedFamilyId?.endsWith('/cabinet')) {
-            return 'codicon-package';
-        }
-        if (normalizedFamilyId?.endsWith('/wiring')) {
-            return 'codicon-git-commit';
-        }
-        return 'codicon-symbol-misc';
-    }
-
-    protected viewAriaLabel(view: { displayName: string; description: string }): string {
-        return view.description ? `${view.displayName}: ${view.description}` : view.displayName;
     }
 
     protected connectPortsButtonTitle(): string {
@@ -2503,6 +2559,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             return false;
         }
 
+        this.diagramRequestToken++;
+        this.loading = false;
         this.switchingView = true;
         this.errorMessage = undefined;
         this.lastGraphCommandIntent = undefined;

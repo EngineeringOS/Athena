@@ -28,7 +28,7 @@ function methodBody(source, methodName) {
     return source.slice(start, nextMethod === -1 ? source.length : nextMethod);
 }
 
-test('Graph View add button opens a governed create panel without requiring current editor focus', () => {
+test('Graph View add button opens only for governed capability and does not require editor focus', () => {
     const actionButtonBody = methodBody(graphWorkbenchSource, 'renderCreateEntityActionButton');
     const controlsBody = methodBody(graphWorkbenchSource, 'renderCreateEntityControls');
     const renderBody = methodBody(graphWorkbenchSource, 'render');
@@ -39,8 +39,8 @@ test('Graph View add button opens a governed create panel without requiring curr
     assert.match(renderBody, /ReactDOM\.createPortal\(this\.renderCreateEntityControls\(\), document\.body\)/);
     assert.doesNotMatch(stageChromeBody, /this\.createEntityControlsOpen \? this\.renderCreateEntityControls\(\) : undefined/);
     assert.doesNotMatch(actionButtonBody, /!this\.isAthenaEditor\(this\.editorManager\.currentEditor\)/);
-    assert.doesNotMatch(actionButtonBody, /availableItems\.length === 0/);
-    assert.doesNotMatch(actionButtonBody, /!this\.componentKnowledge\?\.systemSemanticId/);
+    assert.match(actionButtonBody, /availableItems\.length === 0/);
+    assert.match(actionButtonBody, /!this\.componentKnowledge\?\.systemSemanticId/);
     assert.doesNotMatch(controlsBody, /!this\.isAthenaEditor\(this\.editorManager\.currentEditor\)/);
     assert.doesNotMatch(controlsBody, /Open an Athena source editor/);
 });

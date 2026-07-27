@@ -215,8 +215,8 @@ private fun writeAiReasoningSemanticScmFixture(
         """.trimIndent(),
     )
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve("demo.athena").writeText(sourceText)
+    val sourceRoot = repositoryRoot.resolve("src/com/engineeringood/demo").createDirectories()
+    sourceRoot.resolve("demo.athena").writeText(governedAthenaSource(sourceText, "com.engineeringood.demo"))
 }
 
 private val aiReasoningSemanticScmKnowledgeBaselineSource = """

@@ -284,6 +284,7 @@ enum class AuthoredLayoutIntentRelation {
     BELOW,
     ALIGNED_WITH,
     GROUPED_WITH,
+    AT_GRID,
 }
 
 /**
@@ -313,7 +314,25 @@ data class AuthoredLayoutIntentStatement(
     val axis: AuthoredLayoutAxis? = null,
     val priority: AuthoredLayoutIntentPriority = AuthoredLayoutIntentPriority.PREFERENCE,
     val sourceSpan: LayoutSourceSpan,
+    val gridPosition: DrawingGridPosition? = null,
+    val orientation: LayoutOrientation? = null,
 )
+
+/** Positive, one-based drawing-grid address authored independently from renderer pixels. */
+data class DrawingGridPosition(
+    val column: Int,
+    val row: Int,
+) {
+    init {
+        require(column > 0) { "Drawing grid column must be positive and one-based." }
+        require(row > 0) { "Drawing grid row must be positive and one-based." }
+    }
+}
+
+enum class LayoutOrientation {
+    HORIZONTAL,
+    VERTICAL,
+}
 
 /**
  * Relative orientation vocabulary used by layout intent before geometry exists.
@@ -388,6 +407,7 @@ data class LayoutConstraintSubject(
     val sheetId: String? = null,
     val viewId: String? = null,
     val sourceSpan: LayoutSourceSpan? = null,
+    val functionId: StableSemanticIdentity? = null,
 )
 
 /**
@@ -401,6 +421,7 @@ enum class LayoutConstraintKind {
     PREFERRED_ZONE,
     PRESERVE_ORDER,
     ROUTE_LANE_PREFERENCE,
+    AT_GRID,
 }
 
 /**
@@ -429,6 +450,8 @@ data class LayoutConstraint(
     val routeLanePreference: SchematicRouteLanePreference? = null,
     val authoredPriority: AuthoredLayoutIntentPriority = AuthoredLayoutIntentPriority.PREFERENCE,
     val snapshotId: LayoutSnapshotId? = null,
+    val gridPosition: DrawingGridPosition? = null,
+    val orientation: LayoutOrientation? = null,
 ) {
     internal fun stableKey(): String = listOf(
         kind.ordinal.toString().padStart(2, '0'),
@@ -438,6 +461,8 @@ data class LayoutConstraint(
         axis?.name.orEmpty(),
         zone?.name.orEmpty(),
         routeLanePreference?.name.orEmpty(),
+        gridPosition?.let { position -> "${position.column},${position.row}" }.orEmpty(),
+        orientation?.name.orEmpty(),
         authoredPriority.sortRank.toString().padStart(2, '0'),
         orderedSubjects.joinToString(separator = ",") { item -> item.intentId.value },
     ).joinToString(separator = "|")
@@ -490,6 +515,20 @@ data class LayoutConstraint(
             kind = LayoutConstraintKind.GROUPED_WITH,
             subject = subject,
             target = target,
+        )
+
+        fun atGrid(
+            constraintId: LayoutConstraintId,
+            subject: LayoutConstraintSubject,
+            position: DrawingGridPosition,
+            orientation: LayoutOrientation,
+        ): LayoutConstraint = LayoutConstraint(
+            constraintId = constraintId,
+            kind = LayoutConstraintKind.AT_GRID,
+            subject = subject,
+            gridPosition = position,
+            orientation = orientation,
+            authoredPriority = AuthoredLayoutIntentPriority.HARD,
         )
 
         fun preferredZone(

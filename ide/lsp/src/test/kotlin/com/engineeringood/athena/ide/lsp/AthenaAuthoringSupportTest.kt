@@ -7,6 +7,7 @@ import org.eclipse.lsp4j.DocumentSymbolParams
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.ReferenceContext
 import org.eclipse.lsp4j.ReferenceParams
+import org.eclipse.lsp4j.SemanticTokensParams
 import org.eclipse.lsp4j.SymbolKind
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent
 import org.eclipse.lsp4j.TextDocumentIdentifier
@@ -57,7 +58,7 @@ class AthenaAuthoringSupportTest {
               connect PLC1.out -> PLC1.out
             }
         """.trimIndent()
-        sourcePath.writeText(validSourceText)
+        sourcePath.writeText(governedAthenaSource(validSourceText))
 
         val server = AthenaLanguageServer()
         try {
@@ -144,7 +145,7 @@ class AthenaAuthoringSupportTest {
               }
             }
         """.trimIndent()
-        sourcePath.writeText(sourceText)
+        sourcePath.writeText(governedAthenaSource(sourceText))
 
         val server = AthenaLanguageServer()
         try {
@@ -218,7 +219,7 @@ class AthenaAuthoringSupportTest {
               }
             }
         """.trimIndent()
-        sourcePath.writeText(sourceText)
+        sourcePath.writeText(governedAthenaSource(sourceText))
 
         val server = AthenaLanguageServer()
         try {
@@ -257,5 +258,129 @@ class AthenaAuthoringSupportTest {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
         }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `document symbols and definitions expose nested function and fixed placement subjects`() {
+        val repository = createGovernedTestRepository("athena-lsp-function-placement-")
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+        val sourceText = """
+            system FunctionPlacement {
+              device KM1 {
+                type Contactor
+                port A1 {
+                  direction in
+                  signal Control
+                }
+                port A2 {
+                  direction out
+                  signal Control
+                }
+                function coil {
+                  role coil
+                  ports (A1, A2)
+                }
+              }
+              layout schematic {
+                place KM1.coil at (7, 4) orientation vertical
+              }
+            }
+        """.trimIndent()
+        sourcePath.writeText(governedAthenaSource(sourceText))
+
+        val server = AthenaLanguageServer()
+        try {
+            server.initialize(org.eclipse.lsp4j.InitializeParams().apply {
+                rootUri = repositoryRoot.toUri().toString()
+            }).get()
+            val documentUri = sourcePath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(TextDocumentItem(documentUri, "athena", 1, sourceText)),
+            )
+
+            val symbols = server.textDocumentService.documentSymbol(
+                DocumentSymbolParams(TextDocumentIdentifier(documentUri)),
+            ).get()
+            val system = symbols.single().right
+            val device = system.children.single { child -> child.name == "KM1" }
+            val function = device.children.single { child -> child.name == "coil" }
+            val layout = system.children.single { child -> child.name == "schematic" }
+
+            assertEquals(SymbolKind.Function, function.kind)
+            assertEquals("engineering function: coil", function.detail)
+            assertEquals(listOf("role", "ports"), function.children.map { child -> child.name })
+            assertEquals("place KM1.coil at (7, 4) orientation vertical", layout.children.single().name)
+
+            val functionBodyCompletions = server.textDocumentService.completion(
+                CompletionParams().apply {
+                    textDocument = TextDocumentIdentifier(documentUri)
+                    position = Position(11, 4)
+                },
+            ).get().right.items.map { item -> item.label }
+            assertTrue(functionBodyCompletions.containsAll(listOf("role", "ports")))
+
+            val orientationCompletions = server.textDocumentService.completion(
+                CompletionParams().apply {
+                    textDocument = TextDocumentIdentifier(documentUri)
+                    position = sourceText.positionOf("vertical", occurrence = 0)
+                },
+            ).get().right.items.map { item -> item.label }
+            assertTrue(orientationCompletions.containsAll(listOf("horizontal", "vertical")))
+
+            val semanticTokens = server.textDocumentService.semanticTokensFull(
+                SemanticTokensParams(TextDocumentIdentifier(documentUri)),
+            ).get()
+            val functionTokens = sourceText.semanticTokenTexts(
+                encodedTokens = semanticTokens.data,
+                tokenType = athenaSemanticTokenTypes.indexOf("athenaFunctionKeyword"),
+            )
+            assertTrue(
+                functionTokens.containsAll(listOf("function", "role", "ports")),
+                functionTokens.toString(),
+            )
+            val layoutTokens = sourceText.semanticTokenTexts(
+                encodedTokens = semanticTokens.data,
+                tokenType = athenaSemanticTokenTypes.indexOf("athenaLayoutKeyword"),
+            )
+            assertTrue(
+                layoutTokens.containsAll(listOf("place", "at", "orientation", "vertical")),
+                layoutTokens.toString(),
+            )
+
+            val functionReference = sourceText.positionOf("KM1.coil", occurrence = 0)
+            val definition = server.textDocumentService.definition(
+                DefinitionParams().apply {
+                    textDocument = TextDocumentIdentifier(documentUri)
+                    position = functionReference
+                },
+            ).get()
+            assertEquals(sourceText.positionOf("coil", occurrence = 0).line, definition.left.single().range.start.line)
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+}
+
+private fun String.positionOf(needle: String, occurrence: Int): Position {
+    var offset = -1
+    repeat(occurrence + 1) {
+        offset = indexOf(needle, offset + 1)
+        require(offset >= 0) { "Missing `$needle` occurrence $occurrence" }
+    }
+    val prefix = substring(0, offset)
+    return Position(prefix.count { character -> character == '\n' }, offset - (prefix.lastIndexOf('\n') + 1))
+}
+
+private fun String.semanticTokenTexts(encodedTokens: List<Int>, tokenType: Int): List<String> {
+    val lines = lines()
+    var line = 0
+    var start = 0
+    return encodedTokens.chunked(5).mapNotNull { token ->
+        line += token[0]
+        start = if (token[0] == 0) start + token[1] else token[1]
+        if (token[3] == tokenType) lines[line].substring(start, start + token[2]) else null
     }
 }

@@ -88,9 +88,9 @@ class AthenaM24SampleProjectCompilerTest {
     private fun sampleProjectSources(): List<Path> {
         val repoRoot = resolveRepoRoot()
         return listOf(
-            repoRoot.resolve("examples/m24/sample-project/src/01-control-route.athena"),
-            repoRoot.resolve("examples/m24/sample-project/src/02-terminal-strip-routes.athena"),
-            repoRoot.resolve("examples/m24/sample-project/src/03-power-protection-load.athena"),
+            repoRoot.resolve("examples/m24/sample-project/src/com/engineeringood/m24/sample/01-control-route.athena"),
+            repoRoot.resolve("examples/m24/sample-project/src/com/engineeringood/m24/sample/02-terminal-strip-routes.athena"),
+            repoRoot.resolve("examples/m24/sample-project/src/com/engineeringood/m24/sample/03-power-protection-load.athena"),
         )
     }
 

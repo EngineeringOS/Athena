@@ -145,11 +145,45 @@ data class RouteBundleFact(
     }
 }
 
+/** Explicit electrical join between two or more routed semantic connections. */
+data class RouteJunctionFact(
+    val junctionId: String,
+    val point: SchematicRoutePoint,
+    val routeIds: List<SchematicRouteId>,
+    val semanticPortId: String,
+) {
+    init {
+        require(junctionId.isNotBlank()) { "Route junction id must not be blank." }
+        require(routeIds.size >= 2 && routeIds.distinct().size == routeIds.size) {
+            "Route junctions require at least two distinct route ids."
+        }
+        require(semanticPortId.isNotBlank()) { "Route junction semantic port id must not be blank." }
+    }
+}
+
+/** Geometric intersection between routes that does not imply electrical connectivity. */
+data class RouteCrossingFact(
+    val crossingId: String,
+    val point: SchematicRoutePoint,
+    val routeIds: List<SchematicRouteId>,
+    val joined: Boolean = false,
+) {
+    init {
+        require(crossingId.isNotBlank()) { "Route crossing id must not be blank." }
+        require(routeIds.size == 2 && routeIds.distinct().size == routeIds.size) {
+            "Route crossings require exactly two distinct route ids."
+        }
+        require(!joined) { "Electrically joined intersections must be represented as route junction facts." }
+    }
+}
+
 /** Immutable route fact snapshot with deterministic fact ordering. */
 data class RouteFactSnapshot(
     val snapshotId: LayoutSnapshotId,
     val family: String,
     val routeFacts: List<RouteFact>,
+    val junctionFacts: List<RouteJunctionFact> = emptyList(),
+    val crossingFacts: List<RouteCrossingFact> = emptyList(),
 ) {
     init {
         require(family.isNotBlank()) { "Route fact snapshot family must not be blank." }
@@ -163,10 +197,18 @@ data class RouteFactSnapshot(
             snapshotId: LayoutSnapshotId,
             family: String,
             routeFacts: List<RouteFact>,
+            junctionFacts: List<RouteJunctionFact> = emptyList(),
+            crossingFacts: List<RouteCrossingFact> = emptyList(),
         ): RouteFactSnapshot = RouteFactSnapshot(
             snapshotId = snapshotId,
             family = family,
             routeFacts = routeFacts.sortedBy(RouteFact::stableKey),
+            junctionFacts = junctionFacts.sortedWith(
+                compareBy<RouteJunctionFact>({ it.point.y }, { it.point.x }, { it.junctionId }),
+            ),
+            crossingFacts = crossingFacts.sortedWith(
+                compareBy<RouteCrossingFact>({ it.point.y }, { it.point.x }, { it.crossingId }),
+            ),
         )
     }
 }

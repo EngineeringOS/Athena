@@ -82,12 +82,39 @@ data class RepositoryManifest(
  * The lock records the reproducibility-critical package resolution result in a stable typed form.
  */
 data class RepositoryLock(
-    val version: Int = 1,
+    val version: Int = 2,
+    val schema: String = "repository-lock-v2",
+    val compilerSchema: String = "athena-m35-lock-v2",
+    val validatedLockStateDigest: String = "lock-state/v1:unlocked",
     val primaryPackage: PackageIdentifier,
     val packages: List<ResolvedPackage> = emptyList(),
+    val packageSnapshots: List<RepositoryLockedPackage> = emptyList(),
 ) : RepositoryArtifact {
     override val artifactRole: RepositoryArtifactRole = RepositoryArtifactRole.DERIVED_STATE
 }
+
+/** One package's immutable admitted snapshot evidence in `RepositoryLock` v2. */
+data class RepositoryLockedPackage(
+    val packageId: PackageIdentifier,
+    val sourceRoot: String,
+    val snapshotDigest: String,
+    val sourceHashes: List<RepositorySourceHash> = emptyList(),
+    val resourceHashes: List<RepositoryResourceHash> = emptyList(),
+    val directDependencies: List<PackageIdentifier> = emptyList(),
+)
+
+/** Hash evidence for one admitted governed Athena source file. */
+data class RepositorySourceHash(
+    val path: String,
+    val hash: String,
+)
+
+/** Hash evidence for one admitted package-local resource. Story 1.2 keeps this empty. */
+data class RepositoryResourceHash(
+    val key: String,
+    val path: String,
+    val hash: String,
+)
 
 /**
  * Typed repository aggregate used by compiler, runtime, and IDE adapters when they need one
@@ -153,6 +180,11 @@ data class RepositoryDiagnostic(
     val code: String,
     val message: String,
     val severity: RepositoryDiagnosticSeverity = RepositoryDiagnosticSeverity.ERROR,
+    val sourcePath: String? = null,
+    val startLine: Int? = null,
+    val startColumn: Int? = null,
+    val endLine: Int? = null,
+    val endColumn: Int? = null,
 )
 
 /**

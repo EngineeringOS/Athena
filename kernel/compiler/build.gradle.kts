@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":kernel:physical-model"))
     implementation(project(":kernel:package-model"))
     implementation(project(":kernel:document-projection-model"))
+    implementation(project(":kernel:drawing-composition"))
     implementation(project(":kernel:presentation-model"))
     implementation(project(":kernel:presentation-policy-model"))
     implementation(project(":kernel:package-runtime"))

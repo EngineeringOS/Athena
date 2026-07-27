@@ -73,6 +73,16 @@ sealed interface PresentationPrimitive {
             require(radius.value > 0) { "Circle primitive radius must be positive." }
         }
     }
+
+    data class Text(
+        override val primitiveId: PresentationPrimitiveId,
+        val origin: PresentationPoint,
+        val text: String,
+    ) : PresentationPrimitive {
+        init {
+            require(text.isNotBlank()) { "Text primitive content must not be blank." }
+        }
+    }
 }
 
 data class PresentationTerminalPoint(
@@ -97,6 +107,11 @@ data class PresentationLabelAnchor(
     val point: PresentationPoint,
 )
 
+enum class PresentationAnatomyAuthority {
+    LEGACY_VISUAL,
+    COMPATIBILITY_SHELL,
+}
+
 data class PresentationAnatomy(
     val representationId: RepresentationId,
     val context: RepresentationContext,
@@ -105,9 +120,19 @@ data class PresentationAnatomy(
     val primitives: List<PresentationPrimitive>,
     val terminals: List<PresentationTerminalPoint>,
     val labelAnchors: List<PresentationLabelAnchor>,
+    val authority: PresentationAnatomyAuthority = PresentationAnatomyAuthority.LEGACY_VISUAL,
 ) {
     init {
-        require(primitives.isNotEmpty()) { "Presentation anatomy requires at least one primitive." }
+        when (authority) {
+            PresentationAnatomyAuthority.LEGACY_VISUAL -> require(primitives.isNotEmpty()) {
+                "Legacy presentation anatomy requires at least one primitive."
+            }
+            PresentationAnatomyAuthority.COMPATIBILITY_SHELL -> require(
+                primitives.isEmpty() && terminals.isEmpty() && labelAnchors.isEmpty(),
+            ) {
+                "Presentation compatibility shells cannot own visual, terminal, or label facts."
+            }
+        }
     }
 
     fun hasRendererTruth(): Boolean = false

@@ -45,13 +45,13 @@ class AthenaRepositoryGraphSessionRequestTest {
 
                 assertNotNull(payload)
                 assertEquals(repositoryRoot.toAbsolutePath().normalize().toString(), payload.repositoryRoot)
-                assertEquals("com.engineeringood.factory-line", payload.primaryPackageName)
+                assertEquals("com.engineeringood.factoryline", payload.primaryPackageName)
                 assertEquals("current", payload.lockState)
                 assertTrue(payload.isValid)
                 assertEquals(sourcePath.toUri().toString(), payload.lastOpenedDocumentUri)
                 assertTrue(payload.manifestDependencies.isEmpty())
                 assertEquals(
-                    listOf("com.engineeringood.factory-line"),
+                    listOf("com.engineeringood.factoryline"),
                     payload.resolvedPackages.map { resolvedPackage -> resolvedPackage.name },
                 )
                 assertTrue(payload.resolvedPackages.first().directDependencies.isEmpty())
@@ -74,7 +74,7 @@ class AthenaRepositoryGraphSessionRequestTest {
                 """
                     version: nope
                     primaryPackage:
-                      name: com.engineeringood.factory-line
+                      name: com.engineeringood.factoryline
                       version: 1.0.0
                 """.trimIndent(),
             )
@@ -95,10 +95,10 @@ class AthenaRepositoryGraphSessionRequestTest {
                 assertEquals("invalid", payload.lockState)
                 assertTrue(!payload.isValid)
                 assertTrue(
-                    payload.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.version.invalid" },
+                    payload.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.schema-incompatible" },
                 )
                 assertEquals(
-                    listOf("com.engineeringood.factory-line"),
+                    listOf("com.engineeringood.factoryline"),
                     payload.resolvedPackages.map { resolvedPackage -> resolvedPackage.name },
                 )
             } finally {

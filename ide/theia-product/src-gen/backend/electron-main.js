@@ -50,7 +50,8 @@ process.env.LC_NUMERIC = 'C';
         "toolbar.showToolbar": true,
         "editor.enablePreview": false,
         "workbench.editor.revealIfOpen": true,
-        "editor.semanticHighlighting.enabled": true
+        "editor.semanticHighlighting.enabled": true,
+        "security.workspace.trust.enabled": false
     }
 };
     const isSingleInstance = true;

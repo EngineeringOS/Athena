@@ -149,7 +149,7 @@ Sonnet 5 (Cursor subagent)
 ### Completion Notes List
 
 - Published `examples/m17/parser-parity-proof/parity-cabinet.athena` (mirrors `demo-cabinet.athena`'s system/device/port/connect/property shape) and `dense-qualified-names.athena` (denser qualified-name and string-literal-property coverage), each with a `.expectation.txt` sidecar recording `status=`, `components=`, `ports=`, `connections=`, `svg=`, `diagnostics=`.
-- Published `examples/m17/repository-parity-proof/` (`athena.yaml`, `athena.lock`, `src/parity-repo.athena`) following the `examples/m4`/`m5` governed-repository shape, scoped to the currently supported syntax subset.
+- Published `examples/m17/repository-parity-proof/` (`athena.yaml`, `athena.lock`, `src/com/engineeringood/m17/parity/parity-repo.athena`) following the `examples/m4`/`m5` governed-repository shape, scoped to the currently supported syntax subset.
 - Added `examples/m17/README.md` describing the corpus purpose, fixture layout, and its AD-113 primacy over inline-only parser demos.
 - Added `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaM17ParserParityProofTest.kt`, which (a) pins the exact fixture inventory, (b) compiles every standalone fixture and asserts component/port/connection counts and the `system:`/`component:`/`port:`/`connection:` identity scheme, (c) asserts deterministic re-lowering, and (d) resolves the repository-backed fixture through `validateRepositoryContract`/`validateRepositoryLock`/`resolveRepositoryGraph` and asserts deterministic resolution and a successful compile.
 - Cross-linked the identity-scheme assertions with Story 4.3's `AthenaParserContinuityTest`, which reuses the same `examples/m17` fixtures and asserts m0/m17 structural parity, so both stories reinforce one shared parity definition.
@@ -163,7 +163,7 @@ Sonnet 5 (Cursor subagent)
 - `examples/m17/parser-parity-proof/dense-qualified-names.athena` (+ `.expectation.txt`)
 - `examples/m17/repository-parity-proof/athena.yaml`
 - `examples/m17/repository-parity-proof/athena.lock`
-- `examples/m17/repository-parity-proof/src/parity-repo.athena`
+- `examples/m17/repository-parity-proof/src/com/engineeringood/m17/parity/parity-repo.athena`
 - `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/AthenaM17ParserParityProofTest.kt`
 - `examples/README.md` (added `m17/` section)
 

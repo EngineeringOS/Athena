@@ -175,10 +175,10 @@ test('resolves the nearest governed repository root for a nested Athena document
         const monorepoPath = join(rootDirectoryPath, 'Athena');
         const nestedRepositoryPath = join(monorepoPath, 'examples', 'm4', 'open-repository-proof');
         const sourceRootPath = join(nestedRepositoryPath, 'src');
-        const sourcePath = join(sourceRootPath, 'factory-line.athena');
-        await mkdir(sourceRootPath, { recursive: true });
-        await writeFile(join(nestedRepositoryPath, 'athena.yaml'), 'primaryPackage:\n  name: com.engineeringood.factory-line\n  version: 1.0.0\n  sourceRoot: src\n', 'utf8');
-        await writeFile(sourcePath, 'system FactoryLine {\n}\n', 'utf8');
+        const sourcePath = join(sourceRootPath, 'com', 'engineeringood', 'factoryline', 'factoryline.athena');
+        await mkdir(join(sourceRootPath, 'com', 'engineeringood', 'factoryline'), { recursive: true });
+        await writeFile(join(nestedRepositoryPath, 'athena.yaml'), 'primaryPackage:\n  name: com.engineeringood.factoryline\n  version: 1.0.0\n  sourceRoot: src\n', 'utf8');
+        await writeFile(sourcePath, 'package com.engineeringood.factoryline\n\nsystem FactoryLine {\n}\n', 'utf8');
 
         const manager = new TestableAthenaRepositorySessionManager();
         const documentUri = pathToFileURL(sourcePath).toString();

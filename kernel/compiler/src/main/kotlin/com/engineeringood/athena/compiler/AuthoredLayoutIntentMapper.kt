@@ -7,6 +7,8 @@ import com.engineeringood.athena.layout.AuthoredLayoutAxis
 import com.engineeringood.athena.layout.AuthoredLayoutIntent
 import com.engineeringood.athena.layout.AuthoredLayoutIntentRelation
 import com.engineeringood.athena.layout.AuthoredLayoutIntentStatement
+import com.engineeringood.athena.layout.DrawingGridPosition
+import com.engineeringood.athena.layout.LayoutOrientation
 import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.language.LayoutAxis as SyntaxLayoutAxis
 
@@ -57,6 +59,19 @@ class AuthoredLayoutIntentMapper {
                 relation = AuthoredLayoutIntentRelation.GROUPED_WITH,
                 target = target,
                 sourceSpan = span.toLayoutSourceSpan(sourceUnitId),
+            )
+
+            is LayoutStatement.PlaceAt -> AuthoredLayoutIntentStatement(
+                subject = subject.parts.joinToString("."),
+                relation = AuthoredLayoutIntentRelation.AT_GRID,
+                target = subject.parts.joinToString("."),
+                priority = com.engineeringood.athena.layout.AuthoredLayoutIntentPriority.HARD,
+                sourceSpan = span.toLayoutSourceSpan(sourceUnitId),
+                gridPosition = DrawingGridPosition(position.column, position.row),
+                orientation = when (orientation) {
+                    com.engineeringood.athena.language.LayoutOrientation.Horizontal -> LayoutOrientation.HORIZONTAL
+                    com.engineeringood.athena.language.LayoutOrientation.Vertical -> LayoutOrientation.VERTICAL
+                },
             )
         }
     }

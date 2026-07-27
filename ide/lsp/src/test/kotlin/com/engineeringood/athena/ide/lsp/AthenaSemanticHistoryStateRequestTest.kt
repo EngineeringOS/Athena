@@ -32,7 +32,7 @@ class AthenaSemanticHistoryStateRequestTest {
             writeSemanticHistoryFixture(
                 repositoryRoot = baselineB,
                 packageVersion = "1.0.0",
-                dependencyLocator = "../alpha-baseline",
+                dependencyLocator = "vendor/alpha-baseline",
                 dependencyVersion = "1.0.0",
                 sourceText = """
                     system Demo {
@@ -45,7 +45,7 @@ class AthenaSemanticHistoryStateRequestTest {
             writeSemanticHistoryFixture(
                 repositoryRoot = current,
                 packageVersion = "1.1.0",
-                dependencyLocator = "../alpha-current",
+                dependencyLocator = "vendor/alpha-current",
                 dependencyVersion = "2.0.0",
                 sourceText = """
                     system Demo {
@@ -192,8 +192,8 @@ private fun writeSemanticHistoryFixture(
         }.trimEnd(),
     )
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve("demo.athena").writeText(sourceText)
+    val sourceRoot = repositoryRoot.resolve("src/com/engineeringood/demo").createDirectories()
+    sourceRoot.resolve("demo.athena").writeText(governedAthenaSource(sourceText, "com.engineeringood.demo"))
 
     if (dependencyLocator != null && dependencyVersion != null) {
         val dependencyRoot = repositoryRoot.resolve(dependencyLocator).createDirectories()
@@ -206,8 +206,8 @@ private fun writeSemanticHistoryFixture(
             """.trimIndent(),
         )
         dependencyRoot.resolve("athena.lock").writeText("# lock")
-        val dependencySourceRoot = dependencyRoot.resolve("src").createDirectories()
-        dependencySourceRoot.resolve("alpha.athena").writeText("system Alpha { }")
+        val dependencySourceRoot = dependencyRoot.resolve("src/com/engineeringood/alpha").createDirectories()
+        dependencySourceRoot.resolve("alpha.athena").writeText(governedAthenaSource("system Alpha { }", "com.engineeringood.alpha"))
         AthenaCompiler().materializeRepositoryLock(dependencyRoot)
     }
 }

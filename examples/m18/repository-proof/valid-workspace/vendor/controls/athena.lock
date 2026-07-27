@@ -1,6 +1,9 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-m35-lock-v2
+validatedLockStateDigest: lock-state/v1:4dc7dde1ae826a14f67b89274fa09d1d6f88e3056868fbeee7d315f2f8fad798
 primaryPackage:
   name: com.engineeringood.m18.vendor.controls
   version: 1.0.0
@@ -8,4 +11,9 @@ packages:
   - name: com.engineeringood.m18.vendor.controls
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot/v1:56128d440c340fad6bf3298977631e97d1f40db8b3b4dd4675c4c8ca577988b4
+    sourceHashes:
+      - path: com/engineeringood/m18/vendor/controls/vendor-controls.athena
+        hash: sha256:63ce6a68cd1951e300c9116f4a837e8260efb6bce3a3623d003f90a1506ddfef
+    resourceHashes: []
     dependencies: []

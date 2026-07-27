@@ -203,7 +203,31 @@ object RepresentationPackageDescriptorValidator {
                     )
                 }
             }
+
+            if (entry.bindingPolicyTags.any { it.value.isBlank() } ||
+                entry.bindingPolicyTags.distinct().size != entry.bindingPolicyTags.size
+            ) {
+                diagnostics += diagnostic(
+                    code = "package.representation.binding-policy.invalid",
+                    subject = "descriptorEntries[$index].bindingPolicyTags",
+                    message = "Representation descriptor binding policy tags must be non-blank and unique.",
+                )
+            }
         }
+
+        descriptor.descriptorEntries
+            .flatMap { entry -> entry.bindingPolicyTags.map { tag -> tag to entry.descriptorId } }
+            .groupBy({ it.first }, { it.second })
+            .filterValues { descriptorIds -> descriptorIds.distinct().size > 1 }
+            .keys
+            .sortedBy { it.value }
+            .forEach { tag ->
+                diagnostics += diagnostic(
+                    code = "package.representation.binding-policy.ambiguous",
+                    subject = "descriptorEntries.bindingPolicyTags.${tag.value}",
+                    message = "A binding policy tag must select at most one representation descriptor.",
+                )
+            }
     }
 
     private fun validatePreviews(

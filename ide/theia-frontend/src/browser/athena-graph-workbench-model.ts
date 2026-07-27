@@ -9,9 +9,11 @@ import {
 } from '@engineeringood/athena-graph-glsp';
 import {
     AthenaGraphResolvedPresentationConnector,
+    AthenaGraphResolvedPresentationGraphicOccurrence,
     AthenaGraphResolvedPresentationOccurrence,
     AthenaGraphResolvedPresentationPart,
     resolvePresentationConnectors,
+    resolvePresentationGraphicOccurrences,
     resolvePresentationOccurrences,
     resolvePresentationRepresentations,
     resolvePresentationReferenceMarkers,
@@ -123,6 +125,7 @@ export type AthenaGraphWorkbenchModel = {
     }>;
     diagnostics: AthenaGLSPDiagram['diagnostics'];
     activeRenderContributions: AthenaGLSPRenderContributionSource[];
+    drawingComposition?: NonNullable<AthenaGLSPDiagram['presentation']>['drawingComposition'];
     sheetChrome: AthenaGraphWorkbenchSheetChrome;
     referenceMarkers: AthenaGraphWorkbenchReferenceMarker[];
     nodes: AthenaGraphWorkbenchNode[];
@@ -138,6 +141,39 @@ export type AthenaGraphWorkbenchModel = {
         message: string;
     };
 };
+
+export type AthenaGraphWorkbenchProductSurface = {
+    surfaceId: 'control-drawing';
+    displayName: 'Control Drawing';
+    description: 'Professional engineering control drawing';
+    backingViewId: string;
+    backingFamilyId?: string;
+    isActive: boolean;
+};
+
+export function resolveAthenaGraphPrimaryProductSurface(
+    supportedViews: AthenaGraphWorkbenchModel['supportedViews'],
+): AthenaGraphWorkbenchProductSurface | undefined {
+    const backingView = supportedViews.find(view => view.viewId === 'schematic');
+    if (!backingView) {
+        return undefined;
+    }
+    return {
+        surfaceId: 'control-drawing',
+        displayName: 'Control Drawing',
+        description: 'Professional engineering control drawing',
+        backingViewId: backingView.viewId,
+        backingFamilyId: backingView.familyId,
+        isActive: backingView.isActive,
+    };
+}
+
+export function requiresAthenaControlDrawingProductActivation(
+    supportedViews: ReadonlyArray<Pick<AthenaGraphWorkbenchModel['supportedViews'][number], 'viewId'>>,
+    activeViewId: string | undefined,
+): boolean {
+    return supportedViews.some(view => view.viewId === 'schematic') && activeViewId !== 'schematic';
+}
 
 export type AthenaGraphSurfaceTokens = {
     canvas: Record<string, string>;
@@ -257,6 +293,41 @@ export type AthenaGraphWorkbenchReferenceMarker = {
     targetDocumentLocation: AthenaGraphWorkbenchDocumentLocation;
     compactNotation: string;
     sourceProjectionIds: string[];
+};
+
+export type AthenaGraphDrawingComposition = NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['drawingComposition']>;
+
+export type AthenaGraphDrawingLayerModel = {
+    items: AthenaGraphDrawingLayerItem[];
+};
+
+export type AthenaGraphDrawingLayerItem = {
+    id: string;
+    kind: 'sheet-frame'
+        | 'drawing-area'
+        | 'title-block'
+        | 'title-field'
+        | 'zone-column'
+        | 'zone-row'
+        | 'rail'
+        | 'lane'
+        | 'terminal-strip'
+        | 'label-band'
+        | 'route-channel'
+        | 'reference-marker';
+    authority: string;
+    bounds?: AthenaGraphRect;
+    start?: AthenaGLSPPoint;
+    end?: AthenaGLSPPoint;
+    label?: string;
+    identity?: string;
+};
+
+export type AthenaGraphRect = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 };
 
 export type AthenaGraphWorkbenchDocumentLocation = {
@@ -444,6 +515,7 @@ export type AthenaGraphWorkbenchNode = AthenaGLSPNode & {
     labelLeader?: AthenaGraphWorkbenchLeaderSegment;
     electricalAnchors: AthenaGraphWorkbenchNodeAnchor[];
     presentationOccurrence?: AthenaGraphResolvedPresentationOccurrence;
+    presentationGraphicOccurrence?: AthenaGraphResolvedPresentationGraphicOccurrence;
     presentationRepresentation?: AthenaGraphResolvedPresentationRepresentation;
     presentationParts: AthenaGraphResolvedPresentationPart[];
     presentationTerminals: AthenaGraphWorkbenchPresentationTerminal[];
@@ -467,22 +539,26 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
     const rawGraphNodes = normalizeArray(graph.nodes);
     const rawGraphEdges = normalizeArray(graph.edges);
     const governedSheetSurfaceSize = resolveGovernedSheetSurfaceSize(diagram);
+    const drawingComposition = diagram.presentation?.drawingComposition;
+    const governedDrawingBounds = drawingComposition?.sheetBounds;
     const canvasWidth = governedSheetSurfaceSize?.width ?? (graph.canvas.width > 0 ? graph.canvas.width : fallbackCanvasWidth);
     const canvasHeight = governedSheetSurfaceSize?.height ?? (graph.canvas.height > 0 ? graph.canvas.height : fallbackCanvasHeight);
     const graphNodes = rawGraphNodes
-        .filter(node => presentationBoundsIntersectsCanvas({
+        .filter(node => presentationBoundsIntersectsSurface({
             x: node.position.x,
             y: node.position.y,
             width: node.size.width,
             height: node.size.height,
-        }, canvasWidth, canvasHeight));
+        }, governedDrawingBounds, canvasWidth, canvasHeight));
     const graphEdges = rawGraphEdges
         .filter(edge => [edge.sourcePoint, ...normalizeArray(edge.bendPoints), edge.targetPoint]
-            .every(point => point.x >= 0 && point.x <= canvasWidth && point.y >= 0 && point.y <= canvasHeight));
+            .every(point => pointIntersectsSurface(point, governedDrawingBounds, canvasWidth, canvasHeight)));
     const presentationOccurrences = resolvePresentationOccurrences(diagram)
-        .filter(occurrence => presentationBoundsIntersectsCanvas(occurrence.bounds, canvasWidth, canvasHeight));
+        .filter(occurrence => presentationBoundsIntersectsSurface(occurrence.bounds, governedDrawingBounds, canvasWidth, canvasHeight));
+    const presentationGraphicOccurrences = resolvePresentationGraphicOccurrences(diagram)
+        .filter(occurrence => presentationBoundsIntersectsSurface(occurrence.bounds, governedDrawingBounds, canvasWidth, canvasHeight));
     const presentationConnectors = resolvePresentationConnectors(diagram)
-        .filter(connector => connector.routePoints.every(point => point.x >= 0 && point.x <= canvasWidth && point.y >= 0 && point.y <= canvasHeight));
+        .filter(connector => connector.routePoints.every(point => pointIntersectsSurface(point, governedDrawingBounds, canvasWidth, canvasHeight)));
     const presentationRepresentations = resolvePresentationRepresentations(diagram);
     const supportedViews = normalizeArray(diagram.supportedViews);
     const diagnostics = normalizeArray(diagram.diagnostics);
@@ -515,8 +591,10 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
     const representationBySubjectId = new Map(
         presentationRepresentations.map(representation => [representation.subjectId, representation] as const),
     );
-    const nodes = presentationOccurrences.length > 0
-        ? presentationOccurrences.map(occurrence => buildWorkbenchNodeFromPresentation(
+    const nodes = presentationGraphicOccurrences.length > 0
+        ? presentationGraphicOccurrences.map(occurrence => buildWorkbenchNodeFromGraphicOccurrence(occurrence))
+        : presentationOccurrences.length > 0
+            ? presentationOccurrences.map(occurrence => buildWorkbenchNodeFromPresentation(
             occurrence,
             notationBySemanticId,
             anchorsByNodeId,
@@ -524,7 +602,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             isElectricalFamily,
             resolveRepresentationForOccurrence(occurrence, representationByProjectionId, representationBySubjectId),
         ))
-        : graphNodes.map(node => buildWorkbenchNode(
+            : graphNodes.map(node => buildWorkbenchNode(
             node,
             notationBySemanticId,
             anchorsByNodeId,
@@ -547,7 +625,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
     const sheetChrome = resolveSheetChrome(diagram, canvasWidth, canvasHeight);
     const sheetViewSelector = resolveSheetViewSelector(diagram);
     const referenceMarkers = resolveWorkbenchReferenceMarkers(diagram);
-    const sceneBounds = resolveSceneBounds(nodes, edges, canvasWidth, canvasHeight);
+    const sceneBounds = resolveSceneBounds(nodes, edges, canvasWidth, canvasHeight, governedDrawingBounds);
 
     return {
         headerTitle: diagram.projectName,
@@ -576,6 +654,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         })),
         diagnostics,
         activeRenderContributions: renderContributions,
+        ...(drawingComposition ? { drawingComposition } : {}),
         sheetChrome,
         referenceMarkers,
         nodes,
@@ -588,6 +667,88 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         surfaceTokens: resolveSurfaceTokens(renderContributions),
         emptyState: resolveEmptyState(diagram, nodes, edges),
     };
+}
+
+export function buildAthenaGraphDrawingLayerModel(
+    drawingComposition: AthenaGraphDrawingComposition | undefined,
+): AthenaGraphDrawingLayerModel {
+    if (!drawingComposition) {
+        return { items: [] };
+    }
+
+    const items: AthenaGraphDrawingLayerItem[] = [
+        {
+            id: drawingComposition.frameId || `${drawingComposition.sheetId}:frame`,
+            kind: 'sheet-frame',
+            authority: drawingComposition.authorities?.bounds ?? 'drawing-composition',
+            bounds: normalizeRect(drawingComposition.frameBounds),
+        },
+        {
+            id: `${drawingComposition.sheetId}:drawing-area`,
+            kind: 'drawing-area',
+            authority: drawingComposition.authorities?.bounds ?? 'drawing-composition',
+            bounds: normalizeRect(drawingComposition.drawingAreaBounds),
+        },
+        {
+            id: `${drawingComposition.sheetId}:title-block`,
+            kind: 'title-block',
+            authority: drawingComposition.authorities?.policy ?? 'presentation-profile-policy',
+            bounds: normalizeRect(drawingComposition.titleBlockBounds),
+        },
+        {
+            id: `${drawingComposition.sheetId}:title-field`,
+            kind: 'title-field',
+            authority: drawingComposition.authorities?.policy ?? 'presentation-profile-policy',
+            bounds: normalizeRect(drawingComposition.titleBlockBounds),
+            label: [
+                drawingComposition.title?.sheetTitle,
+                drawingComposition.title?.sheetNumber,
+                drawingComposition.title?.revisionCode ? `REV ${drawingComposition.title.revisionCode}` : undefined,
+            ].filter(Boolean).join(' / '),
+        },
+    ];
+
+    normalizeArray(drawingComposition.coordinateZones).forEach(zone => {
+        const axis = String(zone.axis ?? '').toUpperCase();
+        if (axis !== 'COLUMN' && axis !== 'ROW') {
+            return;
+        }
+        items.push({
+            id: zone.zoneId,
+            kind: axis === 'COLUMN' ? 'zone-column' : 'zone-row',
+            authority: drawingComposition.authorities?.policy ?? 'presentation-profile-policy',
+            bounds: normalizeRect(zone.bounds),
+            label: zone.label,
+        });
+    });
+
+    normalizeArray(drawingComposition.structureFacts).forEach(fact => {
+        const kind = normalizeDrawingStructureKind(fact.kind);
+        if (!kind) {
+            return;
+        }
+        items.push({
+            id: fact.factId,
+            kind,
+            authority: fact.authority ?? drawingComposition.authorities?.structureIntent ?? 'drawing-structure-intent',
+            bounds: normalizeRect(fact.bounds),
+            start: normalizePoint(fact.start),
+            end: normalizePoint(fact.end),
+        });
+    });
+
+    normalizeArray(drawingComposition.referencePlacements).forEach(reference => {
+        items.push({
+            id: reference.placementId,
+            kind: 'reference-marker',
+            authority: drawingComposition.authorities?.representation ?? 'drawing-symbol-anatomy',
+            bounds: normalizeRect(reference.bounds),
+            identity: reference.representationIdentity,
+            label: reference.compactNotation,
+        });
+    });
+
+    return { items };
 }
 
 export function buildAthenaGraphRouteInspection(
@@ -775,6 +936,51 @@ function semanticIdToAuthoredName(semanticId: string): string {
     return lastSegment.split('.').filter(Boolean).at(-1) ?? lastSegment;
 }
 
+function normalizeDrawingStructureKind(kind: string | undefined): AthenaGraphDrawingLayerItem['kind'] | undefined {
+    switch (kind) {
+        case 'rail':
+            return 'rail';
+        case 'lane':
+            return 'lane';
+        case 'terminal-strip':
+            return 'terminal-strip';
+        case 'label-band':
+            return 'label-band';
+        case 'route-channel':
+            return 'route-channel';
+        default:
+            return undefined;
+    }
+}
+
+function normalizeRect(rect: Partial<AthenaGraphRect> | undefined): AthenaGraphRect | undefined {
+    if (!rect) {
+        return undefined;
+    }
+    const x = toFiniteNumber(rect.x);
+    const y = toFiniteNumber(rect.y);
+    const width = toFiniteNumber(rect.width);
+    const height = toFiniteNumber(rect.height);
+    if (width <= 0 || height <= 0) {
+        return undefined;
+    }
+    return { x, y, width, height };
+}
+
+function normalizePoint(point: Partial<AthenaGLSPPoint> | undefined): AthenaGLSPPoint | undefined {
+    if (!point) {
+        return undefined;
+    }
+    return {
+        x: toFiniteNumber(point.x),
+        y: toFiniteNumber(point.y),
+    };
+}
+
+function toFiniteNumber(value: unknown): number {
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
 function resolveWorkbenchSnapshotId(diagram: AthenaGLSPDiagram): string {
     return [
         'workbench-snapshot',
@@ -817,12 +1023,8 @@ export function resolveSheetViewSelector(
 
 export function resolveVisibleAthenaGraphSheetViewSelector(
     model: Pick<AthenaGraphWorkbenchModel, 'sheetViewSelector'>,
-    previousDocumentSelector: AthenaGraphWorkbenchSheetViewSelector | undefined,
 ): AthenaGraphWorkbenchSheetViewSelector | undefined {
-    if (model.sheetViewSelector) {
-        return isGovernedMultiSheetSelector(model.sheetViewSelector) ? model.sheetViewSelector : undefined;
-    }
-    return isGovernedMultiSheetSelector(previousDocumentSelector) ? previousDocumentSelector : undefined;
+    return isGovernedMultiSheetSelector(model.sheetViewSelector) ? model.sheetViewSelector : undefined;
 }
 
 function isGovernedMultiSheetSelector(
@@ -1211,16 +1413,29 @@ function resolveEmptyState(
     return undefined;
 }
 
-function presentationBoundsIntersectsCanvas(
+function presentationBoundsIntersectsSurface(
     bounds: { x: number; y: number; width: number; height: number },
+    governedBounds: { x: number; y: number; width: number; height: number } | undefined,
     canvasWidth: number,
     canvasHeight: number,
 ): boolean {
+    const surface = governedBounds ?? { x: 0, y: 0, width: canvasWidth, height: canvasHeight };
     const minX = bounds.x;
     const minY = bounds.y;
     const maxX = bounds.x + bounds.width;
     const maxY = bounds.y + bounds.height;
-    return maxX >= 0 && maxY >= 0 && minX <= canvasWidth && minY <= canvasHeight;
+    return maxX >= surface.x && maxY >= surface.y && minX <= surface.x + surface.width && minY <= surface.y + surface.height;
+}
+
+function pointIntersectsSurface(
+    point: AthenaGLSPPoint,
+    governedBounds: { x: number; y: number; width: number; height: number } | undefined,
+    canvasWidth: number,
+    canvasHeight: number,
+): boolean {
+    const surface = governedBounds ?? { x: 0, y: 0, width: canvasWidth, height: canvasHeight };
+    return point.x >= surface.x && point.x <= surface.x + surface.width
+        && point.y >= surface.y && point.y <= surface.y + surface.height;
 }
 
 function resolveSheetChrome(
@@ -1280,6 +1495,10 @@ function resolveSheetChrome(
 function resolveGovernedSheetSurfaceSize(
     diagram: AthenaGLSPDiagram,
 ): Pick<AthenaGraphWorkbenchSheetFrame, 'width' | 'height'> | undefined {
+    const drawingBounds = diagram.presentation?.drawingComposition?.sheetBounds;
+    if (drawingBounds && drawingBounds.width > 0 && drawingBounds.height > 0) {
+        return { width: drawingBounds.width, height: drawingBounds.height };
+    }
     const frame = diagram.presentation?.sheetSurface?.frame;
     if (frame && frame.width > 0 && frame.height > 0) {
         return {
@@ -1300,6 +1519,49 @@ function resolveGovernedSheetSurface(
     canvasWidth: number,
     canvasHeight: number,
 ): AthenaGraphPresentationSheetSurface | undefined {
+    const drawingComposition = diagram.presentation?.drawingComposition;
+    if (drawingComposition) {
+        const frame = drawingComposition.frameBounds;
+        const sheet = drawingComposition.sheetBounds;
+        const columns = drawingComposition.coordinateZones
+            .filter(zone => zone.axis === 'COLUMN')
+            .sort((left, right) => left.order - right.order)
+            .map(zone => zone.label);
+        const rows = drawingComposition.coordinateZones
+            .filter(zone => zone.axis === 'ROW')
+            .sort((left, right) => left.order - right.order)
+            .map(zone => zone.label);
+        return {
+            surfaceId: `presentation/drawing-composition/${drawingComposition.sheetId}`,
+            source: drawingComposition.authorities.bounds,
+            frame: {
+                width: sheet.width,
+                height: sheet.height,
+                margins: {
+                    top: frame.y - sheet.y,
+                    right: (sheet.x + sheet.width) - (frame.x + frame.width),
+                    bottom: (sheet.y + sheet.height) - (frame.y + frame.height),
+                    left: frame.x - sheet.x,
+                },
+                zoneColumns: columns,
+                zoneRows: rows,
+            },
+            grid: { majorStep: 24, minorStep: 6 },
+            titleBlock: {
+                fields: [
+                    { role: 'sheet', label: 'Sheet', value: drawingComposition.title.sheetTitle },
+                    { role: 'sheet-number', label: 'Sheet No.', value: drawingComposition.title.sheetNumber },
+                    { role: 'revision', label: 'Revision', value: drawingComposition.title.revisionCode },
+                    { role: 'policy', label: 'Policy', value: drawingComposition.policyId },
+                ],
+            },
+            metadata: {
+                sheetSize: drawingComposition.title.pageFormat,
+                orientation: drawingComposition.title.orientation,
+                projectionPolicyId: drawingComposition.policyId,
+            },
+        };
+    }
     const presentationSurface = diagram.presentation?.sheetSurface;
     if (presentationSurface) {
         return {
@@ -1463,7 +1725,20 @@ function resolveSceneBounds(
     edges: AthenaGraphWorkbenchEdge[],
     canvasWidth: number,
     canvasHeight: number,
+    governedBounds?: { x: number; y: number; width: number; height: number },
 ): AthenaGraphSceneBounds {
+    if (governedBounds && governedBounds.width > 0 && governedBounds.height > 0) {
+        return {
+            minX: governedBounds.x,
+            minY: governedBounds.y,
+            maxX: governedBounds.x + governedBounds.width,
+            maxY: governedBounds.y + governedBounds.height,
+            width: governedBounds.width,
+            height: governedBounds.height,
+            centerX: governedBounds.x + governedBounds.width / 2,
+            centerY: governedBounds.y + governedBounds.height / 2,
+        };
+    }
     let minX = Number.POSITIVE_INFINITY;
     let minY = Number.POSITIVE_INFINITY;
     let maxX = Number.NEGATIVE_INFINITY;
@@ -1567,6 +1842,7 @@ function buildWorkbenchNode(
             : undefined,
         electricalAnchors: nodeAnchors,
         presentationOccurrence: undefined,
+        presentationGraphicOccurrence: undefined,
         presentationRepresentation: representation,
         presentationParts: representation
             ? scaleRepresentationPartsToNode(representation.parts, visualNode)
@@ -1635,6 +1911,7 @@ function buildWorkbenchNodeFromPresentation(
             : undefined,
         electricalAnchors: nodeAnchors,
         presentationOccurrence: occurrence,
+        presentationGraphicOccurrence: undefined,
         presentationRepresentation: representation,
         presentationParts: representation
             ? scaleRepresentationPartsToNode(representation.parts, visualNode)
@@ -1645,6 +1922,66 @@ function buildWorkbenchNodeFromPresentation(
         presentationLabels: representation
             ? scaleRepresentationLabelsToNode(representation, visualNode)
             : [],
+    };
+}
+
+function buildWorkbenchNodeFromGraphicOccurrence(
+    occurrence: AthenaGraphResolvedPresentationGraphicOccurrence,
+): AthenaGraphWorkbenchNode {
+    const node: AthenaGLSPNode = {
+        id: occurrence.occurrenceId,
+        semanticId: occurrence.semanticSubjectId,
+        type: 'node',
+        kind: 'component',
+        label: occurrence.deviceLabel,
+        position: {
+            x: occurrence.bounds.x,
+            y: occurrence.bounds.y,
+        },
+        size: {
+            width: occurrence.bounds.width,
+            height: occurrence.bounds.height,
+        },
+    };
+    const terminalBindings = normalizeArray(occurrence.terminalBindings);
+    return {
+        ...node,
+        renderVariant: 'electrical-device',
+        markerKeys: [],
+        electricalAnchors: terminalBindings.map(binding => ({
+            anchorId: binding.anchorId,
+            point: { ...binding.point },
+            side: binding.side,
+            portSemanticId: binding.portSemanticId,
+        })),
+        presentationOccurrence: undefined,
+        presentationGraphicOccurrence: occurrence,
+        presentationRepresentation: undefined,
+        presentationParts: normalizeArray(occurrence.parts),
+        presentationTerminals: terminalBindings.map(binding => ({
+            terminalId: `${occurrence.occurrenceId}:${binding.anchorId}`,
+            subjectId: occurrence.semanticSubjectId,
+            occurrenceId: occurrence.occurrenceId,
+            portId: binding.portSemanticId,
+            physicalTerminalId: binding.terminalIdentity,
+            side: binding.side,
+            marker: binding.terminalIdentity,
+            number: binding.terminalIdentity,
+            point: { ...binding.point },
+            anchorId: binding.anchorId,
+        })),
+        presentationLabels: normalizeArray(occurrence.labels).map(label => ({
+            labelId: label.labelId,
+            subjectId: occurrence.semanticSubjectId,
+            occurrenceId: occurrence.occurrenceId,
+            role: label.role,
+            value: label.value,
+            point: {
+                x: label.bounds.x,
+                y: label.bounds.y,
+            },
+            anchorId: label.labelId,
+        })),
     };
 }
 
@@ -1780,9 +2117,16 @@ function scaleRepresentationCommand(
                 y: scaleWithinNode(command.center.y, sourceBounds.height, node.position.y, node.size.height),
             }
             : undefined,
+        origin: command.origin
+            ? {
+                x: scaleWithinNode(command.origin.x, sourceBounds.width, node.position.x, node.size.width),
+                y: scaleWithinNode(command.origin.y, sourceBounds.height, node.position.y, node.size.height),
+            }
+            : undefined,
         radius: command.radius === undefined
             ? undefined
             : Math.max(1, Math.round(command.radius * Math.min(node.size.width / sourceBounds.width, node.size.height / sourceBounds.height))),
+        text: command.text,
     };
 }
 

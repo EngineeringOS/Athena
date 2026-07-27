@@ -15,7 +15,9 @@ class AthenaM18RepositoryProofCorpusLspTest {
     @Test
     @Suppress("DEPRECATION")
     fun `lsp publishes package aware diagnostics from repository backed m18 corpus source`() {
-        val corpusSource = corpusRoot().resolve("valid-workspace/src/invalid-import.athena").readText()
+        val corpusSource = corpusRoot()
+            .resolve("valid-workspace/src/com/engineeringood/m18/root/invalid-import.athena")
+            .readText()
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-m18-corpus-",
             packageName = "com.engineeringood.m18.root",

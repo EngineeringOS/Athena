@@ -127,7 +127,7 @@ never evidence that the editor's syntax UX degrades gracefully.
 
 Corpus: `examples/m17/parser-parity-proof/*.athena` (+ `.expectation.txt` sidecars) and the
 governed repository-backed fixture `examples/m17/repository-parity-proof/` (`athena.yaml` /
-`athena.lock` / `src/parity-repo.athena`).
+`athena.lock` / `src/com/engineeringood/m17/parity/parity-repo.athena`).
 
 ```powershell
 java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests *M17*

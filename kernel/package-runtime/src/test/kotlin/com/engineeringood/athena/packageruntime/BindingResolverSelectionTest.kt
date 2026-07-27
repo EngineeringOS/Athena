@@ -32,6 +32,15 @@ import com.engineeringood.athena.packageplatform.ProjectionContextId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorDefinition
 import com.engineeringood.athena.packageplatform.RepresentationAnchorId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorSide
+import com.engineeringood.athena.packageplatform.RepresentationBindingPriority
+import com.engineeringood.athena.packageplatform.RepresentationBindingRule
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleId
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleLifecycle
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleLifecycleState
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleProvenance
+import com.engineeringood.athena.packageplatform.RepresentationBindingSelectorFact
+import com.engineeringood.athena.packageplatform.RepresentationBindingSubjectKind
+import com.engineeringood.athena.packageplatform.RepresentationBindingTarget
 import com.engineeringood.athena.packageplatform.RepresentationDescriptor
 import com.engineeringood.athena.packageplatform.RepresentationDescriptorBounds
 import com.engineeringood.athena.packageplatform.RepresentationDescriptorId
@@ -61,6 +70,115 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class BindingResolverSelectionTest {
+    @Test
+    fun `binding resolver keeps device and function selector scopes disjoint`() {
+        val deviceRule = rule(
+            id = "binding.drive.device",
+            descriptorId = "descriptor.drive.iec.standard",
+            packageId = "com.athena.example.representation.drive.iec",
+            variant = "standard",
+            priority = 100,
+            subjectKind = RepresentationBindingSubjectKind.DEVICE,
+        )
+        val functionRule = rule(
+            id = "binding.drive.function",
+            descriptorId = "descriptor.drive.iec.standard",
+            packageId = "com.athena.example.representation.drive.iec",
+            variant = "standard",
+            priority = 100,
+            subjectKind = RepresentationBindingSubjectKind.FUNCTION,
+            selectorFacts = listOf(
+                RepresentationBindingSelectorFact("type", "Drive"),
+                RepresentationBindingSelectorFact("role", "coil"),
+            ),
+        )
+
+        val device = BindingResolver().resolve(
+            baseRequest(
+                activeProfile = profile("iec"),
+                bindingRules = listOf(deviceRule, functionRule),
+            ),
+        )
+        val function = BindingResolver().resolve(
+            baseRequest(
+                activeProfile = profile("iec"),
+                bindingRules = listOf(deviceRule, functionRule),
+                subjectKind = RepresentationBindingSubjectKind.FUNCTION,
+                semanticFacts = mapOf("type" to "Drive", "role" to "coil"),
+            ),
+        )
+
+        assertEquals("descriptor.drive.iec.standard", device.resolution?.descriptorId?.value)
+        assertEquals("binding.drive.device", device.resolution?.bindingRuleId?.value)
+        assertEquals("descriptor.drive.iec.standard", function.resolution?.descriptorId?.value)
+        assertEquals("binding.drive.function", function.resolution?.bindingRuleId?.value)
+    }
+
+    @Test
+    fun `binding resolver selects descriptor by package entry resource instead of global descriptor id order`() {
+        val sharedDescriptorId = "descriptor.drive.shared"
+        val selectedPackage = representationPackage(
+            "com.athena.example.representation.drive.iec",
+            "iec",
+            sharedDescriptorId,
+            "standard",
+        )
+        val otherPackage = representationPackage(
+            "com.athena.example.representation.drive.compact",
+            "compact",
+            sharedDescriptorId,
+            "compact",
+        )
+        val wrongPackageDescriptor = descriptor(sharedDescriptorId, "drive-compact", "compact").copy(
+            anchors = listOf(
+                RepresentationAnchorDefinition(
+                    RepresentationAnchorId("compact-only"),
+                    x = 8.0,
+                    y = 24.0,
+                    side = RepresentationAnchorSide.LEFT,
+                ),
+            ),
+        )
+        val selectedDescriptor = descriptor(sharedDescriptorId, "drive-iec", "standard")
+        val request = baseRequest(
+            activeProfile = profile("iec"),
+            bindingRules = listOf(
+                rule(
+                    "binding.drive.package-qualified",
+                    sharedDescriptorId,
+                    selectedPackage.packageId.value,
+                    "standard",
+                    100,
+                ),
+            ),
+        ).copy(
+            representationPackages = listOf(selectedPackage, otherPackage),
+            descriptors = listOf(wrongPackageDescriptor, selectedDescriptor),
+        )
+
+        val result = BindingResolver().resolve(request)
+
+        assertTrue(result.isValid, result.diagnostics.toString())
+        assertEquals(selectedPackage.packageId, result.resolution?.representationPackageId)
+        assertEquals(sharedDescriptorId, result.resolution?.descriptorId?.value)
+    }
+
+    @Test
+    fun `binding resolver rejects duplicate descriptors for one selected package entry`() {
+        val request = baseRequest(activeProfile = profile("iec"))
+        val selected = request.descriptors.single { descriptor ->
+            descriptor.descriptorId.value == "descriptor.drive.iec.standard"
+        }
+
+        val result = BindingResolver().resolve(request.copy(descriptors = listOf(selected, selected.copy())))
+
+        assertFalse(result.isValid)
+        assertTrue(result.diagnostics.any { diagnostic ->
+            diagnostic.code.wireValue == "binding.resolution.descriptor.ambiguous" &&
+                diagnostic.authority == BindingAuthority.DESCRIPTOR
+        })
+    }
+
     @Test
     fun `binding resolver selects package descriptor variant anchors labels and style`() {
         val result = BindingResolver().resolve(baseRequest(activeProfile = profile("iec")))
@@ -92,6 +210,73 @@ class BindingResolverSelectionTest {
         assertEquals("com.athena.example.representation.drive.compact", compact.representationPackageId.value)
         assertEquals("descriptor.drive.compact", compact.descriptorId.value)
         assertEquals("compact", compact.variantId.value)
+    }
+
+    @Test
+    fun `binding resolver selects highest priority typed rule and requested variant`() {
+        val result = BindingResolver().resolve(
+            baseRequest(
+                activeProfile = profile("iec"),
+                bindingRules = listOf(
+                    rule(
+                        id = "binding.drive.low",
+                        descriptorId = "descriptor.drive.compact",
+                        packageId = "com.athena.example.representation.drive.compact",
+                        variant = "compact",
+                        priority = 10,
+                    ),
+                    rule(
+                        id = "binding.drive.high",
+                        descriptorId = "descriptor.drive.iec.standard",
+                        packageId = "com.athena.example.representation.drive.iec",
+                        variant = "standard",
+                        priority = 100,
+                    ),
+                ),
+            ).copy(manifest = manifest().copy(policyTags = listOf(BindingPolicyTag("wrong-legacy-tag")))),
+        )
+
+        assertTrue(result.isValid, result.diagnostics.toString())
+        val resolution = assertNotNull(result.resolution)
+        assertEquals("com.athena.example.representation.drive.iec", resolution.representationPackageId.value)
+        assertEquals("descriptor.drive.iec.standard", resolution.descriptorId.value)
+        assertEquals("standard", resolution.variantId.value)
+    }
+
+    @Test
+    fun `binding resolver fails closed when typed rule is missing ambiguous or asks for a missing variant`() {
+        val noRule = BindingResolver().resolve(baseRequest(activeProfile = profile("iec"), bindingRules = emptyList()))
+        assertFalse(noRule.isValid)
+        assertEquals(listOf("binding.resolution.rule.missing"), noRule.diagnostics.map { it.code.wireValue })
+
+        val ambiguous = BindingResolver().resolve(
+            baseRequest(
+                activeProfile = profile("iec"),
+                bindingRules = listOf(
+                    rule("binding.drive.a", "descriptor.drive.iec.standard", "com.athena.example.representation.drive.iec", "standard", 100),
+                    rule("binding.drive.b", "descriptor.drive.compact", "com.athena.example.representation.drive.compact", "compact", 100),
+                ),
+            ),
+        )
+        assertFalse(ambiguous.isValid)
+        assertEquals(listOf("binding.resolution.rule.ambiguous"), ambiguous.diagnostics.map { it.code.wireValue })
+
+        val missingVariant = BindingResolver().resolve(
+            baseRequest(
+                activeProfile = profile("iec"),
+                bindingRules = listOf(
+                    rule(
+                        id = "binding.drive.missing-variant",
+                        descriptorId = "descriptor.drive.iec.standard",
+                        packageId = "com.athena.example.representation.drive.iec",
+                        variant = "wide",
+                        priority = 100,
+                    ),
+                ),
+            ),
+        )
+        assertFalse(missingVariant.isValid)
+        assertEquals(listOf("binding.resolution.variant.missing"), missingVariant.diagnostics.map { it.code.wireValue })
     }
 
     @Test
@@ -139,16 +324,61 @@ class BindingResolverSelectionTest {
         )
     }
 
+    @Test
+    fun `binding resolver compares compatibility ranges as semantic versions`() {
+        val newerMinor = BindingResolver().resolve(
+            baseRequest(activeProfile = profile("iec", versionRange = "1.2.0+")).copy(
+                engineeringPackage = engineeringPackage("1.10.0"),
+            ),
+        )
+        val olderMajor = BindingResolver().resolve(
+            baseRequest(activeProfile = profile("iec", versionRange = "10.0.0+")).copy(
+                engineeringPackage = engineeringPackage("2.0.0"),
+            ),
+        )
+        val malformed = BindingResolver().resolve(
+            baseRequest(activeProfile = profile("iec", versionRange = "1.0.0+")).copy(
+                engineeringPackage = engineeringPackage("not-semver"),
+            ),
+        )
+
+        assertTrue(newerMinor.isValid, newerMinor.diagnostics.toString())
+        listOf(olderMajor, malformed).forEach { result ->
+            assertFalse(result.isValid)
+            assertTrue(result.diagnostics.any { diagnostic ->
+                diagnostic.code.wireValue == "binding.resolution.presentation-profile.incompatible"
+            }, result.diagnostics.toString())
+        }
+    }
+
     private fun baseRequest(
         activeProfile: PresentationProfileDescriptor,
         requiredAnchorBindings: Map<String, RepresentationAnchorId> = mapOf("port:DriveA.power" to RepresentationAnchorId("power")),
         requiredLabelBindings: Map<RepresentationLabelSlotId, String> = mapOf(RepresentationLabelSlotId("device-tag") to "DriveA"),
+        bindingRules: List<RepresentationBindingRule> = listOf(
+            rule(
+                id = "binding.drive.default",
+                descriptorId = if (activeProfile.profileId.value == "compact") "descriptor.drive.compact" else "descriptor.drive.iec.standard",
+                packageId = if (activeProfile.profileId.value == "compact") {
+                    "com.athena.example.representation.drive.compact"
+                } else {
+                    "com.athena.example.representation.drive.iec"
+                },
+                variant = if (activeProfile.profileId.value == "compact") "compact" else "standard",
+                priority = 100,
+                profileId = activeProfile.profileId.value,
+            ),
+        ),
+        subjectKind: RepresentationBindingSubjectKind = RepresentationBindingSubjectKind.DEVICE,
+        semanticFacts: Map<String, String> = mapOf("type" to "Drive"),
     ): BindingResolutionRequest = BindingResolutionRequest(
         subject = BindingSubject(
             semanticSubjectId = "device:DriveA",
             conceptId = EngineeringConceptId("FrequencyDrive"),
             requiredAnchorBindings = requiredAnchorBindings,
             requiredLabelBindings = requiredLabelBindings,
+            subjectKind = subjectKind,
+            semanticFacts = semanticFacts,
         ),
         projectionContext = ProjectionContextId("schematic-sheet"),
         engineeringPackage = engineeringPackage(),
@@ -162,14 +392,42 @@ class BindingResolverSelectionTest {
             descriptor("descriptor.drive.iec.standard", "drive-iec", "standard"),
             descriptor("descriptor.drive.compact", "drive-compact", "compact"),
         ),
+        bindingRules = bindingRules,
     )
 
-    private fun engineeringPackage(): EngineeringPackageDescriptor = EngineeringPackageDescriptor(
+    private fun rule(
+        id: String,
+        descriptorId: String,
+        packageId: String,
+        variant: String,
+        priority: Int,
+        profileId: String = "iec",
+        subjectKind: RepresentationBindingSubjectKind = RepresentationBindingSubjectKind.DEVICE,
+        selectorFacts: List<RepresentationBindingSelectorFact> = listOf(RepresentationBindingSelectorFact("type", "Drive")),
+    ): RepresentationBindingRule = RepresentationBindingRule(
+        ruleId = RepresentationBindingRuleId(id),
+        profileId = PresentationProfileId(profileId),
+        projectionContext = ProjectionContextId("schematic-sheet"),
+        conceptId = EngineeringConceptId("FrequencyDrive"),
+        subjectKind = subjectKind,
+        selectorFacts = selectorFacts,
+        target = RepresentationBindingTarget(
+            representationPackageId = RepresentationPackageId(packageId),
+            descriptorId = RepresentationDescriptorId(descriptorId),
+            packageVersion = RepresentationPackageVersion("1.0.0"),
+            variantId = RepresentationVariantId(variant),
+        ),
+        priority = RepresentationBindingPriority(priority),
+        lifecycle = RepresentationBindingRuleLifecycle(RepresentationBindingRuleLifecycleState.ACTIVE),
+        provenance = RepresentationBindingRuleProvenance(listOf("m34-test"), "Athena M34"),
+    )
+
+    private fun engineeringPackage(version: String = "1.0.0"): EngineeringPackageDescriptor = EngineeringPackageDescriptor(
         packageId = EngineeringPackageId("com.athena.example.engineering.drive.compact-vfd"),
         coordinates = EngineeringPackageCoordinates(
             groupId = EngineeringPackageGroupId("com.athena.example.engineering.drive"),
             artifactId = EngineeringPackageArtifactId("compact-vfd"),
-            version = EngineeringPackageVersion("1.0.0"),
+            version = EngineeringPackageVersion(version),
         ),
         kind = EngineeringPackageKind.CATALOG,
         concepts = listOf(EngineeringConceptDefinition(EngineeringConceptId("FrequencyDrive"))),
@@ -189,7 +447,10 @@ class BindingResolverSelectionTest {
         provenance = BindingManifestProvenance(sources = listOf("m32-test"), reviewedBy = "Athena M32"),
     )
 
-    private fun profile(id: String): PresentationProfileDescriptor = PresentationProfileDescriptor(
+    private fun profile(
+        id: String,
+        versionRange: String = "1.0.0+",
+    ): PresentationProfileDescriptor = PresentationProfileDescriptor(
         profileId = PresentationProfileId(id),
         version = PresentationProfileVersion("1.0.0"),
         projectionContexts = listOf(ProjectionContextId("schematic-sheet")),
@@ -198,7 +459,7 @@ class BindingResolverSelectionTest {
         compatibilityConstraints = listOf(
             PresentationPackageCompatibilityConstraint(
                 packageId = "com.athena.example.engineering.drive.compact-vfd",
-                versionRange = "1.0.0+",
+                versionRange = versionRange,
             ),
         ),
         fallbackPolicy = PresentationProfileFallbackPolicy(PresentationProfileFallbackMode.FAIL_CLOSED),

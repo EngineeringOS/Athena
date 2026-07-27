@@ -3,6 +3,7 @@ package com.engineeringood.athena.compiler
 import com.engineeringood.athena.packageruntime.RepresentationPackageSnapshotRequest
 import com.engineeringood.athena.packageruntime.RepresentationPackageSnapshotStager
 import com.engineeringood.athena.packageplatform.RepresentationAnchorSide
+import com.engineeringood.athena.representation.RepresentationDefinitionKind
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -160,8 +161,107 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         assertTrue(result.proof.sourceHashes.keys.none { path -> path.endsWith(".xml") })
         assertTrue(result.proof.xmlRuntimeAuthorityAbsent)
         val driveDescriptor = result.descriptors.single { descriptor -> descriptor.descriptorId.value == "vendor.drive.element" }
-        assertEquals(setOf("inspectBody", "powerIn", "statusOut"), driveDescriptor.anchors.map { it.anchorId.value }.toSet())
+        assertTrue(driveDescriptor.anchors.isEmpty())
         assertEquals(setOf("deviceTag"), driveDescriptor.labelSlots.map { it.slotId.value }.toSet())
+    }
+
+    @Test
+    fun `m35 standard and vendor package proof compiles reproducibly from manifest authority`() {
+        val sampleRoot = Files.createTempDirectory("athena-m35-package-proof")
+        copyTree(repositoryRoot().resolve("examples/m35/package-platform-proof"), sampleRoot)
+        val lockValidation = AthenaCompiler().validateRepositoryLock(sampleRoot)
+
+        assertTrue(
+            lockValidation.isValid,
+            lockValidation.diagnostics.joinToString(separator = "\n") { diagnostic -> "${diagnostic.code}: ${diagnostic.message}" },
+        )
+        val firstStage = RepresentationPackageSnapshotStager().stageRepository(
+            repositoryRoot = sampleRoot,
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-first"),
+        )
+        val secondStage = RepresentationPackageSnapshotStager().stageRepository(
+            repositoryRoot = sampleRoot,
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-second"),
+        )
+
+        assertTrue(firstStage.diagnostics.isEmpty(), firstStage.diagnostics.toString())
+        assertTrue(secondStage.diagnostics.isEmpty(), secondStage.diagnostics.toString())
+        val firstSnapshot = assertNotNull(firstStage.snapshot)
+        val secondSnapshot = assertNotNull(secondStage.snapshot)
+        assertEquals(firstSnapshot.snapshotId, secondSnapshot.snapshotId)
+        assertEquals(firstSnapshot.files.map { it.repositoryRelativePath }, secondSnapshot.files.map { it.repositoryRelativePath })
+        assertEquals(firstSnapshot.files.map { it.contentHash }, secondSnapshot.files.map { it.contentHash })
+        assertEquals(
+            listOf(
+                "packages/representation/com/engineeringood/m35/standard/iec/standard-elements.athena",
+                "packages/representation/com/engineeringood/m35/vendor/abb/pfea112/pfea112.svg",
+                "packages/representation/com/engineeringood/m35/vendor/abb/pfea112/vendor-elements.athena",
+            ),
+            firstSnapshot.files.map { it.repositoryRelativePath },
+        )
+
+        val compiler = AthenaRepresentationPackageSnapshotCompiler()
+        val first = compiler.compile(firstSnapshot)
+        val second = compiler.compile(secondSnapshot)
+
+        assertTrue(first.diagnostics.isEmpty(), first.diagnostics.toString())
+        assertTrue(second.diagnostics.isEmpty(), second.diagnostics.toString())
+        assertEquals(first.proof.snapshotId, second.proof.snapshotId)
+        assertEquals(first.proof.dependencyLockDigest, second.proof.dependencyLockDigest)
+        assertEquals(first.proof.compilerSchemaVersion, second.proof.compilerSchemaVersion)
+        assertEquals(first.proof.sourceHashes, second.proof.sourceHashes)
+        assertEquals(first.proof.generatedResourceIds, second.proof.generatedResourceIds)
+        assertEquals(first.proof.compiledBodyAuthorities, second.proof.compiledBodyAuthorities)
+        assertEquals(
+            listOf("iec.protective-earth.element", "vendor.abb.pfea112.element"),
+            first.definitions
+                .filter { definition -> definition.definitionKind == RepresentationDefinitionKind.ELEMENT }
+                .map { it.symbolId.value }
+                .sorted(),
+        )
+        assertEquals(first.definitions.map { it.symbolId.value }.sorted(), first.descriptors.map { it.descriptorId.value }.sorted())
+        assertTrue(first.proof.sourceHashes.keys.none { path -> path.endsWith(".xml") || path.endsWith(".html") })
+        assertTrue(first.proof.xmlRuntimeAuthorityAbsent)
+        assertTrue(first.proof.rawSvgTransportAbsent)
+        assertTrue(first.proof.rendererFileAccessAuthorityAbsent)
+        assertEquals(setOf("GRAPHIC_PRIMITIVE"), first.proof.compiledBodyAuthorities)
+    }
+
+    @Test
+    fun `m35 package proof changes identity for resource edits and rejects malicious svg paths`() {
+        val sampleRoot = Files.createTempDirectory("athena-m35-package-proof-negative")
+        copyTree(repositoryRoot().resolve("examples/m35/package-platform-proof"), sampleRoot)
+        val clean = RepresentationPackageSnapshotStager().stageRepository(
+            repositoryRoot = sampleRoot,
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-clean"),
+        )
+        assertTrue(clean.diagnostics.isEmpty(), clean.diagnostics.toString())
+        val cleanSnapshot = assertNotNull(clean.snapshot)
+        val vendorSvg = sampleRoot.resolve("packages/representation/com/engineeringood/m35/vendor/abb/pfea112/pfea112.svg")
+        Files.writeString(vendorSvg, Files.readString(vendorSvg).replace("PFEA112", "PFEA112-CHANGED"))
+        val changed = RepresentationPackageSnapshotStager().stageRepository(
+            repositoryRoot = sampleRoot,
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-changed"),
+        )
+
+        assertTrue(changed.diagnostics.isEmpty(), changed.diagnostics.toString())
+        assertTrue(cleanSnapshot.snapshotId != assertNotNull(changed.snapshot).snapshotId)
+
+        val vendorSource = sampleRoot.resolve("packages/representation/com/engineeringood/m35/vendor/abb/pfea112/vendor-elements.athena")
+        Files.writeString(vendorSource, Files.readString(vendorSource).replace("path \"./pfea112.svg\"", "path \"../pfea112.svg\""))
+        val maliciousStage = RepresentationPackageSnapshotStager().stageRepository(
+            repositoryRoot = sampleRoot,
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-malicious"),
+        )
+        assertTrue(maliciousStage.diagnostics.isEmpty(), maliciousStage.diagnostics.toString())
+        val malicious = AthenaRepresentationPackageSnapshotCompiler().compile(assertNotNull(maliciousStage.snapshot))
+
+        assertTrue(
+            malicious.diagnostics.any { diagnostic -> diagnostic.code == "resource.path.invalid" },
+            malicious.diagnostics.toString(),
+        )
+        assertTrue(malicious.definitions.none { definition -> definition.symbolId.value == "vendor.abb.pfea112.element" })
+        assertTrue(malicious.descriptors.none { descriptor -> descriptor.descriptorId.value == "vendor.abb.pfea112.element" })
     }
 
     @Test
@@ -240,15 +340,10 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         """.trimIndent()
 
         private val VALID_SVG = """
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360" data-athena-schema="representation/v1">
-              <rect id="body" x="8" y="8" width="224" height="344"/>
-              <circle id="power-in-dot" cx="24" cy="48" r="4"
-                      data-athena-anchor="powerIn"
-                      data-athena-point="24 48"
-                      data-athena-role="terminal"
-                      data-athena-direction="in"
-                      data-athena-signal="AC"/>
-              <text id="tag" x="120" y="32" data-athena-label-slot="deviceTag" data-athena-point="120 32">ACS380</text>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360">
+              <rect id="body" x="8" y="8" width="224" height="344" data-athena-geometry-ref="body"/>
+              <circle id="power-in-dot" cx="24" cy="48" r="4" data-athena-geometry-ref="power-in-dot"/>
+              <text id="tag" x="120" y="32" data-athena-geometry-ref="tag">ACS380</text>
             </svg>
         """.trimIndent()
 

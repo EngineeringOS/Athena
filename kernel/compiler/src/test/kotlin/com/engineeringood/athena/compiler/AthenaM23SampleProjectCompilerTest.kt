@@ -43,7 +43,7 @@ class AthenaM23SampleProjectCompilerTest {
     }
 
     private fun sampleProjectSource(): Path {
-        return resolveRepoRoot().resolve("examples/m23/sample-project/src/01-layout-hints.athena")
+        return resolveRepoRoot().resolve("examples/m23/sample-project/src/com/engineeringood/m23/sample/01-layout-hints.athena")
     }
 
     private fun resolveRepoRoot(): Path {

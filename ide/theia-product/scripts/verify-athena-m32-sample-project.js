@@ -35,7 +35,6 @@ async function main() {
     assertInstalledLspHostPresent();
 
     const smoke = await runElectronSmoke(repositoryRoot, screenshotPath, {
-        activeView: 'cabinet',
         requireZeroDiagnostics: true,
     });
     if (smoke.capturedScreenshotPath !== screenshotPath) {
@@ -68,7 +67,7 @@ async function runElectronSmoke(repositoryRoot, screenshotPath, options = {}) {
                 ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: SOURCE_RELATIVE,
                 ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH: EXPECTED_OUTLINE_PATH,
                 ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE: options.skipOutline ? '1' : '0',
-                ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW: options.activeView || 'cabinet',
+                ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW: options.activeView ?? '',
                 ATHENA_ELECTRON_SMOKE_CREATE_ENTITY_TAG: options.createEntityTag || '',
                 ATHENA_ELECTRON_SMOKE_EXPECT_SEMANTIC_ID: options.expectedSemanticId || '',
                 ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT: screenshotPath || '',
@@ -184,6 +183,7 @@ async function runGraphFirstAuthoringProof(sampleRepositoryRoot) {
         });
         const graphFirstAuthoringProof = createSmoke.graphWorkbenchProof?.createEntityPanelProof?.graphFirstAuthoringProof;
         if (!graphFirstAuthoringProof?.accepted || !graphFirstAuthoringProof?.projected ||
+            !graphFirstAuthoringProof.cabinetActiveAfterCreate ||
             !graphFirstAuthoringProof?.outlineSkipped || graphFirstAuthoringProof.semanticId !== expectedSemanticId
         ) {
             throw new Error(`M32 graph-first authoring proof failed.\n${JSON.stringify(graphFirstAuthoringProof, null, 2)}`);
@@ -402,12 +402,31 @@ function assertGraphWorkbenchProof(graphWorkbenchProof) {
         );
     }
     assertProjectionViewFocusProof(graphWorkbenchProof.projectionViewProof);
+    assertToolbarDensityProof(graphWorkbenchProof.toolbarDensityProof);
     assertRouteProof(graphWorkbenchProof.routeProof);
     assertRepresentationProof(graphWorkbenchProof.representationProof);
     assertVisualProof(graphWorkbenchProof.visualProof);
     assertOutlineProof(graphWorkbenchProof.outlineProof);
     assertCreateEntityPanelProof(graphWorkbenchProof.createEntityPanelProof);
-    assertDocumentProjectionProof(graphWorkbenchProof.documentProjectionProof);
+}
+
+function assertToolbarDensityProof(toolbarDensityProof) {
+    if (!toolbarDensityProof) {
+        throw new Error('Athena Cabinet proof missing toolbar density evidence.');
+    }
+    if (Number(toolbarDensityProof.normalToolbarButtonCount) > 4) {
+        throw new Error(`Athena Cabinet toolbar exposes too many normal controls.\n${JSON.stringify(toolbarDensityProof, null, 2)}`);
+    }
+    if (Number(toolbarDensityProof.internalProofControlCount) !== 0) {
+        throw new Error(`Athena Cabinet toolbar exposes internal proof/debug controls.\n${JSON.stringify(toolbarDensityProof, null, 2)}`);
+    }
+    if (Number(toolbarDensityProof.inspectionButtonCount) !== 1) {
+        throw new Error(`Athena Cabinet toolbar must expose one inspection affordance.\n${JSON.stringify(toolbarDensityProof, null, 2)}`);
+    }
+    const textButtonLabels = normalizeArray(toolbarDensityProof.textButtonLabels);
+    if (textButtonLabels.length !== 1 || textButtonLabels[0] !== 'Cabinet') {
+        throw new Error(`Athena Cabinet toolbar has unexpected text commands.\n${JSON.stringify(toolbarDensityProof, null, 2)}`);
+    }
 }
 
 function assertProjectionViewFocusProof(projectionViewProof) {
@@ -415,48 +434,31 @@ function assertProjectionViewFocusProof(projectionViewProof) {
         throw new Error('Athena M32 graph proof missing projection view focus proof.');
     }
     const visibleViewIds = normalizeArray(projectionViewProof.visibleViewIds);
+    const visibleProductSurfaceIds = normalizeArray(projectionViewProof.visibleProductSurfaceIds);
+    const visibleProductSurfaceLabels = normalizeArray(projectionViewProof.visibleProductSurfaceLabels);
+    const activeViewIds = normalizeArray(projectionViewProof.activeViewIds);
+    if (visibleProductSurfaceIds.length !== 1 || visibleProductSurfaceIds[0] !== 'cabinet') {
+        throw new Error(`Athena product toolbar must expose exactly one Cabinet product surface.\n${JSON.stringify(projectionViewProof, null, 2)}`);
+    }
     if (visibleViewIds.length !== 1 || visibleViewIds[0] !== 'cabinet') {
         throw new Error(
-            `Athena M32 product toolbar must expose only the Cabinet demo view. Visible views: ${visibleViewIds.join(', ') || '<none>'}.\n${JSON.stringify(projectionViewProof, null, 2)}`
+            `Athena product toolbar must expose Cabinet through the cabinet projection. Backing views: ${visibleViewIds.join(', ') || '<none>'}.\n${JSON.stringify(projectionViewProof, null, 2)}`
         );
+    }
+    if (visibleProductSurfaceLabels.length !== 1 || visibleProductSurfaceLabels[0] !== 'Cabinet' || projectionViewProof.primaryLabelMatched !== true) {
+        throw new Error(`Athena product toolbar does not expose the stable Cabinet label.\n${JSON.stringify(projectionViewProof, null, 2)}`);
     }
     if (Number(projectionViewProof.visibleViewButtonCount) !== 1 || Number(projectionViewProof.visibleViewCountAttribute) !== 1) {
         throw new Error(`Athena M32 product toolbar has unstable visible projection button count.\n${JSON.stringify(projectionViewProof, null, 2)}`);
     }
-    if (!normalizeArray(projectionViewProof.activeViewIds).includes('cabinet')) {
-        throw new Error(`Athena M32 Cabinet view button is not active.\n${JSON.stringify(projectionViewProof, null, 2)}`);
-    }
     if (Number(projectionViewProof.compatibilityViewCount) < 1) {
         throw new Error(`Athena M32 projection compatibility modes were not accounted for as hidden compatibility.\n${JSON.stringify(projectionViewProof, null, 2)}`);
     }
-}
-
-function assertDocumentProjectionProof(documentProjectionProof) {
-    if (!documentProjectionProof?.compatibilityActivated) {
-        throw new Error(`Athena M32 document projection proof did not activate Documentation through the compatibility API.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
+    if (activeViewIds.length !== 1 || activeViewIds[0] !== 'cabinet') {
+        throw new Error(`Athena Cabinet product surface is not the unique active control.\n${JSON.stringify(projectionViewProof, null, 2)}`);
     }
-    if (!documentProjectionProof.contextualNavigationPresent || Number(documentProjectionProof.contextualDocumentControlCount) < 1) {
-        throw new Error(`Athena M32 Documentation controls were not rendered in contextual navigation.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
-    }
-    if (Number(documentProjectionProof.globalToolbarDocumentControlCount) !== 0) {
-        throw new Error(`Athena M32 Documentation controls polluted the global toolbar.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
-    }
-    if (!documentProjectionProof?.hasSheetViewSelector) {
-        throw new Error(`Athena M32 document projection proof did not expose sheet navigation.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
-    }
-    if (Number(documentProjectionProof.sheetViewOptionCount) < 2) {
-        throw new Error(`Athena M32 sheet navigation must expose multiple sheets.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
-    }
-    if (!documentProjectionProof.selectedSheetViewId) {
-        throw new Error(`Athena M32 sheet navigation proof missing selected sheet.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
-    }
-    if (!documentProjectionProof.sheetSelectionRestored ||
-        documentProjectionProof.restoredSheetViewId !== documentProjectionProof.selectedSheetViewIdBeforeProjectionSwitch
-    ) {
-        throw new Error(`Athena M32 Documentation sheet selection did not survive the Cabinet compatibility round trip.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
-    }
-    if (documentProjectionProof.restoredActiveViewId !== 'cabinet' || documentProjectionProof.contextualNavigationPresentAfterRestore) {
-        throw new Error(`Athena M32 document projection proof did not restore the clean Cabinet surface.\n${JSON.stringify(documentProjectionProof, null, 2)}`);
+    if (!projectionViewProof.cabinetRefreshAccepted || !projectionViewProof.cabinetActiveAfterRefresh) {
+        throw new Error(`Athena Cabinet surface did not survive a real projection refresh.\n${JSON.stringify(projectionViewProof, null, 2)}`);
     }
 }
 

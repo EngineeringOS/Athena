@@ -34,6 +34,13 @@ import com.engineeringood.athena.packageplatform.ProjectionContextId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorDefinition
 import com.engineeringood.athena.packageplatform.RepresentationAnchorId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorSide
+import com.engineeringood.athena.packageplatform.RepresentationBindingPriority
+import com.engineeringood.athena.packageplatform.RepresentationBindingRule
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleId
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleLifecycle
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleLifecycleState
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleProvenance
+import com.engineeringood.athena.packageplatform.RepresentationBindingTarget
 import com.engineeringood.athena.packageplatform.RepresentationDescriptor
 import com.engineeringood.athena.packageplatform.RepresentationDescriptorBounds
 import com.engineeringood.athena.packageplatform.RepresentationDescriptorId
@@ -103,6 +110,7 @@ data class M32SamplePackageSet(
             activeProfile = profile,
             representationPackages = representationPackages,
             descriptors = descriptors,
+            bindingRules = bindingRulesFor(subject, manifest, profile),
         )
     }
 
@@ -135,6 +143,45 @@ data class M32SamplePackageSet(
             anchor = "up",
         ),
     )
+
+    private fun bindingRulesFor(
+        subject: M32SampleSubject,
+        manifest: BindingManifest,
+        profile: PresentationProfileDescriptor,
+    ): List<RepresentationBindingRule> {
+        val admitted = (listOf(manifest.defaultRepresentationPackageId) + manifest.alternativeRepresentationPackageIds).toSet()
+        return representationPackages
+            .filter { representationPackage -> representationPackage.packageId.value in admitted }
+            .filter { representationPackage ->
+                representationPackage.supportedProfiles.any { supported ->
+                    supported.profileId == profile.profileId || supported.tags.any { tag -> tag.value == profile.profileId.value }
+                }
+            }
+            .flatMap { representationPackage ->
+                representationPackage.descriptorEntries.map { entry ->
+                    RepresentationBindingRule(
+                        ruleId = RepresentationBindingRuleId(
+                            "binding.m32.${subject.conceptId.value}.${profile.profileId.value}.${entry.descriptorId.value}",
+                        ),
+                        profileId = profile.profileId,
+                        projectionContext = ProjectionContextId("schematic-sheet"),
+                        conceptId = subject.conceptId,
+                        target = RepresentationBindingTarget(
+                            representationPackageId = representationPackage.packageId,
+                            descriptorId = entry.descriptorId,
+                            packageVersion = representationPackage.coordinates.version,
+                            variantId = entry.variants.firstOrNull(),
+                        ),
+                        priority = RepresentationBindingPriority(100),
+                        lifecycle = RepresentationBindingRuleLifecycle(RepresentationBindingRuleLifecycleState.ACTIVE),
+                        provenance = RepresentationBindingRuleProvenance(
+                            sources = listOf("athena-owned-m32-sample-typed-rule"),
+                            reviewedBy = "Athena M34 migration",
+                        ),
+                    )
+                }
+            }
+    }
 
     companion object {
         fun loadDefault(projectRoot: Path = Path.of("").absolute()): M32SamplePackageSet {

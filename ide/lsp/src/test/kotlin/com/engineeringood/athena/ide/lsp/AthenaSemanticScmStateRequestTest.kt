@@ -29,7 +29,7 @@ class AthenaSemanticScmStateRequestTest {
             )
             writeSemanticScmFixture(
                 repositoryRoot = current,
-                dependencyLocator = "../alpha-package",
+                dependencyLocator = "vendor/alpha-package",
                 sourceText = """
                     system Demo {
                       device PLC1 {
@@ -207,8 +207,8 @@ private fun writeSemanticScmFixture(
         }.trimEnd(),
     )
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve("demo.athena").writeText(sourceText)
+    val sourceRoot = repositoryRoot.resolve("src/com/engineeringood/demo").createDirectories()
+    sourceRoot.resolve("demo.athena").writeText(governedAthenaSource(sourceText, "com.engineeringood.demo"))
 
     if (dependencyLocator != null) {
         val dependencyRoot = repositoryRoot.resolve(dependencyLocator).createDirectories()
@@ -221,8 +221,8 @@ private fun writeSemanticScmFixture(
             """.trimIndent(),
         )
         dependencyRoot.resolve("athena.lock").writeText("# lock")
-        val dependencySourceRoot = dependencyRoot.resolve("src").createDirectories()
-        dependencySourceRoot.resolve("alpha.athena").writeText("system Alpha { }")
+        val dependencySourceRoot = dependencyRoot.resolve("src/com/engineeringood/alpha").createDirectories()
+        dependencySourceRoot.resolve("alpha.athena").writeText(governedAthenaSource("system Alpha { }", "com.engineeringood.alpha"))
         AthenaCompiler().materializeRepositoryLock(dependencyRoot)
     }
 }

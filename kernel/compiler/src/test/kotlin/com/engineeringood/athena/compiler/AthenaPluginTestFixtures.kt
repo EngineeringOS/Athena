@@ -397,6 +397,7 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
         }
         val connections = connectionDeclarations.map { declaration ->
             context.connection(
+                alias = declaration.alias,
                 fromPath = declaration.from.parts,
                 fromProvenance = context.provenance(declaration.from.span),
                 toPath = declaration.to.parts,

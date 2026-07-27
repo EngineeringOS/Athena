@@ -9,6 +9,9 @@ import com.engineeringood.athena.packageplatform.PresentationProfileId
 import com.engineeringood.athena.packageplatform.PresentationStyleProfileId
 import com.engineeringood.athena.packageplatform.ProjectionContextId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorId
+import com.engineeringood.athena.packageplatform.RepresentationBindingRule
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleId
+import com.engineeringood.athena.packageplatform.RepresentationBindingSubjectKind
 import com.engineeringood.athena.packageplatform.RepresentationDescriptor
 import com.engineeringood.athena.packageplatform.RepresentationDescriptorId
 import com.engineeringood.athena.packageplatform.RepresentationLabelSlotId
@@ -21,6 +24,8 @@ data class BindingSubject(
     val conceptId: EngineeringConceptId,
     val requiredAnchorBindings: Map<String, RepresentationAnchorId> = emptyMap(),
     val requiredLabelBindings: Map<RepresentationLabelSlotId, String> = emptyMap(),
+    val semanticFacts: Map<String, String> = emptyMap(),
+    val subjectKind: RepresentationBindingSubjectKind = RepresentationBindingSubjectKind.DEVICE,
 )
 
 data class BindingResolutionRequest(
@@ -31,6 +36,7 @@ data class BindingResolutionRequest(
     val activeProfile: PresentationProfileDescriptor,
     val representationPackages: List<RepresentationPackageDescriptor>,
     val descriptors: List<RepresentationDescriptor>,
+    val bindingRules: List<RepresentationBindingRule> = emptyList(),
 )
 
 enum class BindingAuthority {
@@ -42,6 +48,8 @@ enum class BindingAuthority {
     ANCHOR,
     LABEL_SLOT,
     BINDING_POLICY,
+    BINDING_RULE,
+    VARIANT,
 }
 
 enum class BindingResolverDiagnosticSeverity {
@@ -71,6 +79,7 @@ data class BindingResolution(
     val anchorMapping: Map<String, RepresentationAnchorId>,
     val labelBinding: Map<RepresentationLabelSlotId, String>,
     val styleProfile: PresentationStyleProfileId,
+    val bindingRuleId: RepresentationBindingRuleId? = null,
 )
 
 data class BindingResolutionResult(

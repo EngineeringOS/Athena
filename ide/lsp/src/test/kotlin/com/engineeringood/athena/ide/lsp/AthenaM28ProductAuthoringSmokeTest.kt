@@ -25,7 +25,7 @@ class AthenaM28ProductAuthoringSmokeTest {
         try {
             AthenaCompiler().materializeRepositoryLock(repositoryRoot)
 
-            val sourcePath = repositoryRoot.resolve("src/01-relationship-authoring-source.athena")
+            val sourcePath = repositoryRoot.resolve("src/com/engineeringood/m28/sample/01-relationship-authoring-source.athena")
             val documentUri = sourcePath.toUri().toString()
             val originalSource = Files.readString(sourcePath)
             val server = AthenaLanguageServer()

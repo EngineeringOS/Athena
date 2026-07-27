@@ -48,16 +48,68 @@ object RepresentationContractValidator {
                 diagnostics += diagnostic(
                     RepresentationDiagnosticCode.LIBRARY_INVALID,
                     "Representation library `${definition.libraryId.value}` is not allowed.",
-                    definition.symbolId,
+                    definition,
                 )
             }
             if (definition.lifecycle.state !in input.supportedLifecycleStates) {
                 diagnostics += diagnostic(
                     RepresentationDiagnosticCode.LIFECYCLE_UNSUPPORTED,
                     "Representation lifecycle `${definition.lifecycle.state.name}` is not supported.",
-                    definition.symbolId,
+                    definition,
                 )
             }
+            if (definition.bodyAuthority == RepresentationBodyAuthority.GRAPHIC_PRIMITIVE) {
+                GraphicPrimitiveIrValidator.validate(definition.graphicBody).diagnostics.forEach { bodyDiagnostic ->
+                    diagnostics += diagnostic(
+                        RepresentationDiagnosticCode.GRAPHIC_BODY_INVALID,
+                        "${bodyDiagnostic.code.wireValue}: ${bodyDiagnostic.message}",
+                        definition,
+                    )
+                }
+            }
+            definition.forbiddenAuthorityClaims
+                .sortedBy { claim -> claim.name }
+                .forEach { claim ->
+                    diagnostics += diagnostic(
+                        RepresentationDiagnosticCode.SOURCE_AUTHORITY_VIOLATION,
+                        "Representation definition `${definition.symbolId.value}` cannot claim `$claim` authority.",
+                        definition,
+                    )
+                }
+            definition.anchors
+                .groupBy { anchor -> anchor.anchorId }
+                .filterValues { anchors -> anchors.size > 1 }
+                .keys
+                .forEach { anchorId ->
+                    diagnostics += diagnostic(
+                        RepresentationDiagnosticCode.ANCHOR_DUPLICATE,
+                        "Representation definition `${definition.symbolId.value}` declares duplicate anchor `${anchorId.value}`.",
+                        definition,
+                    )
+                }
+            val primitiveIds = definition.graphicBody.primitives.flatMap { primitive -> primitive.allPrimitiveIds() }.toSet()
+            if (primitiveIds.isNotEmpty()) {
+                definition.anchors
+                    .filterNot { anchor -> anchor.primitiveId in primitiveIds }
+                    .forEach { anchor ->
+                        diagnostics += diagnostic(
+                            RepresentationDiagnosticCode.ANCHOR_MISSING,
+                            "Representation definition `${definition.symbolId.value}` anchor `${anchor.anchorId.value}` references missing primitive `${anchor.primitiveId.value}`.",
+                            definition,
+                        )
+                    }
+            }
+            definition.intrinsicComposition?.children.orEmpty()
+                .groupBy { child -> child.childId }
+                .filterValues { children -> children.size > 1 }
+                .keys
+                .forEach { childId ->
+                    diagnostics += diagnostic(
+                        RepresentationDiagnosticCode.COMPOSITION_CHILD_DUPLICATE,
+                        "Representation definition `${definition.symbolId.value}` declares duplicate child `${childId.value}`.",
+                        definition,
+                    )
+                }
         }
 
         input.policies.forEach { policy ->
@@ -109,13 +161,23 @@ object RepresentationContractValidator {
                     )
                 }
 
-            val terminalIds = definition?.anatomy?.terminals.orEmpty().map { terminal -> terminal.terminalId }.toSet()
+            val terminalIds = when (definition?.bodyAuthority) {
+                RepresentationBodyAuthority.GRAPHIC_PRIMITIVE -> definition.anchors
+                    .filter { anchor -> anchor.role == RepresentationAnchorRole.TERMINAL }
+                    .map { anchor -> PresentationTerminalId(anchor.anchorId.value) }
+                    .toSet()
+                RepresentationBodyAuthority.LEGACY_PRESENTATION_ANATOMY -> definition.anatomy.terminals
+                    .map { terminal -> terminal.terminalId }
+                    .toSet()
+                null -> emptySet()
+            }
             occurrence.terminalBindings.forEach { binding ->
                 if (binding.terminalId !in terminalIds) {
                     diagnostics += diagnostic(
                         RepresentationDiagnosticCode.ANCHOR_MISSING,
                         "Occurrence `${occurrence.occurrenceId.value}` binds missing terminal anchor `${binding.terminalId.value}`.",
                         occurrence.canonicalSemanticId,
+                        definition?.lifecycle?.provenance,
                     )
                 }
                 val compatibleBinding = RepresentationCompatibleTerminalBinding(binding.terminalId, binding.semanticPortId)
@@ -124,6 +186,7 @@ object RepresentationContractValidator {
                         RepresentationDiagnosticCode.TERMINAL_INCOMPATIBLE,
                         "Terminal `${binding.terminalId.value}` is not compatible with semantic port `${binding.semanticPortId.value}`.",
                         occurrence.canonicalSemanticId,
+                        definition?.lifecycle?.provenance,
                     )
                 }
             }
@@ -155,11 +218,24 @@ object RepresentationContractValidator {
     private fun diagnostic(
         code: RepresentationDiagnosticCode,
         message: String,
+        definition: RepresentationDefinition,
+    ): RepresentationDiagnostic = RepresentationDiagnostic(
+        code = code,
+        message = message,
+        subjectId = RepresentationSubjectId("symbol:${definition.symbolId.value}"),
+        provenance = definition.lifecycle.provenance,
+    )
+
+    private fun diagnostic(
+        code: RepresentationDiagnosticCode,
+        message: String,
         subjectId: RepresentationSubjectId,
+        provenance: RepresentationProvenance? = null,
     ): RepresentationDiagnostic = RepresentationDiagnostic(
         code = code,
         message = message,
         subjectId = subjectId,
+        provenance = provenance,
     )
 }
 
@@ -169,11 +245,13 @@ private fun List<RepresentationDiagnostic>.canonical(): List<RepresentationDiagn
             { diagnostic -> diagnostic.code.wireValue },
             { diagnostic -> diagnostic.subjectId?.value.orEmpty() },
             { diagnostic -> diagnostic.message },
+            { diagnostic -> diagnostic.provenance?.source.orEmpty() },
         ),
     )
 }
 
 private fun RepresentationSymbolKind.supportedOccurrenceRoles(): Set<RepresentationOccurrenceRole> = when (this) {
+    RepresentationSymbolKind.GENERIC -> emptySet()
     RepresentationSymbolKind.SUPPLY_REFERENCE -> setOf(RepresentationOccurrenceRole.SUPPLY_REFERENCE)
     RepresentationSymbolKind.TERMINAL -> setOf(RepresentationOccurrenceRole.TERMINAL)
     RepresentationSymbolKind.SWITCH_CONTACT -> setOf(RepresentationOccurrenceRole.SWITCH_CONTACT)
@@ -185,4 +263,10 @@ private fun RepresentationSymbolKind.supportedOccurrenceRoles(): Set<Representat
     )
     RepresentationSymbolKind.PROTECTIVE_DEVICE -> setOf(RepresentationOccurrenceRole.PROTECTIVE_DEVICE)
     RepresentationSymbolKind.FOLIO_REFERENCE -> setOf(RepresentationOccurrenceRole.FOLIO_REFERENCE)
+}
+
+private fun GraphicPrimitive.allPrimitiveIds(): List<GraphicPrimitiveId> = when (this) {
+    is GraphicPrimitive.Group -> listOf(primitiveId) + children.flatMap { child -> child.allPrimitiveIds() }
+    is GraphicPrimitive.Transformed -> listOf(primitiveId) + child.allPrimitiveIds()
+    else -> listOf(primitiveId)
 }

@@ -1,0 +1,48 @@
+package athena.vendor
+
+symbol vendor_drive_symbol {
+  identity "vendor.drive.symbol"
+  version "1.0.0"
+
+  resource vendor_drive_svg {
+    kind svg
+    path "./vendor-drive.svg"
+  }
+
+  graphic svg resource vendor_drive_svg
+}
+
+symbol vendor_drive_label_symbol {
+  identity "vendor.drive.label.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 120, 14)
+    rectangle plate at (0, 0) size (120, 14) style symbol
+    label deviceTag at (4, 1) size (112, 12) role device-tag style device-label
+  }
+}
+
+element vendor_drive_element {
+  identity "vendor.drive.element"
+  version "1.0.0"
+  bounds (0, 0, 120, 78)
+
+  child label {
+    symbol "vendor.drive.label.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  child body {
+    symbol "vendor.drive.symbol"
+    translate (0, 18)
+    rotate 0
+    scale (1, 1)
+    zOrder 1
+  }
+
+  export label deviceTag from label.deviceTag
+}

@@ -24,22 +24,25 @@ test('creates the governed M5 repository bootstrap shape', async () => {
         assert.equal(result.repositoryName, 'Factory Line');
         assert.equal(result.projectName, 'factory-line');
         assert.equal(result.repositoryRootPath, join(parentDirectoryPath, 'Factory Line'));
-        assert.equal(result.sourcePath, join(parentDirectoryPath, 'Factory Line', 'src', 'factory-line.athena'));
+        assert.equal(
+            result.sourcePath,
+            join(parentDirectoryPath, 'Factory Line', 'src', 'com', 'engineeringood', 'factoryline', 'factoryline.athena')
+        );
 
         const manifest = await readFile(join(result.repositoryRootPath, 'athena.yaml'), 'utf8');
         const lock = await readFile(join(result.repositoryRootPath, 'athena.lock'), 'utf8');
         const source = await readFile(result.sourcePath, 'utf8');
 
         assert.match(manifest, /^primaryPackage:\n/m);
-        assert.match(manifest, /name: com\.engineeringood\.factory-line/);
+        assert.match(manifest, /name: com\.engineeringood\.factoryline/);
         assert.match(manifest, /version: 0\.1\.0/);
         assert.match(manifest, /sourceRoot: src/);
         assert.match(lock, /Generated from compiler-owned repository resolution/);
         assert.match(lock, /primaryPackage:/);
-        assert.match(lock, /name: com\.engineeringood\.factory-line/);
+        assert.match(lock, /name: com\.engineeringood\.factoryline/);
         assert.match(lock, /sourceRoot: src/);
         assert.match(lock, /dependencies: \[\]/);
-        assert.equal(source, 'system FactoryLine {\n}\n');
+        assert.equal(source, 'package com.engineeringood.factoryline\n\nsystem FactoryLine {\n}\n');
     });
 });
 

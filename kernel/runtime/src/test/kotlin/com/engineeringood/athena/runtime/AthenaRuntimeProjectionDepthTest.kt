@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class AthenaRuntimeProjectionDepthTest {
     @Test
     fun `dense m11 proof delivers repeated references through runtime projection sessions`() {
-        val sourcePath = resolveRepoRoot().resolve("examples/m11/dense-electrical-proof/src/assembly-line.athena")
+        val sourcePath = resolveRepoRoot().resolve("examples/m11/dense-electrical-proof/src/com/engineeringood/assemblyline/assemblyline.athena")
         val runtime = AthenaRuntime()
         val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
             projectName = "assembly-line",

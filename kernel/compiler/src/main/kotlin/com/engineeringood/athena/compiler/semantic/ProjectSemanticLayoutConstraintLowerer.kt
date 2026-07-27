@@ -6,6 +6,7 @@ import com.engineeringood.athena.language.LayoutStatement
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.layout.AuthoredLayoutIntentPriority
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
+import com.engineeringood.athena.layout.DrawingGridPosition
 import com.engineeringood.athena.layout.LayoutAxis
 import com.engineeringood.athena.layout.LayoutConstraint
 import com.engineeringood.athena.layout.LayoutConstraintId
@@ -13,6 +14,7 @@ import com.engineeringood.athena.layout.LayoutConstraintSubject
 import com.engineeringood.athena.layout.LayoutConstraintSnapshot
 import com.engineeringood.athena.layout.LayoutIntentId
 import com.engineeringood.athena.layout.LayoutOccurrenceId
+import com.engineeringood.athena.layout.LayoutOrientation
 import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.language.LayoutAxis as SyntaxLayoutAxis
@@ -26,8 +28,10 @@ class ProjectSemanticLayoutConstraintLowerer {
             .flatMap { namespace -> namespace.sourceUnitIds.map { sourceUnitId -> sourceUnitId to namespace } }
             .toMap()
         val declarationsByNamespaceAndName = snapshot.declarations
-            .filter { declaration -> declaration.kind == "device" && declaration.qualifiedAuthoredName.size == 1 }
-            .associateBy { declaration -> NamespaceNameKey(declaration.namespaceId, declaration.qualifiedAuthoredName.single()) }
+            .filter { declaration -> declaration.kind == "device" || declaration.kind == "function" }
+            .associateBy { declaration ->
+                NamespaceNameKey(declaration.namespaceId, declaration.qualifiedAuthoredName.joinToString("."))
+            }
         val constraints = mutableListOf<LayoutConstraint>()
 
         snapshot.sourceUnits
@@ -39,16 +43,29 @@ class ProjectSemanticLayoutConstraintLowerer {
                     .sortedBy { declaration -> declaration.span.start.offset }
                     .forEach { declaration ->
                         declaration.statements.forEach { statement ->
+                            val subjectName = statement.subjectName()
                             val subject = declarationsByNamespaceAndName[
-                                NamespaceNameKey(namespace.namespaceId, statement.subject),
+                                NamespaceNameKey(namespace.namespaceId, subjectName),
                             ] ?: return@forEach
-                            val target = declarationsByNamespaceAndName[
-                                NamespaceNameKey(namespace.namespaceId, statement.target),
-                            ] ?: return@forEach
+                            val physicalSubject = if (subject.kind == "function") {
+                                declarationsByNamespaceAndName[
+                                    NamespaceNameKey(namespace.namespaceId, subject.qualifiedAuthoredName.first()),
+                                ] ?: return@forEach
+                            } else {
+                                subject
+                            }
+                            val target = statement.targetName()?.let { targetName ->
+                                declarationsByNamespaceAndName[
+                                    NamespaceNameKey(namespace.namespaceId, targetName),
+                                ] ?: return@forEach
+                            }
                             constraints += statement.toConstraint(
                                 sourceUnitId = sourceUnit.sourceUnitId,
                                 viewFamily = declaration.viewFamily,
-                                subject = subject,
+                                subject = ResolvedLayoutSubject(
+                                    physicalDeclaration = physicalSubject,
+                                    functionDeclaration = subject.takeIf { candidate -> candidate.kind == "function" },
+                                ),
                                 target = target,
                             )
                         }
@@ -65,38 +82,53 @@ class ProjectSemanticLayoutConstraintLowerer {
     private fun LayoutStatement.toConstraint(
         sourceUnitId: SourceUnitId,
         viewFamily: String,
-        subject: ProjectSemanticDeclaration,
-        target: ProjectSemanticDeclaration,
+        subject: ResolvedLayoutSubject,
+        target: ProjectSemanticDeclaration?,
     ): LayoutConstraint {
-        val subjectName = subject.qualifiedAuthoredName.single()
-        val targetName = target.qualifiedAuthoredName.single()
+        val subjectName = subject.authoredName
+        val targetName = target?.qualifiedAuthoredName?.joinToString(".").orEmpty()
         val subjectRef = subject.toConstraintSubject(sourceUnitId, viewFamily, span)
-        val targetRef = target.toConstraintSubject(sourceUnitId, viewFamily, span)
+        val targetRef = target?.let { declaration ->
+            ResolvedLayoutSubject(declaration).toConstraintSubject(sourceUnitId, viewFamily, span)
+        }
         val constraintId = LayoutConstraintId(
             "constraint:m23:$viewFamily:${relationToken()}:$subjectName:$targetName:${span.start.offset}",
         )
         return when (this) {
-            is LayoutStatement.PlaceNear -> LayoutConstraint.near(constraintId, subjectRef, targetRef)
-            is LayoutStatement.PlaceBelow -> LayoutConstraint.below(constraintId, subjectRef, targetRef)
+            is LayoutStatement.PlaceNear -> LayoutConstraint.near(constraintId, subjectRef, requireNotNull(targetRef))
+            is LayoutStatement.PlaceBelow -> LayoutConstraint.below(constraintId, subjectRef, requireNotNull(targetRef))
             is LayoutStatement.AlignWith -> LayoutConstraint.alignedWith(
                 constraintId = constraintId,
                 subject = subjectRef,
-                target = targetRef,
+                target = requireNotNull(targetRef),
                 axis = axis.toConstraintAxis(),
             )
-            is LayoutStatement.GroupWith -> LayoutConstraint.groupedWith(constraintId, subjectRef, targetRef)
-        }.copy(authoredPriority = AuthoredLayoutIntentPriority.PREFERENCE)
+            is LayoutStatement.GroupWith -> LayoutConstraint.groupedWith(constraintId, subjectRef, requireNotNull(targetRef))
+            is LayoutStatement.PlaceAt -> LayoutConstraint.atGrid(
+                constraintId = constraintId,
+                subject = subjectRef,
+                position = DrawingGridPosition(position.column, position.row),
+                orientation = when (orientation) {
+                    com.engineeringood.athena.language.LayoutOrientation.Horizontal -> LayoutOrientation.HORIZONTAL
+                    com.engineeringood.athena.language.LayoutOrientation.Vertical -> LayoutOrientation.VERTICAL
+                },
+            )
+        }.let { constraint ->
+            if (this is LayoutStatement.PlaceAt) constraint else constraint.copy(
+                authoredPriority = AuthoredLayoutIntentPriority.PREFERENCE,
+            )
+        }
     }
 
-    private fun ProjectSemanticDeclaration.toConstraintSubject(
+    private fun ResolvedLayoutSubject.toConstraintSubject(
         sourceUnitId: SourceUnitId,
         viewFamily: String,
         span: SourceSpan,
     ): LayoutConstraintSubject {
-        val name = qualifiedAuthoredName.single()
+        val name = authoredName
         return LayoutConstraintSubject(
             intentId = LayoutIntentId("intent:m23:$viewFamily:$name"),
-            subjectId = StableSemanticIdentity(declarationId.value),
+            subjectId = StableSemanticIdentity(physicalDeclaration.declarationId.value),
             occurrenceId = LayoutOccurrenceId("occurrence:m23:$viewFamily:$name"),
             viewId = viewFamily,
             sourceSpan = LayoutSourceSpan(
@@ -106,6 +138,7 @@ class ProjectSemanticLayoutConstraintLowerer {
                 endLine = span.end.line,
                 endColumn = span.end.column,
             ),
+            functionId = functionDeclaration?.declarationId?.value?.let(::StableSemanticIdentity),
         )
     }
 
@@ -115,7 +148,24 @@ class ProjectSemanticLayoutConstraintLowerer {
             is LayoutStatement.PlaceBelow -> "below"
             is LayoutStatement.AlignWith -> "aligned-with"
             is LayoutStatement.GroupWith -> "grouped-with"
+            is LayoutStatement.PlaceAt -> "at"
         }
+    }
+
+    private fun LayoutStatement.subjectName(): String = when (this) {
+        is LayoutStatement.PlaceAt -> subject.parts.joinToString(".")
+        is LayoutStatement.PlaceNear -> subject
+        is LayoutStatement.PlaceBelow -> subject
+        is LayoutStatement.AlignWith -> subject
+        is LayoutStatement.GroupWith -> subject
+    }
+
+    private fun LayoutStatement.targetName(): String? = when (this) {
+        is LayoutStatement.PlaceAt -> null
+        is LayoutStatement.PlaceNear -> target
+        is LayoutStatement.PlaceBelow -> target
+        is LayoutStatement.AlignWith -> target
+        is LayoutStatement.GroupWith -> target
     }
 
     private fun SyntaxLayoutAxis.toConstraintAxis(): LayoutAxis {
@@ -129,4 +179,13 @@ class ProjectSemanticLayoutConstraintLowerer {
         val namespaceId: NamespaceId,
         val name: String,
     )
+
+    private data class ResolvedLayoutSubject(
+        val physicalDeclaration: ProjectSemanticDeclaration,
+        val functionDeclaration: ProjectSemanticDeclaration? = null,
+    ) {
+        val authoredName: String = functionDeclaration?.qualifiedAuthoredName
+            ?.joinToString(".")
+            ?: physicalDeclaration.qualifiedAuthoredName.joinToString(".")
+    }
 }

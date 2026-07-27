@@ -15,9 +15,15 @@ const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED';
 const SHOULD_EXIT_ON_WORKSPACE_OPEN = process.env.ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN === '1';
 const REQUESTED_ACTIVE_VIEW = resolveRequestedActiveView();
+const EXPECTED_PRODUCT_SURFACE_ID = process.env.ATHENA_ELECTRON_SMOKE_EXPECTED_PRODUCT_SURFACE_ID || 'cabinet';
+const EXPECTED_PRODUCT_SURFACE_LABEL = process.env.ATHENA_ELECTRON_SMOKE_EXPECTED_PRODUCT_SURFACE_LABEL || 'Cabinet';
+const EXPECTED_BACKING_VIEW_ID = process.env.ATHENA_ELECTRON_SMOKE_EXPECTED_BACKING_VIEW_ID || REQUESTED_ACTIVE_VIEW || 'cabinet';
 const GRAPH_VIEW_SCREENSHOT_PATH = process.env.ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT || '';
+const SMOKE_WINDOW_WIDTH = positiveIntegerFromEnv('ATHENA_ELECTRON_SMOKE_WINDOW_WIDTH', 1920);
+const SMOKE_WINDOW_HEIGHT = positiveIntegerFromEnv('ATHENA_ELECTRON_SMOKE_WINDOW_HEIGHT', 1080);
 const CAPTURE_CREATE_ENTITY_PANEL = process.env.ATHENA_ELECTRON_SMOKE_CAPTURE_CREATE_ENTITY_PANEL === '1';
 const SKIP_SMOKE_OUTLINE = process.env.ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE === '1';
+const OPEN_SOURCE_FOR_DIAGNOSTICS = process.env.ATHENA_ELECTRON_SMOKE_OPEN_SOURCE_FOR_DIAGNOSTICS === '1';
 const SMOKE_CREATE_ENTITY_TAG = process.env.ATHENA_ELECTRON_SMOKE_CREATE_ENTITY_TAG || '';
 const SMOKE_EXPECT_SEMANTIC_ID = process.env.ATHENA_ELECTRON_SMOKE_EXPECT_SEMANTIC_ID || '';
 const COLLECT_EDITOR_SYNTAX_COLOR_PROOF = process.env.ATHENA_ELECTRON_SMOKE_EDITOR_SYNTAX_COLORS === '1';
@@ -42,7 +48,7 @@ function main() {
     app.on('browser-window-created', (_event, window) => {
         console.log(ATHENA_WINDOW_CREATED_SENTINEL);
         if (SHOULD_EXIT_ON_WORKSPACE_OPEN) {
-            window.setSize(1920, 1080, false);
+            window.setSize(SMOKE_WINDOW_WIDTH, SMOKE_WINDOW_HEIGHT, false);
             window.center();
         }
         window.webContents.once('did-finish-load', () => {
@@ -117,6 +123,32 @@ async function openWorkspace(window) {
                 const color = window.getComputedStyle(element).backgroundColor;
                 return color === 'transparent' || color === 'rgba(0, 0, 0, 0)';
             };
+            const visibleWorkspaceTrustDialogs = () => Array.from(document.querySelectorAll('.workspace-trust-dialog'))
+                .filter(visibleElement);
+            const dismissWorkspaceTrustDialog = async () => {
+                const dialog = visibleWorkspaceTrustDialogs()[0];
+                if (!dialog) {
+                    return { present: false, dismissed: false };
+                }
+                const buttons = Array.from(document.querySelectorAll('.workspace-trust-dialog button, .dialogOverlay.workspace-trust-dialog button, button'))
+                    .filter(visibleElement);
+                const trustButton = buttons.find(button => {
+                    const text = commandText(button);
+                    return /yes|i trust|trust the authors|continue|open/i.test(text) && !/don't|do not|no,/i.test(text);
+                }) || buttons[buttons.length - 1];
+                if (!trustButton) {
+                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                } else {
+                    trustButton.click();
+                    trustButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                }
+                await waitFor(
+                    () => visibleWorkspaceTrustDialogs().length === 0 ? true : undefined,
+                    'workspace trust dialog dismissal',
+                    10000
+                );
+                return { present: true, dismissed: true };
+            };
 
             await waitFor(() => window.theia?.container, 'theia container');
             smokeStep('theia-container');
@@ -127,6 +159,8 @@ async function openWorkspace(window) {
                 return normalizedHash === normalizedTarget ? target : undefined;
             }, 'target workspace URL fragment');
             smokeStep('workspace-fragment');
+            const workspaceTrustProof = await dismissWorkspaceTrustDialog();
+            smokeStep('workspace-trust-dialog');
 
             const electronRequire = await waitFor(
                 () => typeof require === 'function' ? require : undefined,
@@ -142,6 +176,10 @@ async function openWorkspace(window) {
                 ? { skipped: true, reason: 'ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE=1' }
                 : await collectOutlineProof(target);
             smokeStep('outline-proof');
+            const sourceDiagnosticActivationProof = ${JSON.stringify(OPEN_SOURCE_FOR_DIAGNOSTICS)}
+                ? await collectSourceDiagnosticActivationProof(target)
+                : { requested: false, skipped: true, reason: 'ATHENA_ELECTRON_SMOKE_OPEN_SOURCE_FOR_DIAGNOSTICS!=1' };
+            smokeStep('source-diagnostic-activation');
             smokeStep('graph-reveal-start');
             if (athenaWorkbenchSmoke) {
                 await Promise.race([
@@ -165,24 +203,46 @@ async function openWorkspace(window) {
                 await revealGraphicalViewThroughDom();
             }
             smokeStep('graph-reveal-end');
+            const workspaceTrustProofAfterGraphReveal = await dismissWorkspaceTrustDialog();
+            smokeStep('workspace-trust-dialog-after-graph-reveal');
 
             const workbench = await requireElement('.athena-graph-workbench', 'graph workbench root');
             smokeStep('graph-workbench-root');
             const stage = await requireElement('.athena-graph-workbench__stage', 'graph workbench stage');
             const smokeActiveView = ${JSON.stringify(REQUESTED_ACTIVE_VIEW)};
             if (smokeActiveView) {
-                const viewButton = await requireElement(
-                    '[data-athena-projection-view-id="' + smokeActiveView + '"]',
-                    'projection view button ' + smokeActiveView
-                );
-                if (!viewButton.disabled) {
-                    viewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                const viewButton = document.querySelector('[data-athena-projection-view-id="' + smokeActiveView + '"]');
+                if (viewButton) {
+                    if (!viewButton.disabled) {
+                        viewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+                    }
+                    await waitFor(() => {
+                        const activeButton = document.querySelector('[data-athena-projection-view-id="' + smokeActiveView + '"]');
+                        return activeButton?.disabled ? activeButton : undefined;
+                    }, 'active product projection ' + smokeActiveView);
+                } else {
+                    const switched = await window.__athenaWorkbenchSmoke?.switchProjectionView?.(smokeActiveView);
+                    if (switched !== true) {
+                        throw new Error('Athena could not activate hidden compatibility projection ' + smokeActiveView);
+                    }
+                    await waitFor(
+                        () => collectActiveProjectionViewId() === smokeActiveView,
+                        'active compatibility projection ' + smokeActiveView
+                    );
                 }
-                await waitFor(() => {
-                    const activeButton = document.querySelector('[data-athena-projection-view-id="' + smokeActiveView + '"]');
-                    return activeButton?.disabled ? activeButton : undefined;
-                }, 'active projection view ' + smokeActiveView);
             }
+            const expectedBackingViewId = ${JSON.stringify(EXPECTED_BACKING_VIEW_ID)};
+            const proveCabinetRefresh = !smokeActiveView || smokeActiveView === expectedBackingViewId;
+            const cabinetRefreshAccepted = proveCabinetRefresh
+                ? await window.__athenaWorkbenchSmoke?.refreshProjectionView?.() === true
+                : false;
+            if (proveCabinetRefresh) {
+                await waitFor(
+                    () => collectActiveProjectionViewId() === expectedBackingViewId,
+                    expectedBackingViewId + ' after projection refresh'
+                );
+            }
+            const cabinetActiveAfterRefresh = collectActiveProjectionViewId() === expectedBackingViewId;
             const viewport = await waitFor(() => {
                 const element = document.querySelector('.athena-graph-workbench__viewport');
                 if (element) {
@@ -210,7 +270,11 @@ async function openWorkspace(window) {
             const infoButton = await requireElement('[data-athena-info-button="true"]', 'graph workbench info button');
             const createEntityButton = await requireElement('[data-athena-create-entity-button="true"]', 'graph workbench create entity button');
             const referenceMarkerButtons = Array.from(document.querySelectorAll('[data-athena-reference-marker="true"]'));
-            const projectionViewProof = collectProjectionViewProof();
+            const projectionViewProof = collectProjectionViewProof(
+                cabinetRefreshAccepted,
+                cabinetActiveAfterRefresh
+            );
+            const toolbarDensityProof = collectToolbarDensityProof(floatingBar);
             smokeStep('graph-workbench-controls');
 
             infoButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -232,15 +296,20 @@ async function openWorkspace(window) {
                         sheet: !!sheet,
                         canvas: !!canvas,
                         activeViewId: collectActiveProjectionViewId(),
+                        drawingLayerProof: collectDrawingLayerProof(),
+                        sourceDiagnosticActivationProof,
                         createEntityPanelProof
                     }
                 };
             }
             const expectedSemanticProof = await collectExpectedSemanticProof();
-            const documentProjectionProof = await collectWithSmokeStep(
-                'documentation-compatibility-proof',
-                collectDocumentationCompatibilityProof
-            );
+            const documentNavigation = document.querySelector('.athena-graph-workbench__document-navigation');
+            const documentProjectionProof = smokeActiveView === 'documentation'
+                ? collectDocumentProjectionProof(
+                    documentNavigation?.querySelector('.athena-graph-workbench__sheet-view-selector select'),
+                    Array.from(documentNavigation?.querySelectorAll('[data-athena-reference-marker="true"]') || [])
+                )
+                : undefined;
 
             return {
                 workspace: target,
@@ -261,10 +330,18 @@ async function openWorkspace(window) {
                     infoPopoverOpened: popoverText.includes('Projection Information'),
                     infoPopoverClosedOnWhitespace: !document.querySelector('[data-athena-info-popover="true"]'),
                     projectionViewProof,
+                    toolbarDensityProof,
                     createEntityPanelProof,
+                    sourceDiagnosticActivationProof,
+                    workspaceTrustProof: {
+                        initial: workspaceTrustProof,
+                        afterGraphReveal: workspaceTrustProofAfterGraphReveal,
+                        remainingDialogCount: document.querySelectorAll('.workspace-trust-dialog').length
+                    },
                     expectedSemanticProof,
                     documentProjectionProof,
                     sheetSurfaceProof: collectSheetSurfaceProof(sheetFrame),
+                    drawingLayerProof: collectDrawingLayerProof(),
                     densityProof: collectDensityProof(referenceMarkerButtons),
                     routeProof: collectRouteProof(),
                     representationProof: collectRepresentationProof(),
@@ -281,13 +358,31 @@ async function openWorkspace(window) {
                 return result;
             }
 
-            function collectProjectionViewProof() {
+            function collectProjectionViewProof(cabinetRefreshAccepted, cabinetActiveAfterRefresh) {
                 const viewSwitches = document.querySelector('.athena-graph-workbench__view-switches');
-                const visibleButtons = Array.from(document.querySelectorAll('[data-athena-projection-view-id]'));
+                const visibleButtons = Array.from(document.querySelectorAll('[data-athena-product-surface-id]'));
+                const expectedProductSurfaceId = ${JSON.stringify(EXPECTED_PRODUCT_SURFACE_ID)};
+                const expectedProductSurfaceLabel = ${JSON.stringify(EXPECTED_PRODUCT_SURFACE_LABEL)};
+                const visibleProductSurfaceLabels = visibleButtons
+                    .map(button => (button.textContent || button.getAttribute('aria-label') || '').replace(/\\s+/g, ' ').trim())
+                    .filter(Boolean);
+                const backingProjectionViewIds = visibleButtons
+                    .map(button => button.getAttribute('data-athena-projection-view-id') || '')
+                    .filter(Boolean);
                 return {
-                    visibleViewIds: visibleButtons
-                        .map(button => button.getAttribute('data-athena-projection-view-id') || '')
+                    visibleProductSurfaceIds: visibleButtons
+                        .map(button => button.getAttribute('data-athena-product-surface-id') || '')
                         .filter(Boolean),
+                    visibleProductSurfaceLabels,
+                    backingProjectionViewIds,
+                    primaryLabelMatched: visibleProductSurfaceLabels.length === 1
+                        && visibleProductSurfaceLabels[0] === expectedProductSurfaceLabel,
+                    cabinetRefreshAccepted,
+                    cabinetActiveAfterRefresh,
+                    visibleViewIds: backingProjectionViewIds,
+                    expectedProductSurfaceId,
+                    expectedProductSurfaceLabel,
+                    expectedBackingViewId,
                     visibleViewButtonCount: visibleButtons.length,
                     activeViewIds: visibleButtons
                         .filter(button => button.disabled)
@@ -295,6 +390,23 @@ async function openWorkspace(window) {
                         .filter(Boolean),
                     compatibilityViewCount: Number(viewSwitches?.getAttribute('data-athena-compatibility-projection-view-count') || 0),
                     visibleViewCountAttribute: Number(viewSwitches?.getAttribute('data-athena-visible-projection-view-count') || 0)
+                };
+            }
+
+            function collectToolbarDensityProof(floatingBar) {
+                const toolGroup = floatingBar.querySelector('.athena-graph-workbench__tool-group');
+                const buttons = Array.from(toolGroup?.querySelectorAll('button') || [])
+                    .filter(visibleElement);
+                const textButtonLabels = buttons
+                    .map(button => (button.textContent || '').replace(/\\s+/g, ' ').trim())
+                    .filter(Boolean);
+                return {
+                    normalToolbarButtonCount: buttons.length,
+                    textButtonLabels,
+                    inspectionButtonCount: buttons.filter(button => button.matches('[data-athena-info-button="true"]')).length,
+                    internalProofControlCount: toolGroup?.querySelectorAll(
+                        '[data-athena-debug-control], [data-athena-proof-control]'
+                    ).length ?? 0
                 };
             }
 
@@ -467,6 +579,7 @@ async function openWorkspace(window) {
                     previewTextIncludesTag: previewPanelText.includes(createEntityTag),
                     accepted: true,
                     projected: true,
+                    cabinetActiveAfterCreate: collectActiveProjectionViewId() === 'cabinet',
                     outlineSkipped: ${JSON.stringify(SKIP_SMOKE_OUTLINE)},
                 };
             }
@@ -520,9 +633,37 @@ async function openWorkspace(window) {
                 };
             }
 
+            async function collectSourceDiagnosticActivationProof(target) {
+                const sourceRelative = ${JSON.stringify(SMOKE_OUTLINE_SOURCE_RELATIVE)};
+                const sourcePath = target.replace(/\\\\/g, '/') + '/' + sourceRelative.replace(/^\\/+/, '');
+                const sourceUri = 'file:///' + sourcePath.replace(/^\\/?([A-Za-z]:)/, '$1');
+                const openSourceEditorForSmoke = await waitFor(
+                    () => window.__athenaWorkbenchSmoke?.openSourceEditorForSmoke,
+                    'Athena source editor smoke command hook for diagnostics'
+                );
+                const proof = await Promise.race([
+                    openSourceEditorForSmoke(sourceUri),
+                    new Promise((_, reject) => setTimeout(
+                        () => reject(new Error('Timed out waiting for Athena source diagnostic activation for ' + sourceUri)),
+                        60000
+                    ))
+                ]);
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                const resourceUri = proof.resourceUri || '';
+                const currentEditorWidgetId = proof.currentEditorWidgetId || '';
+                return {
+                    requested: true,
+                    sourceUri,
+                    widgetId: proof.widgetId || '',
+                    resourceUri,
+                    currentEditorWidgetId,
+                    opened: !!currentEditorWidgetId && resourceUri.replace(/\\\\/g, '/').toLowerCase().includes(sourceRelative.toLowerCase())
+                };
+            }
+
             function collectActiveProjectionViewId() {
-                const activeButton = document.querySelector('.athena-graph-workbench__tool-button--view.athena-graph-workbench__tool-button--active');
-                return activeButton?.getAttribute('data-athena-projection-view-id') || '';
+                const viewSwitches = document.querySelector('.athena-graph-workbench__view-switches');
+                return viewSwitches?.getAttribute('data-athena-active-projection-view-id') || '';
             }
 
             function collectDocumentProjectionProof(sheetViewSelector, referenceMarkerButtons) {
@@ -545,63 +686,6 @@ async function openWorkspace(window) {
                     markerTargetIds: referenceMarkerButtons
                         .map(button => button.getAttribute('data-athena-reference-marker-id') || '')
                         .filter(Boolean)
-                };
-            }
-
-            async function collectDocumentationCompatibilityProof() {
-                await switchGraphWorkbenchProjectionView('documentation');
-                let proof;
-                try {
-                    const initialNavigation = await requireElement(
-                        '.athena-graph-workbench__document-navigation',
-                        'contextual Documentation navigation'
-                    );
-                    const initialSelector = initialNavigation.querySelector('.athena-graph-workbench__sheet-view-selector select');
-                    const sheetViewIds = initialSelector
-                        ? Array.from(initialSelector.options).map(option => option.value).filter(Boolean)
-                        : [];
-                    const selectedSheetViewId = sheetViewIds[1] || initialSelector?.value || '';
-                    if (selectedSheetViewId) {
-                        await switchSheetView(selectedSheetViewId);
-                    }
-                    const selectedSheetViewIdBeforeProjectionSwitch = document.querySelector(
-                        '.athena-graph-workbench__document-navigation .athena-graph-workbench__sheet-view-selector select'
-                    )?.value || '';
-
-                    await switchGraphWorkbenchProjectionView('cabinet');
-                    await switchGraphWorkbenchProjectionView('documentation');
-
-                    const contextualNavigation = await requireElement(
-                        '.athena-graph-workbench__document-navigation',
-                        'restored contextual Documentation navigation'
-                    );
-                    const selector = contextualNavigation.querySelector('.athena-graph-workbench__sheet-view-selector select');
-                    const restoredSheetViewId = selector?.value || '';
-                    const markers = Array.from(contextualNavigation.querySelectorAll('[data-athena-reference-marker="true"]'));
-                    const toolGroup = document.querySelector('.athena-graph-workbench__tool-group');
-                    const documentControlSelector = '.athena-graph-workbench__sheet-view-selector, [data-athena-reference-marker="true"]';
-                    proof = {
-                        ...collectDocumentProjectionProof(selector, markers),
-                        compatibilityActivated: true,
-                        contextualNavigationPresent: visibleElement(contextualNavigation),
-                        contextualDocumentControlCount: contextualNavigation.querySelectorAll(documentControlSelector).length,
-                        globalToolbarDocumentControlCount: toolGroup?.querySelectorAll(documentControlSelector).length ?? 0,
-                        selectedSheetViewIdBeforeProjectionSwitch,
-                        restoredSheetViewId,
-                        sheetSelectionRestored: !!selectedSheetViewIdBeforeProjectionSwitch &&
-                            restoredSheetViewId === selectedSheetViewIdBeforeProjectionSwitch
-                    };
-                } finally {
-                    await switchGraphWorkbenchProjectionView('cabinet');
-                }
-                await waitFor(() => {
-                    const cabinetButton = document.querySelector('[data-athena-projection-view-id="cabinet"]');
-                    return cabinetButton?.disabled ? cabinetButton : undefined;
-                }, 'restored Cabinet projection after Documentation compatibility proof');
-                return {
-                    ...proof,
-                    restoredActiveViewId: collectActiveProjectionViewId(),
-                    contextualNavigationPresentAfterRestore: !!document.querySelector('.athena-graph-workbench__document-navigation')
                 };
             }
 
@@ -723,6 +807,7 @@ async function openWorkspace(window) {
 
             function collectRepresentationProof() {
                 const representations = Array.from(document.querySelectorAll('[data-athena-representation-fact="true"]'));
+                const graphicOccurrences = Array.from(document.querySelectorAll('[data-athena-graphic-occurrence="true"]'));
                 const terminals = Array.from(document.querySelectorAll('[data-athena-presentation-terminal="true"]'));
                 const labels = Array.from(document.querySelectorAll('[data-athena-presentation-label="true"]'));
                 const representationStates = representations.map(representation => ({
@@ -742,8 +827,38 @@ async function openWorkspace(window) {
                         .split(';')
                         .filter(Boolean)
                 }));
+                const graphicOccurrenceStates = graphicOccurrences.map(graphicOccurrence => ({
+                    occurrenceId: graphicOccurrence.getAttribute('data-athena-graphic-occurrence-id') || '',
+                    definitionId: graphicOccurrence.getAttribute('data-athena-graphic-definition-id') || '',
+                    packageId: graphicOccurrence.getAttribute('data-athena-graphic-package-id') || '',
+                    bindingRuleId: graphicOccurrence.getAttribute('data-athena-graphic-binding-rule-id') || '',
+                    physicalComponentId: graphicOccurrence.getAttribute('data-athena-graphic-physical-component-id') || '',
+                    fallback: graphicOccurrence.getAttribute('data-athena-render-fallback') === 'true',
+                    semanticId: graphicOccurrence.getAttribute('data-athena-semantic-id') || '',
+                    graphicAuthority: graphicOccurrence.getAttribute('data-athena-graphic-authority') || '',
+                    placementAuthority: graphicOccurrence.getAttribute('data-athena-placement-authority') || '',
+                    materialAuthority: graphicOccurrence.getAttribute('data-athena-material-authority') || ''
+                }));
+                const activeRepresentationStates = [
+                    ...representationStates,
+                    ...graphicOccurrenceStates.map(graphicOccurrence => ({
+                        representationId: graphicOccurrence.definitionId || graphicOccurrence.occurrenceId,
+                        fallback: graphicOccurrence.fallback,
+                        semanticId: graphicOccurrence.semanticId,
+                        engineeringPackageId: '',
+                        presentationProfileId: '',
+                        bindingManifestId: graphicOccurrence.bindingRuleId,
+                        representationPackageId: graphicOccurrence.packageId,
+                        descriptorId: graphicOccurrence.definitionId,
+                        graphicResourceId: graphicOccurrence.occurrenceId,
+                        anchorMapSummary: [],
+                        labelBindingSummary: []
+                    }))
+                ];
                 return {
-                    representationCount: representations.length,
+                    representationCount: activeRepresentationStates.length,
+                    legacyRepresentationCount: representations.length,
+                    graphicOccurrenceCount: graphicOccurrences.length,
                     presentationTerminalCount: terminals.length,
                     presentationLabelCount: labels.length,
                     terminalNumbers: terminals
@@ -752,20 +867,21 @@ async function openWorkspace(window) {
                     labelRoles: labels
                         .map(label => label.getAttribute('data-athena-presentation-label-role') || '')
                         .filter(Boolean),
-                    representationIds: representationStates.map(representation => representation.representationId).filter(Boolean),
-                    semanticIds: representationStates.map(representation => representation.semanticId).filter(Boolean),
-                    engineeringPackageIds: representationStates.map(representation => representation.engineeringPackageId).filter(Boolean),
-                    presentationProfileIds: representationStates.map(representation => representation.presentationProfileId).filter(Boolean),
-                    bindingManifestIds: representationStates.map(representation => representation.bindingManifestId).filter(Boolean),
-                    representationPackageIds: representationStates.map(representation => representation.representationPackageId).filter(Boolean),
-                    descriptorIds: representationStates.map(representation => representation.descriptorId).filter(Boolean),
-                    graphicResourceIds: representationStates.map(representation => representation.graphicResourceId).filter(Boolean),
-                    anchorMapSummary: representationStates.flatMap(representation => representation.anchorMapSummary),
-                    labelBindingSummary: representationStates.flatMap(representation => representation.labelBindingSummary),
-                    fallbackRepresentationIds: representationStates
+                    representationIds: activeRepresentationStates.map(representation => representation.representationId).filter(Boolean),
+                    semanticIds: activeRepresentationStates.map(representation => representation.semanticId).filter(Boolean),
+                    engineeringPackageIds: activeRepresentationStates.map(representation => representation.engineeringPackageId).filter(Boolean),
+                    presentationProfileIds: activeRepresentationStates.map(representation => representation.presentationProfileId).filter(Boolean),
+                    bindingManifestIds: activeRepresentationStates.map(representation => representation.bindingManifestId).filter(Boolean),
+                    representationPackageIds: activeRepresentationStates.map(representation => representation.representationPackageId).filter(Boolean),
+                    descriptorIds: activeRepresentationStates.map(representation => representation.descriptorId).filter(Boolean),
+                    graphicResourceIds: activeRepresentationStates.map(representation => representation.graphicResourceId).filter(Boolean),
+                    anchorMapSummary: activeRepresentationStates.flatMap(representation => representation.anchorMapSummary),
+                    labelBindingSummary: activeRepresentationStates.flatMap(representation => representation.labelBindingSummary),
+                    fallbackRepresentationIds: activeRepresentationStates
                         .filter(representation => representation.fallback)
                         .map(representation => representation.representationId || representation.semanticId || '<unknown>'),
-                    representationStates
+                    representationStates,
+                    graphicOccurrenceStates
                 };
             }
 
@@ -887,12 +1003,18 @@ async function openWorkspace(window) {
                 if (!switched) {
                     throw new Error('Graph widget rejected projection compatibility switch ' + viewId);
                 }
+                await waitFor(
+                    () => collectActiveProjectionViewId() === viewId,
+                    'active compatibility projection ' + viewId,
+                    30000
+                );
                 await waitFor(() => {
                     const routeCount = document.querySelectorAll('[data-athena-route-fact="true"]').length;
                     const nodeBoxCount = document.querySelectorAll('.athena-graph-workbench__node-hitbox').length;
                     return routeCount > 0 && nodeBoxCount > 0 ? true : undefined;
                 }, 'rendered projection compatibility view ' + viewId, 30000);
                 await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                return true;
             }
 
             function dispatchNativeSheetSelectorChange(sheetViewId) {
@@ -1075,6 +1197,50 @@ async function openWorkspace(window) {
                             crossedNodeSemanticIds: route.crossedNodeSemanticIds
                         }))
                 };
+            }
+
+            function collectDrawingLayerProof() {
+                const items = Array.from(document.querySelectorAll('[data-athena-drawing-layer-kind]'));
+                const itemStates = items.map(item => ({
+                    kind: item.getAttribute('data-athena-drawing-layer-kind') || '',
+                    authority: item.getAttribute('data-athena-drawing-layer-authority') || '',
+                    id: item.getAttribute('data-athena-drawing-layer-id') || '',
+                    referenceIdentity: item.getAttribute('data-athena-drawing-reference-identity') || '',
+                    visible: visibleDrawingLayerItem(item)
+                }));
+                return {
+                    itemCount: itemStates.length,
+                    kinds: itemStates.map(item => item.kind).filter(Boolean),
+                    authorities: itemStates.map(item => item.authority).filter(Boolean),
+                    visibleItemCount: itemStates.filter(item => item.visible).length,
+                    referenceMarkerIdentities: itemStates
+                        .map(item => item.referenceIdentity)
+                        .filter(Boolean),
+                    wrapperBorderCount: Array.from(document.querySelectorAll('.athena-graph-workbench__node-hitbox'))
+                        .filter(hitbox => {
+                            const style = window.getComputedStyle(hitbox);
+                            return style.stroke !== 'none' &&
+                                style.stroke !== 'transparent' &&
+                                style.stroke !== 'rgba(0, 0, 0, 0)';
+                        }).length,
+                    itemStates
+                };
+            }
+
+            function visibleDrawingLayerItem(item) {
+                if (visibleElement(item)) {
+                    return true;
+                }
+                if (item.tagName?.toLowerCase() !== 'line') {
+                    return false;
+                }
+                const x1 = Number(item.getAttribute('x1') || '0');
+                const y1 = Number(item.getAttribute('y1') || '0');
+                const x2 = Number(item.getAttribute('x2') || '0');
+                const y2 = Number(item.getAttribute('y2') || '0');
+                return Number.isFinite(x1) && Number.isFinite(y1) &&
+                    Number.isFinite(x2) && Number.isFinite(y2) &&
+                    (x1 !== x2 || y1 !== y2);
             }
 
             function roundedClientRect(element) {
@@ -1291,4 +1457,9 @@ function resolveRequestedActiveView() {
     const activeViewArgIndex = process.argv.indexOf('--active-view');
     const activeViewArg = activeViewArgIndex >= 0 ? process.argv[activeViewArgIndex + 1] : undefined;
     return activeViewArg || process.env.ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW || '';
+}
+
+function positiveIntegerFromEnv(name, fallback) {
+    const parsed = Number.parseInt(process.env[name] || '', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }

@@ -15,7 +15,7 @@ class AthenaM32SampleProjectCompilerTest {
     fun `m32 package platform sample is an ide openable athena repository with compilable source`() {
         val compiler = AthenaCompiler()
         val sampleRoot = resolveRepoRoot().resolve("examples/m32/sample-project")
-        val source = sampleRoot.resolve("src/01-package-platform-demo.athena")
+        val source = sampleRoot.resolve("src/com/engineeringood/m32/sample/01-package-platform-demo.athena")
 
         assertTrue(Files.exists(sampleRoot.resolve("athena.yaml")), "M32 sample must include athena.yaml for LSP repository initialization.")
         assertTrue(Files.exists(sampleRoot.resolve("athena.lock")), "M32 sample must include athena.lock for governed repository validation.")
@@ -53,7 +53,7 @@ class AthenaM32SampleProjectCompilerTest {
     fun `m32 documentation presentation uses package backed representation evidence as live authority`() {
         val compiler = AthenaCompiler()
         val sampleRoot = resolveRepoRoot().resolve("examples/m32/sample-project")
-        val source = sampleRoot.resolve("src/01-package-platform-demo.athena")
+        val source = sampleRoot.resolve("src/com/engineeringood/m32/sample/01-package-platform-demo.athena")
 
         val compilation = compiler.compile(source)
         val success = compilation as? CompilerCompilationSuccess ?: fail("M32 sample must compile successfully.")
@@ -85,7 +85,7 @@ class AthenaM32SampleProjectCompilerTest {
     fun `m32 cabinet presentation uses package backed representation evidence as live authority`() {
         val compiler = AthenaCompiler()
         val sampleRoot = resolveRepoRoot().resolve("examples/m32/sample-project")
-        val source = sampleRoot.resolve("src/01-package-platform-demo.athena")
+        val source = sampleRoot.resolve("src/com/engineeringood/m32/sample/01-package-platform-demo.athena")
 
         val compilation = compiler.compile(source)
         val success = compilation as? CompilerCompilationSuccess ?: fail("M32 sample must compile successfully.")
@@ -109,7 +109,7 @@ class AthenaM32SampleProjectCompilerTest {
     fun `m32 package representation preserves every projection occurrence id for one semantic subject`() {
         val compiler = AthenaCompiler()
         val sampleRoot = resolveRepoRoot().resolve("examples/m32/sample-project")
-        val source = sampleRoot.resolve("src/01-package-platform-demo.athena")
+        val source = sampleRoot.resolve("src/com/engineeringood/m32/sample/01-package-platform-demo.athena")
         val success = compiler.compile(source) as? CompilerCompilationSuccess
             ?: fail("M32 sample must compile successfully.")
         val cabinetProjection = success.projections.first { projection -> projection.view.id == "cabinet" }

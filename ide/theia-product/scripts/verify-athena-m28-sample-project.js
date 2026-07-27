@@ -27,7 +27,7 @@ async function main() {
                 ATHENA_ELECTRON_TEMP_USER_DATA: '1',
                 ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW: 'documentation',
                 ATHENA_ELECTRON_SMOKE_SKIP_OUTLINE: '1',
-                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/01-relationship-authoring-source.athena',
+                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/com/engineeringood/m28/sample/01-relationship-authoring-source.athena',
                 ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH: 'RelationshipAuthoringProof > OperatorHMI1 > status',
                 ELECTRON_ENABLE_LOGGING: '1'
             },

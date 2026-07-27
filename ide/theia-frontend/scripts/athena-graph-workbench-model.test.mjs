@@ -684,7 +684,7 @@ test('omits sheet-view selector when only one sheet view is available', () => {
     assert.equal(model.sheetViewSelector, undefined);
 });
 
-test('preserves document sheet selector across projection view changes from sheet facts', () => {
+test('resolves the current governed document sheet selector without cross-view cache state', () => {
     assert.equal(typeof graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector, 'function');
 
     const documentationDiagram = JSON.parse(JSON.stringify(readyDiagram));
@@ -736,8 +736,6 @@ test('preserves document sheet selector across projection view changes from shee
         },
     ];
     const documentationModel = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(documentationDiagram);
-    const cabinetModel = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(readyDiagram);
-
     assert.equal(documentationModel.sheetViewSelector.entries.length, 2);
     assert.equal(documentationModel.sheetViewSelector.entries.length, documentationDiagram.sheets.length);
     assert.notEqual(documentationModel.sheetViewSelector.entries.length, documentationDiagram.sourceFiles.length);
@@ -746,12 +744,16 @@ test('preserves document sheet selector across projection view changes from shee
         ['control-and-plc-logic', 'field-wiring-and-terminal-transition'],
     );
     assert.deepEqual(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(cabinetModel, documentationModel.sheetViewSelector),
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(documentationModel),
         documentationModel.sheetViewSelector,
+    );
+    assert.equal(
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: undefined }),
+        undefined,
     );
 });
 
-test('keeps non-M31 package sheet selector visible across projection view changes', () => {
+test('keeps a current non-M31 package sheet selector visible', () => {
     assert.equal(typeof graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector, 'function');
 
     const packageSelector = {
@@ -788,15 +790,13 @@ test('keeps non-M31 package sheet selector visible across projection view change
         ],
     };
     const modelWithPackageSheets = { sheetViewSelector: packageSelector };
-    const modelWithoutSheets = { sheetViewSelector: undefined };
-
     assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(modelWithPackageSheets, undefined),
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(modelWithPackageSheets),
         packageSelector,
     );
     assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector(modelWithoutSheets, packageSelector),
-        packageSelector,
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: undefined }),
+        undefined,
     );
 });
 
@@ -817,11 +817,11 @@ test('intentionally hides sheet selector for single-sheet or empty selector stat
     };
 
     assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: singleSheetSelector }, undefined),
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: singleSheetSelector }),
         undefined,
     );
     assert.equal(
-        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: undefined }, undefined),
+        graphWorkbenchModel.resolveVisibleAthenaGraphSheetViewSelector({ sheetViewSelector: undefined }),
         undefined,
     );
 });
@@ -2200,4 +2200,47 @@ test('builds a safe model even when optional diagram arrays are missing at runti
     assert.deepEqual(model.nodes, []);
     assert.deepEqual(model.edges, []);
     assert.equal(model.emptyState?.title, 'Projection is empty');
+});
+
+test('resolves one Control Drawing product surface backed only by schematic', () => {
+    const ownershipContract = {
+        interactivity: 'interactive',
+        displayScopes: ['devices'],
+        semanticCommandIds: [],
+        projectionCommandIds: [],
+        transientInteractionKinds: ['navigate-view'],
+        persistedProjectionMetadataKeys: [],
+    };
+    const projection = (viewId, displayName, familyId, isActive = false) => ({
+        viewId,
+        displayName,
+        description: `${displayName} compatibility projection`,
+        familyId,
+        ownershipContract,
+        isActive,
+    });
+    const schematic = projection('schematic', 'Schematic', 'electrical/schematic', true);
+    const views = [
+        projection('cabinet', 'Cabinet', 'electrical/cabinet'),
+        projection('documentation', 'Documentation', 'electrical/documentation'),
+        schematic,
+    ];
+
+    assert.deepEqual(graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface(views), {
+        surfaceId: 'control-drawing',
+        displayName: 'Control Drawing',
+        description: 'Professional engineering control drawing',
+        backingViewId: 'schematic',
+        backingFamilyId: 'electrical/schematic',
+        isActive: true,
+    });
+    assert.equal(typeof graphWorkbenchModel.requiresAthenaControlDrawingProductActivation, 'function');
+    assert.equal(graphWorkbenchModel.requiresAthenaControlDrawingProductActivation(views, 'cabinet'), true);
+    assert.equal(graphWorkbenchModel.requiresAthenaControlDrawingProductActivation(views, 'schematic'), false);
+    assert.equal(
+        graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface([
+            projection('cabinet', 'Cabinet', 'electrical/cabinet', true),
+        ]),
+        undefined,
+    );
 });

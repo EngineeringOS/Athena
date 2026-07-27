@@ -4,6 +4,8 @@ import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinato
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringFunction
+import com.engineeringood.athena.ir.EngineeringFunctionRole
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.EngineeringSystem
@@ -36,7 +38,7 @@ class EngineeringIrLowerer(
      * the current supported syntax subset, as pinned by `AthenaCompilerTest` and
      * `AthenaM17ParserParityProofTest`.
      */
-    fun lower(source: CompilerSourceDocument): EngineeringDocument {
+    fun lower(source: CompilerSourceDocument, sourceUnitId: String = source.file): EngineeringDocument {
         val contribution = domainSemantics.lower(source)
 
         val components = contribution.components.withDuplicateOrdinals { it.name }.map { (blueprint, duplicateOrdinal) ->
@@ -68,11 +70,9 @@ class EngineeringIrLowerer(
             idSelector = { it.id },
         )
 
-        val connections = contribution.connections.withDuplicateOrdinals {
-            "${pathKey(it.fromPath)}->${pathKey(it.toPath)}"
-        }.map { (blueprint, duplicateOrdinal) ->
+        val connections = contribution.connections.map { blueprint ->
             EngineeringConnection(
-                id = connectionIdentity(blueprint.fromPath, blueprint.toPath, duplicateOrdinal),
+                id = connectionIdentity(sourceUnitId, blueprint.alias),
                 from = EngineeringReference(
                     authoredPath = blueprint.fromPath,
                     resolvedIdentity = portIdsByAuthoredPath[pathKey(blueprint.fromPath)],
@@ -87,6 +87,29 @@ class EngineeringIrLowerer(
             )
         }
 
+        val functions = contribution.functions.withDuplicateOrdinals {
+            pathKey(it.ownerPath + it.name)
+        }.map { (blueprint, duplicateOrdinal) ->
+            EngineeringFunction(
+                id = functionIdentity(blueprint.ownerPath, blueprint.name, duplicateOrdinal),
+                ownerReference = EngineeringReference(
+                    authoredPath = blueprint.ownerPath,
+                    resolvedIdentity = componentIdsByAuthoredPath[pathKey(blueprint.ownerPath)],
+                    provenance = blueprint.ownerProvenance,
+                ),
+                name = blueprint.name,
+                role = EngineeringFunctionRole(blueprint.role),
+                portReferences = blueprint.portReferences.map { reference ->
+                    EngineeringReference(
+                        authoredPath = reference.path,
+                        resolvedIdentity = portIdsByAuthoredPath[pathKey(reference.path)],
+                        provenance = reference.provenance,
+                    )
+                },
+                provenance = blueprint.provenance,
+            )
+        }
+
         return EngineeringDocument(
             system = EngineeringSystem(
                 id = systemIdentity(source.ast.system.name),
@@ -96,6 +119,7 @@ class EngineeringIrLowerer(
             components = components,
             ports = ports,
             connections = connections,
+            functions = functions,
         )
     }
 
@@ -109,11 +133,11 @@ class EngineeringIrLowerer(
         return StableSemanticIdentity(withDuplicateSuffix("port:${pathKey(path)}", duplicateOrdinal))
     }
 
-    private fun connectionIdentity(from: List<String>, to: List<String>, duplicateOrdinal: Int): StableSemanticIdentity {
-        return StableSemanticIdentity(
-            withDuplicateSuffix("connection:${pathKey(from)}->${pathKey(to)}", duplicateOrdinal),
-        )
-    }
+    private fun connectionIdentity(sourceUnitId: String, alias: String): StableSemanticIdentity =
+        StableSemanticIdentity("connection:$sourceUnitId:$alias")
+
+    private fun functionIdentity(owner: List<String>, name: String, duplicateOrdinal: Int): StableSemanticIdentity =
+        StableSemanticIdentity(withDuplicateSuffix("function:${pathKey(owner + name)}", duplicateOrdinal))
 
     private fun pathKey(parts: List<String>): String = parts.joinToString(".")
 

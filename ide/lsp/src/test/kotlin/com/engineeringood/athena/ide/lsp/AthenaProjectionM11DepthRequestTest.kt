@@ -183,9 +183,9 @@ class AthenaProjectionM11DepthRequestTest {
         val repositoryRoot = createTempDirectory("athena-lsp-m11-dense-proof-")
         repositoryRoot.resolve("athena.yaml").writeText(sourceRoot.resolve("athena.yaml").readText())
         repositoryRoot.resolve("athena.lock").writeText(sourceRoot.resolve("athena.lock").readText())
-        val copiedSourceRoot = repositoryRoot.resolve("src").createDirectories()
-        val sourcePath = copiedSourceRoot.resolve("assembly-line.athena")
-        sourcePath.writeText(sourceRoot.resolve("src/assembly-line.athena").readText())
+        val copiedSourceRoot = repositoryRoot.resolve("src/com/engineeringood/assemblyline").createDirectories()
+        val sourcePath = copiedSourceRoot.resolve("assemblyline.athena")
+        sourcePath.writeText(sourceRoot.resolve("src/com/engineeringood/assemblyline/assemblyline.athena").readText())
         return DenseProofRepository(
             repositoryRoot = repositoryRoot,
             sourcePath = sourcePath,

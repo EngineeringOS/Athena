@@ -97,9 +97,9 @@ class AthenaM29SampleProjectCompilerTest {
     private fun sampleProjectSources(): List<Path> {
         val repoRoot = resolveRepoRoot()
         return listOf(
-            repoRoot.resolve("examples/m29/sample-project/src/01-interaction-authoring-source.athena"),
-            repoRoot.resolve("examples/m29/sample-project/src/02-interaction-candidates.athena"),
-            repoRoot.resolve("examples/m29/sample-project/src/03-entity-creation-context.athena"),
+            repoRoot.resolve("examples/m29/sample-project/src/com/engineeringood/m29/sample/01-interaction-authoring-source.athena"),
+            repoRoot.resolve("examples/m29/sample-project/src/com/engineeringood/m29/sample/02-interaction-candidates.athena"),
+            repoRoot.resolve("examples/m29/sample-project/src/com/engineeringood/m29/sample/03-entity-creation-context.athena"),
         )
     }
 

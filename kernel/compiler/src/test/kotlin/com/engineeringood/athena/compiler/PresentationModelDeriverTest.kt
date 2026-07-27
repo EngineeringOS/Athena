@@ -88,7 +88,7 @@ class PresentationModelDeriverTest {
     }
 
     @Test
-    fun `presentation derivation publishes M25 representation facts for real sample sources`() {
+    fun `presentation derivation does not publish legacy M25 fallback representation facts`() {
         val sourcePath = resolveRepoRoot()
             .resolve("examples/m25/sample-project/src/01-professional-symbol-sheet.athena")
 
@@ -96,11 +96,7 @@ class PresentationModelDeriverTest {
         val schematic = success.presentations.first { presentation -> presentation.view.id == "schematic" }
         val facts = schematic.representationFacts
 
-        assertTrue(facts.size >= 4)
-        assertTrue(facts.any { fact -> fact.subjectId.value == "component:PowerSupplyPS1" })
-        assertTrue(facts.any { fact -> fact.subjectId.value == "component:ControllerPLC1" })
-        assertTrue(facts.all { fact -> fact.terminals.isNotEmpty() })
-        assertTrue(facts.all { fact -> fact.labels.any { label -> label.role.name == "DEVICE_TAG" } })
+        assertTrue(facts.none { fact -> fact.anatomy.representationId.value.startsWith("athena-industrial-control-v0:") })
     }
 
     private fun resolveRepoRoot(): Path {

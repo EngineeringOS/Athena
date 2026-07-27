@@ -231,6 +231,7 @@ function normalizePresentationDocument(
         canvasWidth: document.canvasWidth,
         canvasHeight: document.canvasHeight,
         ...(document.sheetSurface ? { sheetSurface: normalizeSheetSurface(document.sheetSurface) } : {}),
+        ...(document.drawingComposition ? { drawingComposition: normalizeDrawingComposition(document.drawingComposition) } : {}),
         primitivePacks: normalizeArray(document.primitivePacks).map(pack => ({
             packId: pack.packId,
             displayName: pack.displayName,
@@ -311,6 +312,58 @@ function normalizePresentationDocument(
             })),
             tokenOverrides: { ...occurrence.tokenOverrides },
             sourceProjectionIds: [...normalizeArray(occurrence.sourceProjectionIds)],
+        })),
+        graphicOccurrences: normalizeArray(document.graphicOccurrences).map(occurrence => ({
+            occurrenceId: occurrence.occurrenceId,
+            semanticSubjectId: occurrence.semanticSubjectId,
+            physicalComponentId: occurrence.physicalComponentId,
+            functionId: occurrence.functionId,
+            bounds: { ...occurrence.bounds },
+            orientation: occurrence.orientation,
+            deviceLabel: occurrence.deviceLabel,
+            modelLabel: occurrence.modelLabel,
+            packageId: occurrence.packageId,
+            definitionId: occurrence.definitionId,
+            bindingRuleId: occurrence.bindingRuleId,
+            graphic: {
+                documentId: occurrence.graphic.documentId,
+                ...(occurrence.graphic.bounds ? { bounds: { ...occurrence.graphic.bounds } } : {}),
+                primitives: normalizeArray(occurrence.graphic.primitives).map(primitive => ({
+                    primitiveId: primitive.primitiveId,
+                    kind: primitive.kind,
+                    bounds: { ...primitive.bounds },
+                    styleTokenId: primitive.styleTokenId,
+                    ...(primitive.start ? { start: { ...primitive.start } } : {}),
+                    ...(primitive.end ? { end: { ...primitive.end } } : {}),
+                    points: normalizeArray(primitive.points).map(point => ({ ...point })),
+                    ...(primitive.center ? { center: { ...primitive.center } } : {}),
+                    ...(primitive.origin ? { origin: { ...primitive.origin } } : {}),
+                    radius: primitive.radius,
+                    startAngleDegrees: primitive.startAngleDegrees,
+                    sweepAngleDegrees: primitive.sweepAngleDegrees,
+                    text: primitive.text,
+                    cornerRadius: primitive.cornerRadius,
+                    markerKind: primitive.markerKind,
+                    headSize: primitive.headSize,
+                })),
+                provenanceSources: [...normalizeArray(occurrence.graphic.provenanceSources)],
+                forbiddenAuthorityClaims: [...normalizeArray(occurrence.graphic.forbiddenAuthorityClaims)],
+            },
+            terminalBindings: normalizeArray(occurrence.terminalBindings).map(binding => ({
+                portSemanticId: binding.portSemanticId,
+                anchorId: binding.anchorId,
+                terminalIdentity: binding.terminalIdentity,
+                point: { ...binding.point },
+                side: binding.side,
+            })),
+            labels: normalizeArray(occurrence.labels).map(label => ({
+                labelId: label.labelId,
+                role: label.role,
+                value: label.value,
+                bounds: { ...label.bounds },
+            })),
+            sourceProvenance: [...normalizeArray(occurrence.sourceProvenance)],
+            authorities: { ...occurrence.authorities },
         })),
         connectors: normalizeArray(document.connectors).map(connector => ({
             occurrenceId: connector.occurrenceId,
@@ -398,6 +451,59 @@ function normalizePresentationDocument(
     };
 }
 
+function normalizeDrawingComposition(
+    composition: NonNullable<NonNullable<AthenaGLSPReadyProjectionSource['presentation']>['drawingComposition']>,
+): NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['drawingComposition']> {
+    return {
+        sheetId: composition.sheetId,
+        policyId: composition.policyId,
+        contentBounds: { ...composition.contentBounds },
+        frameBounds: { ...composition.frameBounds },
+        drawingAreaBounds: { ...composition.drawingAreaBounds },
+        titleBlockBounds: { ...composition.titleBlockBounds },
+        sheetBounds: { ...composition.sheetBounds },
+        frameId: composition.frameId,
+        frameStyle: composition.frameStyle,
+        title: { ...composition.title },
+        coordinateZones: normalizeArray(composition.coordinateZones).map(zone => ({
+            ...zone,
+            bounds: { ...zone.bounds },
+        })),
+        structureSubjects: normalizeArray(composition.structureSubjects).map(subject => ({
+            ...subject,
+            bounds: { ...subject.bounds },
+        })),
+        structureFacts: normalizeArray(composition.structureFacts).map(fact => ({
+            ...fact,
+            ...(fact.bounds ? { bounds: { ...fact.bounds } } : {}),
+            ...(fact.start ? { start: { ...fact.start } } : {}),
+            ...(fact.end ? { end: { ...fact.end } } : {}),
+            memberIds: [...normalizeArray(fact.memberIds)],
+        })),
+        referencePlacements: normalizeArray(composition.referencePlacements).map(placement => ({
+            ...placement,
+            bounds: { ...placement.bounds },
+            anchor: { ...placement.anchor },
+            anatomy: {
+                ...placement.anatomy,
+                bounds: { ...placement.anatomy.bounds },
+                hotspot: { ...placement.anatomy.hotspot },
+                primitives: normalizeArray(placement.anatomy.primitives).map(normalizeRepresentationPrimitive),
+                terminals: normalizeArray(placement.anatomy.terminals).map(terminal => ({
+                    ...terminal,
+                    localPoint: { ...terminal.localPoint },
+                    notation: { ...terminal.notation },
+                })),
+                labelAnchors: normalizeArray(placement.anatomy.labelAnchors).map(anchor => ({
+                    ...anchor,
+                    point: { ...anchor.point },
+                })),
+            },
+        })),
+        authorities: { ...composition.authorities },
+    };
+}
+
 function normalizeSheetPublication(
     publication: NonNullable<NonNullable<AthenaGLSPReadyProjectionSource['sheets']>[number]['publication']>,
 ): NonNullable<AthenaGLSPDiagram['sheets'][number]['publication']> {
@@ -465,6 +571,13 @@ function normalizeRepresentationPrimitive(
                 primitiveId: primitive.primitiveId,
                 center: { ...primitive.center },
                 radius: primitive.radius,
+            };
+        case 'text':
+            return {
+                kind: primitive.kind,
+                primitiveId: primitive.primitiveId,
+                origin: { ...primitive.origin },
+                text: primitive.text,
             };
     }
 }

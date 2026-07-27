@@ -16,7 +16,7 @@ class AthenaLspSessionHostTest {
         val repositoryRoot = createTempDirectory("athena-lsp-session-host-")
         try {
             val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-            val sourcePath = sourceRoot.resolve("factory-line.athena")
+            val sourcePath = sourceRoot.resolve("com/engineeringood/factory/line/factoryline.athena")
             repositoryRoot.resolve("athena.yaml").writeText(
                 """
                     primaryPackage:
@@ -26,7 +26,14 @@ class AthenaLspSessionHostTest {
                 """.trimIndent(),
             )
             repositoryRoot.resolve("athena.lock").writeText("# lock")
-            sourcePath.writeText("system FactoryLine { }")
+            sourcePath.parent.createDirectories()
+            sourcePath.writeText(
+                """
+                    package com.engineeringood.factory.line
+
+                    system FactoryLine { }
+                """.trimIndent(),
+            )
             AthenaCompiler().materializeRepositoryLock(repositoryRoot)
 
             val runtime = AthenaRuntime()

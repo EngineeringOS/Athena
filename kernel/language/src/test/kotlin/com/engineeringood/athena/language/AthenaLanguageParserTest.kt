@@ -114,7 +114,7 @@ class AthenaLanguageParserTest {
               port PLC1.out {
                 direction out
               }
-              connect PLC1.out -> PLC1.out
+              connect plc_self PLC1.out -> PLC1.out
             }
             """.trimIndent()
 
@@ -151,8 +151,25 @@ class AthenaLanguageParserTest {
         assertEquals("PLC1", assertIs<DeviceDeclaration>(success.ast.declarations[0]).name)
         assertEquals(listOf("PLC1", "out"), assertIs<PortDeclaration>(success.ast.declarations[1]).qualifiedName.parts)
         val connection = assertIs<ConnectionDeclaration>(success.ast.declarations[2])
+        assertEquals("plc_self", connection.alias)
         assertEquals(listOf("PLC1", "out"), connection.from.parts)
         assertEquals(listOf("PLC1", "out"), connection.to.parts)
+    }
+
+    @Test
+    fun `requires authored aliases for all connection declarations`() {
+        val source =
+            """
+            system Demo {
+              connect PLC1.out -> M1.in
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("alias-free-connect.athena", source)
+
+        val failure = assertIs<ParseFailure>(result)
+        assertEquals(1, failure.diagnostics.size)
+        assertTrue(failure.diagnostics.single().message.isNotBlank())
     }
 
     @Test
@@ -203,11 +220,11 @@ class AthenaLanguageParserTest {
               }
 
               connect con_01 {
-                MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
-                MainBreakerQF30.load -> ControlRelayK30.supply
+                feed_in MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
+                relay_supply MainBreakerQF30.load -> ControlRelayK30.supply
               }
 
-              connect ControlRelayK30.status -> MainBreakerQF30.line
+              connect relay_status ControlRelayK30.status -> MainBreakerQF30.line
             }
             """.trimIndent()
 
@@ -217,8 +234,10 @@ class AthenaLanguageParserTest {
         val group = assertIs<ConnectionGroupDeclaration>(success.ast.declarations[3])
         assertEquals("con_01", group.name)
         assertEquals(2, group.connections.size)
+        assertEquals("feed_in", group.connections[0].alias)
         assertEquals(listOf("MainPowerSupplyPS30", "lplus"), group.connections[0].from.parts)
         assertEquals(listOf("MainBreakerQF30", "line"), group.connections[0].to.parts)
+        assertEquals("relay_supply", group.connections[1].alias)
         assertEquals(listOf("MainBreakerQF30", "load"), group.connections[1].from.parts)
         assertEquals(listOf("ControlRelayK30", "supply"), group.connections[1].to.parts)
         assertTrue(group.connections.all { connection -> connection.span.start.offset > group.span.start.offset })
@@ -308,6 +327,8 @@ class AthenaLanguageParserTest {
                         span = portTwo.span,
                     ),
                     ConnectionDeclaration(
+                        alias = "plc_to_motor",
+                        aliasSpan = connection.aliasSpan,
                         from = QualifiedName(listOf("PLC1", "out"), connection.from.span),
                         to = QualifiedName(listOf("M1", "in"), connection.to.span),
                         span = connection.span,
@@ -356,7 +377,7 @@ class AthenaLanguageParserTest {
                 signal Digital
               }
             
-              connect PLC1.out -> PLC1.out
+              connect plc_self PLC1.out -> PLC1.out
             }
         """.trimIndent()
 
@@ -376,7 +397,7 @@ class AthenaLanguageParserTest {
                 type PLC
               }
             
-              connect PLC1.out M1.in
+              connect bad PLC1.out M1.in
             }
         """.trimIndent()
 

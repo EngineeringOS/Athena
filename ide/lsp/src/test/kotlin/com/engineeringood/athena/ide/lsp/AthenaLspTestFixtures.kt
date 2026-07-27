@@ -4,14 +4,15 @@ import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeText
+import com.engineeringood.athena.compiler.AthenaCompiler
 
 /**
  * Creates a governed M5 repository fixture for LSP tests.
  */
 fun createGovernedTestRepository(
     prefix: String,
-    packageName: String = "com.engineeringood.factory-line",
-    sourceFileName: String = "factory-line.athena",
+    packageName: String = "com.engineeringood.factoryline",
+    sourceFileName: String = "factoryline.athena",
     sourceText: String = "system FactoryLine { }",
 ): AthenaLspTestRepository {
     val repositoryRoot = createTempDirectory(prefix)
@@ -37,13 +38,26 @@ fun createGovernedTestRepository(
         """.trimIndent(),
     )
     val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    val seedSourcePath = sourceRoot.resolve(sourceFileName)
-    seedSourcePath.writeText(sourceText)
+    val packageDirectory = sourceRoot.resolve(packageName.replace('.', '/')).createDirectories()
+    val seedSourcePath = packageDirectory.resolve(sourceFileName)
+    seedSourcePath.writeText(governedAthenaSource(sourceText, packageName))
+    AthenaCompiler().materializeRepositoryLock(repositoryRoot)
     return AthenaLspTestRepository(
         repositoryRoot = repositoryRoot,
         sourceRoot = sourceRoot,
         seedSourcePath = seedSourcePath,
     )
+}
+
+fun governedAthenaSource(
+    sourceText: String,
+    packageName: String = "com.engineeringood.factoryline",
+): String {
+    return if (sourceText.trimStart().startsWith("package ")) {
+        sourceText
+    } else {
+        "package $packageName\n\n$sourceText"
+    }
 }
 
 /**

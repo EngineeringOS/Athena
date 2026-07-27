@@ -59,6 +59,7 @@ include(
     ":kernel:routing-model",
     ":kernel:document-projection-model",
     ":kernel:representation-model",
+    ":kernel:drawing-composition",
     ":kernel:package-model",
     ":kernel:package-runtime",
     ":kernel:presentation-policy-model",

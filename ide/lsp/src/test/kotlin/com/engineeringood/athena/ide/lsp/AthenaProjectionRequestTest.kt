@@ -703,7 +703,7 @@ class AthenaProjectionRequestTest {
 
                 assertNotNull(payload)
                 assertEquals("ready", payload.status)
-                assertEquals("factory-line", payload.projectName)
+                assertEquals("factoryline", payload.projectName)
                 assertEquals(
                     listOf("cabinet", "wiring", "schematic", "documentation"),
                     payload.supportedViews.map { view -> view.viewId },
@@ -1117,6 +1117,8 @@ class AthenaProjectionRequestTest {
         )
         val repositoryRoot = repository.repositoryRoot
         val layoutSource = """
+            package com.engineeringood.factoryline
+
             system LayoutAcceptance {
               device PLC2 {
                 type Switch
@@ -1139,7 +1141,7 @@ class AthenaProjectionRequestTest {
               connect PLC2.out -> M2.in
             }
         """.trimIndent()
-        val layoutSourcePath = repository.sourceRoot.resolve("02-layout-intelligence-acceptance.athena")
+        val layoutSourcePath = repository.sourceRoot.resolve("com/engineeringood/factoryline/02-layout-intelligence-acceptance.athena")
         try {
             layoutSourcePath.writeText(layoutSource)
             AthenaCompiler().materializeRepositoryLock(repositoryRoot)

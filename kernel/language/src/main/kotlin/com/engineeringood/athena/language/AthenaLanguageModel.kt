@@ -389,6 +389,8 @@ data class PortDeclaration(
  * future parser implementation changes.
  */
 data class ConnectionDeclaration(
+    val alias: String,
+    val aliasSpan: SourceSpan,
     val from: QualifiedName,
     val to: QualifiedName,
     override val span: SourceSpan,

@@ -34,3 +34,53 @@
   Owner: M32 projection compatibility owner.
   Reason: Normal M31 compiler/runtime/LSP payloads no longer emit duplicate `_reference` visual components, but tests still guard malformed legacy payload handling.
   Verification: M31 no-duplicate projection tests plus scan proving retained `_reference` hits are tests or M19 static history only.
+
+## Deferred from: code review of M34 Story 1.1 (2026-07-24)
+
+- Resolve composition children, reject nested Elements and cycles, and validate exported anchors in
+  Story 1.3. Owner: M34 Story 1.3 implementation agent. Verification: intrinsic composition compiler
+  tests with stable source diagnostics.
+- Reject ambiguous Profile/Binding selection in Story 3.1. Owner: M34 Story 3.1 implementation agent.
+  Verification: deterministic binding resolver tests across reversed rule order.
+- Evaluate project-port direction and signal compatibility against canonical Element anchors in Story
+  3.2. Owner: M34 Story 3.2 implementation agent. Verification: accepted/rejected binding tests with
+  source-spanned diagnostics.
+- Remove independently authored descriptors and descriptor-to-definition reverse construction in Story
+  3.3. Owner: M34 Story 3.3 implementation agent. Verification: generated-descriptor admission tests and
+  the exact migration-ledger search gate.
+- Remove active legacy anatomy and Presentation Primitive Cabinet producers in Story 3.4. Owner: M34
+  Story 3.4 implementation agent. Verification: Graphic Primitive-only structured Cabinet proof and
+  migration-ledger source gates.
+- Establish a tracked M33/M34 prerequisite baseline before final M34 handoff; Story 1.1 currently builds
+  over preserved uncommitted M33 workspace dependencies. Owner: M34 Story 4.3 implementation agent.
+  Verification: clean-worktree checkout runs the full M34 suite and product smoke from committed sources.
+
+## Deferred from: M34 post-E2E review and M35 refactor input (2026-07-27)
+
+- Align `.athena` project source package declarations with filesystem hierarchy, using the same
+  discipline as Java package layout. Example: `package com.engineeringood.m34.professional` should
+  live under the matching `src/com/engineeringood/m34/professional/...` path instead of a flat sample
+  source folder. Owner: M35 package/source-layout owner. Verification: repository lint that rejects
+  package/path mismatch for governed project and package sources.
+
+- Add a complex vendor element proof where Athena source references a package-local SVG geometry
+  resource and owns all exposed metadata: identity, version, anchors, labels, compatibility, roles,
+  direction/signal predicates, and binding exposure. Owner: M35 representation-material owner.
+  Verification: compiler tests and product proof using a non-trivial SVG-backed element, not only
+  native primitive symbols.
+
+- Design package/resource resolution for third-party representation libraries so resources are
+  addressed relative to their owning package hierarchy, not by fragile workspace-relative paths.
+  Owner: M35 package-platform owner. Verification: fixture package laid out like
+  `com/vendor/product/...` with colocated `.athena` and SVG resources, plus dependency-style lookup
+  tests for IEC standard libraries and vendor/user composite elements.
+
+- Sketch a future resource URI schema for package-local SVG assets only after M35. Default lookup
+  stays package-local and classpath-like; remote resource fetching or other URI authorities stay
+  deferred to a later milestone so M35 keeps one admitted source path.
+
+- Define the editable graphics contract: every rendered element occurrence must trace back to the
+  authoritative `.athena` source declaration, and graphic-side edits must round-trip through governed
+  Athena source mutation, compile, lint, and verification. Owner: M35 authoring/representation owner.
+  Verification: source-to-graphic and graphic-to-source tests proving no renderer-side metadata
+  authority and no unverified direct presentation mutation.

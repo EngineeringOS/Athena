@@ -24,8 +24,7 @@ class AthenaRepositoryContractLoaderTest {
                 """.trimIndent(),
             )
             repositoryRoot.resolve("athena.lock").writeText("# lock is derived later")
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+            writePackagedProjectSource(repositoryRoot)
 
             val loader = AthenaRepositoryContractLoader()
             val first = loader.load(repositoryRoot)
@@ -77,6 +76,33 @@ class AthenaRepositoryContractLoaderTest {
     }
 
     @Test
+    fun `rejects hyphenated primary package identity segments`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.factory-line
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            repositoryRoot.resolve("src").createDirectories()
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertEquals(
+                listOf("repository.contract.manifest.primary-package.name.invalid"),
+                result.diagnostics.map { diagnostic -> diagnostic.code },
+            )
+            assertEquals(null, result.repository)
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `reports missing lock and unsupported source-root layout explicitly`() {
         val repositoryRoot = createTempDirectory("athena-repository-contract-")
         try {
@@ -115,8 +141,7 @@ class AthenaRepositoryContractLoaderTest {
                       sourceRoot: src
                 """.trimIndent(),
             )
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+            writePackagedProjectSource(repositoryRoot)
 
             val result = AthenaRepositoryContractLoader().load(
                 repositoryRoot = repositoryRoot,
@@ -147,8 +172,7 @@ class AthenaRepositoryContractLoaderTest {
                 """.trimIndent(),
             )
             repositoryRoot.resolve("athena.lock").writeText("# lock")
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+            writePackagedProjectSource(repositoryRoot)
             repositoryRoot.resolve("rogue.athena").writeText("system Rogue { }")
             repositoryRoot.resolve("packages").resolve("nested").createDirectories()
             repositoryRoot.resolve("packages").resolve("nested").resolve("athena.yaml").writeText(
@@ -186,6 +210,265 @@ class AthenaRepositoryContractLoaderTest {
     }
 
     @Test
+    fun `allows representation package sources under declared package roots`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                    representationPackageRoots:
+                      - packages/representation
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            writePackagedProjectSource(repositoryRoot)
+            repositoryRoot.resolve("packages")
+                .resolve("representation")
+                .resolve("athena")
+                .resolve("vendor")
+                .createDirectories()
+            repositoryRoot.resolve("packages")
+                .resolve("representation")
+                .resolve("athena")
+                .resolve("vendor")
+                .resolve("drive.athena")
+                .writeText(
+                    """
+                        package athena.vendor
+
+                        symbol drive {
+                          identity "vendor.drive"
+                          version "1.0.0"
+                        }
+                    """.trimIndent(),
+                )
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertTrue(result.isValid, result.diagnostics.toString())
+            assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
+            assertEquals(
+                setOf(repositoryRoot.resolve("packages/representation").toRealPath()),
+                result.representationPackageRoots,
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `validates governed source package hierarchy under primary and representation roots`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                    representationPackageRoots:
+                      - packages/representation
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            repositoryRoot.resolve("src/com/engineeringood/demo").createDirectories()
+            repositoryRoot.resolve("src/com/engineeringood/demo/demo.athena").writeText(
+                """
+                    package com.engineeringood.demo
+
+                    system Demo { }
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("packages/representation/com/vendor/drive").createDirectories()
+            repositoryRoot.resolve("packages/representation/com/vendor/drive/drive.athena").writeText(
+                """
+                    package com.vendor.drive
+
+                    symbol drive {
+                      identity "vendor.drive"
+                      version "1.0.0"
+                    }
+                """.trimIndent(),
+            )
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertTrue(result.isValid, result.diagnostics.toString())
+            assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `rejects default package and mismatched governed source path`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            repositoryRoot.resolve("src/com/engineeringood/demo").createDirectories()
+            repositoryRoot.resolve("src/com/engineeringood/demo/missing-package.athena").writeText("system Demo { }")
+            repositoryRoot.resolve("src/com/engineeringood/wrong").createDirectories()
+            repositoryRoot.resolve("src/com/engineeringood/wrong/demo.athena").writeText(
+                """
+                    package com.engineeringood.demo
+
+                    system Demo { }
+                """.trimIndent(),
+            )
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertEquals(
+                listOf(
+                    "repository.contract.package.default-forbidden",
+                    "repository.contract.package.path-mismatch",
+                ),
+                result.diagnostics.map { diagnostic -> diagnostic.code },
+            )
+            assertTrue(result.diagnostics.all { diagnostic -> diagnostic.sourcePath != null })
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `rejects uppercase package segments and case-only path mismatch while ignoring generated caches`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            repositoryRoot.resolve("src/com/engineeringood/demo").createDirectories()
+            repositoryRoot.resolve("src/com/engineeringood/demo/uppercase-package.athena").writeText(
+                """
+                    package com.Engineeringood.demo
+
+                    system Demo { }
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("src/Org/example/caseonly").createDirectories()
+            repositoryRoot.resolve("src/Org/example/caseonly/case-path.athena").writeText(
+                """
+                    package org.example.caseonly
+
+                    system DemoCase { }
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve(".athena/snapshots/cache/com/Engineeringood/demo").createDirectories()
+            repositoryRoot.resolve(".athena/snapshots/cache/com/Engineeringood/demo/generated.athena").writeText(
+                """
+                    package com.engineeringood.demo
+
+                    system Generated { }
+                """.trimIndent(),
+            )
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertEquals(
+                listOf(
+                    "repository.contract.package.segment-case",
+                    "repository.contract.package.path-mismatch",
+                ),
+                result.diagnostics.map { diagnostic -> diagnostic.code },
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `normalizes quoted representation package roots through the canonical manifest loader`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                    representationPackageRoots:
+                      - "packages/representation"
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            repositoryRoot.resolve("src").createDirectories()
+            repositoryRoot.resolve("packages/representation").createDirectories()
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertTrue(result.isValid, result.diagnostics.toString())
+            assertEquals(
+                setOf(repositoryRoot.resolve("packages/representation").toRealPath()),
+                result.representationPackageRoots,
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `ignores derived representation snapshots under athena state`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.demo
+                      sourceRoot: src
+                    representationPackageRoots:
+                      - packages/representation
+                """.trimIndent(),
+            )
+            repositoryRoot.resolve("athena.lock").writeText("# lock")
+            writePackagedProjectSource(repositoryRoot)
+            repositoryRoot.resolve(".athena")
+                .resolve("snapshots")
+                .resolve("m34-live-cabinet")
+                .resolve("packages")
+                .resolve("representation")
+                .resolve("athena")
+                .resolve("iec")
+                .createDirectories()
+            repositoryRoot.resolve(".athena")
+                .resolve("snapshots")
+                .resolve("m34-live-cabinet")
+                .resolve("packages")
+                .resolve("representation")
+                .resolve("athena")
+                .resolve("iec")
+                .resolve("cabinet-element-set.athena")
+                .writeText("package athena.iec\n")
+            repositoryRoot.resolve(".athena")
+                .resolve("snapshots")
+                .resolve("m34-live-cabinet")
+                .resolve("athena.yaml")
+                .writeText("primaryPackage:\n  name: com.generated.snapshot\n  sourceRoot: src\n")
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertTrue(result.isValid, result.diagnostics.toString())
+            assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `allows nested governed repositories for graph resolution validation`() {
         val repositoryRoot = createTempDirectory("athena-repository-contract-")
         try {
@@ -201,8 +484,7 @@ class AthenaRepositoryContractLoaderTest {
                 """.trimIndent(),
             )
             repositoryRoot.resolve("athena.lock").writeText("# lock")
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+            writePackagedProjectSource(repositoryRoot)
             repositoryRoot.resolve("vendor").resolve("alpha").createDirectories()
             repositoryRoot.resolve("vendor").resolve("alpha").resolve("athena.yaml").writeText(
                 """
@@ -212,8 +494,12 @@ class AthenaRepositoryContractLoaderTest {
                 """.trimIndent(),
             )
             repositoryRoot.resolve("vendor").resolve("alpha").resolve("athena.lock").writeText("# lock")
-            repositoryRoot.resolve("vendor").resolve("alpha").resolve("src").createDirectories()
-            repositoryRoot.resolve("vendor").resolve("alpha").resolve("src").resolve("alpha.athena").writeText("system Alpha { }")
+            writePackagedProjectSource(
+                repositoryRoot = repositoryRoot.resolve("vendor").resolve("alpha"),
+                packageName = "com.engineeringood.alpha",
+                fileName = "alpha.athena",
+                systemName = "Alpha",
+            )
 
             val result = AthenaRepositoryContractLoader().load(
                 repositoryRoot = repositoryRoot,
@@ -264,8 +550,7 @@ class AthenaRepositoryContractLoaderTest {
                       sourceRoot: src
                 """.trimIndent(),
             )
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+            writePackagedProjectSource(repositoryRoot)
 
             val result = AthenaCompiler().validateRepositoryContract(repositoryRoot)
 
@@ -286,7 +571,7 @@ class AthenaRepositoryContractLoaderTest {
             repositoryRoot.resolve("athena.yaml").writeText(
                 """
                     primaryPackage:
-                      name: com.engineeringood.factory-line
+                      name: com.engineeringood.factoryline
                       version: 0.1.0
                       sourceRoot: src
                 """.trimIndent(),
@@ -297,23 +582,27 @@ class AthenaRepositoryContractLoaderTest {
                     # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
                     version: 1
                     primaryPackage:
-                      name: com.engineeringood.factory-line
+                      name: com.engineeringood.factoryline
                       version: 0.1.0
                     packages:
-                      - name: com.engineeringood.factory-line
+                      - name: com.engineeringood.factoryline
                         version: 0.1.0
                         sourceRoot: src
                         dependencies: []
                 """.trimIndent(),
             )
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("factory-line.athena").writeText("system FactoryLine { }")
+            writePackagedProjectSource(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.factoryline",
+                fileName = "factoryline.athena",
+                systemName = "FactoryLine",
+            )
 
             val result = AthenaCompiler().validateRepositoryContract(repositoryRoot)
 
             assertTrue(result.isValid)
             assertTrue(result.diagnostics.isEmpty())
-            assertEquals("com.engineeringood.factory-line", result.repository?.manifest?.primaryPackage?.id?.name)
+            assertEquals("com.engineeringood.factoryline", result.repository?.manifest?.primaryPackage?.id?.name)
             assertEquals("0.1.0", result.repository?.manifest?.primaryPackage?.id?.version)
         } finally {
             repositoryRoot.toFile().deleteRecursively()
@@ -339,8 +628,7 @@ class AthenaRepositoryContractLoaderTest {
                 """.trimIndent(),
             )
             repositoryRoot.resolve("athena.lock").writeText("# lock")
-            repositoryRoot.resolve("src").createDirectories()
-            repositoryRoot.resolve("src").resolve("demo.athena").writeText("system Demo { }")
+            writePackagedProjectSource(repositoryRoot)
 
             val result = AthenaRepositoryContractLoader().load(repositoryRoot)
 
@@ -392,4 +680,21 @@ class AthenaRepositoryContractLoaderTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+}
+
+private fun writePackagedProjectSource(
+    repositoryRoot: java.nio.file.Path,
+    packageName: String = "com.engineeringood.demo",
+    fileName: String = "demo.athena",
+    systemName: String = "Demo",
+) {
+    val packageDirectory = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/'))
+    packageDirectory.createDirectories()
+    packageDirectory.resolve(fileName).writeText(
+        """
+            package $packageName
+
+            system $systemName { }
+        """.trimIndent(),
+    )
 }

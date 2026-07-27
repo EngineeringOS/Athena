@@ -77,7 +77,7 @@ class AthenaGrammarSmokeTest {
             """
             package com.engineeringood.factory-line
             system Demo {
-              connect plc.out -> plc.input
+              connect plc_loop plc.out -> plc.input
             }
             """.trimIndent()
 
@@ -102,7 +102,7 @@ class AthenaGrammarSmokeTest {
               port plc.out {
                 package package
               }
-              connect plc.out -> plc.input
+              connect plc_loop plc.out -> plc.input
             }
             """.trimIndent()
 
@@ -113,6 +113,7 @@ class AthenaGrammarSmokeTest {
         val connect = parse.tree.systemDecl().declaration(2).connectDecl()
         assertEquals("->", connect.ARROW().text)
         assertEquals(listOf("plc.out", "plc.input"), connect.twoPartName().map { it.text })
+        assertEquals("plc_loop", connect.ident().text)
     }
 
     @Test
@@ -155,7 +156,7 @@ class AthenaGrammarSmokeTest {
               port PLC1.out {
                 direction out
               }
-              connect PLC1.out -> PLC1.out
+              connect plc_self PLC1.out -> PLC1.out
             }
             """.trimIndent()
 

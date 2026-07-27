@@ -40,6 +40,17 @@ value class GraphicResourceId(val value: String) {
     override fun toString(): String = value
 }
 
+data class PackageResourceKey(
+    val sourceUnitId: String,
+    val resourceId: GraphicResourceId,
+)
+
+data class PackageResourceDeclaration(
+    val key: PackageResourceKey,
+    val kind: GraphicResourceKind,
+    val path: String,
+)
+
 @JvmInline
 value class RepresentationStyleTokenRef(val value: String) {
     override fun toString(): String = value
@@ -91,6 +102,7 @@ data class RepresentationPackageDescriptorEntry(
     val resourceId: GraphicResourceId,
     val variants: List<RepresentationVariantId> = emptyList(),
     val styleTokenRefs: List<RepresentationStyleTokenRef> = emptyList(),
+    val bindingPolicyTags: List<BindingPolicyTag> = emptyList(),
 )
 
 data class RepresentationVariantDefinition(

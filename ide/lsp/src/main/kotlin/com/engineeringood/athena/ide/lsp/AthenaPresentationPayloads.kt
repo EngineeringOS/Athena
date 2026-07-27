@@ -9,9 +9,78 @@ data class AthenaPresentationDocumentPayload(
     val primitivePacks: List<AthenaPresentationPrimitivePackPayload>,
     val compositePacks: List<AthenaPresentationCompositePackPayload>,
     val occurrences: List<AthenaPresentationOccurrencePayload>,
+    val graphicOccurrences: List<AthenaPresentationGraphicOccurrencePayload> = emptyList(),
     val connectors: List<AthenaPresentationConnectorPayload>,
     val representationFacts: List<AthenaPresentationRepresentationFactPayload> = emptyList(),
     val referenceMarkers: List<AthenaPresentationReferenceMarkerPayload> = emptyList(),
+    val drawingComposition: AthenaDrawingCompositionPayload? = null,
+)
+
+data class AthenaPresentationGraphicOccurrencePayload(
+    val occurrenceId: String,
+    val semanticSubjectId: String,
+    val physicalComponentId: String,
+    val functionId: String?,
+    val bounds: AthenaPresentationBoundsPayload,
+    val orientation: String,
+    val deviceLabel: String,
+    val modelLabel: String?,
+    val packageId: String,
+    val definitionId: String,
+    val bindingRuleId: String,
+    val graphic: AthenaGraphicPrimitiveDocumentPayload,
+    val terminalBindings: List<AthenaPresentationGraphicTerminalBindingPayload>,
+    val labels: List<AthenaPresentationGraphicLabelPayload>,
+    val sourceProvenance: List<String>,
+    val authorities: AthenaPresentationGraphicOccurrenceAuthoritiesPayload,
+)
+
+data class AthenaPresentationGraphicOccurrenceAuthoritiesPayload(
+    val graphic: String,
+    val placement: String,
+    val material: String,
+)
+
+data class AthenaPresentationGraphicTerminalBindingPayload(
+    val portSemanticId: String,
+    val anchorId: String,
+    val terminalIdentity: String,
+    val point: AthenaProjectionPointPayload,
+    val side: String,
+)
+
+data class AthenaPresentationGraphicLabelPayload(
+    val labelId: String,
+    val role: String,
+    val value: String,
+    val bounds: AthenaPresentationBoundsPayload,
+)
+
+data class AthenaGraphicPrimitiveDocumentPayload(
+    val documentId: String?,
+    val bounds: AthenaPresentationBoundsPayload?,
+    val primitives: List<AthenaGraphicPrimitivePayload>,
+    val provenanceSources: List<String>,
+    val forbiddenAuthorityClaims: List<String>,
+)
+
+data class AthenaGraphicPrimitivePayload(
+    val primitiveId: String,
+    val kind: String,
+    val bounds: AthenaPresentationBoundsPayload,
+    val styleTokenId: String?,
+    val start: AthenaProjectionPointPayload? = null,
+    val end: AthenaProjectionPointPayload? = null,
+    val points: List<AthenaProjectionPointPayload> = emptyList(),
+    val center: AthenaProjectionPointPayload? = null,
+    val origin: AthenaProjectionPointPayload? = null,
+    val radius: Int? = null,
+    val startAngleDegrees: Double? = null,
+    val sweepAngleDegrees: Double? = null,
+    val text: String? = null,
+    val cornerRadius: Int? = null,
+    val markerKind: String? = null,
+    val headSize: Int? = null,
 )
 
 /**
@@ -83,7 +152,9 @@ data class AthenaPresentationShapeCommandPayload(
     val start: AthenaProjectionPointPayload? = null,
     val end: AthenaProjectionPointPayload? = null,
     val center: AthenaProjectionPointPayload? = null,
+    val origin: AthenaProjectionPointPayload? = null,
     val radius: Int? = null,
+    val text: String? = null,
     val pathData: String? = null,
     val strokeTokenKey: String? = null,
     val strokeWidthTokenKey: String? = null,
@@ -244,6 +315,7 @@ data class AthenaPresentationAnatomyPrimitivePayload(
     val points: List<AthenaProjectionPointPayload> = emptyList(),
     val center: AthenaProjectionPointPayload? = null,
     val radius: Int? = null,
+    val text: String? = null,
 )
 
 data class AthenaPresentationSizePayload(

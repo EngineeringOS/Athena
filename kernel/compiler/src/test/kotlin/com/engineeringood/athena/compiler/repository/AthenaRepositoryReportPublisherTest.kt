@@ -17,6 +17,7 @@ class AthenaRepositoryReportPublisherTest {
         try {
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
                 sourceFileName = "root.athena",
                 manifestBody = """
                     primaryPackage:
@@ -31,6 +32,7 @@ class AthenaRepositoryReportPublisherTest {
             )
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot.resolve("vendor").resolve("alpha"),
+                packageName = "com.engineeringood.alpha",
                 sourceFileName = "alpha.athena",
                 manifestBody = """
                     primaryPackage:
@@ -64,6 +66,7 @@ class AthenaRepositoryReportPublisherTest {
         try {
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
                 sourceFileName = "root.athena",
                 manifestBody = """
                     primaryPackage:
@@ -78,6 +81,7 @@ class AthenaRepositoryReportPublisherTest {
             )
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot.resolve("vendor").resolve("alpha"),
+                packageName = "com.engineeringood.alpha",
                 sourceFileName = "alpha.athena",
                 manifestBody = """
                     primaryPackage:
@@ -103,11 +107,11 @@ class AthenaRepositoryReportPublisherTest {
             val result = AthenaCompiler().publishRepositoryGraphReport(repositoryRoot)
 
             assertFalse(result.isValid)
-            assertEquals(AthenaRepositoryReportLockState.STALE, result.lockState)
+            assertEquals(AthenaRepositoryReportLockState.INVALID, result.lockState)
             assertNotNull(result.report)
             assertEquals("com.engineeringood.alpha", result.report?.repository?.lock?.packages?.get(1)?.packageId?.name)
             assertTrue(
-                result.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.content.out-of-date" },
+                result.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.schema-incompatible" },
                 result.diagnostics.joinToString(separator = "\n") { diagnostic -> "${diagnostic.code}: ${diagnostic.message}" },
             )
         } finally {
@@ -118,14 +122,19 @@ class AthenaRepositoryReportPublisherTest {
 
 private fun writeGovernedRepository(
     repositoryRoot: java.nio.file.Path,
+    packageName: String,
     sourceFileName: String,
     manifestBody: String,
 ) {
     repositoryRoot.createDirectories()
     repositoryRoot.resolve("athena.yaml").writeText(manifestBody)
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve(sourceFileName).writeText(
-        "system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }",
+    val packageDirectory = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/')).createDirectories()
+    packageDirectory.resolve(sourceFileName).writeText(
+        """
+            package $packageName
+
+            system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }
+        """.trimIndent(),
     )
 }

@@ -5,6 +5,7 @@ import com.engineeringood.athena.authoring.AuthoringRevisionGuard
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
+import com.engineeringood.athena.compiler.AthenaRepresentationSourceDiagnostic
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnostic
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnosticSeverity
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticRelatedLocation
@@ -13,6 +14,8 @@ import com.engineeringood.athena.runtime.AthenaAuthoringPreviewSubmitted
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.runtime.AthenaAiDeterministicProofProvider
 import com.engineeringood.athena.runtime.AthenaAiReasoningProvider
+import com.engineeringood.athena.repository.RepositoryDiagnostic
+import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
@@ -26,6 +29,7 @@ import org.eclipse.lsp4j.DidChangeWatchedFilesParams
 import org.eclipse.lsp4j.DidCloseTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DidSaveTextDocumentParams
+import org.eclipse.lsp4j.DocumentFormattingParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializeResult
 import org.eclipse.lsp4j.Location
@@ -35,7 +39,12 @@ import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.ReferenceParams
+import org.eclipse.lsp4j.SemanticTokens
+import org.eclipse.lsp4j.SemanticTokensLegend
+import org.eclipse.lsp4j.SemanticTokensParams
+import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions
 import org.eclipse.lsp4j.ServerCapabilities
+import org.eclipse.lsp4j.TextEdit
 import org.eclipse.lsp4j.TextDocumentSyncKind
 import org.eclipse.lsp4j.TextDocumentSyncOptions
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException
@@ -109,6 +118,12 @@ class AthenaLanguageServer(
         },
         onReferences = { params ->
             languageFeatures?.references(params).orEmpty()
+        },
+        onFormatting = { params ->
+            languageFeatures?.formatting(params.textDocument.uri).orEmpty()
+        },
+        onSemanticTokens = { params ->
+            languageFeatures?.semanticTokens(params.textDocument.uri) ?: SemanticTokens(emptyList())
         },
     )
 
@@ -187,12 +202,21 @@ class AthenaLanguageServer(
                             documentSymbolProvider = Either.forLeft(true)
                             definitionProvider = Either.forLeft(true)
                             referencesProvider = Either.forLeft(true)
+                            documentFormattingProvider = Either.forLeft(true)
+                            semanticTokensProvider = SemanticTokensWithRegistrationOptions(
+                                SemanticTokensLegend(athenaSemanticTokenTypes, emptyList()),
+                                true,
+                            )
                             experimental = sessionSnapshot!!.toTransportPayload()
                         },
                     )
                 }
 
                 is AthenaLspSessionHostUnavailable -> {
+                    publishRepositoryContractDiagnostics(
+                        repositoryRoot = activation.repositoryRoot,
+                        diagnostics = activation.diagnostics,
+                    )
                     throw ResponseErrorException(
                         ResponseError(
                             ResponseErrorCode.InvalidParams,
@@ -203,6 +227,23 @@ class AthenaLanguageServer(
                 }
             }
         }
+    }
+
+    private fun publishRepositoryContractDiagnostics(
+        repositoryRoot: Path,
+        diagnostics: List<RepositoryDiagnostic>,
+    ) {
+        diagnostics
+            .filter { diagnostic -> diagnostic.sourcePath != null }
+            .groupBy { diagnostic -> repositoryRoot.resolve(diagnostic.sourcePath!!).normalize().toUri().toString() }
+            .forEach { (uri, groupedDiagnostics) ->
+                languageClient?.publishDiagnostics(
+                    PublishDiagnosticsParams().apply {
+                        this.uri = uri
+                        this.diagnostics = groupedDiagnostics.map { diagnostic -> diagnostic.toLspDiagnostic() }
+                    },
+                )
+            }
     }
 
     override fun shutdown(): CompletableFuture<Any> {
@@ -930,12 +971,13 @@ class AthenaLanguageServer(
             version = version,
             text = documentText,
         )
-        val diagnostics = trackedDocument.compilation.toLspDiagnostics() +
-            trackedDocument.projectSemanticDiagnostics.toLspDiagnostics(
-                documentUri = documentUri,
-                currentSourceUnitId = trackedDocument.projectSemanticSourceUnitId,
-                sourceUnitUris = trackedDocument.projectSemanticSourceUnitUris,
-            )
+        val diagnostics = trackedDocument.representation?.diagnostics?.toRepresentationLspDiagnostics()
+            ?: (trackedDocument.compilation.toLspDiagnostics() +
+                trackedDocument.projectSemanticDiagnostics.toLspDiagnostics(
+                    documentUri = documentUri,
+                    currentSourceUnitId = trackedDocument.projectSemanticSourceUnitId,
+                    sourceUnitUris = trackedDocument.projectSemanticSourceUnitUris,
+                ))
         languageClient?.publishDiagnostics(
             PublishDiagnosticsParams().apply {
                 uri = documentUri
@@ -1004,6 +1046,12 @@ class AthenaTextDocumentService(
     private val onReferences: (params: ReferenceParams) -> List<Location> = {
         emptyList()
     },
+    private val onFormatting: (params: DocumentFormattingParams) -> List<TextEdit> = {
+        emptyList()
+    },
+    private val onSemanticTokens: (params: SemanticTokensParams) -> SemanticTokens = {
+        SemanticTokens(emptyList())
+    },
 ) : TextDocumentService {
     override fun didOpen(params: DidOpenTextDocumentParams) {
         onDidOpen(
@@ -1054,6 +1102,14 @@ class AthenaTextDocumentService(
 
     override fun references(params: ReferenceParams): CompletableFuture<MutableList<out Location>> {
         return CompletableFuture.completedFuture(onReferences(params).toMutableList())
+    }
+
+    override fun formatting(params: DocumentFormattingParams): CompletableFuture<List<TextEdit>> {
+        return CompletableFuture.completedFuture(onFormatting(params))
+    }
+
+    override fun semanticTokensFull(params: SemanticTokensParams): CompletableFuture<SemanticTokens> {
+        return CompletableFuture.completedFuture(onSemanticTokens(params))
     }
 }
 
@@ -1106,6 +1162,18 @@ private fun CompilerCompilationResult.toLspDiagnostics(): List<Diagnostic> {
     }
 }
 
+private fun List<AthenaRepresentationSourceDiagnostic>.toRepresentationLspDiagnostics(): List<Diagnostic> {
+    return map { diagnostic ->
+        Diagnostic().apply {
+            severity = DiagnosticSeverity.Error
+            source = "Athena representation"
+            code = Either.forLeft(diagnostic.code)
+            message = diagnostic.message
+            range = diagnostic.span.toLspRange()
+        }
+    }
+}
+
 private fun CompilerSyntaxDiagnostic.toLspDiagnostic(): Diagnostic {
     return Diagnostic().apply {
         severity = DiagnosticSeverity.Error
@@ -1139,18 +1207,36 @@ private fun SemanticDiagnostic.toLspDiagnostic(): Diagnostic {
     }
 }
 
+private fun RepositoryDiagnostic.toLspDiagnostic(): Diagnostic {
+    return Diagnostic().apply {
+        severity = when (this@toLspDiagnostic.severity) {
+            RepositoryDiagnosticSeverity.ERROR -> DiagnosticSeverity.Error
+            RepositoryDiagnosticSeverity.WARNING -> DiagnosticSeverity.Warning
+            RepositoryDiagnosticSeverity.INFO -> DiagnosticSeverity.Information
+        }
+        source = "Athena repository"
+        code = Either.forLeft(this@toLspDiagnostic.code)
+        message = this@toLspDiagnostic.message
+        range = Range(
+            Position(((startLine ?: 1) - 1).coerceAtLeast(0), ((startColumn ?: 1) - 1).coerceAtLeast(0)),
+            Position(((endLine ?: startLine ?: 1) - 1).coerceAtLeast(0), ((endColumn ?: startColumn ?: 1) - 1).coerceAtLeast(0)),
+        )
+    }
+}
+
 internal fun List<ProjectSemanticDiagnostic>.toLspDiagnostics(
     documentUri: String,
     currentSourceUnitId: SourceUnitId?,
     sourceUnitUris: Map<SourceUnitId, String>,
 ): List<Diagnostic> {
-    return mapNotNull { diagnostic ->
-        diagnostic.toLspDiagnostic(
-            documentUri = documentUri,
-            currentSourceUnitId = currentSourceUnitId,
-            sourceUnitUris = sourceUnitUris,
-        )
-    }.distinctBy { diagnostic ->
+    return filter { diagnostic -> diagnostic.severity != ProjectSemanticDiagnosticSeverity.INFO }
+        .mapNotNull { diagnostic ->
+            diagnostic.toLspDiagnostic(
+                documentUri = documentUri,
+                currentSourceUnitId = currentSourceUnitId,
+                sourceUnitUris = sourceUnitUris,
+            )
+        }.distinctBy { diagnostic ->
         listOf(
             diagnostic.code?.left,
             diagnostic.message,

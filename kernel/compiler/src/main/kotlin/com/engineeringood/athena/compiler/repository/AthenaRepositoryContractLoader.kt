@@ -8,6 +8,10 @@ import com.engineeringood.athena.repository.PrimaryPackage
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
 import com.engineeringood.athena.repository.RepositoryManifest
+import com.engineeringood.athena.language.AthenaLanguageParser
+import com.engineeringood.athena.language.ParseFailure
+import com.engineeringood.athena.language.ParseSuccess
+import java.text.Normalizer
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Locale
@@ -97,6 +101,13 @@ class AthenaRepositoryContractLoader {
         } else {
             null
         }
+        val representationPackageRoots = if (manifestPresent && Files.isRegularFile(manifestPath)) {
+            readRepresentationPackageRoots(readManifestLines(manifestPath))
+                .map { relativeRoot -> normalizeRoot(normalizedRepositoryRoot.resolve(relativeRoot)) }
+                .toSet()
+        } else {
+            emptySet()
+        }
 
         val excludedGovernedRoots = if (options.allowNestedGovernedSubrepositories) {
             discoverNestedGovernedRoots(normalizedRepositoryRoot)
@@ -113,8 +124,14 @@ class AthenaRepositoryContractLoader {
             diagnostics += validateSourceRootLayout(
                 repositoryRoot = normalizedRepositoryRoot,
                 sourceRoot = manifest.primaryPackage.sourceRoot,
-                excludedGovernedRoots = excludedGovernedRoots,
+                excludedGovernedRoots = excludedGovernedRoots + representationPackageRoots,
             )
+            representationPackageRoots.forEach { representationPackageRoot ->
+                diagnostics += validateGovernedSourcePackageHierarchy(
+                    repositoryRoot = normalizedRepositoryRoot,
+                    governedRoot = representationPackageRoot,
+                )
+            }
         }
 
         return AthenaRepositoryContractValidationResult(
@@ -129,6 +146,7 @@ class AthenaRepositoryContractLoader {
                     lock = null,
                 )
             },
+            representationPackageRoots = representationPackageRoots,
             diagnostics = diagnostics,
         )
     }
@@ -160,7 +178,7 @@ class AthenaRepositoryContractLoader {
         } else if (!PACKAGE_NAME_PATTERN.matches(packageName)) {
             diagnostics += diagnostic(
                 code = "repository.contract.manifest.primary-package.name.invalid",
-                message = "`primaryPackage.name` must use lowercase dot-separated package identity segments.",
+                message = "`primaryPackage.name` must use lowercase dot-separated Java-style package identity segments.",
             )
         }
 
@@ -228,6 +246,29 @@ class AthenaRepositoryContractLoader {
         }
 
         return primaryPackageEntries.ifEmpty { null }
+    }
+
+    private fun readRepresentationPackageRoots(manifestLines: List<ManifestLine>): List<String> {
+        val roots = mutableListOf<String>()
+        var insideRepresentationPackageRoots = false
+        manifestLines.forEach { line ->
+            if (line.indent == 0) {
+                insideRepresentationPackageRoots = line.trimmed == "representationPackageRoots:"
+                return@forEach
+            }
+            if (!insideRepresentationPackageRoots || line.indent < 2 || !line.trimmed.startsWith("-")) {
+                return@forEach
+            }
+            val root = line.trimmed.removePrefix("-").trim().unquote()
+            if (root.isNotBlank() &&
+                !root.startsWith("/") &&
+                !root.contains('\\') &&
+                !root.split('/').any { segment -> segment.isBlank() || segment == ".." }
+            ) {
+                roots += root
+            }
+        }
+        return roots.distinct().sorted()
     }
 
     private fun parseDependencies(
@@ -355,6 +396,12 @@ class AthenaRepositoryContractLoader {
                 message = "Dependency `${dependencyName ?: "<unknown>"}` with `source: local-path` must declare a non-blank `locator`.",
             )
             hasErrors = true
+        } else if (dependencySource == PackageDependencySource.LOCAL_PATH && !isSafeLocalPathLocator(normalizedLocator)) {
+            diagnostics += diagnostic(
+                code = "repository.contract.manifest.dependencies.locator.invalid",
+                message = "Dependency `${dependencyName ?: "<unknown>"}` local-path locator must be a repository-confined relative path without traversal, absolute roots, empty segments, or Windows separators.",
+            )
+            hasErrors = true
         }
 
         if (hasErrors) {
@@ -380,6 +427,7 @@ class AthenaRepositoryContractLoader {
                 .filter { candidate -> candidate.isRegularFile() }
                 .filter { candidate -> candidate.fileName.toString() == MANIFEST_FILE_NAME }
                 .filter { candidate -> candidate != repositoryRoot.resolve(MANIFEST_FILE_NAME) }
+                .filter { candidate -> !candidate.isDerivedRepositoryState(repositoryRoot) }
                 .filter { candidate -> !candidate.isWithinAny(excludedGovernedRoots) }
                 .sorted(compareBy(::stablePathKey))
                 .map { candidate ->
@@ -421,7 +469,100 @@ class AthenaRepositoryContractLoader {
             sourceRootPath = sourceRootPath,
             excludedGovernedRoots = excludedGovernedRoots,
         )
+        diagnostics += validateGovernedSourcePackageHierarchy(
+            repositoryRoot = repositoryRoot,
+            governedRoot = sourceRootPath,
+        )
         return diagnostics
+    }
+
+    private fun validateGovernedSourcePackageHierarchy(
+        repositoryRoot: Path,
+        governedRoot: Path,
+    ): List<RepositoryDiagnostic> {
+        if (!Files.exists(governedRoot) || !Files.isDirectory(governedRoot)) {
+            return emptyList()
+        }
+        Files.walk(governedRoot).use { candidates ->
+            return candidates
+                .filter { candidate -> candidate.isRegularFile() }
+                .filter { candidate -> candidate.extension.equals("athena", ignoreCase = true) }
+                .filter { candidate -> !candidate.isDerivedRepositoryState(repositoryRoot) }
+                .sorted(compareBy(::stablePathKey))
+                .flatMap { candidate ->
+                    validateGovernedSourcePackagePath(
+                        repositoryRoot = repositoryRoot,
+                        governedRoot = governedRoot,
+                        sourcePath = candidate,
+                    ).stream()
+                }
+                .collect(Collectors.toList())
+        }
+    }
+
+    private fun validateGovernedSourcePackagePath(
+        repositoryRoot: Path,
+        governedRoot: Path,
+        sourcePath: Path,
+    ): List<RepositoryDiagnostic> {
+        val relativeSourcePath = repositoryRoot.relativize(sourcePath.toAbsolutePath().normalize()).toDisplayPath()
+        val sourceText = Files.readString(sourcePath)
+        val parseResult = AthenaLanguageParser().parse(relativeSourcePath, sourceText)
+        val packageDeclaration = when (parseResult) {
+            is ParseSuccess -> parseResult.ast.packageDeclaration
+            is ParseFailure -> return emptyList()
+        }
+        if (packageDeclaration == null) {
+            return listOf(
+                diagnostic(
+                    code = "repository.contract.package.default-forbidden",
+                    message = "Governed `.athena` source must declare a package matching its source-root-relative directory: $relativeSourcePath",
+                    sourcePath = relativeSourcePath,
+                    startLine = 1,
+                    startColumn = 1,
+                    endLine = 1,
+                    endColumn = 1,
+                ),
+            )
+        }
+
+        val namespace = packageDeclaration.name.parts.joinToString(".")
+        val namespaceSegments = packageDeclaration.name.parts
+        if (namespaceSegments.any { segment -> segment != segment.lowercase(Locale.ROOT) }) {
+            return listOf(
+                diagnostic(
+                    code = "repository.contract.package.segment-case",
+                    message = "Package namespace `$namespace` must use lowercase segments.",
+                    sourcePath = relativeSourcePath,
+                    startLine = packageDeclaration.span.start.line,
+                    startColumn = packageDeclaration.span.start.column,
+                    endLine = packageDeclaration.span.end.line,
+                    endColumn = packageDeclaration.span.end.column,
+                ),
+            )
+        }
+
+        val relativeParentSegments = governedRoot
+            .relativize(sourcePath.parent.toAbsolutePath().normalize())
+            .map { segment -> segment.toString() }
+            .toList()
+        val normalizedParentSegments = relativeParentSegments.map { segment -> segment.normalizeNfc() }
+        val expectedSegments = namespaceSegments.map { segment -> segment.normalizeNfc() }
+        if (normalizedParentSegments != expectedSegments) {
+            return listOf(
+                diagnostic(
+                    code = "repository.contract.package.path-mismatch",
+                    message = "Package namespace `$namespace` must match source-root-relative directory `${expectedSegments.joinToString("/")}`; actual `${relativeParentSegments.joinToString("/")}`.",
+                    sourcePath = relativeSourcePath,
+                    startLine = packageDeclaration.span.start.line,
+                    startColumn = packageDeclaration.span.start.column,
+                    endLine = packageDeclaration.span.end.line,
+                    endColumn = packageDeclaration.span.end.column,
+                ),
+            )
+        }
+
+        return emptyList()
     }
 
     private fun findAuthoredSourcesOutsideSourceRoot(
@@ -434,6 +575,7 @@ class AthenaRepositoryContractLoader {
                 .filter { candidate -> candidate.isRegularFile() }
                 .filter { candidate -> candidate.extension.equals("athena", ignoreCase = true) }
                 .filter { candidate -> !candidate.startsWith(sourceRootPath) }
+                .filter { candidate -> !candidate.isDerivedRepositoryState(repositoryRoot) }
                 .filter { candidate -> !candidate.isWithinAny(excludedGovernedRoots) }
                 .sorted(compareBy(::stablePathKey))
                 .map { candidate ->
@@ -449,11 +591,21 @@ class AthenaRepositoryContractLoader {
     private fun diagnostic(
         code: String,
         message: String,
+        sourcePath: String? = null,
+        startLine: Int? = null,
+        startColumn: Int? = null,
+        endLine: Int? = null,
+        endColumn: Int? = null,
     ): RepositoryDiagnostic {
         return RepositoryDiagnostic(
             code = code,
             message = message,
             severity = RepositoryDiagnosticSeverity.ERROR,
+            sourcePath = sourcePath,
+            startLine = startLine,
+            startColumn = startColumn,
+            endLine = endLine,
+            endColumn = endColumn,
         )
     }
 }
@@ -471,6 +623,7 @@ private fun discoverNestedGovernedRoots(repositoryRoot: Path): Set<Path> {
             .filter { candidate -> candidate.isRegularFile() }
             .filter { candidate -> candidate.fileName.toString() == MANIFEST_FILE_NAME }
             .filter { candidate -> candidate != repositoryRoot.resolve(MANIFEST_FILE_NAME) }
+            .filter { candidate -> !candidate.isDerivedRepositoryState(repositoryRoot) }
             .map(Path::getParent)
             .map(::normalizeRoot)
             .collect(Collectors.toSet())
@@ -514,6 +667,11 @@ private fun stableDependencyKey(dependency: PackageDependency): String {
     ).joinToString("|")
 }
 
+private fun Path.isDerivedRepositoryState(repositoryRoot: Path): Boolean {
+    val relative = repositoryRoot.relativize(toAbsolutePath().normalize()).toDisplayPath()
+    return relative == ".athena/snapshots" || relative.startsWith(".athena/snapshots/")
+}
+
 private fun stablePathKey(path: Path): String {
     val normalizedPath = runCatching { path.toRealPath() }.getOrElse { path.toAbsolutePath().normalize() }
     val pathKey = normalizedPath.toString().replace('\\', '/')
@@ -534,6 +692,8 @@ private fun Path.isWithinAny(candidateRoots: Set<Path>): Boolean {
 
 private fun String.unquote(): String = removeSurrounding("\"").removeSurrounding("'")
 
+private fun String.normalizeNfc(): String = Normalizer.normalize(this, Normalizer.Form.NFC)
+
 private fun String.toDependencySourceOrNull(): PackageDependencySource? {
     val normalized = trim().uppercase(Locale.ROOT).replace('-', '_')
     return PackageDependencySource.entries.firstOrNull { source ->
@@ -548,7 +708,15 @@ private fun normalizeLocator(locator: String?): String? {
         ?.takeIf(String::isNotBlank)
 }
 
+private fun isSafeLocalPathLocator(locator: String?): Boolean {
+    if (locator.isNullOrBlank()) return false
+    if (Path.of(locator).isAbsolute) return false
+    return locator.split('/').all { segment ->
+        segment.isNotBlank() && segment != "." && segment != ".."
+    }
+}
+
 private const val MANIFEST_FILE_NAME = "athena.yaml"
 private const val LOCK_FILE_NAME = "athena.lock"
 private const val GOVERNED_SOURCE_ROOT = "src"
-private val PACKAGE_NAME_PATTERN = Regex("^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$")
+private val PACKAGE_NAME_PATTERN = Regex("^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$")

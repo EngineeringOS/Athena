@@ -231,12 +231,12 @@ internal object AthenaElementSourceLowerer {
             ),
             kind = RepresentationSymbolKind.GENERIC,
             anatomy = compatibilityAnatomy(identity, SymbolBounds(bounds.x, bounds.y, bounds.width, bounds.height, resource.span)),
-            labelSlots = svg.labelSlots,
+            labelSlots = emptyList(),
             variants = listOf(RepresentationVariantId("standard")),
             bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.ELEMENT,
             graphicBody = graphicBody,
-            anchors = svg.anchors,
+            anchors = emptyList(),
             intrinsicComposition = null,
         )
         val diagnostics = buildList {

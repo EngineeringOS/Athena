@@ -20,6 +20,7 @@ class AthenaRepositoryGraphResolver(
 ) {
     private val contractLoadOptions = AthenaRepositoryContractLoadOptions(
         allowNestedGovernedSubrepositories = true,
+        requireLockFile = false,
     )
 
     /**

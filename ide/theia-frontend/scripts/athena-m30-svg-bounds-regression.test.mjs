@@ -18,9 +18,13 @@ test('M30 SVG viewBox is content-derived and duplicate-safe', () => {
     const widgetSource = readRepoFile('ide/theia-frontend/src/browser/athena-graph-workbench-widget.tsx');
     const presentationNodeSource = readRepoFile('ide/theia-frontend/src/browser/athena-graph-workbench-presentation-node.tsx');
 
-    assert.match(modelSource, /const sceneBounds = resolveSceneBounds\(nodes, edges, canvasWidth, canvasHeight\);/);
+    assert.match(modelSource, /const sceneBounds = resolveSceneBounds\(nodes, edges, canvasWidth, canvasHeight, governedDrawingBounds\);/);
+    assert.match(modelSource, /if \(governedBounds && governedBounds\.width > 0 && governedBounds\.height > 0\)/);
     assert.match(modelSource, /svgViewBox: formatSvgViewBox\(sceneBounds\)/);
-    assert.match(modelSource, /presentationBoundsIntersectsCanvas\(occurrence\.bounds, canvasWidth, canvasHeight\)/);
+    assert.match(
+        modelSource,
+        /presentationBoundsIntersectsSurface\(occurrence\.bounds, governedDrawingBounds, canvasWidth, canvasHeight\)/,
+    );
     assert.doesNotMatch(modelSource, /svgViewBox:\s*['"`]0 0 (1680|960)/);
     assert.doesNotMatch(widgetSource, /viewBox=['"`]0 0 (1680|960)/);
 

@@ -1,0 +1,148 @@
+# generated: 2026-07-23T09:10:00+08:00
+# last_updated: 2026-07-23T09:10:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m33
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+generated: 2026-07-23T09:10:00+08:00
+last_updated: 2026-07-24T01:30:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m33
+
+development_status:
+  epic-1: done
+  1-1-define-engineering-drawing-symbol-anatomy-v1: done
+  1-2-define-graphic-primitive-ir-v0: done
+  1-3-add-drawing-diagnostics-and-proof-payloads: done
+  epic-1-retrospective: optional
+  epic-2: done
+  2-1-scaffold-iec-style-representation-package-v1: done
+  2-2-implement-core-power-and-control-symbols: done
+  2-3-implement-terminal-and-reference-symbols: done
+  epic-2-retrospective: done
+  epic-3: done
+  3-1-compile-symbol-anatomy-to-graphic-primitive-ir: done
+  3-2-implement-svg-adapter-for-graphic-primitive-ir: done
+  3-3-enforce-derived-viewbox-and-no-fallback-rendering: done
+  epic-3-retrospective: done
+  epic-4: done
+  4-1-add-sheet-frame-title-block-and-zones: done
+  4-2-add-lanes-rails-terminal-strips-and-label-bands: done
+  4-3-add-reference-and-continuation-placement: done
+  epic-4-retrospective: done
+  epic-5: done
+  5-1-define-professional-schematic-as-primary-surface: done
+  5-2-make-cabinet-the-only-product-surface: done
+  5-3-resolve-create-device-demo-behavior: done
+  5-4-contain-debug-and-proof-controls: done
+  epic-5-retrospective: done
+  epic-6: in-progress
+  6-1-create-m33-sample-project-and-package-set: done
+  6-2-add-structured-drawing-product-smoke: review
+  6-3-add-electron-screenshot-evidence: review
+  epic-6-retrospective: optional
+  epic-7: in-progress
+  7-1-publish-visual-review-checklist: review
+  7-2-purge-toy-rendering-and-workbench-debt: review
+  7-3-run-m33-retrospective-and-m34-handoff: review
+  epic-7-retrospective: done
+
+action_items:
+  - epic: 0
+    action: "Carry M32 open package cleanup items forward only if touched by M33; do not hide M32 debt behind drawing engine work."
+    owner: "M33 implementation agents"
+    status: done
+  - epic: 1
+    action: "Keep Drawing Symbol Anatomy generic; IEC names belong only to the first representation package."
+    owner: "M33 Epic 1 implementation agent"
+    status: done
+  - epic: 3
+    action: "Do not allow SVG or DOM ids to become Graphic Primitive IR authority."
+    owner: "M33 Epic 3 implementation agent"
+    status: done
+  - epic: 5
+    action: "Separate Workbench UX fixes from drawing engine authority in every story evidence note."
+    owner: "M33 Epic 5 implementation agent"
+    status: done
+  - epic: 6
+    action: "Full M33 smoke must pass before any claim that customer demo is ready."
+    owner: "M33 Epic 6 implementation agent"
+    status: done
+  - epic: 2
+    action: "Resolve native symbol resource handles through Story 3.1; unresolved file-like paths cannot count as rendered assets."
+    owner: "M33 Epic 3 implementation agent"
+    status: done
+  - epic: 2
+    action: "Preserve multi-descriptor binding-policy fail-closed behavior through renderer integration."
+    owner: "M33 Epic 3 implementation agent"
+    status: done
+  - epic: 2
+    action: "Use M33IecSymbolCatalog as the only native symbol inventory authority."
+    owner: "M33 Epic 3 implementation agent"
+    status: done
+  - epic: 3
+    action: "Carry explicit duplicate, off-screen, center-fallback, and generic-fallback safety facts into the full M33 product smoke."
+    owner: "M33 Epic 6 implementation agent"
+    status: done
+  - epic: 3
+    action: "Migrate live Graph View rendering from the legacy box SvgRenderer and svg_path compatibility path before removing them."
+    owner: "M33 Epic 6 and 7 implementation agents"
+    status: open
+  - epic: 4
+    action: "Integrate M33 sheet, structure, and reference facts into full product smoke before claiming professional composition is visible."
+    owner: "M33 Epic 6 implementation agent"
+    status: done
+  - epic: 4
+    action: "Remove Workbench A3/A4/960x540 sizing only after live graph consumes derived sheet bounds."
+    owner: "M33 Epic 6 and 7 implementation agents"
+    status: done
+  - epic: 4
+    action: "Preserve typed reference identities and same-sheet SOURCE/TARGET completeness through live navigation migration."
+    owner: "M33 Epic 6 and 7 implementation agents"
+    status: open
+  - epic: 7
+    action: "Define M34 as Cabinet Professional Product Surface before Engineering Knowledge Runtime."
+    owner: "M34 product/architecture agent"
+    target: "M34 Cabinet Professional Product Surface"
+    status: open
+  - epic: 7
+    action: "Migrate active Cabinet rendering away from legacy SVG path and box renderer compatibility."
+    owner: "M34 drawing pipeline agent"
+    target: "M34 Cabinet Professional Product Surface"
+    status: open
+  - epic: 7
+    action: "Run a dedicated Cabinet visual polish pass using desktop/narrow screenshots and the visual review checklist."
+    owner: "M34 product drawing agent"
+    target: "M34 Cabinet Professional Product Surface"
+    status: open
+  - epic: 7
+    action: "Add package XML trust hardening before vendor or third-party package ingestion."
+    owner: "M34 package security agent"
+    target: "M34 Package Security Hardening"
+    status: open

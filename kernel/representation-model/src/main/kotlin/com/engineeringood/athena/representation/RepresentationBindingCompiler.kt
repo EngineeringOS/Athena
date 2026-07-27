@@ -10,9 +10,20 @@ data class RepresentationBindingRequest(
     val definition: RepresentationDefinition,
     val labelValues: Map<RepresentationLabelSlotId, LabelValue>,
     val terminalPorts: Map<PresentationTerminalId, SemanticPortId>,
+    val projectPorts: List<RepresentationProjectPortFact> = emptyList(),
     val priority: RepresentationPolicyPriority,
     val referenceBindings: List<RepresentationReferenceBinding> = emptyList(),
     val compositionIntentMembership: List<CompositionIntentMembershipId> = emptyList(),
+    val functionSemanticId: RepresentationSubjectId? = null,
+)
+
+data class RepresentationProjectPortFact(
+    val semanticPortId: SemanticPortId,
+    val role: RepresentationAnchorRole,
+    val direction: RepresentationDirectionPredicate,
+    val signal: RepresentationSignalPredicate,
+    val terminal: PhysicalTerminalId?,
+    val provenance: RepresentationProvenance,
 )
 
 data class RepresentationBindingResult(
@@ -44,9 +55,14 @@ class RepresentationBindingCompiler {
 
         val occurrence = RepresentationOccurrence(
             occurrenceId = RepresentationOccurrenceId(
-                "${request.canonicalSemanticId.value}@${request.projectionOccurrenceId.value}",
+                listOfNotNull(
+                    request.canonicalSemanticId.value,
+                    request.functionSemanticId?.value,
+                    request.projectionOccurrenceId.value,
+                ).joinToString("@"),
             ),
             canonicalSemanticId = request.canonicalSemanticId,
+            functionSemanticId = request.functionSemanticId,
             projectionOccurrenceId = request.projectionOccurrenceId,
             occurrenceRole = request.policy.occurrenceRole,
             symbolId = request.policy.symbolId,
@@ -68,6 +84,8 @@ class RepresentationBindingCompiler {
                 occurrences = listOf(occurrence),
                 compatibleTerminalBindings = request.terminalPorts.map { (terminalId, semanticPortId) ->
                     RepresentationCompatibleTerminalBinding(terminalId, semanticPortId)
+                }.filter { compatibleBinding ->
+                    request.isCompatibleTerminalBinding(compatibleBinding)
                 }.toSet(),
                 compositionMemberships = request.compositionIntentMembership.toSet(),
             ),
@@ -92,6 +110,13 @@ class RepresentationBindingCompiler {
                 subjectId = canonicalSemanticId,
             )
         }
+        if ((subjectKind == RepresentationSubjectKind.FUNCTION) != (functionSemanticId != null)) {
+            diagnostics += RepresentationDiagnostic(
+                code = RepresentationDiagnosticCode.SOURCE_AUTHORITY_VIOLATION,
+                message = "Function representation subjects require exactly one Engineering Function identity.",
+                subjectId = canonicalSemanticId,
+            )
+        }
         if (policy.symbolId != definition.symbolId) {
             diagnostics += RepresentationDiagnostic(
                 code = RepresentationDiagnosticCode.SYMBOL_MISSING,
@@ -99,7 +124,38 @@ class RepresentationBindingCompiler {
                 subjectId = canonicalSemanticId,
             )
         }
+        definition.labelSlots
+            .filterNot { slot -> slot.slotId in labelValues.keys }
+            .forEach { slot ->
+                diagnostics += RepresentationDiagnostic(
+                    code = RepresentationDiagnosticCode.LABEL_SLOT_MISSING,
+                    message = "Required label slot `${slot.slotId.value}` has no authored value for `${definition.symbolId.value}`.",
+                    subjectId = canonicalSemanticId,
+                    provenance = definition.lifecycle.provenance,
+                )
+            }
         return diagnostics
+    }
+
+    private fun RepresentationBindingRequest.isCompatibleTerminalBinding(
+        binding: RepresentationCompatibleTerminalBinding,
+    ): Boolean {
+        if (definition.bodyAuthority == RepresentationBodyAuthority.LEGACY_PRESENTATION_ANATOMY) {
+            val hasLegacyTerminal = definition.anatomy.terminals.any { terminal ->
+                terminal.terminalId == binding.terminalId
+            }
+            val hasAuthoredProjectPort = projectPorts.any { port -> port.semanticPortId == binding.semanticPortId }
+            return hasLegacyTerminal && hasAuthoredProjectPort
+        }
+        val anchor = definition.anchors.singleOrNull { anchor ->
+            anchor.role == RepresentationAnchorRole.TERMINAL &&
+                PresentationTerminalId(anchor.anchorId.value) == binding.terminalId
+        } ?: return false
+        val port = projectPorts.singleOrNull { port -> port.semanticPortId == binding.semanticPortId } ?: return false
+        return port.role == RepresentationAnchorRole.TERMINAL &&
+            port.direction in anchor.acceptedDirections &&
+            port.signal in anchor.acceptedSignals &&
+            (anchor.terminal == null || anchor.terminal == port.terminal)
     }
 }
 

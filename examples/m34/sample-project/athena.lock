@@ -1,0 +1,19 @@
+# Derived resolution state for the Athena package graph.
+# Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-m35-lock-v2
+validatedLockStateDigest: lock-state/v1:4c3121ebfaf9c3495d625a255ae767175341fdc860af021dc0530ba423f9aef9
+primaryPackage:
+  name: com.engineeringood.m34.sample
+  version: 1.0.0
+packages:
+  - name: com.engineeringood.m34.sample
+    version: 1.0.0
+    sourceRoot: src
+    snapshotDigest: package-snapshot/v1:447366bf9debabc00c962e5871a42e3d7055f47099e600c2d946419463992ff2
+    sourceHashes:
+      - path: com/engineeringood/m34/sample/01-native-cabinet-proof.athena
+        hash: sha256:2a6873b10c44986d895b3de4a1cb47eb6cb427c5745dbeaa2b24dd19df81547c
+    resourceHashes: []
+    dependencies: []

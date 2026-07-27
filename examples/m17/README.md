@@ -9,14 +9,14 @@ Per AD-113, checked-in proof inputs are stronger than inline-only parser demos. 
 | Path | Purpose |
 | --- | --- |
 | `parser-parity-proof/` | Valid standalone `.athena` fixtures with `.expectation.txt` sidecars covering the supported AD-110 subset |
-| `repository-parity-proof/` | Governed repository fixture (`athena.yaml` / `athena.lock` / `src/*.athena`) through real package-resolution seams |
+| `repository-parity-proof/` | Governed repository fixture (`athena.yaml` / `athena.lock` / Java-style `src/**/*.athena`) through real package-resolution seams |
 | `invalid-and-incomplete-proof/` | Malformed and incomplete sources for compiler diagnostics and Tree-sitter UX tolerance |
 
 ## Valid Parity Fixtures
 
 - `parser-parity-proof/parity-cabinet.athena` (+ `.expectation.txt`) - system/device/port/connect/property coverage mirroring `examples/m0/demo-cabinet`.
 - `parser-parity-proof/dense-qualified-names.athena` (+ `.expectation.txt`) - denser qualified-name and string-literal-property coverage.
-- `repository-parity-proof/{athena.yaml,athena.lock,src/parity-repo.athena}` - governed repository fixture resolved through `AthenaCompiler.validateRepositoryContract` / `validateRepositoryLock` / `resolveRepositoryGraph`.
+- `repository-parity-proof/{athena.yaml,athena.lock,src/com/engineeringood/m17/parity/parity-repo.athena}` - governed repository fixture resolved through `AthenaCompiler.validateRepositoryContract` / `validateRepositoryLock` / `resolveRepositoryGraph`.
 
 Each valid `.expectation.txt` records `status=`, `components=`, `ports=`, `connections=`, `svg=`, and `diagnostics=` in the `examples/m0` conformance-suite format.
 

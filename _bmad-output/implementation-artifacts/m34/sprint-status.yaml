@@ -1,0 +1,127 @@
+﻿# generated: 2026-07-24T10:24:25+08:00
+# last_updated: 2026-07-24T16:10:38+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m34
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: When the first story is created
+#   - in-progress -> done: When all stories reach done
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in implementation artifacts
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but is not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed but not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Stories are normally created and implemented in order so each story inherits prior learning.
+# - Every M34 story ends with mandatory deep polish/purge and AC-to-evidence review.
+# - Final M34 acceptance is the one focused professional control drawing defined by corrective Epic 5.
+
+generated: 2026-07-24T10:24:25+08:00
+last_updated: 2026-07-27T08:33:01+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m34
+
+development_status:
+  epic-1: in-progress
+  1-1-establish-the-canonical-representation-contract: done
+  1-2-compile-a-typed-symbol-with-native-geometry: done
+  1-3-compose-and-display-one-typed-element: review
+  epic-1-retrospective: optional
+  epic-2: in-progress
+  2-1-compile-a-referenced-governed-svg-graphic-body: review
+  2-2-stage-external-assets-into-an-immutable-package-snapshot: review
+  2-3-complete-athena-ide-support-for-representation-source: review
+  2-4-prove-the-importer-and-ai-authoring-boundary: review
+  epic-2-retrospective: optional
+  epic-3: in-progress
+  3-1-compile-deterministic-profile-and-binding-rules: review
+  3-2-bind-project-ports-to-element-anchors: review
+  3-3-migrate-the-m34-cabinet-package-from-xml-to-athena: review
+  3-4-make-graphic-primitive-the-only-cabinet-render-path: review
+  epic-3-retrospective: optional
+  epic-4: in-progress
+  4-1-deliver-the-native-typed-cabinet-element-set: review
+  4-2-compose-the-professional-cabinet-drawing: review
+  4-3-prove-and-hand-off-the-m34-cabinet-product: in-progress
+  epic-4-retrospective: optional
+  epic-5: in-progress
+  5-1-freeze-the-professional-drawing-product-contract: review
+  5-2-model-functions-and-deterministic-drawing-placement: review
+  5-3-compile-the-rolling-shutter-iec-package-and-semantic-sample: review
+  5-4-compose-and-route-the-professional-control-drawing: review
+  5-5-prove-polish-and-hand-off-m34: review
+  epic-5-retrospective: done
+
+action_items:
+  - epic: 0
+    action: "Do not expand M32/M33 XML package manifests as product runtime architecture."
+    owner: "M34 implementation agents"
+    target: "M34 Epic 3"
+    status: done
+  - epic: 0
+    action: "Keep Cabinet as the only product surface until Symbol/Element IR proves the corrected path."
+    owner: "M34 implementation agents"
+    target: "M34 Epic 4"
+    status: done
+  - epic: 2
+    action: "Implement Athena graphic svg references to governed SVG resources with data-athena-schema representation/v1, closed node-local data-athena-* typing, and no SVG identity/version/kind authority."
+    owner: "M34 implementation agents"
+    target: "M34 Story 2.1"
+    status: done
+  - epic: 4
+    action: "Deliver or explicitly scope-gate the dedicated professional renderer example against draft/screenshort/equipement_d'un_volet_roulant.png, with QET elements only as reference/offline input, Athena metadata SSOT, and fresh Electron E2E evidence."
+    owner: "M34 implementation agents"
+    target: "M34 Epic 4 / Story 4.3"
+    status: done
+  - epic: 5
+    action: "Close M34 against the approved rolling-shutter control drawing through typed functions, explicit grid placement, governed IEC material, real routing, and fresh Electron visual proof."
+    owner: "M34 implementation agent"
+    target: "M34 Epic 5"
+    status: done
+  - epic: 5
+    action: "Independently review Epic 5 stories before marking them done."
+    owner: "M34 reviewer"
+    target: "M34 Epic 5"
+    status: open
+  - epic: 5
+    action: "Keep generated .athena/snapshots out of committed source and purge them after proof runs."
+    owner: "M34/M35 implementation agents"
+    target: "M34/M35 product proof"
+    status: open
+  - epic: 5
+    action: "Plan the next milestone around one product-quality path, not broad multi-view work."
+    owner: "M35 planning agent"
+    target: "M35 planning"
+    status: open
+  - epic: 5
+    action: "Preserve Athena-source SSOT and reject XML/QET/SVG metadata authority in future package work."
+    owner: "Architecture owner"
+    target: "M35 architecture"
+    status: open
+
+
+

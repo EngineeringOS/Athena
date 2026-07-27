@@ -1,0 +1,207 @@
+package com.engineeringood.m34.sample
+
+system M34NativeCabinetProof {
+  device MainPowerSupplyPS34 {
+    type Switch
+    model "ATHENA-M34-POWER-SUPPLY"
+
+    port input {
+      direction in
+      signal Power
+    }
+
+    port output {
+      direction out
+      signal Power
+    }
+  }
+
+  device MainBreakerQF34 {
+    type Switch
+    model "ATHENA-M34-BREAKER"
+
+    port line {
+      direction in
+      signal Power
+    }
+
+    port load {
+      direction out
+      signal Power
+    }
+  }
+
+  device WallSwitchS34 {
+    type Switch
+    model "ATHENA-M34-WALL-SWITCH"
+
+    port up {
+      direction out
+      signal Power
+    }
+
+    port down {
+      direction out
+      signal Power
+    }
+  }
+
+  device ControlRelayK34 {
+    type Switch
+    model "ATHENA-M34-CONTROL-RELAY"
+
+    port supply {
+      direction in
+      signal Power
+    }
+
+    port output {
+      direction out
+      signal Power
+    }
+  }
+
+  device FieldTerminalXT34 {
+    type Switch
+    model "ATHENA-M34-FIELD-TERMINAL"
+
+    port field {
+      direction in
+      signal Power
+    }
+
+    port panel {
+      direction out
+      signal Power
+    }
+  }
+
+  device SpareTerminalXT34 {
+    type Switch
+    model "ATHENA-M34-SPARE-TERMINAL"
+
+    port field {
+      direction in
+      signal Power
+    }
+
+    port panel {
+      direction out
+      signal Power
+    }
+  }
+
+  device ShutterMotorM34 {
+    type Motor
+    model "ATHENA-M34-SHUTTER-MOTOR"
+
+    port up {
+      direction in
+      signal Power
+    }
+
+    port down {
+      direction in
+      signal Power
+    }
+  }
+
+  device PilotLampHL34 {
+    type Lamp
+    model "ATHENA-M34-PILOT-LAMP"
+
+    port status {
+      direction in
+      signal Power
+    }
+  }
+
+  device UpperRail34 {
+    type Switch
+    model "ATHENA-M34-DIN-RAIL"
+
+    port mount {
+      direction in
+      signal Digital
+    }
+  }
+
+  device LowerRail34 {
+    type Switch
+    model "ATHENA-M34-DIN-RAIL"
+
+    port mount {
+      direction in
+      signal Digital
+    }
+  }
+
+  device CabinetEnclosure34 {
+    type Switch
+    model "ATHENA-M34-CABINET-ENCLOSURE"
+
+    port body {
+      direction in
+      signal Digital
+    }
+  }
+
+  device RouteChannel34 {
+    type Switch
+    model "ATHENA-M34-ROUTE-CHANNEL"
+
+    port channel {
+      direction in
+      signal Digital
+    }
+  }
+
+  device CabinetTitleLabel34 {
+    type Lamp
+    model "ATHENA-M34-CABINET-TITLE"
+
+    port label {
+      direction in
+      signal Digital
+    }
+  }
+
+  connect cabinet_control_chain {
+    MainPowerSupplyPS34.output -> MainBreakerQF34.line
+    MainBreakerQF34.load -> ControlRelayK34.supply
+    ControlRelayK34.output -> FieldTerminalXT34.field
+    FieldTerminalXT34.panel -> ShutterMotorM34.up
+    WallSwitchS34.up -> PilotLampHL34.status
+    WallSwitchS34.down -> SpareTerminalXT34.field
+    SpareTerminalXT34.panel -> ShutterMotorM34.down
+  }
+
+  layout cabinet {
+    place MainBreakerQF34 near MainPowerSupplyPS34
+    place WallSwitchS34 near MainBreakerQF34
+    place ControlRelayK34 near WallSwitchS34
+    place FieldTerminalXT34 below MainPowerSupplyPS34
+    place SpareTerminalXT34 near FieldTerminalXT34
+    place ShutterMotorM34 near SpareTerminalXT34
+    place PilotLampHL34 near WallSwitchS34
+    place CabinetEnclosure34 near MainPowerSupplyPS34
+    place UpperRail34 near CabinetEnclosure34
+    place LowerRail34 below UpperRail34
+    place RouteChannel34 below FieldTerminalXT34
+    place CabinetTitleLabel34 near CabinetEnclosure34
+    align MainBreakerQF34 aligned-with MainPowerSupplyPS34 axis horizontal
+    align WallSwitchS34 aligned-with MainBreakerQF34 axis horizontal
+    align ControlRelayK34 aligned-with WallSwitchS34 axis horizontal
+    align SpareTerminalXT34 aligned-with FieldTerminalXT34 axis horizontal
+    align ShutterMotorM34 aligned-with SpareTerminalXT34 axis horizontal
+    align PilotLampHL34 aligned-with WallSwitchS34 axis horizontal
+    align LowerRail34 aligned-with UpperRail34 axis vertical
+    group MainPowerSupplyPS34 grouped-with MainBreakerQF34
+    group WallSwitchS34 grouped-with ControlRelayK34
+    group FieldTerminalXT34 grouped-with SpareTerminalXT34
+    group ShutterMotorM34 grouped-with SpareTerminalXT34
+    group PilotLampHL34 grouped-with WallSwitchS34
+    group RouteChannel34 grouped-with FieldTerminalXT34
+    group UpperRail34 grouped-with LowerRail34
+  }
+}

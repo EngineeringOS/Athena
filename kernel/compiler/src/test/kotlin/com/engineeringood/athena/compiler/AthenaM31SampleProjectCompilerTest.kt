@@ -151,7 +151,7 @@ class AthenaM31SampleProjectCompilerTest {
     }
 
     private fun sampleProjectSource(): Path =
-        resolveRepoRoot().resolve("examples/m31/sample-project/src/01-governed-authoring-customer-source.athena")
+        resolveRepoRoot().resolve("examples/m31/sample-project/src/com/engineeringood/m31/sample/01-governed-authoring-customer-source.athena")
 
     private fun resolveRepoRoot(): Path {
         var current = Path.of("").toAbsolutePath()

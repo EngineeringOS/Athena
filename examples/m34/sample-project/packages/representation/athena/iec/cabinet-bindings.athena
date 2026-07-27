@@ -1,0 +1,164 @@
+package athena.iec
+
+profile CabinetIEC {
+  projection cabinet
+  standard IEC
+  style athena-industrial-iec-v1
+  fallback fail-closed
+}
+
+binding M34PowerSupplyCabinet {
+  profile CabinetIEC
+  priority 160
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-POWER-SUPPLY"
+  }
+
+  use element "cabinet.power_supply.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34ProtectiveDeviceCabinet {
+  profile CabinetIEC
+  priority 150
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-BREAKER"
+  }
+
+  use element "cabinet.protective_device.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34SwitchControlCabinet {
+  profile CabinetIEC
+  priority 140
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-WALL-SWITCH"
+  }
+
+  use element "cabinet.switch_control.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34RelayContactorCabinet {
+  profile CabinetIEC
+  priority 130
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-CONTROL-RELAY"
+  }
+
+  use element "cabinet.relay_contactor.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34TerminalBlockCabinet {
+  profile CabinetIEC
+  priority 120
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-FIELD-TERMINAL"
+  }
+
+  use element "cabinet.terminal_block.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34SpareTerminalCabinet {
+  profile CabinetIEC
+  priority 118
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-SPARE-TERMINAL"
+  }
+
+  use element "cabinet.terminal_block.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34ActuatorLoadCabinet {
+  profile CabinetIEC
+  priority 110
+
+  select device where {
+    type Motor
+    model "ATHENA-M34-SHUTTER-MOTOR"
+  }
+
+  use element "cabinet.actuator_load.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34PilotLampCabinet {
+  profile CabinetIEC
+  priority 100
+
+  select device where {
+    type Lamp
+    model "ATHENA-M34-PILOT-LAMP"
+  }
+
+  use element "cabinet.label.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34CabinetTitleLabel {
+  profile CabinetIEC
+  priority 95
+
+  select device where {
+    type Lamp
+    model "ATHENA-M34-CABINET-TITLE"
+  }
+
+  use element "cabinet.label.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34CabinetEnclosure {
+  profile CabinetIEC
+  priority 90
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-CABINET-ENCLOSURE"
+  }
+
+  use element "cabinet.enclosure.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34CabinetDinRail {
+  profile CabinetIEC
+  priority 80
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-DIN-RAIL"
+  }
+
+  use element "cabinet.din_rail.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M34CabinetRouteChannel {
+  profile CabinetIEC
+  priority 70
+
+  select device where {
+    type Switch
+    model "ATHENA-M34-ROUTE-CHANNEL"
+  }
+
+  use element "cabinet.route_channel.element" version "1.0.0"
+  variant "standard"
+}

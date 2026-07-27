@@ -1,0 +1,7 @@
+primaryPackage:
+  name: com.engineeringood.m34.professional
+  version: 1.0.0
+  sourceRoot: src
+
+representationPackageRoots:
+  - packages/representation

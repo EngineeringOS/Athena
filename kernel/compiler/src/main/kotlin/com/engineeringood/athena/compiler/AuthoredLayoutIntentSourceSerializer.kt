@@ -5,6 +5,7 @@ import com.engineeringood.athena.layout.AuthoredLayoutIntent
 import com.engineeringood.athena.layout.AuthoredLayoutIntentPriority
 import com.engineeringood.athena.layout.AuthoredLayoutIntentRelation
 import com.engineeringood.athena.layout.AuthoredLayoutIntentStatement
+import com.engineeringood.athena.layout.LayoutOrientation
 
 /**
  * Serializes approved authored layout intent into admitted M23 `.athena` source text.
@@ -28,8 +29,14 @@ class AuthoredLayoutIntentSourceSerializer {
     }
 
     private fun AuthoredLayoutIntentStatement.render(): String {
-        require(priority == AuthoredLayoutIntentPriority.PREFERENCE) {
-            "M23 source syntax admits only default preference layout hints."
+        require(
+            priority == if (relation == AuthoredLayoutIntentRelation.AT_GRID) {
+                AuthoredLayoutIntentPriority.HARD
+            } else {
+                AuthoredLayoutIntentPriority.PREFERENCE
+            },
+        ) {
+            "Authored layout intent priority does not match its admitted source form."
         }
         return when (relation) {
             AuthoredLayoutIntentRelation.NEAR -> "place $subject near $target"
@@ -37,6 +44,9 @@ class AuthoredLayoutIntentSourceSerializer {
             AuthoredLayoutIntentRelation.ALIGNED_WITH ->
                 "align $subject aligned-with $target axis ${requireNotNull(axis).render()}"
             AuthoredLayoutIntentRelation.GROUPED_WITH -> "group $subject grouped-with $target"
+            AuthoredLayoutIntentRelation.AT_GRID -> requireNotNull(gridPosition).let { position ->
+                "place $subject at (${position.column}, ${position.row}) orientation ${requireNotNull(orientation).render()}"
+            }
         }
     }
 
@@ -46,4 +56,6 @@ class AuthoredLayoutIntentSourceSerializer {
             AuthoredLayoutAxis.VERTICAL -> "vertical"
         }
     }
+
+    private fun LayoutOrientation.render(): String = name.lowercase()
 }

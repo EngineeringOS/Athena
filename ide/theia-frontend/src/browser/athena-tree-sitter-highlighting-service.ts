@@ -26,8 +26,13 @@ const ATHENA_SEMANTIC_TOKEN_TYPES = [
     'athenaDeclarationKeyword',
     'athenaPortKeyword',
     'athenaRelationshipKeyword',
+    'athenaFunctionKeyword',
     'athenaLayoutKeyword',
-    'athenaLayoutOperator'
+    'athenaLayoutOperator',
+    'athenaRepresentationKeyword',
+    'athenaPrimitiveKeyword',
+    'athenaProfileKeyword',
+    'athenaBindingKeyword'
 ] as const;
 export type AthenaSemanticTokenType = typeof ATHENA_SEMANTIC_TOKEN_TYPES[number];
 
@@ -46,8 +51,13 @@ const CAPTURE_NAME_TO_TOKEN_TYPE: Readonly<Record<string, AthenaSemanticTokenTyp
     athenaDeclarationKeyword: 'athenaDeclarationKeyword',
     athenaPortKeyword: 'athenaPortKeyword',
     athenaRelationshipKeyword: 'athenaRelationshipKeyword',
+    athenaFunctionKeyword: 'athenaFunctionKeyword',
     athenaLayoutKeyword: 'athenaLayoutKeyword',
-    athenaLayoutOperator: 'athenaLayoutOperator'
+    athenaLayoutOperator: 'athenaLayoutOperator',
+    athenaRepresentationKeyword: 'athenaRepresentationKeyword',
+    athenaPrimitiveKeyword: 'athenaPrimitiveKeyword',
+    athenaProfileKeyword: 'athenaProfileKeyword',
+    athenaBindingKeyword: 'athenaBindingKeyword'
 };
 
 type AthenaTreeSitterContext = {

@@ -31,6 +31,13 @@ import com.engineeringood.athena.packageplatform.ProjectionContextId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorDefinition
 import com.engineeringood.athena.packageplatform.RepresentationAnchorId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorSide
+import com.engineeringood.athena.packageplatform.RepresentationBindingPriority
+import com.engineeringood.athena.packageplatform.RepresentationBindingRule
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleId
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleLifecycle
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleLifecycleState
+import com.engineeringood.athena.packageplatform.RepresentationBindingRuleProvenance
+import com.engineeringood.athena.packageplatform.RepresentationBindingTarget
 import com.engineeringood.athena.packageplatform.RepresentationDescriptor
 import com.engineeringood.athena.packageplatform.RepresentationDescriptorBounds
 import com.engineeringood.athena.packageplatform.RepresentationDescriptorId
@@ -120,6 +127,7 @@ class BindingEvidencePayloadTest {
         activeProfile = profile(),
         representationPackages = listOf(representationPackage()),
         descriptors = listOf(descriptor()),
+        bindingRules = listOf(bindingRule()),
     )
 
     private fun engineeringPackage(): EngineeringPackageDescriptor = EngineeringPackageDescriptor(
@@ -179,5 +187,21 @@ class BindingEvidencePayloadTest {
         anchors = listOf(RepresentationAnchorDefinition(RepresentationAnchorId("power"), x = 8.0, y = 24.0, side = RepresentationAnchorSide.LEFT)),
         labelSlots = listOf(RepresentationLabelSlotDefinition(RepresentationLabelSlotId("device-tag"), RepresentationLabelSlotRole.DEVICE_TAG, required = true)),
         variants = listOf(RepresentationVariantId("standard")),
+    )
+
+    private fun bindingRule(): RepresentationBindingRule = RepresentationBindingRule(
+        ruleId = RepresentationBindingRuleId("binding.drive.frequency-drive.typed"),
+        profileId = PresentationProfileId("iec"),
+        projectionContext = ProjectionContextId("schematic-sheet"),
+        conceptId = EngineeringConceptId("FrequencyDrive"),
+        target = RepresentationBindingTarget(
+            representationPackageId = RepresentationPackageId("com.athena.example.representation.drive.iec"),
+            descriptorId = RepresentationDescriptorId("descriptor.drive.iec.standard"),
+            packageVersion = RepresentationPackageVersion("1.0.0"),
+            variantId = RepresentationVariantId("standard"),
+        ),
+        priority = RepresentationBindingPriority(100),
+        lifecycle = RepresentationBindingRuleLifecycle(RepresentationBindingRuleLifecycleState.ACTIVE),
+        provenance = RepresentationBindingRuleProvenance(listOf("m34-test"), "Athena M34"),
     )
 }

@@ -45,7 +45,7 @@ class AthenaRepositoryReportPublisher(
         }
 
         val diagnosticCodes = validation.diagnostics.map { diagnostic -> diagnostic.code }.toSet()
-        if ("repository.lock.content.out-of-date" in diagnosticCodes || "repository.lock.content.noncanonical" in diagnosticCodes) {
+        if ("repository.lock.stale" in diagnosticCodes || "repository.lock.noncanonical" in diagnosticCodes) {
             return AthenaRepositoryReportLockState.STALE
         }
 

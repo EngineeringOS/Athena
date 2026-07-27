@@ -37,6 +37,7 @@ import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.ParseFailure
 import com.engineeringood.athena.language.ParseResult
 import com.engineeringood.athena.language.ParseSuccess
+import com.engineeringood.athena.language.RepresentationSourceUnit
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.layout.ViewDefinition
@@ -219,6 +220,13 @@ class AthenaCompiler(
     fun lower(path: Path): CompilerLoweringResult {
         return when (val parseResult = parseSource(path)) {
             is CompilerParseSuccess -> {
+                if (parseResult.source.ast.unit is RepresentationSourceUnit) {
+                    return CompilerLoweringFailure(
+                        listOf(
+                            representationSourceCompilerBoundaryDiagnostic(parseResult.source),
+                        ),
+                    )
+                }
                 val document = lowerer.lower(parseResult.source)
                 val diagnostics = compilationSupport.domainSemanticsUnavailableDiagnostics(parseResult.source, document)
                 if (diagnostics.isEmpty()) {
@@ -490,4 +498,16 @@ class AthenaCompiler(
             )
         }
     }
+}
+
+private fun representationSourceCompilerBoundaryDiagnostic(source: CompilerSourceDocument): CompilerSyntaxDiagnostic {
+    val span = source.ast.span
+    return CompilerSyntaxDiagnostic(
+        file = source.file,
+        line = span.start.line,
+        column = span.start.column,
+        endLine = span.end.line,
+        endColumn = span.end.column,
+        message = "Standalone representation source must be compiled by AthenaRepresentationSourceCompiler.",
+    )
 }

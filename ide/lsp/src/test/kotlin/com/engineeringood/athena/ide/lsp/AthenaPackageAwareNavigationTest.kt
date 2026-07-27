@@ -33,7 +33,7 @@ class AthenaPackageAwareNavigationTest {
         )
         val repositoryRoot = repository.repositoryRoot
         val consumerPath = repository.seedSourcePath
-        val providerPath = repository.sourceRoot.resolve("provider.athena")
+        val providerPath = repository.sourceRoot.resolve("com/root/provider.athena")
         val providerText = """
             package com.root
 
@@ -119,7 +119,7 @@ class AthenaPackageAwareNavigationTest {
         )
         val repositoryRoot = repository.repositoryRoot
         val consumerPath = repository.seedSourcePath
-        val providerPath = repository.sourceRoot.resolve("provider.athena")
+        val providerPath = repository.sourceRoot.resolve("com/root/provider.athena")
         providerPath.writeText(
             """
                 package com.root

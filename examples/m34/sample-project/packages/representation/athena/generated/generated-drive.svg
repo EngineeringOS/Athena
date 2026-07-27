@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220">
+  <rect id="body" x="8" y="8" width="144" height="204" data-athena-geometry-ref="body"/>
+  <circle id="power-in" cx="20" cy="40" r="4" data-athena-geometry-ref="power-in"/>
+  <circle id="status-out" cx="140" cy="40" r="4" data-athena-geometry-ref="status-out"/>
+  <text id="tag" x="80" y="28" data-athena-geometry-ref="tag">GEN-DRV</text>
+</svg>

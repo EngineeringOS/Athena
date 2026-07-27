@@ -28,7 +28,8 @@ class AthenaRepositoryGraphResolverTest {
                         source: local-path
                         locator: vendor/alpha
                       - name: com.engineeringood.beta
-                        source: local-package
+                        source: local-path
+                        locator: vendor/beta
                 """.trimIndent(),
             )
             writeGovernedRepository(
@@ -42,8 +43,7 @@ class AthenaRepositoryGraphResolverTest {
                       sourceRoot: src
                     dependencies:
                       - name: com.engineeringood.beta
-                        source: local-path
-                        locator: ../beta
+                        source: local-package
                 """.trimIndent(),
             )
             writeGovernedRepository(
@@ -174,6 +174,12 @@ private fun writeGovernedRepository(
     repositoryRoot.createDirectories()
     repositoryRoot.resolve("athena.yaml").writeText(manifestBody)
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve(sourceFileName).writeText("system ${sourceFileName.substringBefore('.') .replaceFirstChar(Char::uppercase)} { }")
+    val packageDirectory = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/')).createDirectories()
+    packageDirectory.resolve(sourceFileName).writeText(
+        """
+            package $packageName
+
+            system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }
+        """.trimIndent(),
+    )
 }

@@ -133,6 +133,16 @@ class M30DemoRepresentationBinder(
                     definition = definition,
                     labelValues = mapOf(labelSlot to device.label),
                     terminalPorts = mapOf(device.terminalId to device.semanticPortId),
+                    projectPorts = listOf(
+                        RepresentationProjectPortFact(
+                            semanticPortId = device.semanticPortId,
+                            role = RepresentationAnchorRole.TERMINAL,
+                            direction = RepresentationDirectionPredicate.BIDIRECTIONAL,
+                            signal = RepresentationSignalPredicate(device.semanticRole.value),
+                            terminal = PhysicalTerminalId(device.terminalId.value),
+                            provenance = RepresentationProvenance("m30-demo:${device.semanticId.value}"),
+                        ),
+                    ),
                     priority = RepresentationPolicyPriority(100),
                 ),
             )
@@ -159,6 +169,16 @@ class M30DemoRepresentationBinder(
                     definition = definition,
                     labelValues = mapOf(definition.labelSlots.first().slotId to referenceFact.label),
                     terminalPorts = mapOf(PresentationTerminalId("continuation") to SemanticPortId(referenceFact.semanticId.value)),
+                    projectPorts = listOf(
+                        RepresentationProjectPortFact(
+                            semanticPortId = SemanticPortId(referenceFact.semanticId.value),
+                            role = RepresentationAnchorRole.REFERENCE,
+                            direction = RepresentationDirectionPredicate.BIDIRECTIONAL,
+                            signal = RepresentationSignalPredicate("folio-continuation"),
+                            terminal = PhysicalTerminalId("continuation"),
+                            provenance = RepresentationProvenance("m30-demo:${referenceFact.semanticId.value}"),
+                        ),
+                    ),
                     priority = RepresentationPolicyPriority(100),
                     referenceBindings = listOf(
                         RepresentationReferenceBinding(

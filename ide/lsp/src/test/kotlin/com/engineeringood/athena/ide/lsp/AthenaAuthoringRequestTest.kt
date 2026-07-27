@@ -61,7 +61,7 @@ class AthenaAuthoringRequestTest {
                     ).get(),
                 )
 
-                assertEquals("factory-line", payload.projectName)
+                assertEquals("factoryline", payload.projectName)
                 assertEquals("frontend -> LSP -> runtime/compiler", payload.semanticPath)
                 assertEquals("submitted", payload.status)
                 assertEquals("create-entity", payload.preview.intentKind)

@@ -57,13 +57,17 @@ class AthenaRepresentationSourceLspSupportTest {
             val packageSymbol = symbols.single()
             assertEquals("athena.vendor", packageSymbol.name)
             assertEquals("package", packageSymbol.detail)
-            assertEquals(listOf("vendor_drive_symbol", "vendor_drive_element"), packageSymbol.children.map { it.name })
             assertEquals(
-                listOf("identity", "version", "resource vendor_drive_svg", "graphic svg resource", "line", "load"),
-                packageSymbol.children.first().children.map { it.name },
+                listOf("vendor_drive_symbol", "vendor_drive_label_symbol", "vendor_drive_element"),
+                packageSymbol.children.map { it.name },
             )
             assertEquals(
-                listOf("identity", "version", "bounds", "child body", "export anchor line", "export anchor load"),
+                listOf("identity", "version", "resource vendor_drive_svg", "graphic svg resource"),
+                packageSymbol.children.first().children.map { it.name },
+            )
+            assertEquals(listOf("identity", "version", "graphic"), packageSymbol.children[1].children.map { it.name })
+            assertEquals(
+                listOf("identity", "version", "bounds", "child label", "child body", "export label deviceTag"),
                 packageSymbol.children.last().children.map { it.name },
             )
 
@@ -73,7 +77,7 @@ class AthenaRepresentationSourceLspSupportTest {
                     position = Position(16, 2)
                 },
             ).get().right.items.map { it.label }
-            assertTrue(completion.containsAll(listOf("symbol", "element", "graphic", "svg", "resource", "anchor", "child", "export")))
+            assertTrue(completion.containsAll(listOf("symbol", "element", "graphic", "svg", "resource", "label", "child", "export")))
             assertFalse(completion.any { it in FORBIDDEN_RUNTIME_VOCABULARY }, completion.toString())
 
             val edits = server.textDocumentService.formatting(
@@ -400,16 +404,23 @@ class AthenaRepresentationSourceLspSupportTest {
             path "./vendor-drive.svg"
             }
             graphic svg resource vendor_drive_svg
-            anchor line { primitiveRef line point (0, 10) role terminal accepts direction in accepts signal Power }
-            anchor load { primitiveRef load point (80, 10) role terminal accepts direction out accepts signal Power }
+            }
+            symbol vendor_drive_label_symbol {
+            identity "vendor.drive.label.symbol"
+            version "1.0.0"
+            graphic {
+            bounds (0, 0, 120, 14)
+            rectangle plate at (0, 0) size (120, 14) style symbol
+            label deviceTag at (4, 1) size (112, 12) role device-tag style device-label
+            }
             }
             element vendor_drive_element {
             identity "vendor.drive.element"
             version "1.0.0"
-            bounds (0, 0, 80, 20)
-            child body { symbol "vendor.drive.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
-            export anchor line from body.line
-            export anchor load from body.load
+            bounds (0, 0, 120, 78)
+            child label { symbol "vendor.drive.label.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+            child body { symbol "vendor.drive.symbol" translate (0, 18) rotate 0 scale (1, 1) zOrder 1 }
+            export label deviceTag from label.deviceTag
             }
         """.trimIndent()
 
@@ -425,39 +436,41 @@ class AthenaRepresentationSourceLspSupportTest {
               }
 
               graphic svg resource vendor_drive_svg
+            }
 
-              anchor line {
-                primitiveRef line
-                point (0, 10)
-                role terminal
-                accepts direction in
-                accepts signal Power
-              }
+            symbol vendor_drive_label_symbol {
+              identity "vendor.drive.label.symbol"
+              version "1.0.0"
 
-              anchor load {
-                primitiveRef load
-                point (80, 10)
-                role terminal
-                accepts direction out
-                accepts signal Power
+              graphic {
+                bounds (0, 0, 120, 14)
+                rectangle plate at (0, 0) size (120, 14) style symbol
+                label deviceTag at (4, 1) size (112, 12) role device-tag style device-label
               }
             }
 
             element vendor_drive_element {
               identity "vendor.drive.element"
               version "1.0.0"
-              bounds (0, 0, 80, 20)
+              bounds (0, 0, 120, 78)
 
-              child body {
-                symbol "vendor.drive.symbol"
+              child label {
+                symbol "vendor.drive.label.symbol"
                 translate (0, 0)
                 rotate 0
                 scale (1, 1)
                 zOrder 0
               }
 
-              export anchor line from body.line
-              export anchor load from body.load
+              child body {
+                symbol "vendor.drive.symbol"
+                translate (0, 18)
+                rotate 0
+                scale (1, 1)
+                zOrder 1
+              }
+
+              export label deviceTag from label.deviceTag
             }
         """.trimIndent() + "\n"
 
@@ -475,9 +488,9 @@ class AthenaRepresentationSourceLspSupportTest {
         """.trimIndent()
 
         val VALID_VENDOR_DRIVE_SVG = """
-            <svg xmlns="http://www.w3.org/2000/svg" data-athena-schema="representation/v1" viewBox="0 0 80 20">
-              <line id="line" x1="0" y1="10" x2="20" y2="10" data-athena-anchor="line" data-athena-point="0,10" data-athena-role="terminal" data-athena-direction="in" data-athena-signal="Power"/>
-              <line id="load" x1="60" y1="10" x2="80" y2="10" data-athena-anchor="load" data-athena-point="80,10" data-athena-role="terminal" data-athena-direction="out" data-athena-signal="Power"/>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 20">
+              <line id="line" x1="0" y1="10" x2="20" y2="10" data-athena-geometry-ref="line"/>
+              <line id="load" x1="60" y1="10" x2="80" y2="10" data-athena-geometry-ref="load"/>
             </svg>
         """.trimIndent()
 

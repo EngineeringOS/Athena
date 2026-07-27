@@ -29,6 +29,7 @@ class AthenaRepositoryResolver(
             normalizedRepositoryRoot,
             AthenaRepositoryContractLoadOptions(
                 requireLockFile = false,
+                allowNestedGovernedSubrepositories = true,
             ),
         )
         if (!validation.isValid || validation.repository == null) {

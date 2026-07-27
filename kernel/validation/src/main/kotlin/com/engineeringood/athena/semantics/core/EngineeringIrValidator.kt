@@ -3,6 +3,7 @@ package com.engineeringood.athena.semantics.core
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringFunction
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
@@ -25,6 +26,11 @@ class EngineeringIrValidator {
             addAll(duplicatePortDiagnostics(document.ports, scope))
             addAll(connectionReferenceDiagnostics(document.connections, portsByPath, scope))
             addAll(duplicateConnectionDiagnostics(document.connections, scope))
+            addAll(functionOwnerDiagnostics(document.functions, componentsByName, scope))
+            addAll(duplicateFunctionDiagnostics(document.functions, scope))
+            addAll(functionPortReferenceDiagnostics(document.functions, document.ports, scope))
+            addAll(duplicateFunctionPortDiagnostics(document.functions, scope))
+            addAll(multipleFunctionPortOwnershipDiagnostics(document.functions, scope))
         }
 
         return SemanticValidationResult(
@@ -163,6 +169,120 @@ class EngineeringIrValidator {
                 }
             }
     }
+
+    private fun functionOwnerDiagnostics(
+        functions: List<EngineeringFunction>,
+        componentsByName: Map<String, List<EngineeringComponent>>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> = functions.mapNotNull { function ->
+        if (scope != null && !scope.includes(function.id.value)) return@mapNotNull null
+        classifyReference(
+            function.ownerReference,
+            componentsByName[authoredComponentPath(function.ownerReference)]?.size ?: 0,
+        )?.let { classification ->
+            errorDiagnostic(
+                ruleId = "reference.function-owner.${classification.name.lowercase()}",
+                category = SemanticDiagnosticCategory.REFERENCE,
+                subjectIdentity = function.id,
+                provenance = function.ownerReference.provenance,
+                message = "Function owner `${authoredComponentPath(function.ownerReference)}` ${classification.messageFragment}.",
+            )
+        }
+    }
+
+    private fun duplicateFunctionDiagnostics(
+        functions: List<EngineeringFunction>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> = functions
+        .groupBy { function -> authoredPath(function.ownerReference) to function.name }
+        .values
+        .filter { duplicates -> duplicates.size > 1 }
+        .filter { duplicates -> scope == null || duplicates.any { function -> scope.includes(function.id.value) } }
+        .flatMap { duplicates ->
+            duplicates.map { function ->
+                errorDiagnostic(
+                    ruleId = "uniqueness.function.duplicate-authored-key",
+                    category = SemanticDiagnosticCategory.UNIQUENESS,
+                    subjectIdentity = function.id,
+                    provenance = function.provenance,
+                    message = "Duplicate function authored key `${authoredPath(function.ownerReference)}.${function.name}` is not semantically unique.",
+                )
+            }
+        }
+
+    private fun functionPortReferenceDiagnostics(
+        functions: List<EngineeringFunction>,
+        ports: List<EngineeringPort>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> {
+        val portsByIdentity = ports.associateBy { port -> port.id }
+        return functions.flatMap { function ->
+            if (scope != null && !scope.includes(function.id.value)) return@flatMap emptyList()
+            val ownerPath = function.ownerReference.authoredPath
+            function.portReferences.mapNotNull { reference ->
+                val resolvedPort = reference.resolvedIdentity?.let(portsByIdentity::get)
+                when {
+                    resolvedPort == null -> errorDiagnostic(
+                        ruleId = "reference.function-port.unresolved",
+                        category = SemanticDiagnosticCategory.REFERENCE,
+                        subjectIdentity = function.id,
+                        provenance = reference.provenance,
+                        message = "Function port `${authoredPath(reference)}` does not resolve to a canonical project port.",
+                    )
+                    resolvedPort.ownerReference.authoredPath != ownerPath -> errorDiagnostic(
+                        ruleId = "reference.function-port.cross-owner",
+                        category = SemanticDiagnosticCategory.REFERENCE,
+                        subjectIdentity = function.id,
+                        provenance = reference.provenance,
+                        message = "Function port `${authoredPath(reference)}` belongs to a different physical component.",
+                    )
+                    else -> null
+                }
+            }
+        }
+    }
+
+    private fun duplicateFunctionPortDiagnostics(
+        functions: List<EngineeringFunction>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> = functions.flatMap { function ->
+        if (scope != null && !scope.includes(function.id.value)) return@flatMap emptyList()
+        function.portReferences
+            .groupBy(::authoredPath)
+            .values
+            .filter { references -> references.size > 1 }
+            .map { references ->
+                errorDiagnostic(
+                    ruleId = "uniqueness.function-port.duplicate-reference",
+                    category = SemanticDiagnosticCategory.UNIQUENESS,
+                    subjectIdentity = function.id,
+                    provenance = references[1].provenance,
+                    message = "Function `${function.name}` references `${authoredPath(references[0])}` more than once.",
+                )
+            }
+    }
+
+    private fun multipleFunctionPortOwnershipDiagnostics(
+        functions: List<EngineeringFunction>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> = functions
+        .flatMap { function -> function.portReferences.map { reference -> function to reference } }
+        .filter { (_, reference) -> reference.resolvedIdentity != null }
+        .groupBy { (_, reference) -> reference.resolvedIdentity }
+        .values
+        .filter { assignments -> assignments.map { (function, _) -> function.id }.distinct().size > 1 }
+        .flatMap { assignments ->
+            assignments.mapNotNull { (function, reference) ->
+                if (scope != null && !scope.includes(function.id.value)) return@mapNotNull null
+                errorDiagnostic(
+                    ruleId = "ownership.function-port.multiple",
+                    category = SemanticDiagnosticCategory.DOMAIN,
+                    subjectIdentity = function.id,
+                    provenance = reference.provenance,
+                    message = "Port `${authoredPath(reference)}` is assigned to more than one function.",
+                )
+            }
+        }
 
     private fun authoredConnectionPath(connection: EngineeringConnection): String {
         return "${authoredPath(connection.from)}->${authoredPath(connection.to)}"

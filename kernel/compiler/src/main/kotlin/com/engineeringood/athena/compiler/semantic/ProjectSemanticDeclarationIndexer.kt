@@ -1,6 +1,8 @@
 package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.language.Declaration
+import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.PortDeclaration
 
@@ -23,9 +25,19 @@ class ProjectSemanticDeclarationIndexer {
                 val ordered = duplicates.sortedWith(declarationDuplicateComparator)
                 ordered.drop(1).forEach { duplicate ->
                     diagnostics += ProjectSemanticDiagnostic(
-                        code = ProjectSemanticDiagnosticCode("semantic.declaration.duplicate"),
+                        code = ProjectSemanticDiagnosticCode(
+                            if (duplicate.kind == CONNECTION_DECLARATION_KIND) {
+                                "semantic.connection.alias.duplicate"
+                            } else {
+                                "semantic.declaration.duplicate"
+                            },
+                        ),
                         severity = ProjectSemanticDiagnosticSeverity.ERROR,
-                        message = "Duplicate authored ${duplicate.kind} declaration `${duplicate.qualifiedAuthoredName.joinToString(".")}`.",
+                        message = if (duplicate.kind == CONNECTION_DECLARATION_KIND) {
+                            "Duplicate authored connection alias `${duplicate.qualifiedAuthoredName.single()}`."
+                        } else {
+                            "Duplicate authored ${duplicate.kind} declaration `${duplicate.qualifiedAuthoredName.joinToString(".")}`."
+                        },
                         sourceUnitId = duplicate.sourceUnitId,
                         sourceSpan = duplicate.authoredSpan,
                     )
@@ -74,8 +86,13 @@ class ProjectSemanticDeclarationIndexer {
         val semanticDeclarations = when (this) {
             is DeviceDeclaration -> listOf(
                 "device" to listOf(name) to span,
-            ) + nestedPorts.map { port -> "port" to port.qualifiedName.parts to port.span }
+            ) + nestedPorts.map { port -> "port" to port.qualifiedName.parts to port.span } +
+                nestedFunctions.map { function -> "function" to listOf(name, function.name) to function.span }
             is PortDeclaration -> listOf("port" to qualifiedName.parts to span)
+            is ConnectionDeclaration -> listOf(CONNECTION_DECLARATION_KIND to listOf(alias) to aliasSpan)
+            is ConnectionGroupDeclaration -> connections.map { connection ->
+                CONNECTION_DECLARATION_KIND to listOf(connection.alias) to connection.aliasSpan
+            }
             else -> return emptyList()
         }
         return semanticDeclarations.map { (kindAndName, authoredSpan) ->
@@ -92,6 +109,8 @@ class ProjectSemanticDeclarationIndexer {
     }
 
     private companion object {
+        private const val CONNECTION_DECLARATION_KIND = "connection"
+
         private data class SemanticAvailabilityKey(
             val namespaceId: NamespaceId,
             val kind: String,

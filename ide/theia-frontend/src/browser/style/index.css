@@ -1167,11 +1167,14 @@
     font-size: 11px;
 }
 
-.athena-graph-workbench__tool-button--view {
-    min-width: 28px;
-    width: 28px;
-    padding: 0;
-    font-size: 10px;
+.athena-graph-workbench__tool-button--primary-surface {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 150px;
+    padding: 0 9px;
+    font-size: 11px;
+    white-space: nowrap;
 }
 
 .athena-graph-workbench__tool-button:hover {
@@ -1263,6 +1266,74 @@
     width: 100%;
     height: 100%;
     overflow: visible;
+}
+
+.athena-graph-workbench__drawing-layer {
+    pointer-events: none;
+}
+
+.athena-graph-workbench__drawing-sheet-frame,
+.athena-graph-workbench__drawing-drawing-area,
+.athena-graph-workbench__drawing-title-block,
+.athena-graph-workbench__drawing-zone-column,
+.athena-graph-workbench__drawing-zone-row,
+.athena-graph-workbench__drawing-lane,
+.athena-graph-workbench__drawing-terminal-strip,
+.athena-graph-workbench__drawing-label-band,
+.athena-graph-workbench__drawing-route-channel {
+    fill: transparent;
+    vector-effect: non-scaling-stroke;
+}
+
+.athena-graph-workbench__drawing-sheet-frame,
+.athena-graph-workbench__drawing-title-block {
+    stroke: color-mix(in srgb, var(--theia-editor-foreground) 72%, transparent);
+    stroke-width: 1.25;
+}
+
+.athena-graph-workbench__drawing-drawing-area,
+.athena-graph-workbench__drawing-zone-column,
+.athena-graph-workbench__drawing-zone-row {
+    stroke: color-mix(in srgb, var(--theia-editor-foreground) 18%, transparent);
+    stroke-width: 0.7;
+}
+
+.athena-graph-workbench__drawing-zone-column,
+.athena-graph-workbench__drawing-zone-row {
+    stroke-dasharray: 3 5;
+}
+
+.athena-graph-workbench__drawing-lane,
+.athena-graph-workbench__drawing-route-channel {
+    fill: color-mix(in srgb, var(--theia-editor-foreground) 3%, transparent);
+    stroke: color-mix(in srgb, var(--theia-editor-foreground) 13%, transparent);
+    stroke-width: 0.8;
+}
+
+.athena-graph-workbench__drawing-terminal-strip,
+.athena-graph-workbench__drawing-label-band {
+    stroke: color-mix(in srgb, var(--theia-editor-foreground) 34%, transparent);
+    stroke-width: 0.95;
+}
+
+.athena-graph-workbench__drawing-rail {
+    stroke: color-mix(in srgb, var(--theia-editor-foreground) 58%, transparent);
+    stroke-width: 1.6;
+    stroke-linecap: square;
+}
+
+.athena-graph-workbench__drawing-title-field,
+.athena-graph-workbench__drawing-reference-marker text {
+    fill: color-mix(in srgb, var(--theia-editor-foreground) 78%, transparent);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+.athena-graph-workbench__drawing-reference-marker path {
+    fill: transparent;
+    stroke: color-mix(in srgb, var(--theia-editor-foreground) 70%, transparent);
+    stroke-width: 1.2;
 }
 
 .athena-graph-workbench__element {

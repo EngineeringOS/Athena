@@ -46,13 +46,16 @@ test('Graph View customer toolbar text uses product taxonomy instead of architec
     assert.match(graphWorkbenchSource, /aria-label='Create device'/);
 });
 
-test('Graph View product toolbar exposes Cabinet as the single primary customer projection', () => {
-    assert.match(graphWorkbenchSource, /resolveVisibleProjectionViews/);
-    assert.match(graphWorkbenchSource, /view\.viewId === 'cabinet'/);
+test('M32 projection compatibility remains behind the M33 Cabinet product surface', () => {
+    assert.match(graphWorkbenchSource, /resolveAthenaGraphPrimaryProductSurface/);
     assert.doesNotMatch(graphWorkbenchSource, /const documentationView = model\.supportedViews\.find/);
+    assert.match(graphWorkbenchSource, /data-athena-product-surface-id/);
     assert.match(graphWorkbenchSource, /data-athena-visible-projection-view-count/);
     assert.match(graphWorkbenchSource, /data-athena-compatibility-projection-view-count/);
     assert.match(electronSmokeSource, /collectProjectionViewProof/);
     assert.match(m32SmokeSource, /assertProjectionViewFocusProof/);
-    assert.match(m32SmokeSource, /only the Cabinet demo view/);
+    assert.match(m32SmokeSource, /Cabinet/);
+    assert.doesNotMatch(m32SmokeSource, /Professional Schematic/);
+    assert.match(m32SmokeSource, /cabinetRefreshAccepted/);
+    assert.match(m32SmokeSource, /cabinetActiveAfterRefresh/);
 });

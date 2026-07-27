@@ -120,11 +120,24 @@ class ElectricalRuntimeDomainPluginTest {
     }
 
     @Test
-    fun `publishes the narrowed m3 proof vocabulary through the stable schema contract`() {
+    fun `publishes the governed electrical drawing vocabulary through the stable schema contract`() {
         val plugin = ElectricalRuntimeDomainPlugin()
 
         assertEquals(
-            listOf("Lamp", "Motor", "Switch"),
+            listOf(
+                "Breaker",
+                "Contactor",
+                "FuseDisconnector",
+                "Lamp",
+                "LimitSwitch",
+                "Motor",
+                "PowerSource",
+                "ProtectiveEarth",
+                "PushButton",
+                "Switch",
+                "Terminal",
+                "Transformer",
+            ),
             plugin.domainSchema.entities.map { entity -> entity.typeId },
         )
         assertEquals(
@@ -132,8 +145,29 @@ class ElectricalRuntimeDomainPluginTest {
             plugin.domainSchema.connections.map { connection -> connection.typeId },
         )
         assertEquals(
-            setOf("Lamp", "Motor", "Switch"),
+            setOf(
+                "Breaker",
+                "Contactor",
+                "FuseDisconnector",
+                "Lamp",
+                "LimitSwitch",
+                "Motor",
+                "PowerSource",
+                "ProtectiveEarth",
+                "PushButton",
+                "Switch",
+                "Terminal",
+                "Transformer",
+            ),
             plugin.domainSchema.properties.first { property -> property.name == "type" }.allowedSymbolValues,
+        )
+        assertEquals(
+            setOf("direction", "signal", "terminal"),
+            plugin.domainSchema.ports.single().propertyNames,
+        )
+        assertEquals(
+            com.engineeringood.athena.plugin.AthenaDomainPropertyValueKind.TEXT,
+            plugin.domainSchema.properties.single { property -> property.name == "terminal" }.valueKind,
         )
     }
 

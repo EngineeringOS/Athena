@@ -7,9 +7,10 @@
  *
  * Scope includes M17 syntax plus M18 file-level package and import declarations, M23
  * system-scoped layout block grammar admission, M28 nested device-owned ports, and
- * compact grouped connect authoring:
+ * compact grouped connect authoring, and M34 standalone typed Symbol/Element declarations:
  * system, package, import, device, port, connect, grouped connect, qualified names,
- * string literals, property assignments, and layout place/align/group statements only.
+ * string literals, property assignments, layout place/align/group statements, and M34
+ * symbol/element/profile/binding/resource declarations only.
  * No expression / macro-use forms.
  */
 grammar Athena;
@@ -19,7 +20,7 @@ package com.engineeringood.athena.language.antlr;
 }
 
 sourceFile
-    : packageDecl? importDecl* systemDecl EOF
+    : packageDecl? importDecl* (systemDecl | representationDecl+) EOF
     ;
 
 packageDecl
@@ -57,10 +58,32 @@ deviceDecl
 deviceMember
     : propertyAssignment
     | nestedPortDecl
+    | functionDecl
     ;
 
 nestedPortDecl
     : PORT ident LBRACE propertyAssignment* RBRACE
+    ;
+
+functionDecl
+    : FUNCTION ident LBRACE functionMember* RBRACE
+    ;
+
+functionMember
+    : functionRoleDecl
+    | functionPortsDecl
+    ;
+
+functionRoleDecl
+    : ROLE ident
+    ;
+
+functionPortsDecl
+    : PORTS LPAREN functionPortReference (COMMA functionPortReference)* RPAREN
+    ;
+
+functionPortReference
+    : ident (DOT ident)?
     ;
 
 portDecl
@@ -68,7 +91,7 @@ portDecl
     ;
 
 connectDecl
-    : CONNECT twoPartName ARROW twoPartName
+    : CONNECT ident twoPartName ARROW twoPartName
     ;
 
 connectGroupDecl
@@ -76,7 +99,7 @@ connectGroupDecl
     ;
 
 connectGroupEdge
-    : twoPartName ARROW twoPartName
+    : ident twoPartName ARROW twoPartName
     ;
 
 layoutDecl
@@ -84,6 +107,10 @@ layoutDecl
     ;
 
 viewFamilyName
+    : ident (MINUS ident)*
+    ;
+
+profileValueName
     : ident (MINUS ident)*
     ;
 
@@ -95,6 +122,24 @@ layoutStatement
 
 placeStatement
     : PLACE ident layoutPlacementRelation ident
+    | PLACE authoredLayoutReference AT drawingGridPosition ORIENTATION layoutOrientation
+    ;
+
+authoredLayoutReference
+    : ident (DOT ident)?
+    ;
+
+drawingGridPosition
+    : LPAREN positiveInteger COMMA positiveInteger RPAREN
+    ;
+
+positiveInteger
+    : POSITIVE_INTEGER
+    ;
+
+layoutOrientation
+    : HORIZONTAL
+    | VERTICAL
     ;
 
 layoutPlacementRelation
@@ -113,6 +158,275 @@ layoutAxis
 
 groupStatement
     : GROUP ident GROUPED_WITH ident
+    ;
+
+symbolDecl
+    : SYMBOL ident LBRACE symbolMember* RBRACE
+    ;
+
+representationDecl
+    : symbolDecl
+    | elementDecl
+    | profileDecl
+    | bindingDecl
+    ;
+
+profileDecl
+    : PROFILE ident LBRACE profileMember* RBRACE
+    ;
+
+profileMember
+    : projectionDecl
+    | standardDecl
+    | styleDecl
+    | fallbackDecl
+    ;
+
+projectionDecl
+    : PROJECTION profileValueName
+    ;
+
+standardDecl
+    : STANDARD profileValueName
+    ;
+
+styleDecl
+    : STYLE profileValueName
+    ;
+
+fallbackDecl
+    : FALLBACK FAIL_CLOSED
+    ;
+
+bindingDecl
+    : BINDING ident LBRACE bindingMember* RBRACE
+    ;
+
+bindingMember
+    : bindingProfileDecl
+    | priorityDecl
+    | selectSubjectWhereDecl
+    | useElementDecl
+    | variantDecl
+    ;
+
+bindingProfileDecl
+    : PROFILE ident
+    ;
+
+priorityDecl
+    : PRIORITY number
+    ;
+
+selectSubjectWhereDecl
+    : SELECT bindingSubjectKind WHERE LBRACE propertyAssignment* RBRACE
+    ;
+
+bindingSubjectKind
+    : DEVICE
+    | FUNCTION
+    ;
+
+useElementDecl
+    : USE ELEMENT STRING VERSION STRING
+    ;
+
+variantDecl
+    : VARIANT STRING
+    ;
+
+elementDecl
+    : ELEMENT ident LBRACE elementMember* RBRACE
+    ;
+
+elementMember
+    : identityDecl
+    | versionDecl
+    | boundsDecl
+    | resourceDecl
+    | graphicDecl
+    | elementChildDecl
+    | exportAnchorDecl
+    | exportLabelDecl
+    ;
+
+elementChildDecl
+    : CHILD ident LBRACE elementChildMember* RBRACE
+    ;
+
+elementChildMember
+    : symbolRefDecl
+    | translateDecl
+    | rotateDecl
+    | scaleDecl
+    | zOrderDecl
+    ;
+
+symbolRefDecl
+    : SYMBOL STRING
+    ;
+
+translateDecl
+    : TRANSLATE pointTuple
+    ;
+
+rotateDecl
+    : ROTATE number
+    ;
+
+scaleDecl
+    : SCALE pointTuple
+    ;
+
+zOrderDecl
+    : Z_ORDER number
+    ;
+
+exportAnchorDecl
+    : EXPORT ANCHOR ident FROM ident DOT ident
+    ;
+
+exportLabelDecl
+    : EXPORT LABEL ident FROM ident DOT ident
+    ;
+
+symbolMember
+    : identityDecl
+    | versionDecl
+    | resourceDecl
+    | graphicDecl
+    | anchorDecl
+    ;
+
+identityDecl
+    : IDENTITY STRING
+    ;
+
+versionDecl
+    : VERSION STRING
+    ;
+
+graphicDecl
+    : GRAPHIC LBRACE graphicStatement* RBRACE
+    | GRAPHIC SVG RESOURCE ident
+    ;
+
+resourceDecl
+    : RESOURCE ident LBRACE resourceMember* RBRACE
+    ;
+
+resourceMember
+    : kindDecl
+    | pathDecl
+    ;
+
+kindDecl
+    : KIND SVG
+    ;
+
+pathDecl
+    : PATH STRING
+    ;
+
+graphicStatement
+    : boundsDecl
+    | linePrimitiveDecl
+    | polylinePrimitiveDecl
+    | arcPrimitiveDecl
+    | circlePrimitiveDecl
+    | rectanglePrimitiveDecl
+    | labelSlotDecl
+    ;
+
+boundsDecl
+    : BOUNDS numberTuple4
+    ;
+
+linePrimitiveDecl
+    : LINE ident FROM pointTuple TO pointTuple STYLE styleValueName
+    ;
+
+polylinePrimitiveDecl
+    : POLYLINE ident POINTS pointList STYLE styleValueName
+    ;
+
+pointList
+    : LPAREN pointTuple (COMMA pointTuple)* RPAREN
+    ;
+
+arcPrimitiveDecl
+    : ARC ident CENTER pointTuple RADIUS number FROM number SWEEP number STYLE styleValueName
+    ;
+
+circlePrimitiveDecl
+    : CIRCLE ident CENTER pointTuple RADIUS number STYLE styleValueName
+    ;
+
+rectanglePrimitiveDecl
+    : RECTANGLE ident AT pointTuple SIZE sizeTuple STYLE styleValueName
+    ;
+
+labelSlotDecl
+    : LABEL ident AT pointTuple SIZE sizeTuple ROLE profileValueName STYLE styleValueName
+    ;
+
+styleValueName
+    : profileValueName
+    ;
+
+anchorDecl
+    : ANCHOR ident LBRACE anchorMember* RBRACE
+    ;
+
+anchorMember
+    : primitiveRefDecl
+    | pointDecl
+    | roleDecl
+    | acceptsDirectionDecl
+    | acceptsSignalDecl
+    ;
+
+primitiveRefDecl
+    : PRIMITIVE_REF ident
+    ;
+
+pointDecl
+    : POINT pointTuple
+    ;
+
+roleDecl
+    : ROLE ident
+    ;
+
+acceptsDirectionDecl
+    : ACCEPTS DIRECTION directionPredicate
+    ;
+
+acceptsSignalDecl
+    : ACCEPTS SIGNAL ident
+    ;
+
+directionPredicate
+    : IN
+    | OUT
+    | BIDIRECTIONAL
+    ;
+
+pointTuple
+    : LPAREN number COMMA number RPAREN
+    ;
+
+sizeTuple
+    : LPAREN number COMMA number RPAREN
+    ;
+
+numberTuple4
+    : LPAREN number COMMA number COMMA number COMMA number RPAREN
+    ;
+
+number
+    : NUMBER
+    | POSITIVE_INTEGER
     ;
 
 /**
@@ -145,11 +459,15 @@ ident
     | SYSTEM
     | DEVICE
     | PORT
+    | FUNCTION
+    | PORTS
     | CONNECT
     | PACKAGE
     | IMPORT
     | LAYOUT
     | PLACE
+    | AT
+    | ORIENTATION
     | NEAR
     | BELOW
     | ALIGN
@@ -157,16 +475,71 @@ ident
     | HORIZONTAL
     | VERTICAL
     | GROUP
+    | SYMBOL
+    | ELEMENT
+    | PROFILE
+    | BINDING
+    | PROJECTION
+    | STANDARD
+    | FALLBACK
+    | FAIL_CLOSED
+    | PRIORITY
+    | SELECT
+    | WHERE
+    | USE
+    | VARIANT
+    | CHILD
+    | TRANSLATE
+    | ROTATE
+    | SCALE
+    | Z_ORDER
+    | EXPORT
+    | IDENTITY
+    | VERSION
+    | GRAPHIC
+    | SVG
+    | RESOURCE
+    | KIND
+    | PATH
+    | BOUNDS
+    | LINE
+    | POLYLINE
+    | ARC
+    | CIRCLE
+    | RECTANGLE
+    | POINTS
+    | CENTER
+    | RADIUS
+    | SWEEP
+    | SIZE
+    | LABEL
+    | FROM
+    | TO
+    | STYLE
+    | ANCHOR
+    | PRIMITIVE_REF
+    | POINT
+    | ROLE
+    | ACCEPTS
+    | DIRECTION
+    | SIGNAL
+    | IN
+    | OUT
+    | BIDIRECTIONAL
     ;
 
 SYSTEM : 'system' ;
 DEVICE : 'device' ;
 PORT : 'port' ;
+FUNCTION : 'function' ;
+PORTS : 'ports' ;
 CONNECT : 'connect' ;
 PACKAGE : 'package' ;
 IMPORT : 'import' ;
 LAYOUT : 'layout' ;
 PLACE : 'place' ;
+AT : 'at' ;
+ORIENTATION : 'orientation' ;
 NEAR : 'near' ;
 BELOW : 'below' ;
 ALIGN : 'align' ;
@@ -176,8 +549,62 @@ HORIZONTAL : 'horizontal' ;
 VERTICAL : 'vertical' ;
 GROUP : 'group' ;
 GROUPED_WITH : 'grouped-with' ;
+SYMBOL : 'symbol' ;
+ELEMENT : 'element' ;
+PROFILE : 'profile' ;
+BINDING : 'binding' ;
+PROJECTION : 'projection' ;
+STANDARD : 'standard' ;
+FALLBACK : 'fallback' ;
+FAIL_CLOSED : 'fail-closed' ;
+PRIORITY : 'priority' ;
+SELECT : 'select' ;
+WHERE : 'where' ;
+USE : 'use' ;
+VARIANT : 'variant' ;
+CHILD : 'child' ;
+TRANSLATE : 'translate' ;
+ROTATE : 'rotate' ;
+SCALE : 'scale' ;
+Z_ORDER : 'zOrder' ;
+EXPORT : 'export' ;
+IDENTITY : 'identity' ;
+VERSION : 'version' ;
+GRAPHIC : 'graphic' ;
+SVG : 'svg' ;
+RESOURCE : 'resource' ;
+KIND : 'kind' ;
+PATH : 'path' ;
+BOUNDS : 'bounds' ;
+LINE : 'line' ;
+POLYLINE : 'polyline' ;
+ARC : 'arc' ;
+CIRCLE : 'circle' ;
+RECTANGLE : 'rectangle' ;
+POINTS : 'points' ;
+CENTER : 'center' ;
+RADIUS : 'radius' ;
+SWEEP : 'sweep' ;
+SIZE : 'size' ;
+LABEL : 'label' ;
+FROM : 'from' ;
+TO : 'to' ;
+STYLE : 'style' ;
+ANCHOR : 'anchor' ;
+PRIMITIVE_REF : 'primitiveRef' ;
+POINT : 'point' ;
+ROLE : 'role' ;
+ACCEPTS : 'accepts' ;
+DIRECTION : 'direction' ;
+SIGNAL : 'signal' ;
+IN : 'in' ;
+OUT : 'out' ;
+BIDIRECTIONAL : 'bidirectional' ;
 LBRACE : '{' ;
 RBRACE : '}' ;
+LPAREN : '(' ;
+RPAREN : ')' ;
+COMMA : ',' ;
 DOT : '.' ;
 ARROW : '->' ;
 MINUS : '-' ;
@@ -188,6 +615,14 @@ STRING
 
 IDENT
     : [a-zA-Z_] [a-zA-Z0-9_]*
+    ;
+
+POSITIVE_INTEGER
+    : [1-9] [0-9]*
+    ;
+
+NUMBER
+    : '-'? [0-9]+ ('.' [0-9]+)?
     ;
 
 BOM

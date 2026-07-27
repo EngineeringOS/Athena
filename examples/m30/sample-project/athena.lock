@@ -1,6 +1,9 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-m35-lock-v2
+validatedLockStateDigest: lock-state/v1:d9dd18ba9b3456039d7a6cf4fdd53e08f102f6a5ac5528abec29241a2a189dcf
 primaryPackage:
   name: com.engineeringood.m30.sample
   version: 1.0.0
@@ -8,4 +11,9 @@ packages:
   - name: com.engineeringood.m30.sample
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot/v1:a3a0005152a68022a5660e5550bd4a457efb44ffefc53e4cd8e08287b3a08c30
+    sourceHashes:
+      - path: com/engineeringood/m30/sample/01-rolling-shutter-control-source.athena
+        hash: sha256:dfe33a33ca0eec60d44aea9b94f319f345364390964aa3b86e46a85407ee1641
+    resourceHashes: []
     dependencies: []

@@ -47,6 +47,7 @@ class AthenaLspSessionHost(
             is AthenaRepositoryResolutionFailure -> AthenaLspSessionHostUnavailable(
                 repositoryRoot = repositoryRoot.toAbsolutePath().normalize(),
                 reason = resolution.reason,
+                diagnostics = resolution.diagnostics,
             )
         }
     }
@@ -130,6 +131,7 @@ data class AthenaLspSessionHostReady(
 data class AthenaLspSessionHostUnavailable(
     val repositoryRoot: Path,
     val reason: String,
+    val diagnostics: List<com.engineeringood.athena.repository.RepositoryDiagnostic> = emptyList(),
 ) : AthenaLspSessionHostResult {
     override fun toEventLine(): String {
         return """{"event":"session-unavailable","repositoryRoot":${repositoryRoot.toJsonString()},"message":${reason.toJsonString()}}"""
