@@ -1,4 +1,4 @@
-package com.engineeringood.athena.runtime
+﻿package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.authoring.AcceptAuthoringPreviewDecision
 import com.engineeringood.athena.authoring.AuthoringDiagnosticCode
@@ -50,13 +50,13 @@ class GovernedRelationshipPreviewServiceTest {
         assertEquals("port:Load.in", evidence.targetSubjectId)
         assertEquals(ElectricalConnectionRelationship, evidence.relationshipType)
         assertEquals(AuthoringRelationshipCompatibility.COMPATIBLE, evidence.compatibility)
-        assertEquals(listOf("connection:Source.out->Load.in"), evidence.affectedSemanticIds)
+        assertEquals(listOf(CONNECTION_ID), evidence.affectedSemanticIds)
         val sourceEdit = checkNotNull(evidence.sourceEdit)
         assertEquals(fixture.document.revisionGuard, sourceEdit.revisionGuard)
         assertEquals(ready.sourceEditPlan.admittedText, sourceEdit.admittedText)
         assertEquals(
             AuthoringRelationshipRoutePreviewEvidence(
-                routeId = "route:connection:Source.out->Load.in",
+                routeId = ROUTE_ID,
                 quality = "SATISFIED",
                 sourceAnchorId = "anchor:port:Source.out",
                 targetAnchorId = "anchor:port:Load.in",
@@ -121,13 +121,13 @@ class GovernedRelationshipPreviewServiceTest {
         assertEquals(1, fixture.mutationCalls)
         assertEquals(1, fixture.reprojectionCalls)
         assertEquals(AuthoringLifecycleState.REPROJECTED, result.lifecycleState)
-        assertEquals("mutation:connection:Source.out->Load.in", result.mutationId)
-        assertEquals(listOf("connection:Source.out->Load.in"), result.result?.affectedSemanticIds)
-        assertEquals(listOf("route:connection:Source.out->Load.in"), result.result?.projectionOccurrenceIds)
+        assertEquals("mutation:$CONNECTION_ID", result.mutationId)
+        assertEquals(listOf(CONNECTION_ID), result.result?.affectedSemanticIds)
+        assertEquals(listOf(ROUTE_ID), result.result?.projectionOccurrenceIds)
         val compiled = assertIs<CompilerCompilationSuccess>(
             AthenaCompiler().compile(Path.of("sample.athena"), fixture.currentSource),
         )
-        assertEquals("connection:Source.out->Load.in", compiled.document.connections.single().id.value)
+        assertEquals(DIRECT_COMPILER_CONNECTION_ID, compiled.document.connections.single().id.value)
     }
 
     @Test
@@ -286,7 +286,7 @@ class GovernedRelationshipPreviewServiceTest {
                     val ready = assertIs<GovernedRelationshipPreviewReady>(result)
                     currentSource = ready.sourceEditPlan.applyTo(currentSource)
                     AuthoringMutationCommitted(
-                        mutationId = "mutation:connection:Source.out->Load.in",
+                        mutationId = "mutation:$CONNECTION_ID",
                         committedRevision = AuthoringRevisionGuard.from(
                             semanticSnapshotId = "snapshot:m31:committed",
                             sourceUri = document.sourceUri,
@@ -298,7 +298,7 @@ class GovernedRelationshipPreviewServiceTest {
                 },
                 reprojectionAuthority = SemanticAuthoringReprojectionAuthority { _, _ ->
                     reprojectionCalls += 1
-                    AuthoringReprojectionSucceeded(listOf("route:connection:Source.out->Load.in"))
+                    AuthoringReprojectionSucceeded(listOf(ROUTE_ID))
                 },
             )
     }
@@ -306,12 +306,15 @@ class GovernedRelationshipPreviewServiceTest {
     private companion object {
         val ORIGIN = AuthoringOrigin(AuthoringSurface.GRAPH)
         val ROUTE_PREVIEW = AuthoringRelationshipRoutePreviewEvidence(
-            routeId = "route:connection:Source.out->Load.in",
+            routeId = ROUTE_ID,
             quality = "SATISFIED",
             sourceAnchorId = "anchor:port:Source.out",
             targetAnchorId = "anchor:port:Load.in",
             pointCount = 4,
         )
+        const val CONNECTION_ID = "connection:file:///workspace/sample.athena:source_out_to_load_in"
+        const val DIRECT_COMPILER_CONNECTION_ID = "connection:sample.athena:source_out_to_load_in"
+        const val ROUTE_ID = "route:$CONNECTION_ID"
         const val SOURCE = """system Demo {
   device Source {
     type Switch
@@ -352,7 +355,7 @@ class GovernedRelationshipPreviewServiceTest {
 
         val SOURCE_WITH_CONNECTION = SOURCE.replace(
             "\n}",
-            "\n\n  connect Source.out -> Load.in\n}",
+            "\n\n  connect source_out_to_load_in Source.out -> Load.in\n}",
         )
 
         fun sourceDocument(source: String): BackendAuthoringSourceDocument {

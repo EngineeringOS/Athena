@@ -190,7 +190,7 @@ data class M32SamplePackageSet(
             val resourcesRoot = sampleRoot.resolve("packages/resources")
             return M32SamplePackageSet(
                 projectRoot = sampleRoot,
-                sourceFile = sampleRoot.resolve("src/01-package-platform-demo.athena"),
+                sourceFile = sampleRoot.resolve("src/com/engineeringood/m32/sample/01-package-platform-demo.athena"),
                 readmeFile = sampleRoot.resolve("README.md"),
                 resourceFiles = resourcesRoot.listDirectoryEntries("*.svg").sortedBy { it.fileName.toString() },
                 engineeringPackages = listOf(

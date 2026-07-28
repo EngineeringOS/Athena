@@ -48,7 +48,7 @@ class ProjectionModelContractTest {
             connections = listOf(
                 ProjectionConnection(
                     projectionId = ProjectionConnectionId("cabinet/connection/PLC1_out_M1_in"),
-                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    semanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
                     start = ProjectionPoint(x = 104, y = 86),
                     end = ProjectionPoint(x = 316, y = 86),
                     originGeometryElementId = GeometryElementId("cabinet/geometry/path/connection_PLC1_out_M1_in"),
@@ -300,7 +300,7 @@ class ProjectionModelContractTest {
     @Test
     fun `projection documents derive deterministic sheet layout facts before rendering`() {
         val componentSemanticId = StableSemanticIdentity("component:PLC1")
-        val connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in")
+        val connectionSemanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in")
         val overviewSheetId = ProjectionSheetId("schematic/sheet/01-main")
         val layoutDocument = ProjectionDocument(
             view = ViewDefinition(
@@ -471,7 +471,7 @@ class ProjectionModelContractTest {
         val motorSemanticId = StableSemanticIdentity("component:M1")
         val sourcePortSemanticId = StableSemanticIdentity("port:PLC1.out")
         val targetPortSemanticId = StableSemanticIdentity("port:M1.in")
-        val connectionSemanticId = StableSemanticIdentity("connection:PLC1.out->M1.in")
+        val connectionSemanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in")
         val sourceNodeId = ProjectionNodeId("wiring/node/component_PLC1")
         val targetNodeId = ProjectionNodeId("wiring/node/component_M1")
         val sourceLabelId = ProjectionLabelId("wiring/label/port_PLC1_out")

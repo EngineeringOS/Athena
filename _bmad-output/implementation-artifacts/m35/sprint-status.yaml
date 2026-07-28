@@ -1,5 +1,5 @@
 # generated: 2026-07-27T12:46:44+08:00
-# last_updated: 2026-07-27T13:49:00+08:00
+# last_updated: 2026-07-28T08:15:00+08:00
 # project: Athena
 # project_key: NOKEY
 # tracking_system: file-system
@@ -41,7 +41,7 @@
 # - Story status is never advanced from claims; a dedicated artifact and fresh evidence are required.
 
 generated: 2026-07-27T12:46:44+08:00
-last_updated: 2026-07-27T22:10:15+08:00
+last_updated: 2026-07-28T08:15:00+08:00
 project: Athena
 project_key: NOKEY
 tracking_system: file-system
@@ -57,25 +57,25 @@ development_status:
   epic-1-retrospective: optional
 
   epic-2: in-progress
-  2-1-give-every-engineering-connection-stable-authored-identity: in-progress
-  2-2-author-type-safe-cabinet-installation-source: backlog
-  2-3-resolve-validated-physical-installation-contracts: backlog
-  2-4-compile-typed-physical-cabinet-topology: backlog
-  2-5-evaluate-physical-fit-collision-and-clearance: backlog
-  2-6-join-mounted-occurrences-to-one-visual-transform: backlog
-  2-7-compose-one-paint-only-cabinet-document: backlog
+  2-1-give-every-engineering-connection-stable-authored-identity: review
+  2-2-author-type-safe-cabinet-installation-source: review
+  2-3-resolve-validated-physical-installation-contracts: review
+  2-4-compile-typed-physical-cabinet-topology: review
+  2-5-evaluate-physical-fit-collision-and-clearance: review
+  2-6-join-mounted-occurrences-to-one-visual-transform: review
+  2-7-compose-one-paint-only-cabinet-document: review
   epic-2-retrospective: optional
 
-  epic-3: backlog
-  3-1-compile-route-channels-with-exact-lanes-and-adjacency: backlog
-  3-2-compile-deterministic-physical-routes-and-proof: backlog
-  3-3-trace-every-graphic-occurrence-to-governed-source: backlog
-  3-4-resolve-selection-and-preserve-governed-editing: backlog
+  epic-3: in-progress
+  3-1-compile-route-channels-with-exact-lanes-and-adjacency: review
+  3-2-compile-deterministic-physical-routes-and-proof: review
+  3-3-trace-every-graphic-occurrence-to-governed-source: review
+  3-4-resolve-selection-and-preserve-governed-editing: review
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-assemble-the-dedicated-m35-cabinet-project: backlog
-  4-2-reach-professional-cabinet-visual-quality: backlog
-  4-3-run-falsifiable-cabinet-product-e2e: backlog
-  4-4-freeze-m35-and-hand-off-the-next-engineeringos-layer: backlog
+  epic-4: in-progress
+  4-1-assemble-the-dedicated-m35-cabinet-project: review
+  4-2-reach-professional-cabinet-visual-quality: review
+  4-3-run-falsifiable-cabinet-product-e2e: in-progress
+  4-4-freeze-m35-and-hand-off-the-next-engineeringos-layer: ready-for-dev
   epic-4-retrospective: optional

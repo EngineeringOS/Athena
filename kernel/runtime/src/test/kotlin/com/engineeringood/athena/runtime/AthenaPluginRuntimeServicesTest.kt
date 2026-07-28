@@ -1,4 +1,4 @@
-package com.engineeringood.athena.runtime
+﻿package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.domain.electricalruntime.ElectricalRuntimeDomainPlugin
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
@@ -218,7 +218,7 @@ class AthenaPluginRuntimeServicesTest {
                     tint Amber
                   }
 
-                  connect G1.emit -> P1.absorb
+                  connect g1_emit_to_p1_absorb G1.emit -> P1.absorb
                 }
             """.trimIndent(),
         )

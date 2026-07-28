@@ -1,4 +1,4 @@
-system DemoCabinet {
+﻿system DemoCabinet {
   device PLC1 {
     type Switch
     model "S7-1200"
@@ -18,5 +18,5 @@ system DemoCabinet {
     signal Digital
   }
 
-  connect PLC1.out -> M1.in
+  connect plc1_out_to_m1_in PLC1.out -> M1.in
 }

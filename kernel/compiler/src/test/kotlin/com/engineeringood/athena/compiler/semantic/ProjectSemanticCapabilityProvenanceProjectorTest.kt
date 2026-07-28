@@ -1,4 +1,4 @@
-package com.engineeringood.athena.compiler.semantic
+﻿package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.language.AthenaLanguageParser
@@ -127,7 +127,7 @@ class ProjectSemanticCapabilityProvenanceProjectorTest {
             package com.root
             import com.vendor
             system Consumer {
-              connect Vendor.out -> Local.out
+              connect vendor_out_to_local_out Vendor.out -> Local.out
               port Local.out {}
             }
             """.trimIndent(),

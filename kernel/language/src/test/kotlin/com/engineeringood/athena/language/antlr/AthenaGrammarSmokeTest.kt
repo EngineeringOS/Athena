@@ -225,9 +225,11 @@ class AthenaGrammarSmokeTest {
         assertEquals(
             listOf(
                 "invalid-file-global-layout",
+                "invalid-installation-kind",
                 "invalid-layout-bad-axis",
                 "invalid-layout-malformed-place",
                 "invalid-layout-missing-target",
+                "valid-installation-cabinet",
                 "valid-layout-block",
             ),
             discovered,
@@ -238,11 +240,14 @@ class AthenaGrammarSmokeTest {
     fun `m23 parser parity corpus accepts valid layout syntax and rejects invalid layout syntax`() {
         val corpus = resolveRepoRoot().resolve("examples/m23/parser-parity-proof")
         val valid = parseSource(Files.readString(corpus.resolve("valid-layout-block.athena")))
+        val validInstallation = parseSource(Files.readString(corpus.resolve("valid-installation-cabinet.athena")))
 
         assertTrue(valid.errors.isEmpty(), "Unexpected syntax errors: ${valid.errors}")
+        assertTrue(validInstallation.errors.isEmpty(), "Unexpected syntax errors: ${validInstallation.errors}")
 
         listOf(
             "invalid-file-global-layout",
+            "invalid-installation-kind",
             "invalid-layout-bad-axis",
             "invalid-layout-malformed-place",
             "invalid-layout-missing-target",

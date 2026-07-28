@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class SemanticSpatialIntentModelTest {
     @Test
     fun `semantic spatial intent captures M27 required 2D schematic contract without coordinates`() {
-        val route = subject("connection:ControllerPLC1.do1->FieldTerminalXT1.in1", SemanticSpatialSubjectKind.CONNECTION)
+        val route = subject("connection:test:controller_plc1_do1_to_field_terminal_xt1_in1", SemanticSpatialSubjectKind.CONNECTION)
         val terminal = subject("port:FieldTerminalXT1.in1", SemanticSpatialSubjectKind.TERMINAL, terminalId = "terminal:XT1:1")
 
         val intent = SemanticSpatialIntent(

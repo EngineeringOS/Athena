@@ -18,6 +18,7 @@ class AthenaRuntimeProjectionSessionTest {
     @Test
     fun `runtime hosts supported projection views with deterministic default active view`() {
         val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val connectionId = "connection:$sourcePath:plc_to_motor"
         val runtime = AthenaRuntime()
         val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
             projectName = "demo-cabinet",
@@ -70,7 +71,7 @@ class AthenaRuntimeProjectionSessionTest {
         assertEquals("cabinet/sheet/01-main", ready.activeSheetId)
         assertEquals(listOf("cabinet/sheet/01-main"), ready.sheets.map { sheet -> sheet.sheetId })
         assertEquals(
-            listOf("component:M1", "component:PLC1", "connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
+            listOf("component:M1", "component:PLC1", connectionId, "port:M1.in", "port:PLC1.out"),
             ready.sheets.single().subjectSemanticIds,
         )
         assertEquals(listOf("electrical-runtime.render.cabinet"), ready.activeRenderContributions.map { contribution -> contribution.contributionId })
@@ -361,7 +362,9 @@ class AthenaRuntimeProjectionSessionTest {
 
     @Test
     fun `m27 field wiring sheet renders field subjects from the active semantic source`() {
-        val sourcePath = resolveRepoRoot().resolve("examples/m27/sample-project/src/01-workspace-semantic-source.athena")
+        val sourcePath = resolveRepoRoot()
+            .resolve("examples/m27/sample-project/src/com/engineeringood/m27/sample/01-workspace-semantic-source.athena")
+        val connectionId = "connection:$sourcePath:fieldoutputmoduleiom1_do1_to_fieldterminalxt1_in1"
         val runtime = AthenaRuntime()
         val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
             projectName = "m27-sample-project",
@@ -383,7 +386,7 @@ class AthenaRuntimeProjectionSessionTest {
         )
         assertTrue(
             ready.scene.connections.any { connection ->
-                connection.semanticId == "connection:FieldOutputModuleIOM1.do1->FieldTerminalXT1.in1"
+                connection.semanticId == connectionId
             },
             "M27 field sheet must include a routed field output to terminal connection.",
         )
@@ -395,7 +398,8 @@ class AthenaRuntimeProjectionSessionTest {
 
     @Test
     fun `m27 document sheets do not render orphan terminal labels`() {
-        val sourcePath = resolveRepoRoot().resolve("examples/m27/sample-project/src/01-workspace-semantic-source.athena")
+        val sourcePath = resolveRepoRoot()
+            .resolve("examples/m27/sample-project/src/com/engineeringood/m27/sample/01-workspace-semantic-source.athena")
         val runtime = AthenaRuntime()
         val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
             projectName = "m27-sample-project",

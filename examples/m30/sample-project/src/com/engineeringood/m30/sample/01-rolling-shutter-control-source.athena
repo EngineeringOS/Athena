@@ -1,4 +1,4 @@
-package com.engineeringood.m30.sample
+﻿package com.engineeringood.m30.sample
 
 system RollingShutterControlProof {
   device MainPowerSupplyPS30 {
@@ -127,23 +127,23 @@ system RollingShutterControlProof {
   }
 
   connect supply_feed {
-    MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
-    MainBreakerQF30.load -> ControlRelayK30.supply
+    mainpowersupplyps30_lplus_to_mainbreakerqf30_line MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
+    mainbreakerqf30_load_to_controlrelayk30_supply MainBreakerQF30.load -> ControlRelayK30.supply
   }
 
   connect operator_commands {
-    WallSwitchS30.up -> ControlRelayK30.upCommand
-    WallSwitchS30.down -> ControlRelayK30.downCommand
+    wallswitchs30_up_to_controlrelayk30_upcommand WallSwitchS30.up -> ControlRelayK30.upCommand
+    wallswitchs30_down_to_controlrelayk30_downcommand WallSwitchS30.down -> ControlRelayK30.downCommand
   }
 
   connect motor_drive {
-    ControlRelayK30.upOut -> FieldTerminalXT30.controlUp
-    ControlRelayK30.downOut -> FieldTerminalXT30.controlDown
-    FieldTerminalXT30.motorUp -> ShutterMotorM30.up
-    FieldTerminalXT30.motorDown -> ShutterMotorM30.down
+    controlrelayk30_upout_to_fieldterminalxt30_controlup ControlRelayK30.upOut -> FieldTerminalXT30.controlUp
+    controlrelayk30_downout_to_fieldterminalxt30_controldown ControlRelayK30.downOut -> FieldTerminalXT30.controlDown
+    fieldterminalxt30_motorup_to_shuttermotorm30_up FieldTerminalXT30.motorUp -> ShutterMotorM30.up
+    fieldterminalxt30_motordown_to_shuttermotorm30_down FieldTerminalXT30.motorDown -> ShutterMotorM30.down
   }
 
-  connect ControlRelayK30.status -> PilotLampHL30.status
+  connect controlrelayk30_status_to_pilotlamphl30_status ControlRelayK30.status -> PilotLampHL30.status
 
   layout schematic-sheet {
     place MainBreakerQF30 near MainPowerSupplyPS30

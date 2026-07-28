@@ -40,6 +40,7 @@ class EngineeringIrLowerer(
      */
     fun lower(source: CompilerSourceDocument, sourceUnitId: String = source.file): EngineeringDocument {
         val contribution = domainSemantics.lower(source)
+        val portableSourceUnitId = sourceUnitId.toPortableSourceUnitId()
 
         val components = contribution.components.withDuplicateOrdinals { it.name }.map { (blueprint, duplicateOrdinal) ->
             EngineeringComponent(
@@ -72,7 +73,7 @@ class EngineeringIrLowerer(
 
         val connections = contribution.connections.map { blueprint ->
             EngineeringConnection(
-                id = connectionIdentity(sourceUnitId, blueprint.alias),
+                id = connectionIdentity(portableSourceUnitId, blueprint.alias),
                 from = EngineeringReference(
                     authoredPath = blueprint.fromPath,
                     resolvedIdentity = portIdsByAuthoredPath[pathKey(blueprint.fromPath)],
@@ -144,6 +145,19 @@ class EngineeringIrLowerer(
     private fun withDuplicateSuffix(baseIdentity: String, duplicateOrdinal: Int): String {
         return if (duplicateOrdinal == 1) baseIdentity else "$baseIdentity#$duplicateOrdinal"
     }
+}
+
+private fun String.toPortableSourceUnitId(): String {
+    val normalized = replace('\\', '/')
+    val examplesIndex = normalized.indexOf("/examples/")
+    if (examplesIndex >= 0) {
+        return normalized.substring(examplesIndex + 1)
+    }
+    val srcIndex = normalized.indexOf("/src/")
+    if (srcIndex >= 0) {
+        return normalized.substring(srcIndex + 1)
+    }
+    return normalized
 }
 
 /** Converts a syntax-layer span into stable provenance carried by canonical semantic objects. */

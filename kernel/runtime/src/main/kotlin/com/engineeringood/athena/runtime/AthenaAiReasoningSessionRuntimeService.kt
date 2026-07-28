@@ -241,14 +241,11 @@ private fun AthenaAiReasoningProviderOutcome.toProposalDraft(
 
 private fun AthenaAiReasoningRequestCategory.toProposalCategory(): AthenaAiReasoningProposalCategory {
     return when (this) {
-        AthenaAiReasoningRequestCategory.DIAGNOSTIC_EXPLANATION ->
-            AthenaAiReasoningProposalCategory.DIAGNOSTIC_EXPLANATION
+        AthenaAiReasoningRequestCategory.DIAGNOSTIC_EXPLANATION -> AthenaAiReasoningProposalCategory.DIAGNOSTIC_EXPLANATION
 
-        AthenaAiReasoningRequestCategory.IMPACT_SUMMARY ->
-            AthenaAiReasoningProposalCategory.IMPACT_SUMMARY
+        AthenaAiReasoningRequestCategory.IMPACT_SUMMARY -> AthenaAiReasoningProposalCategory.IMPACT_SUMMARY
 
-        AthenaAiReasoningRequestCategory.NEXT_CHECK ->
-            AthenaAiReasoningProposalCategory.NEXT_CHECK
+        AthenaAiReasoningRequestCategory.NEXT_CHECK -> AthenaAiReasoningProposalCategory.NEXT_CHECK
     }
 }
 

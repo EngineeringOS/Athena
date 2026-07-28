@@ -1,4 +1,4 @@
-package com.engineeringood.m25.sample
+﻿package com.engineeringood.m25.sample
 
 system SixFamilyPresentationAcceptance {
   device PowerSupplyPS3 {
@@ -81,11 +81,11 @@ system SixFamilyPresentationAcceptance {
     signal Digital
   }
 
-  connect PowerSupplyPS3.lplus -> BreakerQF3.line
-  connect BreakerQF3.load -> ControllerPLC3.power
-  connect ControllerPLC3.do1 -> TerminalBlockXT3.in1
-  connect TerminalBlockXT3.out1 -> MotorM3.u1
-  connect ControllerPLC3.hmi -> OperatorHMI3.status
+  connect powersupplyps3_lplus_to_breakerqf3_line PowerSupplyPS3.lplus -> BreakerQF3.line
+  connect breakerqf3_load_to_controllerplc3_power BreakerQF3.load -> ControllerPLC3.power
+  connect controllerplc3_do1_to_terminalblockxt3_in1 ControllerPLC3.do1 -> TerminalBlockXT3.in1
+  connect terminalblockxt3_out1_to_motorm3_u1 TerminalBlockXT3.out1 -> MotorM3.u1
+  connect controllerplc3_hmi_to_operatorhmi3_status ControllerPLC3.hmi -> OperatorHMI3.status
 
   layout schematic-sheet {
     place BreakerQF3 near PowerSupplyPS3

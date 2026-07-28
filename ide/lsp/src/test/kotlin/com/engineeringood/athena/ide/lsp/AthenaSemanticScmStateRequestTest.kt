@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import kotlin.io.path.createDirectories
@@ -50,7 +50,7 @@ class AthenaSemanticScmStateRequestTest {
                         signal Analog
                       }
 
-                      connect PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in PLC1.out -> M1.in
                     }
                 """.trimIndent(),
             )

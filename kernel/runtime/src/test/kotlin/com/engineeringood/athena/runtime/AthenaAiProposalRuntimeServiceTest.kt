@@ -28,6 +28,8 @@ class AthenaAiProposalRuntimeServiceTest {
                     summary = "Connect PLC1.out1 to M1.in",
                     rationale = "Suggested by the optional AI proof surface.",
                     command = AthenaConnectPortsCommand(
+                        sourceUnitId = "ai-proposals",
+                        connectionAlias = "plc1_out1_to_m1_in",
                         sourcePortSemanticId = "port:PLC1.out1",
                         targetPortSemanticId = "port:M1.in",
                     ),
@@ -62,6 +64,8 @@ class AthenaAiProposalRuntimeServiceTest {
                         summary = "Connect PLC1.out1 to M1.in",
                         rationale = "Suggested by the optional AI proof surface.",
                         command = AthenaConnectPortsCommand(
+                            sourceUnitId = "ai-proposals",
+                            connectionAlias = "plc1_out1_to_m1_in",
                             sourcePortSemanticId = "port:PLC1.out1",
                             targetPortSemanticId = "port:M1.in",
                         ),
@@ -116,6 +120,8 @@ class AthenaAiProposalRuntimeServiceTest {
                         summary = "Connect PLC1.out1 to Missing.in",
                         rationale = "Optional AI proof can still suggest invalid commands.",
                         command = AthenaConnectPortsCommand(
+                            sourceUnitId = "ai-proposals",
+                            connectionAlias = "plc1_out1_to_missing_in",
                             sourcePortSemanticId = "port:PLC1.out1",
                             targetPortSemanticId = "port:Missing.in",
                         ),

@@ -25,6 +25,7 @@ import com.engineeringood.athena.language.ElementDeclaration
 import com.engineeringood.athena.language.ElementLabelExportDeclaration
 import com.engineeringood.athena.language.ElementNumberField
 import com.engineeringood.athena.language.EngineeringFunctionDeclaration
+import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.LayoutStatement
 import com.engineeringood.athena.language.ParseSuccess
@@ -719,7 +720,12 @@ class AthenaLanguageFeatures(
 
     fun formatting(uri: String): List<TextEdit> {
         val tracked = trackedDocument(uri) ?: return emptyList()
-        val formatted = tracked.representation?.formattedSource ?: return emptyList()
+        val formatted = tracked.representation?.formattedSource
+            ?: (tracked.compilation as? CompilerCompilationSuccess)
+                ?.source
+                ?.ast
+                ?.let(AthenaProjectSourceFormatter::format)
+            ?: return emptyList()
         return listOf(
             TextEdit(
                 tracked.text.fullDocumentRange(),
@@ -1244,6 +1250,7 @@ private fun SourceFileAst.authoredConnectionDeclarations(): List<ConnectionDecla
             is DeviceDeclaration -> emptyList()
             is PortDeclaration -> emptyList()
             is LayoutDeclaration -> emptyList()
+            is InstallationDeclaration -> emptyList()
         }
     }
 }
@@ -1559,7 +1566,7 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
         is PortDeclaration -> toDocumentSymbol(displayName = qualifiedName.parts.joinToString("."))
 
         is ConnectionDeclaration -> DocumentSymbol().apply {
-            name = "connect ${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
+            name = "connect $alias ${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
             kind = SymbolKind.Operator
             detail = "connect"
             range = span.toLspRange()
@@ -1583,12 +1590,58 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
             selectionRange = span.toLspRange()
             children = statements.map { statement -> statement.toDocumentSymbol() }
         }
+
+        is InstallationDeclaration -> DocumentSymbol().apply {
+            name = this@toDocumentSymbol.name
+            kind = SymbolKind.Module
+            detail = "installation cabinet"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+            children = buildList {
+                enclosures.mapTo(this) { member -> member.toInstallationDocumentSymbol("enclosure") }
+                surfaces.mapTo(this) { member -> member.toInstallationDocumentSymbol("surface") }
+                rails.mapTo(this) { member -> member.toInstallationDocumentSymbol("rail") }
+                ducts.mapTo(this) { member -> member.toInstallationDocumentSymbol("duct") }
+                channels.mapTo(this) { member -> member.toInstallationDocumentSymbol("channel") }
+                terminalGroups.mapTo(this) { member -> member.toInstallationDocumentSymbol("terminal-group") }
+                mounts.mapTo(this) { member -> member.toInstallationDocumentSymbol("mount") }
+                routes.mapTo(this) { route ->
+                    DocumentSymbol().apply {
+                        name = "route ${route.connectionAlias}"
+                        kind = SymbolKind.Operator
+                        detail = "route"
+                        range = route.span.toLspRange()
+                        selectionRange = route.span.toLspRange()
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun Any.toInstallationDocumentSymbol(kindName: String): DocumentSymbol {
+    val (id, span) = when (this) {
+        is com.engineeringood.athena.language.InstallationEnclosureDeclaration -> id to span
+        is com.engineeringood.athena.language.InstallationSurfaceDeclaration -> id to span
+        is com.engineeringood.athena.language.InstallationRailDeclaration -> id to span
+        is com.engineeringood.athena.language.InstallationDuctDeclaration -> id to span
+        is com.engineeringood.athena.language.InstallationChannelDeclaration -> id to span
+        is com.engineeringood.athena.language.InstallationTerminalGroupDeclaration -> id to span
+        is com.engineeringood.athena.language.InstallationMountDeclaration -> id to span
+        else -> error("Unsupported installation document symbol member: ${this::class.simpleName}")
+    }
+    return DocumentSymbol().apply {
+        name = "$kindName $id"
+        kind = SymbolKind.Object
+        detail = kindName
+        range = span.toLspRange()
+        selectionRange = span.toLspRange()
     }
 }
 
 private fun ConnectionDeclaration.toConnectEdgeDocumentSymbol(): DocumentSymbol {
     return DocumentSymbol().apply {
-        name = "${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
+        name = "$alias ${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
         kind = SymbolKind.Operator
         detail = "connect edge"
         range = span.toLspRange()
@@ -1947,6 +2000,34 @@ private val layoutKeywordTokens = setOf(
     "vertical",
 )
 
+private val installationKeywordTokens = setOf(
+    "installation",
+    "cabinet",
+    "enclosure",
+    "surface",
+    "rail",
+    "duct",
+    "channel",
+    "terminal-group",
+    "mount",
+    "route",
+    "in",
+    "on",
+    "at",
+    "size",
+    "accepts",
+    "length",
+    "orientation",
+    "horizontal",
+    "vertical",
+    "mounting",
+    "wall",
+    "lanes",
+    "margin",
+    "device",
+    "through",
+)
+
 private val layoutOperatorTokens = setOf("aligned-with", "grouped-with")
 
 private val representationKeywordTokens = setOf(
@@ -2025,6 +2106,7 @@ private fun String.semanticTokenData(): List<Int> {
                     "athenaBindingKeyword"
                 line.isProfileStyleLine() && text == "style" -> "athenaProfileKeyword"
                 line.isPrimitiveLine() && text in primitiveKeywordTokens -> "athenaPrimitiveKeyword"
+                line.isInstallationLine() && text in installationKeywordTokens -> "athenaLayoutKeyword"
                 text in declarationKeywordTokens -> "athenaDeclarationKeyword"
                 text in portKeywordTokens -> "athenaPortKeyword"
                 text in relationshipKeywordTokens -> "athenaRelationshipKeyword"
@@ -2066,6 +2148,21 @@ private fun String.isProfileStyleLine(): Boolean = trimStart().startsWith("style
 private fun String.isPrimitiveLine(): Boolean {
     val firstWord = trimStart().substringBefore(' ')
     return firstWord in setOf("bounds", "line", "polyline", "arc", "circle", "rectangle", "label")
+}
+
+private fun String.isInstallationLine(): Boolean {
+    val firstWord = trimStart().substringBefore(' ')
+    return firstWord in setOf(
+        "installation",
+        "enclosure",
+        "surface",
+        "rail",
+        "duct",
+        "channel",
+        "terminal-group",
+        "mount",
+        "route",
+    )
 }
 
 private fun SourceSpan.toLspRange(): Range {

@@ -33,7 +33,7 @@ const SMOKE_OUTLINE_EXPECTED_PATH = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_EX
     || 'InteractionAuthoringProof > OperatorHMI1 > status';
 
 const targetWorkspace = process.argv[2] ? path.resolve(process.cwd(), process.argv[2]) : undefined;
-if (process.env.ATHENA_ELECTRON_TEMP_USER_DATA === '1') {
+if (app && process.env.ATHENA_ELECTRON_TEMP_USER_DATA === '1') {
     app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'athena-m21-smoke-')));
 }
 
@@ -302,6 +302,29 @@ async function openWorkspace(window) {
                     }
                 };
             }
+            let lastCabinetRenderProofReadiness;
+            await waitFor(async () => {
+                const routeProof = collectRouteProof();
+                const representationProof = collectRepresentationProof();
+                const visualProof = collectVisualProof();
+                const widgetDiagramProof = await collectGraphWorkbenchWidgetDiagramProof();
+                lastCabinetRenderProofReadiness = {
+                    routeCount: routeProof.routeCount,
+                    representationCount: representationProof.representationCount,
+                    graphicOccurrenceCount: representationProof.graphicOccurrenceCount,
+                    routeBodyIntersectionCount: visualProof.routeBodyIntersectionCount,
+                    activeViewId: collectActiveProjectionViewId(),
+                    widgetDiagramProof
+                };
+                return routeProof.routeCount > 0 &&
+                    representationProof.representationCount > 0 &&
+                    visualProof.routeBodyIntersectionCount === 0
+                    ? true
+                    : undefined;
+            }, 'governed Cabinet render proof').catch(error => {
+                throw new Error(error.message + ': ' + JSON.stringify(lastCabinetRenderProofReadiness));
+            });
+            smokeStep('governed-cabinet-render-proof');
             const expectedSemanticProof = await collectExpectedSemanticProof();
             const documentNavigation = document.querySelector('.athena-graph-workbench__document-navigation');
             const documentProjectionProof = smokeActiveView === 'documentation'
@@ -641,23 +664,17 @@ async function openWorkspace(window) {
                     () => window.__athenaWorkbenchSmoke?.openSourceEditorForSmoke,
                     'Athena source editor smoke command hook for diagnostics'
                 );
-                const proof = await Promise.race([
-                    openSourceEditorForSmoke(sourceUri),
-                    new Promise((_, reject) => setTimeout(
-                        () => reject(new Error('Timed out waiting for Athena source diagnostic activation for ' + sourceUri)),
-                        60000
-                    ))
-                ]);
-                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                const resourceUri = proof.resourceUri || '';
-                const currentEditorWidgetId = proof.currentEditorWidgetId || '';
+                const proof = await openSourceEditorForSmoke(sourceUri);
                 return {
                     requested: true,
                     sourceUri,
                     widgetId: proof.widgetId || '',
-                    resourceUri,
-                    currentEditorWidgetId,
-                    opened: !!currentEditorWidgetId && resourceUri.replace(/\\\\/g, '/').toLowerCase().includes(sourceRelative.toLowerCase())
+                    resourceUri: proof.resourceUri || '',
+                    currentEditorWidgetId: proof.currentEditorWidgetId || '',
+                    problemMarkerCount: Number(proof.problemMarkerCount || 0),
+                    problemMarkers: Array.isArray(proof.problemMarkers) ? proof.problemMarkers : [],
+                    zeroProblemMarkerCount: proof.zeroProblemMarkerCount === true,
+                    opened: Boolean(proof.currentEditorWidgetId)
                 };
             }
 
@@ -883,6 +900,18 @@ async function openWorkspace(window) {
                     representationStates,
                     graphicOccurrenceStates
                 };
+            }
+
+            async function collectGraphWorkbenchWidgetDiagramProof() {
+                try {
+                    return await window.__athenaWorkbenchSmoke?.collectGraphWorkbenchProof?.()
+                        || { available: false, reason: 'smoke hook unavailable' };
+                } catch (error) {
+                    return {
+                        available: false,
+                        reason: error instanceof Error ? error.message : String(error)
+                    };
+                }
             }
 
             async function revealGraphicalViewThroughDom() {
@@ -1370,6 +1399,7 @@ async function captureGraphWorkbenchScreenshot(window) {
     }
     const captureRect = await window.webContents.executeJavaScript(`
         (async () => {
+            const isBlockingScreenshotSpinner = ${isBlockingScreenshotSpinner.toString()};
             const waitFor = async (predicate, description, timeoutMs = 30000, intervalMs = 100) => {
                 const startedAt = Date.now();
                 while (Date.now() - startedAt < timeoutMs) {
@@ -1389,13 +1419,49 @@ async function captureGraphWorkbenchScreenshot(window) {
                 const sheetFrame = document.querySelector('.athena-graph-workbench__sheet-frame');
                 const routeCount = document.querySelectorAll('[data-athena-route-fact="true"]').length;
                 const emptyText = (document.querySelector('.athena-graph-workbench__empty')?.textContent || '').replace(/\\s+/g, ' ').trim();
-                const activeSpinner = document.querySelector(
-                    '.codicon-loading, .codicon-modifier-spin, .theia-loading, .theia-preload'
-                );
                 const workbenchRect = workbench?.getBoundingClientRect();
                 const viewportRect = viewport?.getBoundingClientRect();
                 const sheetRect = sheet?.getBoundingClientRect();
-                const spinnerStyle = activeSpinner ? window.getComputedStyle(activeSpinner) : undefined;
+                const captureRect = workbenchRect
+                    ? {
+                        left: workbenchRect.left,
+                        top: workbenchRect.top,
+                        right: workbenchRect.right,
+                        bottom: workbenchRect.bottom,
+                        width: workbenchRect.width,
+                        height: workbenchRect.height
+                    }
+                    : undefined;
+                const probeX = captureRect ? captureRect.left + captureRect.width / 2 : 0;
+                const probeY = captureRect ? captureRect.top + captureRect.height / 2 : 0;
+                const frontmostAtProbePoint = captureRect
+                    ? document.elementFromPoint(probeX, probeY)
+                    : undefined;
+                const spinnerStates = Array.from(document.querySelectorAll(
+                    '.codicon-loading, .codicon-modifier-spin, .theia-loading, .theia-preload'
+                )).map(spinner => {
+                    const spinnerRect = spinner.getBoundingClientRect();
+                    const spinnerStyle = window.getComputedStyle(spinner);
+                    return {
+                        className: spinner.className || '',
+                        display: spinnerStyle.display || '',
+                        visibility: spinnerStyle.visibility || '',
+                        opacity: spinnerStyle.opacity || '',
+                        pointerEvents: spinnerStyle.pointerEvents || '',
+                        zIndex: spinnerStyle.zIndex || '',
+                        left: spinnerRect.left,
+                        top: spinnerRect.top,
+                        right: spinnerRect.right,
+                        bottom: spinnerRect.bottom,
+                        width: spinnerRect.width,
+                        height: spinnerRect.height,
+                        frontmostAtProbePoint: !!frontmostAtProbePoint &&
+                            (frontmostAtProbePoint === spinner || spinner.contains(frontmostAtProbePoint))
+                    };
+                });
+                const activeSpinner = spinnerStates.find(spinnerState =>
+                    isBlockingScreenshotSpinner(spinnerState, captureRect)
+                );
                 lastReadinessState = {
                     workbench: !!workbench,
                     viewportPresent: !!viewport,
@@ -1403,10 +1469,18 @@ async function captureGraphWorkbenchScreenshot(window) {
                     sheetFrame: !!sheetFrame,
                     routeCount,
                     emptyText,
+                    spinnerCandidateCount: spinnerStates.length,
                     activeSpinnerClass: activeSpinner?.className || '',
-                    activeSpinnerDisplay: spinnerStyle?.display || '',
-                    activeSpinnerVisibility: spinnerStyle?.visibility || '',
-                    activeSpinnerOpacity: spinnerStyle?.opacity || '',
+                    activeSpinnerDisplay: activeSpinner?.display || '',
+                    activeSpinnerVisibility: activeSpinner?.visibility || '',
+                    activeSpinnerOpacity: activeSpinner?.opacity || '',
+                    activeSpinnerPointerEvents: activeSpinner?.pointerEvents || '',
+                    activeSpinnerZIndex: activeSpinner?.zIndex || '',
+                    activeSpinnerFrontmostAtProbePoint: activeSpinner?.frontmostAtProbePoint ?? false,
+                    activeSpinnerLeft: activeSpinner?.left ?? 0,
+                    activeSpinnerTop: activeSpinner?.top ?? 0,
+                    activeSpinnerRight: activeSpinner?.right ?? 0,
+                    activeSpinnerBottom: activeSpinner?.bottom ?? 0,
                     workbenchWidth: workbenchRect?.width || 0,
                     workbenchHeight: workbenchRect?.height || 0,
                     viewportWidth: viewportRect?.width || 0,
@@ -1451,7 +1525,42 @@ function configureJvmRuntime() {
     return resolver.configureProcessEnvironment(process.env, process.platform);
 }
 
-main();
+if (process.versions.electron) {
+    main();
+}
+
+function isBlockingScreenshotSpinner(spinnerState, captureRect) {
+    if (!spinnerState) {
+        return false;
+    }
+    if (!captureRect) {
+        return true;
+    }
+    if (spinnerState.display === 'none' ||
+        spinnerState.visibility === 'hidden' ||
+        spinnerState.visibility === 'collapse') {
+        return false;
+    }
+    const opacity = Number(spinnerState.opacity);
+    if (Number.isFinite(opacity) && opacity <= 0.01) {
+        return false;
+    }
+    if (Number(spinnerState.width || 0) <= 0 || Number(spinnerState.height || 0) <= 0) {
+        return false;
+    }
+    const overlapsCapture = Math.max(Number(spinnerState.left), Number(captureRect.left)) <
+        Math.min(Number(spinnerState.right), Number(captureRect.right)) &&
+        Math.max(Number(spinnerState.top), Number(captureRect.top)) <
+        Math.min(Number(spinnerState.bottom), Number(captureRect.bottom));
+    if (!overlapsCapture) {
+        return false;
+    }
+    return spinnerState.frontmostAtProbePoint === true;
+}
+
+module.exports = {
+    isBlockingScreenshotSpinner,
+};
 
 function resolveRequestedActiveView() {
     const activeViewArgIndex = process.argv.indexOf('--active-view');

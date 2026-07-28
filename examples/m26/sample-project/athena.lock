@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:0d3d96bb1188c00394834ad365e0f559e5ae16525da677f3e85b8aa7cd0c19f0
+validatedLockStateDigest: lock-state/v1:456c1d3f2fb01171d68c4b1fa81acc260be71d5fb92bd80890762bd268cf8fd6
 primaryPackage:
   name: com.engineeringood.m26.sample
   version: 1.0.0
@@ -11,11 +11,11 @@ packages:
   - name: com.engineeringood.m26.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:5234f2a27891d86461b67d35875880cada8e1559c987ae246ccda2f5286616fb
+    snapshotDigest: package-snapshot/v1:e7749b90e87517874f13fbdbcb0b027eebaf3b65a9aa3bd88fdad82faf9f891d
     sourceHashes:
       - path: com/engineeringood/m26/sample/01-workspace-semantic-source.athena
-        hash: sha256:3eadeb9eaee39e57b0758e2989e677b32cc50c8fd459fb056ca9c1e370aec4fa
+        hash: sha256:80ad057b94c38e1cb17540297034e4b32ddd46419e6a11052810d792072c7bcf
       - path: com/engineeringood/m26/sample/02-field-assets-not-a-sheet.athena
-        hash: sha256:31c1f33fa386713e0e7b57ae74941fbafe670d8dd70c12cc6b24093d76799850
+        hash: sha256:b31a1e67628e4ad08928af6dfb16dc12e1caf92781b29b04173d72b18115791e
     resourceHashes: []
     dependencies: []

@@ -1,0 +1,56 @@
+package com.engineeringood.m35.control
+
+profile PhysicalCabinetIEC {
+  projection cabinet
+  standard IEC
+  style athena-industrial-cabinet-v1
+  fallback fail-closed
+}
+
+binding M35PowerSourceCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type PowerSource }
+  use element "iec.power-source.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M35BreakerCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type Breaker }
+  use element "iec.breaker.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M35RelayCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type Contactor }
+  use element "iec.relay.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M35Pfea112Cabinet {
+  profile PhysicalCabinetIEC
+  priority 300
+  select device where { type Terminal model "ABB-PFEA112-IP20 m35.productSurface cabinet-only" }
+  use element "vendor.abb.pfea112.element" version "1.0.0"
+  variant "vendor-svg"
+}
+
+binding M35TerminalCabinet {
+  profile PhysicalCabinetIEC
+  priority 100
+  select device where { type Terminal }
+  use element "iec.terminal-block.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M35ProtectiveEarthCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type ProtectiveEarth }
+  use element "iec.protective-earth.element" version "1.0.0"
+  variant "standard"
+}

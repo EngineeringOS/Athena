@@ -18,13 +18,13 @@ class RouteQualityDiagnosticsTest {
             routeFacts = listOf(
                 routeFact(
                     snapshotId = snapshotId,
-                    connectionId = ElectricalConnectionId("connection:PLC1.DO1->HMI1.IN1"),
+                    connectionId = ElectricalConnectionId("connection:test:plc1_do1_to_hmi1_in1"),
                     routeId = SchematicRouteId("route:satisfied"),
                     quality = RouteQuality.satisfied(),
                 ),
                 routeFact(
                     snapshotId = snapshotId,
-                    connectionId = ElectricalConnectionId("connection:PLC1.DO2->XT1.1"),
+                    connectionId = ElectricalConnectionId("connection:test:plc1_do2_to_xt1_1"),
                     routeId = SchematicRouteId("route:fallback"),
                     quality = RouteQuality.fallback(
                         failedConstraintIds = listOf(fallbackConstraintId),
@@ -38,7 +38,7 @@ class RouteQualityDiagnosticsTest {
         val inspection = RouteQualityDiagnosticPublisher().inspectionPayloadFor(snapshot)
 
         assertEquals(1, diagnostics.size)
-        assertEquals(ElectricalConnectionId("connection:PLC1.DO2->XT1.1"), diagnostics.single().connectionId)
+        assertEquals(ElectricalConnectionId("connection:test:plc1_do2_to_xt1_1"), diagnostics.single().connectionId)
         assertEquals(SchematicRouteId("route:fallback"), diagnostics.single().routeId)
         assertEquals(RouteQualityState.FALLBACK, diagnostics.single().qualityState)
         assertEquals(listOf(fallbackConstraintId), diagnostics.single().failedConstraintIds)

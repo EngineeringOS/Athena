@@ -1,4 +1,4 @@
-package com.engineeringood.m31.sample
+﻿package com.engineeringood.m31.sample
 
 system RollingShutterGovernedAuthoringProof {
   device MainPowerSupplyPS31 {
@@ -142,23 +142,23 @@ system RollingShutterGovernedAuthoringProof {
   }
 
   connect supply_feed {
-    MainPowerSupplyPS31.lplus -> MainBreakerQF31.line
-    MainBreakerQF31.load -> ControlRelayK31.supply
+    mainpowersupplyps31_lplus_to_mainbreakerqf31_line MainPowerSupplyPS31.lplus -> MainBreakerQF31.line
+    mainbreakerqf31_load_to_controlrelayk31_supply MainBreakerQF31.load -> ControlRelayK31.supply
   }
 
   connect operator_commands {
-    WallSwitchS31.up -> ControlRelayK31.upCommand
-    WallSwitchS31.down -> ControlRelayK31.downCommand
+    wallswitchs31_up_to_controlrelayk31_upcommand WallSwitchS31.up -> ControlRelayK31.upCommand
+    wallswitchs31_down_to_controlrelayk31_downcommand WallSwitchS31.down -> ControlRelayK31.downCommand
   }
 
   connect motor_drive {
-    ControlRelayK31.upOut -> FieldTerminalXT31.controlUp
-    ControlRelayK31.downOut -> FieldTerminalXT31.controlDown
-    FieldTerminalXT31.motorUp -> ShutterMotorM31.up
-    FieldTerminalXT31.motorDown -> ShutterMotorM31.down
+    controlrelayk31_upout_to_fieldterminalxt31_controlup ControlRelayK31.upOut -> FieldTerminalXT31.controlUp
+    controlrelayk31_downout_to_fieldterminalxt31_controldown ControlRelayK31.downOut -> FieldTerminalXT31.controlDown
+    fieldterminalxt31_motorup_to_shuttermotorm31_up FieldTerminalXT31.motorUp -> ShutterMotorM31.up
+    fieldterminalxt31_motordown_to_shuttermotorm31_down FieldTerminalXT31.motorDown -> ShutterMotorM31.down
   }
 
-  connect ControlRelayK31.status -> PilotLampHL31.status
+  connect controlrelayk31_status_to_pilotlamphl31_status ControlRelayK31.status -> PilotLampHL31.status
 
   layout schematic-sheet {
     place MainBreakerQF31 near MainPowerSupplyPS31

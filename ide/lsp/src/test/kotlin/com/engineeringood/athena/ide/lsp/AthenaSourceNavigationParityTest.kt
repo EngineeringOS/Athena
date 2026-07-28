@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DefinitionParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
@@ -41,7 +41,7 @@ class AthenaSourceNavigationParityTest {
 
             val children = systemSymbol.children
             assertEquals(
-                listOf("PLC1", "M1", "PLC1.out", "M1.in", "connect PLC1.out -> M1.in"),
+                    listOf("PLC1", "M1", "PLC1.out", "M1.in", "connect plc_to_motor PLC1.out -> M1.in"),
                 children.map { child -> child.name },
             )
             assertEquals(
@@ -61,8 +61,8 @@ class AthenaSourceNavigationParityTest {
     @Suppress("DEPRECATION")
     fun `definition and references resolve a device across authored source spans`() {
         withOpenedDemoCabinet { server, documentUri ->
-            // Cursor on the `PLC1` owner segment inside `connect PLC1.out -> M1.in` (0-based line 20).
-            val ownerReferencePosition = Position(20, 11)
+            // Cursor on the `PLC1` owner segment inside `connect plc_to_motor PLC1.out -> M1.in` (0-based line 20).
+            val ownerReferencePosition = Position(20, 24)
 
             val definitions = server.textDocumentService
                 .definition(DefinitionParams(TextDocumentIdentifier(documentUri), ownerReferencePosition))

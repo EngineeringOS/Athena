@@ -1,4 +1,4 @@
-package com.engineeringood.m28.sample
+﻿package com.engineeringood.m28.sample
 
 system RelationshipRejectionCandidates {
   device CandidateOutputModuleIOM28 {
@@ -46,8 +46,8 @@ system RelationshipRejectionCandidates {
     }
   }
 
-  connect CandidateOutputModuleIOM28.do1 -> CandidateTerminalXT28.in1
-  connect CandidateTerminalXT28.out1 -> CandidateMotorM28.u1
+  connect candidateoutputmoduleiom28_do1_to_candidateterminalxt28_in1 CandidateOutputModuleIOM28.do1 -> CandidateTerminalXT28.in1
+  connect candidateterminalxt28_out1_to_candidatemotorm28_u1 CandidateTerminalXT28.out1 -> CandidateMotorM28.u1
 
   layout schematic-sheet {
     place CandidateTerminalXT28 near CandidateOutputModuleIOM28

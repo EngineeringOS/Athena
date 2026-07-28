@@ -1,4 +1,4 @@
-system DummyProof {
+﻿system DummyProof {
   device G1 {
     domain "dummy-runtime"
     type Glyph
@@ -19,5 +19,5 @@ system DummyProof {
     tint Amber
   }
 
-  connect G1.emit -> P1.absorb
+  connect g1_emit_to_p1_absorb G1.emit -> P1.absorb
 }

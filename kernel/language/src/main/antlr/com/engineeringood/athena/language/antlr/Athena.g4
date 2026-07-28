@@ -7,10 +7,11 @@
  *
  * Scope includes M17 syntax plus M18 file-level package and import declarations, M23
  * system-scoped layout block grammar admission, M28 nested device-owned ports, and
- * compact grouped connect authoring, and M34 standalone typed Symbol/Element declarations:
+ * compact grouped connect authoring, M34 standalone typed Symbol/Element declarations, and
+ * M35 typed installation cabinet declarations:
  * system, package, import, device, port, connect, grouped connect, qualified names,
- * string literals, property assignments, layout place/align/group statements, and M34
- * symbol/element/profile/binding/resource declarations only.
+ * string literals, property assignments, layout place/align/group statements, M34
+ * symbol/element/profile/binding/resource declarations, and installation cabinet source only.
  * No expression / macro-use forms.
  */
 grammar Athena;
@@ -49,6 +50,7 @@ declaration
     | connectGroupDecl
     | connectDecl
     | layoutDecl
+    | installationDecl
     ;
 
 deviceDecl
@@ -158,6 +160,78 @@ layoutAxis
 
 groupStatement
     : GROUP ident GROUPED_WITH ident
+    ;
+
+installationDecl
+    : INSTALLATION CABINET ident LBRACE installationMember* RBRACE
+    ;
+
+installationMember
+    : enclosureDecl
+    | installationSurfaceDecl
+    | installationRailDecl
+    | installationDuctDecl
+    | installationChannelDecl
+    | installationTerminalGroupDecl
+    | installationMountDecl
+    | installationRouteDecl
+    ;
+
+enclosureDecl
+    : ENCLOSURE ident SIZE lengthTuple3
+    ;
+
+installationSurfaceDecl
+    : SURFACE ident IN ident AT lengthPoint SIZE lengthSize ACCEPTS identList
+    ;
+
+installationRailDecl
+    : RAIL ident ON ident AT lengthPoint LENGTH lengthLiteral ORIENTATION installationOrientation MOUNTING ident
+    ;
+
+installationDuctDecl
+    : DUCT ident IN ident AT lengthPoint SIZE lengthSize ORIENTATION installationOrientation WALL lengthLiteral
+    ;
+
+installationChannelDecl
+    : CHANNEL ident IN ident AT lengthPoint SIZE lengthSize LANES positiveInteger MARGIN lengthLiteral
+    ;
+
+installationTerminalGroupDecl
+    : TERMINAL_GROUP ident IN ident AT lengthPoint SIZE lengthSize ORIENTATION installationOrientation ACCEPTS identList
+    ;
+
+installationMountDecl
+    : MOUNT ident DEVICE ident ON ident AT lengthPoint ORIENTATION installationOrientation
+    ;
+
+installationRouteDecl
+    : ROUTE ident THROUGH identList
+    ;
+
+installationOrientation
+    : HORIZONTAL
+    | VERTICAL
+    ;
+
+identList
+    : LBRACK ident (COMMA ident)* RBRACK
+    ;
+
+lengthPoint
+    : LPAREN lengthLiteral COMMA lengthLiteral RPAREN
+    ;
+
+lengthSize
+    : LPAREN lengthLiteral COMMA lengthLiteral RPAREN
+    ;
+
+lengthTuple3
+    : LPAREN lengthLiteral COMMA lengthLiteral COMMA lengthLiteral RPAREN
+    ;
+
+lengthLiteral
+    : number MM
     ;
 
 symbolDecl
@@ -475,6 +549,23 @@ ident
     | HORIZONTAL
     | VERTICAL
     | GROUP
+    | INSTALLATION
+    | CABINET
+    | ENCLOSURE
+    | SURFACE
+    | RAIL
+    | DUCT
+    | CHANNEL
+    | TERMINAL_GROUP
+    | MOUNT
+    | ROUTE
+    | ON
+    | THROUGH
+    | LENGTH
+    | LANES
+    | MARGIN
+    | WALL
+    | MOUNTING
     | SYMBOL
     | ELEMENT
     | PROFILE
@@ -549,6 +640,23 @@ HORIZONTAL : 'horizontal' ;
 VERTICAL : 'vertical' ;
 GROUP : 'group' ;
 GROUPED_WITH : 'grouped-with' ;
+INSTALLATION : 'installation' ;
+CABINET : 'cabinet' ;
+ENCLOSURE : 'enclosure' ;
+SURFACE : 'surface' ;
+RAIL : 'rail' ;
+DUCT : 'duct' ;
+CHANNEL : 'channel' ;
+TERMINAL_GROUP : 'terminal-group' ;
+MOUNT : 'mount' ;
+ROUTE : 'route' ;
+ON : 'on' ;
+THROUGH : 'through' ;
+LENGTH : 'length' ;
+LANES : 'lanes' ;
+MARGIN : 'margin' ;
+WALL : 'wall' ;
+MOUNTING : 'mounting' ;
 SYMBOL : 'symbol' ;
 ELEMENT : 'element' ;
 PROFILE : 'profile' ;
@@ -602,12 +710,15 @@ OUT : 'out' ;
 BIDIRECTIONAL : 'bidirectional' ;
 LBRACE : '{' ;
 RBRACE : '}' ;
+LBRACK : '[' ;
+RBRACK : ']' ;
 LPAREN : '(' ;
 RPAREN : ')' ;
 COMMA : ',' ;
 DOT : '.' ;
 ARROW : '->' ;
 MINUS : '-' ;
+MM : 'mm' ;
 
 STRING
     : '"' (~["\r\n])* '"'

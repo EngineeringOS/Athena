@@ -75,37 +75,37 @@ class EngineeringIrValidatorTest {
                 DiagnosticExpectation(
                     ruleId = "reference.connection-endpoint.ambiguous",
                     category = SemanticDiagnosticCategory.REFERENCE,
-                    subjectIdentity = "connection:PLC1.out->PLC1.out",
+                    subjectIdentity = "connection:test:plc1_out_self",
                     provenance = duplicateSource(20, 11, 20, 19),
                 ),
                 DiagnosticExpectation(
                     ruleId = "reference.connection-endpoint.ambiguous",
                     category = SemanticDiagnosticCategory.REFERENCE,
-                    subjectIdentity = "connection:PLC1.out->PLC1.out",
+                    subjectIdentity = "connection:test:plc1_out_self",
                     provenance = duplicateSource(20, 23, 20, 31),
                 ),
                 DiagnosticExpectation(
                     ruleId = "reference.connection-endpoint.ambiguous",
                     category = SemanticDiagnosticCategory.REFERENCE,
-                    subjectIdentity = "connection:PLC1.out->PLC1.out#2",
+                    subjectIdentity = "connection:test:plc1_out_self_2",
                     provenance = duplicateSource(21, 11, 21, 19),
                 ),
                 DiagnosticExpectation(
                     ruleId = "reference.connection-endpoint.ambiguous",
                     category = SemanticDiagnosticCategory.REFERENCE,
-                    subjectIdentity = "connection:PLC1.out->PLC1.out#2",
+                    subjectIdentity = "connection:test:plc1_out_self_2",
                     provenance = duplicateSource(21, 23, 21, 31),
                 ),
                 DiagnosticExpectation(
                     ruleId = "uniqueness.connection.duplicate-authored-key",
                     category = SemanticDiagnosticCategory.UNIQUENESS,
-                    subjectIdentity = "connection:PLC1.out->PLC1.out",
+                    subjectIdentity = "connection:test:plc1_out_self",
                     provenance = duplicateSource(20, 3, 20, 31),
                 ),
                 DiagnosticExpectation(
                     ruleId = "uniqueness.connection.duplicate-authored-key",
                     category = SemanticDiagnosticCategory.UNIQUENESS,
-                    subjectIdentity = "connection:PLC1.out->PLC1.out#2",
+                    subjectIdentity = "connection:test:plc1_out_self_2",
                     provenance = duplicateSource(21, 3, 21, 31),
                 ),
             ),
@@ -189,7 +189,7 @@ class EngineeringIrValidatorTest {
             ),
             connections = listOf(
                 connection(
-                    id = "connection:PLC1.out->M1.in",
+                    id = "connection:test:plc1_out_to_m1_in",
                     fromPath = listOf("PLC1", "out"),
                     fromIdentity = "port:PLC1.out",
                     toPath = listOf("M1", "in"),
@@ -247,7 +247,7 @@ class EngineeringIrValidatorTest {
             ),
             connections = listOf(
                 connection(
-                    id = "connection:PLC1.out->PLC1.out",
+                    id = "connection:test:plc1_out_self",
                     fromPath = listOf("PLC1", "out"),
                     fromIdentity = null,
                     toPath = listOf("PLC1", "out"),
@@ -257,7 +257,7 @@ class EngineeringIrValidatorTest {
                     toProvenance = duplicateSource(20, 23, 20, 31),
                 ),
                 connection(
-                    id = "connection:PLC1.out->PLC1.out#2",
+                    id = "connection:test:plc1_out_self_2",
                     fromPath = listOf("PLC1", "out"),
                     fromIdentity = null,
                     toPath = listOf("PLC1", "out"),
@@ -353,7 +353,7 @@ class EngineeringIrValidatorTest {
             ),
             connections = listOf(
                 connection(
-                    id = "connection:PLC1.out->M1.out",
+                    id = "connection:test:plc1_out_to_m1_out",
                     fromPath = listOf("PLC1", "out"),
                     fromIdentity = "port:PLC1.out",
                     toPath = listOf("M1", "out"),
@@ -363,7 +363,7 @@ class EngineeringIrValidatorTest {
                     toProvenance = propertySource(26, 23, 26, 29),
                 ),
                 connection(
-                    id = "connection:PLC1.out->M2.in",
+                    id = "connection:test:plc1_out_to_m2_in",
                     fromPath = listOf("PLC1", "out"),
                     fromIdentity = "port:PLC1.out",
                     toPath = listOf("M2", "in"),

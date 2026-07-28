@@ -1,0 +1,233 @@
+package com.engineeringood.m35.standard.iec
+
+symbol power_source_symbol {
+  identity "iec.power-source.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 88, 72)
+    rectangle body at (12, 12) size (64, 48) style symbol
+    line lplus from (0, 24) to (12, 24) style conductor
+    line lminus from (0, 48) to (12, 48) style conductor
+    label deviceTag at (18, 20) size (52, 12) role device-tag style device-label
+    label modelTag at (18, 38) size (52, 12) role model-tag style device-label
+  }
+
+  anchor lplus {
+    primitiveRef lplus
+    point (0, 24)
+    role terminal
+    accepts direction out
+    accepts signal Power
+  }
+
+  anchor lminus {
+    primitiveRef lminus
+    point (0, 48)
+    role terminal
+    accepts direction out
+    accepts signal Power
+  }
+}
+
+element power_source_element {
+  identity "iec.power-source.element"
+  version "1.0.0"
+  bounds (0, 0, 88, 72)
+
+  child body {
+    symbol "iec.power-source.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor lplus from body.lplus
+  export anchor lminus from body.lminus
+  export label deviceTag from body.deviceTag
+  export label modelTag from body.modelTag
+}
+
+symbol breaker_symbol {
+  identity "iec.breaker.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 64, 96)
+    rectangle body at (10, 10) size (44, 76) style symbol
+    line line from (32, 0) to (32, 10) style conductor
+    line load from (32, 86) to (32, 96) style conductor
+    line blade from (24, 58) to (42, 34) style conductor
+    label deviceTag at (16, 18) size (32, 12) role device-tag style device-label
+    label modelTag at (16, 68) size (32, 12) role model-tag style device-label
+  }
+
+  anchor lineL {
+    primitiveRef line
+    point (32, 0)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor loadT {
+    primitiveRef load
+    point (32, 96)
+    role terminal
+    accepts direction out
+    accepts signal Power
+  }
+}
+
+element breaker_element {
+  identity "iec.breaker.element"
+  version "1.0.0"
+  bounds (0, 0, 64, 96)
+
+  child body {
+    symbol "iec.breaker.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor lineL from body.lineL
+  export anchor loadT from body.loadT
+  export label deviceTag from body.deviceTag
+  export label modelTag from body.modelTag
+}
+
+symbol relay_symbol {
+  identity "iec.relay.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 72, 96)
+    rectangle body at (12, 16) size (48, 64) style symbol
+    line a1 from (36, 0) to (36, 16) style conductor
+    line a2 from (36, 80) to (36, 96) style conductor
+    circle coil at (36, 48) radius 18 style symbol
+    label deviceTag at (18, 22) size (36, 12) role device-tag style device-label
+  }
+
+  anchor coilA1 {
+    primitiveRef a1
+    point (36, 0)
+    role terminal
+    accepts direction in
+    accepts signal Control
+  }
+
+  anchor coilA2 {
+    primitiveRef a2
+    point (36, 96)
+    role terminal
+    accepts direction out
+    accepts signal Control
+  }
+}
+
+element relay_element {
+  identity "iec.relay.element"
+  version "1.0.0"
+  bounds (0, 0, 72, 96)
+
+  child body {
+    symbol "iec.relay.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor coilA1 from body.coilA1
+  export anchor coilA2 from body.coilA2
+  export label deviceTag from body.deviceTag
+}
+
+symbol terminal_block_symbol {
+  identity "iec.terminal-block.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 96, 48)
+    rectangle body at (8, 8) size (80, 32) style symbol
+    line inLead from (0, 24) to (8, 24) style conductor
+    line outLead from (88, 24) to (96, 24) style conductor
+    label deviceTag at (16, 14) size (64, 12) role device-tag style device-label
+  }
+
+  anchor input {
+    primitiveRef inLead
+    point (0, 24)
+    role terminal
+    accepts direction in
+    accepts signal Control
+  }
+
+  anchor output {
+    primitiveRef outLead
+    point (96, 24)
+    role terminal
+    accepts direction out
+    accepts signal Control
+  }
+}
+
+element terminal_block_element {
+  identity "iec.terminal-block.element"
+  version "1.0.0"
+  bounds (0, 0, 96, 48)
+
+  child body {
+    symbol "iec.terminal-block.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor input from body.input
+  export anchor output from body.output
+  export label deviceTag from body.deviceTag
+}
+
+symbol protective_earth_symbol {
+  identity "iec.protective-earth.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 64, 64)
+    line stem from (32, 8) to (32, 36) style conductor
+    line bar_long from (16, 36) to (48, 36) style conductor
+    line bar_mid from (20, 44) to (44, 44) style conductor
+    line bar_short from (24, 52) to (40, 52) style conductor
+  }
+
+  anchor earth {
+    primitiveRef stem
+    point (32, 8)
+    role terminal
+    accepts direction in
+    accepts direction out
+    accepts signal Power
+  }
+}
+
+element protective_earth_element {
+  identity "iec.protective-earth.element"
+  version "1.0.0"
+  bounds (0, 0, 64, 64)
+
+  child earth {
+    symbol "iec.protective-earth.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  export anchor earth from earth.earth
+}

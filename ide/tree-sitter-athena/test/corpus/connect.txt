@@ -9,7 +9,7 @@ system Demo {
   port PLC1.out {
     direction out
   }
-  connect PLC1.out -> PLC1.out
+  connect plc_self PLC1.out -> PLC1.out
 }
 
 ---
@@ -33,6 +33,7 @@ system Demo {
           (identifier))))
     (declaration
       (connect_declaration
+        name: (name)
         from: (qualified_name
           (identifier)
           (identifier))
@@ -46,8 +47,8 @@ Grouped connect forms
 
 system Demo {
   connect control_feed {
-    PLC1.out -> M1.in
-    M1.feedback -> PLC1.feedback
+    motor_command PLC1.out -> M1.in
+    motor_feedback M1.feedback -> PLC1.feedback
   }
 }
 
@@ -60,6 +61,7 @@ system Demo {
       (connect_declaration
         name: (name)
         (connect_group_edge
+          name: (name)
           from: (qualified_name
             (identifier)
             (identifier))
@@ -67,6 +69,7 @@ system Demo {
             (identifier)
             (identifier)))
         (connect_group_edge
+          name: (name)
           from: (qualified_name
             (identifier)
             (identifier))

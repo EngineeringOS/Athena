@@ -1,4 +1,4 @@
-package com.engineeringood.m34.sample
+﻿package com.engineeringood.m34.sample
 
 system M34NativeCabinetProof {
   device MainPowerSupplyPS34 {
@@ -167,13 +167,13 @@ system M34NativeCabinetProof {
   }
 
   connect cabinet_control_chain {
-    MainPowerSupplyPS34.output -> MainBreakerQF34.line
-    MainBreakerQF34.load -> ControlRelayK34.supply
-    ControlRelayK34.output -> FieldTerminalXT34.field
-    FieldTerminalXT34.panel -> ShutterMotorM34.up
-    WallSwitchS34.up -> PilotLampHL34.status
-    WallSwitchS34.down -> SpareTerminalXT34.field
-    SpareTerminalXT34.panel -> ShutterMotorM34.down
+    mainpowersupplyps34_output_to_mainbreakerqf34_line MainPowerSupplyPS34.output -> MainBreakerQF34.line
+    mainbreakerqf34_load_to_controlrelayk34_supply MainBreakerQF34.load -> ControlRelayK34.supply
+    controlrelayk34_output_to_fieldterminalxt34_field ControlRelayK34.output -> FieldTerminalXT34.field
+    fieldterminalxt34_panel_to_shuttermotorm34_up FieldTerminalXT34.panel -> ShutterMotorM34.up
+    wallswitchs34_up_to_pilotlamphl34_status WallSwitchS34.up -> PilotLampHL34.status
+    wallswitchs34_down_to_spareterminalxt34_field WallSwitchS34.down -> SpareTerminalXT34.field
+    spareterminalxt34_panel_to_shuttermotorm34_down SpareTerminalXT34.panel -> ShutterMotorM34.down
   }
 
   layout cabinet {

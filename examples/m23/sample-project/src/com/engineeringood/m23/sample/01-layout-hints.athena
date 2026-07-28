@@ -1,4 +1,4 @@
-package com.engineeringood.m23.sample
+﻿package com.engineeringood.m23.sample
 
 system LayoutHintRoundTrip {
   device ControllerPLC1 {
@@ -46,9 +46,9 @@ system LayoutHintRoundTrip {
     signal Digital
   }
 
-  connect ControllerPLC1.command -> OperatorHMI1.status
-  connect ControllerPLC1.command -> TerminalBlockXT1.in
-  connect TerminalBlockXT1.out -> PrimaryLoadM1.in
+  connect controllerplc1_command_to_operatorhmi1_status ControllerPLC1.command -> OperatorHMI1.status
+  connect controllerplc1_command_to_terminalblockxt1_in ControllerPLC1.command -> TerminalBlockXT1.in
+  connect terminalblockxt1_out_to_primaryloadm1_in TerminalBlockXT1.out -> PrimaryLoadM1.in
 
   layout schematic-sheet {
     place OperatorHMI1 near ControllerPLC1

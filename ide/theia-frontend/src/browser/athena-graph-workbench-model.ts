@@ -143,9 +143,9 @@ export type AthenaGraphWorkbenchModel = {
 };
 
 export type AthenaGraphWorkbenchProductSurface = {
-    surfaceId: 'control-drawing';
-    displayName: 'Control Drawing';
-    description: 'Professional engineering control drawing';
+    surfaceId: 'control-drawing' | 'cabinet';
+    displayName: 'Control Drawing' | 'Cabinet';
+    description: string;
     backingViewId: string;
     backingFamilyId?: string;
     isActive: boolean;
@@ -154,25 +154,51 @@ export type AthenaGraphWorkbenchProductSurface = {
 export function resolveAthenaGraphPrimaryProductSurface(
     supportedViews: AthenaGraphWorkbenchModel['supportedViews'],
 ): AthenaGraphWorkbenchProductSurface | undefined {
-    const backingView = supportedViews.find(view => view.viewId === 'schematic');
-    if (!backingView) {
-        return undefined;
+    const controlDrawingView = supportedViews.find(view =>
+        view.viewId === 'schematic' && view.displayName === 'Control Drawing'
+    );
+    if (controlDrawingView) {
+        return {
+            surfaceId: 'control-drawing',
+            displayName: 'Control Drawing',
+            description: 'Professional engineering control drawing',
+            backingViewId: controlDrawingView.viewId,
+            backingFamilyId: controlDrawingView.familyId,
+            isActive: controlDrawingView.isActive,
+        };
     }
-    return {
-        surfaceId: 'control-drawing',
-        displayName: 'Control Drawing',
-        description: 'Professional engineering control drawing',
-        backingViewId: backingView.viewId,
-        backingFamilyId: backingView.familyId,
-        isActive: backingView.isActive,
-    };
+    const cabinetView = supportedViews.find(view => view.viewId === 'cabinet');
+    if (cabinetView) {
+        return {
+            surfaceId: 'cabinet',
+            displayName: 'Cabinet',
+            description: 'Physical installation Cabinet projection',
+            backingViewId: cabinetView.viewId,
+            backingFamilyId: cabinetView.familyId,
+            isActive: cabinetView.isActive,
+        };
+    }
+    return undefined;
 }
 
-export function requiresAthenaControlDrawingProductActivation(
-    supportedViews: ReadonlyArray<Pick<AthenaGraphWorkbenchModel['supportedViews'][number], 'viewId'>>,
+export function resolveAthenaGraphPrimaryProductActivationViewId(
+    supportedViews: ReadonlyArray<Pick<AthenaGraphWorkbenchModel['supportedViews'][number], 'viewId' | 'displayName'>>,
+    activeViewId: string | undefined,
+): string | undefined {
+    if (supportedViews.some(view => view.viewId === 'schematic' && view.displayName === 'Control Drawing')) {
+        return activeViewId === 'schematic' ? undefined : 'schematic';
+    }
+    if (supportedViews.some(view => view.viewId === 'cabinet')) {
+        return activeViewId === 'cabinet' ? undefined : 'cabinet';
+    }
+    return undefined;
+}
+
+export function requiresAthenaCabinetProductActivation(
+    supportedViews: ReadonlyArray<Pick<AthenaGraphWorkbenchModel['supportedViews'][number], 'viewId' | 'displayName'>>,
     activeViewId: string | undefined,
 ): boolean {
-    return supportedViews.some(view => view.viewId === 'schematic') && activeViewId !== 'schematic';
+    return resolveAthenaGraphPrimaryProductActivationViewId(supportedViews, activeViewId) === 'cabinet';
 }
 
 export type AthenaGraphSurfaceTokens = {

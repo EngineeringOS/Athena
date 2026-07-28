@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnostic
@@ -108,7 +108,7 @@ class AthenaDiagnosticsPublishingTest {
                         sourcePath.toUri().toString(),
                         "athena",
                         1,
-                        "system FactoryLine {\n  connect Motor1.out -> Missing.in\n}",
+                        "system FactoryLine {\n  connect motor1_out_to_missing_in Motor1.out -> Missing.in\n}",
                     ),
                 ),
             )
@@ -123,7 +123,7 @@ class AthenaDiagnosticsPublishingTest {
                     VersionedTextDocumentIdentifier(sourcePath.toUri().toString(), 2),
                     listOf(
                         TextDocumentContentChangeEvent(
-                            "system FactoryLine {\n  device Motor1 {\n    type Motor\n  }\n  device Missing {\n    type Motor\n  }\n  port Motor1.out {\n    direction out\n    signal Digital\n  }\n  port Missing.in {\n    direction in\n    signal Digital\n  }\n  connect Motor1.out -> Missing.in\n}",
+                            "system FactoryLine {\n  device Motor1 {\n    type Motor\n  }\n  device Missing {\n    type Motor\n  }\n  port Motor1.out {\n    direction out\n    signal Digital\n  }\n  port Missing.in {\n    direction in\n    signal Digital\n  }\n  connect motor1_out_to_missing_in_2 Motor1.out -> Missing.in\n}",
                         ),
                     ),
                 ),
@@ -825,7 +825,7 @@ class AthenaDiagnosticsPublishingTest {
             system Consumer {
               device Local {}
               port Local.in {}
-              connect Shared.out -> Local.in
+              connect shared_out_to_local_in Shared.out -> Local.in
             }
         """.trimIndent()
         try {

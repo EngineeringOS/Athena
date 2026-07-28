@@ -5,6 +5,7 @@ import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu
 import URI from '@theia/core/lib/common/uri';
 import { injectable, inject } from '@theia/core/shared/inversify';
 import { EditorManager } from '@theia/editor/lib/browser';
+import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { WorkspaceCommands } from '@theia/workspace/lib/browser/workspace-commands';
 import { AthenaGraphWorkbenchWidget } from './athena-graph-workbench-widget';
 import { AthenaHomeWidget } from './athena-home-widget';
@@ -25,6 +26,7 @@ declare global {
             revealOutlineForSource: (sourceUri: string) => Promise<AthenaOutlineSmokeProof>;
             openSourceEditorForSmoke: (sourceUri: string) => Promise<AthenaSourceEditorSmokeProof>;
             revealSourceLineForSmoke: (lineNumber: number) => Promise<void>;
+            collectGraphWorkbenchProof: () => Promise<AthenaGraphWorkbenchSmokeProof>;
         };
     }
 }
@@ -40,11 +42,24 @@ export interface AthenaSourceEditorSmokeProof {
     readonly widgetId: string;
     readonly resourceUri: string;
     readonly currentEditorWidgetId: string;
+    readonly problemMarkerCount: number;
+    readonly zeroProblemMarkerCount: boolean;
+    readonly problemMarkers: string[];
 }
 
-type AthenaOpenableEditorWidget = {
-    id?: string;
-};
+export interface AthenaGraphWorkbenchSmokeProof {
+    readonly available: boolean;
+    readonly hasDiagram: boolean;
+    readonly activeViewId: string;
+    readonly presentationGraphicOccurrenceCount: number;
+    readonly presentationConnectorCount: number;
+    readonly presentationOccurrenceCount: number;
+    readonly drawingCompositionPrimitiveCount: number;
+    readonly firstGraphicOccurrenceId: string;
+    readonly firstGraphicOccurrenceBounds?: unknown;
+    readonly canvasWidth: number;
+    readonly canvasHeight: number;
+}
 
 @injectable()
 export class AthenaProductContribution extends AbstractViewContribution<AthenaHomeWidget>
@@ -57,6 +72,9 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
 
     @inject(OpenerService)
     protected readonly openerService: OpenerService;
+
+    @inject(ProblemManager)
+    protected readonly problemManager: ProblemManager;
 
     constructor() {
         super({
@@ -102,7 +120,8 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
                 refreshProjectionView: () => this.refreshProjectionForSmoke(),
                 revealOutlineForSource: sourceUri => this.revealOutlineForSource(commands, sourceUri),
                 openSourceEditorForSmoke: sourceUri => this.openSourceEditorForSmoke(sourceUri),
-                revealSourceLineForSmoke: lineNumber => this.revealSourceLineForSmoke(lineNumber)
+                revealSourceLineForSmoke: lineNumber => this.revealSourceLineForSmoke(lineNumber),
+                collectGraphWorkbenchProof: () => this.collectGraphWorkbenchProofForSmoke()
             };
         }
     }
@@ -230,6 +249,44 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         return true;
     }
 
+    protected async collectGraphWorkbenchProofForSmoke(): Promise<AthenaGraphWorkbenchSmokeProof> {
+        const widget = this.shell.getWidgetById(AthenaGraphWorkbenchWidget.ID)
+            ?? await this.widgetManager.getOrCreateWidget(AthenaGraphWorkbenchWidget.ID);
+        const diagram = (widget as unknown as { diagram?: {
+            activeViewId?: string;
+            presentation?: {
+                canvasWidth?: number;
+                canvasHeight?: number;
+                graphicOccurrences?: Array<{ occurrenceId?: string; bounds?: unknown }>;
+                connectors?: unknown[];
+                occurrences?: unknown[];
+                drawingComposition?: { primitives?: unknown[] };
+            };
+        } }).diagram;
+        const presentation = diagram?.presentation;
+        return {
+            available: !!widget,
+            hasDiagram: !!diagram,
+            activeViewId: diagram?.activeViewId ?? '',
+            presentationGraphicOccurrenceCount: Array.isArray(presentation?.graphicOccurrences)
+                ? presentation.graphicOccurrences.length
+                : -1,
+            presentationConnectorCount: Array.isArray(presentation?.connectors)
+                ? presentation.connectors.length
+                : -1,
+            presentationOccurrenceCount: Array.isArray(presentation?.occurrences)
+                ? presentation.occurrences.length
+                : -1,
+            drawingCompositionPrimitiveCount: Array.isArray(presentation?.drawingComposition?.primitives)
+                ? presentation.drawingComposition.primitives.length
+                : -1,
+            firstGraphicOccurrenceId: presentation?.graphicOccurrences?.[0]?.occurrenceId ?? '',
+            firstGraphicOccurrenceBounds: presentation?.graphicOccurrences?.[0]?.bounds,
+            canvasWidth: presentation?.canvasWidth ?? 0,
+            canvasHeight: presentation?.canvasHeight ?? 0
+        };
+    }
+
     protected async revealOutlineForSource(
         commands: CommandRegistry,
         sourceUri: string
@@ -252,18 +309,29 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
     }
 
     protected async openSourceEditorForSmoke(sourceUri: string): Promise<AthenaSourceEditorSmokeProof> {
-        const widget = await open(this.openerService, new URI(sourceUri)) as AthenaOpenableEditorWidget | undefined;
-        if (widget?.id) {
-            await this.shell.activateWidget(widget.id).catch(() => undefined);
-        }
+        const uri = new URI(sourceUri);
+        await open(this.openerService, uri);
+        await new Promise(resolve => window.setTimeout(resolve, 500));
         const editorWidget = this.editorManager.currentEditor;
         if (editorWidget?.id) {
             await this.shell.activateWidget(editorWidget.id).catch(() => undefined);
         }
+        const problemMarkerCount = this.problemManager.findMarkers({ uri }).length;
+        const problemMarkers = this.problemManager.findMarkers({ uri })
+            .map(marker => {
+                const data = marker.data as { message?: string; code?: string | number; source?: string };
+                return [data.source, data.code, data.message]
+                    .filter(value => value !== undefined && value !== '')
+                    .join(' ');
+            })
+            .filter(Boolean);
         return {
-            widgetId: widget?.id ?? '',
+            widgetId: editorWidget?.id ?? '',
             resourceUri: editorWidget?.getResourceUri()?.toString() ?? '',
-            currentEditorWidgetId: editorWidget?.id ?? ''
+            currentEditorWidgetId: editorWidget?.id ?? '',
+            problemMarkerCount,
+            zeroProblemMarkerCount: problemMarkerCount === 0,
+            problemMarkers
         };
     }
 

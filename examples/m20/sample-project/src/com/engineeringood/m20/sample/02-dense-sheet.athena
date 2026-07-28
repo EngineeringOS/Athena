@@ -1,4 +1,4 @@
-package com.engineeringood.m20.sample
+﻿package com.engineeringood.m20.sample
 
 system DenseSheetShowcase {
   device DenseSW1 {
@@ -38,7 +38,7 @@ system DenseSheetShowcase {
     signal Control24V
   }
 
-  connect DenseSW1.out -> DenseM1.in
-  connect DenseSW1.out -> DenseM2.in
-  connect DenseSW1.out -> DenseL1.in
+  connect densesw1_out_to_densem1_in DenseSW1.out -> DenseM1.in
+  connect densesw1_out_to_densem2_in DenseSW1.out -> DenseM2.in
+  connect densesw1_out_to_densel1_in DenseSW1.out -> DenseL1.in
 }

@@ -73,7 +73,7 @@ class SemanticEntityAuthoringContractTest {
             ),
         )
         val impact = AuthoringDependencyImpact(
-            dependentRelationshipIds = listOf("connection:Relay.upOut->Motor.up"),
+            dependentRelationshipIds = listOf("connection:test:relay_up_out_to_motor_up"),
             projectionOccurrenceIds = listOf("occurrence:field:ShutterMotorM31"),
         )
         val diagnostic = AuthoringDiagnostic(

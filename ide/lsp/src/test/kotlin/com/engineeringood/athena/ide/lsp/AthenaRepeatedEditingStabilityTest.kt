@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DefinitionParams
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -26,7 +26,7 @@ class AthenaRepeatedEditingStabilityTest {
 
         val invalidOpenText = """
             system FactoryLine {
-              connect PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out PLC1.out -> PLC1.out
             }
         """.trimIndent()
         val validText = """
@@ -49,7 +49,7 @@ class AthenaRepeatedEditingStabilityTest {
                 signal Digital
               }
 
-              connect Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in Motor1.out -> Missing.in
             }
         """.trimIndent()
         val invalidChangedText = """
@@ -67,7 +67,7 @@ class AthenaRepeatedEditingStabilityTest {
                 signal Digital
               }
 
-              connect Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in_2 Motor1.out -> Missing.in
             }
         """.trimIndent()
 
@@ -106,7 +106,7 @@ class AthenaRepeatedEditingStabilityTest {
             val validDefinition = server.textDocumentService.definition(
                 DefinitionParams().apply {
                     textDocument = TextDocumentIdentifier(documentUri)
-                    position = Position(19, 17)
+                    position = validText.positionOf("Motor1.out")
                 },
             ).get()
             assertEquals(2, server.trackedDocument(documentUri)?.version)
@@ -124,7 +124,7 @@ class AthenaRepeatedEditingStabilityTest {
             val invalidDefinition = server.textDocumentService.definition(
                 DefinitionParams().apply {
                     textDocument = TextDocumentIdentifier(documentUri)
-                    position = Position(14, 17)
+                    position = invalidChangedText.positionOf("Motor1.out", "Motor1.".length)
                 },
             ).get()
             assertEquals(3, server.trackedDocument(documentUri)?.version)
@@ -149,7 +149,7 @@ class AthenaRepeatedEditingStabilityTest {
             val recoveredDefinition = server.textDocumentService.definition(
                 DefinitionParams().apply {
                     textDocument = TextDocumentIdentifier(documentUri)
-                    position = Position(19, 17)
+                    position = validText.positionOf("Motor1.out")
                 },
             ).get()
             assertEquals(4, server.trackedDocument(documentUri)?.version)
@@ -160,5 +160,15 @@ class AthenaRepeatedEditingStabilityTest {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
         }
+    }
+
+    private fun String.positionOf(token: String, offsetInToken: Int = 0): Position {
+        val offset = indexOf(token)
+        require(offset >= 0) { "Token `$token` not found." }
+        val adjustedOffset = offset + offsetInToken
+        val before = substring(0, adjustedOffset)
+        val line = before.count { it == '\n' }
+        val character = adjustedOffset - before.lastIndexOf('\n') - 1
+        return Position(line, character)
     }
 }

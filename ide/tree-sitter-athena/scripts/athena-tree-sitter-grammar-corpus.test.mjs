@@ -27,9 +27,11 @@ const M18_SYNTAX_FIXTURE_NAMES = [
 ];
 const M23_LAYOUT_FIXTURE_NAMES = [
     'invalid-file-global-layout',
+    'invalid-installation-kind',
     'invalid-layout-bad-axis',
     'invalid-layout-malformed-place',
     'invalid-layout-missing-target',
+    'valid-installation-cabinet',
     'valid-layout-block',
 ];
 

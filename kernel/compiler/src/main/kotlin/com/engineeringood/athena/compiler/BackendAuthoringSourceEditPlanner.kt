@@ -21,6 +21,7 @@ data class BackendAuthoringSourceDocument(
     val sourceUri: String,
     val documentVersion: Int,
     val semanticSnapshotId: String,
+    val sourceUnitId: String = sourceUri,
     val sourceText: String,
     val ast: SourceFileAst,
 ) {
@@ -182,11 +183,16 @@ class BackendAuthoringSourceEditPlanner(
                 ),
             )
         }
-        val semanticId = "connection:${request.sourceAuthoredPath}->${request.targetAuthoredPath}"
+        val alias = uniqueConnectionAlias(
+            sourceAuthoredPath = request.sourceAuthoredPath,
+            targetAuthoredPath = request.targetAuthoredPath,
+            ast = request.document.ast,
+        )
+        val semanticId = "connection:${request.document.sourceUnitId.toPortableSourceUnitId()}:$alias"
         return planned(
             request = request,
             insertionOffset = insertionOffset,
-            admittedText = "\n\n  connect ${request.sourceAuthoredPath} -> ${request.targetAuthoredPath}\n",
+            admittedText = "\n\n  connect $alias ${request.sourceAuthoredPath} -> ${request.targetAuthoredPath}\n",
             affectedSemanticIds = listOf(semanticId),
         )
     }
@@ -256,6 +262,33 @@ class BackendAuthoringSourceEditPlanner(
         if (base !in existing) return base
         return generateSequence(2) { ordinal -> ordinal + 1 }
             .map { ordinal -> "$base$ordinal" }
+            .first { candidate -> candidate !in existing }
+    }
+
+    private fun uniqueConnectionAlias(
+        sourceAuthoredPath: String,
+        targetAuthoredPath: String,
+        ast: SourceFileAst,
+    ): String {
+        val existing = ast.declarations.flatMap { declaration ->
+            when (declaration) {
+                is com.engineeringood.athena.language.ConnectionDeclaration -> listOf(declaration.alias)
+                is com.engineeringood.athena.language.ConnectionGroupDeclaration -> {
+                    declaration.connections.map { connection -> connection.alias }
+                }
+                else -> emptyList()
+            }
+        }.toSet()
+        val base = "${sourceAuthoredPath}_to_${targetAuthoredPath}"
+            .replace(Regex("[^A-Za-z0-9_]"), "_")
+            .replace(Regex("_+"), "_")
+            .trim('_')
+            .lowercase()
+            .ifBlank { "connection" }
+            .let { value -> if (value.first().isLetter()) value else "connection_$value" }
+        if (base !in existing) return base
+        return generateSequence(2) { ordinal -> ordinal + 1 }
+            .map { ordinal -> "${base}_$ordinal" }
             .first { candidate -> candidate !in existing }
     }
 
@@ -330,4 +363,17 @@ class BackendAuthoringSourceEditPlanner(
     private fun EngineeringConceptPortDirection.render(): String = name.lowercase()
 
     private fun String.escapeAthenaString(): String = replace("\\", "\\\\").replace("\"", "\\\"")
+}
+
+private fun String.toPortableSourceUnitId(): String {
+    val normalized = replace('\\', '/')
+    val examplesIndex = normalized.indexOf("/examples/")
+    if (examplesIndex >= 0) {
+        return normalized.substring(examplesIndex + 1)
+    }
+    val srcIndex = normalized.indexOf("/src/")
+    if (srcIndex >= 0) {
+        return normalized.substring(srcIndex + 1)
+    }
+    return normalized
 }

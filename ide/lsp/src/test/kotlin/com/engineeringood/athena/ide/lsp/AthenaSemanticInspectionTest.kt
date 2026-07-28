@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
@@ -25,7 +25,7 @@ class AthenaSemanticInspectionTest {
 
         val invalidText = """
             system FactoryLine {
-              connect Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in Motor1.out -> Missing.in
             }
         """.trimIndent()
         val validText = """
@@ -48,7 +48,7 @@ class AthenaSemanticInspectionTest {
                 signal Digital
               }
 
-              connect Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in_2 Motor1.out -> Missing.in
             }
         """.trimIndent()
 
@@ -124,7 +124,7 @@ class AthenaSemanticInspectionTest {
             assertEquals(
                 Range(
                     org.eclipse.lsp4j.Position(19, 2),
-                    org.eclipse.lsp4j.Position(19, 34),
+                    org.eclipse.lsp4j.Position(19, 61),
                 ),
                 validInspection.connections.single().sourceRange,
             )
@@ -158,7 +158,7 @@ class AthenaSemanticInspectionTest {
               }
 
               connect control_group {
-                PLC1.out -> M1.in
+                plc1_out_to_m1_in PLC1.out -> M1.in
               }
             }
         """.trimIndent()

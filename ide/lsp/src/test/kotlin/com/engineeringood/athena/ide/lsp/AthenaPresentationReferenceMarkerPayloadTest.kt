@@ -26,8 +26,8 @@ class AthenaPresentationReferenceMarkerPayloadTest {
             selectedSheetViewId = SheetViewId("sheet-view:control-and-plc-logic"),
             sourceOccurrenceId = DocumentOccurrenceId("occurrence:route:control"),
             targetOccurrenceId = DocumentOccurrenceId("occurrence:route:field"),
-            sourceIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1"),
-            targetIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1"),
+            sourceIdentity = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1"),
+            targetIdentity = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1"),
             sourceDocumentLocation = DocumentLocation(
                 sheetViewId = SheetViewId("sheet-view:control-and-plc-logic"),
                 zoneId = LogicalZoneId("A1"),
@@ -52,8 +52,8 @@ class AthenaPresentationReferenceMarkerPayloadTest {
         assertEquals("sheet-view:control-and-plc-logic", markerPayload.selectedSheetViewId)
         assertEquals("occurrence:route:control", markerPayload.sourceOccurrenceId)
         assertEquals("occurrence:route:field", markerPayload.targetOccurrenceId)
-        assertEquals("connection:PLC1.Q0.0->XT1.1", markerPayload.sourceIdentity)
-        assertEquals("connection:PLC1.Q0.0->XT1.1", markerPayload.targetIdentity)
+        assertEquals("connection:test:plc1_q0_0_to_xt1_1", markerPayload.sourceIdentity)
+        assertEquals("connection:test:plc1_q0_0_to_xt1_1", markerPayload.targetIdentity)
         assertEquals("sheet-view:field-wiring-and-terminal-transition B2", markerPayload.compactNotation)
         assertEquals(listOf("cross-reference:route-1"), markerPayload.sourceProjectionIds)
     }

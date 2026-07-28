@@ -152,6 +152,7 @@ internal object AthenaSymbolSourceLowerer {
         if (svg.diagnostics.isNotEmpty()) return AthenaRepresentationLoweringResult(null, svg.diagnostics)
         val graphicBody = requireNotNull(svg.document)
         val bounds = requireNotNull(graphicBody.bounds)
+        val anchorPrimitiveId = graphicBody.primitives.firstOrNull()?.primitiveId
         val definition = RepresentationDefinition(
             symbolId = RepresentationSymbolId(identity),
             libraryId = libraryId,
@@ -167,7 +168,7 @@ internal object AthenaSymbolSourceLowerer {
             bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.SYMBOL,
             graphicBody = graphicBody,
-            anchors = emptyList(),
+            anchors = symbol.anchors.map { anchor -> anchor.toRepresentationAnchor(anchorPrimitiveId) },
         )
         val diagnostics = validateLoweredSvg(file, symbol.span, definition, graphicBody).canonicalRepresentationDiagnostics()
         return AthenaRepresentationLoweringResult(definition.takeIf { diagnostics.isEmpty() }, diagnostics)
@@ -271,9 +272,11 @@ private fun positiveAxisBounds(
     return start to size
 }
 
-private fun SymbolAnchorDeclaration.toRepresentationAnchor(): RepresentationAnchorContract = RepresentationAnchorContract(
+private fun SymbolAnchorDeclaration.toRepresentationAnchor(
+    primitiveOverride: GraphicPrimitiveId? = null,
+): RepresentationAnchorContract = RepresentationAnchorContract(
     anchorId = RepresentationAnchorId(id),
-    primitiveId = GraphicPrimitiveId(requireNotNull(primitiveRef).value),
+    primitiveId = primitiveOverride ?: GraphicPrimitiveId(requireNotNull(primitiveRef).value),
     point = requireNotNull(point).let { value -> GraphicPoint(value.x, value.y) },
     role = requireNotNull(requireNotNull(role).value.toAnchorRole()),
     required = true,

@@ -1,4 +1,4 @@
-package com.engineeringood.athena.runtime
+﻿package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import java.nio.file.Files
@@ -69,7 +69,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in PLC1.out -> M1.in
                     }
                 """.trimIndent(),
             )
@@ -81,15 +81,16 @@ class AthenaSourceMutationRuntimeServiceTest {
             )
 
             val accepted = assertIs<AthenaSourceMutationAccepted>(result)
+            val expectedConnectionId = "connection:$sourcePath:plc1_out_to_m1_in"
             assertEquals("connectable", accepted.projectName)
             assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, accepted.mutationCategory)
             assertEquals(AthenaMutationOutcome.ACCEPTED, accepted.outcome)
             assertTrue(accepted.validationFeedback.isEmpty())
             assertTrue(accepted.beforeDocument.connections.isEmpty())
             assertEquals(1, accepted.afterDocument.connections.size)
-            assertContains(accepted.changedSemanticIds, "connection:PLC1.out->M1.in")
+            assertContains(accepted.changedSemanticIds, expectedConnectionId)
             assertEquals(AthenaSemanticDiffInspectionSource.SOURCE, accepted.inspection.source)
-            assertContains(accepted.inspection.affectedSemanticIds, "connection:PLC1.out->M1.in")
+            assertContains(accepted.inspection.affectedSemanticIds, expectedConnectionId)
             assertEquals(
                 listOf(
                     AthenaProjectionRefreshConsequenceLayer.GEOMETRY,
@@ -161,7 +162,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in_2 PLC1.out -> M1.in
                     }
                 """.trimIndent(),
             )
@@ -173,6 +174,7 @@ class AthenaSourceMutationRuntimeServiceTest {
             )
 
             val validationFeedback = assertIs<AthenaSourceMutationValidationFeedbackResult>(result)
+            val expectedConnectionId = "connection:$sourcePath:plc1_out_to_m1_in_2"
             assertEquals("connectable", validationFeedback.projectName)
             assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, validationFeedback.mutationCategory)
             assertEquals(AthenaMutationOutcome.VALIDATION_FEEDBACK, validationFeedback.outcome)
@@ -180,7 +182,7 @@ class AthenaSourceMutationRuntimeServiceTest {
             assertTrue(validationFeedback.validationFeedback.all { feedback -> feedback.code.isNotBlank() })
             assertContains(
                 validationFeedback.validationFeedback.flatMap { feedback -> feedback.relatedSemanticIds },
-                "connection:PLC1.out->M1.in",
+                expectedConnectionId,
             )
             assertSame(canonicalCompilation, context.compileActiveProject())
             assertTrue(assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document.connections.isEmpty())
@@ -248,7 +250,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in_3 PLC1.out -> M1.in
                     }
                 """.trimIndent(),
             )
@@ -280,7 +282,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                     signal Digital
                   }
 
-                  connect PLC1.out -> Missing.in
+                  connect plc1_out_to_missing_in PLC1.out -> Missing.in
                 }
             """.trimIndent(),
         )
@@ -316,7 +318,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in_4 PLC1.out -> M1.in
                     }
                 """.trimIndent(),
             )

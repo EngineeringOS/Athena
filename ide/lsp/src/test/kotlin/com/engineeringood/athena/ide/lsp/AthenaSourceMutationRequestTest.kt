@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -94,14 +94,15 @@ class AthenaSourceMutationRequestTest {
                     ).get(),
                 )
                 assertEquals(documentUri, payload.uri)
+                val expectedConnectionId = "connection:src/com/engineeringood/factoryline/demo-cabinet.athena:plc1_out_to_m1_in_2"
                 assertEquals(2, payload.version)
                 assertEquals("semantic-mutation", payload.mutationCategory)
                 assertEquals("accepted", payload.outcome)
-                assertContains(payload.changedSemanticIds, "connection:PLC1.out->M1.in")
+                assertContains(payload.changedSemanticIds, expectedConnectionId)
                 assertTrue(payload.validationFeedback.isEmpty())
                 val inspection = assertNotNull(payload.inspection)
                 assertEquals("source", inspection.source)
-                assertContains(inspection.affectedSemanticIds, "connection:PLC1.out->M1.in")
+                assertContains(inspection.affectedSemanticIds, expectedConnectionId)
                 val semanticReview = assertNotNull(payload.semanticReview)
                 assertEquals(1, semanticReview.authoredChangeCount)
                 assertTrue(semanticReview.reviewSummary.entryCount > 0)
@@ -161,7 +162,7 @@ class AthenaSourceMutationRequestTest {
                                         signal Digital
                                       }
 
-                                      connect PLC1.out -> M1.in
+                                      connect plc1_out_to_m1_in PLC1.out -> M1.in
                                     }
                                 """.trimIndent(),
                             ),
@@ -177,13 +178,14 @@ class AthenaSourceMutationRequestTest {
                     ).get(),
                 )
                 assertEquals(documentUri, payload.uri)
+                val expectedConnectionId = "connection:src/com/engineeringood/factoryline/demo-cabinet.athena:plc1_out_to_m1_in"
                 assertEquals(2, payload.version)
                 assertEquals("validation-feedback", payload.outcome)
                 assertTrue(payload.validationFeedback.isNotEmpty())
                 assertTrue(payload.validationFeedback.all { feedback -> feedback.code.isNotBlank() })
                 assertContains(
                     payload.validationFeedback.flatMap { feedback -> feedback.relatedSemanticIds },
-                    "connection:PLC1.out->M1.in",
+                    expectedConnectionId,
                 )
             } finally {
                 server.shutdown().get()
@@ -366,7 +368,7 @@ private val sourceMutationDemoCabinetSource = """
         signal Digital
       }
 
-      connect PLC1.out -> M1.in
+      connect plc1_out_to_m1_in_2 PLC1.out -> M1.in
     }
 """.trimIndent()
 

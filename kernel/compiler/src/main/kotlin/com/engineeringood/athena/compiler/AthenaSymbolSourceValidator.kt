@@ -70,6 +70,8 @@ internal object AthenaSymbolSourceValidator {
                     "Symbol graphic must choose either native primitives or one SVG reference.",
                 )
             }
+            val authoredAnchorRefs = symbol.anchors.mapNotNull { anchor -> anchor.primitiveRef?.value }.toSet()
+            symbol.anchors.forEach { anchor -> validateAnchor(file, anchor, null, authoredAnchorRefs) }
             return@buildList
         }
         val bounds = graphic.bounds

@@ -198,9 +198,7 @@ internal object AthenaProfileBindingSourceValidator {
         identities: List<RepresentationIdentityOccurrence>,
     ) {
         val subject = "binding.${binding.name}.target.element"
-        val candidates = identities.filter { candidate ->
-            candidate.libraryId == occurrence.libraryId && candidate.identity == identity
-        }
+        val candidates = identities.filter { candidate -> candidate.identity == identity }
         when {
             candidates.isEmpty() -> add(
                 representationDiagnostic(
@@ -208,7 +206,16 @@ internal object AthenaProfileBindingSourceValidator {
                     occurrence.file,
                     requireNotNull(binding.useElement).span,
                     subject,
-                    "Representation Binding target `$identity` must resolve to a package-local Element.",
+                    "Representation Binding target `$identity` must resolve to exactly one compiled Element in the package graph.",
+                ),
+            )
+            candidates.size > 1 -> add(
+                representationDiagnostic(
+                    "binding.target.element.ambiguous",
+                    occurrence.file,
+                    requireNotNull(binding.useElement).span,
+                    subject,
+                    "Representation Binding target `$identity` resolves to multiple package graph declarations.",
                 ),
             )
             candidates.size == 1 && candidates.single().declaration !is ElementDeclaration -> add(

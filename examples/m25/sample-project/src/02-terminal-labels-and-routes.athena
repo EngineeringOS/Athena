@@ -1,4 +1,4 @@
-package com.engineeringood.m25.sample
+﻿package com.engineeringood.m25.sample
 
 system TerminalLabelsAndRoutes {
   device ControllerPLC2 {
@@ -51,9 +51,9 @@ system TerminalLabelsAndRoutes {
     signal Digital
   }
 
-  connect ControllerPLC2.do1 -> TerminalStripXT2.in1
-  connect TerminalStripXT2.out1 -> MotorM2.start
-  connect ControllerPLC2.status -> OperatorHMI2.statusIn
+  connect controllerplc2_do1_to_terminalstripxt2_in1 ControllerPLC2.do1 -> TerminalStripXT2.in1
+  connect terminalstripxt2_out1_to_motorm2_start TerminalStripXT2.out1 -> MotorM2.start
+  connect controllerplc2_status_to_operatorhmi2_statusin ControllerPLC2.status -> OperatorHMI2.statusIn
 
   layout schematic-sheet {
     place TerminalStripXT2 below ControllerPLC2

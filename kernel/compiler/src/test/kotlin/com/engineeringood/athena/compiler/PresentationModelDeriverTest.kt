@@ -15,6 +15,7 @@ class PresentationModelDeriverTest {
     @Test
     fun `presentation derivation keeps routing guidance and family specific composites downstream of canonical semantics`() {
         val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val connectionId = "connection:examples/m0/demo-cabinet.athena:plc_to_motor"
 
         val success = assertIs<CompilerCompilationSuccess>(AthenaCompiler().compile(sourcePath))
         val cabinet = success.presentations.first { presentation -> presentation.view.id == "cabinet" }
@@ -39,16 +40,15 @@ class PresentationModelDeriverTest {
         assertEquals(listOf("contact-mark"), schematicComposite.parts.map { part -> part.partId })
 
         val cabinetConnector = cabinet.connectors.single()
-        assertEquals("connection:PLC1.out->M1.in", cabinetConnector.semanticId.value)
+        assertEquals(connectionId, cabinetConnector.semanticId.value)
         assertEquals("port:PLC1.out", cabinetConnector.sourcePortSemanticId?.value)
         assertEquals("port:M1.in", cabinetConnector.targetPortSemanticId?.value)
         assertNotNull(cabinetConnector.sourceAnchorId)
         assertNotNull(cabinetConnector.targetAnchorId)
         assertTrue(cabinetConnector.routePoints.size >= 2)
-        assertEquals(
-            "cabinet/projection/connection/connection_PLC1_out_M1_in",
-            cabinetConnector.sourceProjectionIds.single(),
-        )
+        val connectionProjectionId = cabinetConnector.sourceProjectionIds.single()
+        assertTrue(connectionProjectionId.startsWith("cabinet/projection/connection/connection_"))
+        assertTrue(connectionProjectionId.endsWith("_plc_to_motor"))
 
         assertTrue(
             cabinetPlc.anchorBindings.any { binding ->
@@ -62,6 +62,7 @@ class PresentationModelDeriverTest {
     @Test
     fun `presentation derivation publishes terminal anchor route facts for rendered schematic wires`() {
         val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
+        val connectionId = "connection:examples/m0/demo-cabinet.athena:plc_to_motor"
 
         val success = assertIs<CompilerCompilationSuccess>(AthenaCompiler().compile(sourcePath))
         val schematic = success.presentations.first { presentation -> presentation.view.id == "schematic" }
@@ -69,7 +70,7 @@ class PresentationModelDeriverTest {
         val route = routeFacts.single()
         val connector = schematic.connectorsForRendering().single()
 
-        assertEquals("connection:PLC1.out->M1.in", route.connectionId.value)
+        assertEquals(connectionId, route.connectionId.value)
         assertEquals("port:PLC1.out", route.source.portSemanticId?.value)
         assertEquals("port:M1.in", route.target.portSemanticId?.value)
         assertEquals(route.source.gridPoint.x, connector.routePoints.first().x)

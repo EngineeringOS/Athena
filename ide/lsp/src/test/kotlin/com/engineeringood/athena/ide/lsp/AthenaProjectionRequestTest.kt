@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.layout.ProjectionInteractivity
@@ -240,6 +240,7 @@ class AthenaProjectionRequestTest {
             sourceText = demoCabinetSource,
         )
         val repositoryRoot = repository.repositoryRoot
+        val connectionId = "connection:src/com/engineeringood/factoryline/demo-cabinet.athena:plc1_out_to_m1_in_2"
         try {
             AthenaCompiler().materializeRepositoryLock(repositoryRoot)
 
@@ -298,7 +299,7 @@ class AthenaProjectionRequestTest {
                             subjectSemanticIds = listOf(
                                 "component:M1",
                                 "component:PLC1",
-                                "connection:PLC1.out->M1.in",
+                                connectionId,
                                 "port:M1.in",
                                 "port:PLC1.out",
                             ),
@@ -353,7 +354,7 @@ class AthenaProjectionRequestTest {
                                 subjectSemanticIds = listOf(
                                     "component:M1",
                                     "component:PLC1",
-                                    "connection:PLC1.out->M1.in",
+                                    connectionId,
                                     "port:M1.in",
                                     "port:PLC1.out",
                                 ),
@@ -362,7 +363,7 @@ class AthenaProjectionRequestTest {
                         subjectSemanticIds = listOf(
                             "component:M1",
                             "component:PLC1",
-                            "connection:PLC1.out->M1.in",
+                            connectionId,
                             "port:M1.in",
                             "port:PLC1.out",
                         ),
@@ -394,7 +395,7 @@ class AthenaProjectionRequestTest {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-projection-session-m31-sheet-policy-",
             sourceFileName = "demo-cabinet.athena",
-            sourceText = demoCabinetSource,
+            sourceText = m31SheetPolicySource,
         )
         val repositoryRoot = repository.repositoryRoot
         try {
@@ -631,7 +632,7 @@ class AthenaProjectionRequestTest {
                                         signal Digital
                                       }
 
-                                      connect PLC1.out -> M1.in
+                                      connect plc1_out_to_m1_in PLC1.out -> M1.in
                                     }
                                 """.trimIndent(),
                             ),
@@ -686,6 +687,7 @@ class AthenaProjectionRequestTest {
             sourceText = demoCabinetSource,
         )
         val repositoryRoot = repository.repositoryRoot
+        val connectionId = "connection:src/com/engineeringood/factoryline/demo-cabinet.athena:plc1_out_to_m1_in_2"
         try {
             AthenaCompiler().materializeRepositoryLock(repositoryRoot)
 
@@ -785,7 +787,7 @@ class AthenaProjectionRequestTest {
                 assertEquals("cabinet/sheet/01-main", readyProjection.activeSheetId)
                 assertEquals(listOf("cabinet/sheet/01-main"), readyProjection.sheets.map { sheet -> sheet.sheetId })
                 assertEquals(
-                    listOf("component:M1", "component:PLC1", "connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
+                    listOf("component:M1", "component:PLC1", connectionId, "port:M1.in", "port:PLC1.out"),
                     readyProjection.sheets.single().subjectSemanticIds,
                 )
                 assertEquals(
@@ -1138,7 +1140,7 @@ class AthenaProjectionRequestTest {
                 signal Digital
               }
 
-              connect PLC2.out -> M2.in
+              connect plc2_out_to_m2_in PLC2.out -> M2.in
             }
         """.trimIndent()
         val layoutSourcePath = repository.sourceRoot.resolve("com/engineeringood/factoryline/02-layout-intelligence-acceptance.athena")
@@ -1208,7 +1210,32 @@ private val demoCabinetSource = """
         signal Digital
       }
 
-      connect PLC1.out -> M1.in
+      connect plc1_out_to_m1_in_2 PLC1.out -> M1.in
+    }
+""".trimIndent()
+
+private val m31SheetPolicySource = """
+    system DemoCabinet {
+      device PLC1 {
+        type Switch
+        model "S7-1200"
+      }
+
+      device M1 {
+        type Motor
+      }
+
+      port PLC1.do {
+        direction out
+        signal Digital
+      }
+
+      port M1.in {
+        direction in
+        signal Digital
+      }
+
+      connect plc1_do_to_m1_in PLC1.do -> M1.in
     }
 """.trimIndent()
 

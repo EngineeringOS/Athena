@@ -422,6 +422,125 @@ data class LayoutDeclaration(
     override val span: SourceSpan,
 ) : Declaration
 
+/** Syntax node for an authored `installation cabinet` declaration inside a system block. */
+data class InstallationDeclaration(
+    val name: String,
+    val kind: InstallationKind,
+    val enclosures: List<InstallationEnclosureDeclaration>,
+    val surfaces: List<InstallationSurfaceDeclaration>,
+    val rails: List<InstallationRailDeclaration>,
+    val ducts: List<InstallationDuctDeclaration>,
+    val channels: List<InstallationChannelDeclaration>,
+    val terminalGroups: List<InstallationTerminalGroupDeclaration>,
+    val mounts: List<InstallationMountDeclaration>,
+    val routes: List<InstallationRouteDeclaration>,
+    override val span: SourceSpan,
+) : Declaration
+
+enum class InstallationKind {
+    Cabinet,
+}
+
+enum class InstallationOrientation {
+    Horizontal,
+    Vertical,
+}
+
+data class InstallationLengthLiteral(
+    val value: Double,
+    val unit: String,
+    val span: SourceSpan,
+)
+
+data class InstallationPointLiteral(
+    val x: InstallationLengthLiteral,
+    val y: InstallationLengthLiteral,
+    val span: SourceSpan,
+)
+
+data class InstallationSizeLiteral(
+    val width: InstallationLengthLiteral,
+    val height: InstallationLengthLiteral,
+    val span: SourceSpan,
+)
+
+data class InstallationSize3Literal(
+    val width: InstallationLengthLiteral,
+    val height: InstallationLengthLiteral,
+    val depth: InstallationLengthLiteral,
+    val span: SourceSpan,
+)
+
+data class InstallationEnclosureDeclaration(
+    val id: String,
+    val size: InstallationSize3Literal,
+    val span: SourceSpan,
+)
+
+data class InstallationSurfaceDeclaration(
+    val id: String,
+    val enclosureId: String,
+    val at: InstallationPointLiteral,
+    val size: InstallationSizeLiteral,
+    val acceptedMountingTypes: List<String>,
+    val span: SourceSpan,
+)
+
+data class InstallationRailDeclaration(
+    val id: String,
+    val surfaceId: String,
+    val at: InstallationPointLiteral,
+    val length: InstallationLengthLiteral,
+    val orientation: InstallationOrientation,
+    val mountingType: String,
+    val span: SourceSpan,
+)
+
+data class InstallationDuctDeclaration(
+    val id: String,
+    val enclosureId: String,
+    val at: InstallationPointLiteral,
+    val size: InstallationSizeLiteral,
+    val orientation: InstallationOrientation,
+    val wall: InstallationLengthLiteral,
+    val span: SourceSpan,
+)
+
+data class InstallationChannelDeclaration(
+    val id: String,
+    val ductId: String,
+    val at: InstallationPointLiteral,
+    val size: InstallationSizeLiteral,
+    val lanes: Int,
+    val margin: InstallationLengthLiteral,
+    val span: SourceSpan,
+)
+
+data class InstallationTerminalGroupDeclaration(
+    val id: String,
+    val enclosureId: String,
+    val at: InstallationPointLiteral,
+    val size: InstallationSizeLiteral,
+    val orientation: InstallationOrientation,
+    val acceptedMountingTypes: List<String>,
+    val span: SourceSpan,
+)
+
+data class InstallationMountDeclaration(
+    val id: String,
+    val deviceId: String,
+    val targetId: String,
+    val at: InstallationPointLiteral,
+    val orientation: InstallationOrientation,
+    val span: SourceSpan,
+)
+
+data class InstallationRouteDeclaration(
+    val connectionAlias: String,
+    val channelIds: List<String>,
+    val span: SourceSpan,
+)
+
 /** Syntax-only authored statements inside a [LayoutDeclaration]. */
 sealed interface LayoutStatement {
     val span: SourceSpan

@@ -1,8 +1,10 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.CompletionParams
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
+import org.eclipse.lsp4j.DocumentFormattingParams
 import org.eclipse.lsp4j.DefinitionParams
+import org.eclipse.lsp4j.FormattingOptions
 import org.eclipse.lsp4j.DocumentSymbolParams
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.ReferenceContext
@@ -41,7 +43,7 @@ class AthenaAuthoringSupportTest {
               }
 
               con
-              connect PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out PLC1.out -> PLC1.out
             }
         """.trimIndent()
         val validSourceText = """
@@ -55,7 +57,7 @@ class AthenaAuthoringSupportTest {
                 signal Digital
               }
 
-              connect PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out_2 PLC1.out -> PLC1.out
             }
         """.trimIndent()
         sourcePath.writeText(governedAthenaSource(validSourceText))
@@ -101,12 +103,12 @@ class AthenaAuthoringSupportTest {
             ).get()
             val systemSymbol = symbols.single().right
             assertEquals("FactoryLine", systemSymbol.name)
-            assertEquals(listOf("PLC1", "PLC1.out", "connect PLC1.out -> PLC1.out"), systemSymbol.children.map { child -> child.name })
+            assertEquals(listOf("PLC1", "PLC1.out", "connect plc1_out_to_plc1_out_2 PLC1.out -> PLC1.out"), systemSymbol.children.map { child -> child.name })
 
             val definition = server.textDocumentService.definition(
                 DefinitionParams().apply {
                     textDocument = TextDocumentIdentifier(documentUri)
-                    position = Position(10, 17)
+                    position = Position(10, 40)
                 },
             ).get()
             val definitionRange = definition.left.single().range
@@ -115,7 +117,7 @@ class AthenaAuthoringSupportTest {
             val references = server.textDocumentService.references(
                 ReferenceParams().apply {
                     textDocument = TextDocumentIdentifier(documentUri)
-                    position = Position(10, 17)
+                    position = Position(10, 40)
                     context = ReferenceContext(true)
                 },
             ).get()
@@ -215,7 +217,7 @@ class AthenaAuthoringSupportTest {
               }
 
               connect control_feed {
-                PLC1.out -> M1.in
+                plc1_out_to_m1_in PLC1.out -> M1.in
               }
             }
         """.trimIndent()
@@ -250,7 +252,7 @@ class AthenaAuthoringSupportTest {
             assertEquals(SymbolKind.Module, groupSymbol.kind)
             assertEquals("connect group", groupSymbol.detail)
             assertEquals(
-                listOf("PLC1.out -> M1.in"),
+                listOf("plc1_out_to_m1_in PLC1.out -> M1.in"),
                 groupSymbol.children.map { child -> child.name },
             )
             assertEquals("connect edge", groupSymbol.children.single().detail)
@@ -360,6 +362,174 @@ class AthenaAuthoringSupportTest {
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `cabinet installation source exposes outline and semantic tokens without diagnostics`() {
+        val packageName = "com.engineeringood.m35.installation"
+        val rawSource = """
+            system Demo {
+              device QF1 {
+                type Breaker
+              }
+              device M1 {
+                type Motor
+              }
+              port QF1.line {
+                direction out
+              }
+              port M1.line {
+                direction in
+              }
+              connect feeder QF1.line -> M1.line
+
+              installation cabinet MainCabinet {
+                enclosure ENC1 size (800mm, 600mm, 250mm)
+                surface Backplate in ENC1 at (20mm, 20mm) size (760mm, 560mm) accepts [din35, screw]
+                rail DIN1 on Backplate at (60mm, 120mm) length 680mm orientation horizontal mounting din35
+                duct D1 in ENC1 at (30mm, 60mm) size (40mm, 480mm) orientation vertical wall 2mm
+                channel C1 in D1 at (4mm, 8mm) size (32mm, 464mm) lanes 4 margin 2mm
+                terminal-group XT1 in ENC1 at (560mm, 420mm) size (160mm, 80mm) orientation horizontal accepts [terminal]
+                mount QF1Mount device QF1 on DIN1 at (0mm, 0mm) orientation horizontal
+                mount M1Mount device M1 on DIN1 at (100mm, 0mm) orientation horizontal
+                route feeder through [C1]
+              }
+            }
+        """.trimIndent()
+        val sourceText = governedAthenaSource(rawSource, packageName)
+        val repository = createGovernedTestRepository(
+            prefix = "athena-lsp-m35-installation-",
+            packageName = packageName,
+            sourceFileName = "installation.athena",
+            sourceText = sourceText,
+        )
+        val server = AthenaLanguageServer()
+        val client = AthenaRecordingLanguageClient()
+        server.connect(client)
+        try {
+            server.initialize(org.eclipse.lsp4j.InitializeParams().apply {
+                rootUri = repository.repositoryRoot.toUri().toString()
+            }).get()
+            val documentUri = repository.seedSourcePath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(TextDocumentItem(documentUri, "athena", 1, sourceText)),
+            )
+
+            val diagnostics = client.publishedDiagnostics.last().diagnostics
+            assertEquals(
+                0,
+                diagnostics.size,
+                diagnostics.joinToString("\n") { diagnostic ->
+                    "${diagnostic.code?.left ?: "<no-code>"}: ${diagnostic.message}"
+                },
+            )
+
+            val symbols = server.textDocumentService.documentSymbol(
+                DocumentSymbolParams(TextDocumentIdentifier(documentUri)),
+            ).get()
+            val installation = symbols.single().right.children.single().children.single { child ->
+                child.name == "MainCabinet"
+            }
+            assertEquals(SymbolKind.Module, installation.kind)
+            assertEquals("installation cabinet", installation.detail)
+            assertEquals(
+                listOf(
+                    "enclosure ENC1",
+                    "surface Backplate",
+                    "rail DIN1",
+                    "duct D1",
+                    "channel C1",
+                    "terminal-group XT1",
+                    "mount QF1Mount",
+                    "mount M1Mount",
+                    "route feeder",
+                ),
+                installation.children.map { child -> child.name },
+            )
+
+            val semanticTokens = server.textDocumentService.semanticTokensFull(
+                SemanticTokensParams(TextDocumentIdentifier(documentUri)),
+            ).get()
+            val installationTokens = sourceText.semanticTokenTexts(
+                encodedTokens = semanticTokens.data,
+                tokenType = athenaSemanticTokenTypes.indexOf("athenaLayoutKeyword"),
+            )
+            assertTrue(
+                installationTokens.containsAll(
+                    listOf(
+                        "installation",
+                        "cabinet",
+                        "enclosure",
+                        "surface",
+                        "rail",
+                        "duct",
+                        "channel",
+                        "terminal-group",
+                        "mount",
+                        "route",
+                        "through",
+                    ),
+                ),
+                installationTokens.toString(),
+            )
+
+            val formatted = server.textDocumentService.formatting(
+                DocumentFormattingParams(TextDocumentIdentifier(documentUri), FormattingOptions()),
+            ).get().single().newText
+            assertEquals(
+                """
+                package com.engineeringood.m35.installation
+
+                system Demo {
+                  device QF1 {
+                    type Breaker
+                  }
+
+                  device M1 {
+                    type Motor
+                  }
+
+                  port QF1.line {
+                    direction out
+                  }
+
+                  port M1.line {
+                    direction in
+                  }
+
+                  connect feeder QF1.line -> M1.line
+
+                  installation cabinet MainCabinet {
+                    enclosure ENC1 size (800mm, 600mm, 250mm)
+                    surface Backplate in ENC1 at (20mm, 20mm) size (760mm, 560mm) accepts [din35, screw]
+                    rail DIN1 on Backplate at (60mm, 120mm) length 680mm orientation horizontal mounting din35
+                    duct D1 in ENC1 at (30mm, 60mm) size (40mm, 480mm) orientation vertical wall 2mm
+                    channel C1 in D1 at (4mm, 8mm) size (32mm, 464mm) lanes 4 margin 2mm
+                    terminal-group XT1 in ENC1 at (560mm, 420mm) size (160mm, 80mm) orientation horizontal accepts [terminal]
+                    mount QF1Mount device QF1 on DIN1 at (0mm, 0mm) orientation horizontal
+                    mount M1Mount device M1 on DIN1 at (100mm, 0mm) orientation horizontal
+                    route feeder through [C1]
+                  }
+                }
+                """.trimIndent() + "\n",
+                formatted,
+            )
+
+            server.textDocumentService.didChange(
+                DidChangeTextDocumentParams().apply {
+                    textDocument = VersionedTextDocumentIdentifier(documentUri, 2)
+                    contentChanges = listOf(TextDocumentContentChangeEvent(formatted))
+                },
+            )
+            val secondFormat = server.textDocumentService.formatting(
+                DocumentFormattingParams(TextDocumentIdentifier(documentUri), FormattingOptions()),
+            ).get().single().newText
+            assertEquals(formatted, secondFormat)
+        } finally {
+            server.shutdown().get()
+            repository.repositoryRoot.toFile().deleteRecursively()
         }
     }
 }

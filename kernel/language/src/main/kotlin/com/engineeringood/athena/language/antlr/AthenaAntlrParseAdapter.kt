@@ -14,6 +14,21 @@ import com.engineeringood.athena.language.EngineeringFunctionDeclaration
 import com.engineeringood.athena.language.BindingDeclaration
 import com.engineeringood.athena.language.BindingSelectorKind
 import com.engineeringood.athena.language.ImportDeclaration
+import com.engineeringood.athena.language.InstallationChannelDeclaration
+import com.engineeringood.athena.language.InstallationDeclaration
+import com.engineeringood.athena.language.InstallationDuctDeclaration
+import com.engineeringood.athena.language.InstallationEnclosureDeclaration
+import com.engineeringood.athena.language.InstallationKind
+import com.engineeringood.athena.language.InstallationLengthLiteral
+import com.engineeringood.athena.language.InstallationMountDeclaration
+import com.engineeringood.athena.language.InstallationOrientation
+import com.engineeringood.athena.language.InstallationPointLiteral
+import com.engineeringood.athena.language.InstallationRailDeclaration
+import com.engineeringood.athena.language.InstallationRouteDeclaration
+import com.engineeringood.athena.language.InstallationSize3Literal
+import com.engineeringood.athena.language.InstallationSizeLiteral
+import com.engineeringood.athena.language.InstallationSurfaceDeclaration
+import com.engineeringood.athena.language.InstallationTerminalGroupDeclaration
 import com.engineeringood.athena.language.LayoutAxis
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.LayoutOrientation
@@ -316,12 +331,13 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         context.connectGroupDecl()?.let { return adaptConnectGroup(it) }
         context.connectDecl()?.let { return adaptConnect(it) }
         context.layoutDecl()?.let { return adaptLayout(it) }
+        context.installationDecl()?.let { return adaptInstallation(it) }
         throw AthenaAntlrAdapterFailure(
             SyntaxDiagnostic(
                 file = file,
                 line = context.start.line,
                 column = context.start.charPositionInLine + 1,
-                message = "Expected 'device', 'port', 'connect', or 'layout'",
+                message = "Expected 'device', 'port', 'connect', 'layout', or 'installation'",
                 span = spanOfContext(context.start, context.stop),
             ),
         )
@@ -552,6 +568,185 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             span = spanOfContext(context.start, context.stop),
         )
     }
+
+    private fun adaptInstallation(context: AthenaParser.InstallationDeclContext): InstallationDeclaration {
+        val members = context.installationMember()
+        val enclosures = members.mapNotNull { it.enclosureDecl()?.let(::adaptInstallationEnclosure) }
+        val surfaces = members.mapNotNull { it.installationSurfaceDecl()?.let(::adaptInstallationSurface) }
+        val rails = members.mapNotNull { it.installationRailDecl()?.let(::adaptInstallationRail) }
+        val ducts = members.mapNotNull { it.installationDuctDecl()?.let(::adaptInstallationDuct) }
+        val channels = members.mapNotNull { it.installationChannelDecl()?.let(::adaptInstallationChannel) }
+        val terminalGroups = members.mapNotNull {
+            it.installationTerminalGroupDecl()?.let(::adaptInstallationTerminalGroup)
+        }
+        val mounts = members.mapNotNull { it.installationMountDecl()?.let(::adaptInstallationMount) }
+        rejectDuplicateInstallationMemberIds(
+            enclosures.map { it.id to it.span } +
+                surfaces.map { it.id to it.span } +
+                rails.map { it.id to it.span } +
+                ducts.map { it.id to it.span } +
+                channels.map { it.id to it.span } +
+                terminalGroups.map { it.id to it.span } +
+                mounts.map { it.id to it.span },
+        )
+        return InstallationDeclaration(
+            name = context.ident().text,
+            kind = InstallationKind.Cabinet,
+            enclosures = enclosures,
+            surfaces = surfaces,
+            rails = rails,
+            ducts = ducts,
+            channels = channels,
+            terminalGroups = terminalGroups,
+            mounts = mounts,
+            routes = members.mapNotNull { it.installationRouteDecl()?.let(::adaptInstallationRoute) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun rejectDuplicateInstallationMemberIds(ids: List<Pair<String, SourceSpan>>) {
+        val seen = mutableSetOf<String>()
+        ids.forEach { (id, span) ->
+            if (!seen.add(id)) {
+                throw AthenaAntlrAdapterFailure(
+                    SyntaxDiagnostic(
+                        file = file,
+                        line = span.start.line,
+                        column = span.start.column,
+                        message = "Duplicate installation member id '$id'",
+                        span = span,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun adaptInstallationEnclosure(context: AthenaParser.EnclosureDeclContext): InstallationEnclosureDeclaration =
+        InstallationEnclosureDeclaration(
+            id = context.ident().text,
+            size = adaptLengthTuple3(context.lengthTuple3()),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationSurface(context: AthenaParser.InstallationSurfaceDeclContext): InstallationSurfaceDeclaration =
+        InstallationSurfaceDeclaration(
+            id = context.ident(0).text,
+            enclosureId = context.ident(1).text,
+            at = adaptLengthPoint(context.lengthPoint()),
+            size = adaptLengthSize(context.lengthSize()),
+            acceptedMountingTypes = adaptIdentList(context.identList()),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationRail(context: AthenaParser.InstallationRailDeclContext): InstallationRailDeclaration =
+        InstallationRailDeclaration(
+            id = context.ident(0).text,
+            surfaceId = context.ident(1).text,
+            at = adaptLengthPoint(context.lengthPoint()),
+            length = adaptLength(context.lengthLiteral()),
+            orientation = adaptInstallationOrientation(context.installationOrientation()),
+            mountingType = context.ident(2).text,
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationDuct(context: AthenaParser.InstallationDuctDeclContext): InstallationDuctDeclaration =
+        InstallationDuctDeclaration(
+            id = context.ident(0).text,
+            enclosureId = context.ident(1).text,
+            at = adaptLengthPoint(context.lengthPoint()),
+            size = adaptLengthSize(context.lengthSize()),
+            orientation = adaptInstallationOrientation(context.installationOrientation()),
+            wall = adaptLength(context.lengthLiteral()),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationChannel(context: AthenaParser.InstallationChannelDeclContext): InstallationChannelDeclaration =
+        InstallationChannelDeclaration(
+            id = context.ident(0).text,
+            ductId = context.ident(1).text,
+            at = adaptLengthPoint(context.lengthPoint()),
+            size = adaptLengthSize(context.lengthSize()),
+            lanes = context.positiveInteger().text.toInt(),
+            margin = adaptLength(context.lengthLiteral()),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationTerminalGroup(
+        context: AthenaParser.InstallationTerminalGroupDeclContext,
+    ): InstallationTerminalGroupDeclaration =
+        InstallationTerminalGroupDeclaration(
+            id = context.ident(0).text,
+            enclosureId = context.ident(1).text,
+            at = adaptLengthPoint(context.lengthPoint()),
+            size = adaptLengthSize(context.lengthSize()),
+            orientation = adaptInstallationOrientation(context.installationOrientation()),
+            acceptedMountingTypes = adaptIdentList(context.identList()),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationMount(context: AthenaParser.InstallationMountDeclContext): InstallationMountDeclaration =
+        InstallationMountDeclaration(
+            id = context.ident(0).text,
+            deviceId = context.ident(1).text,
+            targetId = context.ident(2).text,
+            at = adaptLengthPoint(context.lengthPoint()),
+            orientation = adaptInstallationOrientation(context.installationOrientation()),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationRoute(context: AthenaParser.InstallationRouteDeclContext): InstallationRouteDeclaration =
+        InstallationRouteDeclaration(
+            connectionAlias = context.ident().text,
+            channelIds = adaptIdentList(context.identList()),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptInstallationOrientation(context: AthenaParser.InstallationOrientationContext): InstallationOrientation =
+        when (context.text) {
+            "horizontal" -> InstallationOrientation.Horizontal
+            "vertical" -> InstallationOrientation.Vertical
+            else -> throw AthenaAntlrAdapterFailure(
+                SyntaxDiagnostic(
+                    file = file,
+                    line = context.start.line,
+                    column = context.start.charPositionInLine + 1,
+                    message = "Expected installation orientation 'horizontal' or 'vertical'",
+                    span = spanOfContext(context.start, context.stop),
+                ),
+            )
+        }
+
+    private fun adaptIdentList(context: AthenaParser.IdentListContext): List<String> =
+        context.ident().map { it.text }
+
+    private fun adaptLengthPoint(context: AthenaParser.LengthPointContext): InstallationPointLiteral =
+        InstallationPointLiteral(
+            x = adaptLength(context.lengthLiteral(0)),
+            y = adaptLength(context.lengthLiteral(1)),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptLengthSize(context: AthenaParser.LengthSizeContext): InstallationSizeLiteral =
+        InstallationSizeLiteral(
+            width = adaptLength(context.lengthLiteral(0)),
+            height = adaptLength(context.lengthLiteral(1)),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptLengthTuple3(context: AthenaParser.LengthTuple3Context): InstallationSize3Literal =
+        InstallationSize3Literal(
+            width = adaptLength(context.lengthLiteral(0)),
+            height = adaptLength(context.lengthLiteral(1)),
+            depth = adaptLength(context.lengthLiteral(2)),
+            span = spanOfContext(context.start, context.stop),
+        )
+
+    private fun adaptLength(context: AthenaParser.LengthLiteralContext): InstallationLengthLiteral =
+        InstallationLengthLiteral(
+            value = adaptNumber(context.number()),
+            unit = context.MM().text,
+            span = spanOfContext(context.start, context.stop),
+        )
 
     private fun adaptSymbol(context: AthenaParser.SymbolDeclContext): SymbolDeclaration {
         val members = context.symbolMember()

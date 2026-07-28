@@ -161,7 +161,7 @@ class SemanticRelationshipCompatibilityValidatorTest {
 
     private fun connection(source: String, target: String): EngineeringConnection {
         return EngineeringConnection(
-            id = StableSemanticIdentity("connection:$source->$target"),
+            id = StableSemanticIdentity("connection:test:${source.aliasPart()}_to_${target.aliasPart()}"),
             from = EngineeringReference(listOf("source"), StableSemanticIdentity(source), provenance()),
             to = EngineeringReference(listOf("target"), StableSemanticIdentity(target), provenance()),
             provenance = provenance(),
@@ -197,4 +197,9 @@ class SemanticRelationshipCompatibilityValidatorTest {
         endLine = 1,
         endColumn = 1,
     )
+
+    private fun String.aliasPart(): String =
+        removePrefix("port:")
+            .replace(".", "_")
+            .lowercase()
 }

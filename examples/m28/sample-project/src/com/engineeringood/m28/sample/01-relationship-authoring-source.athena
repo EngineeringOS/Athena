@@ -1,4 +1,4 @@
-package com.engineeringood.m28.sample
+﻿package com.engineeringood.m28.sample
 
 system RelationshipAuthoringProof {
   device MainPowerSupplyPS1 {
@@ -66,9 +66,9 @@ system RelationshipAuthoringProof {
     }
   }
 
-  connect MainPowerSupplyPS1.lplus -> MainBreakerQF1.line
-  connect MainBreakerQF1.load -> ControllerPLC1.power
-  connect ControllerPLC1.do1 -> OperatorHMI1.status
+  connect mainpowersupplyps1_lplus_to_mainbreakerqf1_line MainPowerSupplyPS1.lplus -> MainBreakerQF1.line
+  connect mainbreakerqf1_load_to_controllerplc1_power MainBreakerQF1.load -> ControllerPLC1.power
+  connect controllerplc1_do1_to_operatorhmi1_status ControllerPLC1.do1 -> OperatorHMI1.status
 
   layout schematic-sheet {
     place MainBreakerQF1 near MainPowerSupplyPS1

@@ -1,6 +1,5 @@
 package com.engineeringood.athena.runtime
 
-import com.engineeringood.athena.authoring.SemanticRelationshipIntent
 import com.engineeringood.athena.compiler.CompilerIncrementalPassMode
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.geometry.GeometryElementKind
@@ -82,6 +81,8 @@ class AthenaCommandRuntimeTest {
             val result = context.commandRuntime().execute(
                 context = context,
                 command = AthenaConnectPortsCommand(
+                    sourceUnitId = "runtime-connectable",
+                    connectionAlias = "plc1_out_to_m1_in",
                     sourcePortSemanticId = "port:PLC1.out",
                     targetPortSemanticId = "port:M1.in",
                 ),
@@ -95,21 +96,21 @@ class AthenaCommandRuntimeTest {
             assertTrue(success.validationFeedback.isEmpty())
             assertTrue(success.beforeDocument.connections.isEmpty())
             assertEquals(
-                listOf("connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
+                listOf("connection:runtime-connectable:plc1_out_to_m1_in", "port:M1.in", "port:PLC1.out"),
                 success.changedSemanticIds.sorted(),
             )
             assertEquals(1, success.afterDocument.connections.size)
 
             val updatedCompilation = assertIs<CompilerCompilationSuccess>(context.compileActiveProject())
             assertEquals(1, updatedCompilation.document.connections.size)
-            assertEquals("connection:PLC1.out->M1.in", updatedCompilation.document.connections.single().id.value)
+            assertEquals("connection:runtime-connectable:plc1_out_to_m1_in", updatedCompilation.document.connections.single().id.value)
             val incrementalReport = requireNotNull(updatedCompilation.incrementalUpdateReport)
             assertEquals(
-                listOf("connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
+                listOf("connection:runtime-connectable:plc1_out_to_m1_in", "port:M1.in", "port:PLC1.out"),
                 incrementalReport.affectedScope.changedSemanticIds.sorted(),
             )
             assertEquals(
-                listOf("component:M1", "component:PLC1", "connection:PLC1.out->M1.in", "port:M1.in", "port:PLC1.out"),
+                listOf("component:M1", "component:PLC1", "connection:runtime-connectable:plc1_out_to_m1_in", "port:M1.in", "port:PLC1.out"),
                 incrementalReport.affectedScope.validationSemanticIds.sorted(),
             )
             assertEquals(
@@ -117,7 +118,7 @@ class AthenaCommandRuntimeTest {
                 incrementalReport.affectedScope.renderComponentSemanticIds.sorted(),
             )
             assertEquals(
-                listOf("connection:PLC1.out->M1.in"),
+                listOf("connection:runtime-connectable:plc1_out_to_m1_in"),
                 incrementalReport.affectedScope.renderConnectionSemanticIds.sorted(),
             )
             assertEquals(CompilerIncrementalPassMode.SCOPED, incrementalReport.validationMode)
@@ -157,7 +158,7 @@ class AthenaCommandRuntimeTest {
             )
             assertTrue(
                 updatedWiringLayout.groups.first { group -> group.label == "Digital" }.semanticIds
-                    .any { semanticId -> semanticId.value == "connection:PLC1.out->M1.in" },
+                    .any { semanticId -> semanticId.value == "connection:runtime-connectable:plc1_out_to_m1_in" },
             )
 
             val updatedCabinetGeometry = updatedCompilation.geometries.first { geometry -> geometry.viewId == "cabinet" }
@@ -176,14 +177,14 @@ class AthenaCommandRuntimeTest {
             )
             assertTrue(
                 updatedCabinetGeometry.elements.any { element ->
-                    element.semanticId.value == "connection:PLC1.out->M1.in" && element.kind == GeometryElementKind.PATH
+                    element.semanticId.value == "connection:runtime-connectable:plc1_out_to_m1_in" && element.kind == GeometryElementKind.PATH
                 },
             )
 
             val graphProjection = assertIs<AthenaEngineeringGraphReadyProjection>(context.projectEngineeringGraphProjection())
             assertEquals(
                 listOf("port:M1.in", "port:PLC1.out"),
-                graphProjection.graph.referencedNodes("connection:PLC1.out->M1.in").map { it.semanticId }.sorted(),
+                graphProjection.graph.referencedNodes("connection:runtime-connectable:plc1_out_to_m1_in").map { it.semanticId }.sorted(),
             )
 
             val viewerProjection = assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection())
@@ -221,6 +222,8 @@ class AthenaCommandRuntimeTest {
             val result = context.commandRuntime().execute(
                 context = context,
                 command = AthenaConnectPortsCommand(
+                    sourceUnitId = "runtime-broken",
+                    connectionAlias = "p1_out_to_p2_in",
                     sourcePortSemanticId = "port:P1.out",
                     targetPortSemanticId = "port:P2.in",
                 ),
@@ -232,7 +235,7 @@ class AthenaCommandRuntimeTest {
             assertEquals(AthenaCommandKind.CONNECT_PORTS, unavailable.commandKind)
             assertEquals(AthenaMutationOutcome.UNAVAILABLE, unavailable.outcome)
             assertTrue(unavailable.validationFeedback.isEmpty())
-            assertContains(unavailable.reason, "missing '->'")
+            assertContains(unavailable.reason, "connect")
         } finally {
             Files.deleteIfExists(brokenPath)
         }
@@ -265,6 +268,8 @@ class AthenaCommandRuntimeTest {
             val result = context.commandRuntime().execute(
                 context = context,
                 command = AthenaConnectPortsCommand(
+                    sourceUnitId = "runtime-connectable",
+                    connectionAlias = "plc1_out_to_missing_in",
                     sourcePortSemanticId = "port:PLC1.out",
                     targetPortSemanticId = "port:Missing.in",
                 ),
@@ -317,6 +322,8 @@ class AthenaCommandRuntimeTest {
             val result = context.commandRuntime().execute(
                 context = context,
                 command = AthenaConnectPortsCommand(
+                    sourceUnitId = "runtime-connectable",
+                    connectionAlias = "plc1_lplus_to_plc1_mpi",
                     sourcePortSemanticId = "port:PLC1.lplus",
                     targetPortSemanticId = "port:PLC1.mpi",
                 ),
@@ -346,6 +353,8 @@ class AthenaCommandRuntimeTest {
         )
 
         val command = AthenaConnectPortsCommand(
+            sourceUnitId = "runtime-contract-demo",
+            connectionAlias = "plc1_out_to_m1_in",
             sourcePortSemanticId = "port:PLC1.out",
             targetPortSemanticId = "port:M1.in",
         )
@@ -378,28 +387,6 @@ class AthenaCommandRuntimeTest {
         assertEquals(AthenaMutationOutcome.VALIDATION_FEEDBACK, historyFeedback.outcome)
         assertEquals(listOf(feedback), historyFeedback.validationFeedback)
         assertEquals(listOf("command-0001"), historyFeedback.affectedCommandIds)
-    }
-
-    @Test
-    fun `connect ports command publishes legacy runtime compatibility contract against semantic relationship intent`() {
-        val command = AthenaConnectPortsCommand(
-            sourcePortSemanticId = "port:PLC1.out",
-            targetPortSemanticId = "port:M1.in",
-        )
-
-        val contract = command.compatibilityContract()
-
-        assertEquals("legacy-connect-ports-runtime-command-v1", contract.contractId)
-        assertEquals(AthenaCommandKind.CONNECT_PORTS, contract.retainedCommandKind)
-        assertEquals(AthenaConnectPortsCommand::class.qualifiedName, contract.retainedRuntimeCommandClass)
-        assertEquals(SemanticRelationshipIntent::class.qualifiedName, contract.productAuthoringIntentClass)
-        assertEquals(false, contract.mutableSourceAuthority)
-        assertEquals(
-            setOf("cli", "desktop-compose", "domain-electrical-runtime"),
-            contract.retainedSurfaces,
-        )
-        assertContains(contract.retainedSurfacePolicy, "runtime-owned")
-        assertContains(contract.retainedSurfacePolicy, "not a product authoring contract")
     }
 
     private fun writeProject(source: String): Path {

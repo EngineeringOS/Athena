@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import java.nio.file.Files
@@ -778,7 +778,7 @@ class AthenaAuthoringRequestTest {
                     edit = sourceEdit,
                 )
                 assertTrue(updatedSource.contains("port PLC2.out"))
-                assertTrue(updatedSource.contains("connect PLC2.out -> M1.in"))
+                assertTrue(updatedSource.contains("connect plc1_out_to_m1_in_6 PLC2.out -> M1.in"))
                 server.textDocumentService.didChange(
                     DidChangeTextDocumentParams().apply {
                         textDocument = VersionedTextDocumentIdentifier(documentUri, 2)
@@ -905,6 +905,7 @@ class AthenaAuthoringRequestTest {
                 ).get()
 
                 val documentUri = repository.seedSourcePath.toUri().toString()
+                val expectedConnectionId = "connection:src/com/engineeringood/factoryline/factoryline.athena:plc1_out_to_m1_in"
                 server.textDocumentService.didOpen(
                     DidOpenTextDocumentParams(
                         TextDocumentItem(
@@ -942,15 +943,15 @@ class AthenaAuthoringRequestTest {
 
                 val sourceEdit = assertNotNull(decision.sourceEdit)
                 assertEquals(documentUri, sourceEdit.uri)
-                assertTrue(sourceEdit.newText.contains("connect PLC1.out -> M1.in"))
-                assertEquals("connection:PLC1.out->M1.in", sourceEdit.suggestedSemanticId)
+                assertTrue(sourceEdit.newText.contains("connect plc1_out_to_m1_in PLC1.out -> M1.in"))
+                assertEquals(expectedConnectionId, sourceEdit.suggestedSemanticId)
                 assertNotNull(sourceEdit.revisionGuard)
 
                 val updatedSource = applySourceEdit(
                     source = authoringConnectSource,
                     edit = sourceEdit,
                 )
-                assertTrue(updatedSource.contains("connect PLC1.out -> M1.in"))
+                assertTrue(updatedSource.contains("connect plc1_out_to_m1_in PLC1.out -> M1.in"))
                 server.textDocumentService.didChange(
                     DidChangeTextDocumentParams().apply {
                         textDocument = VersionedTextDocumentIdentifier(documentUri, 2)
@@ -967,7 +968,10 @@ class AthenaAuthoringRequestTest {
                 )
                 assertEquals("ready", inspection.status)
                 assertEquals(1, inspection.connectionCount)
-                assertTrue(inspection.connections.any { connection -> connection.semanticId == "connection:PLC1.out->M1.in" })
+                assertTrue(
+                    inspection.connections.any { connection -> connection.semanticId == expectedConnectionId },
+                    "Actual semantic ids: ${inspection.connections.map { connection -> connection.semanticId }}",
+                )
             } finally {
                 server.shutdown().get()
             }
@@ -996,6 +1000,7 @@ class AthenaAuthoringRequestTest {
                 ).get()
 
                 val documentUri = repository.seedSourcePath.toUri().toString()
+                val expectedConnectionId = "connection:src/com/engineeringood/factoryline/factoryline.athena:plc1_out_to_m1_in"
                 server.textDocumentService.didOpen(
                     DidOpenTextDocumentParams(
                         TextDocumentItem(
@@ -1027,7 +1032,7 @@ class AthenaAuthoringRequestTest {
                 assertEquals("port:M1.in", relationshipEvidence.targetSubjectId)
                 assertEquals("ElectricalConnectionRelationship", relationshipEvidence.relationshipType)
                 assertEquals("compatible", relationshipEvidence.compatibility)
-                assertEquals(listOf("connection:PLC1.out->M1.in"), relationshipEvidence.affectedSemanticIds)
+                assertEquals(listOf(expectedConnectionId), relationshipEvidence.affectedSemanticIds)
                 assertEquals(documentUri, assertNotNull(relationshipEvidence.sourceEdit).uri)
                 assertNull(
                     relationshipEvidence.routePreview,
@@ -1047,16 +1052,16 @@ class AthenaAuthoringRequestTest {
 
                 val sourceEdit = assertNotNull(decision.sourceEdit)
                 assertEquals(documentUri, sourceEdit.uri)
-                assertEquals("connection:PLC1.out->M1.in", sourceEdit.suggestedSemanticId)
-                assertTrue(sourceEdit.newText.contains("connect PLC1.out -> M1.in"))
+                assertEquals(expectedConnectionId, sourceEdit.suggestedSemanticId)
+                assertTrue(sourceEdit.newText.contains("connect plc1_out_to_m1_in PLC1.out -> M1.in"))
                 assertTrue(
-                    Files.readString(repository.seedSourcePath).contains("connect PLC1.out -> M1.in"),
+                    Files.readString(repository.seedSourcePath).contains("connect plc1_out_to_m1_in PLC1.out -> M1.in"),
                     "Relationship Mutation Authority must change canonical source before reporting reprojected.",
                 )
                 val transactionResult = assertNotNull(decision.transactionResult)
                 assertEquals("reprojected", transactionResult.lifecycleState)
                 assertTrue(transactionResult.mutationId.orEmpty().startsWith("authoring-mutation:"))
-                assertEquals(listOf("connection:PLC1.out->M1.in"), transactionResult.affectedSemanticIds)
+                assertEquals(listOf(expectedConnectionId), transactionResult.affectedSemanticIds)
                 assertTrue(transactionResult.projectionOccurrenceIds.isNotEmpty())
                 val repeatedDecision = assertNotNull(
                     server.authoringDecision(
@@ -1083,18 +1088,19 @@ class AthenaAuthoringRequestTest {
 
                 val projection = assertNotNull(server.projectionSession(AthenaProjectionSessionParams()).get())
                 val readyProjection = assertNotNull(projection.readyProjection)
+                val renderedConnectionId = expectedConnectionId
                 assertEquals("ready", projection.status)
-                assertTrue(readyProjection.connections.any { connection -> connection.semanticId == "connection:PLC1.out->M1.in" })
+                assertTrue(readyProjection.connections.any { connection -> connection.semanticId == renderedConnectionId })
                 assertTrue(readyProjection.electricalConnectionEndpoints.any { endpoint ->
-                    endpoint.connectionSemanticId == "connection:PLC1.out->M1.in" &&
+                    endpoint.connectionSemanticId == renderedConnectionId &&
                         endpoint.portSemanticId == "port:PLC1.out"
                 })
                 assertTrue(readyProjection.electricalConnectionEndpoints.any { endpoint ->
-                    endpoint.connectionSemanticId == "connection:PLC1.out->M1.in" &&
+                    endpoint.connectionSemanticId == renderedConnectionId &&
                         endpoint.portSemanticId == "port:M1.in"
                 })
                 assertTrue(readyProjection.electricalRoutingCorridors.any { corridor ->
-                    corridor.connectionSemanticId == "connection:PLC1.out->M1.in"
+                    corridor.connectionSemanticId == renderedConnectionId
                 })
 
                 val authoringState = assertNotNull(server.authoringState(AthenaAuthoringStateParams()).get())
@@ -1587,14 +1593,14 @@ class AthenaAuthoringRequestTest {
                 assertTrue(inspection.ports.any { port -> port.path == "PLCMAIN.lplus" })
                 assertTrue(inspection.ports.any { port -> port.path == "PWR1.out" })
                 assertEquals(1, inspection.connectionCount)
-                assertTrue(inspection.connections.any { connection -> connection.semanticId == "connection:PWR1.out->PLCMAIN.lplus" })
+                assertTrue(inspection.connections.any { connection -> connection.semanticId.endsWith(":pwr1_out_to_plcmain_lplus") })
                 assertTrue(currentSource.contains("device PLCMAIN"))
                 assertTrue(currentSource.contains("device PWR1"))
                 assertTrue(currentSource.contains("    port lplus {"))
                 assertTrue(currentSource.contains("    port out {"))
                 assertFalse(currentSource.contains("port PLCMAIN.lplus"))
                 assertFalse(currentSource.contains("port PWR1.out"))
-                assertTrue(currentSource.contains("connect PWR1.out -> PLCMAIN.lplus"))
+                assertTrue(currentSource.contains("connect pwr1_out_to_plcmain_lplus PWR1.out -> PLCMAIN.lplus"))
             } finally {
                 server.shutdown().get()
             }
@@ -1624,7 +1630,7 @@ private val authoringSource = """
         signal Digital
       }
 
-      connect PLC1.out -> M1.in
+      connect plc1_out_to_m1_in_5 PLC1.out -> M1.in
     }
 """.trimIndent()
 
@@ -1651,7 +1657,7 @@ private val authoringUpdateSource = """
         signal Digital
       }
 
-      connect PLC1.out -> M1.in
+      connect plc1_out_to_m1_in_6 PLC1.out -> M1.in
     }
 """.trimIndent()
 

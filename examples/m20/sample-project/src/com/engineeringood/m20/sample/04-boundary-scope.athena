@@ -1,4 +1,4 @@
-package com.engineeringood.m20.sample
+﻿package com.engineeringood.m20.sample
 
 system BoundaryScopeShowcase {
   device BoundarySwitch {
@@ -20,5 +20,5 @@ system BoundaryScopeShowcase {
     signal Control24V
   }
 
-  connect BoundarySwitch.out -> BoundaryLamp.in
+  connect boundaryswitch_out_to_boundarylamp_in BoundarySwitch.out -> BoundaryLamp.in
 }

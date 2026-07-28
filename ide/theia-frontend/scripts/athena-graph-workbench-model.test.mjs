@@ -2202,7 +2202,7 @@ test('builds a safe model even when optional diagram arrays are missing at runti
     assert.equal(model.emptyState?.title, 'Projection is empty');
 });
 
-test('resolves one Control Drawing product surface backed only by schematic', () => {
+test('resolves one Cabinet product surface backed only by cabinet projection', () => {
     const ownershipContract = {
         interactivity: 'interactive',
         displayScopes: ['devices'],
@@ -2219,11 +2219,50 @@ test('resolves one Control Drawing product surface backed only by schematic', ()
         ownershipContract,
         isActive,
     });
-    const schematic = projection('schematic', 'Schematic', 'electrical/schematic', true);
+    const cabinet = projection('cabinet', 'Cabinet', 'electrical/cabinet', true);
     const views = [
-        projection('cabinet', 'Cabinet', 'electrical/cabinet'),
+        cabinet,
         projection('documentation', 'Documentation', 'electrical/documentation'),
-        schematic,
+        projection('schematic', 'Schematic', 'electrical/schematic'),
+    ];
+
+    assert.deepEqual(graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface(views), {
+        surfaceId: 'cabinet',
+        displayName: 'Cabinet',
+        description: 'Physical installation Cabinet projection',
+        backingViewId: 'cabinet',
+        backingFamilyId: 'electrical/cabinet',
+        isActive: true,
+    });
+    assert.equal(typeof graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId, 'function');
+    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'schematic'), 'cabinet');
+    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'cabinet'), undefined);
+    assert.equal(
+        graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface([
+            projection('schematic', 'Schematic', 'electrical/schematic', true),
+        ]),
+        undefined,
+    );
+});
+
+test('keeps M34 Control Drawing product surface backed by its focused schematic projection', () => {
+    const ownershipContract = {
+        interactivity: 'interactive',
+        displayScopes: ['devices'],
+        semanticCommandIds: [],
+        projectionCommandIds: [],
+        transientInteractionKinds: ['navigate-view'],
+        persistedProjectionMetadataKeys: [],
+    };
+    const views = [
+        {
+            viewId: 'schematic',
+            displayName: 'Control Drawing',
+            description: 'Focused professional rolling-shutter control drawing.',
+            familyId: 'schematic',
+            ownershipContract,
+            isActive: true,
+        },
     ];
 
     assert.deepEqual(graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface(views), {
@@ -2231,16 +2270,9 @@ test('resolves one Control Drawing product surface backed only by schematic', ()
         displayName: 'Control Drawing',
         description: 'Professional engineering control drawing',
         backingViewId: 'schematic',
-        backingFamilyId: 'electrical/schematic',
+        backingFamilyId: 'schematic',
         isActive: true,
     });
-    assert.equal(typeof graphWorkbenchModel.requiresAthenaControlDrawingProductActivation, 'function');
-    assert.equal(graphWorkbenchModel.requiresAthenaControlDrawingProductActivation(views, 'cabinet'), true);
-    assert.equal(graphWorkbenchModel.requiresAthenaControlDrawingProductActivation(views, 'schematic'), false);
-    assert.equal(
-        graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface([
-            projection('cabinet', 'Cabinet', 'electrical/cabinet', true),
-        ]),
-        undefined,
-    );
+    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'cabinet'), 'schematic');
+    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'schematic'), undefined);
 });

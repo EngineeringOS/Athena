@@ -639,11 +639,6 @@ private fun ProjectionSheetSubject.owningComponentSemanticIds(): List<StableSema
     val value = semanticId.value
     val ownerNames = when {
         value.startsWith("port:") -> listOf(value.removePrefix("port:").substringBefore('.'))
-        value.startsWith("connection:") -> value
-            .removePrefix("connection:")
-            .split("->")
-            .map { endpoint -> endpoint.substringBefore('.') }
-
         else -> emptyList()
     }
     return ownerNames

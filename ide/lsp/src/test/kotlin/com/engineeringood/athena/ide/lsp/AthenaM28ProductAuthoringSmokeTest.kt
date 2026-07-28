@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import java.nio.file.Files
@@ -69,7 +69,7 @@ class AthenaM28ProductAuthoringSmokeTest {
                 )
                 val sourceEdit = assertNotNull(accepted.sourceEdit)
                 assertEquals(documentUri, sourceEdit.uri)
-                assertTrue(sourceEdit.newText.contains("connect ControllerPLC1.spareDo -> SpareTerminalXT99.in1"))
+                assertTrue(sourceEdit.newText.contains("connect controllerplc1_sparedo_to_spareterminalxt99_in1 ControllerPLC1.spareDo -> SpareTerminalXT99.in1"))
                 currentSource = applySourceEdit(currentSource, sourceEdit)
                 currentVersion += 1
                 server.textDocumentService.didChange(
@@ -79,14 +79,14 @@ class AthenaM28ProductAuthoringSmokeTest {
                     },
                 )
 
-                assertTrue(currentSource.contains("connect ControllerPLC1.spareDo -> SpareTerminalXT99.in1"))
+                assertTrue(currentSource.contains("connect controllerplc1_sparedo_to_spareterminalxt99_in1 ControllerPLC1.spareDo -> SpareTerminalXT99.in1"))
                 val projection = assertNotNull(server.projectionSession(AthenaProjectionSessionParams()).get())
                 val readyProjection = assertNotNull(projection.readyProjection)
                 assertTrue(readyProjection.connections.any { connection ->
-                    connection.semanticId == "connection:ControllerPLC1.spareDo->SpareTerminalXT99.in1"
+                    connection.semanticId.endsWith(":controllerplc1_sparedo_to_spareterminalxt99_in1")
                 })
                 assertTrue(readyProjection.electricalRoutingCorridors.any { corridor ->
-                    corridor.connectionSemanticId == "connection:ControllerPLC1.spareDo->SpareTerminalXT99.in1"
+                    corridor.connectionSemanticId.endsWith(":controllerplc1_sparedo_to_spareterminalxt99_in1")
                 })
 
                 val sourceBeforeInvalidAttempts = currentSource

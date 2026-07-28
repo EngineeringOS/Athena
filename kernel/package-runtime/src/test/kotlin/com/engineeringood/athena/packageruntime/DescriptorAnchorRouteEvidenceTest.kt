@@ -20,7 +20,7 @@ class DescriptorAnchorRouteEvidenceTest {
     fun `route evidence uses mapped descriptor anchors for source and target terminals`() {
         val result = DescriptorAnchorRouteEvidenceMapper.map(
             request = DescriptorAnchorRouteEvidenceRequest(
-                connectionSemanticId = "connection:DriveA.power->Breaker.line",
+                connectionSemanticId = "connection:test:drivea_power_to_breaker_line",
                 sourceSemanticTerminalId = "port:DriveA.power",
                 targetSemanticTerminalId = "port:Breaker.line",
                 sourceBindingEvidence = evidence("device:DriveA", "port:DriveA.power=power"),
@@ -33,7 +33,7 @@ class DescriptorAnchorRouteEvidenceTest {
         assertTrue(result.isValid)
         assertFalse(result.centerFallbackAccepted)
         val route = result.route
-        assertEquals("connection:DriveA.power->Breaker.line", route?.connectionSemanticId)
+        assertEquals("connection:test:drivea_power_to_breaker_line", route?.connectionSemanticId)
         assertEquals("descriptor.drive#power", route?.sourceDescriptorAnchorEvidence)
         assertEquals("descriptor.breaker#line", route?.targetDescriptorAnchorEvidence)
         assertEquals(8.0, route?.sourcePoint?.x)
@@ -44,7 +44,7 @@ class DescriptorAnchorRouteEvidenceTest {
     fun `route evidence fails closed when descriptor anchors are missing and does not accept center fallback`() {
         val result = DescriptorAnchorRouteEvidenceMapper.map(
             request = DescriptorAnchorRouteEvidenceRequest(
-                connectionSemanticId = "connection:DriveA.power->Breaker.line",
+                connectionSemanticId = "connection:test:drivea_power_to_breaker_line",
                 sourceSemanticTerminalId = "port:DriveA.power",
                 targetSemanticTerminalId = "port:Breaker.line",
                 sourceBindingEvidence = evidence("device:DriveA", "port:DriveA.power=missing"),

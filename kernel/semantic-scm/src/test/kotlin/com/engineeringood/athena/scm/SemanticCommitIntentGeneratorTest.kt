@@ -111,7 +111,7 @@ private fun commitIntentDiff(): SemanticDiff {
         ruleId = "validation.connection.missing",
         message = "Connection endpoint `Missing.in` does not resolve to any declared port.",
         severity = SemanticDiagnosticSeverity.ERROR,
-        subjectIdentity = StableSemanticIdentity("connection:PLC1.out->Missing.in"),
+        subjectIdentity = StableSemanticIdentity("connection:test:plc1_out_to_missing_in"),
         file = "src/demo.athena",
         line = 12,
     )

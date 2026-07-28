@@ -202,8 +202,11 @@ class BackendAuthoringSourceEditPlannerTest {
             ),
         )
         val relationshipPlan = assertIs<BackendAuthoringSourceEditPlanned>(relationship).plan
-        assertTrue(relationshipPlan.admittedText.contains("connect Source.out -> Load.in"))
-        assertEquals(listOf("connection:Source.out->Load.in"), relationshipPlan.affectedSemanticIds)
+        assertTrue(relationshipPlan.admittedText.contains("connect source_out_to_load_in Source.out -> Load.in"))
+        assertEquals(
+            listOf("connection:source:com.test/sample.athena:source_out_to_load_in"),
+            relationshipPlan.affectedSemanticIds,
+        )
 
         val layoutIntent = AuthoredLayoutIntent(
             viewFamily = "documentation",
@@ -261,6 +264,7 @@ class BackendAuthoringSourceEditPlannerTest {
             sourceUri = "file:///workspace/sample.athena",
             documentVersion = 7,
             semanticSnapshotId = "snapshot:m31",
+            sourceUnitId = "source:com.test/sample.athena",
             sourceText = source,
             ast = parse.ast,
         )

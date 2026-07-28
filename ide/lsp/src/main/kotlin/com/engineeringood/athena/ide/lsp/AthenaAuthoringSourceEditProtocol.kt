@@ -219,6 +219,7 @@ internal fun AthenaTrackedDocument.toBackendSourceDocument(
         sourceUri = uri,
         documentVersion = version,
         semanticSnapshotId = revisionGuard.semanticSnapshotId,
+        sourceUnitId = projectSemanticSourceUnitId?.value ?: compilation.source.file,
         sourceText = text,
         ast = compilation.source.ast,
     )

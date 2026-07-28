@@ -1,0 +1,4 @@
+system MachineNo000 {
+  installation panel MainPanel {
+  }
+}

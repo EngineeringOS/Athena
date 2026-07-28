@@ -36,8 +36,8 @@ class AthenaCommandHistoryTest {
             )
             assertEquals(
                 listOf(
-                    listOf("connection:PLC1.out1->M1.in", "port:M1.in", "port:PLC1.out1"),
-                    listOf("connection:PLC1.out2->M2.in", "port:M2.in", "port:PLC1.out2"),
+                    listOf("connection:history-demo:plc1_out1_to_m1_in", "port:M1.in", "port:PLC1.out1"),
+                    listOf("connection:history-demo:plc1_out2_to_m2_in", "port:M2.in", "port:PLC1.out2"),
                 ),
                 history.records.map { it.changedSemanticIds.sorted() },
             )
@@ -178,12 +178,21 @@ class AthenaCommandHistoryTest {
         val result = context.commandRuntime().execute(
             context = context,
             command = AthenaConnectPortsCommand(
+                sourceUnitId = "history-demo",
+                connectionAlias = "${sourcePortSemanticId.connectionAliasPart()}_to_${targetPortSemanticId.connectionAliasPart()}",
                 sourcePortSemanticId = sourcePortSemanticId,
                 targetPortSemanticId = targetPortSemanticId,
             ),
         )
 
         assertIs<AthenaCommandExecutionSuccess>(result)
+    }
+
+    private fun String.connectionAliasPart(): String {
+        return removePrefix("port:")
+            .replace('.', '_')
+            .replace('-', '_')
+            .lowercase()
     }
 
     private fun writeProject(source: String): Path {

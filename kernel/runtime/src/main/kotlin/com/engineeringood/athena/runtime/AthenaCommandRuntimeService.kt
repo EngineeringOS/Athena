@@ -1,6 +1,5 @@
 package com.engineeringood.athena.runtime
 
-import com.engineeringood.athena.authoring.SemanticRelationshipIntent
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.ir.EngineeringConnection
@@ -42,43 +41,17 @@ sealed interface AthenaCommand {
  * Command that creates one canonical connection between two existing ports.
  */
 data class AthenaConnectPortsCommand(
+    val sourceUnitId: String,
+    val connectionAlias: String,
     val sourcePortSemanticId: String,
     val targetPortSemanticId: String,
 ) : AthenaCommand {
     override val commandKind: AthenaCommandKind = AthenaCommandKind.CONNECT_PORTS
-}
 
-/**
- * Explicit closeout contract for retained non-Theia relationship mutation callers.
- *
- * M32 does not let product authoring surfaces treat [AthenaConnectPortsCommand] as a second
- * relationship authoring model. CLI, desktop Compose, and electrical runtime callers may retain
- * this command only as a runtime-owned compatibility command while product authoring continues to
- * enter through [SemanticRelationshipIntent].
- */
-data class AthenaRelationshipMutationCompatibilityContract(
-    val contractId: String,
-    val retainedCommandKind: AthenaCommandKind,
-    val retainedRuntimeCommandClass: String,
-    val productAuthoringIntentClass: String,
-    val mutableSourceAuthority: Boolean,
-    val retainedSurfaces: Set<String>,
-    val retainedSurfacePolicy: String,
-)
-
-/**
- * Publishes the retained compatibility status for the low-level connect command.
- */
-fun AthenaConnectPortsCommand.compatibilityContract(): AthenaRelationshipMutationCompatibilityContract {
-    return AthenaRelationshipMutationCompatibilityContract(
-        contractId = "legacy-connect-ports-runtime-command-v1",
-        retainedCommandKind = commandKind,
-        retainedRuntimeCommandClass = AthenaConnectPortsCommand::class.qualifiedName.orEmpty(),
-        productAuthoringIntentClass = SemanticRelationshipIntent::class.qualifiedName.orEmpty(),
-        mutableSourceAuthority = false,
-        retainedSurfaces = setOf("cli", "desktop-compose", "domain-electrical-runtime"),
-        retainedSurfacePolicy = "Retained only as a runtime-owned compatibility command; not a product authoring contract.",
-    )
+    init {
+        require(sourceUnitId.isNotBlank()) { "Connection source unit id must not be blank." }
+        require(connectionAlias.isNotBlank()) { "Connection alias must not be blank." }
+    }
 }
 
 /**
@@ -599,9 +572,7 @@ class AthenaCommandRuntimeService internal constructor() {
             return AthenaCommandApplicationRejected(reason)
         }
 
-        val connectionIdentity = StableSemanticIdentity(
-            "connection:${sourcePort.authoredPath()}->${targetPort.authoredPath()}",
-        )
+        val connectionIdentity = StableSemanticIdentity("connection:${command.sourceUnitId}:${command.connectionAlias}")
 
         if (document.connections.any { connection -> connection.id == connectionIdentity }) {
             return AthenaCommandApplicationRejected("Connection `${connectionIdentity.value}` already exists.")
@@ -938,7 +909,7 @@ private fun String.jsonEscaped(): String {
 private fun AthenaCommand.serializedPayloadJson(): String {
     return when (this) {
         is AthenaConnectPortsCommand -> {
-            "{\"sourcePortSemanticId\":\"${sourcePortSemanticId.jsonEscaped()}\",\"targetPortSemanticId\":\"${targetPortSemanticId.jsonEscaped()}\"}"
+            "{\"sourceUnitId\":\"${sourceUnitId.jsonEscaped()}\",\"connectionAlias\":\"${connectionAlias.jsonEscaped()}\",\"sourcePortSemanticId\":\"${sourcePortSemanticId.jsonEscaped()}\",\"targetPortSemanticId\":\"${targetPortSemanticId.jsonEscaped()}\"}"
         }
         is AthenaApplySemanticMacroBundleCommand -> {
             "{\"bundleId\":\"${bundle.bundleId.jsonEscaped()}\",\"previewId\":\"${bundle.previewId.value.jsonEscaped()}\",\"expansionId\":\"${bundle.acceptedExpansion.expansionId.value.jsonEscaped()}\",\"macroId\":\"${bundle.acceptedExpansion.origin.macroId.value.jsonEscaped()}\",\"instantiationId\":\"${bundle.acceptedExpansion.origin.instantiationId.value.jsonEscaped()}\",\"operationCount\":${bundle.operations.size}}"

@@ -1,7 +1,7 @@
-package com.engineeringood.m18.root
+﻿package com.engineeringood.m18.root
 
 system UnresolvedSymbol {
   device Unresolved {}
   port Unresolved.out {}
-  connect Missing.out -> Unresolved.out
+  connect missing_out_to_unresolved_out Missing.out -> Unresolved.out
 }

@@ -1,4 +1,4 @@
-package com.engineeringood.m24.sample
+﻿package com.engineeringood.m24.sample
 
 system PowerProtectionRouteProof {
   device PowerSupplyPS1 {
@@ -51,9 +51,9 @@ system PowerProtectionRouteProof {
     signal Digital
   }
 
-  connect PowerSupplyPS1.lplus -> BreakerQF1.line
-  connect BreakerQF1.load -> ContactorKM1.a1
-  connect ContactorKM1.t1 -> MotorM1.u1
+  connect powersupplyps1_lplus_to_breakerqf1_line PowerSupplyPS1.lplus -> BreakerQF1.line
+  connect breakerqf1_load_to_contactorkm1_a1 BreakerQF1.load -> ContactorKM1.a1
+  connect contactorkm1_t1_to_motorm1_u1 ContactorKM1.t1 -> MotorM1.u1
 
   layout schematic-sheet {
     place BreakerQF1 near PowerSupplyPS1

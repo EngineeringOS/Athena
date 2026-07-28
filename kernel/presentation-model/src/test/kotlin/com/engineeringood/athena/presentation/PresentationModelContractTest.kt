@@ -110,7 +110,7 @@ class PresentationModelContractTest {
             connectors = listOf(
                 PresentationConnector(
                     occurrenceId = PresentationOccurrenceId("cabinet/presentation/connection_PLC1_out_M1_in"),
-                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    semanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
                     primitiveId = PresentationPrimitiveId("electrical.conductor.orthogonal"),
                     routePoints = listOf(
                         PresentationPoint(x = 104, y = 86),
@@ -183,7 +183,7 @@ class PresentationModelContractTest {
             connectors = listOf(
                 PresentationConnector(
                     occurrenceId = PresentationOccurrenceId("schematic/presentation/old-edge"),
-                    semanticId = StableSemanticIdentity("connection:PLC1.DO1->XT1.1"),
+                    semanticId = StableSemanticIdentity("connection:test:plc1_do1_to_xt1_1"),
                     primitiveId = PresentationPrimitiveId("electrical.conductor.generic"),
                     routePoints = listOf(
                         PresentationPoint(x = 320, y = 180),
@@ -201,7 +201,7 @@ class PresentationModelContractTest {
         val connector = document.connectorsForRendering().single()
 
         assertEquals("route:PLC1.DO1->XT1.1", connector.occurrenceId.value)
-        assertEquals(StableSemanticIdentity("connection:PLC1.DO1->XT1.1"), connector.semanticId)
+        assertEquals(StableSemanticIdentity("connection:test:plc1_do1_to_xt1_1"), connector.semanticId)
         assertEquals(
             listOf(
                 PresentationPoint(x = 320, y = 180),
@@ -221,7 +221,7 @@ class PresentationModelContractTest {
 
     @Test
     fun `presentation reference markers keep compact notation with canonical payload`() {
-        val routeIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1")
+        val routeIdentity = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1")
         val sourceTerminal = StableSemanticIdentity("terminal:PLC1.Q0.0")
         val targetTerminal = StableSemanticIdentity("terminal:XT1.1")
         val documentProjection = DocumentProjectionEntryPoint.projectWorkspace(
@@ -295,7 +295,7 @@ class PresentationModelContractTest {
     }
 
     private fun routeFact(snapshotId: LayoutSnapshotId): RouteFact {
-        val connectionId = ElectricalConnectionId("connection:PLC1.DO1->XT1.1")
+        val connectionId = ElectricalConnectionId("connection:test:plc1_do1_to_xt1_1")
         val source = terminalAnchor("PLC1", "DO1", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 320, 180)
         val target = terminalAnchor("XT1", "1", ElectricalPortRole.TERMINAL, TerminalSide.LEFT, 520, 220)
         return RouteFact(

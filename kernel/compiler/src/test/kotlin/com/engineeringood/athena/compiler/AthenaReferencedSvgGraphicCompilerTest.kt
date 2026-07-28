@@ -130,6 +130,23 @@ class AthenaReferencedSvgGraphicCompilerTest {
         assertEquals(native.definitionKind, svg.definitionKind)
     }
 
+    @Test
+    fun `svg backed symbol keeps athena authored anchors for element export`() {
+        val project = createTempProject()
+        project.resolve("asset.svg").writeText(COMPLEX_SVG)
+
+        val result = AthenaRepresentationSourceCompiler().compile(
+            project.resolve("svg-symbol.athena").toString(),
+            SVG_BACKED_SYMBOL_WITH_ANCHOR,
+        )
+
+        assertTrue(result.diagnostics.isEmpty(), result.diagnostics.joinToString("\n"))
+        val symbol = result.definitions.single { it.symbolId.value == "vendor.drive.svg.symbol" }
+        val element = result.definitions.single { it.symbolId.value == "vendor.drive.svg.element" }
+        assertEquals(listOf("powerIn"), symbol.anchors.map { it.anchorId.value })
+        assertEquals(listOf("powerIn"), element.anchors.map { it.anchorId.value })
+    }
+
     private fun createTempProject(): Path {
         val root = Files.createTempDirectory("athena-svg-geometry-test")
         root.resolve("source.athena").writeText("package athena.vendor")
@@ -252,6 +269,46 @@ class AthenaReferencedSvgGraphicCompilerTest {
               }
 
               graphic svg resource vendor_svg
+            }
+        """.trimIndent()
+
+        val SVG_BACKED_SYMBOL_WITH_ANCHOR = """
+            package athena.vendor
+
+            symbol vendor_drive_svg_symbol {
+              identity "vendor.drive.svg.symbol"
+              version "1.0.0"
+
+              resource vendor_svg {
+                kind svg
+                path "./asset.svg"
+              }
+
+              graphic svg resource vendor_svg
+
+              anchor powerIn {
+                primitiveRef vendor_svg
+                point (20, 10)
+                role terminal
+                accepts direction in
+                accepts signal Power
+              }
+            }
+
+            element vendor_drive_svg_element {
+              identity "vendor.drive.svg.element"
+              version "1.0.0"
+              bounds (0, 0, 120, 60)
+
+              child body {
+                symbol "vendor.drive.svg.symbol"
+                translate (0, 0)
+                rotate 0
+                scale (1, 1)
+                zOrder 0
+              }
+
+              export anchor powerIn from body.powerIn
             }
         """.trimIndent()
     }

@@ -1,4 +1,4 @@
-system DenseQualifiedNames {
+﻿system DenseQualifiedNames {
   device ControllerA {
     type Switch
     model "CPU-313C"
@@ -20,5 +20,5 @@ system DenseQualifiedNames {
     signal Digital
   }
 
-  connect ControllerA.out -> DriveB.in
+  connect controllera_out_to_driveb_in ControllerA.out -> DriveB.in
 }

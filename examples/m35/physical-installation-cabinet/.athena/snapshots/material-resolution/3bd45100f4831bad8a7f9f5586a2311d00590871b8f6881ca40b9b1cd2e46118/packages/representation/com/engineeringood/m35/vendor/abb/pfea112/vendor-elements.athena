@@ -1,0 +1,93 @@
+package com.engineeringood.m35.vendor.abb.pfea112
+
+symbol pfea112_body_symbol {
+  identity "vendor.abb.pfea112.body.symbol"
+  version "1.0.0"
+
+  resource pfea112_svg {
+    kind svg
+    path "./pfea112.svg"
+  }
+
+  graphic svg resource pfea112_svg
+
+  anchor supplyPlus {
+    primitiveRef pfea112_svg
+    point (6, 22)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor supplyMinus {
+    primitiveRef pfea112_svg
+    point (6, 38)
+    role terminal
+    accepts direction in
+    accepts signal Power
+  }
+
+  anchor signalOut {
+    primitiveRef pfea112_svg
+    point (126, 58)
+    role terminal
+    accepts direction out
+    accepts signal Control
+  }
+
+  anchor controlReturn {
+    primitiveRef pfea112_svg
+    point (126, 74)
+    role terminal
+    accepts direction in
+    accepts signal Control
+  }
+
+  anchor protectiveEarth {
+    primitiveRef pfea112_svg
+    point (66, 104)
+    role terminal
+    accepts direction in
+    accepts signal Ground
+  }
+}
+
+symbol pfea112_label_symbol {
+  identity "vendor.abb.pfea112.label.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 132, 16)
+    rectangle plate at (0, 0) size (132, 16) style symbol
+    label deviceTag at (6, 2) size (120, 12) role device-tag style device-label
+  }
+}
+
+element pfea112_element {
+  identity "vendor.abb.pfea112.element"
+  version "1.0.0"
+  bounds (0, 0, 132, 112)
+
+  child label {
+    symbol "vendor.abb.pfea112.label.symbol"
+    translate (0, 0)
+    rotate 0
+    scale (1, 1)
+    zOrder 0
+  }
+
+  child body {
+    symbol "vendor.abb.pfea112.body.symbol"
+    translate (0, 20)
+    rotate 0
+    scale (1, 1)
+    zOrder 1
+  }
+
+  export label deviceTag from label.deviceTag
+  export anchor supplyPlus from body.supplyPlus
+  export anchor supplyMinus from body.supplyMinus
+  export anchor signalOut from body.signalOut
+  export anchor controlReturn from body.controlReturn
+  export anchor protectiveEarth from body.protectiveEarth
+}

@@ -1,6 +1,6 @@
-package com.root
+﻿package com.root
 
 system InvalidAvailability {
   port Local.out {}
-  connect Vendor.out -> Local.out
+  connect vendor_out_to_local_out Vendor.out -> Local.out
 }

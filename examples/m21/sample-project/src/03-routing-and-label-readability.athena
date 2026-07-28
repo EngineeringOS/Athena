@@ -1,4 +1,4 @@
-package com.engineeringood.m21.sample
+﻿package com.engineeringood.m21.sample
 
 system RoutingAndLabelReadability {
   device RoutePLC1 {
@@ -51,7 +51,7 @@ system RoutingAndLabelReadability {
     signal ActuatorCommand
   }
 
-  connect RouteSensorS1.out -> RoutePLC1.input
-  connect RoutePLC1.output -> RouteTerminalXT2.in
-  connect RouteTerminalXT2.out -> RouteActuatorY1.in
+  connect routesensors1_out_to_routeplc1_input RouteSensorS1.out -> RoutePLC1.input
+  connect routeplc1_output_to_routeterminalxt2_in RoutePLC1.output -> RouteTerminalXT2.in
+  connect routeterminalxt2_out_to_routeactuatory1_in RouteTerminalXT2.out -> RouteActuatorY1.in
 }

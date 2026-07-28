@@ -1,4 +1,4 @@
-system DualDomainProof {
+﻿system DualDomainProof {
   device PLC1 {
     type Switch
   }
@@ -37,6 +37,6 @@ system DualDomainProof {
     tint Amber
   }
 
-  connect PLC1.out -> L1.in
-  connect G1.emit -> P1.absorb
+  connect plc1_out_to_l1_in PLC1.out -> L1.in
+  connect g1_emit_to_p1_absorb G1.emit -> P1.absorb
 }

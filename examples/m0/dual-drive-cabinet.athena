@@ -1,4 +1,4 @@
-system DualDriveCabinet {
+﻿system DualDriveCabinet {
   device PLC1 {
     type Switch
   }
@@ -31,6 +31,6 @@ system DualDriveCabinet {
     signal Digital
   }
 
-  connect PLC1.out1 -> M1.in
-  connect PLC1.out2 -> M2.in
+  connect plc1_out1_to_m1_in PLC1.out1 -> M1.in
+  connect plc1_out2_to_m2_in PLC1.out2 -> M2.in
 }

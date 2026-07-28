@@ -27,6 +27,8 @@ internal fun electricalRuntimeCommandContributions(): List<AthenaRuntimePluginCo
                     )
                 AthenaRuntimePluginCommandReady(
                     command = AthenaConnectPortsCommand(
+                        sourceUnitId = "runtime:${context.project.name}",
+                        connectionAlias = "${pair.sourceSemanticId.connectionAliasPart()}_to_${pair.targetSemanticId.connectionAliasPart()}",
                         sourcePortSemanticId = pair.sourceSemanticId,
                         targetPortSemanticId = pair.targetSemanticId,
                     ),
@@ -34,6 +36,13 @@ internal fun electricalRuntimeCommandContributions(): List<AthenaRuntimePluginCo
             },
         ),
     )
+}
+
+private fun String.connectionAliasPart(): String {
+    return removePrefix("port:")
+        .replace('.', '_')
+        .replace('-', '_')
+        .lowercase()
 }
 
 internal fun electricalRuntimeViewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {

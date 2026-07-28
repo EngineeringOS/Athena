@@ -1,4 +1,4 @@
-system SiemensProofCorpus {
+﻿system SiemensProofCorpus {
   device PS1 {
     type Switch
     label "24V DC power supply"
@@ -55,5 +55,5 @@ system SiemensProofCorpus {
     signal MPIBus
   }
 
-  connect PS1.out -> PLC1.lplus
+  connect ps1_out_to_plc1_lplus PS1.out -> PLC1.lplus
 }

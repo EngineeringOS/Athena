@@ -33,7 +33,7 @@ data class M30DemoRepresentationSample(
             ),
             referenceFacts = listOf(
                 M30DemoRepresentationReferenceFact(
-                    semanticId = RepresentationSubjectId("connection:ControlRelayK1.a1->MotorM1.u1"),
+                    semanticId = RepresentationSubjectId("connection:m30-demo:control_relay_k1_a1_to_motor_m1_u1"),
                     targetSemanticId = RepresentationSubjectId("sheet:field/continuation:MotorM1"),
                     label = LabelValue("/2.4"),
                 ),

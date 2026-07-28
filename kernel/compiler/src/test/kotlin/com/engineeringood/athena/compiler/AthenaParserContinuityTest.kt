@@ -69,12 +69,15 @@ class AthenaParserContinuityTest {
                 )
             }
             document.connections.forEach { connection ->
-                val from = connection.from.authoredPath.joinToString(".")
-                val to = connection.to.authoredPath.joinToString(".")
                 assertEquals(
-                    "connection:$from->$to",
-                    connection.id.value,
-                    "connection identity scheme for ${fixture.relativePath}",
+                    true,
+                    connection.id.value.startsWith("connection:${fixture.relativePath}:"),
+                    "connection identity must use source path plus authored alias for ${fixture.relativePath}",
+                )
+                assertEquals(
+                    false,
+                    "->" in connection.id.value,
+                    "connection identity must not derive from endpoints for ${fixture.relativePath}",
                 )
             }
         }

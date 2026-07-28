@@ -1,4 +1,4 @@
-package com.engineeringood.athena.runtime
+﻿package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.integrations.scm.git.GitSemanticBaselineAdapter
@@ -63,8 +63,8 @@ class AthenaSemanticDiffServiceTest {
                         signal Analog
                       }
 
-                      connect PLC1.out -> M1.in
-                      connect PLC1.out -> Missing.in
+                      connect plc1_out_to_m1_in PLC1.out -> M1.in
+                      connect plc1_out_to_missing_in PLC1.out -> Missing.in
                     }
                 """.trimIndent(),
             )
@@ -90,7 +90,7 @@ class AthenaSemanticDiffServiceTest {
             val workspace = runtime.openWorkspace(currentRoot)
             val session = workspace.activateRepositoryGraphSession(
                 projectName = "demo",
-                sourcePath = currentRoot.resolve("src").resolve("demo.athena"),
+                sourcePath = currentRoot.resolve("src/com/engineeringood/demo/demo.athena"),
             )
             val baseline = runtime.serviceRegistry.semanticBaselines().resolveBaseline(
                 session = session,
@@ -173,7 +173,7 @@ class AthenaSemanticDiffServiceTest {
             val workspace = runtime.openWorkspace(currentRoot)
             val session = workspace.activateRepositoryGraphSession(
                 projectName = "demo",
-                sourcePath = currentRoot.resolve("src").resolve("demo.athena"),
+                sourcePath = currentRoot.resolve("src/com/engineeringood/demo/demo.athena"),
             )
             val baseline = runtime.serviceRegistry.semanticBaselines().resolveBaseline(
                 session = session,
@@ -198,12 +198,15 @@ class AthenaSemanticDiffServiceTest {
 
             assertEquals(first, second)
             assertEquals(
-                listOf(SemanticDerivedConsequenceType.COMPARISON_INPUT_INCOMPLETE),
+                listOf(
+                    SemanticDerivedConsequenceType.LOCK_UPDATED,
+                    SemanticDerivedConsequenceType.COMPARISON_INPUT_INCOMPLETE,
+                ),
                 first.derivedConsequences.map { consequence -> consequence.type },
             )
             assertEquals(
                 "semantic.current.compile.parse-failed",
-                first.derivedConsequences.single().diagnostic?.ruleId?.value,
+                first.derivedConsequences.last().diagnostic?.ruleId?.value,
             )
         } finally {
             root.toFile().deleteRecursively()
@@ -235,8 +238,8 @@ private fun writeGovernedRepository(
         }.trimEnd(),
     )
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve(sourceFileName).writeText(sourceText)
+    val sourceRoot = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/')).createDirectories()
+    sourceRoot.resolve(sourceFileName).writeText("package $packageName\n\n$sourceText")
 
     if (dependencyLocator != null) {
         val dependencyRoot = repositoryRoot.resolve(dependencyLocator).createDirectories()
@@ -249,8 +252,8 @@ private fun writeGovernedRepository(
             """.trimIndent(),
         )
         dependencyRoot.resolve("athena.lock").writeText("# lock")
-        val dependencySourceRoot = dependencyRoot.resolve("src").createDirectories()
-        dependencySourceRoot.resolve("alpha.athena").writeText("system Alpha { }")
+        val dependencySourceRoot = dependencyRoot.resolve("src/com/engineeringood/alpha").createDirectories()
+        dependencySourceRoot.resolve("alpha.athena").writeText("package com.engineeringood.alpha\n\nsystem Alpha { }")
         AthenaCompiler().materializeRepositoryLock(dependencyRoot)
     }
 }

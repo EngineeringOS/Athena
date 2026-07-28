@@ -15,9 +15,9 @@ class SchematicRouteIntentProjectorTest {
         val snapshotId = LayoutSnapshotId("snapshot:m24:semantic-route-intent")
         val layoutContext = SchematicRoutingLayoutContext(gridSize = 20)
         val intents = listOf(
-            semanticIntent("connection:PLC1.DO1->HMI1.IN1", "PLC1", "DO1", "HMI1", "IN1", ElectricalSignalClass.DIGITAL_OUTPUT),
-            semanticIntent("connection:PLC1.DO2->XT1.1", "PLC1", "DO2", "XT1", "1", ElectricalSignalClass.DIGITAL_OUTPUT),
-            semanticIntent("connection:PS1.L+->QF1.L+", "PS1", "L+", "QF1", "L+", ElectricalSignalClass.POWER),
+            semanticIntent("connection:test:plc1_do1_to_hmi1_in1", "PLC1", "DO1", "HMI1", "IN1", ElectricalSignalClass.DIGITAL_OUTPUT),
+            semanticIntent("connection:test:plc1_do2_to_xt1_1", "PLC1", "DO2", "XT1", "1", ElectricalSignalClass.DIGITAL_OUTPUT),
+            semanticIntent("connection:test:ps1_lplus_to_qf1_lplus", "PS1", "L+", "QF1", "L+", ElectricalSignalClass.POWER),
         ).reversed()
         val anchors = listOf(
             anchor("PLC1", "DO1", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 320, 120),
@@ -43,9 +43,9 @@ class SchematicRouteIntentProjectorTest {
         assertSame(layoutContext, snapshot.layoutContext)
         assertEquals(
             listOf(
-                ElectricalConnectionId("connection:PLC1.DO1->HMI1.IN1"),
-                ElectricalConnectionId("connection:PLC1.DO2->XT1.1"),
-                ElectricalConnectionId("connection:PS1.L+->QF1.L+"),
+                ElectricalConnectionId("connection:test:plc1_do1_to_hmi1_in1"),
+                ElectricalConnectionId("connection:test:plc1_do2_to_xt1_1"),
+                ElectricalConnectionId("connection:test:ps1_lplus_to_qf1_lplus"),
             ),
             snapshot.routeIntents.map { intent -> intent.connectionIntent.connectionId },
         )
@@ -67,9 +67,9 @@ class SchematicRouteIntentProjectorTest {
         )
         assertEquals(
             listOf(
-                SchematicRouteId("route:connection:PLC1.DO1->HMI1.IN1"),
-                SchematicRouteId("route:connection:PLC1.DO2->XT1.1"),
-                SchematicRouteId("route:connection:PS1.L+->QF1.L+"),
+                SchematicRouteId("route:connection:test:plc1_do1_to_hmi1_in1"),
+                SchematicRouteId("route:connection:test:plc1_do2_to_xt1_1"),
+                SchematicRouteId("route:connection:test:ps1_lplus_to_qf1_lplus"),
             ),
             snapshot.toEngineInput().requests.map(AthenaRouteRequest::routeId),
         )

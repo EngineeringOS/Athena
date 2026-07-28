@@ -155,7 +155,7 @@ class M32ProductSmokeProofRunner {
         val target = bindingEvidence(sample, "device:ControlRelayK32")
         val result = DescriptorAnchorRouteEvidenceMapper.map(
             DescriptorAnchorRouteEvidenceRequest(
-                connectionSemanticId = "connection:MainPowerSupplyPS32.lplus->ControlRelayK32.supply",
+                connectionSemanticId = "connection:m32-product-smoke:main_power_supply_ps32_lplus_to_control_relay_k32_supply",
                 sourceSemanticTerminalId = "port:MainPowerSupplyPS32.lplus",
                 targetSemanticTerminalId = "port:ControlRelayK32.supply",
                 sourceBindingEvidence = source,
@@ -165,7 +165,7 @@ class M32ProductSmokeProofRunner {
             ),
         )
         return M32ProductSmokeRouteProof(
-            connectionSemanticId = "connection:MainPowerSupplyPS32.lplus->ControlRelayK32.supply",
+            connectionSemanticId = "connection:m32-product-smoke:main_power_supply_ps32_lplus_to_control_relay_k32_supply",
             routeAnchored = result.route != null && result.diagnostics.isEmpty(),
             centerFallbackAccepted = result.centerFallbackAccepted,
         )

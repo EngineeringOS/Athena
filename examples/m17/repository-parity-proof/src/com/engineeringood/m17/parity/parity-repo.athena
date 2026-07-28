@@ -1,4 +1,4 @@
-package com.engineeringood.m17.parity
+﻿package com.engineeringood.m17.parity
 
 system M17ParityRepo {
   device PLC1 {
@@ -20,5 +20,5 @@ system M17ParityRepo {
     signal Digital
   }
 
-  connect PLC1.out -> M1.in
+  connect plc1_out_to_m1_in PLC1.out -> M1.in
 }

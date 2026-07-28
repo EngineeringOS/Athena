@@ -1,4 +1,4 @@
-package com.engineeringood.m25.sample
+﻿package com.engineeringood.m25.sample
 
 system ProfessionalSymbolSheet {
   device PowerSupplyPS1 {
@@ -51,9 +51,9 @@ system ProfessionalSymbolSheet {
     signal Digital
   }
 
-  connect PowerSupplyPS1.lplus -> ControllerPLC1.power
-  connect ControllerPLC1.do1 -> TerminalBlockXT1.in1
-  connect TerminalBlockXT1.out1 -> ActuatorY1.command
+  connect powersupplyps1_lplus_to_controllerplc1_power PowerSupplyPS1.lplus -> ControllerPLC1.power
+  connect controllerplc1_do1_to_terminalblockxt1_in1 ControllerPLC1.do1 -> TerminalBlockXT1.in1
+  connect terminalblockxt1_out1_to_actuatory1_command TerminalBlockXT1.out1 -> ActuatorY1.command
 
   layout schematic-sheet {
     place ControllerPLC1 near PowerSupplyPS1

@@ -1,4 +1,4 @@
-system InvalidDirectionCabinet {
+﻿system InvalidDirectionCabinet {
   device M1 {
     type Motor
   }
@@ -17,5 +17,5 @@ system InvalidDirectionCabinet {
     signal Digital
   }
 
-  connect M1.in -> M2.in
+  connect m1_in_to_m2_in M1.in -> M2.in
 }

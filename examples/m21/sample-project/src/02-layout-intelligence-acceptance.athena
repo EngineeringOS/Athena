@@ -1,4 +1,4 @@
-package com.engineeringood.m21.sample
+﻿package com.engineeringood.m21.sample
 
 system LayoutIntelligenceAcceptance {
   device PowerSupply24V {
@@ -71,9 +71,9 @@ system LayoutIntelligenceAcceptance {
     signal MotorEnable
   }
 
-  connect PowerSupply24V.out -> ProtectionQF1.in
-  connect ProtectionQF1.out -> ControllerPLC1.power
-  connect ProtectionQF1.out -> OperatorHMI1.power
-  connect ProtectionQF1.out -> TerminalBlockXT1.in
-  connect TerminalBlockXT1.out -> PrimaryLoadM1.in
+  connect powersupply24v_out_to_protectionqf1_in PowerSupply24V.out -> ProtectionQF1.in
+  connect protectionqf1_out_to_controllerplc1_power ProtectionQF1.out -> ControllerPLC1.power
+  connect protectionqf1_out_to_operatorhmi1_power ProtectionQF1.out -> OperatorHMI1.power
+  connect protectionqf1_out_to_terminalblockxt1_in ProtectionQF1.out -> TerminalBlockXT1.in
+  connect terminalblockxt1_out_to_primaryloadm1_in TerminalBlockXT1.out -> PrimaryLoadM1.in
 }

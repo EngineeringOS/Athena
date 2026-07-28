@@ -2,11 +2,12 @@
 
 English | [Chinese (Simplified)](README.zh-CN.md)
 
-The `:kernel:physical-model` module defines Athena's minimal physical-trait contract for M14.
+The `:kernel:physical-model` module defines Athena's reusable physical traits and M35 physical
+installation contracts.
 
 This module keeps the ownership ladder explicit:
 
-`Engineering IR -> physical trait knowledge -> downstream layout / projection / presentation consumers`
+`Engineering IR -> physical trait knowledge -> validated installation contract -> downstream physical projection consumers`
 
 ## Responsibilities
 
@@ -15,6 +16,11 @@ This module keeps the ownership ladder explicit:
 - Publish installation-marker identifiers through `PhysicalInstallationMarkerId`.
 - Publish minimal physical-trait definitions through `PhysicalTraitDefinition`.
 - Publish read-only resolved physical-trait knowledge through `ResolvedPhysicalTraitDefinition`.
+- Resolve `PhysicalInstallationContractV0` from governed project facts and existing resolved traits.
+- Validate positive dimensions, mounting type, allowed orientations, clearance, and compatible container kinds.
+- Preserve field-level provenance and canonical digest material for deterministic downstream checks.
+- Compile typed `PhysicalInstallationIRV0` topology from installation intent and validated contracts.
+- Evaluate Physical Constraint v0 fit, containment, collision, clearance, and mounting compatibility.
 - Preserve the boundary that canonical authored truth remains in `Engineering IR`.
 
 ## Main Types
@@ -24,6 +30,11 @@ This module keeps the ownership ladder explicit:
 - `PhysicalInstallationMarkerId`
 - `PhysicalTraitDefinition`
 - `ResolvedPhysicalTraitDefinition`
+- `PhysicalInstallationContractV0`
+- `PhysicalInstallationContractResolver`
+- `PhysicalInstallationIRV0`
+- `PhysicalInstallationTopologyCompiler`
+- `PhysicalConstraintEvaluatorV0`
 
 ## Dependencies
 
@@ -31,7 +42,7 @@ This module depends on `:kernel:engineering-model` for canonical semantic identi
 
 ## Boundaries
 
-This module does not define layout placement, geometry bounds, canvas coordinates, scene calculation, routing, presentation logic, or renderer behavior. It only defines minimal reusable physical knowledge: width, height, depth, mounting type, and installation markers.
+This module does not define layout placement, final drawing coordinates, representation selection, anchor coordinates, route segments, canvas coordinates, scene calculation, presentation logic, renderer behavior, package manifests, SVG metadata, product catalogs, manufacturer/article identity, solver/optimization behavior, AI layout, or an Engineering Component System. Existing `PhysicalSize` is unchecked trait input only; validated M35 values are constructed by the contract resolver after diagnostics pass.
 
 ## Verification
 

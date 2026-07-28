@@ -91,7 +91,7 @@ class AthenaM31SampleAuthoringProofTest {
         val result = GovernedRelationshipPreviewService(
             routePreviewAuthority = GovernedRelationshipRoutePreviewAuthority { _, _ ->
                 AuthoringRelationshipRoutePreviewEvidence(
-                    routeId = "route:connection:ControlRelayK31.spareOut->SpareTerminalXT31.in1",
+                    routeId = "route:${sampleConnectionId()}",
                     quality = "SATISFIED",
                     sourceAnchorId = "anchor:port:ControlRelayK31.spareOut",
                     targetAnchorId = "anchor:port:SpareTerminalXT31.in1",
@@ -120,7 +120,7 @@ class AthenaM31SampleAuthoringProofTest {
         val evidence = checkNotNull(ready.transaction.preview?.relationshipEvidence)
         assertEquals(AuthoringRelationshipCompatibility.COMPATIBLE, evidence.compatibility)
         assertEquals(
-            listOf("connection:ControlRelayK31.spareOut->SpareTerminalXT31.in1"),
+            listOf(sampleConnectionId()),
             evidence.affectedSemanticIds,
         )
         assertTrue(checkNotNull(evidence.sourceEdit).admittedText.contains("ControlRelayK31.spareOut -> SpareTerminalXT31.in1"))
@@ -182,7 +182,12 @@ class AthenaM31SampleAuthoringProofTest {
         }
 
     private fun sampleProjectSource(): Path =
-        resolveRepoRoot().resolve("examples/m31/sample-project/src/01-governed-authoring-customer-source.athena")
+        resolveRepoRoot().resolve(
+            "examples/m31/sample-project/src/com/engineeringood/m31/sample/01-governed-authoring-customer-source.athena",
+        )
+
+    private fun sampleConnectionId(): String =
+        "connection:${sampleProjectSource().toUri()}:controlrelayk31_spareout_to_spareterminalxt31_in1"
 
     private fun resolveRepoRoot(): Path {
         var current = Path.of("").toAbsolutePath()

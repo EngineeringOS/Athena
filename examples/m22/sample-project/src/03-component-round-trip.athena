@@ -1,4 +1,4 @@
-package com.engineeringood.m22.sample
+﻿package com.engineeringood.m22.sample
 
 system ComponentRoundTripScenario {
   device RoundTripControllerPLC1 {
@@ -46,7 +46,7 @@ system ComponentRoundTripScenario {
     signal RoundTripCommand
   }
 
-  connect RoundTripControllerPLC1.output -> RoundTripHMI1.status
-  connect RoundTripControllerPLC1.output -> RoundTripTerminalXT2.in
-  connect RoundTripTerminalXT2.out -> RoundTripLoadM2.in
+  connect roundtripcontrollerplc1_output_to_roundtriphmi1_status RoundTripControllerPLC1.output -> RoundTripHMI1.status
+  connect roundtripcontrollerplc1_output_to_roundtripterminalxt2_in RoundTripControllerPLC1.output -> RoundTripTerminalXT2.in
+  connect roundtripterminalxt2_out_to_roundtriploadm2_in RoundTripTerminalXT2.out -> RoundTripLoadM2.in
 }

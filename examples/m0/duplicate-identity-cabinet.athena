@@ -1,4 +1,4 @@
-system DuplicateIdentityCabinet {
+﻿system DuplicateIdentityCabinet {
   device PLC1 {
     type Switch
   }
@@ -17,6 +17,6 @@ system DuplicateIdentityCabinet {
     signal Digital
   }
 
-  connect PLC1.out -> PLC1.out
-  connect PLC1.out -> PLC1.out
+  connect plc1_out_to_plc1_out PLC1.out -> PLC1.out
+  connect plc1_out_to_plc1_out_2 PLC1.out -> PLC1.out
 }

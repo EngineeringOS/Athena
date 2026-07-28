@@ -1,4 +1,4 @@
-package com.engineeringood.m20.sample
+﻿package com.engineeringood.m20.sample
 
 system SchematicSheetShowcase {
   device SchematicSW1 {
@@ -29,6 +29,6 @@ system SchematicSheetShowcase {
     signal Control24V
   }
 
-  connect SchematicSW1.out -> SchematicM1.in
-  connect SchematicSW1.out -> SchematicL1.in
+  connect schematicsw1_out_to_schematicm1_in SchematicSW1.out -> SchematicM1.in
+  connect schematicsw1_out_to_schematicl1_in SchematicSW1.out -> SchematicL1.in
 }

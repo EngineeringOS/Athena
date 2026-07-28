@@ -29,7 +29,7 @@ class DocumentProjectionModelContractTest {
                     sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
                 ),
                 DocumentProjectionSubjectSummary(
-                    canonicalSubjectId = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1"),
+                    canonicalSubjectId = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1"),
                     occurrenceRole = DocumentOccurrenceRole.ROUTE,
                     detailRole = DocumentOccurrenceDetailRole.ROUTE,
                     sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
@@ -136,7 +136,7 @@ class DocumentProjectionModelContractTest {
                     source = DocumentProjectionProvenance("source:system"),
                 ),
                 DocumentProjectionSubjectSummary(
-                    canonicalSubjectId = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1"),
+                    canonicalSubjectId = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1"),
                     occurrenceRole = DocumentOccurrenceRole.ROUTE,
                     detailRole = DocumentOccurrenceDetailRole.ROUTE,
                     sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC, SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION),
@@ -154,10 +154,10 @@ class DocumentProjectionModelContractTest {
             mapOf(
                 "sheet-view:control-and-plc-logic" to listOf(
                     "component:PLC1",
-                    "connection:PLC1.Q0.0->XT1.1",
+                    "connection:test:plc1_q0_0_to_xt1_1",
                 ),
                 "sheet-view:field-wiring-and-terminal-transition" to listOf(
-                    "connection:PLC1.Q0.0->XT1.1",
+                    "connection:test:plc1_q0_0_to_xt1_1",
                     "terminal:XT1.1",
                 ),
                 "sheet-view:power-distribution" to listOf("component:PLC1"),
@@ -212,7 +212,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `cross view route membership produces governed continuation facts`() {
-        val routeIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1")
+        val routeIdentity = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1")
         val sourceTerminal = StableSemanticIdentity("terminal:PLC1.Q0.0")
         val targetTerminal = StableSemanticIdentity("terminal:XT1.1")
         val workspace = DocumentProjectionWorkspaceSemanticSnapshot(
@@ -267,7 +267,7 @@ class DocumentProjectionModelContractTest {
             sourceUnits = listOf(DocumentProjectionSourceUnitSummary("source:system", "src/system.athena")),
             subjects = listOf(
                 DocumentProjectionSubjectSummary(
-                    canonicalSubjectId = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1"),
+                    canonicalSubjectId = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1"),
                     occurrenceRole = DocumentOccurrenceRole.ROUTE,
                     detailRole = DocumentOccurrenceDetailRole.ROUTE,
                     sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
@@ -328,7 +328,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `continuation facts produce route and terminal cross reference facts`() {
-        val routeIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1")
+        val routeIdentity = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1")
         val sourceTerminal = StableSemanticIdentity("terminal:PLC1.Q0.0")
         val targetTerminal = StableSemanticIdentity("terminal:XT1.1")
         val workspace = DocumentProjectionWorkspaceSemanticSnapshot(
@@ -379,7 +379,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `source backed missing terminal continuation diagnostic can publish to problems`() {
-        val routeIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1")
+        val routeIdentity = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1")
         val sourceTerminal = StableSemanticIdentity("terminal:PLC1.Q0.0")
         val missingTargetTerminal = StableSemanticIdentity("terminal:XT1.1")
         val sourceRange = DocumentSourceRange(8, 5, 8, 38)
@@ -421,7 +421,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `projection only ambiguous terminal continuation diagnostic stays out of problems`() {
-        val routeIdentity = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1")
+        val routeIdentity = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1")
         val sourceTerminal = StableSemanticIdentity("terminal:PLC1.Q0.0")
         val repeatedTargetTerminal = StableSemanticIdentity("terminal:XT1.1")
         val workspace = DocumentProjectionWorkspaceSemanticSnapshot(
@@ -632,7 +632,7 @@ class DocumentProjectionModelContractTest {
         val route = DocumentOccurrence.identityOf(
             documentProjectionId = projectionId,
             sheetViewId = viewId,
-            canonicalSubjectId = StableSemanticIdentity("connection:PLC1.Q0.0->XT1.1"),
+            canonicalSubjectId = StableSemanticIdentity("connection:test:plc1_q0_0_to_xt1_1"),
             occurrenceRole = DocumentOccurrenceRole.ROUTE,
             detailRole = DocumentOccurrenceDetailRole.ROUTE,
         )
@@ -668,7 +668,7 @@ class DocumentProjectionModelContractTest {
             stableKey(
                 projectionId.value,
                 viewId.value,
-                "connection:PLC1.Q0.0->XT1.1",
+                "connection:test:plc1_q0_0_to_xt1_1",
                 DocumentOccurrenceRole.ROUTE.name,
                 DocumentOccurrenceDetailRole.ROUTE.name,
             ),

@@ -25,7 +25,7 @@ import {
     buildAthenaGraphRepresentationInspection,
     resolveAthenaGraphReferenceMarkerNavigation,
     resolveAthenaGraphPrimaryProductSurface,
-    requiresAthenaControlDrawingProductActivation,
+    resolveAthenaGraphPrimaryProductActivationViewId,
     resolveVisibleAthenaGraphSheetViewSelector,
     buildAthenaGraphDrawingLayerModel,
     buildAthenaGraphRouteInspection,
@@ -261,10 +261,13 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                 return;
             }
             let diagram = requestedDiagram;
-            if (diagram && requiresAthenaControlDrawingProductActivation(diagram.supportedViews, diagram.activeViewId)) {
-                diagram = await this.graphAdapterService.switchActiveView('schematic');
+            const activationViewId = diagram
+                ? resolveAthenaGraphPrimaryProductActivationViewId(diagram.supportedViews, diagram.activeViewId)
+                : undefined;
+            if (diagram && activationViewId) {
+                diagram = await this.graphAdapterService.switchActiveView(activationViewId);
                 if (!diagram) {
-                    throw new Error('Athena did not return the Control Drawing product projection.');
+                    throw new Error('Athena did not return the primary product projection.');
                 }
             }
             if (requestToken !== this.diagramRequestToken || this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {

@@ -1,4 +1,4 @@
-package com.engineeringood.athena.language
+﻿package com.engineeringood.athena.language
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,7 +22,7 @@ class AthenaM18SyntaxScopeTest {
               port package.out {
                 direction out
               }
-              connect package.out -> package.out
+              connect package_out_to_package_out package.out -> package.out
             }
             """.trimIndent()
 
@@ -39,6 +39,7 @@ class AthenaM18SyntaxScopeTest {
                 is ConnectionDeclaration -> it.from.parts.first()
                 is ConnectionGroupDeclaration -> it.name
                 is LayoutDeclaration -> error("Layout declarations are outside this M18 compatibility fixture")
+                is InstallationDeclaration -> error("Installation declarations are outside this M18 compatibility fixture")
             }
         })
     }
@@ -74,7 +75,7 @@ class AthenaM18SyntaxScopeTest {
             "export-device" to "export device PLC1 {}",
             "public-device" to "public device PLC1 {}",
             "private-port" to "private port PLC1.out {}",
-            "internal-connect" to "internal connect PLC1.out -> PLC1.out",
+            "internal-connect" to "internal connect plc1_out_to_plc1_out PLC1.out -> PLC1.out",
         )
 
         declarations.forEach { (name, declaration) ->

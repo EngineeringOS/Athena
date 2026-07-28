@@ -4,6 +4,7 @@ import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.compiler.AthenaProfessionalDrawingCompiler
 import com.engineeringood.athena.compiler.AthenaProfessionalDrawingPolicy
 import com.engineeringood.athena.compiler.AthenaProfessionalDrawingRequest
+import com.engineeringood.athena.compiler.AthenaM35CabinetProjectionCompiler
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
 import com.engineeringood.athena.compiler.semantic.GraphPackageIdentity
@@ -75,8 +76,16 @@ internal fun AthenaLspSessionHostReady.currentProjectionSession(
     professionalTrackedDocument?.professionalM34ProjectionSession(snapshot)?.let { professional ->
         return professional
     }
+    val m35TrackedDocument = trackedDocument ?: professionalM35TrackedDocument(snapshot, languageFeatures)
+    m35TrackedDocument?.professionalM35ProjectionSession(
+        snapshot = snapshot,
+        generic = context.projectProjectionSession(),
+    )?.let { professional ->
+        return professional
+    }
     return trackedDocument?.let { tracked ->
-        context.previewProjectionSession(tracked.compilation)
+        val generic = context.previewProjectionSession(tracked.compilation)
+        tracked.professionalM35ProjectionSession(snapshot, generic) ?: generic
     } ?: context.projectProjectionSession()
 }
 
@@ -159,6 +168,99 @@ private fun AthenaTrackedDocument.professionalM34ProjectionSession(
 private fun Path.isProfessionalM34RepositoryRoot(): Boolean {
     return toAbsolutePath().normalize().toString().replace('\\', '/')
         .endsWith("examples/m34/professional-control-drawing")
+}
+
+private fun AthenaTrackedDocument.professionalM35ProjectionSession(
+    snapshot: AthenaLspSessionSnapshot?,
+    generic: AthenaRuntimeProjectionSession,
+): AthenaRuntimeProjectionSession? {
+    val repositoryRoot = snapshot?.repositoryRoot ?: return null
+    if (!repositoryRoot.isProfessionalM35RepositoryRoot()) {
+        return null
+    }
+    val success = compilation as? CompilerCompilationSuccess ?: return null
+    val cabinetView = m35CabinetView()
+    val result = AthenaM35CabinetProjectionCompiler().compile(
+        repositoryRoot = repositoryRoot,
+        sourcePath = path,
+        success = success,
+    )
+    val presentation = result.presentation
+    if (presentation == null) {
+        return AthenaRuntimeProjectionSession(
+            projectName = snapshot.projectName,
+            supportedViews = listOf(cabinetView),
+            activeViewId = "cabinet",
+            activeProjection = AthenaRuntimeProjectionUnavailableSnapshot(
+                viewId = "cabinet",
+                reason = result.diagnostics.joinToString("\n") { diagnostic ->
+                    "${diagnostic.code}: ${diagnostic.subject}: ${diagnostic.message}"
+                }.ifBlank { "M35 Cabinet projection compilation failed." },
+                diagnostics = result.diagnostics.map { diagnostic ->
+                    AthenaRuntimeProjectionDiagnostic(
+                        severity = "error",
+                        code = diagnostic.code,
+                        message = diagnostic.message,
+                        provenance = diagnostic.subject,
+                    )
+                },
+            ),
+        )
+    }
+    return generic.copy(
+        supportedViews = listOf(cabinetView),
+        activeViewId = "cabinet",
+        activeProjection = AthenaRuntimeProjectionReadySnapshot(
+            viewId = "cabinet",
+            familyId = "electrical/cabinet",
+            scene = AthenaRuntimeViewerScene(
+                systemName = success.document.system.name,
+                canvasWidth = presentation.canvasWidth,
+                canvasHeight = presentation.canvasHeight,
+                components = emptyList(),
+                connections = emptyList(),
+                labels = emptyList(),
+            ),
+            presentation = presentation,
+            activeSheetId = "cabinet/sheet/m35-physical-installation",
+            sheets = emptyList(),
+        ),
+    )
+}
+
+private fun professionalM35TrackedDocument(
+    snapshot: AthenaLspSessionSnapshot?,
+    languageFeatures: AthenaLanguageFeatures?,
+): AthenaTrackedDocument? {
+    val repositoryRoot = snapshot?.repositoryRoot ?: return null
+    if (!repositoryRoot.isProfessionalM35RepositoryRoot()) {
+        return null
+    }
+    val sourcePath = repositoryRoot.resolve(
+        "src/com/engineeringood/m35/physicalinstallationcabinet/01-physical-installation-cabinet.athena",
+    ).toAbsolutePath().normalize()
+    languageFeatures ?: return null
+    return languageFeatures.trackedDocumentByPath(sourcePath) ?: runCatching {
+        languageFeatures.trackDocument(
+            uri = sourcePath.toUri().toString(),
+            path = sourcePath,
+            version = 0,
+            text = Files.readString(sourcePath),
+        )
+    }.getOrNull()
+}
+
+private fun m35CabinetView(): AthenaRuntimeProjectionView =
+    AthenaRuntimeProjectionView(
+        viewId = "cabinet",
+        displayName = "Cabinet",
+        description = "M35 physical installation Cabinet.",
+        familyId = "electrical/cabinet",
+    )
+
+private fun Path.isProfessionalM35RepositoryRoot(): Boolean {
+    return toAbsolutePath().normalize().toString().replace('\\', '/')
+        .endsWith("examples/m35/physical-installation-cabinet")
 }
 
 private fun professionalM34SemanticSnapshot(

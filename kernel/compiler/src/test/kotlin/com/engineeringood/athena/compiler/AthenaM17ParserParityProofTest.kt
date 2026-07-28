@@ -61,9 +61,9 @@ class AthenaM17ParserParityProofTest {
                 assertEquals("port:$owner.${port.name}", port.id.value, "port identity scheme for ${example.name}")
             }
             document.connections.forEach { connection ->
-                val from = connection.from.authoredPath.joinToString(".")
-                val to = connection.to.authoredPath.joinToString(".")
-                assertEquals("connection:$from->$to", connection.id.value, "connection identity scheme for ${example.name}")
+                val prefix = "connection:${sourcePath.toPortableSourceUnitId()}:"
+                assertTrue(connection.id.value.startsWith(prefix), "connection identity scheme for ${example.name}")
+                assertTrue("->" !in connection.id.value, "connection identity must not derive from endpoints for ${example.name}")
             }
         }
     }
@@ -164,6 +164,19 @@ class AthenaM17ParserParityProofTest {
         }
         require(Files.exists(current.resolve("settings.gradle.kts"))) { "Could not locate repository root" }
         return current
+    }
+
+    private fun Path.toPortableSourceUnitId(): String {
+        val normalized = toString().replace('\\', '/')
+        val examplesIndex = normalized.indexOf("/examples/")
+        if (examplesIndex >= 0) {
+            return normalized.substring(examplesIndex + 1)
+        }
+        val srcIndex = normalized.indexOf("/src/")
+        if (srcIndex >= 0) {
+            return normalized.substring(srcIndex + 1)
+        }
+        return normalized
     }
 
     private data class ConformanceExample(

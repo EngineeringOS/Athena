@@ -3,7 +3,7 @@
 // AD-107: Tree-sitter owns syntax UX only (highlighting/structure), never semantic truth.
 // AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset,
 // M23 system-scoped layout-block admission, M28 nested device-owned ports, compact grouped connect
-// authoring, and the frozen M34 native Symbol/Element syntax subset.
+// authoring, the frozen M34 native Symbol/Element syntax subset, and M35 installation cabinet syntax.
 // `kernel/language/src/main/kotlin/com/engineeringood/athena/language/AthenaLanguageModel.kt` /
 // `AthenaLanguageParser.kt`: optional package, repeated imports, one system block, and the
 // existing device/port/connect, layout, qualified-name, string, identifier, property, and M34
@@ -36,6 +36,7 @@ module.exports = grammar({
     [$.element_child],
     [$.binding_declaration],
     [$.binding_select],
+    [$.installation_declaration],
   ],
 
   rules: {
@@ -99,6 +100,7 @@ module.exports = grammar({
       $.port_declaration,
       $.connect_declaration,
       $.layout_declaration,
+      $.installation_declaration,
     ),
 
     symbol_declaration: $ => seq(
@@ -563,6 +565,7 @@ module.exports = grammar({
 
     connect_declaration: $ => seq(
       'connect',
+      field('name', alias($.identifier, $.name)),
       choice(
         seq(
           field('from', $.qualified_name),
@@ -570,7 +573,6 @@ module.exports = grammar({
           field('to', $.qualified_name),
         ),
         seq(
-          field('name', alias($.identifier, $.name)),
           '{',
           repeat($.connect_group_edge),
           '}',
@@ -579,6 +581,7 @@ module.exports = grammar({
     ),
 
     connect_group_edge: $ => seq(
+      field('name', alias($.identifier, $.name)),
       field('from', $.qualified_name),
       '->',
       field('to', $.qualified_name),
@@ -662,6 +665,160 @@ module.exports = grammar({
       'grouped-with',
       field('target', $.identifier),
     ),
+
+    installation_declaration: $ => seq(
+      token(prec(1, 'installation')),
+      token(prec(1, 'cabinet')),
+      field('name', alias($.identifier, $.name)),
+      '{',
+      repeat($._installation_member),
+      optional('}'),
+    ),
+
+    _installation_member: $ => choice(
+      $.installation_enclosure,
+      $.installation_surface,
+      $.installation_rail,
+      $.installation_duct,
+      $.installation_channel,
+      $.installation_terminal_group,
+      $.installation_mount,
+      $.installation_route,
+    ),
+
+    installation_enclosure: $ => seq(
+      'enclosure',
+      field('name', alias($.identifier, $.name)),
+      'size',
+      field('size', $.length_tuple3),
+    ),
+
+    installation_surface: $ => seq(
+      'surface',
+      field('name', alias($.identifier, $.name)),
+      'in',
+      field('enclosure', $.identifier),
+      'at',
+      field('origin', $.length_point),
+      'size',
+      field('size', $.length_size),
+      'accepts',
+      field('mounting_types', $.identifier_list),
+    ),
+
+    installation_rail: $ => seq(
+      'rail',
+      field('name', alias($.identifier, $.name)),
+      'on',
+      field('surface', $.identifier),
+      'at',
+      field('origin', $.length_point),
+      'length',
+      field('length', $.length_literal),
+      'orientation',
+      field('orientation', $.layout_orientation),
+      'mounting',
+      field('mounting_type', $.identifier),
+    ),
+
+    installation_duct: $ => seq(
+      'duct',
+      field('name', alias($.identifier, $.name)),
+      'in',
+      field('enclosure', $.identifier),
+      'at',
+      field('origin', $.length_point),
+      'size',
+      field('size', $.length_size),
+      'orientation',
+      field('orientation', $.layout_orientation),
+      'wall',
+      field('wall', $.length_literal),
+    ),
+
+    installation_channel: $ => seq(
+      'channel',
+      field('name', alias($.identifier, $.name)),
+      'in',
+      field('duct', $.identifier),
+      'at',
+      field('origin', $.length_point),
+      'size',
+      field('size', $.length_size),
+      'lanes',
+      field('lanes', $.positive_integer),
+      'margin',
+      field('margin', $.length_literal),
+    ),
+
+    installation_terminal_group: $ => seq(
+      'terminal-group',
+      field('name', alias($.identifier, $.name)),
+      'in',
+      field('enclosure', $.identifier),
+      'at',
+      field('origin', $.length_point),
+      'size',
+      field('size', $.length_size),
+      'orientation',
+      field('orientation', $.layout_orientation),
+      'accepts',
+      field('mounting_types', $.identifier_list),
+    ),
+
+    installation_mount: $ => seq(
+      'mount',
+      field('name', alias($.identifier, $.name)),
+      'device',
+      field('device', $.identifier),
+      'on',
+      field('target', $.identifier),
+      'at',
+      field('origin', $.length_point),
+      'orientation',
+      field('orientation', $.layout_orientation),
+    ),
+
+    installation_route: $ => seq(
+      'route',
+      field('connection', $.identifier),
+      'through',
+      field('channels', $.identifier_list),
+    ),
+
+    identifier_list: $ => seq(
+      '[',
+      commaSep1($.identifier),
+      ']',
+    ),
+
+    length_point: $ => seq(
+      '(',
+      $.length_literal,
+      ',',
+      $.length_literal,
+      ')',
+    ),
+
+    length_size: $ => seq(
+      '(',
+      $.length_literal,
+      ',',
+      $.length_literal,
+      ')',
+    ),
+
+    length_tuple3: $ => seq(
+      '(',
+      $.length_literal,
+      ',',
+      $.length_literal,
+      ',',
+      $.length_literal,
+      ')',
+    ),
+
+    length_literal: _ => token(prec(1, /-?[0-9]+(?:\.[0-9]+)?mm/)),
 
     qualified_name: $ => seq(
       $.identifier,

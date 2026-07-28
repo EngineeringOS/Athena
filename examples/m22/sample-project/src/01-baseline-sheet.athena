@@ -1,4 +1,4 @@
-package com.engineeringood.m22.sample
+﻿package com.engineeringood.m22.sample
 
 system BaselineSheetShowcase {
   device BaselineSW1 {
@@ -29,6 +29,6 @@ system BaselineSheetShowcase {
     signal Control24V
   }
 
-  connect BaselineSW1.out -> BaselineM1.in
-  connect BaselineSW1.out -> BaselineL1.in
+  connect baselinesw1_out_to_baselinem1_in BaselineSW1.out -> BaselineM1.in
+  connect baselinesw1_out_to_baselinel1_in BaselineSW1.out -> BaselineL1.in
 }

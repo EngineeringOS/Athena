@@ -71,6 +71,21 @@ class AthenaProfileBindingSourceValidatorTest {
             result.diagnostics.map { diagnostic -> diagnostic.code },
         )
     }
+
+    @Test
+    fun `binding may target one exported element from another representation package`() {
+        val result = compiler.compile(
+            listOf(
+                AthenaRepresentationSourceInput("standard/iec.athena", CROSS_PACKAGE_ELEMENT),
+                AthenaRepresentationSourceInput("control/bindings.athena", CROSS_PACKAGE_BINDING),
+            ),
+        )
+
+        assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
+        val rule = result.bindingRules.single()
+        assertEquals("com.engineeringood.standard.iec", rule.target.representationPackageId.value)
+        assertEquals("iec.breaker.element", rule.target.descriptorId.value)
+    }
 }
 
 private val MISSING_CONTRACTS = """
@@ -150,5 +165,44 @@ private val FUNCTION_WITHOUT_ROLE = """
       priority 100
       select function where { type Contactor }
       use element "iec.coil.element" version "1.0.0"
+    }
+""".trimIndent()
+
+private val CROSS_PACKAGE_ELEMENT = """
+    package com.engineeringood.standard.iec
+
+    symbol breaker_symbol {
+      identity "iec.breaker.symbol"
+      version "1.0.0"
+      graphic {
+        bounds (0, 0, 32, 32)
+        line body from (16, 0) to (16, 32) style symbol
+      }
+    }
+
+    element breaker_element {
+      identity "iec.breaker.element"
+      version "1.0.0"
+      bounds (0, 0, 32, 32)
+      child glyph { symbol "iec.breaker.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+    }
+""".trimIndent()
+
+private val CROSS_PACKAGE_BINDING = """
+    package com.engineeringood.control
+
+    profile CabinetIEC {
+      projection cabinet
+      standard IEC
+      style athena-industrial-cabinet-v1
+      fallback fail-closed
+    }
+
+    binding BreakerCabinet {
+      profile CabinetIEC
+      priority 100
+      select device where { type Breaker }
+      use element "iec.breaker.element" version "1.0.0"
+      variant "standard"
     }
 """.trimIndent()

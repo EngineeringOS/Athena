@@ -41,7 +41,10 @@ class M30DemoRepresentationBinderTest {
             setOf(RepresentationReferenceKind.FOLIO_CONTINUATION),
             referenceOccurrence.referenceBindings.map { binding -> binding.kind }.toSet(),
         )
-        assertEquals(RepresentationSubjectId("connection:ControlRelayK1.a1->MotorM1.u1"), referenceOccurrence.canonicalSemanticId)
+        assertEquals(
+            RepresentationSubjectId("connection:m30-demo:control_relay_k1_a1_to_motor_m1_u1"),
+            referenceOccurrence.canonicalSemanticId,
+        )
     }
 
     private fun nativeLibrary(): NativeRepresentationLibrary {

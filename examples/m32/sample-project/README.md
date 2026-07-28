@@ -5,7 +5,7 @@ package data.
 
 It contains:
 
-- semantic `.athena` source in `src/01-package-platform-demo.athena`
+- semantic `.athena` source in `src/com/engineeringood/m32/sample/01-package-platform-demo.athena`
 - Engineering Package descriptors under `packages/engineering`
 - Presentation Profile descriptors under `packages/profiles`
 - Binding Manifests under `packages/manifests`

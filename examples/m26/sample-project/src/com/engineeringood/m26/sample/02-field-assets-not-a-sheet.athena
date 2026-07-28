@@ -1,4 +1,4 @@
-package com.engineeringood.m26.sample
+﻿package com.engineeringood.m26.sample
 
 system SemanticDocumentProjectionAcceptanceField {
   device FieldOutputModuleIOM1 {
@@ -36,8 +36,8 @@ system SemanticDocumentProjectionAcceptanceField {
     signal Digital
   }
 
-  connect FieldOutputModuleIOM1.do1 -> FieldTerminalXT1.in1
-  connect FieldTerminalXT1.out1 -> ConveyorMotorM1.u1
+  connect fieldoutputmoduleiom1_do1_to_fieldterminalxt1_in1 FieldOutputModuleIOM1.do1 -> FieldTerminalXT1.in1
+  connect fieldterminalxt1_out1_to_conveyormotorm1_u1 FieldTerminalXT1.out1 -> ConveyorMotorM1.u1
 
   layout schematic-sheet {
     place FieldTerminalXT1 below FieldOutputModuleIOM1

@@ -1,6 +1,9 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-m35-lock-v2
+validatedLockStateDigest: lock-state/v1:73b1f1c5420acdca3ce6e8b3be770a288ddec92e1e5c9078eff15a3fa63e8a15
 primaryPackage:
   name: com.engineeringood.m34.professional
   version: 1.0.0
@@ -8,4 +11,9 @@ packages:
   - name: com.engineeringood.m34.professional
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot/v1:5e2a6160607b020a880264db62a517bdd895ea3a73700c965b7c78085073434c
+    sourceHashes:
+      - path: com/engineeringood/m34/professional/01-control-drawing.athena
+        hash: sha256:5d2da279f6ff7efcf0990813a8f2655ee9d078f6e4bad5ed5a7fba61f918f503
+    resourceHashes: []
     dependencies: []

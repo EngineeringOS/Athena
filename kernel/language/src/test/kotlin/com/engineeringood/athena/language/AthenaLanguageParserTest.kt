@@ -1,4 +1,4 @@
-package com.engineeringood.athena.language
+﻿package com.engineeringood.athena.language
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -165,7 +165,7 @@ class AthenaLanguageParserTest {
             }
             """.trimIndent()
 
-        val result = AthenaLanguageParser().parse("alias-free-connect.athena", source)
+        val result = AthenaLanguageParser().parse("missing-connection-alias.athena", source)
 
         val failure = assertIs<ParseFailure>(result)
         assertEquals(1, failure.diagnostics.size)
@@ -361,6 +361,174 @@ class AthenaLanguageParserTest {
             layout.statements,
         )
         assertTrue(layout.span.start.line < layout.span.end.line)
+    }
+
+    @Test
+    fun `parses cabinet installation block into typed authored source model with spans`() {
+        val source =
+            """
+            system Demo {
+              device QF1 {
+                type Breaker
+              }
+              device M1 {
+                type Motor
+              }
+              port QF1.line {
+                direction out
+              }
+              port M1.line {
+                direction in
+              }
+              connect feeder QF1.line -> M1.line
+
+              installation cabinet MainCabinet {
+                enclosure ENC1 size (800mm, 600mm, 250mm)
+                surface Backplate in ENC1 at (20mm, 20mm) size (760mm, 560mm) accepts [din35, screw]
+                rail DIN1 on Backplate at (60mm, 120mm) length 680mm orientation horizontal mounting din35
+                duct D1 in ENC1 at (30mm, 60mm) size (40mm, 480mm) orientation vertical wall 2mm
+                channel C1 in D1 at (4mm, 8mm) size (32mm, 464mm) lanes 4 margin 2mm
+                terminal-group XT1 in ENC1 at (560mm, 420mm) size (160mm, 80mm) orientation horizontal accepts [terminal]
+                mount QF1Mount device QF1 on DIN1 at (0mm, 0mm) orientation horizontal
+                mount M1Mount device M1 on DIN1 at (100mm, 0mm) orientation horizontal
+                route feeder through [C1]
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("cabinet-installation.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val installation = assertIs<InstallationDeclaration>(success.ast.declarations.last())
+        assertEquals("MainCabinet", installation.name)
+        assertEquals(InstallationKind.Cabinet, installation.kind)
+        assertEquals("ENC1", installation.enclosures.single().id)
+        assertEquals(800.0, installation.enclosures.single().size.width.value)
+        assertEquals("mm", installation.enclosures.single().size.width.unit)
+        assertEquals("Backplate", installation.surfaces.single().id)
+        assertEquals(listOf("din35", "screw"), installation.surfaces.single().acceptedMountingTypes)
+        assertEquals("DIN1", installation.rails.single().id)
+        assertEquals(InstallationOrientation.Horizontal, installation.rails.single().orientation)
+        assertEquals("D1", installation.ducts.single().id)
+        assertEquals(InstallationOrientation.Vertical, installation.ducts.single().orientation)
+        assertEquals("C1", installation.channels.single().id)
+        assertEquals(4, installation.channels.single().lanes)
+        assertEquals("XT1", installation.terminalGroups.single().id)
+        assertEquals("QF1Mount", installation.mounts[0].id)
+        assertEquals("QF1", installation.mounts[0].deviceId)
+        assertEquals("DIN1", installation.mounts[0].targetId)
+        assertEquals("M1Mount", installation.mounts[1].id)
+        assertEquals("feeder", installation.routes.single().connectionAlias)
+        assertEquals(listOf("C1"), installation.routes.single().channelIds)
+        assertTrue(installation.span.start.line < installation.span.end.line)
+        assertTrue(installation.enclosures.single().span.start.offset > installation.span.start.offset)
+        assertTrue(installation.routes.single().span.end.offset < installation.span.end.offset)
+    }
+
+    @Test
+    fun `rejects non cabinet installation kinds and implementation vocabulary in public syntax`() {
+        val cases = listOf(
+            "panel-kind" to """
+                system Demo {
+                  installation panel MainPanel {
+                  }
+                }
+            """.trimIndent(),
+            "renderer-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    renderer HtmlCanvas
+                  }
+                }
+            """.trimIndent(),
+            "graphic-ir-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    GraphicPrimitive RoutePreview
+                  }
+                }
+            """.trimIndent(),
+            "missing-required-member-fields" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    enclosure ENC1
+                  }
+                }
+            """.trimIndent(),
+            "ir-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    IR CabinetModel
+                  }
+                }
+            """.trimIndent(),
+            "occurrence-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    occurrence QF1Mount
+                  }
+                }
+            """.trimIndent(),
+            "descriptor-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    descriptor CabinetShape
+                  }
+                }
+            """.trimIndent(),
+            "snapshot-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    snapshot CabinetState
+                  }
+                }
+            """.trimIndent(),
+            "pixel-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    pixel CabinetDot
+                  }
+                }
+            """.trimIndent(),
+            "dom-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    DOM CabinetNode
+                  }
+                }
+            """.trimIndent(),
+            "transport-term" to """
+                system Demo {
+                  installation cabinet MainCabinet {
+                    transport CabinetPayload
+                  }
+                }
+            """.trimIndent(),
+        )
+
+        cases.forEach { (name, invalidSource) ->
+            val result = AthenaLanguageParser().parse("$name.athena", invalidSource)
+            val failure = assertIs<ParseFailure>(result, "Expected $name to fail")
+            assertTrue(failure.diagnostics.single().message.isNotBlank(), "Expected diagnostic for $name")
+        }
+    }
+
+    @Test
+    fun `rejects duplicate installation member ids at authored source boundary`() {
+        val source =
+            """
+            system Demo {
+              installation cabinet MainCabinet {
+                enclosure ENC1 size (800mm, 600mm, 250mm)
+                surface ENC1 in ENC1 at (20mm, 20mm) size (760mm, 560mm) accepts [din35]
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("duplicate-installation-member.athena", source)
+
+        val failure = assertIs<ParseFailure>(result)
+        assertTrue(failure.diagnostics.single().message.contains("Duplicate installation member id"))
     }
 
     @Test

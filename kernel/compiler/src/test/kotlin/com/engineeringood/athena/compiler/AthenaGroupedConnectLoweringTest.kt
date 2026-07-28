@@ -92,12 +92,12 @@ class AthenaGroupedConnectLoweringTest {
         assertEquals(
             listOf(
                 ConnectionProof(
-                    id = "connection:${directory.resolve(fileName)}:feed_in",
+                    id = "connection:${directory.resolve(fileName).toPortableSourceUnitId()}:feed_in",
                     sourceId = "port:MainPowerSupplyPS30.lplus",
                     targetId = "port:MainBreakerQF30.line",
                 ),
                 ConnectionProof(
-                    id = "connection:${directory.resolve(fileName)}:relay_supply",
+                    id = "connection:${directory.resolve(fileName).toPortableSourceUnitId()}:relay_supply",
                     sourceId = "port:MainBreakerQF30.load",
                     targetId = "port:ControlRelayK30.supply",
                 ),
@@ -128,4 +128,6 @@ class AthenaGroupedConnectLoweringTest {
         val sourceId: String,
         val targetId: String,
     )
+
+    private fun java.nio.file.Path.toPortableSourceUnitId(): String = toString().replace('\\', '/')
 }

@@ -270,6 +270,10 @@
         {
           "type": "SYMBOL",
           "name": "layout_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_declaration"
         }
       ]
     },
@@ -2207,6 +2211,19 @@
           "value": "connect"
         },
         {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
           "type": "CHOICE",
           "members": [
             {
@@ -2238,19 +2255,6 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "FIELD",
-                  "name": "name",
-                  "content": {
-                    "type": "ALIAS",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "identifier"
-                    },
-                    "named": true,
-                    "value": "name"
-                  }
-                },
-                {
                   "type": "STRING",
                   "value": "{"
                 },
@@ -2274,6 +2278,19 @@
     "connect_group_edge": {
       "type": "SEQ",
       "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
         {
           "type": "FIELD",
           "name": "from",
@@ -2602,6 +2619,769 @@
         }
       ]
     },
+    "installation_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 1,
+            "content": {
+              "type": "STRING",
+              "value": "installation"
+            }
+          }
+        },
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "PREC",
+            "value": 1,
+            "content": {
+              "type": "STRING",
+              "value": "cabinet"
+            }
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_installation_member"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "}"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "_installation_member": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "installation_enclosure"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_surface"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_rail"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_duct"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_channel"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_terminal_group"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_mount"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "installation_route"
+        }
+      ]
+    },
+    "installation_enclosure": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "enclosure"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "size"
+        },
+        {
+          "type": "FIELD",
+          "name": "size",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_tuple3"
+          }
+        }
+      ]
+    },
+    "installation_surface": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "surface"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "in"
+        },
+        {
+          "type": "FIELD",
+          "name": "enclosure",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "at"
+        },
+        {
+          "type": "FIELD",
+          "name": "origin",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_point"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "size"
+        },
+        {
+          "type": "FIELD",
+          "name": "size",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_size"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "accepts"
+        },
+        {
+          "type": "FIELD",
+          "name": "mounting_types",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier_list"
+          }
+        }
+      ]
+    },
+    "installation_rail": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "rail"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "on"
+        },
+        {
+          "type": "FIELD",
+          "name": "surface",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "at"
+        },
+        {
+          "type": "FIELD",
+          "name": "origin",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_point"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "length"
+        },
+        {
+          "type": "FIELD",
+          "name": "length",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_literal"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "orientation"
+        },
+        {
+          "type": "FIELD",
+          "name": "orientation",
+          "content": {
+            "type": "SYMBOL",
+            "name": "layout_orientation"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "mounting"
+        },
+        {
+          "type": "FIELD",
+          "name": "mounting_type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        }
+      ]
+    },
+    "installation_duct": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "duct"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "in"
+        },
+        {
+          "type": "FIELD",
+          "name": "enclosure",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "at"
+        },
+        {
+          "type": "FIELD",
+          "name": "origin",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_point"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "size"
+        },
+        {
+          "type": "FIELD",
+          "name": "size",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_size"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "orientation"
+        },
+        {
+          "type": "FIELD",
+          "name": "orientation",
+          "content": {
+            "type": "SYMBOL",
+            "name": "layout_orientation"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "wall"
+        },
+        {
+          "type": "FIELD",
+          "name": "wall",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_literal"
+          }
+        }
+      ]
+    },
+    "installation_channel": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "channel"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "in"
+        },
+        {
+          "type": "FIELD",
+          "name": "duct",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "at"
+        },
+        {
+          "type": "FIELD",
+          "name": "origin",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_point"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "size"
+        },
+        {
+          "type": "FIELD",
+          "name": "size",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_size"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "lanes"
+        },
+        {
+          "type": "FIELD",
+          "name": "lanes",
+          "content": {
+            "type": "SYMBOL",
+            "name": "positive_integer"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "margin"
+        },
+        {
+          "type": "FIELD",
+          "name": "margin",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_literal"
+          }
+        }
+      ]
+    },
+    "installation_terminal_group": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "terminal-group"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "in"
+        },
+        {
+          "type": "FIELD",
+          "name": "enclosure",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "at"
+        },
+        {
+          "type": "FIELD",
+          "name": "origin",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_point"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "size"
+        },
+        {
+          "type": "FIELD",
+          "name": "size",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_size"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "orientation"
+        },
+        {
+          "type": "FIELD",
+          "name": "orientation",
+          "content": {
+            "type": "SYMBOL",
+            "name": "layout_orientation"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "accepts"
+        },
+        {
+          "type": "FIELD",
+          "name": "mounting_types",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier_list"
+          }
+        }
+      ]
+    },
+    "installation_mount": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "mount"
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            "named": true,
+            "value": "name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "device"
+        },
+        {
+          "type": "FIELD",
+          "name": "device",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "on"
+        },
+        {
+          "type": "FIELD",
+          "name": "target",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "at"
+        },
+        {
+          "type": "FIELD",
+          "name": "origin",
+          "content": {
+            "type": "SYMBOL",
+            "name": "length_point"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "orientation"
+        },
+        {
+          "type": "FIELD",
+          "name": "orientation",
+          "content": {
+            "type": "SYMBOL",
+            "name": "layout_orientation"
+          }
+        }
+      ]
+    },
+    "installation_route": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "route"
+        },
+        {
+          "type": "FIELD",
+          "name": "connection",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "through"
+        },
+        {
+          "type": "FIELD",
+          "name": "channels",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier_list"
+          }
+        }
+      ]
+    },
+    "identifier_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ","
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "identifier"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "length_point": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ","
+        },
+        {
+          "type": "SYMBOL",
+          "name": "length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "length_size": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ","
+        },
+        {
+          "type": "SYMBOL",
+          "name": "length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "length_tuple3": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "("
+        },
+        {
+          "type": "SYMBOL",
+          "name": "length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ","
+        },
+        {
+          "type": "SYMBOL",
+          "name": "length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ","
+        },
+        {
+          "type": "SYMBOL",
+          "name": "length_literal"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "length_literal": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "-?[0-9]+(?:\\.[0-9]+)?mm"
+        }
+      }
+    },
     "qualified_name": {
       "type": "SEQ",
       "members": [
@@ -2723,6 +3503,9 @@
     ],
     [
       "binding_select"
+    ],
+    [
+      "installation_declaration"
     ]
   ],
   "precedences": [],

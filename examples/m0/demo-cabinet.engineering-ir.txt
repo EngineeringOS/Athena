@@ -10,4 +10,4 @@ property|name=signal|value=symbol:Digital
 port|id=port:M1.in|owner=M1|ownerResolved=component:M1|ownerProvenance=examples/m0/demo-cabinet.athena:16:8-16:13|name=in|provenance=examples/m0/demo-cabinet.athena:16:3-19:4
 property|name=direction|value=symbol:in
 property|name=signal|value=symbol:Digital
-connection|id=connection:PLC1.out->M1.in|from=PLC1.out|fromResolved=port:PLC1.out|fromProvenance=examples/m0/demo-cabinet.athena:21:11-21:19|to=M1.in|toResolved=port:M1.in|toProvenance=examples/m0/demo-cabinet.athena:21:23-21:28|provenance=examples/m0/demo-cabinet.athena:21:3-21:28
+connection|id=connection:examples/m0/demo-cabinet.athena:plc_to_motor|from=PLC1.out|fromResolved=port:PLC1.out|fromProvenance=examples/m0/demo-cabinet.athena:21:24-21:32|to=M1.in|toResolved=port:M1.in|toProvenance=examples/m0/demo-cabinet.athena:21:36-21:41|provenance=examples/m0/demo-cabinet.athena:21:3-21:41

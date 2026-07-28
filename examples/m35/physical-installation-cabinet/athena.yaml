@@ -1,0 +1,7 @@
+primaryPackage:
+  name: com.engineeringood.m35.physicalinstallationcabinet
+  version: 1.0.0
+  sourceRoot: src
+
+representationPackageRoots:
+  - packages/representation

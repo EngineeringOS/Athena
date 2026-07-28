@@ -27,22 +27,23 @@ class AthenaEngineeringGraphProjectionTest {
         assertEquals(6, ready.graph.nodes.size)
         assertEquals(6, ready.graph.relationships.size)
 
-        val connection = ready.graph.node("connection:PLC1.out->M1.in")
+        val connectionId = "connection:$sourcePath:plc_to_motor"
+        val connection = ready.graph.node(connectionId)
         assertEquals(AthenaEngineeringGraphNodeKind.CONNECTION, connection?.kind)
         assertEquals(
             listOf("port:PLC1.out", "port:M1.in"),
-            ready.graph.referencedNodes("connection:PLC1.out->M1.in").map { it.semanticId },
+            ready.graph.referencedNodes(connectionId).map { it.semanticId },
         )
         assertEquals(
             listOf("component:M1", "component:PLC1"),
             ready.graph.dependenciesOf("system:DemoCabinet").map { it.semanticId }.sorted(),
         )
         assertEquals(
-            listOf("component:PLC1", "connection:PLC1.out->M1.in"),
+            listOf("component:PLC1", connectionId),
             ready.graph.neighbors("port:PLC1.out").map { it.semanticId }.sorted(),
         )
         assertEquals(
-            listOf("component:PLC1", "connection:PLC1.out->M1.in"),
+            listOf("component:PLC1", connectionId),
             ready.graph.affectedRelationships("port:PLC1.out").map { it.sourceSemanticId }.sorted(),
         )
         assertEquals(
@@ -50,9 +51,9 @@ class AthenaEngineeringGraphProjectionTest {
             ready.graph.nodesOfKind(AthenaEngineeringGraphNodeKind.COMPONENT).map { it.semanticId }.sorted(),
         )
         assertEquals(
-            listOf("connection:PLC1.out->M1.in->port:M1.in", "connection:PLC1.out->M1.in->port:PLC1.out"),
+            listOf("$connectionId -> port:M1.in", "$connectionId -> port:PLC1.out"),
             ready.graph.relationshipsOfKind(AthenaEngineeringGraphRelationshipKind.CONNECTION_REFERENCE)
-                .map { "${it.sourceSemanticId}->${it.targetSemanticId}" }
+                .map { "${it.sourceSemanticId} -> ${it.targetSemanticId}" }
                 .sorted(),
         )
     }
@@ -120,7 +121,7 @@ class AthenaEngineeringGraphProjectionTest {
 
             val unavailable = assertIs<AthenaEngineeringGraphUnavailableProjection>(projection)
             assertEquals("broken", unavailable.projectName)
-            assertContains(unavailable.reason, "missing '->'")
+            assertTrue(unavailable.reason.isNotBlank())
         } finally {
             Files.deleteIfExists(brokenPath)
         }

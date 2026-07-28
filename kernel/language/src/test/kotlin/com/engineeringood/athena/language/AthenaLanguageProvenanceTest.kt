@@ -72,7 +72,7 @@ class AthenaLanguageProvenanceTest {
                 direction out
               }
 
-              connect PLC1.out -> M1
+              connect invalid_target PLC1.out -> M1
             }
         """.trimIndent()
 
@@ -87,7 +87,7 @@ class AthenaLanguageProvenanceTest {
         val source = """
             system InvalidGroupedConnectionQualifiedNames {
               connect control_feed {
-                PLC1.out -> M1
+                invalid_group_target PLC1.out -> M1
               }
             }
         """.trimIndent()

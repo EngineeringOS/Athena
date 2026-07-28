@@ -1,4 +1,4 @@
-package com.engineeringood.m27.sample
+﻿package com.engineeringood.m27.sample
 
 system ProfessionalSheetProofAcceptance {
   device MainPowerSupplyPS1 {
@@ -86,11 +86,11 @@ system ProfessionalSheetProofAcceptance {
     signal Digital
   }
 
-  connect MainPowerSupplyPS1.lplus -> MainBreakerQF1.line
-  connect MainBreakerQF1.load -> ControllerPLC1.power
-  connect ControllerPLC1.hmiStatus -> OperatorHMI1.status
-  connect FieldOutputModuleIOM1.do1 -> FieldTerminalXT1.in1
-  connect FieldTerminalXT1.out1 -> ConveyorMotorM1.u1
+  connect mainpowersupplyps1_lplus_to_mainbreakerqf1_line MainPowerSupplyPS1.lplus -> MainBreakerQF1.line
+  connect mainbreakerqf1_load_to_controllerplc1_power MainBreakerQF1.load -> ControllerPLC1.power
+  connect controllerplc1_hmistatus_to_operatorhmi1_status ControllerPLC1.hmiStatus -> OperatorHMI1.status
+  connect fieldoutputmoduleiom1_do1_to_fieldterminalxt1_in1 FieldOutputModuleIOM1.do1 -> FieldTerminalXT1.in1
+  connect fieldterminalxt1_out1_to_conveyormotorm1_u1 FieldTerminalXT1.out1 -> ConveyorMotorM1.u1
 
   layout schematic-sheet {
     place MainBreakerQF1 near MainPowerSupplyPS1

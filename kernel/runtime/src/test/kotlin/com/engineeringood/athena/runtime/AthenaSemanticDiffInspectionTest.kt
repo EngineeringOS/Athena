@@ -23,15 +23,16 @@ class AthenaSemanticDiffInspectionTest {
             executeConnect(context, "port:PLC1.out1", "port:M1.in")
 
             val latestInspection = assertNotNull(context.latestSemanticDiffInspection())
+            val firstConnectionId = "connection:history-demo:plc1_out1_to_m1_in"
             assertEquals(AthenaSemanticDiffInspectionSource.COMMAND, latestInspection.source)
             assertEquals(listOf("command-0001"), latestInspection.affectedCommandIds)
             assertEquals(
-                listOf("connection:PLC1.out1->M1.in", "port:M1.in", "port:PLC1.out1"),
+                listOf(firstConnectionId, "port:M1.in", "port:PLC1.out1"),
                 latestInspection.affectedSemanticIds.sorted(),
             )
 
             val connectionEntry = latestInspection.entries.first { entry ->
-                entry.semanticId == "connection:PLC1.out1->M1.in"
+                entry.semanticId == firstConnectionId
             }
             assertEquals(AthenaSemanticDiffChangeKind.ADDED, connectionEntry.changeKind)
             assertEquals(null, connectionEntry.beforeSummary)
@@ -54,7 +55,7 @@ class AthenaSemanticDiffInspectionTest {
                 latestLayoutConsequence.affectedViewIds.sorted(),
             )
             assertEquals(
-                listOf("connection:PLC1.out1->M1.in", "port:M1.in", "port:PLC1.out1"),
+                listOf(firstConnectionId, "port:M1.in", "port:PLC1.out1"),
                 latestLayoutConsequence.affectedSemanticIds.sorted(),
             )
             val latestRenderingConsequence = latestInspection.projectionConsequences.first { consequence ->
@@ -72,11 +73,11 @@ class AthenaSemanticDiffInspectionTest {
             assertEquals(listOf("command-0001"), commandInspection.affectedCommandIds)
             assertEquals(AthenaCommandHistoryRecordStatus.APPLIED, commandInspection.historyConsequences.single().status)
             assertEquals(AthenaSemanticDiffChangeKind.ADDED, commandInspection.entries.first { entry ->
-                entry.semanticId == "connection:PLC1.out1->M1.in"
+                entry.semanticId == firstConnectionId
             }.changeKind)
             assertTrue(commandInspection.projectionConsequences.isNotEmpty())
             assertTrue(commandInspection.projectionConsequences.all { consequence ->
-                "connection:PLC1.out1->M1.in" in consequence.affectedSemanticIds
+                firstConnectionId in consequence.affectedSemanticIds
             })
         } finally {
             Files.deleteIfExists(sourcePath)
@@ -98,12 +99,13 @@ class AthenaSemanticDiffInspectionTest {
             executeConnect(context, "port:PLC1.out2", "port:M2.in")
 
             context.commandRuntime().undo(context)
+            val secondConnectionId = "connection:history-demo:plc1_out2_to_m2_in"
 
             val latestAfterUndo = assertNotNull(context.latestSemanticDiffInspection())
             assertEquals(AthenaSemanticDiffInspectionSource.UNDO, latestAfterUndo.source)
             assertEquals(listOf("command-0002"), latestAfterUndo.affectedCommandIds)
             assertEquals(AthenaSemanticDiffChangeKind.REMOVED, latestAfterUndo.entries.first { entry ->
-                entry.semanticId == "connection:PLC1.out2->M2.in"
+                entry.semanticId == secondConnectionId
             }.changeKind)
             assertEquals(
                 listOf("cabinet", "documentation", "schematic", "wiring"),
@@ -126,7 +128,7 @@ class AthenaSemanticDiffInspectionTest {
             )
             assertEquals(AthenaCommandHistoryRecordStatus.UNDONE, commandInspectionAfterUndo.historyConsequences.single().status)
             assertEquals(AthenaSemanticDiffChangeKind.ADDED, commandInspectionAfterUndo.entries.first { entry ->
-                entry.semanticId == "connection:PLC1.out2->M2.in"
+                entry.semanticId == secondConnectionId
             }.changeKind)
             assertTrue(commandInspectionAfterUndo.projectionConsequences.isNotEmpty())
 
@@ -156,12 +158,21 @@ class AthenaSemanticDiffInspectionTest {
         val result = context.commandRuntime().execute(
             context = context,
             command = AthenaConnectPortsCommand(
+                sourceUnitId = "history-demo",
+                connectionAlias = "${sourcePortSemanticId.connectionAliasPart()}_to_${targetPortSemanticId.connectionAliasPart()}",
                 sourcePortSemanticId = sourcePortSemanticId,
                 targetPortSemanticId = targetPortSemanticId,
             ),
         )
 
         check(result is AthenaCommandExecutionSuccess)
+    }
+
+    private fun String.connectionAliasPart(): String {
+        return removePrefix("port:")
+            .replace('.', '_')
+            .replace('-', '_')
+            .lowercase()
     }
 
     private fun writeProject(source: String): Path {

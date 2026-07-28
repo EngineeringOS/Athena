@@ -74,7 +74,7 @@ class TerminalStripBundleProofTest {
     ): AthenaRouteRequest {
         val source = anchor("anchor:PLC1:DO$terminalNumber", "component:PLC1", "DO$terminalNumber", TerminalSide.RIGHT, 320, terminalY)
         val target = anchor("anchor:XT1:$terminalNumber", "component:XT1", "XT1.${terminalNumber.toInt()}", TerminalSide.LEFT, 520, terminalY)
-        val connectionId = ElectricalConnectionId("connection:PLC1.DO$terminalNumber->XT1.$terminalNumber")
+        val connectionId = ElectricalConnectionId("connection:test:plc1_do${terminalNumber}_to_xt1_$terminalNumber")
         return AthenaRouteRequest(
             routeId = SchematicRouteId("route:xt1:${terminalNumber.toInt()}"),
             bundleId = bundleId,

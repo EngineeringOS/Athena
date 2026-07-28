@@ -1,4 +1,4 @@
-package com.engineeringood.athena.ide.lsp
+﻿package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import org.eclipse.lsp4j.DefinitionParams
@@ -22,7 +22,7 @@ class AthenaPackageAwareNavigationTest {
             system Consumer {
               device Local {}
               port Local.in {}
-              connect Shared.out -> Local.in
+              connect shared_out_to_local_in Shared.out -> Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -66,7 +66,7 @@ class AthenaPackageAwareNavigationTest {
                 ),
             )
 
-            val sharedReferencePosition = Position(5, 12)
+            val sharedReferencePosition = consumerText.positionOf("Shared.out")
             val definition = server.textDocumentService.definition(
                 DefinitionParams(TextDocumentIdentifier(consumerUri), sharedReferencePosition),
             ).get().left
@@ -108,7 +108,7 @@ class AthenaPackageAwareNavigationTest {
             system Consumer {
               device Local {}
               port Local.in {}
-              connect Shared.out -> Local.in
+              connect shared_out_to_local_in_2 Shared.out -> Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -171,7 +171,7 @@ class AthenaPackageAwareNavigationTest {
             )
 
             val definition = server.textDocumentService.definition(
-                DefinitionParams(TextDocumentIdentifier(consumerUri), Position(5, 12)),
+                DefinitionParams(TextDocumentIdentifier(consumerUri), consumerText.positionOf("Shared.out")),
             ).get().left
 
             assertEquals(listOf(providerUri), definition.map { location -> location.uri })
@@ -180,5 +180,14 @@ class AthenaPackageAwareNavigationTest {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
         }
+    }
+
+    private fun String.positionOf(token: String): Position {
+        val offset = indexOf(token)
+        require(offset >= 0) { "Token `$token` not found." }
+        val before = substring(0, offset)
+        val line = before.count { it == '\n' }
+        val character = offset - before.lastIndexOf('\n') - 1
+        return Position(line, character)
     }
 }

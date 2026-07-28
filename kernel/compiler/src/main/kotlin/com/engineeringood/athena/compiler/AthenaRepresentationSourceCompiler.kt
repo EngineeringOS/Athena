@@ -113,7 +113,7 @@ class AthenaRepresentationSourceCompiler(
         val profilesByName = profiles.associateBy { profile -> profile.profileId.value }
         val bindingRules = declarations.mapNotNull { occurrence ->
             (occurrence.declaration as? BindingDeclaration)?.let { binding ->
-                lowerBinding(occurrence.file, occurrence.libraryId, binding, profilesByName)
+                lowerBinding(occurrence.file, binding, profilesByName, identities)
             }
         }
         val definitions = if (loweringDiagnostics.isEmpty()) {
@@ -425,9 +425,9 @@ private fun lowerProfile(file: String, profile: ProfileDeclaration): Presentatio
 
 private fun lowerBinding(
     file: String,
-    libraryId: RepresentationLibraryId,
     binding: BindingDeclaration,
     profilesByName: Map<String, PresentationProfileDescriptor>,
+    identities: List<RepresentationIdentityOccurrence>,
 ): RepresentationBindingRule {
     val profileId = requireNotNull(binding.profile).value
     val projection = requireNotNull(profilesByName[profileId]).projectionContexts.single()
@@ -435,6 +435,10 @@ private fun lowerBinding(
         RepresentationBindingSelectorFact(fact.name, fact.value.asBindingText())
     }
     val concept = selectorFacts.single { it.name == "type" }.value
+    val targetIdentity = requireNotNull(binding.useElement).value
+    val targetLibraryId = identities.single { occurrence ->
+        occurrence.identity == targetIdentity && occurrence.declaration is ElementDeclaration
+    }.libraryId
     return RepresentationBindingRule(
         ruleId = RepresentationBindingRuleId(binding.name),
         profileId = PresentationProfileId(profileId),
@@ -442,8 +446,8 @@ private fun lowerBinding(
         conceptId = EngineeringConceptId(concept),
         selectorFacts = selectorFacts,
         target = RepresentationBindingTarget(
-            representationPackageId = RepresentationPackageId(libraryId.value),
-            descriptorId = RepresentationDescriptorId(requireNotNull(binding.useElement).value),
+            representationPackageId = RepresentationPackageId(targetLibraryId.value),
+            descriptorId = RepresentationDescriptorId(targetIdentity),
             packageVersion = RepresentationPackageVersion(requireNotNull(binding.useVersion).value),
             variantId = binding.variant?.value?.let(::RepresentationVariantId),
         ),

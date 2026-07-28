@@ -1,4 +1,4 @@
-package com.engineeringood.athena.runtime
+﻿package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.authoring.AcceptAuthoringPreviewDecision
 import com.engineeringood.athena.authoring.AuthoringIntentId
@@ -179,19 +179,6 @@ class AthenaAuthoringSessionRuntimeServiceTest {
         } finally {
             Files.deleteIfExists(sourcePath)
         }
-    }
-
-    @Test
-    fun `preview session compatibility is explicitly versioned as read only legacy API`() {
-        val contract = AthenaAuthoringSessionRuntimeService().compatibilityContract()
-
-        assertEquals("legacy-preview-readonly-v1", contract.apiVersion)
-        assertEquals(false, contract.mutableSourceAuthority)
-        assertEquals(true, contract.acceptanceRequiresGovernedAuthorities)
-        assertEquals(
-            listOf("submit", "state", "snapshot", "restoreSession", "applyDecision"),
-            contract.retainedMethods,
-        )
     }
 
     @Test
@@ -569,7 +556,7 @@ class AthenaAuthoringSessionRuntimeServiceTest {
                 signal Digital
               }
 
-              connect PLC1.out -> M1.in
+              connect plc1_out_to_m1_in PLC1.out -> M1.in
             }
         """.trimIndent()
     }

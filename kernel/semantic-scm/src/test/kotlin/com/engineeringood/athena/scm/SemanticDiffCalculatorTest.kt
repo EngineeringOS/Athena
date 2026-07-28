@@ -402,7 +402,7 @@ private fun engineeringDocument(
     val connections = if (includeConnection) {
         listOf(
             EngineeringConnection(
-                id = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                id = StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
                 from = reference("PLC1", "out", plcPortId),
                 to = reference("M1", "in", motorPortId),
                 provenance = provenance("connections.athena"),

@@ -78,7 +78,9 @@ class AthenaRouteEngineSideStubTest {
         sourceAnchor: TerminalAnchorFact,
         targetAnchor: TerminalAnchorFact,
     ): AthenaRouteEngineInput {
-        val connectionId = ElectricalConnectionId("connection:${sourceAnchor.portId.value}->${targetAnchor.portId.value}")
+        val connectionId = ElectricalConnectionId(
+            "connection:test:${sourceAnchor.portId.value.aliasPart()}_to_${targetAnchor.portId.value.aliasPart()}",
+        )
         return AthenaRouteEngineInput(
             snapshotId = LayoutSnapshotId("snapshot:m24:side-stubs"),
             layoutContext = SchematicRoutingLayoutContext(gridSize = 20),
@@ -129,4 +131,6 @@ class AthenaRouteEngineSideStubTest {
             policySource = "m24:schematic-default",
         )
     }
+
+    private fun String.aliasPart(): String = replace(".", "_").replace("+", "plus").lowercase()
 }

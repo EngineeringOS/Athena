@@ -511,7 +511,7 @@
       },
       "name": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "name",
@@ -555,6 +555,16 @@
           }
         ]
       },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
       "to": {
         "multiple": false,
         "required": true,
@@ -581,6 +591,10 @@
         },
         {
           "type": "device_declaration",
+          "named": true
+        },
+        {
+          "type": "installation_declaration",
           "named": true
         },
         {
@@ -1055,6 +1069,21 @@
     }
   },
   {
+    "type": "identifier_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "import_declaration",
     "named": true,
     "fields": {
@@ -1079,6 +1108,488 @@
     "type": "incomplete_package_declaration",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "installation_channel",
+    "named": true,
+    "fields": {
+      "duct": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "lanes": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "positive_integer",
+            "named": true
+          }
+        ]
+      },
+      "margin": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_literal",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "origin": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_point",
+            "named": true
+          }
+        ]
+      },
+      "size": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_size",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "installation_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "installation_channel",
+          "named": true
+        },
+        {
+          "type": "installation_duct",
+          "named": true
+        },
+        {
+          "type": "installation_enclosure",
+          "named": true
+        },
+        {
+          "type": "installation_mount",
+          "named": true
+        },
+        {
+          "type": "installation_rail",
+          "named": true
+        },
+        {
+          "type": "installation_route",
+          "named": true
+        },
+        {
+          "type": "installation_surface",
+          "named": true
+        },
+        {
+          "type": "installation_terminal_group",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "installation_duct",
+    "named": true,
+    "fields": {
+      "enclosure": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "orientation": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "layout_orientation",
+            "named": true
+          }
+        ]
+      },
+      "origin": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_point",
+            "named": true
+          }
+        ]
+      },
+      "size": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_size",
+            "named": true
+          }
+        ]
+      },
+      "wall": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_literal",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "installation_enclosure",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "size": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_tuple3",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "installation_mount",
+    "named": true,
+    "fields": {
+      "device": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "orientation": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "layout_orientation",
+            "named": true
+          }
+        ]
+      },
+      "origin": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_point",
+            "named": true
+          }
+        ]
+      },
+      "target": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "installation_rail",
+    "named": true,
+    "fields": {
+      "length": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_literal",
+            "named": true
+          }
+        ]
+      },
+      "mounting_type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "orientation": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "layout_orientation",
+            "named": true
+          }
+        ]
+      },
+      "origin": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_point",
+            "named": true
+          }
+        ]
+      },
+      "surface": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "installation_route",
+    "named": true,
+    "fields": {
+      "channels": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "connection": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "installation_surface",
+    "named": true,
+    "fields": {
+      "enclosure": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "mounting_types": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "origin": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_point",
+            "named": true
+          }
+        ]
+      },
+      "size": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_size",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "installation_terminal_group",
+    "named": true,
+    "fields": {
+      "enclosure": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "mounting_types": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier_list",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      },
+      "orientation": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "layout_orientation",
+            "named": true
+          }
+        ]
+      },
+      "origin": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_point",
+            "named": true
+          }
+        ]
+      },
+      "size": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "length_size",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "label_slot",
@@ -1214,6 +1725,51 @@
       "types": [
         {
           "type": "identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "length_point",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "length_literal",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "length_size",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "length_literal",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "length_tuple3",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "length_literal",
           "named": true
         }
       ]
@@ -1910,6 +2466,14 @@
     "named": false
   },
   {
+    "type": "[",
+    "named": false
+  },
+  {
+    "type": "]",
+    "named": false
+  },
+  {
     "type": "accepts",
     "named": false
   },
@@ -1950,7 +2514,15 @@
     "named": false
   },
   {
+    "type": "cabinet",
+    "named": false
+  },
+  {
     "type": "center",
+    "named": false
+  },
+  {
+    "type": "channel",
     "named": false
   },
   {
@@ -1978,7 +2550,15 @@
     "named": true
   },
   {
+    "type": "duct",
+    "named": false
+  },
+  {
     "type": "element",
+    "named": false
+  },
+  {
+    "type": "enclosure",
     "named": false
   },
   {
@@ -2026,6 +2606,14 @@
     "named": false
   },
   {
+    "type": "in",
+    "named": false
+  },
+  {
+    "type": "installation",
+    "named": false
+  },
+  {
     "type": "kind",
     "named": false
   },
@@ -2034,11 +2622,35 @@
     "named": false
   },
   {
+    "type": "lanes",
+    "named": false
+  },
+  {
     "type": "layout",
     "named": false
   },
   {
+    "type": "length",
+    "named": false
+  },
+  {
+    "type": "length_literal",
+    "named": true
+  },
+  {
     "type": "line",
+    "named": false
+  },
+  {
+    "type": "margin",
+    "named": false
+  },
+  {
+    "type": "mount",
+    "named": false
+  },
+  {
+    "type": "mounting",
     "named": false
   },
   {
@@ -2052,6 +2664,10 @@
   {
     "type": "number",
     "named": true
+  },
+  {
+    "type": "on",
+    "named": false
   },
   {
     "type": "orientation",
@@ -2122,6 +2738,10 @@
     "named": false
   },
   {
+    "type": "rail",
+    "named": false
+  },
+  {
     "type": "rectangle",
     "named": false
   },
@@ -2135,6 +2755,10 @@
   },
   {
     "type": "rotate",
+    "named": false
+  },
+  {
+    "type": "route",
     "named": false
   },
   {
@@ -2166,6 +2790,10 @@
     "named": false
   },
   {
+    "type": "surface",
+    "named": false
+  },
+  {
     "type": "svg",
     "named": false
   },
@@ -2179,6 +2807,14 @@
   },
   {
     "type": "system",
+    "named": false
+  },
+  {
+    "type": "terminal-group",
+    "named": false
+  },
+  {
+    "type": "through",
     "named": false
   },
   {
@@ -2203,6 +2839,10 @@
   },
   {
     "type": "vertical",
+    "named": false
+  },
+  {
+    "type": "wall",
     "named": false
   },
   {

@@ -1,4 +1,4 @@
-package com.engineeringood.m20.sample
+﻿package com.engineeringood.m20.sample
 
 system AcceptanceSheetShowcase {
   device AcceptanceSW1 {
@@ -20,5 +20,5 @@ system AcceptanceSheetShowcase {
     signal Control24V
   }
 
-  connect AcceptanceSW1.out -> AcceptanceM1.in
+  connect acceptancesw1_out_to_acceptancem1_in AcceptanceSW1.out -> AcceptanceM1.in
 }

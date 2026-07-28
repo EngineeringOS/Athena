@@ -42,7 +42,7 @@ class SvgRendererModuleMarkerTest {
             ),
             connections = listOf(
                 SvgRenderConnection(
-                    semanticId = com.engineeringood.athena.ir.StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    semanticId = com.engineeringood.athena.ir.StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
                     x1 = 180,
                     y1 = 96,
                     x2 = 300,
@@ -104,7 +104,7 @@ class SvgRendererModuleMarkerTest {
                 ),
                 GeometryElement(
                     elementId = GeometryElementId("cabinet/geometry/path/connection_PLC1_out_M1_in"),
-                    semanticId = StableSemanticIdentity("connection:PLC1.out->M1.in"),
+                    semanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
                     kind = GeometryElementKind.PATH,
                     bounds = GeometryBounds(x = 104, y = 86, width = 212, height = 1),
                     points = listOf(

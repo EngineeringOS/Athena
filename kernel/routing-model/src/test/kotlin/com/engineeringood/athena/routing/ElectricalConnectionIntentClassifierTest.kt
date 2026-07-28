@@ -41,7 +41,7 @@ class ElectricalConnectionIntentClassifierTest {
 
         assertEquals(ElectricalConnectionRole.CONTROL_SIGNAL, intent.role)
         assertEquals(ElectricalSignalClass.DIGITAL_OUTPUT, intent.signalClass)
-        assertEquals(ElectricalConnectionId("connection:PLC1.DO1->HMI1.IN1"), intent.connectionId)
+        assertEquals(ElectricalConnectionId("connection:test:plc1_do1_to_hmi1_in1"), intent.connectionId)
         assertEquals(StableSemanticIdentity("component:PLC1"), intent.sourceSubjectId)
         assertEquals(StableSemanticIdentity("port:PLC1.DO1"), intent.sourcePortSemanticId)
         assertEquals(StableSemanticIdentity("component:HMI1"), intent.targetSubjectId)
@@ -134,7 +134,7 @@ class ElectricalConnectionIntentClassifierTest {
     }
 
     private fun sampleInput(
-        connectionId: ElectricalConnectionId = ElectricalConnectionId("connection:PLC1.DO1->HMI1.IN1"),
+        connectionId: ElectricalConnectionId = ElectricalConnectionId("connection:test:plc1_do1_to_hmi1_in1"),
         sourcePort: ElectricalConnectionPortRef = samplePort(),
         targetPort: ElectricalConnectionPortRef = samplePort(
             subjectId = StableSemanticIdentity("component:HMI1"),

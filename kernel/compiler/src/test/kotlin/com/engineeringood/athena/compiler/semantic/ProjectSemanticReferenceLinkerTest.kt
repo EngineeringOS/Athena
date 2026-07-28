@@ -1,4 +1,4 @@
-package com.engineeringood.athena.compiler.semantic
+﻿package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.language.AthenaLanguageParser
@@ -63,7 +63,7 @@ class ProjectSemanticReferenceLinkerTest {
         )
         val consumerDeclarations = declarations(
             "consumer.athena",
-            "package com.root\nsystem Consumer {\n  connect Missing.out -> PLC1.out\n}",
+            "package com.root\nsystem Consumer {\n  connect missing_out_to_plc1_out Missing.out -> PLC1.out\n}",
         )
         val consumer = sourceUnit(rootKey, "consumer.athena", "consumer", consumerDeclarations)
         val namespace = namespace(rootKey, listOf("com", "root"), listOf(provider.sourceUnitId, consumer.sourceUnitId))
@@ -99,7 +99,7 @@ class ProjectSemanticReferenceLinkerTest {
         )
         val consumerDeclarations = declarations(
             "consumer.athena",
-            "package com.root\nsystem Consumer {\n  connect PLC1.out -> PLC2.out\n  port PLC2.out {}\n}",
+            "package com.root\nsystem Consumer {\n  connect plc1_out_to_plc2_out PLC1.out -> PLC2.out\n  port PLC2.out {}\n}",
         )
         val consumer = sourceUnit(rootKey, "consumer.athena", "consumer", consumerDeclarations)
         val namespace = namespace(
@@ -202,7 +202,7 @@ class ProjectSemanticReferenceLinkerTest {
             import com.vendor.left
             import com.vendor.right
             system Consumer {
-              connect Shared.out -> Local.out
+              connect shared_out_to_local_out Shared.out -> Local.out
               port Local.out {}
             }
             """.trimIndent(),
@@ -285,7 +285,7 @@ class ProjectSemanticReferenceLinkerTest {
             """
             package com.root
             system Consumer {
-              connect PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out PLC1.out -> PLC1.out
             }
             """.trimIndent(),
         )
@@ -315,7 +315,7 @@ class ProjectSemanticReferenceLinkerTest {
                     appendLine("import com.vendor")
                 }
                 appendLine("system Consumer {")
-                appendLine("  connect Vendor.out -> Local.out")
+                appendLine("  connect vendor_out_to_local_out Vendor.out -> Local.out")
                 appendLine("  port Local.out {}")
                 appendLine("}")
             }.trimEnd(),

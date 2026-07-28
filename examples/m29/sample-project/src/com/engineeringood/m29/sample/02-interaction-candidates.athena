@@ -1,4 +1,4 @@
-package com.engineeringood.m29.sample
+﻿package com.engineeringood.m29.sample
 
 system InteractionCandidateProof {
   device CandidateOutputModuleIOM29 {
@@ -46,8 +46,8 @@ system InteractionCandidateProof {
     }
   }
 
-  connect CandidateOutputModuleIOM29.do1 -> CandidateTerminalXT29.in1
-  connect CandidateTerminalXT29.out1 -> CandidateMotorM29.u1
+  connect candidateoutputmoduleiom29_do1_to_candidateterminalxt29_in1 CandidateOutputModuleIOM29.do1 -> CandidateTerminalXT29.in1
+  connect candidateterminalxt29_out1_to_candidatemotorm29_u1 CandidateTerminalXT29.out1 -> CandidateMotorM29.u1
 
   layout schematic-sheet {
     place CandidateTerminalXT29 near CandidateOutputModuleIOM29

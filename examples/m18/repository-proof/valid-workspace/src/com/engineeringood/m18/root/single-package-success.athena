@@ -1,7 +1,7 @@
-package com.engineeringood.m18.root
+﻿package com.engineeringood.m18.root
 
 system SinglePackageSuccess {
   device Single {}
   port Single.out {}
-  connect Single.out -> Single.out
+  connect single_out_to_single_out Single.out -> Single.out
 }
