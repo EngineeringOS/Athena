@@ -34,7 +34,7 @@ class SemanticCapabilityRegistryTest {
                     sheetId = "sheet:control",
                     occurrenceId = "occurrence:PLC1:schematic",
                     presentationMetadata = mapOf("symbol" to "plc"),
-                    standardMetadata = mapOf("profile" to "athena-industrial-control-v0"),
+                    standardMetadata = mapOf("profile" to "athena-industrial-control"),
                     adapterMetadata = mapOf("svgNodeId" to "node-PLC1"),
                 ),
             ),
@@ -60,7 +60,7 @@ class SemanticCapabilityRegistryTest {
         assertEquals(2, registry.subjects.size)
         assertEquals("occurrence:PLC1:schematic", component.occurrences.single().occurrenceId)
         assertEquals("plc", component.presentationMetadata["symbol"])
-        assertEquals("athena-industrial-control-v0", component.standardMetadata["profile"])
+        assertEquals("athena-industrial-control", component.standardMetadata["profile"])
         assertEquals("node-PLC1", component.adapterMetadata["svgNodeId"])
         assertFalse(component.key.canonicalSubjectId.value in component.adapterMetadata.values)
         assertTrue(port.occurrences.isEmpty())

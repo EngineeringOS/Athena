@@ -1,7 +1,7 @@
 package com.engineeringood.athena.packageplatform
 
-/** Non-overridable M35 admission budget shared by package capture, resources, SVG, proof, and tests. */
-data class PackageAdmissionLimitsV1(
+/** Non-overridable M35 admission budget shared by package capture, resources, SVG, evidence, and tests. */
+data class PackageAdmissionLimits(
     val maxResolvedPackages: Int = 64,
     val maxGovernedSourceUnitsPerPackage: Int = 1_024,
     val maxDeclaredResourcesPerPackage: Int = 1_024,
@@ -17,6 +17,6 @@ data class PackageAdmissionLimitsV1(
     val maxWorkUnitsPerRepository: Int = 1_000_000,
 ) {
     companion object {
-        val STANDARD: PackageAdmissionLimitsV1 = PackageAdmissionLimitsV1()
+        val STANDARD: PackageAdmissionLimits = PackageAdmissionLimits()
     }
 }

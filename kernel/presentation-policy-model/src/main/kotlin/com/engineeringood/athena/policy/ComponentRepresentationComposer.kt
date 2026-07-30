@@ -64,7 +64,7 @@ data class ComponentRepresentationSnapshot(
 ) {
     fun hasZeroFallbackSymbols(): Boolean = fallbacks.isEmpty()
 
-    fun acceptedProofSatisfied(): Boolean = hasZeroFallbackSymbols()
+    fun acceptanceSatisfied(): Boolean = hasZeroFallbackSymbols()
 
     fun coverageDiagnostics(): List<PresentationPolicyDiagnostic> =
         fallbacks.map { fallback -> fallback.selection.diagnostic }

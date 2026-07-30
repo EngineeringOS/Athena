@@ -1,7 +1,7 @@
 template.format.version=1
 component.contactor.id=template:starter.contactor
 component.contactor.conceptId=electrical.contactor.power
-component.contactor.implementationId=impl/electrical/contactor/siemens-proof-3pole
+component.contactor.implementationId=impl/electrical/contactor/siemens-evidence-3pole
 component.contactor.displayName=Main contactor
 component.contactor.summary=Governed power contactor from the M14 Siemens-first proof slice
 component.contactor.tags=starter,power
@@ -13,7 +13,7 @@ component.contactor.presentation.symbol.type=preferred-symbol-family
 component.contactor.presentation.symbol.attribute.family=iec-contactor
 component.overload.id=template:starter.overload
 component.overload.conceptId=electrical.relay.overload
-component.overload.implementationId=impl/electrical/relay/siemens-proof-overload
+component.overload.implementationId=impl/electrical/relay/siemens-evidence-overload
 component.overload.displayName=Overload relay
 component.overload.summary=Governed overload relay from the M14 Siemens-first proof slice
 component.overload.tags=starter,protection

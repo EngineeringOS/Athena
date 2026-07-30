@@ -11,7 +11,7 @@ class RepresentationBindingStatusPayloadTest {
     fun `negative binding cases produce stable missing and ambiguous diagnostics`() {
         val diagnosticCodes = RepresentationContractValidator.validate(
             RepresentationValidationInput(
-                allowedLibraries = setOf(RepresentationLibraryId("athena.native.iec-v0")),
+                allowedLibraries = setOf(RepresentationLibraryId("athena.native.iec")),
                 policies = listOf(
                     RepresentationPolicy(
                         policyId = RepresentationPolicyId("policy:missing"),
@@ -79,10 +79,10 @@ class RepresentationBindingStatusPayloadTest {
     }
 
     @Test
-    fun `accepted demo proof exposes clean binding status payload`() {
-        val proof = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
+    fun `accepted demo evidence exposes clean binding status payload`() {
+        val evidence = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
 
-        assertTrue(proof.diagnostics.isEmpty(), proof.diagnostics.toString())
+        assertTrue(evidence.diagnostics.isEmpty(), evidence.diagnostics.toString())
         assertEquals(
             mapOf(
                 "accepted" to "true",
@@ -94,7 +94,7 @@ class RepresentationBindingStatusPayloadTest {
                 "occurrenceRoles" to "COIL_ACTUATOR,FOLIO_REFERENCE,LAMP_INDICATOR,LOAD_SYMBOL,PROTECTIVE_DEVICE,SUPPLY_REFERENCE,SWITCH_CONTACT,TERMINAL",
                 "compositionMembershipCount" to "0",
             ),
-            proof.toBindingStatusPayload(),
+            evidence.toBindingStatusPayload(),
         )
     }
 
@@ -110,7 +110,7 @@ class RepresentationBindingStatusPayloadTest {
 
     private fun nativeLibrary(): NativeRepresentationLibrary {
         val resource = requireNotNull(
-            javaClass.classLoader.getResource("representation-libraries/athena-native-iec-v0.properties"),
+            javaClass.classLoader.getResource("representation-libraries/athena-native-iec.properties"),
         ) { "Missing native M30 symbol pack resource." }
         val result = NativeRepresentationLibraryLoader().load(Path.of(resource.toURI()))
         assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())

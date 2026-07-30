@@ -1,11 +1,19 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:9cf27fdf475db2179950cb09528705c9453bf782a8a4edcd461717bbaa271357
 primaryPackage:
-  name: com.engineeringood.examples.m16.semantic-reuse-proof
+  name: com.engineeringood.examples.m16.semantic.reuse.proof
   version: 1.0.0
 packages:
-  - name: com.engineeringood.examples.m16.semantic-reuse-proof
+  - name: com.engineeringood.examples.m16.semantic.reuse.proof
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot:4cffdedf2d5e57ec19b3f5b39cd169435437cb21ad8295c82581388fa9813352
+    sourceHashes:
+      - path: com/engineeringood/examples/m16/semantic/reuse/proof/semantic-reuse-proof.athena
+        hash: sha256:2db2c017c70ebc7993c06d117f8dd4b3ef2620140d0490a7dc4fc2bfbc0eb98e
+    resourceHashes: []
     dependencies: []

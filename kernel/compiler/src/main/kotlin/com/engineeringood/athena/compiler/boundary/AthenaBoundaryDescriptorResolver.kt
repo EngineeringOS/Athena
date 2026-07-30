@@ -57,7 +57,7 @@ class AthenaBoundaryDescriptorResolver(
                     )
                 }
 
-                addAll(validateM0Posture(manifest))
+                addAll(validateBoundaryPosture(manifest))
             }
 
             if (validationDiagnostics.isEmpty()) {
@@ -97,22 +97,22 @@ class AthenaBoundaryDescriptorResolver(
         )
     }
 
-    private fun validateM0Posture(manifest: AthenaBoundaryDescriptorManifest): List<AthenaBoundaryDiagnostic> {
+    private fun validateBoundaryPosture(manifest: AthenaBoundaryDescriptorManifest): List<AthenaBoundaryDiagnostic> {
         val diagnostics = mutableListOf<AthenaBoundaryDiagnostic>()
 
         if (manifest.upstreamAuthority != AthenaBoundarySemanticAuthority.ENGINEERING_IR) {
             diagnostics += diagnostic(
                 ruleId = "boundary.descriptor.authority.external-canonical-forbidden",
                 subject = "authority.upstream",
-                message = "External boundary descriptors must keep `ENGINEERING_IR` as the upstream semantic authority in M0.",
+                message = "External boundary descriptors must keep `ENGINEERING_IR` as the upstream semantic authority.",
             )
         }
 
-        if (manifest.m0Mode != AthenaBoundaryM0Mode.PASSIVE_METADATA) {
+        if (manifest.mode != AthenaBoundaryMode.PASSIVE_METADATA) {
             diagnostics += diagnostic(
                 ruleId = "boundary.descriptor.mode.operational-not-supported",
                 subject = "m0.mode",
-                message = "External boundary descriptors may only declare passive metadata in M0; operational importer, exporter, or connector behavior is not supported.",
+                message = "External boundary descriptors may only declare passive metadata; operational importer, exporter, or connector behavior is not supported.",
             )
         }
 
@@ -124,7 +124,7 @@ class AthenaBoundaryDescriptorResolver(
             diagnostics += diagnostic(
                 ruleId = "boundary.descriptor.standards.direction.unsupported",
                 subject = "descriptor.direction",
-                message = "Standards boundary descriptors must remain `REFERENCE` or `COMPATIBILITY` boundaries in M0.",
+                message = "Standards boundary descriptors must remain `REFERENCE` or `COMPATIBILITY` boundaries.",
             )
         }
 

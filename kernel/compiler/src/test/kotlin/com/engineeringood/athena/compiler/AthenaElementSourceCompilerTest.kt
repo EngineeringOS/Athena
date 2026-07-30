@@ -329,8 +329,8 @@ class AthenaElementSourceCompilerTest {
                 bounds (0, 0, 80, 80)
                 line line from (40, 0) to (40, 80) style conductor
               }
-              anchor line { primitiveRef line point (40, 0) role terminal accepts direction in accepts signal Power }
-              anchor load { primitiveRef line point (40, 80) role terminal accepts direction out accepts signal Power }
+              anchor line { ref "line" point (40, 0) role terminal direction in signal Power.family }
+              anchor load { ref "line" point (40, 80) role terminal direction out signal Power.family }
             }
 
             symbol iec_indicator {
@@ -340,8 +340,8 @@ class AthenaElementSourceCompilerTest {
                 bounds (0, 0, 80, 80)
                 line body from (0, 40) to (80, 40) style conductor
               }
-              anchor input { primitiveRef body point (0, 40) role terminal accepts direction in accepts signal Digital }
-              anchor output { primitiveRef body point (80, 40) role terminal accepts direction out accepts signal Digital }
+              anchor input { ref "body" point (0, 40) role terminal direction in signal Digital.family }
+              anchor output { ref "body" point (80, 40) role terminal direction out signal Digital.family }
             }
         """.trimIndent()
 
@@ -386,8 +386,8 @@ class AthenaElementSourceCompilerTest {
                 bounds (0, 0, 80, 80)
                 line line from (40, 0) to (40, 80) style conductor
               }
-              anchor otherLine { primitiveRef line point (40, 0) role terminal accepts direction in accepts signal Power }
-              anchor otherLoad { primitiveRef line point (40, 80) role terminal accepts direction out accepts signal Power }
+              anchor otherLine { ref "line" point (40, 0) role terminal direction in signal Power.family }
+              anchor otherLoad { ref "line" point (40, 80) role terminal direction out signal Power.family }
             }
         """.trimIndent()
     }

@@ -24,13 +24,13 @@ test('M23 sample project is an openable IDE proof with real admitted layout synt
         `${sampleRoot}/README.md`,
         `${sampleRoot}/athena.yaml`,
         `${sampleRoot}/athena.lock`,
-        `${sampleRoot}/src/01-layout-hints.athena`,
+        `${sampleRoot}/src/com/engineeringood/m23/sample/01-layout-hints.athena`,
         'ide/theia-product/scripts/verify-athena-m23-sample-project.js',
     ].forEach(assertFile);
 
     const idePackage = readRepoFile('ide/package.json');
     const productPackage = readRepoFile('ide/theia-product/package.json');
-    const source = readRepoFile(`${sampleRoot}/src/01-layout-hints.athena`);
+    const source = readRepoFile(`${sampleRoot}/src/com/engineeringood/m23/sample/01-layout-hints.athena`);
     const sampleReadme = readRepoFile(`${sampleRoot}/README.md`);
 
     assert.match(idePackage, /"start:m23":\s*"yarn workspace @engineeringood\/athena-theia-product start:m23"/);

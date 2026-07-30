@@ -17,7 +17,7 @@ class RepositoryContractsTest {
 
         assertEquals(RepositoryArtifactRole.AUTHORED_INTENT, manifest.artifactRole)
         assertEquals(RepositoryArtifactRole.DERIVED_STATE, lock.artifactRole)
-        assertEquals(1, lock.version)
+        assertEquals(2, lock.version)
     }
 
     @Test

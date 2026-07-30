@@ -22,7 +22,7 @@ class AthenaM34CabinetRenderPathDeletionGateTest {
             root.resolve("kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/AthenaRepresentationMaterialBinder.kt"),
             root.resolve("kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/AthenaRepresentationMaterialModels.kt"),
             root.resolve("kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/AthenaRepresentationMaterialResolver.kt"),
-            root.resolve("kernel/representation-model/src/main/kotlin/com/engineeringood/athena/representation/M34CabinetRenderPathProof.kt"),
+            root.resolve("kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/AthenaCabinetProjectionCompiler.kt"),
             root.resolve("kernel/representation-model/src/main/kotlin/com/engineeringood/athena/representation/GraphicPrimitiveTransport.kt"),
         )
 
@@ -66,7 +66,6 @@ class AthenaM34CabinetRenderPathDeletionGateTest {
             listOf(
                 "kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/AthenaCompiler.kt",
                 "kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/AthenaCompilerCompilationSupport.kt",
-                "kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/M32PackageBackedPresentationFactDeriver.kt",
                 "kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/PresentationModelDeriver.kt",
             ),
             activeMainReferences,

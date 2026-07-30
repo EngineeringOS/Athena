@@ -82,8 +82,8 @@ class AthenaComponentKnowledgeResolverTest {
                 conceptContribution("pack.alpha", "1.0.0", concept("electrical.plc.cpu", "PLC CPU")),
             ),
             implementations = listOf(
-                implementationContribution("pack.beta", "1.0.0", implementation("impl.a", "proof.cpu.313c", "CPU 313C")),
-                implementationContribution("pack.alpha", "1.0.0", implementation("impl.b", "proof.cpu.313c", "CPU 313C Alternate")),
+                implementationContribution("pack.beta", "1.0.0", implementation("impl.a", "evidence.cpu.313c", "CPU 313C")),
+                implementationContribution("pack.alpha", "1.0.0", implementation("impl.b", "evidence.cpu.313c", "CPU 313C Alternate")),
             ),
         )
         val secondCatalog = AthenaComponentKnowledgeCatalog.canonical(
@@ -93,12 +93,12 @@ class AthenaComponentKnowledgeResolverTest {
 
         val first = AthenaComponentKnowledgeResolver().resolve(
             semanticSubjectId = StableSemanticIdentity("component:CPU1"),
-            authoredComponentReference = "proof.cpu.313c",
+            authoredComponentReference = "evidence.cpu.313c",
             catalog = firstCatalog,
         )
         val second = AthenaComponentKnowledgeResolver().resolve(
             semanticSubjectId = StableSemanticIdentity("component:CPU1"),
-            authoredComponentReference = "proof.cpu.313c",
+            authoredComponentReference = "evidence.cpu.313c",
             catalog = secondCatalog,
         )
 
@@ -113,13 +113,13 @@ class AthenaComponentKnowledgeResolverTest {
     fun `resolve returns component and implementation when one governed mapping is active`() {
         val result = AthenaComponentKnowledgeResolver().resolve(
             semanticSubjectId = StableSemanticIdentity("component:CPU1"),
-            authoredComponentReference = "proof.cpu.313c",
+            authoredComponentReference = "evidence.cpu.313c",
             catalog = catalog(),
         )
 
         assertTrue(result.isResolved)
         assertEquals("electrical.plc.cpu", result.resolvedComponent?.concept?.conceptId?.value)
-        assertEquals("proof.cpu.313c", result.resolvedImplementation?.implementation?.vendorPartNumber?.value)
+        assertEquals("evidence.cpu.313c", result.resolvedImplementation?.implementation?.vendorPartNumber?.value)
         assertTrue(result.diagnostics.isEmpty())
     }
 
@@ -129,7 +129,7 @@ class AthenaComponentKnowledgeResolverTest {
                 conceptContribution("pack.alpha", "1.0.0", concept("electrical.plc.cpu", "PLC CPU")),
             ),
             implementations = listOf(
-                implementationContribution("pack.alpha", "1.0.0", implementation("impl.a", "proof.cpu.313c", "CPU 313C")),
+                implementationContribution("pack.alpha", "1.0.0", implementation("impl.a", "evidence.cpu.313c", "CPU 313C")),
             ),
         )
     }

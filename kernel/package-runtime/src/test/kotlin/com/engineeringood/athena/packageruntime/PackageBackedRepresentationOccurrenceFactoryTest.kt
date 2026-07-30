@@ -133,7 +133,7 @@ class PackageBackedRepresentationOccurrenceFactoryTest {
         variant = "standard",
         anchorMapSummary = listOf("port:DriveA.power=power"),
         labelBindingSummary = listOf("device-tag=DriveA"),
-        resolverStage = "binding-resolver-v0",
+        resolverStage = "binding-resolver",
         diagnostics = emptyList(),
         rendererFallbackAccepted = false,
     )

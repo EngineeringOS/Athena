@@ -226,7 +226,7 @@ So that the compiler and IDE can validate it before it enters a package.
 **When** ANTLR4 parsing, tree-sitter parity, AST lowering, semantic type checking, and lint run
 **Then** one canonical `RepresentationDefinition` and Graphic Primitive body are produced.
 
-**Given** missing identity/version/anchors, duplicate primitive ids, unbound `primitiveRef`, invalid
+**Given** missing identity/version/anchors, duplicate primitive ids, unbound `ref`, invalid
 coordinates/styles/bounds, or unsupported geometry
 **When** compilation runs
 **Then** stable source-spanned diagnostics are emitted and no definition enters the package snapshot.

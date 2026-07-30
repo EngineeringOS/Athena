@@ -309,7 +309,7 @@ export class AthenaComponentPanelWidget extends ReactWidget {
             <section className='athena-component-panel__section'>
                 <h3>Scope</h3>
                 <ul className='athena-component-panel__detail-list'>
-                    <li><span>Proof slice</span><strong>Electrical / Siemens-first</strong></li>
+                    <li><span>Library scope</span><strong>Electrical / Siemens</strong></li>
                     <li><span>Source</span><strong>Active component knowledge packs</strong></li>
                     <li><span>Insertion</span><strong>{this.canPreviewInsert() ? 'Preview-first ready' : 'Open one .athena editor to insert'}</strong></li>
                 </ul>

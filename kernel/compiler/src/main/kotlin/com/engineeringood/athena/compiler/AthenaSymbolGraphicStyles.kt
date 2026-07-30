@@ -9,7 +9,7 @@ import com.engineeringood.athena.representation.GraphicStyleTokenId
 import com.engineeringood.athena.representation.GraphicTextAnchor
 import com.engineeringood.athena.representation.GraphicTextBaseline
 
-internal object AthenaSymbolGraphicStyleRegistryV0 {
+internal object AthenaSymbolGraphicStyleRegistry {
     private val styles = listOf(
         GraphicStyleToken(
             styleTokenId = GraphicStyleTokenId("conductor"),

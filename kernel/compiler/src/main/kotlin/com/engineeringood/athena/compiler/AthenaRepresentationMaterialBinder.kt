@@ -178,10 +178,10 @@ internal class AthenaRepresentationMaterialBinder(
                         port.id.value,
                         "Port signal is required by compiled Element anchor '${anchor.anchorId.value}'.",
                     )
-                    anchor.acceptedSignals.none { it.value == signal } -> diagnostics += materialDiagnostic(
+                    anchor.acceptedSignals.none { accepted -> acceptedSignalMatches(signal, accepted.value) } -> diagnostics += materialDiagnostic(
                         "material.anchor.signal.incompatible",
                         port.id.value,
-                        "Port signal is incompatible with compiled Element anchor '${anchor.anchorId.value}'.",
+                        "Port signal is.family incompatible with compiled Element anchor '${anchor.anchorId.value}'.",
                     )
                 }
             }
@@ -193,6 +193,13 @@ internal class AthenaRepresentationMaterialBinder(
         "in" -> RepresentationDirectionPredicate.IN
         "out" -> RepresentationDirectionPredicate.OUT
         "bidirectional" -> RepresentationDirectionPredicate.BIDIRECTIONAL
+        "passive" -> RepresentationDirectionPredicate.BIDIRECTIONAL
         else -> null
+    }
+
+    private fun acceptedSignalMatches(portSignal: String, acceptedSignal: String): Boolean {
+        val normalizedPortSignal = portSignal.removeSuffix(".family")
+        val normalizedAcceptedSignal = acceptedSignal.removeSuffix(".family")
+        return normalizedPortSignal == normalizedAcceptedSignal
     }
 }

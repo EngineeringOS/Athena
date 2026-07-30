@@ -59,12 +59,12 @@ interface RoutingBackendAdapter {
 }
 
 /**
- * Accepted M27 backend adapter that delegates to Athena's deterministic v0 route engine.
+ * Default backend adapter that delegates to Athena's deterministic route engine.
  */
-class AthenaV0RoutingBackendAdapter(
-    private val engine: AthenaRouteEngineV0 = AthenaRouteEngineV0(),
+class AthenaRoutingBackendAdapter(
+    private val engine: AthenaRouteEngine = AthenaRouteEngine(),
 ) : RoutingBackendAdapter {
-    override val backendId: RoutingBackendId = RoutingBackendId("athena-route-engine-v0")
+    override val backendId: RoutingBackendId = RoutingBackendId("athena-route-engine")
 
     override fun solve(input: AthenaRouteEngineInput): RoutingBackendResult {
         val snapshot = engine.solve(input)
@@ -79,7 +79,7 @@ class AthenaV0RoutingBackendAdapter(
  * Boundary that turns backend output into normalized Athena-owned route facts.
  */
 class RoutingBackendBoundary(
-    private val adapter: RoutingBackendAdapter = AthenaV0RoutingBackendAdapter(),
+    private val adapter: RoutingBackendAdapter = AthenaRoutingBackendAdapter(),
 ) {
     fun solve(input: AthenaRouteEngineInput): RouteFactSnapshot {
         val result = adapter.solve(input)

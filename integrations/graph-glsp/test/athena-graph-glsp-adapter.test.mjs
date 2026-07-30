@@ -43,7 +43,7 @@ const readyProjectionSession = {
             canvasHeight: 900,
             primitivePacks: [
                 {
-                    packId: 'electrical-primitives/default-v1',
+                    packId: 'electrical-primitives/default',
                     displayName: 'Electrical primitives',
                     familyIds: ['electrical/cabinet'],
                     primitives: [
@@ -98,7 +98,7 @@ const readyProjectionSession = {
                         familyId: 'plc-controller'
                     },
                     anatomy: {
-                        representationId: 'athena-industrial-control-v0:plc-controller',
+                        representationId: 'athena-industrial-control:plc-controller',
                         context: 'electrical_schematic',
                         bounds: { width: 80, height: 48 },
                         hotspot: { x: 0, y: 0 },
@@ -134,7 +134,7 @@ const readyProjectionSession = {
             }
         ],
         notationPack: {
-            packId: 'electrical-notation/cabinet/default-v1',
+            packId: 'electrical-notation/cabinet/default',
             displayName: 'Electrical Cabinet Default',
             subjects: [
                 {
@@ -311,7 +311,7 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.activeSheetId, 'cabinet/sheet/01-main');
     assert.equal(diagram.sheets.length, 1);
     assert.equal(diagram.sheets[0].role, undefined);
-    assert.equal(diagram.notationPack?.packId, 'electrical-notation/cabinet/default-v1');
+    assert.equal(diagram.notationPack?.packId, 'electrical-notation/cabinet/default');
     assert.equal(diagram.crossReferences.length, 1);
     assert.equal(diagram.electricalAnchors.length, 2);
     assert.equal(diagram.electricalConnectionEndpoints.length, 2);
@@ -406,7 +406,7 @@ test('assigns stable M31 document sheet roles from typed policy evidence', () =>
                     order: 0,
                     subjectSemanticIds: ['component:ControllerPLC1'],
                     policyEvidence: {
-                        policyId: 'athena-m31-customer-projection-v0',
+                        policyId: 'athena-customer-projection',
                         policyVersion: '0',
                         policyDeterministicIdentity: 'policy:m31:test',
                         sheetViewRole: 'control-and-plc-logic',
@@ -419,7 +419,7 @@ test('assigns stable M31 document sheet roles from typed policy evidence', () =>
                     order: 1,
                     subjectSemanticIds: ['component:TerminalBlock1'],
                     policyEvidence: {
-                        policyId: 'athena-m31-customer-projection-v0',
+                        policyId: 'athena-customer-projection',
                         policyVersion: '0',
                         policyDeterministicIdentity: 'policy:m31:test',
                         sheetViewRole: 'field-wiring-and-terminal-transition',
@@ -441,7 +441,7 @@ test('assigns stable M31 document sheet roles from typed policy evidence', () =>
                 sheetId: 'documentation/sheet/01-control',
                 role: 'control-and-plc-logic',
                 policyEvidence: {
-                    policyId: 'athena-m31-customer-projection-v0',
+                    policyId: 'athena-customer-projection',
                     policyVersion: '0',
                     policyDeterministicIdentity: 'policy:m31:test',
                     sheetViewRole: 'control-and-plc-logic',
@@ -452,7 +452,7 @@ test('assigns stable M31 document sheet roles from typed policy evidence', () =>
                 sheetId: 'documentation/sheet/02-field-device',
                 role: 'field-wiring-and-terminal-transition',
                 policyEvidence: {
-                    policyId: 'athena-m31-customer-projection-v0',
+                    policyId: 'athena-customer-projection',
                     policyVersion: '0',
                     policyDeterministicIdentity: 'policy:m31:test',
                     sheetViewRole: 'field-wiring-and-terminal-transition',

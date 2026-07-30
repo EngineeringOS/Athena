@@ -1,6 +1,7 @@
 package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
 import kotlin.test.Test
@@ -54,6 +55,12 @@ class RouteConstraintsAndFactsTest {
 
         assertEquals(fact, copy)
         assertEquals(RouteQualityState.SATISFIED, fact.quality.state)
+        assertEquals(RouteIntentId("intent:connection:a"), fact.routeIntentId)
+        assertEquals(RouteBundleId("bundle:connection:a"), fact.bundleId)
+        assertEquals(listOf("channel:main"), fact.selectedChannelIds)
+        assertEquals("athena-native", fact.plannerId)
+        assertEquals("compiler:route:a", fact.compilerSnapshotId)
+        assertEquals(0, fact.qualityMetrics.crossingCount)
         assertFalse(fact.quality.isDegraded)
         assertFalse(fact.hasCanvasTruth())
     }
@@ -68,6 +75,20 @@ class RouteConstraintsAndFactsTest {
             routeId = routeId,
             snapshotId = LayoutSnapshotId("snapshot:m24:route"),
             connectionId = connectionId,
+            routeIntentId = RouteIntentId("intent:${connectionId.value}"),
+            bundleId = RouteBundleId("bundle:${connectionId.value}"),
+            selectedChannelIds = listOf("channel:main"),
+            plannerId = "athena-native",
+            compilerSnapshotId = "compiler:${routeId.value}",
+            provenance = SourceProvenance("route.athena", 1, 1, 1, 20),
+            qualityMetrics = RouteQualityMetrics(
+                crossingCount = 0,
+                bendCount = 0,
+                length = 40,
+                channelChangeCount = 0,
+                bundleContinuityPenalty = 0,
+                labelClearanceViolationCount = 0,
+            ),
             source = sampleAnchor(sourceAnchorId, "component:A", "port:A.out"),
             target = sampleAnchor(targetAnchorId, "component:B", "port:B.in"),
             segments = listOf(
@@ -113,7 +134,7 @@ class RouteConstraintsAndFactsTest {
             side = TerminalSide.LEFT,
             point = SchematicRoutePoint(x = 0, y = 0),
             gridPoint = SchematicRoutePoint(x = 0, y = 0),
-            policySource = "m24:schematic-default",
+            policySource = "schematic-default",
         )
     }
 }

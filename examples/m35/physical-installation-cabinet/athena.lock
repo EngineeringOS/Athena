@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:903ee1c08f9b251242618a1d2eececefcaf139ff81c8d3d16ff6e300a0644014
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:8bda7905bdaef877d789db221d9b1079a71a59d6edf1043120764be25de78992
 primaryPackage:
   name: com.engineeringood.m35.physicalinstallationcabinet
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m35.physicalinstallationcabinet
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:1fcb8d433df0b3d18bffb20f6ce3b6350f21159823ea376d74d4762644fabd80
+    snapshotDigest: package-snapshot:e8425756b15a4fed535765477c3b1c9298ffa51c98e96730e0d6fe1a901bffb2
     sourceHashes:
       - path: com/engineeringood/m35/physicalinstallationcabinet/01-physical-installation-cabinet.athena
-        hash: sha256:e7124fcfdc06eb437e21ddcc64838ff56262ea824c9277898bec33f226f28b84
+        hash: sha256:c1178385a6b7867bbfd2ba9260d19bc191186a3c39c67fd44eb0d42d251d9e6c
     resourceHashes: []
     dependencies: []

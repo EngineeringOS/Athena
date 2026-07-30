@@ -13,6 +13,7 @@ data class AthenaPresentationDocumentPayload(
     val connectors: List<AthenaPresentationConnectorPayload>,
     val representationFacts: List<AthenaPresentationRepresentationFactPayload> = emptyList(),
     val referenceMarkers: List<AthenaPresentationReferenceMarkerPayload> = emptyList(),
+    val routeFactSnapshot: AthenaPresentationRouteFactSnapshotPayload? = null,
     val drawingComposition: AthenaDrawingCompositionPayload? = null,
 )
 
@@ -33,6 +34,7 @@ data class AthenaPresentationGraphicOccurrencePayload(
     val labels: List<AthenaPresentationGraphicLabelPayload>,
     val sourceProvenance: List<String>,
     val authorities: AthenaPresentationGraphicOccurrenceAuthoritiesPayload,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 data class AthenaPresentationGraphicOccurrenceAuthoritiesPayload(
@@ -47,6 +49,7 @@ data class AthenaPresentationGraphicTerminalBindingPayload(
     val terminalIdentity: String,
     val point: AthenaProjectionPointPayload,
     val side: String,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 data class AthenaPresentationGraphicLabelPayload(
@@ -179,6 +182,7 @@ data class AthenaPresentationOccurrencePayload(
     val anchorBindings: List<AthenaPresentationAnchorBindingPayload>,
     val tokenOverrides: Map<String, String>,
     val sourceProjectionIds: List<String>,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 /**
@@ -197,6 +201,7 @@ data class AthenaPresentationConnectorPayload(
     val markerKeys: List<String>,
     val tokenOverrides: Map<String, String>,
     val sourceProjectionIds: List<String>,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 /**
@@ -259,6 +264,7 @@ data class AthenaPresentationAnchorBindingPayload(
     val portSemanticId: String? = null,
     val ownerSemanticId: String? = null,
     val sourceLabelId: String? = null,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 /**
@@ -273,6 +279,7 @@ data class AthenaPresentationRepresentationFactPayload(
     val terminals: List<AthenaPresentationTerminalFactPayload>,
     val labels: List<AthenaPresentationLabelFactPayload>,
     val packageEvidence: AthenaPresentationPackageEvidencePayload? = null,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 data class AthenaPresentationPackageEvidencePayload(

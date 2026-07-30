@@ -60,6 +60,7 @@ internal object AthenaSymbolSourceValidator {
             return@buildList
         }
         val svgResource = graphic.svgResource
+        val primitiveIds = graphic.primitives.map { primitive -> primitive.id }.toSet()
         if (svgResource != null) {
             if (graphic.bounds != null || graphic.primitives.isNotEmpty() || graphic.labels.isNotEmpty()) {
                 addIssue(
@@ -70,8 +71,7 @@ internal object AthenaSymbolSourceValidator {
                     "Symbol graphic must choose either native primitives or one SVG reference.",
                 )
             }
-            val authoredAnchorRefs = symbol.anchors.mapNotNull { anchor -> anchor.primitiveRef?.value }.toSet()
-            symbol.anchors.forEach { anchor -> validateAnchor(file, anchor, null, authoredAnchorRefs) }
+            symbol.anchors.forEach { anchor -> validateAnchor(file, anchor, null, primitiveIds, requirePrimitiveReference = false) }
             return@buildList
         }
         val bounds = graphic.bounds
@@ -127,8 +127,6 @@ internal object AthenaSymbolSourceValidator {
                 )
             }
         graphic.labels.forEach { label -> validateLabel(file, label, bounds) }
-
-        val primitiveIds = graphic.primitives.map { primitive -> primitive.id }.toSet()
         symbol.anchors.groupBy { anchor -> anchor.id }
             .filterValues { duplicates -> duplicates.size > 1 }
             .toSortedMap()
@@ -141,7 +139,7 @@ internal object AthenaSymbolSourceValidator {
                     "Symbol anchor ids must be unique.",
                 )
             }
-        symbol.anchors.forEach { anchor -> validateAnchor(file, anchor, bounds, primitiveIds) }
+        symbol.anchors.forEach { anchor -> validateAnchor(file, anchor, bounds, primitiveIds, requirePrimitiveReference = true) }
     }.canonicalRepresentationDiagnostics()
 
     private fun MutableList<AthenaRepresentationSourceDiagnostic>.validatePrimitive(
@@ -149,7 +147,7 @@ internal object AthenaSymbolSourceValidator {
         primitive: SymbolGraphicPrimitiveDeclaration,
         bounds: SymbolBounds?,
     ) {
-        if (AthenaSymbolGraphicStyleRegistryV0.resolve(primitive.style) == null) {
+        if (AthenaSymbolGraphicStyleRegistry.resolve(primitive.style) == null) {
             addIssue(
                 "symbol.style.unknown",
                 file,
@@ -217,7 +215,7 @@ internal object AthenaSymbolSourceValidator {
         if (label.role.value.toLabelRole() == null) {
             addIssue("symbol.label.role.unknown", file, label.role.span, "graphic.labels.${label.id}.role", "Unknown dynamic label role `${label.role.value}`.")
         }
-        if (AthenaSymbolGraphicStyleRegistryV0.resolve(label.style) == null) {
+        if (AthenaSymbolGraphicStyleRegistry.resolve(label.style) == null) {
             addIssue("symbol.style.unknown", file, label.span, "graphic.labels.${label.id}.style", "Unknown governed Symbol style `${label.style}`.")
         }
     }
@@ -227,22 +225,23 @@ internal object AthenaSymbolSourceValidator {
         anchor: SymbolAnchorDeclaration,
         bounds: SymbolBounds?,
         primitiveIds: Set<String>,
+        requirePrimitiveReference: Boolean,
     ) {
-        val primitiveRef = anchor.primitiveRef
+        val ref = anchor.ref
         when {
-            primitiveRef == null -> addIssue(
-                "symbol.anchor.primitive-ref.missing",
+            ref == null -> addIssue(
+                "symbol.anchor.ref.missing",
                 file,
                 anchor.span,
-                "anchors.${anchor.id}.primitiveRef",
-                "Symbol anchor requires primitiveRef.",
+                "anchors.${anchor.id}.ref",
+                "Symbol anchor requires ref.",
             )
-            primitiveRef.value !in primitiveIds -> addIssue(
-                "symbol.anchor.primitive-ref.unresolved",
+            requirePrimitiveReference && ref.value !in primitiveIds -> addIssue(
+                "symbol.anchor.ref.unresolved",
                 file,
-                primitiveRef.span,
-                "anchors.${anchor.id}.primitiveRef",
-                "Symbol anchor references missing primitive `${primitiveRef.value}`.",
+                ref.span,
+                "anchors.${anchor.id}.ref",
+                "Symbol anchor references missing geometry primitive `${ref.value}`.",
             )
         }
         val point = anchor.point
@@ -270,7 +269,6 @@ internal object AthenaSymbolSourceValidator {
             )
         }
         val role = anchor.role
-        val resolvedRole = role?.value?.toAnchorRole()
         when {
             role == null -> addIssue(
                 "symbol.anchor.role.missing",
@@ -279,7 +277,7 @@ internal object AthenaSymbolSourceValidator {
                 "anchors.${anchor.id}.role",
                 "Symbol anchor requires a role.",
             )
-            resolvedRole == null -> addIssue(
+            role.value.toAnchorRole() == null -> addIssue(
                 "symbol.anchor.role.unknown",
                 file,
                 role.span,
@@ -287,23 +285,40 @@ internal object AthenaSymbolSourceValidator {
                 "Unknown Symbol anchor role `${role.value}`.",
             )
         }
-        if (resolvedRole == RepresentationAnchorRole.TERMINAL) {
-            if (anchor.acceptedDirections.isEmpty()) {
-                addIssue(
+        val roleValue = role?.value?.toAnchorRole()
+        val requiresCompatibility = roleValue == RepresentationAnchorRole.TERMINAL
+        val directions = anchor.directions
+        if (requiresCompatibility) {
+            when {
+                directions.isEmpty() -> addIssue(
                     "symbol.anchor.direction.missing",
                     file,
                     anchor.span,
-                    "anchors.${anchor.id}.acceptedDirections",
-                    "Terminal anchor requires at least one accepted direction.",
+                    "anchors.${anchor.id}.direction",
+                    "Symbol anchor requires direction.",
                 )
+                directions.any { it.value.toAnchorDirectionPredicate() == null } -> directions
+                    .filter { it.value.toAnchorDirectionPredicate() == null }
+                    .forEach { direction ->
+                        addIssue(
+                            "symbol.anchor.direction.invalid",
+                            file,
+                            direction.span,
+                            "anchors.${anchor.id}.direction",
+                            "Symbol anchor direction must be in, out, or bidirectional.",
+                        )
+                    }
             }
-            if (anchor.acceptedSignals.isEmpty()) {
-                addIssue(
+        }
+        val signals = anchor.signals
+        if (requiresCompatibility) {
+            when {
+                signals.isEmpty() -> addIssue(
                     "symbol.anchor.signal.missing",
                     file,
                     anchor.span,
-                    "anchors.${anchor.id}.acceptedSignals",
-                    "Terminal anchor requires at least one accepted signal.",
+                    "anchors.${anchor.id}.signal",
+                    "Symbol anchor requires signal.",
                 )
             }
         }
@@ -361,6 +376,13 @@ internal fun String.toAnchorRole(): RepresentationAnchorRole? = when (this) {
     "placement" -> RepresentationAnchorRole.PLACEMENT
     "label" -> RepresentationAnchorRole.LABEL
     "hotspot" -> RepresentationAnchorRole.HOTSPOT
+    else -> null
+}
+
+internal fun String.toAnchorDirectionPredicate(): com.engineeringood.athena.representation.RepresentationDirectionPredicate? = when (this) {
+    "in" -> com.engineeringood.athena.representation.RepresentationDirectionPredicate.IN
+    "out" -> com.engineeringood.athena.representation.RepresentationDirectionPredicate.OUT
+    "bidirectional" -> com.engineeringood.athena.representation.RepresentationDirectionPredicate.BIDIRECTIONAL
     else -> null
 }
 

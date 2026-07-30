@@ -1,5 +1,6 @@
 package com.engineeringood.athena.routing
 
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
@@ -9,7 +10,7 @@ import kotlin.test.assertTrue
 
 class M24RoutingContractTest {
     @Test
-    fun `contracts represent governed terminal-anchor route proof`() {
+    fun `contracts represent governed terminal-anchor route evidence`() {
         val connection = ElectricalConnectionIntent(
             connectionId = ElectricalConnectionId("connection:plc1-do1-to-xt1-1"),
             sourceSubjectId = StableSemanticIdentity("component:PLC1"),
@@ -20,7 +21,7 @@ class M24RoutingContractTest {
             signalClass = ElectricalSignalClass.DIGITAL_OUTPUT,
         )
         val policy = RoutingPolicy(
-            policyId = RoutingPolicyId("routing-policy:schematic-control-v0"),
+            policyId = RoutingPolicyId("routing-policy:schematic-control"),
             orthogonalOnly = true,
             gridSize = 20,
             defaultLaneSpacing = 40,
@@ -65,6 +66,20 @@ class M24RoutingContractTest {
             routeId = SchematicRouteId("route:plc1-do1-to-xt1-1"),
             snapshotId = LayoutSnapshotId("snapshot:m24:routing"),
             connectionId = connection.connectionId,
+            routeIntentId = RouteIntentId("intent:${connection.connectionId.value}"),
+            bundleId = RouteBundleId("bundle:${connection.connectionId.value}"),
+            selectedChannelIds = listOf("channel:main"),
+            plannerId = "athena-native",
+            compilerSnapshotId = "compiler:route:plc1-do1-to-xt1-1",
+            provenance = SourceProvenance("routes.athena", 1, 1, 1, 32),
+            qualityMetrics = RouteQualityMetrics(
+                crossingCount = 0,
+                bendCount = 0,
+                length = 200,
+                channelChangeCount = 0,
+                bundleContinuityPenalty = 0,
+                labelClearanceViolationCount = 0,
+            ),
             source = sourceAnchor,
             target = targetAnchor,
             segments = listOf(

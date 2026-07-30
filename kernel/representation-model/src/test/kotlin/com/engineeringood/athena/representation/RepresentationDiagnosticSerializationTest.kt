@@ -9,13 +9,13 @@ class RepresentationDiagnosticSerializationTest {
     fun `validator emits every mandatory m30 diagnostic code deterministically`() {
         val motorDefinition = definition(
             symbolId = "iec.motor.compact",
-            libraryId = "athena.native.iec-v0",
+            libraryId = "athena.native.iec",
             lifecycleState = RepresentationLifecycleState.ACTIVE,
             kind = RepresentationSymbolKind.MOTOR_LOAD,
         )
         val deprecatedDefinition = definition(
             symbolId = "iec.deprecated",
-            libraryId = "athena.native.iec-v0",
+            libraryId = "athena.native.iec",
             lifecycleState = RepresentationLifecycleState.DEPRECATED,
             kind = RepresentationSymbolKind.MOTOR_LOAD,
         )
@@ -27,7 +27,7 @@ class RepresentationDiagnosticSerializationTest {
         )
         val result = RepresentationContractValidator.validate(
             RepresentationValidationInput(
-                allowedLibraries = setOf(RepresentationLibraryId("athena.native.iec-v0")),
+                allowedLibraries = setOf(RepresentationLibraryId("athena.native.iec")),
                 supportedLifecycleStates = setOf(RepresentationLifecycleState.ACTIVE),
                 policies = listOf(
                     policy("policy:missing-symbol", "missing.symbol", RepresentationOccurrenceRole.LOAD_SYMBOL),
@@ -91,10 +91,10 @@ class RepresentationDiagnosticSerializationTest {
     }
 
     @Test
-    fun `explicit fallback policy still fails proof when symbol is missing`() {
+    fun `explicit fallback policy still fails evidence when symbol is missing`() {
         val result = RepresentationContractValidator.validate(
             RepresentationValidationInput(
-                allowedLibraries = setOf(RepresentationLibraryId("athena.native.iec-v0")),
+                allowedLibraries = setOf(RepresentationLibraryId("athena.native.iec")),
                 policies = listOf(
                     policy(
                         policyId = "policy:fallback",

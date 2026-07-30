@@ -84,8 +84,8 @@ data class RepositoryManifest(
 data class RepositoryLock(
     val version: Int = 2,
     val schema: String = "repository-lock-v2",
-    val compilerSchema: String = "athena-m35-lock-v2",
-    val validatedLockStateDigest: String = "lock-state/v1:unlocked",
+    val compilerSchema: String = "athena-lock-v2",
+    val validatedLockStateDigest: String = "lock-state:unlocked",
     val primaryPackage: PackageIdentifier,
     val packages: List<ResolvedPackage> = emptyList(),
     val packageSnapshots: List<RepositoryLockedPackage> = emptyList(),

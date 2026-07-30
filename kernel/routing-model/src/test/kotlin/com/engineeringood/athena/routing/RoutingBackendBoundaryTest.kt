@@ -3,6 +3,7 @@ package com.engineeringood.athena.routing
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.LayoutSourceSpan
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -44,7 +45,7 @@ class RoutingBackendBoundaryTest {
 
             override fun solve(input: AthenaRouteEngineInput): RoutingBackendResult = RoutingBackendResult(
                 backendId = backendId,
-                routeFacts = AthenaV0RoutingBackendAdapter().solve(input).routeFacts,
+                routeFacts = AthenaRoutingBackendAdapter().solve(input).routeFacts,
                 authorityClaims = RoutingBackendAuthorityClaims(ownsSemanticConnectionMeaning = true),
             )
         }
@@ -61,7 +62,7 @@ class RoutingBackendBoundaryTest {
             override val backendId: RoutingBackendId = RoutingBackendId("invented-route-router")
 
             override fun solve(input: AthenaRouteEngineInput): RoutingBackendResult {
-                val routeFact = AthenaV0RoutingBackendAdapter().solve(input).routeFacts.single()
+                val routeFact = AthenaRoutingBackendAdapter().solve(input).routeFacts.single()
                 return RoutingBackendResult(
                     backendId = backendId,
                     routeFacts = listOf(routeFact.copy(routeId = SchematicRouteId("route:invented"))),
@@ -95,6 +96,7 @@ class RoutingBackendBoundaryTest {
             targetPortId = targetAnchor.portId,
             role = ElectricalConnectionRole.CONTROL_SIGNAL,
             signalClass = ElectricalSignalClass.DIGITAL_OUTPUT,
+            sourceSpan = LayoutSourceSpan("routes.athena", 1, 1, 1, 32),
         ),
         sourceAnchor = sourceAnchor,
         targetAnchor = targetAnchor,

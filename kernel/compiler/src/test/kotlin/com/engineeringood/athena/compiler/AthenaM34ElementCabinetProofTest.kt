@@ -51,7 +51,7 @@ class AthenaM34ElementCabinetProofTest {
         val sourceDefinition = compiled.definitions.single { it.definitionKind == RepresentationDefinitionKind.ELEMENT }
         val proofDefinition = sourceDefinition.copy(kind = RepresentationSymbolKind.SWITCH_CONTACT)
         val policy = RepresentationPolicy(
-            policyId = RepresentationPolicyId("m34-proof-only"),
+            policyId = RepresentationPolicyId("m34-evidence-only"),
             projectionKind = RepresentationProjectionKind.CABINET,
             subjectKind = RepresentationSubjectKind.COMPONENT,
             semanticRole = RepresentationSemanticRole("cabinet-control-module"),
@@ -85,7 +85,7 @@ class AthenaM34ElementCabinetProofTest {
                 publication = ProjectionSheetPublication.defaultFor(sheetId, "M34 Cabinet", 0, emptyList()),
                 contentBounds = document.bounds,
                 policy = DrawingSheetCompositionPolicy(
-                    policyId = "m34-cabinet-proof",
+                    policyId = "m34-cabinet-evidence",
                     contentToFrame = 12.0,
                     frameToSheet = 6.0,
                     titleBlockHeight = 24.0,
@@ -105,8 +105,8 @@ class AthenaM34ElementCabinetProofTest {
         )
         val transport = document.toTransportPayload()
         val renderPathProof = document.toM34CabinetRenderPathProof(
-            documentViewBoxAuthority = assertNotNull(canvas.proof).boundsAuthority,
-            adapterAuthority = assertNotNull(fragment.proof).documentId,
+            documentViewBoxAuthority = assertNotNull(canvas.evidence).boundsAuthority,
+            adapterAuthority = assertNotNull(fragment.evidence).documentId,
             xmlRuntimeAuthorityAbsent = true,
             rawMarkupAuthorityAbsent = true,
             fallbackAuthorityAbsent = true,
@@ -117,11 +117,11 @@ class AthenaM34ElementCabinetProofTest {
 
         assertTrue(fragment.isValid, fragment.diagnostics.toString())
         assertTrue(canvas.isValid, canvas.diagnostics.toString())
-        assertFalse(assertNotNull(fragment.proof).normalChromeVisible)
+        assertFalse(assertNotNull(fragment.evidence).normalChromeVisible)
         assertTrue(assertNotNull(canvas.svg).contains("data-athena-render-authority=\"graphic-primitive-ir\""))
         assertTrue(canvas.svg!!.contains("data-athena-primitive-id=\"primary.line\""))
-        assertEquals("graphic-primitive-ir", canvas.proof?.boundsAuthority)
-        assertEquals(document.bounds, composition.proof?.contentBounds)
+        assertEquals("graphic-primitive-ir", canvas.evidence?.boundsAuthority)
+        assertEquals(document.bounds, composition.evidence?.contentBounds)
         assertEquals("m34-cabinet-library.athena", sourceDefinition.lifecycle.provenance.source)
         assertEquals(listOf("primary", "secondary"), sourceDefinition.intrinsicComposition?.children?.map { it.childId.value })
         assertEquals(listOf(0, 1), sourceDefinition.intrinsicComposition?.children?.map { it.zOrder })
@@ -147,11 +147,11 @@ class AthenaM34ElementCabinetProofTest {
 
     @Test
     fun `referenced svg element binds composes and renders through typed cabinet path`() {
-        val sampleRoot = Files.createTempDirectory("athena-m34-cabinet-proof-repo")
+        val sampleRoot = Files.createTempDirectory("athena-m34-cabinet-evidence-repo")
         copyTree(repositoryRoot().resolve("examples/m34/sample-project"), sampleRoot)
         val staged = RepresentationPackageSnapshotStager().stageRepository(
             repositoryRoot = sampleRoot,
-            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/m34-cabinet-proof"),
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/m34-cabinet-evidence"),
         )
         assertTrue(staged.diagnostics.isEmpty(), staged.diagnostics.toString())
         val compiled = AthenaRepresentationPackageSnapshotCompiler().compile(assertNotNull(staged.snapshot))
@@ -159,7 +159,7 @@ class AthenaM34ElementCabinetProofTest {
         val sourceDefinition = compiled.definitions.single { it.symbolId.value == "vendor.drive.element" }
         val proofDefinition = sourceDefinition.copy(kind = RepresentationSymbolKind.SWITCH_CONTACT)
         val policy = RepresentationPolicy(
-            policyId = RepresentationPolicyId("m34-svg-proof-only"),
+            policyId = RepresentationPolicyId("m34-svg-evidence-only"),
             projectionKind = RepresentationProjectionKind.CABINET,
             subjectKind = RepresentationSubjectKind.COMPONENT,
             semanticRole = RepresentationSemanticRole("cabinet-vendor-drive"),
@@ -186,14 +186,14 @@ class AthenaM34ElementCabinetProofTest {
         assertTrue(binding.diagnostics.isEmpty(), binding.diagnostics.toString())
 
         val document = proofDefinition.graphicBody
-        val sheetId = ProjectionSheetId("cabinet/sheet/svg-proof")
+        val sheetId = ProjectionSheetId("cabinet/sheet/svg-evidence")
         val composition = DrawingSheetCompositionCompiler().compile(
             DrawingSheetCompositionRequest(
                 sheetId = sheetId,
                 publication = ProjectionSheetPublication.defaultFor(sheetId, "M34 SVG Cabinet", 0, emptyList()),
                 contentBounds = document.bounds,
                 policy = DrawingSheetCompositionPolicy(
-                    policyId = "m34-svg-cabinet-proof",
+                    policyId = "m34-svg-cabinet-evidence",
                     contentToFrame = 12.0,
                     frameToSheet = 6.0,
                     titleBlockHeight = 24.0,
@@ -221,30 +221,30 @@ class AthenaM34ElementCabinetProofTest {
         )
         assertTrue(fragment.isValid, fragment.diagnostics.toString())
         assertTrue(canvas.isValid, canvas.diagnostics.toString())
-        assertFalse(assertNotNull(fragment.proof).normalChromeVisible)
+        assertFalse(assertNotNull(fragment.evidence).normalChromeVisible)
         assertTrue(assertNotNull(canvas.svg).contains("data-athena-render-authority=\"graphic-primitive-ir\""))
         assertTrue(canvas.svg!!.contains("data-athena-primitive-kind=\"rectangle\""))
         assertTrue(canvas.svg!!.contains("data-athena-primitive-kind=\"line\""))
         val transport = document.toTransportPayload()
         val renderPathProof = document.toM34CabinetRenderPathProof(
-            documentViewBoxAuthority = assertNotNull(canvas.proof).boundsAuthority,
-            adapterAuthority = assertNotNull(fragment.proof).documentId,
-            xmlRuntimeAuthorityAbsent = compiled.proof.xmlRuntimeAuthorityAbsent,
-            rawMarkupAuthorityAbsent = compiled.proof.rawSvgTransportAbsent,
+            documentViewBoxAuthority = assertNotNull(canvas.evidence).boundsAuthority,
+            adapterAuthority = assertNotNull(fragment.evidence).documentId,
+            xmlRuntimeAuthorityAbsent = compiled.evidence.xmlRuntimeAuthorityAbsent,
+            rawMarkupAuthorityAbsent = compiled.evidence.rawSvgTransportAbsent,
             fallbackAuthorityAbsent = true,
             hardCodedDocumentBoundsAbsent = true,
             presentationPrimitiveActiveProducerAbsent = true,
             compatibilityLedger = mapOf("PresentationPrimitive" to "compatibility-only; no active M34 Cabinet producer"),
         )
-        assertEquals("graphic-primitive-ir", canvas.proof?.boundsAuthority)
-        assertEquals(document.bounds, composition.proof?.contentBounds)
+        assertEquals("graphic-primitive-ir", canvas.evidence?.boundsAuthority)
+        assertEquals(document.bounds, composition.evidence?.contentBounds)
         assertTrue(sourceDefinition.lifecycle.provenance.source.contains(".athena"))
         assertTrue(sourceDefinition.graphicBody.provenanceSources.all { it.contains(".athena") })
-        assertEquals(staged.snapshot?.snapshotId, compiled.proof.snapshotId)
-        assertTrue(compiled.proof.dependencyLockDigest.startsWith("sha256:"))
-        assertTrue(compiled.proof.rendererFileAccessAuthorityAbsent)
-        assertTrue(compiled.proof.xmlRuntimeAuthorityAbsent)
-        assertTrue(compiled.proof.rawSvgTransportAbsent)
+        assertEquals(staged.snapshot?.snapshotId, compiled.evidence.snapshotId)
+        assertTrue(compiled.evidence.dependencyLockDigest.startsWith("sha256:"))
+        assertTrue(compiled.evidence.rendererFileAccessAuthorityAbsent)
+        assertTrue(compiled.evidence.xmlRuntimeAuthorityAbsent)
+        assertTrue(compiled.evidence.rawSvgTransportAbsent)
         assertEquals(document.documentId?.value, transport.documentId)
         assertTrue(transport.primitives.nestedKinds().containsAll(listOf("rectangle", "line")))
         assertTrue(renderPathProof.accepted, renderPathProof.toString())

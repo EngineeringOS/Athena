@@ -27,6 +27,18 @@ val verifyJava25 = tasks.register("verifyJava25") {
     }
 }
 
+val sourceSetHygieneAudit = tasks.register<Exec>("sourceSetHygieneAudit") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Rejects test, demo, proof, milestone, and version names in production source sets."
+    commandLine(
+        "powershell",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        layout.projectDirectory.file("tools/source-set-hygiene-audit.ps1").asFile.absolutePath,
+    )
+}
+
 subprojects {
     group = rootProject.group
     version = rootProject.version
@@ -55,11 +67,13 @@ subprojects {
 
 tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME) {
     dependsOn(verifyJava25)
+    dependsOn(sourceSetHygieneAudit)
     dependsOn(leafSubprojects.map { "${it.path}:${LifecycleBasePlugin.CHECK_TASK_NAME}" })
 }
 
 tasks.named(LifecycleBasePlugin.BUILD_TASK_NAME) {
     dependsOn(verifyJava25)
+    dependsOn(sourceSetHygieneAudit)
     dependsOn(leafSubprojects.map { "${it.path}:${LifecycleBasePlugin.BUILD_TASK_NAME}" })
 }
 
@@ -67,6 +81,7 @@ tasks.register("test") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs tests for all Athena modules."
     dependsOn(verifyJava25)
+    dependsOn(sourceSetHygieneAudit)
     dependsOn(leafSubprojects.map { "${it.path}:test" })
 }
 

@@ -113,7 +113,7 @@ class AthenaRepresentationSourceCompiler(
         val profilesByName = profiles.associateBy { profile -> profile.profileId.value }
         val bindingRules = declarations.mapNotNull { occurrence ->
             (occurrence.declaration as? BindingDeclaration)?.let { binding ->
-                lowerBinding(occurrence.file, binding, profilesByName, identities)
+                lowerBinding(occurrence, binding, profilesByName, identities)
             }
         }
         val definitions = if (loweringDiagnostics.isEmpty()) {
@@ -419,12 +419,12 @@ private fun lowerProfile(file: String, profile: ProfileDeclaration): Presentatio
         styleProfile = PresentationStyleProfileId(requireNotNull(profile.style).value),
         standardTags = listOf(RepresentationStandardTag(requireNotNull(profile.standard).value)),
         fallbackPolicy = PresentationProfileFallbackPolicy(PresentationProfileFallbackMode.FAIL_CLOSED),
-        provenance = PresentationProfileProvenance(sources = listOf(file), reviewedBy = "Athena M34 compiler"),
+        provenance = PresentationProfileProvenance(sources = listOf(file), reviewedBy = "Athena representation compiler"),
     )
 }
 
 private fun lowerBinding(
-    file: String,
+    occurrence: AuthoredRepresentationDeclaration,
     binding: BindingDeclaration,
     profilesByName: Map<String, PresentationProfileDescriptor>,
     identities: List<RepresentationIdentityOccurrence>,
@@ -436,9 +436,16 @@ private fun lowerBinding(
     }
     val concept = selectorFacts.single { it.name == "type" }.value
     val targetIdentity = requireNotNull(binding.useElement).value
-    val targetLibraryId = identities.single { occurrence ->
-        occurrence.identity == targetIdentity && occurrence.declaration is ElementDeclaration
-    }.libraryId
+    val localCandidates = identities.filter { candidate ->
+        candidate.libraryId == occurrence.libraryId &&
+            candidate.identity == targetIdentity &&
+            candidate.declaration is ElementDeclaration
+    }
+    val targetLibraryId = localCandidates.ifEmpty {
+        identities.filter { candidate ->
+            candidate.identity == targetIdentity && candidate.declaration is ElementDeclaration
+        }
+    }.single().libraryId
     return RepresentationBindingRule(
         ruleId = RepresentationBindingRuleId(binding.name),
         profileId = PresentationProfileId(profileId),
@@ -453,7 +460,7 @@ private fun lowerBinding(
         ),
         priority = RepresentationBindingPriority(requireNotNull(binding.priority).value.toInt()),
         lifecycle = RepresentationBindingRuleLifecycle(RepresentationBindingRuleLifecycleState.ACTIVE),
-        provenance = RepresentationBindingRuleProvenance(sources = listOf(file), reviewedBy = "Athena M34 compiler"),
+        provenance = RepresentationBindingRuleProvenance(sources = listOf(occurrence.file), reviewedBy = "Athena representation compiler"),
         subjectKind = when (binding.selectorKind) {
             BindingSelectorKind.Function -> RepresentationBindingSubjectKind.FUNCTION
             BindingSelectorKind.Device -> RepresentationBindingSubjectKind.DEVICE

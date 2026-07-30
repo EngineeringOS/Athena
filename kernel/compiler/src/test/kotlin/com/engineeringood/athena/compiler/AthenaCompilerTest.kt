@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.compiler
+package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorSource
 import com.engineeringood.athena.ir.EngineeringComponent
@@ -14,6 +14,7 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.renderer.svg.SvgRenderBox
 import com.engineeringood.athena.renderer.svg.SvgRenderConnection
 import com.engineeringood.athena.renderer.svg.SvgRenderModel
+import com.engineeringood.athena.renderer.svg.SvgRenderPoint
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
 import com.engineeringood.athena.geometry.GeometryBounds
 import com.engineeringood.athena.geometry.GeometryElementKind
@@ -141,6 +142,12 @@ class AthenaCompilerTest {
                             y1 = 86,
                             x2 = 316,
                             y2 = 86,
+                            points = listOf(
+                                SvgRenderPoint(104, 86),
+                                SvgRenderPoint(210, 86),
+                                SvgRenderPoint(210, 86),
+                                SvgRenderPoint(316, 86),
+                            ),
                         ),
                     ),
                 ),
@@ -2020,7 +2027,7 @@ class AthenaCompilerTest {
                 ),
             ),
             notationPack = ProjectionNotationPack(
-                packId = ProjectionNotationPackId("electrical-notation/cabinet/default-v1"),
+                packId = ProjectionNotationPackId("electrical-notation/cabinet/default"),
                 displayName = "Electrical Cabinet Default",
                 subjects = listOf(
                     ProjectionNotationSubject(
@@ -2195,7 +2202,7 @@ class AthenaCompilerTest {
                 ),
             ),
             notationPack = ProjectionNotationPack(
-                packId = ProjectionNotationPackId("electrical-notation/wiring/default-v1"),
+                packId = ProjectionNotationPackId("electrical-notation/wiring/default"),
                 displayName = "Electrical Wiring Default",
                 subjects = listOf(
                     ProjectionNotationSubject(

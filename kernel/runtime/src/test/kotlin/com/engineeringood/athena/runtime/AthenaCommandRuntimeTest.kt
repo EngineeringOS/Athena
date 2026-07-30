@@ -296,7 +296,7 @@ class AthenaCommandRuntimeTest {
                 system Connectable {
                   device PLC1 {
                     type Switch
-                    vendorPartNumber "proof.cpu.313c"
+                    vendorPartNumber "evidence.cpu.313c"
                   }
 
                   port PLC1.lplus {

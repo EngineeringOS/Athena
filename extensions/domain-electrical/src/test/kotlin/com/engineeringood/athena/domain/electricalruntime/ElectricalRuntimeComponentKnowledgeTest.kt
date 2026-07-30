@@ -33,7 +33,7 @@ class ElectricalRuntimeComponentKnowledgeTest {
     }
 
     @Test
-    fun `publishes Siemens first implementations for each targeted proof family and preserves governed alternatives`() {
+    fun `publishes Siemens first implementations for each targeted evidence family and preserves governed alternatives`() {
         val concepts = electricalEngineeringConcepts()
         val implementations = siemensElectricalPartImplementations()
 

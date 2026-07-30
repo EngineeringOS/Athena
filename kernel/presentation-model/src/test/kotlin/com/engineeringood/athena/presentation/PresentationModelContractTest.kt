@@ -9,6 +9,7 @@ import com.engineeringood.athena.document.DocumentProjectionSubjectSummary
 import com.engineeringood.athena.document.DocumentProjectionWorkspaceSemanticSnapshot
 import com.engineeringood.athena.document.SheetViewId
 import com.engineeringood.athena.document.SheetViewRole
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.layout.LayoutOccurrenceId
@@ -17,8 +18,11 @@ import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.routing.ElectricalConnectionId
 import com.engineeringood.athena.routing.ElectricalPortId
 import com.engineeringood.athena.routing.ElectricalPortRole
+import com.engineeringood.athena.routing.RouteBundleId
 import com.engineeringood.athena.routing.RouteFact
 import com.engineeringood.athena.routing.RouteFactSnapshot
+import com.engineeringood.athena.routing.RouteIntentId
+import com.engineeringood.athena.routing.RouteQualityMetrics
 import com.engineeringood.athena.routing.RouteQualityState
 import com.engineeringood.athena.routing.SchematicRouteId
 import com.engineeringood.athena.routing.SchematicRouteLane
@@ -47,7 +51,7 @@ class PresentationModelContractTest {
             canvasHeight = 360,
             primitivePacks = listOf(
                 PresentationPrimitivePack(
-                    packId = PresentationPackId("electrical-primitives/default-v1"),
+                    packId = PresentationPackId("electrical-primitives/default"),
                     displayName = "Electrical primitives",
                     familyIds = setOf("electrical/cabinet"),
                     primitives = listOf(
@@ -123,7 +127,7 @@ class PresentationModelContractTest {
         )
 
         assertEquals("cabinet", document.view.id)
-        assertEquals("electrical-primitives/default-v1", document.primitivePacks.single().packId.value)
+        assertEquals("electrical-primitives/default", document.primitivePacks.single().packId.value)
         assertEquals("electrical-composites/default-v1", document.compositePacks.single().packId.value)
         assertEquals("component:PLC1", document.occurrences.single().semanticId.value)
         assertEquals(
@@ -302,6 +306,20 @@ class PresentationModelContractTest {
             routeId = SchematicRouteId("route:PLC1.DO1->XT1.1"),
             snapshotId = snapshotId,
             connectionId = connectionId,
+            routeIntentId = RouteIntentId("intent:${connectionId.value}"),
+            bundleId = RouteBundleId("bundle:${connectionId.value}"),
+            selectedChannelIds = listOf("channel:main"),
+            plannerId = "athena-native",
+            compilerSnapshotId = "compiler:route:PLC1.DO1->XT1.1",
+            provenance = SourceProvenance("routes.athena", 1, 1, 1, 32),
+            qualityMetrics = RouteQualityMetrics(
+                crossingCount = 0,
+                bendCount = 2,
+                length = 240,
+                channelChangeCount = 0,
+                bundleContinuityPenalty = 0,
+                labelClearanceViolationCount = 0,
+            ),
             source = source,
             target = target,
             lane = SchematicRouteLane(0),

@@ -5,7 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
 
-/** Loads and validates one local directory-backed governed knowledge package for the M0 boundary proof. */
+/** Loads and validates one local directory-backed governed knowledge package for the M0 boundary evidence. */
 class AthenaKnowledgePackageLoader {
     /** Loads the governed knowledge package rooted at [packageRoot] and returns either the loaded package or diagnostics. */
     fun load(packageRoot: Path): AthenaKnowledgePackageLoadResult {
@@ -77,7 +77,7 @@ class AthenaKnowledgePackageLoader {
                     diagnostics += diagnostic(
                         ruleId = "knowledge.package.manifest.kind.unsupported",
                         subject = "artifact.kind",
-                        message = "Governed knowledge artifact kind `$artifactKindText` is not supported in M0.",
+                        message = "Governed knowledge artifact kind `$artifactKindText` is not supported.",
                     )
                     null
                 }

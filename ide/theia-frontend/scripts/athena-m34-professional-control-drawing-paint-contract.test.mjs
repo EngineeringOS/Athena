@@ -71,7 +71,7 @@ test('Control Drawing consumes compiler-owned Graphic Primitive occurrences with
             }],
             drawingComposition: {
                 sheetId: 'control-drawing/01',
-                policyId: 'm34-rolling-shutter-control-drawing-v0',
+                policyId: 'rolling-shutter-control-drawing',
                 contentBounds: { x: 48, y: 42, width: 954, height: 614 },
                 frameBounds: { x: 30, y: 24, width: 990, height: 672 },
                 drawingAreaBounds: { x: 48, y: 42, width: 954, height: 564 },

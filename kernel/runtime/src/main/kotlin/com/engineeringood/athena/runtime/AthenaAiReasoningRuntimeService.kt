@@ -1,7 +1,7 @@
 package com.engineeringood.athena.runtime
 
 /**
- * Stable request categories for the first governed AI reasoning proof.
+ * Stable request categories for the first governed AI reasoning evidence.
  */
 enum class AthenaAiReasoningRequestCategory {
     DIAGNOSTIC_EXPLANATION,

@@ -304,41 +304,12 @@ The sample separates:
 descriptor ids. This is package/binding runtime evidence; the `.athena` source is not edited to
 select a visual resource.
 
-## M32 Structured Product Smoke
+## Historical M32 Verification
 
-`M32ProductSmokeProofRunner` is the package-runtime smoke proof for the M32 sample. It composes the
-same contracts used by the earlier package stories:
-
-- `M32SamplePackageSet`
-- `BindingResolver`
-- `BindingEvidencePayloadMapper`
-- `RepresentationDescriptorValidator`
-- `PackageBackedRepresentationOccurrenceFactory`
-- `DescriptorBackedGraphicResourceRenderPayloadMapper`
-- `DescriptorAnchorRouteEvidenceMapper`
-
-The proof records Engineering Package resolution, Representation Package resolution, manifest
-selection, descriptor validation, anchor mapping, label binding, occurrence creation, derived
-bounds, route anchoring, profile switching, and no accepted fallback.
-
-Screenshot evidence is intentionally secondary. A screenshot can help a human review visual
-quality, but it cannot satisfy package, binding, descriptor, route, or fallback claims without the
-structured proof passing.
-
-## M32 Professional-Density Proof
-
-`M32DemoLayoutDensityProofRunner` validates the sample's industrial-density constraints from
-descriptor-backed render payloads and sample layout facts:
-
-- normal component background and hitbox chrome are transparent
-- duplicate visible labels are rejected
-- anchors and labels come from descriptors and binding evidence
-- generic rectangle fallback is not accepted
-- viewBox is derived from content bounds plus a governed margin
-- the sheet navigation band remains visible in the structured adapter proof
-
-The sample layout fixture is `examples/m32/sample-project/presentation/layout-density-proof.json`.
-It is demo presentation data, not `.athena` visual syntax and not semantic kernel truth.
+The M32 package and density scenarios are retained only as test fixtures under
+`kernel/package-runtime/src/test`. They are not production package-resolution authorities and are
+never loaded by `PresentationModelDeriver`. Current production resolution starts from repository
+declarations and canonical package/runtime contracts.
 
 ## Authoring Preview Compatibility Closeout
 

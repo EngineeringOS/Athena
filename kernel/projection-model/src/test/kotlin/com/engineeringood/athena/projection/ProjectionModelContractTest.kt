@@ -445,7 +445,7 @@ class ProjectionModelContractTest {
             connections = emptyList(),
             labels = emptyList(),
             notationPack = ProjectionNotationPack(
-                packId = ProjectionNotationPackId("electrical-notation/schematic/default-v1"),
+                packId = ProjectionNotationPackId("electrical-notation/schematic/default"),
                 displayName = "Electrical Schematic Default",
                 subjects = listOf(
                     ProjectionNotationSubject(
@@ -458,7 +458,7 @@ class ProjectionModelContractTest {
             ),
         )
 
-        assertEquals("electrical-notation/schematic/default-v1", document.notationPack?.packId?.value)
+        assertEquals("electrical-notation/schematic/default", document.notationPack?.packId?.value)
         assertEquals(componentSemanticId, document.notationPack?.subjects?.single()?.semanticId)
         assertEquals("device.schematic.default", document.notationPack?.subjects?.single()?.symbolKey?.value)
         assertEquals(ProjectionLabelPolicy.SUBJECT_LABEL, document.notationPack?.subjects?.single()?.labelPolicy)

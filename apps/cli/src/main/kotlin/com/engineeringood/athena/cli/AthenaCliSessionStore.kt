@@ -154,7 +154,7 @@ internal class AthenaCliSessionStore {
         }
 
         val version = headerValues[VERSION_KEY]
-        require(version == SESSION_VERSION_V1 || version == SESSION_VERSION_V2) {
+        require(version == SESSION_VERSION_V3) {
             "Unsupported persisted CLI session version `$version`."
         }
         val appliedRecordCount = headerValues[APPLIED_RECORD_COUNT_KEY]?.toIntOrNull()
@@ -169,11 +169,7 @@ internal class AthenaCliSessionStore {
             records = recordLines.map { record -> record.toSessionRecord(version) },
             proposals = proposalLines.map { proposal -> proposal.toSessionProposalRecord() },
             nextProposalOrdinal = headerValues[NEXT_AI_PROPOSAL_ORDINAL_KEY]?.toIntOrNull()
-                ?: if (version == SESSION_VERSION_V1) {
-                    1
-                } else {
-                    error("Persisted CLI session is missing a valid next AI proposal ordinal.")
-                },
+                ?: error("Persisted CLI session is missing a valid next AI proposal ordinal."),
         )
     }
 }
@@ -217,7 +213,7 @@ private data class AthenaCliSessionSnapshot(
 ) {
     fun render(): String {
         return buildString {
-            appendLine("$VERSION_KEY=$SESSION_VERSION_V2")
+            appendLine("$VERSION_KEY=$SESSION_VERSION_V3")
             appendLine("$APPLIED_RECORD_COUNT_KEY=$appliedRecordCount")
             appendLine("$NEXT_AI_PROPOSAL_ORDINAL_KEY=$nextProposalOrdinal")
             appendLine("$LATEST_DIFF_KEY=${latestDiffText?.encodedValue().orEmpty()}")
@@ -240,6 +236,8 @@ private data class AthenaCliSessionSnapshot(
 
 private data class AthenaCliSessionRecord(
     val commandOrigin: AthenaCommandOrigin,
+    val sourceUnitId: String,
+    val connectionAlias: String,
     val sourcePortSemanticId: String,
     val targetPortSemanticId: String,
 ) {
@@ -247,6 +245,8 @@ private data class AthenaCliSessionRecord(
         return listOf(
             COMMAND_KIND_CONNECT_PORTS,
             commandOrigin.name,
+            sourceUnitId.encodedValue(),
+            connectionAlias.encodedValue(),
             sourcePortSemanticId.encodedValue(),
             targetPortSemanticId.encodedValue(),
         ).joinToString(SESSION_FIELD_SEPARATOR)
@@ -254,6 +254,8 @@ private data class AthenaCliSessionRecord(
 
     fun toCommand(): AthenaConnectPortsCommand {
         return AthenaConnectPortsCommand(
+            sourceUnitId = sourceUnitId,
+            connectionAlias = connectionAlias,
             sourcePortSemanticId = sourcePortSemanticId,
             targetPortSemanticId = targetPortSemanticId,
         )
@@ -264,6 +266,8 @@ private data class AthenaCliSessionProposalRecord(
     val proposalId: String,
     val summary: String,
     val rationale: String,
+    val sourceUnitId: String,
+    val connectionAlias: String,
     val sourcePortSemanticId: String,
     val targetPortSemanticId: String,
 ) {
@@ -273,6 +277,8 @@ private data class AthenaCliSessionProposalRecord(
             summary.encodedValue(),
             rationale.encodedValue(),
             COMMAND_KIND_CONNECT_PORTS,
+            sourceUnitId.encodedValue(),
+            connectionAlias.encodedValue(),
             sourcePortSemanticId.encodedValue(),
             targetPortSemanticId.encodedValue(),
         ).joinToString(SESSION_FIELD_SEPARATOR)
@@ -284,6 +290,8 @@ private data class AthenaCliSessionProposalRecord(
             summary = summary,
             rationale = rationale,
             command = AthenaConnectPortsCommand(
+                sourceUnitId = sourceUnitId,
+                connectionAlias = connectionAlias,
                 sourcePortSemanticId = sourcePortSemanticId,
                 targetPortSemanticId = targetPortSemanticId,
             ),
@@ -297,6 +305,8 @@ private fun com.engineeringood.athena.runtime.AthenaCommandHistoryRecord.toSessi
         ?: error("CLI session persistence does not yet support `${recordedCommand.commandKind}`.")
     return AthenaCliSessionRecord(
         commandOrigin = commandOrigin,
+        sourceUnitId = connectCommand.sourceUnitId,
+        connectionAlias = connectCommand.connectionAlias,
         sourcePortSemanticId = connectCommand.sourcePortSemanticId,
         targetPortSemanticId = connectCommand.targetPortSemanticId,
     )
@@ -309,6 +319,8 @@ private fun AthenaAiCommandProposal.toSessionProposalRecord(): AthenaCliSessionP
         proposalId = proposalId,
         summary = summary,
         rationale = rationale,
+        sourceUnitId = connectCommand.sourceUnitId,
+        connectionAlias = connectCommand.connectionAlias,
         sourcePortSemanticId = connectCommand.sourcePortSemanticId,
         targetPortSemanticId = connectCommand.targetPortSemanticId,
     )
@@ -316,38 +328,23 @@ private fun AthenaAiCommandProposal.toSessionProposalRecord(): AthenaCliSessionP
 
 private fun String.toSessionRecord(version: String): AthenaCliSessionRecord {
     val fields = split(SESSION_FIELD_SEPARATOR)
-    return when (version) {
-        SESSION_VERSION_V1 -> {
-            require(fields.size == 3) { "Invalid persisted command record `$this`." }
-            require(fields.first() == COMMAND_KIND_CONNECT_PORTS) {
-                "Unsupported persisted command kind `${fields.first()}`."
-            }
-            AthenaCliSessionRecord(
-                commandOrigin = AthenaCommandOrigin.STANDARD,
-                sourcePortSemanticId = fields[1].decodedValue(),
-                targetPortSemanticId = fields[2].decodedValue(),
-            )
-        }
-
-        SESSION_VERSION_V2 -> {
-            require(fields.size == 4) { "Invalid persisted command record `$this`." }
-            require(fields.first() == COMMAND_KIND_CONNECT_PORTS) {
-                "Unsupported persisted command kind `${fields.first()}`."
-            }
-            AthenaCliSessionRecord(
-                commandOrigin = AthenaCommandOrigin.valueOf(fields[1]),
-                sourcePortSemanticId = fields[2].decodedValue(),
-                targetPortSemanticId = fields[3].decodedValue(),
-            )
-        }
-
-        else -> error("Unsupported persisted CLI session version `$version`.")
+    require(version == SESSION_VERSION_V3) { "Unsupported persisted CLI session version `$version`." }
+    require(fields.size == 6) { "Invalid persisted command record `$this`." }
+    require(fields.first() == COMMAND_KIND_CONNECT_PORTS) {
+        "Unsupported persisted command kind `${fields.first()}`."
     }
+    return AthenaCliSessionRecord(
+        commandOrigin = AthenaCommandOrigin.valueOf(fields[1]),
+        sourceUnitId = fields[2].decodedValue(),
+        connectionAlias = fields[3].decodedValue(),
+        sourcePortSemanticId = fields[4].decodedValue(),
+        targetPortSemanticId = fields[5].decodedValue(),
+    )
 }
 
 private fun String.toSessionProposalRecord(): AthenaCliSessionProposalRecord {
     val fields = split(SESSION_FIELD_SEPARATOR)
-    require(fields.size == 6) { "Invalid persisted AI proposal record `$this`." }
+    require(fields.size == 8) { "Invalid persisted AI proposal record `$this`." }
     require(fields[3] == COMMAND_KIND_CONNECT_PORTS) {
         "Unsupported persisted AI proposal command kind `${fields[3]}`."
     }
@@ -355,8 +352,10 @@ private fun String.toSessionProposalRecord(): AthenaCliSessionProposalRecord {
         proposalId = fields[0].decodedValue(),
         summary = fields[1].decodedValue(),
         rationale = fields[2].decodedValue(),
-        sourcePortSemanticId = fields[4].decodedValue(),
-        targetPortSemanticId = fields[5].decodedValue(),
+        sourceUnitId = fields[4].decodedValue(),
+        connectionAlias = fields[5].decodedValue(),
+        sourcePortSemanticId = fields[6].decodedValue(),
+        targetPortSemanticId = fields[7].decodedValue(),
     )
 }
 
@@ -370,8 +369,7 @@ private fun String.decodedValue(): String {
     return String(Base64.getUrlDecoder().decode(this), StandardCharsets.UTF_8)
 }
 
-private const val SESSION_VERSION_V1 = "1"
-private const val SESSION_VERSION_V2 = "2"
+private const val SESSION_VERSION_V3 = "3"
 private const val VERSION_KEY = "version"
 private const val APPLIED_RECORD_COUNT_KEY = "appliedRecordCount"
 private const val NEXT_AI_PROPOSAL_ORDINAL_KEY = "nextAiProposalOrdinal"

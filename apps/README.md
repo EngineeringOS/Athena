@@ -7,7 +7,6 @@ The `apps` group contains concrete entry points for users and operators. Apps as
 ## Modules
 
 - `:apps:cli` -> [`cli/`](cli/README.md)
-- `:apps:desktop-viewer` -> [`desktop-viewer/`](desktop-viewer/README.md)
 
 ## Boundary
 

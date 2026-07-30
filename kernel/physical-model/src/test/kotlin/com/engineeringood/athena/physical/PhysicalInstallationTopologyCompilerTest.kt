@@ -107,7 +107,7 @@ class PhysicalInstallationTopologyCompilerTest {
         assertEquals(PhysicalVector2i(-1, 0), rails.getValue("DIN2").frame.normalAxis)
     }
 
-    private fun validIntent(): PhysicalInstallationIntentV0 = PhysicalInstallationIntentV0(
+    private fun validIntent(): PhysicalInstallationIntent = PhysicalInstallationIntent(
         sourceUnitId = PhysicalSourceUnitId("src/main.athena"),
         installationId = PhysicalInstallationId("MainCabinet"),
         enclosures = listOf(enclosure("ENC1")),
@@ -209,28 +209,28 @@ class PhysicalInstallationTopologyCompilerTest {
             provenance = provenance(alias),
         )
 
-    private fun contract(subject: String): PhysicalInstallationContractV0 {
+    private fun contract(subject: String): PhysicalInstallationContract {
         val source = PhysicalContractSource(PhysicalContractSourceKind.Project, "project:$subject")
         val provenance = PhysicalInstallationContractField.entries.associateWith { field ->
             PhysicalInstallationContractFieldProvenance(field, source, null)
         }
-        return PhysicalInstallationContractV0(
+        return PhysicalInstallationContract(
             subjectIdentity = StableSemanticIdentity(subject),
-            size = PhysicalInstallationSizeV0(
+            size = PhysicalInstallationSize(
                 width = PhysicalPositiveMillimeters.from(20)!!,
                 height = PhysicalPositiveMillimeters.from(40)!!,
                 depth = PhysicalPositiveMillimeters.from(35)!!,
             ),
             mountingTypeId = PhysicalMountingTypeId("terminal-snap"),
             allowedOrientations = setOf(PhysicalInstallationOrientation.Deg0),
-            clearance = PhysicalInstallationClearanceV0(
+            clearance = PhysicalInstallationClearance(
                 top = PhysicalNonNegativeMillimeters.from(2)!!,
                 right = PhysicalNonNegativeMillimeters.from(2)!!,
                 bottom = PhysicalNonNegativeMillimeters.from(2)!!,
                 left = PhysicalNonNegativeMillimeters.from(2)!!,
             ),
             compatibleContainerKinds = setOf(PhysicalContainerKindId("cabinet")),
-            provenance = PhysicalInstallationContractProvenanceV0(
+            provenance = PhysicalInstallationContractProvenance(
                 width = provenance.getValue(PhysicalInstallationContractField.Width),
                 height = provenance.getValue(PhysicalInstallationContractField.Height),
                 depth = provenance.getValue(PhysicalInstallationContractField.Depth),

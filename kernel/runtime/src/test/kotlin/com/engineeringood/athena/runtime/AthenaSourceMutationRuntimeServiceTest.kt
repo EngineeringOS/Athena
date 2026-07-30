@@ -81,7 +81,7 @@ class AthenaSourceMutationRuntimeServiceTest {
             )
 
             val accepted = assertIs<AthenaSourceMutationAccepted>(result)
-            val expectedConnectionId = "connection:$sourcePath:plc1_out_to_m1_in"
+            val expectedConnectionId = "connection:${sourcePath.toString().replace('\\', '/')}:plc1_out_to_m1_in"
             assertEquals("connectable", accepted.projectName)
             assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, accepted.mutationCategory)
             assertEquals(AthenaMutationOutcome.ACCEPTED, accepted.outcome)
@@ -174,7 +174,7 @@ class AthenaSourceMutationRuntimeServiceTest {
             )
 
             val validationFeedback = assertIs<AthenaSourceMutationValidationFeedbackResult>(result)
-            val expectedConnectionId = "connection:$sourcePath:plc1_out_to_m1_in_2"
+            val expectedConnectionId = "connection:${sourcePath.toString().replace('\\', '/')}:plc1_out_to_m1_in_2"
             assertEquals("connectable", validationFeedback.projectName)
             assertEquals(AthenaMutationCategory.SEMANTIC_MUTATION, validationFeedback.mutationCategory)
             assertEquals(AthenaMutationOutcome.VALIDATION_FEEDBACK, validationFeedback.outcome)
@@ -434,7 +434,7 @@ class AthenaSourceMutationRuntimeServiceTest {
         try {
             val runtime = AthenaRuntime()
             val context = runtime.openWorkspace(sourcePath.parent).activateProject(
-                projectName = "motor-impact-proof",
+                projectName = "motor-impact-evidence",
                 sourcePath = sourcePath,
             )
 
@@ -488,7 +488,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                 system ComponentKnowledgeAuthority {
                   device PLC1 {
                     type Switch
-                    model "proof.cpu.313c"
+                    model "evidence.cpu.313c"
                   }
                 }
             """.trimIndent(),

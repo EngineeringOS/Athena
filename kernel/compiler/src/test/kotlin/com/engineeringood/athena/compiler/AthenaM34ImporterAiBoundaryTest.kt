@@ -34,15 +34,15 @@ class AthenaM34ImporterAiBoundaryTest {
         val definition = report.definitions.single()
         assertTrue(definition.anchors.isEmpty())
         assertTrue(definition.labelSlots.isEmpty())
-        val proof = assertNotNull(report.proof)
-        assertEquals("canonical-athena-source", proof.generatedSourceBoundary)
-        assertTrue(proof.qetRuntimeAuthorityAbsent)
-        assertTrue(proof.foreignRuntimeSchemaAbsent)
-        assertTrue(proof.xmlRuntimeAuthorityAbsent)
-        assertTrue(proof.rawSvgTransportAbsent)
-        assertTrue(proof.stagedSourcePaths.any { it.endsWith("athena/generated/vendor-drive.athena") })
-        assertTrue(proof.stagedSourcePaths.any { it.endsWith("athena/generated/vendor-drive.svg") })
-        assertTrue(proof.stagedSourcePaths.none { it.endsWith(".elmt") })
+        val evidence = assertNotNull(report.evidence)
+        assertEquals("canonical-athena-source", evidence.generatedSourceBoundary)
+        assertTrue(evidence.qetRuntimeAuthorityAbsent)
+        assertTrue(evidence.foreignRuntimeSchemaAbsent)
+        assertTrue(evidence.xmlRuntimeAuthorityAbsent)
+        assertTrue(evidence.rawSvgTransportAbsent)
+        assertTrue(evidence.stagedSourcePaths.any { it.endsWith("athena/generated/vendor-drive.athena") })
+        assertTrue(evidence.stagedSourcePaths.any { it.endsWith("athena/generated/vendor-drive.svg") })
+        assertTrue(evidence.stagedSourcePaths.none { it.endsWith(".elmt") })
     }
 
     @Test
@@ -94,7 +94,7 @@ class AthenaM34ImporterAiBoundaryTest {
                 repositoryRoot = sampleRoot,
                 packageRoots = listOf(sampleRoot.resolve("packages/representation")),
                 dependencyLockDigest = Files.readString(sampleRoot.resolve("athena.lock")),
-                snapshotDirectory = sampleRoot.resolve(".athena/snapshots/generated-proof"),
+                snapshotDirectory = sampleRoot.resolve(".athena/snapshots/generated-evidence"),
             ),
         )
 
@@ -110,12 +110,12 @@ class AthenaM34ImporterAiBoundaryTest {
         assertTrue(canvas.isValid, canvas.diagnostics.toString())
         assertTrue(assertNotNull(canvas.svg).contains("data-athena-render-authority=\"graphic-primitive-ir\""))
         assertTrue(canvas.svg!!.contains("GEN-DRV"))
-        val proof = assertNotNull(report.proof)
-        assertEquals("canonical-athena-source", proof.generatedSourceBoundary)
-        assertTrue(proof.qetRuntimeAuthorityAbsent)
-        assertTrue(proof.foreignRuntimeSchemaAbsent)
-        assertTrue(proof.xmlRuntimeAuthorityAbsent)
-        assertTrue(proof.rawSvgTransportAbsent)
+        val evidence = assertNotNull(report.evidence)
+        assertEquals("canonical-athena-source", evidence.generatedSourceBoundary)
+        assertTrue(evidence.qetRuntimeAuthorityAbsent)
+        assertTrue(evidence.foreignRuntimeSchemaAbsent)
+        assertTrue(evidence.xmlRuntimeAuthorityAbsent)
+        assertTrue(evidence.rawSvgTransportAbsent)
     }
 
     private fun generatedRepository(svg: String = GENERATED_SVG): Path {
@@ -157,10 +157,10 @@ class AthenaM34ImporterAiBoundaryTest {
 
         private val GENERATED_SVG = """
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220">
-              <rect id="body" x="8" y="8" width="144" height="204" data-athena-geometry-ref="body"/>
-              <circle id="power-in" cx="20" cy="40" r="4" data-athena-geometry-ref="power-in"/>
-              <circle id="status-out" cx="140" cy="40" r="4" data-athena-geometry-ref="status-out"/>
-              <text id="tag" x="80" y="28" data-athena-geometry-ref="tag">GEN-DRV</text>
+              <rect id="body" x="8" y="8" width="144" height="204" data-athena-ref="anchor:body"/>
+              <circle id="power-in" cx="20" cy="40" r="4" data-athena-ref="anchor:power-in"/>
+              <circle id="status-out" cx="140" cy="40" r="4" data-athena-ref="anchor:status-out"/>
+              <text id="tag" x="80" y="28" data-athena-ref="anchor:tag">GEN-DRV</text>
             </svg>
         """.trimIndent()
 

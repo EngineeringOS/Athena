@@ -26,7 +26,6 @@
 - 以 runtime-owned audit data 的形式保存 typed AI reasoning context、evidence、proposal category、provider status 与 decision state。
 - 在任何 provider call 之前，从 compiled knowledge output 与 governed review fact 组装 deterministic AI reasoning context package。
 - 通过可替换的 runtime-owned provider boundary 提交 governed AI reasoning request，同时保留 typed session outcome record。
-- 在依赖 live model 之前，提供一个 deterministic proof provider，用于 explanation、impact-summary 与 next-check 的验证路径。
 
 ## 主要类型
 
@@ -45,7 +44,6 @@
 - `AthenaAiProposalRuntimeService`
 - `AthenaAiReasoningRuntimeService`
 - `AthenaAiReasoningSessionRuntimeService`
-- `AthenaAiDeterministicProofProvider`
 - `AthenaAiReasoningContextRequest`
 - `AthenaAiReasoningSessionRequest`
 - `AthenaAiReasoningProvider`

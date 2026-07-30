@@ -87,7 +87,7 @@ test('M29 structured proof payload inventory is executable without DOM semantic 
         payloads.map(payload => payload.payload.proofKind),
         REQUIRED_INTERACTION_PROOF_KINDS,
     );
-    assert.ok(payloads.every(payload => payload.schemaVersion === 'm29.interaction.v1'));
+    assert.ok(payloads.every(payload => payload.schemaVersion === 'athena.interaction'));
     assert.ok(payloads.every(payload => payload.payloadKind === 'proof'));
     assert.ok(payloads.every(payload => payload.payload.activeSourceContext));
 
@@ -101,7 +101,7 @@ test('shared product smoke opener uses Athena command hook before DOM fallback',
     const opener = readRepoFile('ide/theia-product/scripts/athena-electron-open-workspace-main.js');
     const contribution = readRepoFile('ide/theia-frontend/src/browser/athena-product-contribution.ts');
 
-    assert.match(contribution, /__athenaWorkbenchSmoke/);
+    assert.match(contribution, /__athenaWorkbenchAutomation/);
     assert.match(contribution, /commands\.executeCommand\(AthenaCommands\.REVEAL_GRAPHICAL_VIEW\.id\)/);
 
     const hookIndex = opener.indexOf('Athena workbench smoke command hook');

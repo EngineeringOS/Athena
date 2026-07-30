@@ -24,8 +24,22 @@ system Demo {
     duct D1 in ENC1 at (30mm, 60mm) size (40mm, 480mm) orientation vertical wall 2mm
     channel C1 in D1 at (4mm, 8mm) size (32mm, 464mm) lanes 4 margin 2mm
     terminal-group XT1 in ENC1 at (560mm, 420mm) size (160mm, 80mm) orientation horizontal accepts [terminal]
-    mount QF1Mount device QF1 on DIN1 at (0mm, 0mm) orientation horizontal
-    mount M1Mount device M1 on DIN1 at (100mm, 0mm) orientation horizontal
+    mount QF1 as QF1Mount on DIN1 at (0mm, 0mm) {
+      footprint (45mm, 90mm, 72mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0, deg180]
+      clearance (5mm, 5mm, 10mm, 10mm)
+      compatible-containers [rail]
+    }
+    mount M1 as M1Mount on DIN1 at (100mm, 0mm) {
+      footprint (80mm, 120mm, 100mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (10mm, 10mm, 20mm, 20mm)
+      compatible-containers [rail]
+    }
     route feeder through [C1]
   }
 }
@@ -137,21 +151,50 @@ system Demo {
           mounting_types: (identifier_list
             (identifier)))
         (installation_mount
-          name: (name)
           device: (identifier)
+          name: (name)
           target: (identifier)
           origin: (length_point
             (length_literal)
             (length_literal))
-          orientation: (layout_orientation))
+          footprint: (length_tuple3
+            (length_literal)
+            (length_literal)
+            (length_literal))
+          mounting_type: (identifier)
+          orientation: (mount_orientation)
+          allowed_orientations: (mount_orientation_list
+            (mount_orientation)
+            (mount_orientation))
+          clearance: (length_tuple4
+            (length_literal)
+            (length_literal)
+            (length_literal)
+            (length_literal))
+          compatible_containers: (identifier_list
+            (identifier)))
         (installation_mount
-          name: (name)
           device: (identifier)
+          name: (name)
           target: (identifier)
           origin: (length_point
             (length_literal)
             (length_literal))
-          orientation: (layout_orientation))
+          footprint: (length_tuple3
+            (length_literal)
+            (length_literal)
+            (length_literal))
+          mounting_type: (identifier)
+          orientation: (mount_orientation)
+          allowed_orientations: (mount_orientation_list
+            (mount_orientation))
+          clearance: (length_tuple4
+            (length_literal)
+            (length_literal)
+            (length_literal)
+            (length_literal))
+          compatible_containers: (identifier_list
+            (identifier)))
         (installation_route
           connection: (identifier)
           channels: (identifier_list

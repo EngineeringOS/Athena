@@ -153,6 +153,54 @@ export type AthenaAuthoringSourceEditPayload = {
     appliedByAuthority?: boolean;
 };
 
+export const ATHENA_GOVERNED_GRAPHIC_EDIT_PREVIEW_METHOD = 'athena/graphicEdit/preview';
+
+export type AthenaGovernedGraphicEditSurface = 'cabinet-projection';
+
+export type AthenaGovernedGraphicMutationTarget =
+    | 'svg-resource'
+    | 'dom-node'
+    | 'graphic-primitive-ir'
+    | 'placement-fact'
+    | 'route-fact';
+
+export type AthenaGovernedGraphicEditPayload =
+    | {
+        kind: 'layout-move';
+        occurrenceId: string;
+        dx: number;
+        dy: number;
+        surface: AthenaGovernedGraphicEditSurface;
+    }
+    | {
+        kind: 'direct-mutation';
+        target: AthenaGovernedGraphicMutationTarget;
+        subject: string;
+    };
+
+export interface AthenaGovernedGraphicEditIntentRequest {
+    revisionGuard: AthenaAuthoringRevisionGuardPayload;
+    edit: AthenaGovernedGraphicEditPayload;
+}
+
+export type AthenaGovernedGraphicEditDiagnosticPayload = {
+    code: string;
+    message: string;
+    subject: string;
+};
+
+export type AthenaGovernedGraphicEditPreviewPayload = {
+    decision: 'preview-ready' | 'rejected';
+    authority: 'source-mutation';
+    sourceEdit: AthenaAuthoringSourceEditPayload | undefined;
+    validation: {
+        diagnostics: AthenaGovernedGraphicEditDiagnosticPayload[];
+    };
+    recompileRequired: boolean;
+    rerenderRequired: boolean;
+    evidence: string[];
+};
+
 export type AthenaAuthoringDecisionParams = {
     previewId: string;
     intentId: string;

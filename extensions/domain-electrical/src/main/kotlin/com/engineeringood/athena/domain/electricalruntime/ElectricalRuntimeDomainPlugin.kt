@@ -23,7 +23,7 @@ import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContributor
 import com.engineeringood.athena.scm.SemanticReviewEnrichment
 import com.engineeringood.athena.scm.SemanticReviewSummary
 
-/** Reference Electrical/Runtime proof plugin that publishes the stable M3 hosted domain surface. */
+/** Reference Electrical/Runtime evidence plugin that publishes the stable M3 hosted domain surface. */
 class ElectricalRuntimeDomainPlugin :
     AthenaDomainPlugin,
     AthenaComponentKnowledgeContributor,
@@ -38,16 +38,16 @@ class ElectricalRuntimeDomainPlugin :
     /** Minimal capability declaration showing the plugin remains a domain extension rather than core authority. */
     override val domainCapabilities: Set<String> = ELECTRICAL_RUNTIME_CAPABILITIES
 
-    /** Generic electrical proof schema published through the stable plugin API. */
+    /** Generic electrical evidence schema published through the stable plugin API. */
     override val domainSchema: AthenaDomainSchema = ELECTRICAL_DOMAIN_SCHEMA
 
-    /** Inspectable validation contribution declarations exposed by the electrical proof plugin. */
+    /** Inspectable validation contribution declarations exposed by the electrical evidence plugin. */
     override val validationContributions: List<AthenaValidationContribution> = ELECTRICAL_VALIDATION_CONTRIBUTIONS
 
-    /** Inspectable compiler-stage contribution declarations exposed by the electrical proof plugin. */
+    /** Inspectable compiler-stage contribution declarations exposed by the electrical evidence plugin. */
     override val compilerPassContributions: List<AthenaCompilerPassContribution> = ELECTRICAL_COMPILER_PASS_CONTRIBUTIONS
 
-    /** Inspectable renderer-facing contribution declarations exposed by the electrical proof plugin. */
+    /** Inspectable renderer-facing contribution declarations exposed by the electrical evidence plugin. */
     override val renderContributions: List<AthenaRenderContribution> = ELECTRICAL_RENDER_CONTRIBUTIONS
 
     /** Publishes the first governed electrical primitive presentation packs through the stable SPI. */
@@ -56,17 +56,17 @@ class ElectricalRuntimeDomainPlugin :
     /** Publishes the first governed electrical composite presentation packs through the stable SPI. */
     override fun compositePresentationPacks() = ELECTRICAL_COMPOSITE_PRESENTATION_PACKS
 
-    /** Lowers authored Electrical/Runtime proof declarations into compiler-owned semantic blueprints. */
+    /** Lowers authored Electrical/Runtime evidence declarations into compiler-owned semantic blueprints. */
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
         return lowerElectricalRuntime(context)
     }
 
-    /** Validates Electrical/Runtime proof properties and connection compatibility over canonical Engineering IR. */
+    /** Validates Electrical/Runtime evidence properties and connection compatibility over canonical Engineering IR. */
     override fun validate(context: AthenaPluginValidationContext): AthenaPluginValidationResult {
         return validateElectricalRuntime(context)
     }
 
-    /** Contributes the first runtime-hosted electrical command proof without bypassing the command runtime. */
+    /** Contributes the first runtime-hosted electrical command evidence without bypassing the command runtime. */
     override fun commandContributions(): List<AthenaRuntimePluginCommandContribution> {
         return electricalRuntimeCommandContributions()
     }
@@ -74,7 +74,7 @@ class ElectricalRuntimeDomainPlugin :
     /** Contributes the first governed electrical projection-family set without turning views into semantic truth. */
     override fun viewDefinitions() = ELECTRICAL_RUNTIME_VIEW_DEFINITIONS
 
-    /** Contributes the first runtime-hosted electrical view proof through existing shell seams. */
+    /** Contributes the first runtime-hosted electrical view evidence through existing shell seams. */
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
         return electricalRuntimeViewContributions(context)
     }
@@ -85,7 +85,7 @@ class ElectricalRuntimeDomainPlugin :
             engineeringConcepts = electricalEngineeringConcepts(),
             partImplementations = siemensElectricalPartImplementations(),
             semanticPorts = plcCpuResolvedSemanticPorts(),
-            physicalTraits = siemensProofResolvedPhysicalTraits(),
+            physicalTraits = siemensResolvedPhysicalTraits(),
         )
     }
 

@@ -9,6 +9,7 @@ data class SvgRenderModel(
     val canvasHeight: Int,
     val boxes: List<SvgRenderBox>,
     val connections: List<SvgRenderConnection>,
+    val crossings: List<SvgRenderCrossing> = emptyList(),
 )
 
 /** Simple render-facing rectangle representing one semantic component box. */
@@ -28,4 +29,17 @@ data class SvgRenderConnection(
     val y1: Int,
     val x2: Int,
     val y2: Int,
+    val points: List<SvgRenderPoint> = listOf(SvgRenderPoint(x1, y1), SvgRenderPoint(x2, y2)),
+)
+
+data class SvgRenderPoint(
+    val x: Int,
+    val y: Int,
+)
+
+/** Render-facing marker for a non-joined crossing derived before paint. */
+data class SvgRenderCrossing(
+    val crossingId: String,
+    val x: Int,
+    val y: Int,
 )

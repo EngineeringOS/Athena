@@ -1,4 +1,4 @@
-; Athena Tree-sitter highlight queries — SYNTAX UX ONLY (AD-107).
+; Athena Tree-sitter highlight queries - SYNTAX UX ONLY (AD-107).
 ; Never used for semantic diagnostics or Engineering IR.
 
 (system_declaration "system" @athenaDeclarationKeyword)
@@ -62,10 +62,15 @@
 (installation_terminal_group "orientation" @athenaLayoutKeyword)
 (installation_terminal_group "accepts" @athenaLayoutKeyword)
 (installation_mount "mount" @athenaLayoutKeyword)
-(installation_mount "device" @athenaLayoutKeyword)
+(installation_mount "as" @athenaLayoutKeyword)
 (installation_mount "on" @athenaLayoutKeyword)
 (installation_mount "at" @athenaLayoutKeyword)
+(installation_mount "footprint" @athenaLayoutKeyword)
+(installation_mount "mounting" @athenaLayoutKeyword)
 (installation_mount "orientation" @athenaLayoutKeyword)
+(installation_mount "allowed-orientations" @athenaLayoutKeyword)
+(installation_mount "clearance" @athenaLayoutKeyword)
+(installation_mount "compatible-containers" @athenaLayoutKeyword)
 (installation_route "route" @athenaLayoutKeyword)
 (installation_route "through" @athenaLayoutKeyword)
 (length_literal) @number
@@ -117,12 +122,11 @@
 (label_slot "role" @athenaPrimitiveKeyword)
 (style_reference "style" @athenaPrimitiveKeyword)
 (anchor_declaration "anchor" @athenaRepresentationKeyword)
-(primitive_reference "primitiveRef" @athenaPrimitiveKeyword)
+(primitive_reference "ref" @athenaPrimitiveKeyword)
+(anchor_port "port" @athenaPortKeyword)
 (anchor_point "point" @athenaPrimitiveKeyword)
 (anchor_role "role" @athenaRepresentationKeyword)
-(anchor_direction "accepts" @athenaRepresentationKeyword)
 (anchor_direction "direction" @athenaPortKeyword)
-(anchor_signal "accepts" @athenaRepresentationKeyword)
 (anchor_signal "signal" @athenaPortKeyword)
 (profile_declaration "profile" @athenaProfileKeyword)
 (profile_projection "projection" @athenaProfileKeyword)

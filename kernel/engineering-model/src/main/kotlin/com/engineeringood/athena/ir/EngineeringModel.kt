@@ -26,6 +26,7 @@ data class EngineeringDocument(
     val ports: List<EngineeringPort>,
     val connections: List<EngineeringConnection>,
     val functions: List<EngineeringFunction> = emptyList(),
+    val connectionNetworks: List<EngineeringConnectionNetwork> = emptyList(),
 )
 
 /** Canonical semantic representation of the authored system root. */
@@ -76,6 +77,38 @@ data class EngineeringConnection(
     val id: StableSemanticIdentity,
     val from: EngineeringReference,
     val to: EngineeringReference,
+    val provenance: SourceProvenance,
+)
+
+/** Canonical semantic network derived from authored grouped connections. */
+data class EngineeringConnectionNetwork(
+    val id: StableSemanticIdentity,
+    val name: String,
+    val members: List<EngineeringConnectionNetworkMember>,
+    val junctions: List<EngineeringNetworkJunction>,
+    val compatibilityEvidence: List<EngineeringNetworkCompatibilityEvidence>,
+    val provenance: SourceProvenance,
+)
+
+/** One connection participating in a semantic network. */
+data class EngineeringConnectionNetworkMember(
+    val connectionReference: EngineeringReference,
+    val fromPortReference: EngineeringReference,
+    val toPortReference: EngineeringReference,
+)
+
+/** One semantic junction compiled from shared network membership. */
+data class EngineeringNetworkJunction(
+    val id: StableSemanticIdentity,
+    val sharedPortReference: EngineeringReference,
+    val memberConnectionReferences: List<EngineeringReference>,
+    val provenance: SourceProvenance,
+)
+
+/** Typed evidence explaining why one semantic network is compatible. */
+data class EngineeringNetworkCompatibilityEvidence(
+    val kind: String,
+    val value: String,
     val provenance: SourceProvenance,
 )
 

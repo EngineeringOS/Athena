@@ -31,7 +31,7 @@ import com.engineeringood.athena.runtime.GovernedEntityCreationProjectionResolve
 import com.engineeringood.athena.runtime.GovernedEntityCreationProjectionResult
 import com.engineeringood.athena.runtime.GovernedEntityCreationRepresentationUnresolved
 
-/** Electrical representation policy adapter for the first governed motor-creation proof. */
+/** Electrical representation policy adapter for the first governed motor-creation evidence. */
 class ElectricalEntityCreationProjectionAuthority(
     private val libraryLoader: NativeRepresentationLibraryLoader = NativeRepresentationLibraryLoader(),
     private val bindingCompiler: RepresentationBindingCompiler = RepresentationBindingCompiler(),
@@ -97,7 +97,7 @@ class ElectricalEntityCreationProjectionAuthority(
                 terminalAnchorCountByOccurrence = mapOf(
                     occurrence.occurrenceId to definition.anatomy.terminals.size,
                 ),
-                spatialIntentReferences = listOf(SchematicSpatialIntentReference("m27:sheet:control")),
+                spatialIntentReferences = listOf(SchematicSpatialIntentReference("sheet:control")),
             ),
         )
         val target = composition.facts.singleOrNull { fact ->
@@ -105,7 +105,7 @@ class ElectricalEntityCreationProjectionAuthority(
                 occurrence.occurrenceId in fact.occurrenceIds
         } ?: return GovernedEntityCreationCompositionUnsatisfied(
             representationId = symbolId.value,
-            reason = "M30 composition planning produced no alignment target for `component:$canonicalTag`.",
+            reason = "Composition planning produced no alignment target for `component:$canonicalTag`.",
         )
         return GovernedEntityCreationProjectionResolved(
             representationId = symbolId.value,

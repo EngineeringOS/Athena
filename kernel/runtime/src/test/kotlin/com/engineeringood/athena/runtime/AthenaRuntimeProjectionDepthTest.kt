@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 class AthenaRuntimeProjectionDepthTest {
     @Test
-    fun `dense m11 proof delivers repeated references through runtime projection sessions`() {
+    fun `dense projection evidence delivers repeated references through runtime sessions`() {
         val sourcePath = resolveRepoRoot().resolve("examples/m11/dense-electrical-proof/src/com/engineeringood/assemblyline/assemblyline.athena")
         val runtime = AthenaRuntime()
         val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
@@ -44,7 +44,7 @@ class AthenaRuntimeProjectionDepthTest {
             documentation.scene.components.none { component -> component.projectionId.endsWith("_reference") },
             "Runtime documentation projection must not surface duplicate off-sheet reference components.",
         )
-        assertEquals("electrical-notation/documentation/default-v1", documentation.notationPack?.packId)
+        assertEquals("electrical-notation/documentation/default", documentation.notationPack?.packId)
         assertTrue(documentation.crossReferences.any { crossReference -> crossReference.sheetIds.size >= 2 })
     }
 

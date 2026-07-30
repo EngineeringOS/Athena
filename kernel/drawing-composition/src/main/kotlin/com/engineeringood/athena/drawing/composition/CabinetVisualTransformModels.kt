@@ -57,6 +57,7 @@ data class CabinetTargetFrame(
 data class CabinetPhysicalOccurrenceInput(
     val key: InstallationOccurrenceKey,
     val occurrenceId: PhysicalObjectId,
+    val targetId: PhysicalObjectId = occurrenceId,
     val targetLocalPosition: CabinetPointD,
     val footprint: CabinetSizeD,
     val orientation: PhysicalInstallationOrientation,

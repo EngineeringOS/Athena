@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m25.sample
+package com.engineeringood.m25.sample
 
 system ProfessionalSymbolSheet {
   device PowerSupplyPS1 {

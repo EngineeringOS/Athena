@@ -32,6 +32,8 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticLinkedLowering
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticLayoutHintBinder
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticReferenceLinker
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
+import com.engineeringood.athena.connection.ConnectableEntityContractCompilation
+import com.engineeringood.athena.connection.ConnectableEntityContractCompiler
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.ParseFailure
@@ -99,6 +101,7 @@ class AthenaCompiler(
     private val projectSemanticReferenceLinker: ProjectSemanticReferenceLinker = ProjectSemanticReferenceLinker(),
     private val projectSemanticCapabilityProvenanceProjector: ProjectSemanticCapabilityProvenanceProjector =
         ProjectSemanticCapabilityProvenanceProjector(),
+    private val connectableEntityContractCompiler: ConnectableEntityContractCompiler = ConnectableEntityContractCompiler(),
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
     val pluginDiscoveryReport: AthenaPluginDiscoveryReport = hostedPluginDiscoveryReport ?: pluginDiscovery.discover()
@@ -185,6 +188,7 @@ class AthenaCompiler(
         capabilityFactPromoter = capabilityFactPromoter,
         constraintEvaluator = constraintEvaluator,
         domainSemanticsCoordinator = domainSemanticsCoordinator,
+        connectableEntityContractCompiler = connectableEntityContractCompiler,
         supportedViewDefinitionsCache = supportedViewDefinitionsCache,
         supportedRenderContributionsCache = supportedRenderContributionsCache,
         supportedPrimitivePresentationPacksCache = supportedPrimitivePresentationPacksCache,
@@ -368,6 +372,11 @@ class AthenaCompiler(
         documentsBySourceUnit: Map<com.engineeringood.athena.compiler.semantic.SourceUnitId, CompilerSourceDocument>,
     ): ProjectSemanticLinkedLoweringResult {
         return ProjectSemanticLinkedLowerer(lowerer).lower(snapshot, documentsBySourceUnit)
+    }
+
+    /** Derives M36's typed connectivity contract from canonical Engineering IR without adding a second semantic owner. */
+    fun compileConnectableEntities(document: EngineeringDocument): ConnectableEntityContractCompilation {
+        return connectableEntityContractCompiler.compile(document)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */

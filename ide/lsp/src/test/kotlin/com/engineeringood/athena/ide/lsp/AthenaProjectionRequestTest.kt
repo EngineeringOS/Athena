@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.ide.lsp
+package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.layout.ProjectionInteractivity
@@ -428,7 +428,7 @@ class AthenaProjectionRequestTest {
                     ready.sheets.map { sheet -> sheet.policyEvidence?.sheetViewRole },
                 )
                 assertEquals(
-                    listOf("athena-m31-customer-projection-v0"),
+                    listOf("athena-customer-projection"),
                     ready.sheets.mapNotNull { sheet -> sheet.policyEvidence?.policyId }.distinct(),
                 )
                 assertEquals(
@@ -513,7 +513,7 @@ class AthenaProjectionRequestTest {
     fun `graph command intent rejects semantic relationship mutation bypass`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-graph-intent-connect-accepted-",
-            sourceFileName = "operator-proof.athena",
+            sourceFileName = "operator-evidence.athena",
             sourceText = operatorProofSource,
         )
         val repositoryRoot = repository.repositoryRoot
@@ -568,12 +568,12 @@ class AthenaProjectionRequestTest {
     fun `source mutation review remains available while direct relationship graph mutation is rejected`() {
         val sourceRepository = createGovernedTestRepository(
             prefix = "athena-lsp-m8-source-review-",
-            sourceFileName = "operator-proof.athena",
+            sourceFileName = "operator-evidence.athena",
             sourceText = operatorProofSource,
         )
         val graphRepository = createGovernedTestRepository(
             prefix = "athena-lsp-m8-graph-review-",
-            sourceFileName = "operator-proof.athena",
+            sourceFileName = "operator-evidence.athena",
             sourceText = operatorProofSource,
         )
 
@@ -778,7 +778,7 @@ class AthenaProjectionRequestTest {
                     "cabinet/projection/node/component_PLC1",
                     readyProjection.components.first { component -> component.semanticId == "component:PLC1" }.projectionId,
                 )
-                assertEquals("electrical-notation/cabinet/default-v1", readyProjection.notationPack?.packId)
+                assertEquals("electrical-notation/cabinet/default", readyProjection.notationPack?.packId)
                 assertTrue(
                     readyProjection.notationPack?.subjects?.any { subject ->
                         subject.semanticId == "component:PLC1" && subject.symbolKey == "device.cabinet.default"

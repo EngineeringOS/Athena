@@ -352,7 +352,7 @@ enum class LayoutPlacementRelation {
 }
 
 /**
- * Layout-owned relationship vocabulary for the first explicit projection proof.
+ * Layout-owned relationship vocabulary for the first explicit projection evidence.
  */
 enum class LayoutRelationshipKind {
     OWNERSHIP,

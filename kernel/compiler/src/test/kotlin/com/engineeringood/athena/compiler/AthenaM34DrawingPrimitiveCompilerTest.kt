@@ -73,7 +73,7 @@ class AthenaM34DrawingPrimitiveCompilerTest {
         assertEquals(GraphicPoint(40.0, 0.0), anchor.point)
         assertEquals(RepresentationAnchorRole.TERMINAL, anchor.role)
         assertEquals(setOf(RepresentationDirectionPredicate.BIDIRECTIONAL), anchor.acceptedDirections)
-        assertEquals(setOf(RepresentationSignalPredicate("Control")), anchor.acceptedSignals)
+        assertEquals(setOf(RepresentationSignalPredicate("Control.family")), anchor.acceptedSignals)
 
         val symbolLabel = symbol.labelSlots.single { slot -> slot.slotId.value == "deviceTag" }
         assertEquals("deviceTag", symbolLabel.slotId.value)
@@ -157,11 +157,11 @@ private val VALID_MATERIAL = """
       }
 
       anchor top {
-        primitiveRef lead
+        ref "lead"
         point (40, 0)
         role terminal
-        accepts direction bidirectional
-        accepts signal Control
+        direction bidirectional
+        signal Control.family
       }
     }
 

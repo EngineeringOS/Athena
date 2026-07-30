@@ -15,7 +15,7 @@ import com.engineeringood.athena.physical.PhysicalTraitDefinition
 import com.engineeringood.athena.physical.ResolvedPhysicalTraitDefinition
 
 /**
- * First resolved semantic-port slice for the PLC CPU proof subject in M14.
+ * First resolved semantic-port slice for the PLC CPU evidence subject in M14.
  *
  * The slice stays extension-owned and intentionally narrow. It proves that resolved semantic ports
  * can publish reusable engineering meaning without pushing graph anchors or compatibility logic
@@ -73,17 +73,17 @@ fun plcCpuResolvedSemanticPorts(): List<ResolvedSemanticPortDefinition> {
 }
 
 /**
- * First resolved physical-trait slice for the Siemens-first proof components in M14.
+ * First resolved physical-trait slice for the Siemens-first evidence components in M14.
  *
  * The slice proves that at least one targeted component can publish minimal dimensions and
  * mounting metadata without making the physical model a geometry engine.
  */
-fun siemensProofResolvedPhysicalTraits(): List<ResolvedPhysicalTraitDefinition> {
+fun siemensResolvedPhysicalTraits(): List<ResolvedPhysicalTraitDefinition> {
     return listOf(
         ResolvedPhysicalTraitDefinition(
             semanticSubjectId = StableSemanticIdentity("component:PLC1"),
             definition = PhysicalTraitDefinition(
-                displayName = "Siemens proof PLC CPU physical traits",
+                displayName = "Siemens evidence PLC CPU physical traits",
                 size = PhysicalSize(
                     widthMillimeters = 80,
                     heightMillimeters = 125,

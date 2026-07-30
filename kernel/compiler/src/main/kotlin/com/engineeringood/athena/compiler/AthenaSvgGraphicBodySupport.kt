@@ -9,6 +9,7 @@ import com.engineeringood.athena.representation.GraphicLineJoin
 import com.engineeringood.athena.representation.GraphicPaintToken
 import com.engineeringood.athena.representation.GraphicPoint
 import com.engineeringood.athena.representation.GraphicPrimitive
+import com.engineeringood.athena.representation.GraphicPrimitiveId
 import com.engineeringood.athena.representation.GraphicStyleToken
 import com.engineeringood.athena.representation.GraphicStyleTokenId
 import java.io.StringReader
@@ -40,7 +41,7 @@ internal object AthenaSvgGraphicBodySupport {
     )
 
     private val allowedAthenaAttributes = setOf(
-        "data-athena-geometry-ref",
+        "data-athena-ref",
     )
 
     private val forbiddenMetadataAttributes = setOf(
@@ -110,6 +111,10 @@ internal object AthenaSvgGraphicBodySupport {
                     ),
                 )
             }
+        addAll(validateSecurityAttributes(file, source, root))
+        if (root.hasAttribute("transform") && parseTransformOrNull(root) == null) {
+            add(issue("svg.transform.invalid", file, source.spanOf("transform"), "svg.root.transform", "SVG transform must use the supported finite transform syntax."))
+        }
         documentBoundsOrNull(root) ?: add(
             issue(
                 "svg.viewbox.invalid",
@@ -132,23 +137,20 @@ internal object AthenaSvgGraphicBodySupport {
                 add(issue("svg.element.unsupported", file, source.spanOf(element.tagName), "svg.${element.localName}", "Unsupported SVG element `${element.localName}`."))
             }
         }
+        addAll(validateSecurityAttributes(file, source, element))
         element.attributesList().forEach { attribute ->
             when {
-                attribute.name.startsWith("on") -> add(issue("svg.event.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG event attributes are forbidden."))
-                attribute.value.isForbiddenUrl() -> add(issue("svg.resource-url.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG external, data, file, and CSS url() resources are forbidden."))
-                attribute.name == "data-athena-geometry-ref" -> {
+                attribute.name in allowedAthenaAttributes -> {
                     if (element.localName !in referenceableGeometryNodes) {
                         add(issue("svg.metadata.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG geometry-reference hints may only annotate referenceable geometry nodes."))
-                    }
-                    val geometryRef = attribute.value
-                    val id = element.getAttribute("id").takeIf(String::isNotBlank)
-                    if (id == null || id != geometryRef) {
-                        add(issue("svg.geometry-ref.mismatch", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG geometry-reference hints must match the node id."))
                     }
                 }
                 attribute.name in forbiddenMetadataAttributes -> add(issue("svg.metadata.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG nodes must not declare Athena metadata."))
                 attribute.name.startsWith("data-athena-") -> add(issue("svg.metadata.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "Unknown SVG Athena metadata `${attribute.name}`."))
             }
+        }
+        if (element.hasAttribute("transform") && parseTransformOrNull(element) == null) {
+            add(issue("svg.transform.invalid", file, source.spanOf("transform"), "svg.${element.localName}.transform", "SVG transform must use the supported finite transform syntax."))
         }
         if (element.localName == "use") {
             useHrefOrNull(element) ?: add(
@@ -215,15 +217,17 @@ internal object AthenaSvgGraphicBodySupport {
         val diagnostics = mutableListOf<AthenaRepresentationSourceDiagnostic>()
         val nodesById = linkedMapOf<String, MutableList<Element>>()
         val referenceableNodesById = linkedMapOf<String, MutableList<Element>>()
+        val referenceableNodesByRef = linkedMapOf<String, MutableList<Element>>()
         walkElements(root)
             .filter { element -> element !== root }
             .filter { element -> element.localName in referenceableGeometryNodes }
             .forEach { element ->
-                val id = element.getAttribute("id").takeIf(String::isNotBlank) ?: return@forEach
-                nodesById.getOrPut(id) { mutableListOf() }.add(element)
-                val geometryRef = element.getAttribute("data-athena-geometry-ref").takeIf(String::isNotBlank) ?: return@forEach
-                if (geometryRef == id) {
-                    referenceableNodesById.getOrPut(id) { mutableListOf() }.add(element)
+                val id = element.getAttribute("id").takeIf(String::isNotBlank)
+                if (id != null) nodesById.getOrPut(id) { mutableListOf() }.add(element)
+                val geometryRef = element.getAttribute("data-athena-ref").takeIf(String::isNotBlank)
+                if (geometryRef != null) {
+                    if (id != null) referenceableNodesById.getOrPut(id) { mutableListOf() }.add(element)
+                    referenceableNodesByRef.getOrPut(geometryRef) { mutableListOf() }.add(element)
                 }
             }
         nodesById.filterValues { entries -> entries.size > 1 }
@@ -235,10 +239,21 @@ internal object AthenaSvgGraphicBodySupport {
                     "svg.id.$id",
                     "SVG geometry ids must be unique, but `${entries.size}` nodes declare `$id`.",
                 )
-        }
+            }
+        referenceableNodesByRef.filterValues { entries -> entries.size > 1 }
+            .forEach { (geometryRef, entries) ->
+                diagnostics += issue(
+                    "svg.geometry-ref.duplicate",
+                    file,
+                    source.spanOf("data-athena-ref=\"$geometryRef\""),
+                    "svg.geometry-ref.$geometryRef",
+                    "SVG geometry references must be unique, but `${entries.size}` nodes declare `$geometryRef`.",
+                )
+            }
         return SvgGeometryNodeIndex(
             nodesById = nodesById.mapValues { it.value.toList() },
             referenceableNodesById = referenceableNodesById.mapValues { it.value.toList() },
+            referenceableNodesByRef = referenceableNodesByRef.mapValues { it.value.toList() },
             diagnostics = diagnostics.canonicalRepresentationDiagnostics(),
         )
     }
@@ -318,6 +333,29 @@ internal object AthenaSvgGraphicBodySupport {
             "url(" in value
     }
 
+    private fun validateSecurityAttributes(
+        file: String,
+        source: String,
+        element: Element,
+    ): List<AthenaRepresentationSourceDiagnostic> = buildList {
+        element.attributesList().forEach { attribute ->
+            when {
+                attribute.namespaceURI == XMLConstants.XMLNS_ATTRIBUTE_NS_URI -> Unit
+                attribute.name.startsWith("on", ignoreCase = true) -> add(
+                    issue("svg.event.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG event attributes are forbidden."),
+                )
+                attribute.value.isForbiddenUrl() -> add(
+                    issue("svg.resource-url.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG external, data, file, and CSS url() resources are forbidden."),
+                )
+                attribute.namespaceURI != null &&
+                    attribute.namespaceURI != XMLConstants.XMLNS_ATTRIBUTE_NS_URI &&
+                    attribute.namespaceURI != XLINK_NS -> add(
+                    issue("svg.attribute.namespace.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG attribute namespaces other than xmlns and xlink are forbidden."),
+                )
+            }
+        }
+    }
+
     fun useHrefOrNull(element: Element): String? {
         val href = element.getAttribute("href").takeIf(String::isNotBlank)
             ?: element.getAttributeNS(XLINK_NS, "href").takeIf(String::isNotBlank)
@@ -330,28 +368,37 @@ internal object AthenaSvgGraphicBodySupport {
     }
 
     private fun parseTransform(raw: String): SvgTransform? {
-        val tokens = Regex("""([A-Za-z]+)\(([^)]*)\)""")
-            .findAll(raw)
+        val tokenRegex = Regex("""([A-Za-z]+)\(([^)]*)\)""")
+        val matches = tokenRegex.findAll(raw).toList()
+        if (matches.isEmpty()) return null
+        var cursor = 0
+        matches.forEach { match ->
+            if (!raw.substring(cursor, match.range.first).all { it.isWhitespace() || it == ',' }) return null
+            cursor = match.range.last + 1
+        }
+        if (!raw.substring(cursor).all { it.isWhitespace() || it == ',' }) return null
+        val tokens = matches
             .map { match ->
                 val name = match.groupValues[1]
-                val values = match.groupValues[2]
+                val rawValues = match.groupValues[2]
                     .trim()
                     .split(Regex("\\s+|,"))
                     .filter(String::isNotBlank)
-                    .mapNotNull(String::toDoubleOrNull)
+                val values = rawValues.map { it.toDoubleOrNull() ?: return null }
+                if (values.any { !it.isFinite() }) return null
                 name to values
             }
-            .toList()
-        if (tokens.isEmpty()) return null
         val operations = buildList {
             tokens.forEach { (name, values) ->
                 when (name.lowercase()) {
                     "translate" -> {
+                        if (values.size !in 1..2) return null
                         val dx = values.getOrNull(0) ?: return null
                         val dy = values.getOrNull(1) ?: 0.0
                         add(SvgTransformOperation.Translate(dx, dy))
                     }
                     "scale" -> {
+                        if (values.size !in 1..2) return null
                         val sx = values.getOrNull(0) ?: return null
                         val sy = values.getOrNull(1) ?: sx
                         add(SvgTransformOperation.Scale(sx, sy))
@@ -383,11 +430,16 @@ internal object AthenaSvgGraphicBodySupport {
     internal data class SvgGeometryNodeIndex(
         val nodesById: Map<String, List<Element>>,
         val referenceableNodesById: Map<String, List<Element>>,
+        val referenceableNodesByRef: Map<String, List<Element>>,
         val diagnostics: List<AthenaRepresentationSourceDiagnostic>,
     ) {
         fun resolveReference(id: String): Element? = referenceableNodesById[id].orEmpty().singleOrNull()
 
         fun referenceCandidates(id: String): List<Element> = referenceableNodesById[id].orEmpty()
+
+        fun resolveGeometryRef(ref: String): Element? = referenceableNodesByRef[ref].orEmpty().singleOrNull()
+
+        fun geometryRefCandidates(ref: String): List<Element> = referenceableNodesByRef[ref].orEmpty()
     }
 
     internal data class SvgTransform(
@@ -469,11 +521,13 @@ internal data class SvgGraphicBodyCompilation(
     val document: com.engineeringood.athena.representation.GraphicPrimitiveDocument? = null,
     val diagnostics: List<AthenaRepresentationSourceDiagnostic> = emptyList(),
     val root: Element? = null,
+    val primitiveIdsByGeometryRef: Map<String, List<GraphicPrimitiveId>> = emptyMap(),
 )
 
 internal data class PrimitiveWithNode(
     val primitive: GraphicPrimitive,
     val node: Element,
+    val geometryRef: String? = null,
 )
 
 internal data class SvgTreeMetrics(

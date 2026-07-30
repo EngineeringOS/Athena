@@ -63,6 +63,10 @@
           "named": true
         },
         {
+          "type": "anchor_port",
+          "named": true
+        },
+        {
           "type": "anchor_role",
           "named": true
         },
@@ -110,6 +114,22 @@
     }
   },
   {
+    "type": "anchor_port",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "qualified_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "anchor_role",
     "named": true,
     "fields": {
@@ -134,7 +154,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "qualified_name",
             "named": true
           }
         ]
@@ -1325,9 +1345,59 @@
     "type": "installation_mount",
     "named": true,
     "fields": {
+      "allowed_orientations": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "mount_orientation_list",
+            "named": true
+          }
+        ]
+      },
+      "clearance": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "length_tuple4",
+            "named": true
+          }
+        ]
+      },
+      "compatible_containers": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier_list",
+            "named": true
+          }
+        ]
+      },
       "device": {
         "multiple": false,
         "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "footprint": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "length_tuple3",
+            "named": true
+          }
+        ]
+      },
+      "mounting_type": {
+        "multiple": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -1346,11 +1416,11 @@
         ]
       },
       "orientation": {
-        "multiple": false,
-        "required": true,
+        "multiple": true,
+        "required": false,
         "types": [
           {
-            "type": "layout_orientation",
+            "type": "mount_orientation",
             "named": true
           }
         ]
@@ -1776,6 +1846,21 @@
     }
   },
   {
+    "type": "length_tuple4",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "length_literal",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "line_primitive",
     "named": true,
     "fields": {
@@ -1816,6 +1901,26 @@
       "types": [
         {
           "type": "style_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "mount_orientation",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "mount_orientation_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "mount_orientation",
           "named": true
         }
       ]
@@ -1993,7 +2098,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "string",
             "named": true
           }
         ]
@@ -2486,11 +2591,19 @@
     "named": false
   },
   {
+    "type": "allowed-orientations",
+    "named": false
+  },
+  {
     "type": "anchor",
     "named": false
   },
   {
     "type": "arc",
+    "named": false
+  },
+  {
+    "type": "as",
     "named": false
   },
   {
@@ -2534,7 +2647,31 @@
     "named": false
   },
   {
+    "type": "clearance",
+    "named": false
+  },
+  {
+    "type": "compatible-containers",
+    "named": false
+  },
+  {
     "type": "connect",
+    "named": false
+  },
+  {
+    "type": "deg0",
+    "named": false
+  },
+  {
+    "type": "deg180",
+    "named": false
+  },
+  {
+    "type": "deg270",
+    "named": false
+  },
+  {
+    "type": "deg90",
     "named": false
   },
   {
@@ -2567,6 +2704,10 @@
   },
   {
     "type": "fallback",
+    "named": false
+  },
+  {
+    "type": "footprint",
     "named": false
   },
   {
@@ -2714,10 +2855,6 @@
     "named": true
   },
   {
-    "type": "primitiveRef",
-    "named": false
-  },
-  {
     "type": "priority",
     "named": false
   },
@@ -2743,6 +2880,10 @@
   },
   {
     "type": "rectangle",
+    "named": false
+  },
+  {
+    "type": "ref",
     "named": false
   },
   {

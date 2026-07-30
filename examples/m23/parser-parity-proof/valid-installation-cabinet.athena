@@ -20,8 +20,22 @@ system MachineNo000 {
     duct D1 in ENC1 at (30mm, 60mm) size (40mm, 480mm) orientation vertical wall 2mm
     channel C1 in D1 at (4mm, 8mm) size (32mm, 464mm) lanes 4 margin 2mm
     terminal-group XT1 in ENC1 at (560mm, 420mm) size (160mm, 80mm) orientation horizontal accepts [terminal]
-    mount QF1Mount device QF1 on DIN1 at (0mm, 0mm) orientation horizontal
-    mount M1Mount device M1 on DIN1 at (100mm, 0mm) orientation horizontal
+    mount QF1 as QF1Mount on DIN1 at (0mm, 0mm) {
+      footprint (45mm, 90mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount M1 as M1Mount on DIN1 at (100mm, 0mm) {
+      footprint (120mm, 160mm, 100mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
     route feeder through [C1]
   }
 }

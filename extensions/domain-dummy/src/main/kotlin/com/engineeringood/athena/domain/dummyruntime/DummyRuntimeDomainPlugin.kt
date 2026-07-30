@@ -46,9 +46,9 @@ import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContributor
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 
-/** Synthetic hosted proof plugin used to demonstrate that the SPI is not electrical-specific. */
+/** Synthetic hosted evidence plugin used to demonstrate that the SPI is not electrical-specific. */
 class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewContributor {
-    /** Stable manifest for the synthetic proof domain. */
+    /** Stable manifest for the synthetic evidence domain. */
     override val manifest: AthenaPluginManifest = AthenaPluginManifest(
         pluginId = "com.engineeringood.athena.domain.dummy-runtime",
         pluginVersion = "0.0.1-SNAPSHOT",
@@ -60,19 +60,19 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
         ),
     )
 
-    /** Narrow synthetic capability declaration for the second hosted proof domain. */
+    /** Narrow synthetic capability declaration for the second hosted evidence domain. */
     override val domainCapabilities: Set<String> = setOf(DUMMY_DOMAIN_ID)
 
     /** Synthetic domain schema published through the stable plugin API. */
     override val domainSchema: AthenaDomainSchema = DUMMY_DOMAIN_SCHEMA
 
-    /** Inspectable validation contribution declarations exposed by the dummy proof plugin. */
+    /** Inspectable validation contribution declarations exposed by the dummy evidence plugin. */
     override val validationContributions: List<AthenaValidationContribution> = DUMMY_VALIDATION_CONTRIBUTIONS
 
-    /** Inspectable compiler-stage contribution declarations exposed by the dummy proof plugin. */
+    /** Inspectable compiler-stage contribution declarations exposed by the dummy evidence plugin. */
     override val compilerPassContributions: List<AthenaCompilerPassContribution> = DUMMY_COMPILER_PASS_CONTRIBUTIONS
 
-    /** Inspectable renderer-facing contribution declarations exposed by the dummy proof plugin. */
+    /** Inspectable renderer-facing contribution declarations exposed by the dummy evidence plugin. */
     override val renderContributions: List<AthenaRenderContribution> = DUMMY_RENDER_CONTRIBUTIONS
 
     /** Lowers only explicitly dummy-owned authored declarations into canonical plugin blueprints. */
@@ -447,14 +447,14 @@ private val VALID_FLOWS = mapOf(
 private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
     domainId = DUMMY_DOMAIN_ID,
     displayName = "Dummy Runtime",
-    description = "Synthetic hosted proof-domain schema used to show the Athena SPI is not electrical-specific.",
+    description = "Synthetic hosted evidence-domain schema used to show the Athena SPI is not electrical-specific.",
     capabilities = setOf(DUMMY_DOMAIN_ID),
     entities = listOf(
         AthenaDomainEntitySchema(
             typeId = "Glyph",
             displayName = "Glyph",
             subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
-            description = "Synthetic proof component with no engineering meaning.",
+            description = "Synthetic evidence component with no engineering meaning.",
             propertyNames = setOf("domain", "type"),
             portTypeIds = setOf("dummy-port"),
         ),
@@ -462,7 +462,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             typeId = "Pulse",
             displayName = "Pulse",
             subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
-            description = "Synthetic proof component with no engineering meaning.",
+            description = "Synthetic evidence component with no engineering meaning.",
             propertyNames = setOf("domain", "type"),
             portTypeIds = setOf("dummy-port"),
         ),
@@ -470,7 +470,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             typeId = "Totem",
             displayName = "Totem",
             subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
-            description = "Synthetic proof component with no engineering meaning.",
+            description = "Synthetic evidence component with no engineering meaning.",
             propertyNames = setOf("domain", "type"),
             portTypeIds = setOf("dummy-port"),
         ),
@@ -483,7 +483,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
             required = true,
             allowedSymbolValues = setOf(DUMMY_DOMAIN_ID),
-            description = "Explicit synthetic ownership marker used to keep dummy semantics scoped away from other proof domains.",
+            description = "Explicit synthetic ownership marker used to keep dummy semantics scoped away from other evidence domains.",
         ),
         AthenaDomainPropertySchema(
             name = "type",
@@ -492,7 +492,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
             required = true,
             allowedSymbolValues = VALID_DUMMY_TYPES,
-            description = "Synthetic component type selector interpreted only by the dummy proof plugin.",
+            description = "Synthetic component type selector interpreted only by the dummy evidence plugin.",
         ),
         AthenaDomainPropertySchema(
             name = "flow",
@@ -501,7 +501,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             appliesTo = setOf(AthenaDomainSchemaSubjectKind.PORT),
             required = true,
             allowedSymbolValues = setOf("emit", "absorb"),
-            description = "Synthetic flow metadata used by the dummy proof plugin.",
+            description = "Synthetic flow metadata used by the dummy evidence plugin.",
         ),
         AthenaDomainPropertySchema(
             name = "tint",
@@ -516,7 +516,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
         AthenaDomainPortSchema(
             typeId = "dummy-port",
             displayName = "Dummy port",
-            description = "Synthetic hosted port for the second proof domain.",
+            description = "Synthetic hosted port for the second evidence domain.",
             propertyNames = setOf("flow", "tint"),
             allowedDirections = setOf("emit", "absorb"),
         ),

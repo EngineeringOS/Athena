@@ -119,12 +119,12 @@ private val componentKnowledgeSource = """
     system ComponentKnowledge {
       device PLC1 {
         type Switch
-        model "proof.cpu.313c"
+        model "evidence.cpu.313c"
       }
 
       device M1 {
         type Motor
-        model "proof.motor.ac"
+        model "evidence.motor.ac"
       }
 
       port PLC1.lplus {

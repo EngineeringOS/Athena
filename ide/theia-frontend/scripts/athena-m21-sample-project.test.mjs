@@ -67,11 +67,11 @@ test('M21 sample sources stay inside the accepted local Athena syntax', () => {
 
     sources.forEach(sourcePath => {
         const source = readRepoFile(sourcePath);
-        assert.match(source, /^package com\.engineeringood\.m21\.sample/m);
+        assert.match(source, /^\uFEFF?package com\.engineeringood\.m21\.sample/m);
         assert.match(source, /\bsystem\s+\w+\s+\{/);
         assert.match(source, /\bdevice\s+\w+\s+\{/);
         assert.match(source, /\bport\s+\w+\.\w+\s+\{/);
-        assert.match(source, /\bconnect\s+\w+\.\w+\s+->\s+\w+\.\w+/);
+        assert.match(source, /\bconnect\s+\w+\s+\w+\.\w+\s+->\s+\w+\.\w+/);
         assert.doesNotMatch(source, /\bimport\b/);
         assert.doesNotMatch(source, /\bregistry\b|\bmarketplace\b|\bcabinet\b|\bharness\b|\bcable tray\b|\b3D installation\b/i);
     });
@@ -91,7 +91,7 @@ test('M21 routing sample preserves source endpoint identity vocabulary', () => {
     expectedIdentities.forEach(identity => {
         assert.match(routingSource, new RegExp(`\\b${identity}\\b`));
     });
-    assert.match(routingSource, /connect RouteSensorS1\.out -> RoutePLC1\.input/);
-    assert.match(routingSource, /connect RoutePLC1\.output -> RouteTerminalXT2\.in/);
-    assert.match(routingSource, /connect RouteTerminalXT2\.out -> RouteActuatorY1\.in/);
+    assert.match(routingSource, /connect\s+\w+\s+RouteSensorS1\.out -> RoutePLC1\.input/);
+    assert.match(routingSource, /connect\s+\w+\s+RoutePLC1\.output -> RouteTerminalXT2\.in/);
+    assert.match(routingSource, /connect\s+\w+\s+RouteTerminalXT2\.out -> RouteActuatorY1\.in/);
 });

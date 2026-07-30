@@ -3,13 +3,14 @@ package com.engineeringood.athena.routing
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.LayoutSourceSpan
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class AthenaRouteEngineSideStubTest {
     @Test
     fun `output and input anchors produce short side stubs before long route segments`() {
-        val route = AthenaRouteEngineV0().solve(
+        val route = AthenaRouteEngine().solve(
             input(
                 sourceAnchor = anchor("anchor:plc:do1", "component:PLC1", "DO1", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 320, 180),
                 targetAnchor = anchor("anchor:xt1:1", "component:XT1", "1", ElectricalPortRole.INPUT, TerminalSide.LEFT, 520, 260),
@@ -36,7 +37,7 @@ class AthenaRouteEngineSideStubTest {
 
     @Test
     fun `power and terminal block anchors use their preferred sides`() {
-        val route = AthenaRouteEngineV0().solve(
+        val route = AthenaRouteEngine().solve(
             input(
                 sourceAnchor = anchor("anchor:ps1:lplus", "component:PS1", "L+", ElectricalPortRole.POWER, TerminalSide.TOP, 160, 100),
                 targetAnchor = anchor("anchor:xt1:pwr", "component:XT1", "L+", ElectricalPortRole.TERMINAL, TerminalSide.LEFT, 360, 220),
@@ -63,7 +64,7 @@ class AthenaRouteEngineSideStubTest {
 
     @Test
     fun `stub fallback is explicit when preferred side would leave sheet bounds`() {
-        val route = AthenaRouteEngineV0().solve(
+        val route = AthenaRouteEngine().solve(
             input(
                 sourceAnchor = anchor("anchor:left-edge", "component:LEFT", "in", ElectricalPortRole.INPUT, TerminalSide.LEFT, 0, 100),
                 targetAnchor = anchor("anchor:target", "component:T", "out", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 200, 100),
@@ -94,6 +95,7 @@ class AthenaRouteEngineSideStubTest {
                         targetSubjectId = targetAnchor.subjectId,
                         targetPortId = targetAnchor.portId,
                         role = ElectricalConnectionRole.CONTROL_SIGNAL,
+                        sourceSpan = LayoutSourceSpan("routes.athena", 1, 1, 1, 32),
                     ),
                     sourceAnchor = sourceAnchor,
                     targetAnchor = targetAnchor,
@@ -128,7 +130,7 @@ class AthenaRouteEngineSideStubTest {
             side = side,
             point = SchematicRoutePoint(x = x, y = y),
             gridPoint = SchematicRoutePoint(x = x, y = y),
-            policySource = "m24:schematic-default",
+            policySource = "schematic-default",
         )
     }
 

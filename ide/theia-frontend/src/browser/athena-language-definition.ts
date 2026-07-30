@@ -52,7 +52,7 @@ const ATHENA_REPRESENTATION_KEYWORDS = [
     'graphic',
     'svg',
     'anchor',
-    'primitiveRef',
+    'ref',
     'accepts',
     'child',
     'translate',
@@ -113,7 +113,7 @@ const ATHENA_KEYWORDS = [
 /**
  * Minimal Monaco language configuration for the current Athena DSL surface.
  *
- * This stays presentation-only in M5. The parser and package semantics remain owned by Athena LSP
+ * This stays presentation-only. The parser and package semantics remain owned by Athena LSP
  * and the JVM stack, while the frontend only improves authored-source readability and editing
  * affordances for `.athena` files.
  */
@@ -135,11 +135,11 @@ export const athenaLanguageConfiguration: monaco.languages.LanguageConfiguration
 };
 
 /**
- * Basic M5 tokenizer for `.athena` files.
+ * Basic tokenizer for `.athena` files.
  *
  * The token categories intentionally mirror the current DSL shape only: control keywords, strings,
  * delimiters/operators, qualified references, and plain identifiers. Richer semantic-token work is
- * deferred beyond M5.
+ * owned by the Athena LSP.
  */
 export const athenaMonarchLanguage: monaco.languages.IMonarchLanguage = {
     defaultToken: 'invalid',

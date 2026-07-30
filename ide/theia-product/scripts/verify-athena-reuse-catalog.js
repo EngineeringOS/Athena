@@ -106,7 +106,7 @@ async function main() {
         if (!String(result.approvalMessage || '').length) {
             throw new Error('Athena reuse catalog E2E did not observe an approval response message.');
         }
-        if (!String(result.approvalMessage || '').includes('sole M8 mutation authority')) {
+        if (!String(result.approvalMessage || '').includes('through the mutation authority')) {
             throw new Error('Athena reuse catalog E2E did not observe the committed-through-M8 approval message.');
         }
         if (!String(result.approvalBundleId || '').length) {
@@ -154,7 +154,7 @@ function resolveReuseProofRepository() {
         'athena.yaml',
         'athena.lock',
         'athena-semantic-macros.properties',
-        path.join('src', 'semantic-reuse-proof.athena')
+        path.join('src', 'com', 'engineeringood', 'examples', 'm16', 'semantic', 'reuse', 'proof', 'semantic-reuse-proof.athena')
     ];
     const missing = requiredFiles.filter(filePath => !fs.existsSync(path.join(repositoryRoot, filePath)));
     if (missing.length > 0) {

@@ -45,6 +45,34 @@ class AthenaRepositoryContractLoaderTest {
     }
 
     @Test
+    fun `missing root manifest fails before nested repository discovery`() {
+        val repositoryRoot = createTempDirectory("athena-repository-contract-")
+        try {
+            val nestedRoot = repositoryRoot.resolve("nested").createDirectories()
+            nestedRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.nested
+                      version: 1.0.0
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+
+            val result = AthenaRepositoryContractLoader().load(repositoryRoot)
+
+            assertEquals(
+                listOf(
+                    "repository.contract.manifest.missing",
+                    "repository.contract.lock.missing",
+                ),
+                result.diagnostics.map { diagnostic -> diagnostic.code },
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `reports missing manifest fields and invalid primary package identity explicitly`() {
         val repositoryRoot = createTempDirectory("athena-repository-contract-")
         try {

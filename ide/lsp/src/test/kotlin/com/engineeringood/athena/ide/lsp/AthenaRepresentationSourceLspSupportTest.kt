@@ -382,6 +382,52 @@ class AthenaRepresentationSourceLspSupportTest {
         }
     }
 
+    @Test
+    @Suppress("DEPRECATION")
+    fun `invalid svg-backed geometry bindings publish unresolved anchor diagnostics through lsp`() {
+        val repository = createGovernedTestRepository("athena-representation-invalid-binding-lsp-")
+        repository.enableRepresentationPackageRoots()
+        val packageDir = repository.repositoryRoot
+            .resolve("packages")
+            .resolve("representation")
+            .resolve("athena")
+            .resolve("vendor")
+            .also { it.createDirectories() }
+        val representationPath = packageDir.resolve("invalid-binding.athena")
+        val svgPath = packageDir.resolve("vendor-drive.svg")
+        representationPath.writeText(INVALID_BINDING_REPRESENTATION_SOURCE)
+        svgPath.writeText(UNMARKED_VENDOR_DRIVE_SVG)
+        val client = AthenaRecordingLanguageClient()
+        val server = AthenaLanguageServer()
+        try {
+            server.connect(client)
+            server.initialize(org.eclipse.lsp4j.InitializeParams().apply {
+                rootUri = repository.repositoryRoot.toUri().toString()
+            }).get()
+            val documentUri = representationPath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(documentUri, "athena", 1, INVALID_BINDING_REPRESENTATION_SOURCE),
+                ),
+            )
+            val svgUri = svgPath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(svgUri, "svg", 1, svgPath.toFile().readText()),
+                ),
+            )
+
+            val diagnostics = client.publishedDiagnostics.last { it.uri == documentUri }.diagnostics
+            assertTrue(
+                diagnostics.any { it.code?.left == "symbol.anchor.ref.unresolved" },
+                diagnostics.toString(),
+            )
+        } finally {
+            server.shutdown().get()
+            repository.repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
     private companion object {
         val FORBIDDEN_RUNTIME_VOCABULARY = setOf(
             "descriptor",
@@ -489,8 +535,8 @@ class AthenaRepresentationSourceLspSupportTest {
 
         val VALID_VENDOR_DRIVE_SVG = """
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 20">
-              <line id="line" x1="0" y1="10" x2="20" y2="10" data-athena-geometry-ref="line"/>
-              <line id="load" x1="60" y1="10" x2="80" y2="10" data-athena-geometry-ref="load"/>
+              <line id="line" x1="0" y1="10" x2="20" y2="10" data-athena-ref="anchor:line"/>
+              <line id="load" x1="60" y1="10" x2="80" y2="10" data-athena-ref="anchor:load"/>
             </svg>
         """.trimIndent()
 
@@ -512,11 +558,11 @@ class AthenaRepresentationSourceLspSupportTest {
               }
 
               anchor A1 {
-                primitiveRef terminalA1
+                ref "terminalA1"
+                direction in
+                signal Control.family
                 point (40, 0)
                 role terminal
-                accepts direction in
-                accepts signal Control
               }
             }
 
@@ -582,11 +628,11 @@ class AthenaRepresentationSourceLspSupportTest {
               }
 
               anchor PE {
-                primitiveRef terminalPe
+                ref "terminalPe"
                 point (40, 0)
                 role terminal
-                accepts direction out
-                accepts signal PE
+                direction out
+                signal PE.family
               }
             }
 
@@ -617,6 +663,36 @@ class AthenaRepresentationSourceLspSupportTest {
               use element "iec.protective-earth.element" version "1.0.0"
               variant "standard"
             }
+        """.trimIndent()
+
+        val INVALID_BINDING_REPRESENTATION_SOURCE = """
+            package athena.vendor
+
+            symbol vendor_drive_svg_symbol {
+              identity "vendor.drive.svg.symbol"
+              version "1.0.0"
+
+              resource vendor_svg {
+                kind svg
+                path "./vendor-drive.svg"
+              }
+
+              graphic svg resource vendor_svg
+
+              anchor powerIn {
+                ref "svg-0001"
+                point (20, 10)
+                role terminal
+                direction in
+                signal Power.family
+              }
+            }
+        """.trimIndent()
+
+        val UNMARKED_VENDOR_DRIVE_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60">
+              <rect id="body" x="8" y="8" width="104" height="44"/>
+            </svg>
         """.trimIndent()
     }
 

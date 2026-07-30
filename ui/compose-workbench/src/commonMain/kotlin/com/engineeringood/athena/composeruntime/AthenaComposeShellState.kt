@@ -39,7 +39,7 @@ data class AthenaComposeProjectionViewState(
 )
 
 /**
- * Typed command panel state for the first GUI-backed semantic mutation proof.
+ * Typed command panel state for the first GUI-backed semantic mutation evidence.
  */
 data class AthenaComposeCommandPanelState(
     val title: String = "Connect Ports",

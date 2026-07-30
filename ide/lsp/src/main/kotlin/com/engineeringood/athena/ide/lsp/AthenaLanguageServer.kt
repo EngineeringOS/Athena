@@ -12,8 +12,8 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticRelatedLocatio
 import com.engineeringood.athena.compiler.semantic.SourceUnitId
 import com.engineeringood.athena.runtime.AthenaAuthoringPreviewSubmitted
 import com.engineeringood.athena.language.SourceSpan
-import com.engineeringood.athena.runtime.AthenaAiDeterministicProofProvider
 import com.engineeringood.athena.runtime.AthenaAiReasoningProvider
+import com.engineeringood.athena.runtime.AthenaAiReasoningProviderUnavailable
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -74,7 +74,12 @@ import kotlin.system.measureTimeMillis
  */
 class AthenaLanguageServer(
     private val sessionHost: AthenaLspSessionHost = AthenaLspSessionHost(),
-    private val aiReasoningProvider: AthenaAiReasoningProvider = AthenaAiDeterministicProofProvider(),
+    private val aiReasoningProvider: AthenaAiReasoningProvider = AthenaAiReasoningProvider {
+        AthenaAiReasoningProviderUnavailable(
+            reason = "No AI reasoning provider is configured for this Athena LSP session.",
+            providerId = "unconfigured",
+        )
+    },
 ) : LanguageServer, LanguageClientAware {
     private var languageClient: LanguageClient? = null
     private var sessionSnapshot: AthenaLspSessionSnapshot? = null
@@ -736,6 +741,21 @@ class AthenaLanguageServer(
                 sourceImpact = sourceImpact,
             ),
         )
+    }
+
+    /**
+     * Previews one graphic-originated edit as a source-first governed mutation intent.
+     */
+    @JsonRequest(ATHENA_GOVERNED_GRAPHIC_EDIT_PREVIEW_METHOD)
+    fun governedGraphicEditPreview(
+        params: AthenaGovernedGraphicEditIntentRequest,
+    ): CompletableFuture<AthenaGovernedGraphicEditPreviewPayload?> {
+        if (activeSession == null) return CompletableFuture.completedFuture(null)
+        val trackedDocument = languageFeatures?.trackedDocument(params.revisionGuard.sourceUri)
+            ?: return CompletableFuture.completedFuture(null)
+        val document = trackedDocument.toBackendSourceDocument(trackedDocument.toAuthoringRevisionGuard())
+            ?: return CompletableFuture.completedFuture(null)
+        return CompletableFuture.completedFuture(AthenaGovernedGraphicEditIntentCompiler.preview(params, document))
     }
 
     /**

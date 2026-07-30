@@ -141,7 +141,15 @@ class AthenaAiReasoningRequestTest {
         try {
             AthenaCompiler().materializeRepositoryLock(repositoryRoot)
 
-            val server = AthenaLanguageServer()
+            val server = AthenaLanguageServer(
+                aiReasoningProvider = AthenaAiReasoningProvider {
+                    AthenaAiReasoningProviderSuccess(
+                        summary = "Test provider response",
+                        response = "Review the governed evidence.",
+                        providerId = "test-provider",
+                    )
+                },
+            )
             try {
                 server.initialize(
                     InitializeParams().apply {

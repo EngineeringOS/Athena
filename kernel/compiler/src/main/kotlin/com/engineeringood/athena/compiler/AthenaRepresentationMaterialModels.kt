@@ -23,7 +23,7 @@ data class AthenaRepresentationMaterialDiagnostic(
     override fun toString(): String = "[$code] $subject: $message"
 }
 
-data class AthenaRepresentationMaterialProof(
+data class AthenaRepresentationMaterialEvidence(
     val stagedSourcePaths: List<String> = emptyList(),
 )
 
@@ -31,7 +31,7 @@ data class AthenaRepresentationMaterialResolutionResult(
     val definitions: List<RepresentationDefinition> = emptyList(),
     val materials: List<AthenaResolvedRepresentationMaterial> = emptyList(),
     val diagnostics: List<AthenaRepresentationMaterialDiagnostic> = emptyList(),
-    val proof: AthenaRepresentationMaterialProof = AthenaRepresentationMaterialProof(),
+    val evidence: AthenaRepresentationMaterialEvidence = AthenaRepresentationMaterialEvidence(),
 )
 
 internal data class MaterialSubject(

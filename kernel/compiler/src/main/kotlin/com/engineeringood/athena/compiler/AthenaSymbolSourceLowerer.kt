@@ -76,7 +76,7 @@ internal object AthenaSymbolSourceLowerer {
             primitives = graphic.primitives.map { primitive -> primitive.toGraphicPrimitive(graphicBounds) },
             styleTokens = (graphic.primitives.map { primitive -> primitive.style } + graphic.labels.map { label -> label.style })
                 .distinct().sorted().map { styleId ->
-                requireNotNull(AthenaSymbolGraphicStyleRegistryV0.resolve(styleId))
+                requireNotNull(AthenaSymbolGraphicStyleRegistry.resolve(styleId))
             },
             provenanceSources = listOf(file),
         )
@@ -96,15 +96,29 @@ internal object AthenaSymbolSourceLowerer {
                     role = requireNotNull(label.role.value.toLabelRole()),
                     origin = GraphicPoint(label.origin.x, label.origin.y),
                     bounds = GraphicBounds(label.origin.x, label.origin.y, label.size.width, label.size.height),
-                    styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistryV0.resolve(label.style)).styleTokenId,
+                    styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistry.resolve(label.style)).styleTokenId,
                 )
             },
             variants = listOf(RepresentationVariantId("standard")),
             bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.SYMBOL,
             graphicBody = graphicBody,
-            anchors = symbol.anchors.map(SymbolAnchorDeclaration::toRepresentationAnchor),
+            anchors = emptyList(),
         )
+        val anchorResults = symbol.anchors.map { anchor ->
+            lowerAnchor(
+                file = file,
+                anchor = anchor,
+                primitiveIds = graphicBody.primitives.map { primitive -> primitive.primitiveId }.toSet(),
+                geometryPrimitiveIdsByRef = emptyMap(),
+                allowPrimitiveIdFallback = true,
+            )
+        }
+        val anchorDiagnostics = anchorResults.mapNotNull { it.diagnostic }.canonicalRepresentationDiagnostics()
+        if (anchorDiagnostics.isNotEmpty()) {
+            return AthenaRepresentationLoweringResult(null, anchorDiagnostics)
+        }
+        val definitionWithAnchors = definition.copy(anchors = anchorResults.mapNotNull { it.anchor })
 
         val diagnostics = buildList {
             GraphicPrimitiveIrValidator.validate(graphicBody).diagnostics.forEach { issue ->
@@ -122,7 +136,7 @@ internal object AthenaSymbolSourceLowerer {
                 RepresentationValidationInput(
                     allowedLibraries = setOf(libraryId),
                     policies = emptyList(),
-                    definitions = listOf(definition),
+                    definitions = listOf(definitionWithAnchors),
                     occurrences = emptyList(),
                 ),
             ).diagnostics.forEach { issue ->
@@ -137,7 +151,7 @@ internal object AthenaSymbolSourceLowerer {
                 )
             }
         }.canonicalRepresentationDiagnostics()
-        return AthenaRepresentationLoweringResult(definition.takeIf { diagnostics.isEmpty() }, diagnostics)
+        return AthenaRepresentationLoweringResult(definitionWithAnchors.takeIf { diagnostics.isEmpty() }, diagnostics)
     }
 
     private fun lowerSvgGraphic(
@@ -152,7 +166,6 @@ internal object AthenaSymbolSourceLowerer {
         if (svg.diagnostics.isNotEmpty()) return AthenaRepresentationLoweringResult(null, svg.diagnostics)
         val graphicBody = requireNotNull(svg.document)
         val bounds = requireNotNull(graphicBody.bounds)
-        val anchorPrimitiveId = graphicBody.primitives.firstOrNull()?.primitiveId
         val definition = RepresentationDefinition(
             symbolId = RepresentationSymbolId(identity),
             libraryId = libraryId,
@@ -168,10 +181,24 @@ internal object AthenaSymbolSourceLowerer {
             bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.SYMBOL,
             graphicBody = graphicBody,
-            anchors = symbol.anchors.map { anchor -> anchor.toRepresentationAnchor(anchorPrimitiveId) },
+            anchors = emptyList(),
         )
-        val diagnostics = validateLoweredSvg(file, symbol.span, definition, graphicBody).canonicalRepresentationDiagnostics()
-        return AthenaRepresentationLoweringResult(definition.takeIf { diagnostics.isEmpty() }, diagnostics)
+        val anchorResults = symbol.anchors.map { anchor ->
+            lowerAnchor(
+                file = file,
+                anchor = anchor,
+                primitiveIds = graphicBody.primitives.map { primitive -> primitive.primitiveId }.toSet(),
+                geometryPrimitiveIdsByRef = svg.primitiveIdsByGeometryRef,
+                allowPrimitiveIdFallback = false,
+            )
+        }
+        val anchorDiagnostics = anchorResults.mapNotNull { it.diagnostic }.canonicalRepresentationDiagnostics()
+        if (anchorDiagnostics.isNotEmpty()) {
+            return AthenaRepresentationLoweringResult(null, anchorDiagnostics)
+        }
+        val definitionWithAnchors = definition.copy(anchors = anchorResults.mapNotNull { it.anchor })
+        val diagnostics = validateLoweredSvg(file, symbol.span, definitionWithAnchors, graphicBody).canonicalRepresentationDiagnostics()
+        return AthenaRepresentationLoweringResult(definitionWithAnchors.takeIf { diagnostics.isEmpty() }, diagnostics)
     }
 
     private fun validateLoweredSvg(
@@ -210,13 +237,13 @@ private fun SymbolGraphicPrimitiveDeclaration.toGraphicPrimitive(documentBounds:
         bounds = lineBounds(from.x, from.y, to.x, to.y, documentBounds),
         start = GraphicPoint(from.x, from.y),
         end = GraphicPoint(to.x, to.y),
-        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistryV0.resolve(style)).styleTokenId,
+        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistry.resolve(style)).styleTokenId,
     )
     is SymbolGraphicPrimitiveDeclaration.Polyline -> GraphicPrimitive.Polyline(
         primitiveId = GraphicPrimitiveId(id),
         bounds = pointBounds(points.map { GraphicPoint(it.x, it.y) }, documentBounds),
         points = points.map { GraphicPoint(it.x, it.y) },
-        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistryV0.resolve(style)).styleTokenId,
+        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistry.resolve(style)).styleTokenId,
     )
     is SymbolGraphicPrimitiveDeclaration.Arc -> GraphicPrimitive.Arc(
         primitiveId = GraphicPrimitiveId(id),
@@ -225,20 +252,20 @@ private fun SymbolGraphicPrimitiveDeclaration.toGraphicPrimitive(documentBounds:
         radius = radius,
         startAngleDegrees = startAngleDegrees,
         sweepAngleDegrees = sweepAngleDegrees,
-        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistryV0.resolve(style)).styleTokenId,
+        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistry.resolve(style)).styleTokenId,
     )
     is SymbolGraphicPrimitiveDeclaration.Circle -> GraphicPrimitive.Circle(
         primitiveId = GraphicPrimitiveId(id),
         bounds = GraphicBounds(center.x - radius, center.y - radius, radius * 2.0, radius * 2.0),
         center = GraphicPoint(center.x, center.y),
         radius = radius,
-        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistryV0.resolve(style)).styleTokenId,
+        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistry.resolve(style)).styleTokenId,
     )
     is SymbolGraphicPrimitiveDeclaration.Rectangle -> GraphicPrimitive.Rectangle(
         primitiveId = GraphicPrimitiveId(id),
         bounds = GraphicBounds(origin.x, origin.y, size.width, size.height),
         cornerRadius = 0.0,
-        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistryV0.resolve(style)).styleTokenId,
+        styleTokenId = requireNotNull(AthenaSymbolGraphicStyleRegistry.resolve(style)).styleTokenId,
     )
 }
 
@@ -272,24 +299,63 @@ private fun positiveAxisBounds(
     return start to size
 }
 
-private fun SymbolAnchorDeclaration.toRepresentationAnchor(
-    primitiveOverride: GraphicPrimitiveId? = null,
-): RepresentationAnchorContract = RepresentationAnchorContract(
-    anchorId = RepresentationAnchorId(id),
-    primitiveId = primitiveOverride ?: GraphicPrimitiveId(requireNotNull(primitiveRef).value),
-    point = requireNotNull(point).let { value -> GraphicPoint(value.x, value.y) },
-    role = requireNotNull(requireNotNull(role).value.toAnchorRole()),
-    required = true,
-    acceptedDirections = acceptedDirections.map { field -> field.value.toDirectionPredicate() }.toSet(),
-    acceptedSignals = acceptedSignals.map { field -> RepresentationSignalPredicate(field.value) }.toSet(),
-)
-
-private fun String.toDirectionPredicate(): RepresentationDirectionPredicate = when (this) {
-    "in" -> RepresentationDirectionPredicate.IN
-    "out" -> RepresentationDirectionPredicate.OUT
-    "bidirectional" -> RepresentationDirectionPredicate.BIDIRECTIONAL
-    else -> error("ANTLR direction predicate escaped authored AST boundary: $this")
+private fun lowerAnchor(
+    file: String,
+    anchor: SymbolAnchorDeclaration,
+    primitiveIds: Set<GraphicPrimitiveId>,
+    geometryPrimitiveIdsByRef: Map<String, List<GraphicPrimitiveId>>,
+    allowPrimitiveIdFallback: Boolean,
+): LoweredAnchor {
+    val ref = requireNotNull(anchor.ref) {
+        "Symbol anchor ref is validated before lowering."
+    }
+    val geometryRef = ref.value
+    val primitiveId = geometryPrimitiveIdsByRef[geometryRef]?.singleOrNull()
+        ?: if (allowPrimitiveIdFallback) primitiveIds.singleOrNull { candidate -> candidate.value == geometryRef } else null
+    if (primitiveId == null) {
+        return LoweredAnchor(
+            anchor = null,
+            diagnostic = representationDiagnostic(
+                code = "symbol.anchor.ref.unresolved",
+                file = file,
+                span = ref.span,
+                subject = "anchors.${anchor.id}.ref",
+                message = "Symbol anchor references missing geometry `${geometryRef}`.",
+            ),
+        )
+    }
+    val directions = anchor.directions.map { directionField ->
+        requireNotNull(directionField.value.toAnchorDirectionPredicate()) {
+            "Symbol anchor direction is validated before lowering."
+        }
+    }
+    val signals = anchor.signals
+    val role = requireNotNull(anchor.role) {
+        "Symbol anchor role is validated before lowering."
+    }
+    val point = requireNotNull(anchor.point) {
+        "Symbol anchor point is validated before lowering."
+    }
+    return LoweredAnchor(
+        anchor = RepresentationAnchorContract(
+            anchorId = RepresentationAnchorId(anchor.id),
+            geometryRef = geometryRef,
+            primitiveId = primitiveId,
+            point = GraphicPoint(point.x, point.y),
+            role = requireNotNull(role.value.toAnchorRole()),
+            required = true,
+            acceptedDirections = directions.toSet(),
+            acceptedSignals = signals.map { RepresentationSignalPredicate(it.parts.joinToString(".")) }.toSet(),
+            port = anchor.port?.parts?.joinToString("."),
+        ),
+        diagnostic = null,
+    )
 }
+
+private data class LoweredAnchor(
+    val anchor: RepresentationAnchorContract?,
+    val diagnostic: AthenaRepresentationSourceDiagnostic?,
+)
 
 internal fun compatibilityAnatomy(identity: String, bounds: SymbolBounds) = PresentationAnatomy(
     representationId = RepresentationId(identity),

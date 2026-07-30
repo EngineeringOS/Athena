@@ -83,7 +83,7 @@ class BindingEvidencePayloadTest {
         assertEquals("standard", payload.variant)
         assertEquals(listOf("port:DriveA.power=power"), payload.anchorMapSummary)
         assertEquals(listOf("device-tag=DriveA"), payload.labelBindingSummary)
-        assertEquals("binding-resolver-v0", payload.resolverStage)
+        assertEquals("binding-resolver", payload.resolverStage)
         assertEquals(emptyList(), payload.diagnostics)
         assertFalse(payload.rendererFallbackAccepted)
     }

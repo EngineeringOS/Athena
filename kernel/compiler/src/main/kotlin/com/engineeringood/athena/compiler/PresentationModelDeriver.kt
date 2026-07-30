@@ -3,9 +3,11 @@ package com.engineeringood.athena.compiler
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPropertyValue
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.presentation.PresentationAnchorAlias
 import com.engineeringood.athena.presentation.PresentationAnchorBinding
 import com.engineeringood.athena.presentation.PresentationCompositeOccurrenceReference
@@ -38,7 +40,7 @@ import com.engineeringood.athena.projection.ProjectionLabel
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNotationSubject
 import com.engineeringood.athena.routing.AthenaRouteEngineInput
-import com.engineeringood.athena.routing.AthenaRouteEngineV0
+import com.engineeringood.athena.routing.AthenaRouteEngine
 import com.engineeringood.athena.routing.AthenaRouteRequest
 import com.engineeringood.athena.routing.ElectricalConnectionId
 import com.engineeringood.athena.routing.ElectricalConnectionIntent
@@ -61,9 +63,7 @@ import com.engineeringood.athena.routing.TerminalSide
  * does not invent a second semantic core and it does not let frontend widgets become the first real
  * presentation contract.
  */
-class PresentationModelDeriver(
-    private val packageBackedFactDeriver: M32PackageBackedPresentationFactDeriver = M32PackageBackedPresentationFactDeriver(),
-) {
+class PresentationModelDeriver {
     /**
      * Materializes one rebuildable presentation document for one supported view.
      */
@@ -118,9 +118,8 @@ class PresentationModelDeriver(
         }.sortedBy { connector -> connector.occurrenceId.value }
         val routeFactSnapshot = projection.toRouteFactSnapshot(
             endpointsByConnectionId = endpointsByConnectionId,
+            engineeringDocument = document,
         )
-        val representationFacts = packageBackedFactDeriver.derive(projection)
-
         return PresentationDocument(
             view = projection.view,
             canvasWidth = projection.canvasWidth,
@@ -131,7 +130,6 @@ class PresentationModelDeriver(
             occurrences = occurrences,
             connectors = connectors,
             routeFactSnapshot = routeFactSnapshot,
-            representationFacts = representationFacts,
         )
     }
 }
@@ -261,15 +259,21 @@ private fun com.engineeringood.athena.projection.ProjectionPoint.toPresentationP
 
 private fun ProjectionDocument.toRouteFactSnapshot(
     endpointsByConnectionId: Map<com.engineeringood.athena.projection.ProjectionConnectionId, List<ElectricalConnectionEndpoint>>,
+    engineeringDocument: EngineeringDocument,
 ): com.engineeringood.athena.routing.RouteFactSnapshot? {
     val anchorById = electricalAnchors.associateBy(ElectricalAnchor::anchorId)
+    val engineeringConnectionsById = engineeringDocument.connections.associateBy { connection -> connection.id }
     val requests = connections.mapNotNull { connection ->
         val endpoints = endpointsByConnectionId[connection.projectionId].orEmpty()
         val sourceEndpoint = endpoints.firstOrNull { endpoint -> endpoint.endpointRole == ElectricalConnectionEndpointRole.SOURCE }
         val targetEndpoint = endpoints.firstOrNull { endpoint -> endpoint.endpointRole == ElectricalConnectionEndpointRole.TARGET }
         val sourceAnchor = sourceEndpoint?.anchorId?.let(anchorById::get)
         val targetAnchor = targetEndpoint?.anchorId?.let(anchorById::get)
-        if (sourceEndpoint == null || targetEndpoint == null || sourceAnchor == null || targetAnchor == null) {
+        val sourceSpan = engineeringConnectionsById[connection.semanticId]?.provenance?.toLayoutSourceSpanOrNull()
+        if (
+            sourceEndpoint == null || targetEndpoint == null || sourceAnchor == null || targetAnchor == null ||
+            sourceSpan == null
+        ) {
             null
         } else {
             connection.toRouteRequest(
@@ -277,13 +281,14 @@ private fun ProjectionDocument.toRouteFactSnapshot(
                 targetEndpoint = targetEndpoint,
                 sourceAnchor = sourceAnchor,
                 targetAnchor = targetAnchor,
+                sourceSpan = sourceSpan,
             )
         }
     }
     if (requests.isEmpty()) {
         return null
     }
-    return AthenaRouteEngineV0().solve(
+    return AthenaRouteEngine().solve(
         AthenaRouteEngineInput(
             snapshotId = LayoutSnapshotId("snapshot:${view.id}:${sheets.firstOrNull()?.sheetId?.value ?: "sheet"}"),
             layoutContext = SchematicRoutingLayoutContext(gridSize = 20),
@@ -293,11 +298,28 @@ private fun ProjectionDocument.toRouteFactSnapshot(
     )
 }
 
+internal fun SourceProvenance.toLayoutSourceSpanOrNull(): LayoutSourceSpan? {
+    if (
+        file.isBlank() || startLine <= 0 || startColumn <= 0 || endLine < startLine || endColumn <= 0 ||
+        (endLine == startLine && endColumn < startColumn)
+    ) {
+        return null
+    }
+    return LayoutSourceSpan(
+        sourceUnitId = file,
+        startLine = startLine,
+        startColumn = startColumn,
+        endLine = endLine,
+        endColumn = endColumn,
+    )
+}
+
 private fun ProjectionConnection.toRouteRequest(
     sourceEndpoint: ElectricalConnectionEndpoint,
     targetEndpoint: ElectricalConnectionEndpoint,
     sourceAnchor: ElectricalAnchor,
     targetAnchor: ElectricalAnchor,
+    sourceSpan: LayoutSourceSpan,
 ): AthenaRouteRequest {
     val connectionId = ElectricalConnectionId(semanticId.value)
     val sourceTerminal = sourceAnchor.toTerminalAnchorFact(sourceEndpoint, ElectricalPortRole.OUTPUT)
@@ -314,6 +336,7 @@ private fun ProjectionConnection.toRouteRequest(
             targetPortSemanticId = targetEndpoint.portSemanticId,
             role = ElectricalConnectionRole.CONTROL_SIGNAL,
             signalClass = ElectricalSignalClass.UNKNOWN,
+            sourceSpan = sourceSpan,
         ),
         sourceAnchor = sourceTerminal,
         targetAnchor = targetTerminal,
@@ -334,7 +357,7 @@ private fun ElectricalAnchor.toTerminalAnchorFact(
         side = side.toTerminalSide(),
         point = SchematicRoutePoint(x = position.x, y = position.y),
         gridPoint = SchematicRoutePoint(x = position.x.snapToGrid(20), y = position.y.snapToGrid(20)),
-        policySource = "m24:projection-electrical-anchor",
+        policySource = "projection-electrical-anchor",
     )
 }
 

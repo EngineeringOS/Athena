@@ -52,7 +52,7 @@ data class RepresentationPackageSnapshotDiagnostic(
 )
 
 object RepresentationPackageSnapshotDefaults {
-    const val COMPILER_SCHEMA_VERSION: String = "m34-representation-snapshot/v1"
+    const val COMPILER_SCHEMA_VERSION: String = "athena-representation-snapshot"
     const val MAX_FILES: Int = 512
     const val MAX_AGGREGATE_BYTES: Long = 50L * 1024L * 1024L
 }

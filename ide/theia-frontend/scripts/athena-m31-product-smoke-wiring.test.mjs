@@ -68,7 +68,7 @@ test('M31 structured product smoke names the governed workflow proof inventory',
     ].forEach(proofKind => assert.match(smoke, new RegExp(proofKind)));
 
     assert.match(smoke, /'examples',\s*'m31',\s*'sample-project'/);
-    assert.match(smoke, /src\/01-governed-authoring-customer-source\.athena/);
+    assert.match(smoke, /src\/com\/engineeringood\/m31\/sample\/01-governed-authoring-customer-source\.athena/);
     assert.match(smoke, /m31-graph-workbench-smoke\.png/);
     assert.match(smoke, /ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE/);
     assert.match(smoke, /ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH/);
@@ -178,7 +178,7 @@ test('M31 graph proof rejects duplicate occurrences and repeated terminal labels
             representationCount: 2,
             presentationTerminalCount: 2,
             presentationLabelCount: 2,
-            representationIds: ['athena-industrial-control-v0:terminal-block'],
+            representationIds: ['athena-industrial-control:terminal-block'],
             semanticIds: ['component:FieldTerminalXT31'],
             terminalNumbers: ['1', '2'],
             fallbackRepresentationIds: [],

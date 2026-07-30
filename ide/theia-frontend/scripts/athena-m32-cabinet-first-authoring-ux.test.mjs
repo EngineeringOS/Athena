@@ -81,16 +81,16 @@ test('M32 Electron proof creates from Graph View in a temporary workspace and ve
 });
 
 test('M32 product proof refreshes Cabinet without entering hidden compatibility views', () => {
-    const smokeSwitch = methodBody(productContributionSource, 'switchProjectionViewForSmoke');
+    const automationSwitch = methodBody(productContributionSource, 'switchProjectionView');
 
     assert.doesNotMatch(electronLauncherSource, /collectDocumentationCompatibilityProof/);
     assert.doesNotMatch(electronLauncherSource, /switchGraphWorkbenchProjectionView\('documentation'\)/);
-    assert.match(electronLauncherSource, /__athenaWorkbenchSmoke\?\.switchProjectionView/);
-    assert.match(electronLauncherSource, /__athenaWorkbenchSmoke\?\.refreshProjectionView/);
-    assert.match(productContributionSource, /switchProjectionViewForSmoke/);
-    assert.match(productContributionSource, /refreshProjectionForSmoke/);
-    assert.match(smokeSwitch, /ATHENA_WORKBENCH_EXTENSIONS\.find/);
-    assert.match(smokeSwitch, /revealGraphWorkbench\(graphExtension\)/);
+    assert.match(electronLauncherSource, /__athenaWorkbenchAutomation\?\.switchProjectionView/);
+    assert.match(electronLauncherSource, /__athenaWorkbenchAutomation\?\.refreshProjectionView/);
+    assert.match(productContributionSource, /switchProjectionView/);
+    assert.match(productContributionSource, /refreshProjection/);
+    assert.match(automationSwitch, /ATHENA_WORKBENCH_EXTENSIONS\.find/);
+    assert.match(automationSwitch, /revealGraphWorkbench\(graphExtension\)/);
     assert.match(m32ProductSmokeSource, /cabinetRefreshAccepted/);
     assert.match(m32ProductSmokeSource, /cabinetActiveAfterRefresh/);
     assert.doesNotMatch(m32ProductSmokeSource, /assertDocumentProjectionProof/);

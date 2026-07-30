@@ -53,7 +53,7 @@ class NativeRepresentationSymbolQualityTest {
 
     private fun nativeLibrary(): NativeRepresentationLibrary {
         val resource = requireNotNull(
-            javaClass.classLoader.getResource("representation-libraries/athena-native-iec-v0.properties"),
+            javaClass.classLoader.getResource("representation-libraries/athena-native-iec.properties"),
         ) { "Missing native M30 symbol pack resource." }
         val result = NativeRepresentationLibraryLoader().load(Path.of(resource.toURI()))
         assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())

@@ -42,7 +42,7 @@ export class AthenaHomeWidget extends ReactWidget {
             { key: 'package', label: 'Primary package', value: sessionState.primaryPackageName ?? 'Not validated yet' },
             { key: 'semantic-path', label: 'Semantic path', value: sessionState.semanticPath ?? 'frontend -> LSP -> runtime/compiler' },
             { key: 'editor', label: 'Last Athena editor', value: sessionState.lastOpenedDocumentUri ?? 'Not opened yet' },
-            { key: 'rule', label: 'Window rule', value: 'Single-session M4 rule stays enforced per window' }
+            { key: 'rule', label: 'Window rule', value: 'One active Engineering Repository per window' }
         ];
 
         return <div className='athena-home'>
@@ -60,10 +60,9 @@ export class AthenaHomeWidget extends ReactWidget {
             </header>
 
             <section className='athena-home__intro'>
-                <h1>A serious engineering shell, not a generic editor demo.</h1>
+                <h1>Athena</h1>
                 <p>
-                    This product shell proves the Athena IDE boundary on top of Theia while keeping
-                    semantic authority downstream in the JVM stack behind <code>ide/lsp</code>.
+                    Engineering Repository status and governed workbench access.
                 </p>
             </section>
 
@@ -87,7 +86,7 @@ export class AthenaHomeWidget extends ReactWidget {
             <section className='athena-home__layout'>
                 <article className='athena-home__panel'>
                     <div className='athena-home__panel-header'>
-                        <h2>Current proof</h2>
+                        <h2>Workbench status</h2>
                     </div>
                     <ul className='athena-home__dense-list'>
                         <li>Branded Athena desktop shell</li>
@@ -121,7 +120,7 @@ export class AthenaHomeWidget extends ReactWidget {
                         <h2>Workbench views</h2>
                     </div>
                     <p className='athena-home__panel-lead'>
-                        Athena workbench additions attach through one product-owned extension registry, so later milestones can add panels without replacing the shell.
+                        Available engineering views for the active repository.
                     </p>
                     <div className='athena-home__toolbar athena-home__toolbar--panel'>
                         <button
@@ -148,7 +147,7 @@ export class AthenaHomeWidget extends ReactWidget {
                     </div>
                     <ul className='athena-home__dense-list'>
                         <li>
-                            This shell now carries the M6 operability essentials on top of the M4 and M5 base: editing, completion, document symbols, go-to-definition, references, diagnostics in Problems and editor markers, repository navigation, package-graph feedback, semantic review and commit-preparation projection, output panels, terminal visibility, and product-owned workbench framing.
+                            Editing, completion, navigation, diagnostics, repository inspection, semantic review, and projection remain governed by Athena services.
                         </li>
                         <li>Marketplace sprawl, semantic history publishing, and graphical projection tooling remain intentionally deferred.</li>
                     </ul>

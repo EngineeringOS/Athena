@@ -101,7 +101,7 @@ data class DrawingSheetCompositionPlan(
     val margins: DrawingSheetMarginFact,
 )
 
-data class DrawingSheetCompositionProof(
+data class DrawingSheetCompositionEvidence(
     val policyId: String,
     val contentBounds: GraphicBounds,
     val frameBounds: GraphicBounds,
@@ -125,36 +125,36 @@ data class DrawingSheetCompositionDiagnostic(
 
 data class DrawingSheetCompositionResult(
     val plan: DrawingSheetCompositionPlan?,
-    val proof: DrawingSheetCompositionProof?,
+    val evidence: DrawingSheetCompositionEvidence?,
     val diagnostics: List<DrawingSheetCompositionDiagnostic>,
 ) {
     val isValid: Boolean
-        get() = plan != null && proof != null && diagnostics.isEmpty()
+        get() = plan != null && evidence != null && diagnostics.isEmpty()
 
     fun toTransportPayload(): DrawingSheetCompositionTransportPayload? {
         val resolvedPlan = plan ?: return null
-        val resolvedProof = proof ?: return null
+        val resolvedEvidence = evidence ?: return null
         if (diagnostics.isNotEmpty()) return null
         return DrawingSheetCompositionTransportPayload(
             sheetId = resolvedPlan.sheetId,
-            policyId = resolvedProof.policyId,
-            contentBounds = resolvedProof.contentBounds.toPayload(),
-            frameBounds = resolvedProof.frameBounds.toPayload(),
-            drawingAreaBounds = resolvedProof.drawingAreaBounds.toPayload(),
-            titleBlockBounds = resolvedProof.titleBlockBounds.toPayload(),
-            sheetBounds = resolvedProof.sheetBounds.toPayload(),
+            policyId = resolvedEvidence.policyId,
+            contentBounds = resolvedEvidence.contentBounds.toPayload(),
+            frameBounds = resolvedEvidence.frameBounds.toPayload(),
+            drawingAreaBounds = resolvedEvidence.drawingAreaBounds.toPayload(),
+            titleBlockBounds = resolvedEvidence.titleBlockBounds.toPayload(),
+            sheetBounds = resolvedEvidence.sheetBounds.toPayload(),
             frameId = resolvedPlan.frame.frameId,
             frameStyle = resolvedPlan.frame.style,
             title = resolvedPlan.titleBlock.toPayload(),
             namedZones = resolvedPlan.namedZones.map { it.toPayload() },
             coordinateZones = resolvedPlan.coordinateZones.map { it.toPayload() },
-            namedZoneIds = resolvedProof.namedZoneIds,
+            namedZoneIds = resolvedEvidence.namedZoneIds,
             contentToFrameMargin = resolvedPlan.margins.contentToFrame,
             frameToSheetMargin = resolvedPlan.margins.frameToSheet,
-            contentBoundsAuthority = resolvedProof.contentBoundsAuthority,
-            boundsAuthority = resolvedProof.boundsAuthority,
-            projectionAuthority = resolvedProof.projectionAuthority,
-            policyAuthority = resolvedProof.policyAuthority,
+            contentBoundsAuthority = resolvedEvidence.contentBoundsAuthority,
+            boundsAuthority = resolvedEvidence.boundsAuthority,
+            projectionAuthority = resolvedEvidence.projectionAuthority,
+            policyAuthority = resolvedEvidence.policyAuthority,
         )
     }
 }

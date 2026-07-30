@@ -54,7 +54,7 @@ class DrawingSheetReferenceCompiler {
         val plan = DrawingSheetReferencePlan(request.sheetPlan.sheetId, targets, placements)
         return DrawingSheetReferenceResult(
             plan = plan,
-            proof = DrawingSheetReferenceProof(
+            evidence = DrawingSheetReferenceEvidence(
                 sheetId = plan.sheetId,
                 referenceIds = targets.map { it.referenceId }.distinct(),
                 placementIds = placements.map { it.placementId },
@@ -76,7 +76,7 @@ class DrawingSheetReferenceCompiler {
             diagnostics += diagnostic("drawing.reference.sheet.invalid", BOUNDS_AUTHORITY, request.sheetPlan.sheetId, "Sheet and structure plans must identify the same valid drawing area.")
         }
         if (request.references.isEmpty() || request.placements.isEmpty()) {
-            diagnostics += diagnostic("drawing.reference.collection.empty", STRUCTURE_AUTHORITY, "references", "Reference proof requires projection links and placements.")
+            diagnostics += diagnostic("drawing.reference.collection.empty", STRUCTURE_AUTHORITY, "references", "Reference evidence requires projection links and placements.")
         }
         duplicateIds(request.references.map { it.crossReferenceId.value }).forEach { id ->
             diagnostics += diagnostic("drawing.reference.projection.duplicate", PROJECTION_AUTHORITY, id, "Projection cross-reference ids must be unique.")

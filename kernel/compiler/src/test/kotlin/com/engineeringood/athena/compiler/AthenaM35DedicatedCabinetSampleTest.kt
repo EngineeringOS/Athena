@@ -51,6 +51,10 @@ class AthenaM35DedicatedCabinetSampleTest {
                         "${diagnostic.ruleId.value}: ${diagnostic.message}"
                     },
                 )
+                assertTrue(
+                    compilation.connectionIr?.connections?.isNotEmpty() == true,
+                    "Maintained Cabinet sample must lower typed connections into Connection IR.",
+                )
                 val rendering = assertIs<CompilerRenderingSuccess>(compilation.rendering)
                 assertEquals("cabinet", rendering.viewId)
                 assertEquals("svg", rendering.rendererTarget)
@@ -58,6 +62,7 @@ class AthenaM35DedicatedCabinetSampleTest {
                 assertTrue(rendering.svg.contains("""class="connection""""))
                 assertTrue(rendering.svg.contains("""class="component""""))
                 assertTrue(rendering.svg.contains("""class="label""""))
+
             }
 
             is CompilerCompilationParseFailure -> fail(
@@ -86,10 +91,9 @@ class AthenaM35DedicatedCabinetSampleTest {
         assertTrue(sourceText.contains("duct WireDuctLeft in ENC35"))
         assertTrue(sourceText.contains("channel LeftControlChannel in WireDuctLeft"))
         assertTrue(sourceText.contains("terminal-group XT35 in ENC35"))
-        assertTrue(sourceText.contains("mount PFEA112Mount device PFEA112 on DIN35A"))
+        assertTrue(sourceText.contains("mount PFEA112 as PFEA112Mount on DIN35A"))
         assertTrue(sourceText.contains("route supply_to_breaker through [LeftControlChannel]"))
-        assertTrue(sourceText.contains("connect power"))
-        assertTrue(sourceText.contains("supply_to_breaker Supply35.lplus -> BreakerQF35.line"))
+        assertTrue(sourceText.contains("connect supply_to_breaker Supply35.lplus -> BreakerQF35.line"))
 
         assertTrue(standardText.contains("identity \"iec.protective-earth.element\""))
         assertTrue(vendorText.contains("identity \"vendor.abb.pfea112.element\""))

@@ -161,7 +161,7 @@ test('M34 mixed SVG graphic source exposes the frozen syntax node boundary', () 
 test('M34 Tree-sitter leaves duplicate ids and unresolved references to semantic validation', () => {
     const source = VALID_M34_SYMBOL
         .replace('line load from', 'line line from')
-        .replace('primitiveRef load', 'primitiveRef missing');
+        .replace('ref load', 'ref missing');
     const parser = new Parser();
     parser.setLanguage(language);
     const tree = parser.parse(source);
@@ -185,7 +185,7 @@ test('M34 function and fixed drawing placement expose syntax-only nodes without 
 });
 
 test('M34 Tree-sitter mirrors ANTLR direction and literal boundaries', () => {
-    const validSource = VALID_M34_SYMBOL.replace('accepts direction in', 'accepts direction bidirectional');
+    const validSource = VALID_M34_SYMBOL.replace('direction in', 'direction bidirectional');
     const parser = new Parser();
     parser.setLanguage(language);
 

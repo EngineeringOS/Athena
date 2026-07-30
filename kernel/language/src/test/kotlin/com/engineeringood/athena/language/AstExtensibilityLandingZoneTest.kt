@@ -73,7 +73,7 @@ class AstExtensibilityLandingZoneTest {
 
     /**
      * Exhaustive classifier: adding a new `Declaration` sealed variant must break this
-     * `when` at compile time. That is the structural extensibility proof Story `1.3`
+     * `when` at compile time. That is the structural extensibility evidence Story `1.3`
      * requires. Do not add an `else` branch.
      */
     private fun classifyDeclaration(declaration: Declaration): String {

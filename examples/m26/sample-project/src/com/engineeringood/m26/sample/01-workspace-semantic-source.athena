@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m26.sample
+package com.engineeringood.m26.sample
 
 system SemanticDocumentProjectionAcceptance {
   device MainPowerSupplyPS1 {

@@ -30,7 +30,7 @@ data class GraphicPrimitiveSvgDiagnostic(
     val message: String,
 )
 
-data class GraphicPrimitiveSvgProof(
+data class GraphicPrimitiveSvgEvidence(
     val documentId: String,
     val primitiveIds: List<String>,
     val elementCount: Int,
@@ -39,11 +39,11 @@ data class GraphicPrimitiveSvgProof(
 
 data class GraphicPrimitiveSvgRenderResult(
     val fragment: String?,
-    val proof: GraphicPrimitiveSvgProof?,
+    val evidence: GraphicPrimitiveSvgEvidence?,
     val diagnostics: List<GraphicPrimitiveSvgDiagnostic>,
 ) {
     val isValid: Boolean
-        get() = fragment != null && proof != null && diagnostics.isEmpty()
+        get() = fragment != null && evidence != null && diagnostics.isEmpty()
 }
 
 class GraphicPrimitiveSvgAdapter {
@@ -131,7 +131,7 @@ class GraphicPrimitiveSvgAdapter {
         }
         return GraphicPrimitiveSvgRenderResult(
             fragment = fragment,
-            proof = GraphicPrimitiveSvgProof(
+            evidence = GraphicPrimitiveSvgEvidence(
                 documentId = documentId,
                 primitiveIds = rendered.flatMap { it.primitiveIds },
                 elementCount = 1 + rendered.sumOf { it.elementCount },
@@ -299,7 +299,7 @@ class GraphicPrimitiveSvgAdapter {
 
     private fun failed(diagnostics: List<GraphicPrimitiveSvgDiagnostic>) = GraphicPrimitiveSvgRenderResult(
         fragment = null,
-        proof = null,
+        evidence = null,
         diagnostics = diagnostics.distinct().sortedWith(compareBy({ it.code }, { it.subject }, { it.message })),
     )
 

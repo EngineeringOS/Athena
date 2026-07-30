@@ -45,7 +45,7 @@ class AthenaM30SampleProjectCompilerTest {
                     result.projections
                         .flatMap { projection -> projection.crossReferences }
                         .isNotEmpty(),
-                    "M30 sample must include semantic references for professional representation proof.",
+                    "M30 sample must include semantic references for professional representation evidence.",
                 )
             }
 
@@ -194,7 +194,7 @@ class AthenaM30SampleProjectCompilerTest {
         assertEquals(
             expectedSheetIds,
             documentation.sheets.map { sheet -> sheet.sheetId.value },
-            "M31 reference proof requires the governed control and field-device sheets.",
+            "M31 reference evidence requires the governed control and field-device sheets.",
         )
 
         val links = documentation.crossReferences.flatMap { reference ->

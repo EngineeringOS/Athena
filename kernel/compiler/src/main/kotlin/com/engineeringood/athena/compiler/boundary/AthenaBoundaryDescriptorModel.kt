@@ -12,7 +12,7 @@ data class AthenaBoundaryDescriptorSource(
     }
 }
 
-/** Supported external boundary categories for the M0 descriptor proof. */
+/** Supported external boundary categories for the M0 descriptor evidence. */
 enum class AthenaBoundaryCategory {
     STANDARDS,
     RUNTIME,
@@ -42,7 +42,7 @@ enum class AthenaBoundaryExchangeFormKind {
 }
 
 /** Declared M0 execution posture for one external boundary descriptor. */
-enum class AthenaBoundaryM0Mode {
+enum class AthenaBoundaryMode {
     PASSIVE_METADATA,
     OPERATIONAL,
 }
@@ -50,9 +50,9 @@ enum class AthenaBoundaryM0Mode {
 /** Supported compatibility assumptions that may be declared by passive M0 boundary descriptors. */
 enum class AthenaBoundaryCompatibilityAssumption {
     REVIEWED_MAPPING_ONLY,
-    NO_IMPORTER_OR_EXPORTER_IN_M0,
+    NO_IMPORTER_OR_EXPORTER,
     PASSIVE_BOUNDARY_METADATA_ONLY,
-    NO_LIVE_CONNECTOR_IN_M0,
+    NO_LIVE_CONNECTOR,
 }
 
 /** Core-owned manifest model for one external boundary descriptor. */
@@ -63,7 +63,7 @@ data class AthenaBoundaryDescriptorManifest(
     val upstreamAuthority: AthenaBoundarySemanticAuthority,
     val exchangeForms: List<AthenaBoundaryExchangeFormKind>,
     val compatibilityAssumptions: List<AthenaBoundaryCompatibilityAssumption>,
-    val m0Mode: AthenaBoundaryM0Mode,
+    val mode: AthenaBoundaryMode,
 )
 
 /** Fully loaded external boundary descriptor rooted in one local directory. */

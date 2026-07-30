@@ -34,7 +34,6 @@ rootProject.name = "Athena"
 
 include(
     ":apps:cli",
-    //":apps:desktop-viewer",
     ":integrations:scm-git",
     ":ide:lsp",
      //":ui:compose-workbench",

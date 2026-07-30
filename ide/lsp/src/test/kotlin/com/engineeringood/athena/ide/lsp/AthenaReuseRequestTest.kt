@@ -190,7 +190,7 @@ class AthenaReuseRequestTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol
@@ -304,7 +304,7 @@ class AthenaReuseRequestTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol
@@ -422,7 +422,7 @@ class AthenaReuseRequestTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol
@@ -498,7 +498,7 @@ class AthenaReuseRequestTest {
                 )
                 assertTrue(acceptance.inspection?.affectedSemanticIds?.size == 5)
                 assertTrue(acceptance.semanticReview?.authoredChangeCount ?: 0 > 0)
-                assertTrue(acceptance.reason?.contains("sole M8 mutation authority") == true)
+                assertTrue(acceptance.reason?.contains("through the mutation authority") == true)
             } finally {
                 server.shutdown().get()
             }
@@ -524,7 +524,7 @@ class AthenaReuseRequestTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol

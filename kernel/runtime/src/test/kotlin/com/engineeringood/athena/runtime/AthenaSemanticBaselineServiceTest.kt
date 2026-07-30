@@ -89,8 +89,10 @@ private fun writeGovernedRepository(
         """.trimIndent(),
     )
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
+    val sourceRoot = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/')).createDirectories()
     val sourcePath = sourceRoot.resolve(sourceFileName)
-    sourcePath.writeText("system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }")
+    sourcePath.writeText(
+        "package $packageName\n\nsystem ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }",
+    )
     return sourcePath
 }

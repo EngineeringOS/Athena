@@ -254,7 +254,7 @@ export function resolveSemanticRevealTargetFromDiagnostic(
     return selection ? buildSemanticRevealTarget(selection, diagram, 'diagnostic') : undefined;
 }
 
-/** Reuses M6 semantic SCM subject-identity vocabulary to determine whether one SCM context matches the active selection. */
+/** Uses semantic SCM subject identity to determine whether one SCM context matches the active selection. */
 export function matchesSemanticScmContext(
     carrier: AthenaSemanticScmContextCarrier,
     semanticId: string | undefined

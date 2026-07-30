@@ -16,11 +16,11 @@ This module keeps the ownership ladder explicit:
 - Publish installation-marker identifiers through `PhysicalInstallationMarkerId`.
 - Publish minimal physical-trait definitions through `PhysicalTraitDefinition`.
 - Publish read-only resolved physical-trait knowledge through `ResolvedPhysicalTraitDefinition`.
-- Resolve `PhysicalInstallationContractV0` from governed project facts and existing resolved traits.
+- Resolve `PhysicalInstallationContract` from governed project facts and existing resolved traits.
 - Validate positive dimensions, mounting type, allowed orientations, clearance, and compatible container kinds.
 - Preserve field-level provenance and canonical digest material for deterministic downstream checks.
-- Compile typed `PhysicalInstallationIRV0` topology from installation intent and validated contracts.
-- Evaluate Physical Constraint v0 fit, containment, collision, clearance, and mounting compatibility.
+- Compile typed `PhysicalInstallationIR` topology from installation intent and validated contracts.
+- Evaluate physical fit, containment, collision, clearance, and mounting compatibility.
 - Preserve the boundary that canonical authored truth remains in `Engineering IR`.
 
 ## Main Types
@@ -30,11 +30,11 @@ This module keeps the ownership ladder explicit:
 - `PhysicalInstallationMarkerId`
 - `PhysicalTraitDefinition`
 - `ResolvedPhysicalTraitDefinition`
-- `PhysicalInstallationContractV0`
+- `PhysicalInstallationContract`
 - `PhysicalInstallationContractResolver`
-- `PhysicalInstallationIRV0`
+- `PhysicalInstallationIR`
 - `PhysicalInstallationTopologyCompiler`
-- `PhysicalConstraintEvaluatorV0`
+- `PhysicalConstraintEvaluator`
 
 ## Dependencies
 

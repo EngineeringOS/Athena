@@ -17,7 +17,7 @@ M16 proves that Athena can:
 ## Proof Repository
 
 - Example path: `examples/m16/semantic-reuse-proof`
-- Primary source file: `examples/m16/semantic-reuse-proof/src/semantic-reuse-proof.athena`
+- Primary source file: `examples/m16/semantic-reuse-proof/src/com/engineeringood/examples/m16/semantic/reuse/proof/semantic-reuse-proof.athena`
 - Governed macro manifest: `examples/m16/semantic-reuse-proof/athena-semantic-macros.properties`
 
 The checked-in proof slice currently includes:
@@ -44,7 +44,7 @@ They derive reusable structure from governed electrical concept and implementati
 ## Proof Flow
 
 1. Open the repository at `examples/m16/semantic-reuse-proof`.
-2. Open `src/semantic-reuse-proof.athena`.
+2. Open `src/com/engineeringood/examples/m16/semantic/reuse/proof/semantic-reuse-proof.athena`.
 3. Open the Athena Reuse Catalog.
 4. Choose `DOL Starter`.
 5. Configure:

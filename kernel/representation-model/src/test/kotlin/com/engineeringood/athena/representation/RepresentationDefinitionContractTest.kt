@@ -320,6 +320,7 @@ class RepresentationDefinitionContractTest {
 
     private fun anchor(id: String): RepresentationAnchorContract = RepresentationAnchorContract(
         anchorId = RepresentationAnchorId(id),
+        geometryRef = "body",
         primitiveId = GraphicPrimitiveId("body"),
         point = GraphicPoint(8.0, 24.0),
         role = RepresentationAnchorRole.TERMINAL,

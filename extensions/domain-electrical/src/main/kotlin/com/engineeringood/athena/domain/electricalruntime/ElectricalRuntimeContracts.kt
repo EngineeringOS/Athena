@@ -57,7 +57,7 @@ internal val ELECTRICAL_RUNTIME_MANIFEST = AthenaPluginManifest(
 internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
     domainId = ELECTRICAL_DOMAIN_ID,
     displayName = "Electrical Runtime",
-    description = "Reference real proof-domain schema for hosted electrical semantics on the Athena JVM-first path.",
+    description = "Reference real evidence-domain schema for hosted electrical semantics on the Athena JVM-first path.",
     capabilities = setOf(ELECTRICAL_DOMAIN_ID),
     entities = listOf(
         electricalComponent("Breaker", "Circuit protection and isolation device."),
@@ -81,7 +81,7 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
             appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
             required = true,
             allowedSymbolValues = VALID_DEVICE_TYPES,
-            description = "Proof-domain type selector interpreted by the electrical proof plugin over generic components.",
+            description = "Proof-domain type selector interpreted by the electrical evidence plugin over generic components.",
         ),
         AthenaDomainPropertySchema(
             name = "direction",
@@ -90,7 +90,7 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
             appliesTo = setOf(AthenaDomainSchemaSubjectKind.PORT),
             required = true,
             allowedSymbolValues = setOf("in", "out"),
-            description = "Direction metadata interpreted by the electrical proof plugin over generic ports.",
+            description = "Direction metadata interpreted by the electrical evidence plugin over generic ports.",
         ),
         AthenaDomainPropertySchema(
             name = "signal",
@@ -113,7 +113,7 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
         AthenaDomainPortSchema(
             typeId = "electrical-port",
             displayName = "Electrical port",
-            description = "Generic hosted electrical port for the first proof domain.",
+            description = "Generic hosted electrical port for the first evidence domain.",
             propertyNames = setOf("direction", "signal", "terminal"),
             allowedDirections = setOf("in", "out"),
         ),
@@ -151,7 +151,7 @@ internal val ELECTRICAL_COMPILER_PASS_CONTRIBUTIONS = listOf(
         contributionId = "electrical-runtime.lower.devices-ports-connections",
         stage = AthenaCompilerContributionStage.LOWER,
         displayName = "Electrical lowering",
-        description = "Interprets generic devices, ports, and connections as hosted electrical proof semantics during lowering.",
+        description = "Interprets generic devices, ports, and connections as hosted electrical evidence semantics during lowering.",
     ),
     AthenaCompilerPassContribution(
         contributionId = "electrical-runtime.validate.compatibility-and-property-rules",

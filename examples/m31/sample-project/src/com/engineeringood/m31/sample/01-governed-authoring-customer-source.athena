@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m31.sample
+package com.engineeringood.m31.sample
 
 system RollingShutterGovernedAuthoringProof {
   device MainPowerSupplyPS31 {
@@ -141,22 +141,14 @@ system RollingShutterGovernedAuthoringProof {
     }
   }
 
-  connect supply_feed {
-    mainpowersupplyps31_lplus_to_mainbreakerqf31_line MainPowerSupplyPS31.lplus -> MainBreakerQF31.line
-    mainbreakerqf31_load_to_controlrelayk31_supply MainBreakerQF31.load -> ControlRelayK31.supply
-  }
-
-  connect operator_commands {
-    wallswitchs31_up_to_controlrelayk31_upcommand WallSwitchS31.up -> ControlRelayK31.upCommand
-    wallswitchs31_down_to_controlrelayk31_downcommand WallSwitchS31.down -> ControlRelayK31.downCommand
-  }
-
-  connect motor_drive {
-    controlrelayk31_upout_to_fieldterminalxt31_controlup ControlRelayK31.upOut -> FieldTerminalXT31.controlUp
-    controlrelayk31_downout_to_fieldterminalxt31_controldown ControlRelayK31.downOut -> FieldTerminalXT31.controlDown
-    fieldterminalxt31_motorup_to_shuttermotorm31_up FieldTerminalXT31.motorUp -> ShutterMotorM31.up
-    fieldterminalxt31_motordown_to_shuttermotorm31_down FieldTerminalXT31.motorDown -> ShutterMotorM31.down
-  }
+  connect mainpowersupplyps31_lplus_to_mainbreakerqf31_line MainPowerSupplyPS31.lplus -> MainBreakerQF31.line
+  connect mainbreakerqf31_load_to_controlrelayk31_supply MainBreakerQF31.load -> ControlRelayK31.supply
+  connect wallswitchs31_up_to_controlrelayk31_upcommand WallSwitchS31.up -> ControlRelayK31.upCommand
+  connect wallswitchs31_down_to_controlrelayk31_downcommand WallSwitchS31.down -> ControlRelayK31.downCommand
+  connect controlrelayk31_upout_to_fieldterminalxt31_controlup ControlRelayK31.upOut -> FieldTerminalXT31.controlUp
+  connect controlrelayk31_downout_to_fieldterminalxt31_controldown ControlRelayK31.downOut -> FieldTerminalXT31.controlDown
+  connect fieldterminalxt31_motorup_to_shuttermotorm31_up FieldTerminalXT31.motorUp -> ShutterMotorM31.up
+  connect fieldterminalxt31_motordown_to_shuttermotorm31_down FieldTerminalXT31.motorDown -> ShutterMotorM31.down
 
   connect controlrelayk31_status_to_pilotlamphl31_status ControlRelayK31.status -> PilotLampHL31.status
 

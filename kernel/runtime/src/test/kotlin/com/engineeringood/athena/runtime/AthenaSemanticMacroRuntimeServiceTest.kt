@@ -87,7 +87,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
             assertSame(canonicalCompilation, context.compileActiveProject())
             assertTrue(context.commandRuntime().history(context).records.isEmpty())
         } finally {
-            Files.deleteIfExists(sourcePath)
+            sourcePath.parent.toFile().deleteRecursively()
         }
     }
 
@@ -243,7 +243,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol
@@ -366,7 +366,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol
@@ -482,7 +482,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol
@@ -567,7 +567,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
             assertEquals(AthenaCommandKind.APPLY_SEMANTIC_MACRO_BUNDLE, context.commandRuntime().history(context).records.single().commandKind)
             assertEquals(AthenaCommandOrigin.SEMANTIC_MACRO_ACCEPTED, context.commandRuntime().history(context).records.single().commandOrigin)
             assertTrue(acceptance.semanticReview != null)
-            assertTrue(acceptance.reason.contains("sole M8 mutation authority"))
+            assertTrue(acceptance.reason.contains("through the mutation authority"))
         } finally {
             repositoryRoot.toFile().deleteRecursively()
         }
@@ -594,7 +594,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
                     package.format.version=1
                     macro.dol.id=macro:dol-starter
                     macro.dol.displayName=DOL Starter
-                    macro.dol.summary=Governed DOL starter proof
+                    macro.dol.summary=Governed DOL starter evidence
                     macro.dol.definitionPath=macros/dol-starter.macro
                     macro.dol.classificationKeys=electrical,starter,dol
                     macro.dol.parameter.motorPower.kind=symbol
@@ -684,7 +684,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
                 (bySubject.acceptedExpansion.origin.parameterValues.getValue(SemanticMacroParameterName("motorPower")) as SemanticMacroParameterValue.Symbol).text,
             )
             assertEquals("expansion:dol-starter:M1", byInstantiation.acceptedExpansion.expansionId.value)
-            assertEquals("instance:M1", byInstantiation.instantiationId?.value)
+            assertEquals("instance:M1", byInstantiation.instantiationId.value)
             assertEquals(null, byInstantiation.subjectId?.value)
             assertEquals(null, byInstantiation.matchedMembership?.role)
 
@@ -705,7 +705,7 @@ class AthenaSemanticMacroRuntimeServiceTest {
     }
 
     private fun writeProject(source: String): Path {
-        val path = Files.createTempFile("athena-semantic-macro-runtime-", ".athena")
+        val path = Files.createTempDirectory("athena-semantic-macro-runtime-").resolve("project.athena")
         Files.writeString(path, source)
         return path
     }
@@ -729,9 +729,11 @@ class AthenaSemanticMacroRuntimeServiceTest {
         repositoryRoot.createDirectories()
         repositoryRoot.resolve("athena.yaml").writeText(manifestBody)
         repositoryRoot.resolve("athena.lock").writeText("# lock")
-        val sourceRoot = repositoryRoot.resolve("src").createDirectories()
+        val sourceRoot = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/')).createDirectories()
         val sourcePath = sourceRoot.resolve(sourceFileName)
-        sourcePath.writeText("system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }")
+        sourcePath.writeText(
+            "package $packageName\n\nsystem ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }",
+        )
         return sourcePath
     }
 

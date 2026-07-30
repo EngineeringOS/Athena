@@ -41,14 +41,14 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         assertEquals(listOf("standard"), definition.variants.map { it.value })
         assertEquals(listOf("standard"), result.descriptors.single().variants.map { it.value })
         assertTrue(definition.graphicBody.provenanceSources.all { it.contains(".athena${java.io.File.separator}snapshots") })
-        assertEquals(staged.snapshot?.snapshotId, result.proof.snapshotId)
-        assertEquals("lock:abc", result.proof.dependencyLockDigest)
-        assertEquals(setOf("athena", "svg"), result.proof.stagedSourceExtensions)
-        assertTrue(result.proof.generatedResourceIds.all { resourceId -> resourceId.startsWith("generated:athena.vendor:") })
-        assertEquals(setOf("GRAPHIC_PRIMITIVE"), result.proof.compiledBodyAuthorities)
-        assertTrue(result.proof.rendererFileAccessAuthorityAbsent)
-        assertTrue(result.proof.xmlRuntimeAuthorityAbsent)
-        assertTrue(result.proof.rawSvgTransportAbsent)
+        assertEquals(staged.snapshot?.snapshotId, result.evidence.snapshotId)
+        assertEquals("lock:abc", result.evidence.dependencyLockDigest)
+        assertEquals(setOf("athena", "svg"), result.evidence.stagedSourceExtensions)
+        assertTrue(result.evidence.generatedResourceIds.all { resourceId -> resourceId.startsWith("generated:athena.vendor:") })
+        assertEquals(setOf("GRAPHIC_PRIMITIVE"), result.evidence.compiledBodyAuthorities)
+        assertTrue(result.evidence.rendererFileAccessAuthorityAbsent)
+        assertTrue(result.evidence.xmlRuntimeAuthorityAbsent)
+        assertTrue(result.evidence.rawSvgTransportAbsent)
     }
 
     @Test
@@ -158,16 +158,16 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         assertEquals(result.definitions.map { it.symbolId.value }.sorted(), result.descriptors.map { it.descriptorId.value }.sorted())
         assertTrue(result.bindingRules.isNotEmpty())
         assertTrue(result.definitions.all { definition -> definition.lifecycle.provenance.source.endsWith(".athena") })
-        assertTrue(result.proof.sourceHashes.keys.none { path -> path.endsWith(".xml") })
-        assertTrue(result.proof.xmlRuntimeAuthorityAbsent)
+        assertTrue(result.evidence.sourceHashes.keys.none { path -> path.endsWith(".xml") })
+        assertTrue(result.evidence.xmlRuntimeAuthorityAbsent)
         val driveDescriptor = result.descriptors.single { descriptor -> descriptor.descriptorId.value == "vendor.drive.element" }
         assertTrue(driveDescriptor.anchors.isEmpty())
         assertEquals(setOf("deviceTag"), driveDescriptor.labelSlots.map { it.slotId.value }.toSet())
     }
 
     @Test
-    fun `m35 standard and vendor package proof compiles reproducibly from manifest authority`() {
-        val sampleRoot = Files.createTempDirectory("athena-m35-package-proof")
+    fun `m35 standard and vendor package evidence compiles reproducibly from manifest authority`() {
+        val sampleRoot = Files.createTempDirectory("athena-m35-package-evidence")
         copyTree(repositoryRoot().resolve("examples/m35/package-platform-proof"), sampleRoot)
         val lockValidation = AthenaCompiler().validateRepositoryLock(sampleRoot)
 
@@ -177,11 +177,11 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         )
         val firstStage = RepresentationPackageSnapshotStager().stageRepository(
             repositoryRoot = sampleRoot,
-            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-first"),
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-evidence-first"),
         )
         val secondStage = RepresentationPackageSnapshotStager().stageRepository(
             repositoryRoot = sampleRoot,
-            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-second"),
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-evidence-second"),
         )
 
         assertTrue(firstStage.diagnostics.isEmpty(), firstStage.diagnostics.toString())
@@ -206,12 +206,12 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
 
         assertTrue(first.diagnostics.isEmpty(), first.diagnostics.toString())
         assertTrue(second.diagnostics.isEmpty(), second.diagnostics.toString())
-        assertEquals(first.proof.snapshotId, second.proof.snapshotId)
-        assertEquals(first.proof.dependencyLockDigest, second.proof.dependencyLockDigest)
-        assertEquals(first.proof.compilerSchemaVersion, second.proof.compilerSchemaVersion)
-        assertEquals(first.proof.sourceHashes, second.proof.sourceHashes)
-        assertEquals(first.proof.generatedResourceIds, second.proof.generatedResourceIds)
-        assertEquals(first.proof.compiledBodyAuthorities, second.proof.compiledBodyAuthorities)
+        assertEquals(first.evidence.snapshotId, second.evidence.snapshotId)
+        assertEquals(first.evidence.dependencyLockDigest, second.evidence.dependencyLockDigest)
+        assertEquals(first.evidence.compilerSchemaVersion, second.evidence.compilerSchemaVersion)
+        assertEquals(first.evidence.sourceHashes, second.evidence.sourceHashes)
+        assertEquals(first.evidence.generatedResourceIds, second.evidence.generatedResourceIds)
+        assertEquals(first.evidence.compiledBodyAuthorities, second.evidence.compiledBodyAuthorities)
         assertEquals(
             listOf("iec.protective-earth.element", "vendor.abb.pfea112.element"),
             first.definitions
@@ -220,20 +220,20 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
                 .sorted(),
         )
         assertEquals(first.definitions.map { it.symbolId.value }.sorted(), first.descriptors.map { it.descriptorId.value }.sorted())
-        assertTrue(first.proof.sourceHashes.keys.none { path -> path.endsWith(".xml") || path.endsWith(".html") })
-        assertTrue(first.proof.xmlRuntimeAuthorityAbsent)
-        assertTrue(first.proof.rawSvgTransportAbsent)
-        assertTrue(first.proof.rendererFileAccessAuthorityAbsent)
-        assertEquals(setOf("GRAPHIC_PRIMITIVE"), first.proof.compiledBodyAuthorities)
+        assertTrue(first.evidence.sourceHashes.keys.none { path -> path.endsWith(".xml") || path.endsWith(".html") })
+        assertTrue(first.evidence.xmlRuntimeAuthorityAbsent)
+        assertTrue(first.evidence.rawSvgTransportAbsent)
+        assertTrue(first.evidence.rendererFileAccessAuthorityAbsent)
+        assertEquals(setOf("GRAPHIC_PRIMITIVE"), first.evidence.compiledBodyAuthorities)
     }
 
     @Test
-    fun `m35 package proof changes identity for resource edits and rejects malicious svg paths`() {
-        val sampleRoot = Files.createTempDirectory("athena-m35-package-proof-negative")
+    fun `m35 package evidence changes identity for resource edits and rejects malicious svg paths`() {
+        val sampleRoot = Files.createTempDirectory("athena-m35-package-evidence-negative")
         copyTree(repositoryRoot().resolve("examples/m35/package-platform-proof"), sampleRoot)
         val clean = RepresentationPackageSnapshotStager().stageRepository(
             repositoryRoot = sampleRoot,
-            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-clean"),
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-evidence-clean"),
         )
         assertTrue(clean.diagnostics.isEmpty(), clean.diagnostics.toString())
         val cleanSnapshot = assertNotNull(clean.snapshot)
@@ -241,7 +241,7 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         Files.writeString(vendorSvg, Files.readString(vendorSvg).replace("PFEA112", "PFEA112-CHANGED"))
         val changed = RepresentationPackageSnapshotStager().stageRepository(
             repositoryRoot = sampleRoot,
-            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-changed"),
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-evidence-changed"),
         )
 
         assertTrue(changed.diagnostics.isEmpty(), changed.diagnostics.toString())
@@ -251,7 +251,7 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         Files.writeString(vendorSource, Files.readString(vendorSource).replace("path \"./pfea112.svg\"", "path \"../pfea112.svg\""))
         val maliciousStage = RepresentationPackageSnapshotStager().stageRepository(
             repositoryRoot = sampleRoot,
-            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-proof-malicious"),
+            snapshotDirectory = sampleRoot.resolve(".athena/snapshots/package-evidence-malicious"),
         )
         assertTrue(maliciousStage.diagnostics.isEmpty(), maliciousStage.diagnostics.toString())
         val malicious = AthenaRepresentationPackageSnapshotCompiler().compile(assertNotNull(maliciousStage.snapshot))
@@ -341,9 +341,9 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
 
         private val VALID_SVG = """
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360">
-              <rect id="body" x="8" y="8" width="224" height="344" data-athena-geometry-ref="body"/>
-              <circle id="power-in-dot" cx="24" cy="48" r="4" data-athena-geometry-ref="power-in-dot"/>
-              <text id="tag" x="120" y="32" data-athena-geometry-ref="tag">ACS380</text>
+              <rect id="body" x="8" y="8" width="224" height="344" data-athena-ref="anchor:body"/>
+              <circle id="power-in-dot" cx="24" cy="48" r="4" data-athena-ref="anchor:power-in-dot"/>
+              <text id="tag" x="120" y="32" data-athena-ref="anchor:tag">ACS380</text>
             </svg>
         """.trimIndent()
 
@@ -404,10 +404,10 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
                 line horizontal from (0, 20) to (80, 20) style conductor
                 line vertical from (40, 0) to (40, 40) style conductor
               }
-              anchor left { primitiveRef horizontal point (0, 20) role terminal accepts direction in accepts signal Control }
-              anchor right { primitiveRef horizontal point (80, 20) role terminal accepts direction out accepts signal Control }
-              anchor top { primitiveRef vertical point (40, 0) role terminal accepts direction in accepts signal Control }
-              anchor bottom { primitiveRef vertical point (40, 40) role terminal accepts direction out accepts signal Control }
+              anchor left { ref "horizontal" point (0, 20) role terminal direction in signal Control.family }
+              anchor right { ref "horizontal" point (80, 20) role terminal direction out signal Control.family }
+              anchor top { ref "vertical" point (40, 0) role terminal direction in signal Control.family }
+              anchor bottom { ref "vertical" point (40, 40) role terminal direction out signal Control.family }
             }
         """.trimIndent()
     }

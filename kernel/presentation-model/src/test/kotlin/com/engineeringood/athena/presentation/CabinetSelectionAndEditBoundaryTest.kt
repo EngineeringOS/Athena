@@ -36,14 +36,14 @@ class CabinetSelectionAndEditBoundaryTest {
         assertEquals(StableSemanticIdentity("component:Source"), success.subject.key.canonicalSubjectId)
         assertEquals(InteractionSubjectKind.COMPONENT, success.subject.key.subjectKind)
         assertEquals(
-            CabinetSelectionProof(
+            CabinetSelectionEvidence(
                 occurrenceId = GraphicOccurrenceId("occ:SRC"),
                 subjectAuthority = "graphic-occurrence-trace-table",
                 capabilityAuthority = "semantic-capability-registry",
                 revealAuthority = "trace-source-span",
                 fallbackUsed = false,
             ),
-            success.proof,
+            success.evidence,
         )
         assertEquals("src/main.athena", success.revealTarget.sourceRange?.sourceUri)
         assertEquals(listOf("cabinet.reveal-source"), success.subject.capabilities.map { capability -> capability.capabilityId })
@@ -96,7 +96,7 @@ class CabinetSelectionAndEditBoundaryTest {
             assertIs<CabinetGovernedEditBoundaryResult.Failure>(directMutation).diagnostics.map { diagnostic -> diagnostic.code }.toSet(),
         )
         assertEquals(
-            CabinetGovernedEditPathProof(
+            CabinetGovernedEditPathEvidence(
                 orderedStages = listOf(
                     "SemanticActionIntent",
                     "AuthoringIntent",
@@ -108,7 +108,7 @@ class CabinetSelectionAndEditBoundaryTest {
                 ),
                 target = CabinetGovernedEditTarget.INSTALLATION_DECLARATION,
             ),
-            assertIs<CabinetGovernedEditBoundaryResult.Accepted>(governed).proof,
+            assertIs<CabinetGovernedEditBoundaryResult.Accepted>(governed).evidence,
         )
     }
 
@@ -156,7 +156,7 @@ class CabinetSelectionAndEditBoundaryTest {
                 ),
             ),
         ),
-        proof = GraphicOccurrenceTraceProof(
+        evidence = GraphicOccurrenceTraceEvidence(
             selectablePrimitiveCount = 1,
             decorativePrimitiveCount = 0,
             traceEntryCount = 1,

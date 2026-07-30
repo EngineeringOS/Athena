@@ -9,7 +9,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
- * Story 5.2 proof: exercises the checked-in `examples/m17/invalid-and-incomplete-proof` malformed and
+ * Story 5.2 evidence: exercises the checked-in `examples/m17/invalid-and-incomplete-proof` malformed and
  * incomplete syntax-level fixtures through the live compiler parser path (ANTLR4-backed since Epic 2).
  *
  * Each fixture isolates exactly one syntax failure mode (AD-109): an unterminated string literal, a

@@ -63,11 +63,11 @@ test('M22 sample sources stay inside the accepted local Athena syntax', () => {
 
     sources.forEach(sourcePath => {
         const source = readRepoFile(sourcePath);
-        assert.match(source, /^package com\.engineeringood\.m22\.sample/m);
+        assert.match(source, /^\uFEFF?package com\.engineeringood\.m22\.sample/m);
         assert.match(source, /\bsystem\s+\w+\s+\{/);
         assert.match(source, /\bdevice\s+\w+\s+\{/);
         assert.match(source, /\bport\s+\w+\.\w+\s+\{/);
-        assert.match(source, /\bconnect\s+\w+\.\w+\s+->\s+\w+\.\w+/);
+        assert.match(source, /\bconnect\s+\w+\s+\w+\.\w+\s+->\s+\w+\.\w+/);
         assert.doesNotMatch(source, /\bimport\b/);
         assert.doesNotMatch(source, /\bregistry\b|\bmarketplace\b|\bcabinet\b|\bharness\b|\bcable tray\b|\b3D installation\b/i);
     });

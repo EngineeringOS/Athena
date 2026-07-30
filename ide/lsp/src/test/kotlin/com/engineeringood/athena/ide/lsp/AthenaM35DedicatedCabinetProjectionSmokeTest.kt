@@ -42,8 +42,16 @@ class AthenaM35DedicatedCabinetProjectionSmokeTest {
                     occurrence.definitionId == "vendor.abb.pfea112.element" &&
                     occurrence.terminalBindings.any { binding -> binding.anchorId == "signalOut" }
             })
+            val graphicOccurrence = presentation.graphicOccurrences.first()
+            assertNotNull(graphicOccurrence.trace)
+            assertTrue(graphicOccurrence.trace!!.sourceProvenance.isNotEmpty())
+            assertTrue(graphicOccurrence.terminalBindings.first().trace != null)
+            val routeSnapshot = assertNotNull(presentation.routeFactSnapshot)
+            assertTrue(routeSnapshot.routeFacts.isNotEmpty())
+            assertNotNull(routeSnapshot.routeFacts.first().trace)
+            val composition = assertNotNull(presentation.drawingComposition)
+            assertTrue(composition.structureFacts.any { it.trace != null })
             assertTrue(presentation.connectors.size >= 7)
-            assertNotNull(presentation.drawingComposition)
         } finally {
             server.shutdown().get()
         }

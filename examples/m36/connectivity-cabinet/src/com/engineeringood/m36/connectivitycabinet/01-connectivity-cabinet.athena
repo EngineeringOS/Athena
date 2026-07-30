@@ -1,0 +1,722 @@
+package com.engineeringood.m36.connectivitycabinet
+
+system M36ConnectivityCabinet {
+  device Supply35 {
+    type PowerSource
+    model "24VDC-10A"
+    tag "PS35"
+
+    port lplus {
+      direction out
+      signal Power
+      terminal "L+"
+    }
+    port lminus {
+      direction out
+      signal Power
+      terminal "L-"
+    }
+  }
+
+  device BackupSupply35 {
+    type PowerSource
+    model "24VDC-5A"
+    tag "PS35B"
+
+    port lplus {
+      direction out
+      signal Power
+      terminal "L+"
+    }
+    port lminus {
+      direction out
+      signal Power
+      terminal "L-"
+    }
+  }
+
+  device BreakerQF35 {
+    type Breaker
+    model "1P-C6"
+    tag "QF35"
+
+    port line {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port load {
+      direction out
+      signal Power
+      terminal "2"
+    }
+  }
+
+  device BreakerQF36 {
+    type Breaker
+    model "1P-C6"
+    tag "QF36"
+
+    port line {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port load {
+      direction out
+      signal Power
+      terminal "2"
+    }
+  }
+
+  device BreakerQF37 {
+    type Breaker
+    model "1P-C6"
+    tag "QF37"
+
+    port line {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port load {
+      direction out
+      signal Power
+      terminal "2"
+    }
+  }
+
+  device BreakerQF38 {
+    type Breaker
+    model "1P-C6"
+    tag "QF38"
+
+    port line {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port load {
+      direction out
+      signal Power
+      terminal "2"
+    }
+  }
+
+  device RelayK35 {
+    type Contactor
+    model "24VDC"
+    tag "K35"
+
+    port a1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port a2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+    port auxIn {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port auxOut {
+      direction out
+      signal Control
+      terminal "14"
+    }
+  }
+
+  device RelayK36 {
+    type Contactor
+    model "24VDC"
+    tag "K36"
+
+    port a1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port a2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+    port auxIn {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port auxOut {
+      direction out
+      signal Control
+      terminal "14"
+    }
+  }
+
+  device RelayK37 {
+    type Contactor
+    model "24VDC"
+    tag "K37"
+
+    port a1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port a2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+    port auxIn {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port auxOut {
+      direction out
+      signal Control
+      terminal "14"
+    }
+  }
+
+  device RelayK38 {
+    type Contactor
+    model "24VDC"
+    tag "K38"
+
+    port a1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port a2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+    port auxIn {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port auxOut {
+      direction out
+      signal Control
+      terminal "14"
+    }
+  }
+
+  device TerminalXT35 {
+    type Terminal
+    model "8-POLE"
+    tag "XT35"
+
+    port controlIn {
+      direction in
+      signal Control
+      terminal "1"
+    }
+    port controlOut {
+      direction out
+      signal Control
+      terminal "2"
+    }
+    port feedbackIn {
+      direction in
+      signal Control
+      terminal "3"
+    }
+    port feedbackOut {
+      direction out
+      signal Control
+      terminal "4"
+    }
+  }
+
+  device TerminalXT36 {
+    type Terminal
+    model "8-POLE"
+    tag "XT36"
+
+    port controlIn {
+      direction in
+      signal Control
+      terminal "1"
+    }
+    port controlOut {
+      direction out
+      signal Control
+      terminal "2"
+    }
+    port feedbackIn {
+      direction in
+      signal Control
+      terminal "3"
+    }
+    port feedbackOut {
+      direction out
+      signal Control
+      terminal "4"
+    }
+  }
+
+  device TerminalXT37 {
+    type Terminal
+    model "8-POLE"
+    tag "XT37"
+
+    port controlIn {
+      direction in
+      signal Control
+      terminal "1"
+    }
+    port controlOut {
+      direction out
+      signal Control
+      terminal "2"
+    }
+    port feedbackIn {
+      direction in
+      signal Control
+      terminal "3"
+    }
+    port feedbackOut {
+      direction out
+      signal Control
+      terminal "4"
+    }
+  }
+
+  device TerminalXT38 {
+    type Terminal
+    model "8-POLE"
+    tag "XT38"
+
+    port controlIn {
+      direction in
+      signal Control
+      terminal "1"
+    }
+    port controlOut {
+      direction out
+      signal Control
+      terminal "2"
+    }
+    port feedbackIn {
+      direction in
+      signal Control
+      terminal "3"
+    }
+    port feedbackOut {
+      direction out
+      signal Control
+      terminal "4"
+    }
+  }
+
+  device TerminalXT39 {
+    type Terminal
+    model "8-POLE"
+    tag "XT39"
+
+    port controlIn {
+      direction in
+      signal Control
+      terminal "1"
+    }
+    port controlOut {
+      direction out
+      signal Control
+      terminal "2"
+    }
+    port feedbackIn {
+      direction in
+      signal Control
+      terminal "3"
+    }
+    port feedbackOut {
+      direction out
+      signal Control
+      terminal "4"
+    }
+  }
+
+  device TerminalXT40 {
+    type Terminal
+    model "8-POLE"
+    tag "XT40"
+
+    port controlIn {
+      direction in
+      signal Control
+      terminal "1"
+    }
+    port controlOut {
+      direction out
+      signal Control
+      terminal "2"
+    }
+    port feedbackIn {
+      direction in
+      signal Control
+      terminal "3"
+    }
+    port feedbackOut {
+      direction out
+      signal Control
+      terminal "4"
+    }
+  }
+
+  device ProtectiveEarthPE35 {
+    type ProtectiveEarth
+    model "PE-BAR"
+    tag "PE35"
+
+    port bond {
+      direction out
+      signal Ground
+      terminal "PE"
+    }
+  }
+
+  device PFEA112 {
+    type Terminal
+    model "ABB-PFEA112-IP20"
+    tag "U35"
+
+    port supplyPlus {
+      direction in
+      signal Power
+      terminal "L+"
+    }
+    port supplyMinus {
+      direction in
+      signal Power
+      terminal "L-"
+    }
+    port signalOut {
+      direction out
+      signal Control
+      terminal "OUT"
+    }
+    port controlReturn {
+      direction in
+      signal Control
+      terminal "0V"
+    }
+    port pe {
+      direction in
+      signal Ground
+      terminal "PE"
+    }
+  }
+
+  device PowerJunction35 {
+    type Terminal
+    model "BUS-4"
+    tag "JBP35"
+
+    port bus {
+      direction passive
+      multiplicity multiple
+      signal Power
+      terminal "IN1"
+    }
+  }
+
+  device ControlJunction35 {
+    type Terminal
+    model "BUS-6"
+    tag "JBC35"
+
+    port bus {
+      direction passive
+      multiplicity multiple
+      signal Control
+      terminal "IN"
+    }
+  }
+
+  device FeedbackJunction35 {
+    type Terminal
+    model "BUS-RETURN"
+    tag "JBR35"
+
+    port bus {
+      direction passive
+      multiplicity multiple
+      signal Control
+      terminal "IN1"
+    }
+  }
+
+  connect power_feed {
+    supply_main_to_power_bus Supply35.lplus -> PowerJunction35.bus
+    backup_to_power_bus BackupSupply35.lplus -> PowerJunction35.bus
+    power_bus_to_breaker_35 PowerJunction35.bus -> BreakerQF35.line
+    power_bus_to_breaker_36 PowerJunction35.bus -> BreakerQF36.line
+    power_bus_to_breaker_37 PowerJunction35.bus -> BreakerQF37.line
+    power_bus_to_breaker_38 PowerJunction35.bus -> BreakerQF38.line
+  }
+
+  connect supply_return Supply35.lminus -> PFEA112.supplyMinus
+  connect backup_return BackupSupply35.lminus -> PFEA112.supplyPlus
+
+  connect control_distribution {
+    vendor_signal_to_control_bus PFEA112.signalOut -> ControlJunction35.bus
+    control_bus_to_xt35 ControlJunction35.bus -> TerminalXT35.controlIn
+    control_bus_to_xt36 ControlJunction35.bus -> TerminalXT36.controlIn
+    control_bus_to_xt37 ControlJunction35.bus -> TerminalXT37.controlIn
+    control_bus_to_xt38 ControlJunction35.bus -> TerminalXT38.controlIn
+    control_bus_to_xt39 ControlJunction35.bus -> TerminalXT39.controlIn
+    control_bus_to_xt40 ControlJunction35.bus -> TerminalXT40.controlIn
+    breaker35_to_relay35 ControlJunction35.bus -> RelayK35.a1
+    breaker36_to_relay36 ControlJunction35.bus -> RelayK36.a1
+  }
+
+  connect breaker37_to_relay37 TerminalXT39.controlOut -> RelayK37.a1
+  connect breaker38_to_relay38 TerminalXT40.controlOut -> RelayK38.a1
+
+  connect feedback_return {
+    xt35_feedback TerminalXT35.feedbackOut -> FeedbackJunction35.bus
+    xt36_feedback TerminalXT36.feedbackOut -> FeedbackJunction35.bus
+    xt37_feedback TerminalXT37.feedbackOut -> FeedbackJunction35.bus
+    xt38_feedback TerminalXT38.feedbackOut -> FeedbackJunction35.bus
+    feedback_bus_to_vendor FeedbackJunction35.bus -> PFEA112.controlReturn
+  }
+
+
+  connect xt39_feedback_to_aux TerminalXT39.controlOut -> RelayK37.auxIn
+  connect xt40_feedback_to_aux TerminalXT40.controlOut -> RelayK38.auxIn
+  connect relay35_aux_out RelayK35.auxOut -> TerminalXT39.controlIn
+  connect relay36_aux_out RelayK36.auxOut -> TerminalXT40.controlIn
+  connect relay37_aux_feedback RelayK37.auxOut -> TerminalXT39.feedbackIn
+  connect relay38_aux_feedback RelayK38.auxOut -> TerminalXT40.feedbackIn
+
+  connect earth_bond {
+    cabinet_pe ProtectiveEarthPE35.bond -> PFEA112.pe
+  }
+
+  installation cabinet MainCabinet {
+    enclosure ENC36 size (1120mm, 1160mm, 250mm)
+    surface Backplate in ENC36 at (20mm, 20mm) size (1080mm, 1120mm) accepts [din35, screw]
+    rail DIN35A on Backplate at (110mm, 120mm) length 780mm orientation horizontal mounting din35
+    rail DIN35B on Backplate at (110mm, 330mm) length 780mm orientation horizontal mounting din35
+    rail DIN35C on Backplate at (110mm, 620mm) length 780mm orientation horizontal mounting din35
+    rail DIN35V on Backplate at (980mm, 140mm) length 760mm orientation vertical mounting din35
+    duct WireDuctLeft in ENC36 at (40mm, 80mm) size (48mm, 1020mm) orientation vertical wall 2mm
+    duct WireDuctTop in ENC36 at (100mm, 60mm) size (660mm, 44mm) orientation horizontal wall 2mm
+    duct WireDuctRight in ENC36 at (1048mm, 80mm) size (48mm, 1020mm) orientation vertical wall 2mm
+    duct WireDuctBottomCross in ENC36 at (40mm, 980mm) size (1056mm, 44mm) orientation horizontal wall 2mm
+    channel LeftControlChannel in WireDuctLeft at (4mm, 8mm) size (36mm, 1004mm) lanes 16 margin 2mm
+    channel TopPowerChannel in WireDuctTop at (8mm, 4mm) size (644mm, 32mm) lanes 16 margin 2mm
+    channel RightFieldChannel in WireDuctRight at (4mm, 8mm) size (36mm, 1004mm) lanes 16 margin 2mm
+    channel BottomCrossChannel in WireDuctBottomCross at (4mm, 4mm) size (1048mm, 36mm) lanes 16 margin 2mm
+    terminal-group XT35 in ENC36 at (800mm, 310mm) size (170mm, 640mm) orientation horizontal accepts [terminal]
+    mount Supply35 as SupplyMount on DIN35A at (20mm, 0mm) {
+      footprint (100mm, 80mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount BackupSupply35 as BackupSupplyMount on DIN35A at (130mm, 0mm) {
+      footprint (88mm, 72mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount PowerJunction35 as PowerJunctionMount on DIN35A at (250mm, 0mm) {
+      footprint (128mm, 80mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount BreakerQF35 as BreakerMount35 on DIN35A at (400mm, 0mm) {
+      footprint (64mm, 96mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount BreakerQF36 as BreakerMount36 on DIN35B at (20mm, 0mm) {
+      footprint (64mm, 96mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount BreakerQF37 as BreakerMount37 on DIN35B at (140mm, 0mm) {
+      footprint (64mm, 96mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount BreakerQF38 as BreakerMount38 on DIN35B at (260mm, 0mm) {
+      footprint (64mm, 96mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount RelayK35 as RelayMount35 on DIN35B at (400mm, 0mm) {
+      footprint (96mm, 112mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount RelayK36 as RelayMount36 on DIN35C at (20mm, 0mm) {
+      footprint (96mm, 112mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount RelayK37 as RelayMount37 on DIN35C at (160mm, 0mm) {
+      footprint (96mm, 112mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount RelayK38 as RelayMount38 on DIN35C at (300mm, 0mm) {
+      footprint (96mm, 112mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount ControlJunction35 as ControlJunctionMount on Backplate at (580mm, 800mm) {
+      footprint (160mm, 112mm, 70mm)
+      mounting screw
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount FeedbackJunction35 as FeedbackJunctionMount on Backplate at (580mm, 500mm) {
+      footprint (160mm, 96mm, 70mm)
+      mounting screw
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount PFEA112 as PFEA112Mount on DIN35A at (540mm, 0mm) {
+      footprint (132mm, 112mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount TerminalXT35 as TerminalMount35 on XT35 at (0mm, 0mm) {
+      footprint (128mm, 56mm, 35mm)
+      mounting terminal
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount TerminalXT36 as TerminalMount36 on XT35 at (0mm, 100mm) {
+      footprint (128mm, 56mm, 35mm)
+      mounting terminal
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount TerminalXT37 as TerminalMount37 on XT35 at (0mm, 200mm) {
+      footprint (128mm, 56mm, 35mm)
+      mounting terminal
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount TerminalXT38 as TerminalMount38 on XT35 at (0mm, 300mm) {
+      footprint (128mm, 56mm, 35mm)
+      mounting terminal
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount TerminalXT39 as TerminalMount39 on XT35 at (0mm, 400mm) {
+      footprint (128mm, 56mm, 35mm)
+      mounting terminal
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount TerminalXT40 as TerminalMount40 on XT35 at (0mm, 500mm) {
+      footprint (128mm, 56mm, 35mm)
+      mounting terminal
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+  mount ProtectiveEarthPE35 as PEMount on DIN35V at (220mm, 0mm) {
+      footprint (64mm, 64mm, 35mm)
+      mounting din35
+      orientation deg90
+      allowed-orientations [deg90]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    route supply_main_to_power_bus through [TopPowerChannel]
+    route backup_to_power_bus through [TopPowerChannel]
+    route power_bus_to_breaker_35 through [TopPowerChannel]
+    route power_bus_to_breaker_36 through [TopPowerChannel]
+    route power_bus_to_breaker_37 through [TopPowerChannel]
+    route power_bus_to_breaker_38 through [TopPowerChannel]
+    route supply_return through [TopPowerChannel]
+    route backup_return through [TopPowerChannel]
+    route vendor_signal_to_control_bus through [LeftControlChannel]
+    route control_bus_to_xt35 through [LeftControlChannel]
+    route control_bus_to_xt36 through [LeftControlChannel]
+    route control_bus_to_xt37 through [LeftControlChannel]
+    route control_bus_to_xt38 through [LeftControlChannel]
+    route control_bus_to_xt39 through [LeftControlChannel]
+    route control_bus_to_xt40 through [LeftControlChannel]
+    route breaker35_to_relay35 through [LeftControlChannel]
+    route breaker36_to_relay36 through [LeftControlChannel]
+    route breaker37_to_relay37 through [LeftControlChannel]
+    route breaker38_to_relay38 through [LeftControlChannel]
+    route xt35_feedback through [RightFieldChannel]
+    route xt36_feedback through [RightFieldChannel]
+    route xt37_feedback through [RightFieldChannel]
+    route xt38_feedback through [RightFieldChannel]
+    route feedback_bus_to_vendor through [RightFieldChannel]
+    route xt39_feedback_to_aux through [RightFieldChannel]
+    route xt40_feedback_to_aux through [BottomCrossChannel]
+    route relay35_aux_out through [RightFieldChannel]
+    route relay36_aux_out through [RightFieldChannel]
+    route relay37_aux_feedback through [RightFieldChannel]
+    route relay38_aux_feedback through [RightFieldChannel]
+    route cabinet_pe through [RightFieldChannel]
+  }
+}

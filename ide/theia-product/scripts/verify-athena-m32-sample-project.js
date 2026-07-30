@@ -16,7 +16,7 @@ const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME=';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED=';
 const STARTUP_TIMEOUT_MS = 120000;
 const PACKAGE_SCHEMA_VERSION = 'm32.package-platform.v1';
-const SOURCE_RELATIVE = 'src/01-package-platform-demo.athena';
+const SOURCE_RELATIVE = 'src/com/engineeringood/m32/sample/01-package-platform-demo.athena';
 const EXPECTED_OUTLINE_PATH = 'M32PackagePlatformDemo > ShutterMotorM32 > up';
 
 const REQUIRED_M32_PACKAGE_PROOF_KINDS = [
@@ -482,7 +482,7 @@ function assertRepresentationProof(representationProof) {
         throw new Error(`Athena M32 representation proof used fallback symbols: ${representationProof.fallbackRepresentationIds.join(', ')}`);
     }
     const nativeRepresentationIds = normalizeArray(representationProof.representationIds)
-        .filter(representationId => representationId.startsWith('athena-industrial-control-v0:'));
+        .filter(representationId => representationId.startsWith('athena-industrial-control:'));
     if (nativeRepresentationIds.length > 0) {
         throw new Error(`Athena M32 live Graph View used native representation fallback ids: ${nativeRepresentationIds.join(', ')}`);
     }

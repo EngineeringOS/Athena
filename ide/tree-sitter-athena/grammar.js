@@ -370,6 +370,7 @@ module.exports = grammar({
 
     _anchor_member: $ => choice(
       $.primitive_reference,
+      $.anchor_port,
       $.anchor_point,
       $.anchor_role,
       $.anchor_direction,
@@ -377,8 +378,13 @@ module.exports = grammar({
     ),
 
     primitive_reference: $ => seq(
-      'primitiveRef',
-      field('target', $.identifier),
+      'ref',
+      field('target', $.string),
+    ),
+
+    anchor_port: $ => seq(
+      'port',
+      field('value', $.qualified_name),
     ),
 
     anchor_point: $ => seq(
@@ -392,7 +398,6 @@ module.exports = grammar({
     ),
 
     anchor_direction: $ => seq(
-      'accepts',
       'direction',
       field('value', $.direction_name),
     ),
@@ -400,9 +405,8 @@ module.exports = grammar({
     direction_name: _ => token(prec(1, /(?:in|out|bidirectional)/)),
 
     anchor_signal: $ => seq(
-      'accepts',
       'signal',
-      field('value', $.identifier),
+      field('value', $.qualified_name),
     ),
 
     point_literal: $ => seq(
@@ -768,15 +772,31 @@ module.exports = grammar({
 
     installation_mount: $ => seq(
       'mount',
-      field('name', alias($.identifier, $.name)),
-      'device',
       field('device', $.identifier),
+      'as',
+      field('name', alias($.identifier, $.name)),
       'on',
       field('target', $.identifier),
       'at',
       field('origin', $.length_point),
-      'orientation',
-      field('orientation', $.layout_orientation),
+      '{',
+      repeat(choice(
+        seq('footprint', field('footprint', $.length_tuple3)),
+        seq('mounting', field('mounting_type', $.identifier)),
+        seq('orientation', field('orientation', $.mount_orientation)),
+        seq('allowed-orientations', field('allowed_orientations', $.mount_orientation_list)),
+        seq('clearance', field('clearance', $.length_tuple4)),
+        seq('compatible-containers', field('compatible_containers', $.identifier_list)),
+      )),
+      '}',
+    ),
+
+    mount_orientation: _ => choice('deg0', 'deg90', 'deg180', 'deg270'),
+
+    mount_orientation_list: $ => seq(
+      '[',
+      commaSep1($.mount_orientation),
+      ']',
     ),
 
     installation_route: $ => seq(
@@ -802,6 +822,18 @@ module.exports = grammar({
 
     length_size: $ => seq(
       '(',
+      $.length_literal,
+      ',',
+      $.length_literal,
+      ')',
+    ),
+
+    length_tuple4: $ => seq(
+      '(',
+      $.length_literal,
+      ',',
+      $.length_literal,
+      ',',
       $.length_literal,
       ',',
       $.length_literal,

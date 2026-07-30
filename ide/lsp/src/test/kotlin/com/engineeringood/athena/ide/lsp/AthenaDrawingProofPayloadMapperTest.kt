@@ -1,29 +1,29 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.representation.DrawingAcceptanceAuthority
-import com.engineeringood.athena.representation.DrawingProofAuthority
-import com.engineeringood.athena.representation.DrawingProofFact
-import com.engineeringood.athena.representation.DrawingProofFactId
-import com.engineeringood.athena.representation.DrawingProofId
-import com.engineeringood.athena.representation.DrawingProofPayload
-import com.engineeringood.athena.representation.DrawingProofSchemaVersion
-import com.engineeringood.athena.representation.DrawingProofStatus
+import com.engineeringood.athena.representation.DrawingEvidenceAuthority
+import com.engineeringood.athena.representation.DrawingEvidenceFact
+import com.engineeringood.athena.representation.DrawingEvidenceFactId
+import com.engineeringood.athena.representation.DrawingEvidenceId
+import com.engineeringood.athena.representation.DrawingAcceptanceEvidence
+import com.engineeringood.athena.representation.DrawingEvidenceSchemaVersion
+import com.engineeringood.athena.representation.DrawingEvidenceStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class AthenaDrawingProofPayloadMapperTest {
+class AthenaDrawingEvidencePayloadMapperTest {
     @Test
-    fun `maps core drawing proof through LSP owned transport payload`() {
-        val proof = DrawingProofPayload(
-            proofId = DrawingProofId("m33.lsp.proof"),
-            schemaVersion = DrawingProofSchemaVersion("1.0"),
-            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_PROOF,
-            facts = DrawingProofAuthority.entries.map { authority ->
-                DrawingProofFact(
-                    factId = DrawingProofFactId("fact.${authority.wireValue}"),
+    fun `maps core drawing evidence through LSP owned transport payload`() {
+        val evidence = DrawingAcceptanceEvidence(
+            evidenceId = DrawingEvidenceId("m33.lsp.evidence"),
+            schemaVersion = DrawingEvidenceSchemaVersion("1.0"),
+            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_EVIDENCE,
+            facts = DrawingEvidenceAuthority.entries.map { authority ->
+                DrawingEvidenceFact(
+                    factId = DrawingEvidenceFactId("fact.${authority.wireValue}"),
                     authority = authority,
-                    status = DrawingProofStatus.PASS,
+                    status = DrawingEvidenceStatus.PASS,
                     subject = "subject:${authority.wireValue}",
                     evidence = mapOf("source" to "structured-test"),
                 )
@@ -31,12 +31,12 @@ class AthenaDrawingProofPayloadMapperTest {
             diagnostics = emptyList(),
         )
 
-        val payload = AthenaDrawingProofPayloadMapper.from(proof)
+        val payload = AthenaDrawingEvidencePayloadMapper.from(evidence)
 
         assertTrue(payload.accepted)
-        assertEquals("m33.lsp.proof", payload.proofId)
-        assertEquals("structured-proof", payload.acceptanceAuthority)
-        assertEquals(DrawingProofAuthority.entries.size, payload.facts.size)
+        assertEquals("m33.lsp.evidence", payload.evidenceId)
+        assertEquals("structured-evidence", payload.acceptanceAuthority)
+        assertEquals(DrawingEvidenceAuthority.entries.size, payload.facts.size)
         assertEquals("workbench-chrome", payload.facts.last().authority)
     }
 }

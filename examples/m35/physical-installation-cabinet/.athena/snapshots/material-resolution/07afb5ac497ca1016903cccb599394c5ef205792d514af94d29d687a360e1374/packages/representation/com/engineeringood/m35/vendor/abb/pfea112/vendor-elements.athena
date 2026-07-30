@@ -16,7 +16,7 @@ symbol pfea112_body_symbol {
     point (6, 22)
     role terminal
     accepts direction in
-    accepts signal Power
+    accepts signal Power.family
   }
 
   anchor supplyMinus {
@@ -24,7 +24,7 @@ symbol pfea112_body_symbol {
     point (6, 38)
     role terminal
     accepts direction in
-    accepts signal Power
+    accepts signal Power.family
   }
 
   anchor signalOut {
@@ -32,7 +32,7 @@ symbol pfea112_body_symbol {
     point (126, 58)
     role terminal
     accepts direction out
-    accepts signal Control
+    accepts signal Control.family
   }
 
   anchor controlReturn {
@@ -40,7 +40,7 @@ symbol pfea112_body_symbol {
     point (126, 74)
     role terminal
     accepts direction in
-    accepts signal Control
+    accepts signal Control.family
   }
 
   anchor pe {
@@ -48,7 +48,7 @@ symbol pfea112_body_symbol {
     point (66, 104)
     role terminal
     accepts direction in
-    accepts signal Ground
+    accepts signal Ground.family
   }
 }
 

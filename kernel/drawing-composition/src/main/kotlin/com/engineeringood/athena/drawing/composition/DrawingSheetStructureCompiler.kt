@@ -64,7 +64,7 @@ class DrawingSheetStructureCompiler {
         )
         return DrawingSheetStructureResult(
             plan = plan,
-            proof = DrawingSheetStructureProof(
+            evidence = DrawingSheetStructureEvidence(
                 sheetId = plan.sheetId,
                 policyId = request.policy.policyId,
                 drawingAreaBounds = request.sheetPlan.drawingAreaBounds,

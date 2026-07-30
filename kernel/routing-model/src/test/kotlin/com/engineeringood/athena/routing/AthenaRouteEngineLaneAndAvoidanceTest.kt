@@ -3,6 +3,7 @@ package com.engineeringood.athena.routing
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.LayoutSourceSpan
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -11,7 +12,7 @@ import kotlin.test.assertTrue
 class AthenaRouteEngineLaneAndAvoidanceTest {
     @Test
     fun `lane assignment is deterministic for clear routes`() {
-        val result = AthenaRouteEngineV0().solve(
+        val result = AthenaRouteEngine().solve(
             input(
                 requests = listOf(
                     request("a", 120, 80, 320, 80),
@@ -32,7 +33,7 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
             width = 80,
             height = 80,
         )
-        val result = AthenaRouteEngineV0().solve(
+        val result = AthenaRouteEngine().solve(
             input(
                 componentBounds = listOf(obstacle),
                 requests = listOf(request("a", 120, 180, 400, 180)),
@@ -54,7 +55,7 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
             width = 80,
             height = 140,
         )
-        val result = AthenaRouteEngineV0().solve(
+        val result = AthenaRouteEngine().solve(
             input(
                 componentBounds = listOf(obstacle),
                 requests = listOf(request("blocked", 120, 80, 400, 80)),
@@ -98,6 +99,7 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
                 targetSubjectId = target.subjectId,
                 targetPortId = target.portId,
                 role = ElectricalConnectionRole.CONTROL_SIGNAL,
+                sourceSpan = LayoutSourceSpan("routes.athena", 1, 1, 1, 32),
             ),
             sourceAnchor = source,
             targetAnchor = target,
@@ -128,7 +130,7 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
             side = side,
             point = SchematicRoutePoint(x = x, y = y),
             gridPoint = SchematicRoutePoint(x = x, y = y),
-            policySource = "m24:schematic-default",
+            policySource = "schematic-default",
         )
     }
 }

@@ -13,7 +13,7 @@ class NativeRepresentationLibraryLoaderTest {
         val asset = Files.createTempFile("athena-native-symbol", ".properties")
         asset.writeText(
             """
-            library.id=athena.native.iec-v0
+            library.id=athena.native.iec
             symbol.0.id=iec.motor.compact
             symbol.0.version=1.0.0
             symbol.0.lifecycle=ACTIVE
@@ -53,7 +53,7 @@ class NativeRepresentationLibraryLoaderTest {
 
         assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
         val definition = result.library.definitions.single()
-        assertEquals(RepresentationLibraryId("athena.native.iec-v0"), definition.libraryId)
+        assertEquals(RepresentationLibraryId("athena.native.iec"), definition.libraryId)
         assertEquals(RepresentationSymbolId("iec.motor.compact"), definition.symbolId)
         assertEquals(RepresentationVersion("1.0.0"), definition.version)
         assertEquals(RepresentationLifecycleState.ACTIVE, definition.lifecycle.state)

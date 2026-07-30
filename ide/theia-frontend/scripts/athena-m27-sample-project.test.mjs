@@ -15,8 +15,8 @@ function readRepoFile(path) {
 
 test('M27 sample project is an openable semantic proof workspace', () => {
     const sampleRoot = resolve(repoRoot, 'examples/m27/sample-project');
-    const sourceA = readRepoFile('examples/m27/sample-project/src/01-workspace-semantic-source.athena');
-    const sourceB = readRepoFile('examples/m27/sample-project/src/02-field-assets-not-a-sheet.athena');
+    const sourceA = readRepoFile('examples/m27/sample-project/src/com/engineeringood/m27/sample/01-workspace-semantic-source.athena');
+    const sourceB = readRepoFile('examples/m27/sample-project/src/com/engineeringood/m27/sample/02-field-assets-not-a-sheet.athena');
     const readme = readRepoFile('examples/m27/sample-project/README.md');
 
     assert.equal(existsSync(resolve(sampleRoot, 'athena.yaml')), true);
@@ -44,11 +44,11 @@ test('M27 sample project is an openable semantic proof workspace', () => {
     assert.match(sourceB, /SpareTerminalXT99/);
 
     const combined = `${sourceA}\n${sourceB}`;
-    assert.match(combined, /MainPowerSupplyPS1\.lplus -> MainBreakerQF1\.line/);
-    assert.match(combined, /ControllerPLC1\.hmiStatus -> OperatorHMI1\.status/);
-    assert.match(combined, /FieldOutputModuleIOM1\.do1 -> FieldTerminalXT1\.in1/);
-    assert.match(combined, /FieldTerminalXT1\.out1 -> ConveyorMotorM1\.u1/);
-    assert.match(sourceB, /SpareFieldGatewayGW1\.do1 -> SpareTerminalXT99\.in1/);
+    assert.match(combined, /connect\s+\w+\s+MainPowerSupplyPS1\.lplus -> MainBreakerQF1\.line/);
+    assert.match(combined, /connect\s+\w+\s+ControllerPLC1\.hmiStatus -> OperatorHMI1\.status/);
+    assert.match(combined, /connect\s+\w+\s+FieldOutputModuleIOM1\.do1 -> FieldTerminalXT1\.in1/);
+    assert.match(combined, /connect\s+\w+\s+FieldTerminalXT1\.out1 -> ConveyorMotorM1\.u1/);
+    assert.match(sourceB, /connect\s+\w+\s+SpareFieldGatewayGW1\.do1 -> SpareTerminalXT99\.in1/);
     assert.doesNotMatch(sourceB, /FieldOutputModuleIOM1|FieldTerminalXT1|ConveyorMotorM1/);
     assert.doesNotMatch(sourceB, /device\s+ControllerPLC1\b/);
 });

@@ -18,7 +18,7 @@ class AthenaRuntimeProjectionSessionTest {
     @Test
     fun `runtime hosts supported projection views with deterministic default active view`() {
         val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
-        val connectionId = "connection:$sourcePath:plc_to_motor"
+        val connectionId = "connection:examples/m0/demo-cabinet.athena:plc_to_motor"
         val runtime = AthenaRuntime()
         val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
             projectName = "demo-cabinet",
@@ -66,7 +66,7 @@ class AthenaRuntimeProjectionSessionTest {
         assertEquals(480, ready.scene.canvasWidth)
         assertEquals(172, ready.scene.canvasHeight)
         assertEquals("cabinet/projection/node/component_PLC1", ready.scene.components.first { component -> component.semanticId == "component:PLC1" }.projectionId)
-        assertEquals("electrical-notation/cabinet/default-v1", ready.notationPack?.packId)
+        assertEquals("electrical-notation/cabinet/default", ready.notationPack?.packId)
         assertTrue(ready.notationPack?.subjects?.any { subject -> subject.semanticId == "component:PLC1" && subject.symbolKey == "device.cabinet.default" } == true)
         assertEquals("cabinet/sheet/01-main", ready.activeSheetId)
         assertEquals(listOf("cabinet/sheet/01-main"), ready.sheets.map { sheet -> sheet.sheetId })
@@ -271,7 +271,7 @@ class AthenaRuntimeProjectionSessionTest {
             firstReady.sheets.map { sheet -> sheet.policyEvidence?.sheetViewRole },
         )
         assertEquals(
-            listOf("athena-m31-customer-projection-v0"),
+            listOf("athena-customer-projection"),
             firstReady.sheets.mapNotNull { sheet -> sheet.policyEvidence?.policyId }.distinct(),
         )
         assertEquals(
@@ -364,7 +364,7 @@ class AthenaRuntimeProjectionSessionTest {
     fun `m27 field wiring sheet renders field subjects from the active semantic source`() {
         val sourcePath = resolveRepoRoot()
             .resolve("examples/m27/sample-project/src/com/engineeringood/m27/sample/01-workspace-semantic-source.athena")
-        val connectionId = "connection:$sourcePath:fieldoutputmoduleiom1_do1_to_fieldterminalxt1_in1"
+        val connectionId = "connection:examples/m27/sample-project/src/com/engineeringood/m27/sample/01-workspace-semantic-source.athena:fieldoutputmoduleiom1_do1_to_fieldterminalxt1_in1"
         val runtime = AthenaRuntime()
         val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
             projectName = "m27-sample-project",

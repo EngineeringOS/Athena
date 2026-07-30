@@ -16,10 +16,10 @@ import kotlin.test.assertTrue
 
 class AthenaM16ProofSliceTest {
     @Test
-    fun `m16 proof slice publishes three governed semantic macros from a real repository`() {
+    fun `m16 evidence slice publishes three governed semantic macros from a real repository`() {
         val repositoryRoot = resolveRepoRoot().resolve("examples/m16/semantic-reuse-proof")
-        val sourcePath = repositoryRoot.resolve("src/semantic-reuse-proof.athena")
-        check(Files.exists(sourcePath)) { "Expected M16 proof source at `$sourcePath`." }
+        val sourcePath = repositoryRoot.resolve("src/com/engineeringood/examples/m16/semantic/reuse/proof/semantic-reuse-proof.athena")
+        check(Files.exists(sourcePath)) { "Expected M16 evidence source at `$sourcePath`." }
 
         val compiler = AthenaCompiler()
         val contractValidation = compiler.validateRepositoryContract(repositoryRoot)
@@ -96,14 +96,14 @@ class AthenaM16ProofSliceTest {
         )
         assertEquals(
             listOf(
-                "impl/electrical/contactor/siemens-proof-3pole",
-                "impl/electrical/relay/siemens-proof-overload",
+                "impl/electrical/contactor/siemens-evidence-3pole",
+                "impl/electrical/relay/siemens-evidence-overload",
             ),
             starterPreview.preview.components.map { component -> component.implementationId },
         )
         assertEquals(listOf("electrical.plc.cpu"), plcPreview.preview.components.map { component -> component.conceptId })
         assertEquals(
-            listOf("impl/electrical/plc-cpu/siemens-proof-cpu313c"),
+            listOf("impl/electrical/plc-cpu/siemens-evidence-cpu313c"),
             plcPreview.preview.components.map { component -> component.implementationId },
         )
         assertEquals(
@@ -111,17 +111,17 @@ class AthenaM16ProofSliceTest {
             supplyPreview.preview.components.map { component -> component.conceptId },
         )
         assertEquals(
-            listOf("impl/electrical/power-supply/siemens-proof-24vdc"),
+            listOf("impl/electrical/power-supply/siemens-evidence-24vdc"),
             supplyPreview.preview.components.map { component -> component.implementationId },
         )
         assertEquals(1, starterPreview.preview.connections.size)
     }
 
     @Test
-    fun `m16 proof path stays deterministic across repeated repository reruns`() {
+    fun `m16 evidence path stays deterministic across repeated repository reruns`() {
         val repositoryRoot = resolveRepoRoot().resolve("examples/m16/semantic-reuse-proof")
-        val sourcePath = repositoryRoot.resolve("src/semantic-reuse-proof.athena")
-        check(Files.exists(sourcePath)) { "Expected M16 proof source at `$sourcePath`." }
+        val sourcePath = repositoryRoot.resolve("src/com/engineeringood/examples/m16/semantic/reuse/proof/semantic-reuse-proof.athena")
+        check(Files.exists(sourcePath)) { "Expected M16 evidence source at `$sourcePath`." }
 
         val first = executeDolStarterProof(repositoryRoot, sourcePath)
         val second = executeDolStarterProof(repositoryRoot, sourcePath)

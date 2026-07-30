@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m34.professional
+package com.engineeringood.m34.professional
 
 system M34ProfessionalControlDrawing {
   device PowerSourceG34 {
@@ -457,52 +457,38 @@ system M34ProfessionalControlDrawing {
     }
   }
 
-  connect power_supply {
-    powersourceg34_phasel_to_mainbreakerqf34_linel PowerSourceG34.phaseL -> MainBreakerQF34.lineL
-    powersourceg34_neutraln_to_mainbreakerqf34_neutralinn PowerSourceG34.neutralN -> MainBreakerQF34.neutralInN
-    mainbreakerqf34_loadt_to_fusedisconnectorqs34_linel MainBreakerQF34.loadT -> FuseDisconnectorQS34.lineL
-    mainbreakerqf34_neutraloutn_to_fusedisconnectorqs34_neutralinn MainBreakerQF34.neutralOutN -> FuseDisconnectorQS34.neutralInN
-    fusedisconnectorqs34_loadt_to_controltransformert34_primaryl FuseDisconnectorQS34.loadT -> ControlTransformerT34.primaryL
-    fusedisconnectorqs34_neutraloutn_to_controltransformert34_primaryn FuseDisconnectorQS34.neutralOutN -> ControlTransformerT34.primaryN
-  }
-
-  connect raise_control {
-    controltransformert34_secondaryl_to_stopbuttons0_common ControlTransformerT34.secondaryL -> StopButtonS0.common
-    stopbuttons0_switched_to_reversecontactorkm2_auxnc21 StopButtonS0.switched -> ReverseContactorKM2.auxNc21
-    reversecontactorkm2_auxnc22_to_raisebuttons1_common ReverseContactorKM2.auxNc22 -> RaiseButtonS1.common
-    raisebuttons1_switched_to_upperlimitsq1_common RaiseButtonS1.switched -> UpperLimitSQ1.common
-    upperlimitsq1_switched_to_fieldterminalxt1_controlupin UpperLimitSQ1.switched -> FieldTerminalXT1.controlUpIn
-    fieldterminalxt1_controlupout_to_forwardcontactorkm1_coila1 FieldTerminalXT1.controlUpOut -> ForwardContactorKM1.coilA1
-    forwardcontactorkm1_coila2_to_controltransformert34_secondaryn ForwardContactorKM1.coilA2 -> ControlTransformerT34.secondaryN
-  }
-
-  connect lower_control {
-    stopbuttons0_switched_to_forwardcontactorkm1_auxnc21 StopButtonS0.switched -> ForwardContactorKM1.auxNc21
-    forwardcontactorkm1_auxnc22_to_lowerbuttons2_common ForwardContactorKM1.auxNc22 -> LowerButtonS2.common
-    lowerbuttons2_switched_to_lowerlimitsq2_common LowerButtonS2.switched -> LowerLimitSQ2.common
-    lowerlimitsq2_switched_to_fieldterminalxt1_controldownin LowerLimitSQ2.switched -> FieldTerminalXT1.controlDownIn
-    fieldterminalxt1_controldownout_to_reversecontactorkm2_coila1 FieldTerminalXT1.controlDownOut -> ReverseContactorKM2.coilA1
-    reversecontactorkm2_coila2_to_controltransformert34_secondaryn ReverseContactorKM2.coilA2 -> ControlTransformerT34.secondaryN
-  }
-
-  connect motor_power {
-    fusedisconnectorqs34_loadt_to_forwardcontactorkm1_mainl1 FuseDisconnectorQS34.loadT -> ForwardContactorKM1.mainL1
-    fusedisconnectorqs34_loadt_to_reversecontactorkm2_mainl1 FuseDisconnectorQS34.loadT -> ReverseContactorKM2.mainL1
-    forwardcontactorkm1_maint1_to_fieldterminalxt1_motorupin ForwardContactorKM1.mainT1 -> FieldTerminalXT1.motorUpIn
-    fieldterminalxt1_motorupout_to_shuttermotorm34_up FieldTerminalXT1.motorUpOut -> ShutterMotorM34.up
-    reversecontactorkm2_maint1_to_fieldterminalxt1_motordownin ReverseContactorKM2.mainT1 -> FieldTerminalXT1.motorDownIn
-    fieldterminalxt1_motordownout_to_shuttermotorm34_down FieldTerminalXT1.motorDownOut -> ShutterMotorM34.down
-    fusedisconnectorqs34_neutraloutn_to_shuttermotorm34_neutral FuseDisconnectorQS34.neutralOutN -> ShutterMotorM34.neutral
-  }
-
-  connect indication {
-    controltransformert34_secondaryl_to_forwardcontactorkm1_statusno53 ControlTransformerT34.secondaryL -> ForwardContactorKM1.statusNo53
-    forwardcontactorkm1_statusno54_to_forwardlamphl1_signal ForwardContactorKM1.statusNo54 -> ForwardLampHL1.signal
-    forwardlamphl1_return_to_controltransformert34_secondaryn ForwardLampHL1.return -> ControlTransformerT34.secondaryN
-    controltransformert34_secondaryl_to_reversecontactorkm2_statusno53 ControlTransformerT34.secondaryL -> ReverseContactorKM2.statusNo53
-    reversecontactorkm2_statusno54_to_reverselamphl2_signal ReverseContactorKM2.statusNo54 -> ReverseLampHL2.signal
-    reverselamphl2_return_to_controltransformert34_secondaryn ReverseLampHL2.return -> ControlTransformerT34.secondaryN
-  }
+  connect powersourceg34_phasel_to_mainbreakerqf34_linel PowerSourceG34.phaseL -> MainBreakerQF34.lineL
+  connect powersourceg34_neutraln_to_mainbreakerqf34_neutralinn PowerSourceG34.neutralN -> MainBreakerQF34.neutralInN
+  connect mainbreakerqf34_loadt_to_fusedisconnectorqs34_linel MainBreakerQF34.loadT -> FuseDisconnectorQS34.lineL
+  connect mainbreakerqf34_neutraloutn_to_fusedisconnectorqs34_neutralinn MainBreakerQF34.neutralOutN -> FuseDisconnectorQS34.neutralInN
+  connect fusedisconnectorqs34_loadt_to_controltransformert34_primaryl FuseDisconnectorQS34.loadT -> ControlTransformerT34.primaryL
+  connect fusedisconnectorqs34_neutraloutn_to_controltransformert34_primaryn FuseDisconnectorQS34.neutralOutN -> ControlTransformerT34.primaryN
+  connect controltransformert34_secondaryl_to_stopbuttons0_common ControlTransformerT34.secondaryL -> StopButtonS0.common
+  connect stopbuttons0_switched_to_reversecontactorkm2_auxnc21 StopButtonS0.switched -> ReverseContactorKM2.auxNc21
+  connect reversecontactorkm2_auxnc22_to_raisebuttons1_common ReverseContactorKM2.auxNc22 -> RaiseButtonS1.common
+  connect raisebuttons1_switched_to_upperlimitsq1_common RaiseButtonS1.switched -> UpperLimitSQ1.common
+  connect upperlimitsq1_switched_to_fieldterminalxt1_controlupin UpperLimitSQ1.switched -> FieldTerminalXT1.controlUpIn
+  connect fieldterminalxt1_controlupout_to_forwardcontactorkm1_coila1 FieldTerminalXT1.controlUpOut -> ForwardContactorKM1.coilA1
+  connect forwardcontactorkm1_coila2_to_controltransformert34_secondaryn ForwardContactorKM1.coilA2 -> ControlTransformerT34.secondaryN
+  connect stopbuttons0_switched_to_forwardcontactorkm1_auxnc21 StopButtonS0.switched -> ForwardContactorKM1.auxNc21
+  connect forwardcontactorkm1_auxnc22_to_lowerbuttons2_common ForwardContactorKM1.auxNc22 -> LowerButtonS2.common
+  connect lowerbuttons2_switched_to_lowerlimitsq2_common LowerButtonS2.switched -> LowerLimitSQ2.common
+  connect lowerlimitsq2_switched_to_fieldterminalxt1_controldownin LowerLimitSQ2.switched -> FieldTerminalXT1.controlDownIn
+  connect fieldterminalxt1_controldownout_to_reversecontactorkm2_coila1 FieldTerminalXT1.controlDownOut -> ReverseContactorKM2.coilA1
+  connect reversecontactorkm2_coila2_to_controltransformert34_secondaryn ReverseContactorKM2.coilA2 -> ControlTransformerT34.secondaryN
+  connect fusedisconnectorqs34_loadt_to_forwardcontactorkm1_mainl1 FuseDisconnectorQS34.loadT -> ForwardContactorKM1.mainL1
+  connect fusedisconnectorqs34_loadt_to_reversecontactorkm2_mainl1 FuseDisconnectorQS34.loadT -> ReverseContactorKM2.mainL1
+  connect forwardcontactorkm1_maint1_to_fieldterminalxt1_motorupin ForwardContactorKM1.mainT1 -> FieldTerminalXT1.motorUpIn
+  connect fieldterminalxt1_motorupout_to_shuttermotorm34_up FieldTerminalXT1.motorUpOut -> ShutterMotorM34.up
+  connect reversecontactorkm2_maint1_to_fieldterminalxt1_motordownin ReverseContactorKM2.mainT1 -> FieldTerminalXT1.motorDownIn
+  connect fieldterminalxt1_motordownout_to_shuttermotorm34_down FieldTerminalXT1.motorDownOut -> ShutterMotorM34.down
+  connect fusedisconnectorqs34_neutraloutn_to_shuttermotorm34_neutral FuseDisconnectorQS34.neutralOutN -> ShutterMotorM34.neutral
+  connect controltransformert34_secondaryl_to_forwardcontactorkm1_statusno53 ControlTransformerT34.secondaryL -> ForwardContactorKM1.statusNo53
+  connect forwardcontactorkm1_statusno54_to_forwardlamphl1_signal ForwardContactorKM1.statusNo54 -> ForwardLampHL1.signal
+  connect forwardlamphl1_return_to_controltransformert34_secondaryn ForwardLampHL1.return -> ControlTransformerT34.secondaryN
+  connect controltransformert34_secondaryl_to_reversecontactorkm2_statusno53 ControlTransformerT34.secondaryL -> ReverseContactorKM2.statusNo53
+  connect reversecontactorkm2_statusno54_to_reverselamphl2_signal ReverseContactorKM2.statusNo54 -> ReverseLampHL2.signal
+  connect reverselamphl2_return_to_controltransformert34_secondaryn ReverseLampHL2.return -> ControlTransformerT34.secondaryN
 
   connect protective_earth {
     powersourceg34_protectivepe_to_shuttermotorm34_earth PowerSourceG34.protectivePE -> ShutterMotorM34.earth

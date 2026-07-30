@@ -1,11 +1,19 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:2c8975fc434e27b0ebae67bb86c8aba456a13f36122f9c46c227829ff2f2653c
 primaryPackage:
-  name: com.engineeringood.examples.m14.siemens-proof-corpus
+  name: com.engineeringood.examples.m14.siemens.proof.corpus
   version: 1.0.0
 packages:
-  - name: com.engineeringood.examples.m14.siemens-proof-corpus
+  - name: com.engineeringood.examples.m14.siemens.proof.corpus
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot:c6b0a312396e71407b590e3b4c230e88490b6049e1bdb2df34b80a55f32e00df
+    sourceHashes:
+      - path: com/engineeringood/examples/m14/siemens/proof/corpus/siemens-proof-corpus.athena
+        hash: sha256:e967d9dc1c0b98c81ec733fed647ae45713ca4198492a3b6c309a0b37703354e
+    resourceHashes: []
     dependencies: []

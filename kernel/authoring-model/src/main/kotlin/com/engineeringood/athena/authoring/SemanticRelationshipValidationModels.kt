@@ -36,7 +36,7 @@ data class SemanticRelationshipValidationResult(
     val sourceTextAfterValidation: String? = null,
 )
 
-/** M28 v0 validator for electrical semantic relationship authoring. */
+/** Validator for electrical semantic relationship authoring. */
 class ElectricalSemanticRelationshipCompatibilityValidator {
     fun validate(request: SemanticRelationshipValidationRequest): SemanticRelationshipValidationResult {
         val sourceStateDiagnostic = request.sourceState.toDiagnostic()

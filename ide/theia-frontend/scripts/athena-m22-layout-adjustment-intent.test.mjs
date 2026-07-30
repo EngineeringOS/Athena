@@ -27,7 +27,7 @@ test('graph workbench source captures M22 layout adjustment intent without hidde
     assert.match(modelSource, /sourceUri/);
     assert.match(modelSource, /transientOnly:\s*true/);
     assert.match(modelSource, /persisted:\s*false/);
-    assert.match(modelSource, /route and label adjustment persistence is outside M22 scope/i);
+    assert.match(modelSource, /kind:\s*'place'\s*\|\s*'align'\s*\|\s*'group'/);
     assert.doesNotMatch(modelSource, /localStorage|sessionStorage|indexedDB/);
     assert.match(widgetSource, /captureAthenaGraphLayoutAdjustmentIntent/);
     assert.match(widgetSource, /lastLayoutAdjustmentIntent/);

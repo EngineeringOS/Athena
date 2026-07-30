@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m28.sample
+package com.engineeringood.m28.sample
 
 system RelationshipRejectionCandidates {
   device CandidateOutputModuleIOM28 {

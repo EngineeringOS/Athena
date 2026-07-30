@@ -15,7 +15,7 @@ function readRepoFile(path) {
 
 test('M30 sample project is an openable semantic customer-demo workspace', () => {
     const sampleRoot = resolve(repoRoot, 'examples/m30/sample-project');
-    const source = readRepoFile('examples/m30/sample-project/src/01-rolling-shutter-control-source.athena');
+    const source = readRepoFile('examples/m30/sample-project/src/com/engineeringood/m30/sample/01-rolling-shutter-control-source.athena');
     const readme = readRepoFile('examples/m30/sample-project/README.md');
 
     assert.equal(existsSync(resolve(sampleRoot, 'athena.yaml')), true);
@@ -29,11 +29,9 @@ test('M30 sample project is an openable semantic customer-demo workspace', () =>
     assert.match(source, /device FieldTerminalXT30/);
     assert.match(source, /device ShutterMotorM30/);
     assert.match(source, /port lplus \{/);
-    assert.match(source, /connect supply_feed \{/);
-    assert.match(source, /MainPowerSupplyPS30\.lplus -> MainBreakerQF30\.line/);
-    assert.match(source, /connect motor_drive \{/);
-    assert.match(source, /FieldTerminalXT30\.motorUp -> ShutterMotorM30\.up/);
-    assert.match(source, /connect ControlRelayK30\.status -> PilotLampHL30\.status/);
+    assert.match(source, /connect mainpowersupplyps30_lplus_to_mainbreakerqf30_line MainPowerSupplyPS30\.lplus -> MainBreakerQF30\.line/);
+    assert.match(source, /connect fieldterminalxt30_motorup_to_shuttermotorm30_up FieldTerminalXT30\.motorUp -> ShutterMotorM30\.up/);
+    assert.match(source, /connect\s+\w+\s+ControlRelayK30\.status -> PilotLampHL30\.status/);
     assert.match(source, /layout schematic-sheet \{/);
 
     assert.doesNotMatch(source, /qelectrotech|\.elmt|svg|viewBox|path|rectangle|circle|stroke/i);

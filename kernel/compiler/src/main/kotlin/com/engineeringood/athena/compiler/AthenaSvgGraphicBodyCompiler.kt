@@ -123,6 +123,7 @@ internal object AthenaSvgGraphicBodyCompiler {
                 containerBounds = documentBounds,
                 inheritedTransform = AthenaSvgGraphicBodySupport.SvgTransform.identity(),
                 activeGeometryIds = ArrayDeque(),
+                activeGeometryRefs = ArrayDeque(),
                 primitives = primitives,
                 diagnostics = loweringDiagnostics,
             )
@@ -152,6 +153,10 @@ internal object AthenaSvgGraphicBodyCompiler {
                 styleTokens = listOf(AthenaSvgGraphicBodySupport.styleToken),
                 provenanceSources = listOf(athenaFile, svgPath.toString()),
             ),
+            primitiveIdsByGeometryRef = primitives
+                .mapNotNull { primitive -> primitive.geometryRef?.let { ref -> ref to primitive.primitive.primitiveId } }
+                .groupBy({ it.first }, { it.second })
+                .mapValues { (_, primitiveIds) -> primitiveIds.distinct() },
         )
     }
 
@@ -162,9 +167,15 @@ internal object AthenaSvgGraphicBodyCompiler {
         containerBounds: GraphicBounds,
         inheritedTransform: AthenaSvgGraphicBodySupport.SvgTransform,
         activeGeometryIds: ArrayDeque<String>,
+        activeGeometryRefs: ArrayDeque<String>,
         primitives: MutableList<PrimitiveWithNode>,
         diagnostics: MutableList<AthenaRepresentationSourceDiagnostic>,
     ) {
+        val localGeometryRef = getAttribute("data-athena-ref").takeIf(String::isNotBlank)
+        if (localGeometryRef != null) {
+            activeGeometryRefs.addLast(localGeometryRef)
+        }
+        try {
         when (localName) {
             "defs" -> return
             "use" -> {
@@ -212,6 +223,7 @@ internal object AthenaSvgGraphicBodyCompiler {
                         containerBounds = containerBounds,
                         inheritedTransform = inheritedTransform.then(localTransform),
                         activeGeometryIds = activeGeometryIds,
+                        activeGeometryRefs = activeGeometryRefs,
                         primitives = primitives,
                         diagnostics = diagnostics,
                     )
@@ -227,6 +239,7 @@ internal object AthenaSvgGraphicBodyCompiler {
                     containerBounds = containerBounds,
                     inheritedTransform = inheritedTransform.then(localTransform()),
                     activeGeometryIds = activeGeometryIds,
+                    activeGeometryRefs = activeGeometryRefs,
                     primitives = primitives,
                     diagnostics = diagnostics,
                 )
@@ -240,7 +253,7 @@ internal object AthenaSvgGraphicBodyCompiler {
                     transform = inheritedTransform.then(localTransform()),
                     diagnostics = diagnostics,
                 ) ?: return
-                primitives += PrimitiveWithNode(primitive, this)
+                primitives += PrimitiveWithNode(primitive, this, activeGeometryRefs.lastOrNull())
             }
             else -> childElements().forEach { child ->
                 child.lowerRenderableSubtree(
@@ -250,9 +263,15 @@ internal object AthenaSvgGraphicBodyCompiler {
                     containerBounds = containerBounds,
                     inheritedTransform = inheritedTransform.then(localTransform()),
                     activeGeometryIds = activeGeometryIds,
+                    activeGeometryRefs = activeGeometryRefs,
                     primitives = primitives,
                     diagnostics = diagnostics,
                 )
+            }
+        }
+        } finally {
+            if (localGeometryRef != null) {
+                activeGeometryRefs.removeLast()
             }
         }
     }

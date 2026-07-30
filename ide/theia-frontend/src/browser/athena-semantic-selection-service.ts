@@ -11,7 +11,7 @@ import {
     resolveSemanticSelectionFromSourceRange
 } from './athena-semantic-selection-model';
 
-/** Frontend-only semantic-selection coordinator for cross-surface synchronization in the M7 workbench. */
+/** Frontend-only semantic-selection coordinator for cross-surface synchronization. */
 @injectable()
 export class AthenaSemanticSelectionService implements FrontendApplicationContribution {
     @inject(EditorManager)

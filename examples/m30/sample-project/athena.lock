@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:6e892c141aae2c479f1339713dbb8bce2afe4c01fea8f72c87e8b6659084ebe7
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:21df6d5465fac60070ade956ec7ace469eb016a1af15158b7047b6dad8a5c4dc
 primaryPackage:
   name: com.engineeringood.m30.sample
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m30.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:682ae673cecb2a913fdaeb513ae66706bd0a3d007a8e00ed13a6a99e1fb0778f
+    snapshotDigest: package-snapshot:f4155be2fa65ef1e35ced3de12996b4c511b89b0468ce455af347c798693b621
     sourceHashes:
       - path: com/engineeringood/m30/sample/01-rolling-shutter-control-source.athena
-        hash: sha256:b8c861fb7e382de94a7f8faf056a83fcb61bd9f0bec1e3532d5aa66856182611
+        hash: sha256:e983afd6a8b57b009b67be7bd870a4623bde8327f614841105c4a45d59490bc0
     resourceHashes: []
     dependencies: []

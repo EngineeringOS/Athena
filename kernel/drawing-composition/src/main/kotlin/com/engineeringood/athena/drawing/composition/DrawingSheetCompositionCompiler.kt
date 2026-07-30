@@ -126,7 +126,7 @@ class DrawingSheetCompositionCompiler {
         )
         return DrawingSheetCompositionResult(
             plan = plan,
-            proof = DrawingSheetCompositionProof(
+            evidence = DrawingSheetCompositionEvidence(
                 policyId = policy.policyId,
                 contentBounds = content,
                 frameBounds = frame,
@@ -293,7 +293,7 @@ class DrawingSheetCompositionCompiler {
 
     private fun failed(diagnostics: List<DrawingSheetCompositionDiagnostic>) = DrawingSheetCompositionResult(
         plan = null,
-        proof = null,
+        evidence = null,
         diagnostics = ordered(diagnostics),
     )
 

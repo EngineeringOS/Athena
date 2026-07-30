@@ -47,11 +47,12 @@ private fun writeGovernedRepository(
     sourceFileName: String,
     manifestBody: String,
 ) {
+    val packageName = "com.engineeringood.root"
     repositoryRoot.createDirectories()
     repositoryRoot.resolve("athena.yaml").writeText(manifestBody)
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
+    val sourceRoot = repositoryRoot.resolve("src").resolve(packageName.replace('.', '/')).createDirectories()
     sourceRoot.resolve(sourceFileName).writeText(
-        "system ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }",
+        "package $packageName\n\nsystem ${sourceFileName.substringBefore('.').replaceFirstChar(Char::uppercase)} { }",
     )
 }

@@ -25,14 +25,14 @@ symbol iec_terminal_strip {
     label deviceTag at (0, 0) size (128, 12) role device-tag style device-label
   }
 
-  anchor controlUpIn { primitiveRef controlUpInLead point (0, 28) role terminal accepts direction in accepts signal Control }
-  anchor controlUpOut { primitiveRef controlUpOutLead point (128, 28) role terminal accepts direction out accepts signal Control }
-  anchor controlDownIn { primitiveRef controlDownInLead point (0, 44) role terminal accepts direction in accepts signal Control }
-  anchor controlDownOut { primitiveRef controlDownOutLead point (128, 44) role terminal accepts direction out accepts signal Control }
-  anchor motorUpIn { primitiveRef motorUpInLead point (0, 60) role terminal accepts direction in accepts signal Power }
-  anchor motorUpOut { primitiveRef motorUpOutLead point (128, 60) role terminal accepts direction out accepts signal Power }
-  anchor motorDownIn { primitiveRef motorDownInLead point (0, 76) role terminal accepts direction in accepts signal Power }
-  anchor motorDownOut { primitiveRef motorDownOutLead point (128, 76) role terminal accepts direction out accepts signal Power }
+  anchor controlUpIn { primitiveRef controlUpInLead point (0, 28) role terminal accepts direction in accepts signal Control.family }
+  anchor controlUpOut { primitiveRef controlUpOutLead point (128, 28) role terminal accepts direction out accepts signal Control.family }
+  anchor controlDownIn { primitiveRef controlDownInLead point (0, 44) role terminal accepts direction in accepts signal Control.family }
+  anchor controlDownOut { primitiveRef controlDownOutLead point (128, 44) role terminal accepts direction out accepts signal Control.family }
+  anchor motorUpIn { primitiveRef motorUpInLead point (0, 60) role terminal accepts direction in accepts signal Power.family }
+  anchor motorUpOut { primitiveRef motorUpOutLead point (128, 60) role terminal accepts direction out accepts signal Power.family }
+  anchor motorDownIn { primitiveRef motorDownInLead point (0, 76) role terminal accepts direction in accepts signal Power.family }
+  anchor motorDownOut { primitiveRef motorDownOutLead point (128, 76) role terminal accepts direction out accepts signal Power.family }
 }
 
 element iec_terminal_element {
@@ -70,10 +70,10 @@ symbol iec_motor {
     label deviceTag at (0, 0) size (112, 12) role device-tag style device-label
   }
 
-  anchor up { primitiveRef upLead point (0, 34) role terminal accepts direction in accepts signal Power }
-  anchor down { primitiveRef downLead point (0, 66) role terminal accepts direction in accepts signal Power }
-  anchor neutral { primitiveRef neutralLead point (112, 34) role terminal accepts direction in accepts signal Power }
-  anchor earth { primitiveRef earthLead point (112, 66) role terminal accepts direction in accepts signal Ground }
+  anchor up { primitiveRef upLead point (0, 34) role terminal accepts direction in accepts signal Power.family }
+  anchor down { primitiveRef downLead point (0, 66) role terminal accepts direction in accepts signal Power.family }
+  anchor neutral { primitiveRef neutralLead point (112, 34) role terminal accepts direction in accepts signal Power.family }
+  anchor earth { primitiveRef earthLead point (112, 66) role terminal accepts direction in accepts signal Ground.family }
 }
 
 element iec_motor_element {
@@ -102,7 +102,7 @@ symbol iec_protective_earth {
     label deviceTag at (0, 66) size (80, 12) role device-tag style device-label
   }
 
-  anchor bond { primitiveRef bondLead point (40, 0) role terminal accepts direction in accepts signal Ground }
+  anchor bond { primitiveRef bondLead point (40, 0) role terminal accepts direction in accepts signal Ground.family }
 }
 
 element iec_protective_earth_element {

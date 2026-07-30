@@ -16,8 +16,8 @@ symbol iec_push_button_no {
     label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
   }
 
-  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control }
-  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control }
+  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control.family }
 }
 
 element iec_push_button_no_element {
@@ -48,8 +48,8 @@ symbol iec_push_button_nc {
     label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
   }
 
-  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control }
-  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control }
+  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control.family }
 }
 
 element iec_push_button_nc_element {
@@ -80,8 +80,8 @@ symbol iec_limit_switch_nc {
     label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
   }
 
-  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control }
-  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control }
+  anchor common { primitiveRef commonLead point (40, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor switched { primitiveRef switchedLead point (40, 88) role terminal accepts direction out accepts signal Control.family }
 }
 
 element iec_limit_switch_nc_element {
@@ -109,8 +109,8 @@ symbol iec_lamp {
     label deviceTag at (0, 0) size (34, 12) role device-tag style device-label
   }
 
-  anchor signal { primitiveRef signalLead point (40, 0) role terminal accepts direction in accepts signal Control }
-  anchor return { primitiveRef returnLead point (40, 88) role terminal accepts direction out accepts signal Control }
+  anchor signal { primitiveRef signalLead point (40, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor return { primitiveRef returnLead point (40, 88) role terminal accepts direction out accepts signal Control.family }
 }
 
 element iec_lamp_element {

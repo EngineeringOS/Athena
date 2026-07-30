@@ -264,11 +264,12 @@ data class SymbolDynamicLabelDeclaration(
 
 data class SymbolAnchorDeclaration(
     val id: String,
-    val primitiveRef: SymbolIdentifierField?,
+    val ref: SymbolStringField?,
     val point: SymbolPoint?,
     val role: SymbolIdentifierField?,
-    val acceptedDirections: List<SymbolIdentifierField>,
-    val acceptedSignals: List<SymbolIdentifierField>,
+    val port: QualifiedName? = null,
+    val directions: List<SymbolIdentifierField> = emptyList(),
+    val signals: List<QualifiedName> = emptyList(),
     val span: SourceSpan,
 )
 
@@ -446,6 +447,13 @@ enum class InstallationOrientation {
     Vertical,
 }
 
+enum class InstallationMountOrientation {
+    Deg0,
+    Deg90,
+    Deg180,
+    Deg270,
+}
+
 data class InstallationLengthLiteral(
     val value: Double,
     val unit: String,
@@ -468,6 +476,14 @@ data class InstallationSize3Literal(
     val width: InstallationLengthLiteral,
     val height: InstallationLengthLiteral,
     val depth: InstallationLengthLiteral,
+    val span: SourceSpan,
+)
+
+data class InstallationClearanceLiteral(
+    val top: InstallationLengthLiteral,
+    val right: InstallationLengthLiteral,
+    val bottom: InstallationLengthLiteral,
+    val left: InstallationLengthLiteral,
     val span: SourceSpan,
 )
 
@@ -531,7 +547,12 @@ data class InstallationMountDeclaration(
     val deviceId: String,
     val targetId: String,
     val at: InstallationPointLiteral,
-    val orientation: InstallationOrientation,
+    val footprint: InstallationSize3Literal,
+    val mountingType: String,
+    val orientation: InstallationMountOrientation,
+    val allowedOrientations: List<InstallationMountOrientation>,
+    val clearance: InstallationClearanceLiteral,
+    val compatibleContainerKinds: List<String>,
     val span: SourceSpan,
 )
 

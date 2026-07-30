@@ -1,20 +1,9 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
-import com.engineeringood.athena.compiler.AthenaProfessionalDrawingCompiler
-import com.engineeringood.athena.compiler.AthenaProfessionalDrawingPolicy
-import com.engineeringood.athena.compiler.AthenaProfessionalDrawingRequest
-import com.engineeringood.athena.compiler.AthenaM35CabinetProjectionCompiler
+import com.engineeringood.athena.compiler.AthenaCabinetProjectionCompiler
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
-import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
-import com.engineeringood.athena.compiler.semantic.GraphPackageIdentity
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclarationIndexer
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticLayoutHintBinder
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticNamespace
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticPackage
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceUnit
-import com.engineeringood.athena.repository.PackageIdentifier
+import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionCrossReference
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionCrossReferenceLink
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionDiagnostic
@@ -72,35 +61,21 @@ internal fun AthenaLspSessionHostReady.currentProjectionSession(
 
         else -> null
     } ?: sourcePath?.let { path -> languageFeatures?.trackedDocumentByPath(path) }
-    val professionalTrackedDocument = trackedDocument ?: professionalM34TrackedDocument(snapshot, languageFeatures)
-    professionalTrackedDocument?.professionalM34ProjectionSession(snapshot)?.let { professional ->
-        return professional
-    }
-    val m35TrackedDocument = trackedDocument ?: professionalM35TrackedDocument(snapshot, languageFeatures)
-    m35TrackedDocument?.professionalM35ProjectionSession(
-        snapshot = snapshot,
-        generic = context.projectProjectionSession(),
-    )?.let { professional ->
-        return professional
-    }
+        ?: primaryTrackedDocument(snapshot, languageFeatures)
     return trackedDocument?.let { tracked ->
         val generic = context.previewProjectionSession(tracked.compilation)
-        tracked.professionalM35ProjectionSession(snapshot, generic) ?: generic
+        tracked.cabinetProjectionSession(snapshot, generic) ?: generic
     } ?: context.projectProjectionSession()
 }
 
-private fun professionalM34TrackedDocument(
+private fun primaryTrackedDocument(
     snapshot: AthenaLspSessionSnapshot?,
     languageFeatures: AthenaLanguageFeatures?,
 ): AthenaTrackedDocument? {
-    val repositoryRoot = snapshot?.repositoryRoot ?: return null
-    if (!repositoryRoot.isProfessionalM34RepositoryRoot()) {
-        return null
-    }
-    val sourcePath = repositoryRoot.resolve("src/com/engineeringood/m34/professional/01-control-drawing.athena").toAbsolutePath().normalize()
-    languageFeatures ?: return null
-    return languageFeatures.trackedDocumentByPath(sourcePath) ?: runCatching {
-        languageFeatures.trackDocument(
+    val sourcePath = snapshot?.sourcePath ?: return null
+    val features = languageFeatures ?: return null
+    return features.trackedDocumentByPath(sourcePath) ?: runCatching {
+        features.trackDocument(
             uri = sourcePath.toUri().toString(),
             path = sourcePath,
             version = 0,
@@ -109,78 +84,17 @@ private fun professionalM34TrackedDocument(
     }.getOrNull()
 }
 
-private fun AthenaTrackedDocument.professionalM34ProjectionSession(
-    snapshot: AthenaLspSessionSnapshot?,
-): AthenaRuntimeProjectionSession? {
-    val repositoryRoot = snapshot?.repositoryRoot ?: return null
-    if (!repositoryRoot.isProfessionalM34RepositoryRoot()) {
-        return null
-    }
-    val success = compilation as? CompilerCompilationSuccess ?: return null
-    val semanticSnapshot = professionalM34SemanticSnapshot(success, text)
-    val result = AthenaProfessionalDrawingCompiler().compile(
-        AthenaProfessionalDrawingRequest(
-            repositoryRoot = repositoryRoot,
-            document = success.document,
-            semanticSnapshot = semanticSnapshot,
-            policy = AthenaProfessionalDrawingPolicy.m34RollingShutter(),
-        ),
-    )
-    val presentation = result.presentation ?: return AthenaRuntimeProjectionSession(
-        projectName = snapshot.projectName,
-        supportedViews = listOf(controlDrawingView()),
-        activeViewId = "schematic",
-        activeProjection = AthenaRuntimeProjectionUnavailableSnapshot(
-            viewId = "schematic",
-            reason = result.diagnostics.joinToString("\n").ifBlank { "Professional Control Drawing compilation failed." },
-            diagnostics = result.diagnostics.map { diagnostic ->
-                AthenaRuntimeProjectionDiagnostic(
-                    severity = "error",
-                    code = diagnostic.code,
-                    message = diagnostic.message,
-                    provenance = diagnostic.subject,
-                )
-            },
-        ),
-    )
-    return AthenaRuntimeProjectionSession(
-        projectName = snapshot.projectName,
-        supportedViews = listOf(controlDrawingView()),
-        activeViewId = "schematic",
-        activeProjection = AthenaRuntimeProjectionReadySnapshot(
-            viewId = "schematic",
-            familyId = "schematic",
-            scene = AthenaRuntimeViewerScene(
-                systemName = success.document.system.name,
-                canvasWidth = presentation.canvasWidth,
-                canvasHeight = presentation.canvasHeight,
-                components = emptyList(),
-                connections = emptyList(),
-                labels = emptyList(),
-            ),
-            presentation = presentation,
-            activeSheetId = "schematic/sheet/control-drawing",
-            sheets = emptyList(),
-        ),
-    )
-}
-
-private fun Path.isProfessionalM34RepositoryRoot(): Boolean {
-    return toAbsolutePath().normalize().toString().replace('\\', '/')
-        .endsWith("examples/m34/professional-control-drawing")
-}
-
-private fun AthenaTrackedDocument.professionalM35ProjectionSession(
+private fun AthenaTrackedDocument.cabinetProjectionSession(
     snapshot: AthenaLspSessionSnapshot?,
     generic: AthenaRuntimeProjectionSession,
 ): AthenaRuntimeProjectionSession? {
     val repositoryRoot = snapshot?.repositoryRoot ?: return null
-    if (!repositoryRoot.isProfessionalM35RepositoryRoot()) {
+    val success = compilation as? CompilerCompilationSuccess ?: return null
+    if (success.source.ast.declarations.none { declaration -> declaration is InstallationDeclaration }) {
         return null
     }
-    val success = compilation as? CompilerCompilationSuccess ?: return null
-    val cabinetView = m35CabinetView()
-    val result = AthenaM35CabinetProjectionCompiler().compile(
+    val cabinetView = cabinetView()
+    val result = AthenaCabinetProjectionCompiler().compile(
         repositoryRoot = repositoryRoot,
         sourcePath = path,
         success = success,
@@ -195,7 +109,7 @@ private fun AthenaTrackedDocument.professionalM35ProjectionSession(
                 viewId = "cabinet",
                 reason = result.diagnostics.joinToString("\n") { diagnostic ->
                     "${diagnostic.code}: ${diagnostic.subject}: ${diagnostic.message}"
-                }.ifBlank { "M35 Cabinet projection compilation failed." },
+                }.ifBlank { "Cabinet projection compilation failed." },
                 diagnostics = result.diagnostics.map { diagnostic ->
                     AthenaRuntimeProjectionDiagnostic(
                         severity = "error",
@@ -222,95 +136,18 @@ private fun AthenaTrackedDocument.professionalM35ProjectionSession(
                 labels = emptyList(),
             ),
             presentation = presentation,
-            activeSheetId = "cabinet/sheet/m35-physical-installation",
+            activeSheetId = presentation.drawingComposition?.sheetId ?: "cabinet/sheet/installation",
             sheets = emptyList(),
         ),
     )
 }
 
-private fun professionalM35TrackedDocument(
-    snapshot: AthenaLspSessionSnapshot?,
-    languageFeatures: AthenaLanguageFeatures?,
-): AthenaTrackedDocument? {
-    val repositoryRoot = snapshot?.repositoryRoot ?: return null
-    if (!repositoryRoot.isProfessionalM35RepositoryRoot()) {
-        return null
-    }
-    val sourcePath = repositoryRoot.resolve(
-        "src/com/engineeringood/m35/physicalinstallationcabinet/01-physical-installation-cabinet.athena",
-    ).toAbsolutePath().normalize()
-    languageFeatures ?: return null
-    return languageFeatures.trackedDocumentByPath(sourcePath) ?: runCatching {
-        languageFeatures.trackDocument(
-            uri = sourcePath.toUri().toString(),
-            path = sourcePath,
-            version = 0,
-            text = Files.readString(sourcePath),
-        )
-    }.getOrNull()
-}
-
-private fun m35CabinetView(): AthenaRuntimeProjectionView =
+private fun cabinetView(): AthenaRuntimeProjectionView =
     AthenaRuntimeProjectionView(
         viewId = "cabinet",
         displayName = "Cabinet",
-        description = "M35 physical installation Cabinet.",
+        description = "Governed physical installation and connectivity projection.",
         familyId = "electrical/cabinet",
-    )
-
-private fun Path.isProfessionalM35RepositoryRoot(): Boolean {
-    return toAbsolutePath().normalize().toString().replace('\\', '/')
-        .endsWith("examples/m35/physical-installation-cabinet")
-}
-
-private fun professionalM34SemanticSnapshot(
-    compilation: CompilerCompilationSuccess,
-    sourceContent: String,
-): ProjectSemanticGraphSnapshot {
-    val packageId = PackageIdentifier("com.engineeringood.m34.professional", "1.0.0")
-    val packageKey = CanonicalSemanticIdentityBuilder.packageKey(packageId)
-    val sourceUnitId = CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "01-control-drawing.athena")
-    val source = ProjectSemanticSourceUnit(
-        sourceUnitId = sourceUnitId,
-        packageKey = packageKey,
-        sourceRootRelativePath = "01-control-drawing.athena",
-        contentIdentity = CanonicalSemanticIdentityBuilder.sourceContentIdentity(sourceUnitId, sourceContent),
-        authoredDeclarations = compilation.source.ast.declarations,
-    )
-    val snapshot = ProjectSemanticGraphSnapshot.canonical(
-        graphId = CanonicalSemanticIdentityBuilder.graphId(
-            packageKey,
-            listOf(GraphPackageIdentity(packageKey, "src", emptyList())),
-            listOf(source.contentIdentity),
-        ),
-        rootPackageId = packageKey,
-        packages = listOf(ProjectSemanticPackage(packageId, packageKey, "src", emptyList())),
-        sourceUnits = listOf(source),
-        namespaces = listOf(
-            ProjectSemanticNamespace(
-                namespaceId = CanonicalSemanticIdentityBuilder.namespaceId(
-                    packageKey,
-                    listOf("com", "engineeringood", "m34", "professional"),
-                ),
-                packageKey = packageKey,
-                qualifiedName = listOf("com", "engineeringood", "m34", "professional"),
-                sourceUnitIds = listOf(sourceUnitId),
-                declarationIds = emptyList(),
-            ),
-        ),
-        declarations = emptyList(),
-        bindings = emptyList(),
-        diagnostics = emptyList(),
-    )
-    return ProjectSemanticLayoutHintBinder().bind(ProjectSemanticDeclarationIndexer().index(snapshot))
-}
-
-private fun controlDrawingView(): AthenaRuntimeProjectionView =
-    AthenaRuntimeProjectionView(
-        viewId = "schematic",
-        displayName = "Control Drawing",
-        description = "Focused professional rolling-shutter control drawing.",
-        familyId = "schematic",
     )
 
 private fun java.nio.file.Path.isWithinSourceRoot(sourceRootPath: java.nio.file.Path): Boolean {

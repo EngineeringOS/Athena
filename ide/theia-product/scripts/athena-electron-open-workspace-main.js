@@ -168,7 +168,7 @@ async function openWorkspace(window) {
                 10000
             ).catch(() => undefined);
             const athenaWorkbenchSmoke = await waitFor(
-                () => window.__athenaWorkbenchSmoke?.revealGraphicalView,
+                () => window.__athenaWorkbenchAutomation?.revealGraphicalView,
                 'Athena workbench smoke command hook',
                 60000
             ).catch(() => undefined);
@@ -221,7 +221,7 @@ async function openWorkspace(window) {
                         return activeButton?.disabled ? activeButton : undefined;
                     }, 'active product projection ' + smokeActiveView);
                 } else {
-                    const switched = await window.__athenaWorkbenchSmoke?.switchProjectionView?.(smokeActiveView);
+                    const switched = await window.__athenaWorkbenchAutomation?.switchProjectionView?.(smokeActiveView);
                     if (switched !== true) {
                         throw new Error('Athena could not activate hidden compatibility projection ' + smokeActiveView);
                     }
@@ -234,7 +234,7 @@ async function openWorkspace(window) {
             const expectedBackingViewId = ${JSON.stringify(EXPECTED_BACKING_VIEW_ID)};
             const proveCabinetRefresh = !smokeActiveView || smokeActiveView === expectedBackingViewId;
             const cabinetRefreshAccepted = proveCabinetRefresh
-                ? await window.__athenaWorkbenchSmoke?.refreshProjectionView?.() === true
+                ? await window.__athenaWorkbenchAutomation?.refreshProjectionView?.() === true
                 : false;
             if (proveCabinetRefresh) {
                 await waitFor(
@@ -630,7 +630,7 @@ async function openWorkspace(window) {
                 const sourcePath = target.replace(/\\\\/g, '/') + '/' + outlineSourceRelative.replace(/^\\/+/, '');
                 const sourceUri = 'file:///' + sourcePath.replace(/^\\/?([A-Za-z]:)/, '$1');
                 const revealOutlineForSource = await waitFor(
-                    () => window.__athenaWorkbenchSmoke?.revealOutlineForSource,
+                    () => window.__athenaWorkbenchAutomation?.revealOutlineForSource,
                     'Athena outline smoke command hook'
                 );
                 smokeStep('outline-hook');
@@ -660,11 +660,11 @@ async function openWorkspace(window) {
                 const sourceRelative = ${JSON.stringify(SMOKE_OUTLINE_SOURCE_RELATIVE)};
                 const sourcePath = target.replace(/\\\\/g, '/') + '/' + sourceRelative.replace(/^\\/+/, '');
                 const sourceUri = 'file:///' + sourcePath.replace(/^\\/?([A-Za-z]:)/, '$1');
-                const openSourceEditorForSmoke = await waitFor(
-                    () => window.__athenaWorkbenchSmoke?.openSourceEditorForSmoke,
+                const openSourceEditor = await waitFor(
+                    () => window.__athenaWorkbenchAutomation?.openSourceEditor,
                     'Athena source editor smoke command hook for diagnostics'
                 );
-                const proof = await openSourceEditorForSmoke(sourceUri);
+                const proof = await openSourceEditor(sourceUri);
                 return {
                     requested: true,
                     sourceUri,
@@ -904,7 +904,7 @@ async function openWorkspace(window) {
 
             async function collectGraphWorkbenchWidgetDiagramProof() {
                 try {
-                    return await window.__athenaWorkbenchSmoke?.collectGraphWorkbenchProof?.()
+                    return await window.__athenaWorkbenchAutomation?.collectGraphWorkbenchSnapshot?.()
                         || { available: false, reason: 'smoke hook unavailable' };
                 } catch (error) {
                     return {
@@ -1019,7 +1019,7 @@ async function openWorkspace(window) {
 
             async function switchGraphWorkbenchProjectionView(viewId) {
                 const switchProjectionView = await waitFor(
-                    () => window.__athenaWorkbenchSmoke?.switchProjectionView,
+                    () => window.__athenaWorkbenchAutomation?.switchProjectionView,
                     'Athena projection compatibility smoke hook'
                 );
                 const switched = await Promise.race([
@@ -1072,7 +1072,7 @@ async function openWorkspace(window) {
                 const sourcePath = target.replace(/\\\\/g, '/') + '/' + sourceRelative.replace(/^\\/+/, '');
                 const sourceUri = 'file:///' + sourcePath.replace(/^\\/?([A-Za-z]:)/, '$1');
                 const revealOutlineForSource = await waitFor(
-                    () => window.__athenaWorkbenchSmoke?.revealOutlineForSource,
+                    () => window.__athenaWorkbenchAutomation?.revealOutlineForSource,
                     'Athena editor syntax color source reveal hook'
                 );
                 await Promise.race([
@@ -1083,9 +1083,9 @@ async function openWorkspace(window) {
                     ))
                 ]);
                 const sourceEditorProof = await waitFor(
-                    () => window.__athenaWorkbenchSmoke?.openSourceEditorForSmoke,
+                    () => window.__athenaWorkbenchAutomation?.openSourceEditor,
                     'Athena source editor smoke command hook'
-                ).then(openSourceEditorForSmoke => openSourceEditorForSmoke(sourceUri));
+                ).then(openSourceEditor => openSourceEditor(sourceUri));
                 if (!sourceEditorProof.currentEditorWidgetId) {
                     throw new Error('Athena source editor smoke hook did not activate an editor: ' + JSON.stringify(sourceEditorProof));
                 }
@@ -1095,23 +1095,23 @@ async function openWorkspace(window) {
                     return visibleLines.length > 0 ? visibleLines : undefined;
                 }, 'visible Monaco source editor lines for syntax color proof');
                 const observed = {};
-                const revealSourceLineForSmoke = await waitFor(
-                    () => window.__athenaWorkbenchSmoke?.revealSourceLineForSmoke,
+                const revealSourceLine = await waitFor(
+                    () => window.__athenaWorkbenchAutomation?.revealSourceLine,
                     'Athena source editor line reveal smoke command hook'
                 );
-                await revealEditorLine(revealSourceLineForSmoke, 2);
+                await revealEditorLine(revealSourceLine, 2);
                 collectVisibleTokenColors(observed);
-                await revealEditorLine(revealSourceLineForSmoke, 8);
+                await revealEditorLine(revealSourceLine, 8);
                 collectVisibleTokenColors(observed);
-                await revealEditorLine(revealSourceLineForSmoke, 144);
+                await revealEditorLine(revealSourceLine, 144);
                 collectVisibleTokenColors(observed);
-                await revealEditorLine(revealSourceLineForSmoke, 161);
+                await revealEditorLine(revealSourceLine, 161);
                 collectVisibleTokenColors(observed);
-                await revealEditorLine(revealSourceLineForSmoke, 163);
+                await revealEditorLine(revealSourceLine, 163);
                 collectVisibleTokenColors(observed);
-                await revealEditorLine(revealSourceLineForSmoke, 171);
+                await revealEditorLine(revealSourceLine, 171);
                 collectVisibleTokenColors(observed);
-                await revealEditorLine(revealSourceLineForSmoke, 173);
+                await revealEditorLine(revealSourceLine, 173);
                 collectVisibleTokenColors(observed);
 
                 const selected = {};
@@ -1149,8 +1149,8 @@ async function openWorkspace(window) {
                 };
             }
 
-            async function revealEditorLine(revealSourceLineForSmoke, lineNumber) {
-                await revealSourceLineForSmoke(lineNumber);
+            async function revealEditorLine(revealSourceLine, lineNumber) {
+                await revealSourceLine(lineNumber);
                 await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             }
 

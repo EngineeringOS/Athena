@@ -221,7 +221,7 @@ object SemanticAuthoringTransactionFactory {
                 transactionId = transactionId,
                 diagnostic = AuthoringDiagnostic(
                     code = AuthoringDiagnosticCode.TRANSACTION_INTENT_COUNT_UNSUPPORTED,
-                    message = "Semantic authoring transaction v0 requires exactly one mutable intent; received ${intents.size}.",
+                    message = "Semantic authoring transactions require exactly one mutable intent; received ${intents.size}.",
                     authority = AuthoringDiagnosticAuthority.TRANSACTION_RUNTIME,
                     lifecycleStage = AuthoringLifecycleState.BLOCKED,
                 ),

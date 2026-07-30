@@ -7,6 +7,7 @@ import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.EngineeringFunctionDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.InstallationLengthLiteral
+import com.engineeringood.athena.language.InstallationMountOrientation
 import com.engineeringood.athena.language.InstallationOrientation
 import com.engineeringood.athena.language.LayoutAxis
 import com.engineeringood.athena.language.LayoutDeclaration
@@ -126,7 +127,14 @@ internal object AthenaProjectSourceFormatter {
             appendLine("    terminal-group ${group.id} in ${group.enclosureId} at ${group.at.render()} size ${group.size.render()} orientation ${group.orientation.render()} accepts ${group.acceptedMountingTypes.renderList()}")
         }
         declaration.mounts.forEach { mount ->
-            appendLine("    mount ${mount.id} device ${mount.deviceId} on ${mount.targetId} at ${mount.at.render()} orientation ${mount.orientation.render()}")
+            appendLine("    mount ${mount.deviceId} as ${mount.id} on ${mount.targetId} at ${mount.at.render()} {")
+            appendLine("      footprint ${mount.footprint.render()}")
+            appendLine("      mounting ${mount.mountingType}")
+            appendLine("      orientation ${mount.orientation.render()}")
+            appendLine("      allowed-orientations ${mount.allowedOrientations.joinToString(prefix = "[", postfix = "]") { orientation -> orientation.render() }}")
+            appendLine("      clearance ${mount.clearance.render()}")
+            appendLine("      compatible-containers ${mount.compatibleContainerKinds.renderList()}")
+            appendLine("    }")
         }
         declaration.routes.forEach { route ->
             appendLine("    route ${route.connectionAlias} through ${route.channelIds.renderList()}")
@@ -170,6 +178,8 @@ private fun InstallationOrientation.render(): String =
         InstallationOrientation.Vertical -> "vertical"
     }
 
+private fun InstallationMountOrientation.render(): String = name.lowercase()
+
 private fun InstallationLengthLiteral.render(): String = "${value.renderNumber()}$unit"
 
 private fun com.engineeringood.athena.language.InstallationPointLiteral.render(): String =
@@ -177,6 +187,12 @@ private fun com.engineeringood.athena.language.InstallationPointLiteral.render()
 
 private fun com.engineeringood.athena.language.InstallationSizeLiteral.render(): String =
     "(${width.render()}, ${height.render()})"
+
+private fun com.engineeringood.athena.language.InstallationSize3Literal.render(): String =
+    "(${width.render()}, ${height.render()}, ${depth.render()})"
+
+private fun com.engineeringood.athena.language.InstallationClearanceLiteral.render(): String =
+    "(${top.render()}, ${right.render()}, ${bottom.render()}, ${left.render()})"
 
 private fun QualifiedName.render(): String = parts.joinToString(".")
 

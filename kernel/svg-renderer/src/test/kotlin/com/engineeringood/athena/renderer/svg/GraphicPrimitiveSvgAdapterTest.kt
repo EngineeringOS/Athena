@@ -59,7 +59,7 @@ class GraphicPrimitiveSvgAdapterTest {
                 "line", "polyline", "arc", "circle", "rect", "text", "marker", "dot", "arrow",
                 "group", "group-line", "moved", "moved-circle", "rotated", "rotated-line", "scaled", "scaled-circle",
             ),
-            result.proof?.primitiveIds,
+            result.evidence?.primitiveIds,
         )
         assertEquals(result, GraphicPrimitiveSvgAdapter().render(request(document())))
     }
@@ -76,11 +76,11 @@ class GraphicPrimitiveSvgAdapterTest {
 
         assertFalse(invalid.isValid)
         assertNull(invalid.fragment)
-        assertNull(invalid.proof)
+        assertNull(invalid.evidence)
         assertTrue(invalid.diagnostics.any { it.code == "graphic.ir.style-token.missing" })
         assertFalse(unresolved.isValid)
         assertNull(unresolved.fragment)
-        assertNull(unresolved.proof)
+        assertNull(unresolved.evidence)
         assertEquals(listOf("drawing.svg.paint.unresolved"), unresolved.diagnostics.map { it.code })
         assertFalse(nonFinite.isValid)
         assertNull(nonFinite.fragment)

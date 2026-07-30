@@ -8,9 +8,9 @@ import kotlin.test.assertTrue
 class M30DemoRepresentationBinderTest {
     @Test
     fun `demo devices and ports bind to native symbols and terminal anchors`() {
-        val proof = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
+        val evidence = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
 
-        assertTrue(proof.diagnostics.isEmpty(), proof.diagnostics.toString())
+        assertTrue(evidence.diagnostics.isEmpty(), evidence.diagnostics.toString())
         assertEquals(
             setOf(
                 RepresentationOccurrenceRole.SUPPLY_REFERENCE,
@@ -21,21 +21,21 @@ class M30DemoRepresentationBinderTest {
                 RepresentationOccurrenceRole.LOAD_SYMBOL,
                 RepresentationOccurrenceRole.PROTECTIVE_DEVICE,
             ),
-            proof.deviceOccurrences.map { occurrence -> occurrence.occurrenceRole }.toSet(),
+            evidence.deviceOccurrences.map { occurrence -> occurrence.occurrenceRole }.toSet(),
         )
-        assertTrue(proof.deviceOccurrences.all { occurrence -> occurrence.terminalBindings.isNotEmpty() })
-        assertTrue(proof.deviceOccurrences.all { occurrence -> occurrence.labelBindings.isNotEmpty() })
-        assertTrue(proof.deviceOccurrences.all { occurrence ->
+        assertTrue(evidence.deviceOccurrences.all { occurrence -> occurrence.terminalBindings.isNotEmpty() })
+        assertTrue(evidence.deviceOccurrences.all { occurrence -> occurrence.labelBindings.isNotEmpty() })
+        assertTrue(evidence.deviceOccurrences.all { occurrence ->
             nativeLibrary().definitions.any { definition -> definition.symbolId == occurrence.symbolId }
         })
     }
 
     @Test
     fun `demo reference facts produce continuation representation occurrence`() {
-        val proof = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
+        val evidence = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
 
-        assertTrue(proof.diagnostics.isEmpty(), proof.diagnostics.toString())
-        val referenceOccurrence = proof.referenceOccurrences.single()
+        assertTrue(evidence.diagnostics.isEmpty(), evidence.diagnostics.toString())
+        val referenceOccurrence = evidence.referenceOccurrences.single()
         assertEquals(RepresentationOccurrenceRole.FOLIO_REFERENCE, referenceOccurrence.occurrenceRole)
         assertEquals(
             setOf(RepresentationReferenceKind.FOLIO_CONTINUATION),
@@ -49,7 +49,7 @@ class M30DemoRepresentationBinderTest {
 
     private fun nativeLibrary(): NativeRepresentationLibrary {
         val resource = requireNotNull(
-            javaClass.classLoader.getResource("representation-libraries/athena-native-iec-v0.properties"),
+            javaClass.classLoader.getResource("representation-libraries/athena-native-iec.properties"),
         ) { "Missing native M30 symbol pack resource." }
         val result = NativeRepresentationLibraryLoader().load(Path.of(resource.toURI()))
         assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())

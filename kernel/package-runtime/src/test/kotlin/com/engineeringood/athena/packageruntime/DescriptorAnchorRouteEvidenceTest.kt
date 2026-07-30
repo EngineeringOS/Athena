@@ -74,7 +74,7 @@ class DescriptorAnchorRouteEvidenceTest {
         variant = "standard",
         anchorMapSummary = listOf(anchorSummary),
         labelBindingSummary = emptyList(),
-        resolverStage = "binding-resolver-v0",
+        resolverStage = "binding-resolver",
         diagnostics = emptyList(),
         rendererFallbackAccepted = false,
     )

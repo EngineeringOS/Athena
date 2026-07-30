@@ -43,7 +43,7 @@ class PresentationRepresentationFactContractTest {
         family: String,
     ): PresentationRepresentationFact {
         val anatomy = PresentationAnatomy(
-            representationId = RepresentationId("athena-industrial-control-v0:$family"),
+            representationId = RepresentationId("athena-industrial-control:$family"),
             context = RepresentationContext.ELECTRICAL_SCHEMATIC,
             bounds = PresentationBounds(GridUnit(80), GridUnit(48)),
             hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),

@@ -54,7 +54,7 @@ In the IDE:
 M25 proves:
 
 - component knowledge can compile into presentation anatomy facts
-- the `athena-industrial-control-v0` presentation policy can govern symbol and terminal notation
+- the `athena-industrial-control` presentation policy can govern symbol and terminal notation
 - labels are semantic presentation facts with roles and anchors
 - M24 route facts can attach to M25 presentation terminals
 - the accepted proof path has zero-fallback representation behavior

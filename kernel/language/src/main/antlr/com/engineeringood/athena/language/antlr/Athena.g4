@@ -202,7 +202,51 @@ installationTerminalGroupDecl
     ;
 
 installationMountDecl
-    : MOUNT ident DEVICE ident ON ident AT lengthPoint ORIENTATION installationOrientation
+    : MOUNT ident AS ident ON ident AT lengthPoint LBRACE installationMountMember* RBRACE
+    ;
+
+installationMountMember
+    : installationFootprintDecl
+    | installationMountingDecl
+    | installationMountOrientationDecl
+    | installationAllowedOrientationsDecl
+    | installationClearanceDecl
+    | installationCompatibleContainersDecl
+    ;
+
+installationFootprintDecl
+    : FOOTPRINT lengthTuple3
+    ;
+
+installationMountingDecl
+    : MOUNTING ident
+    ;
+
+installationMountOrientationDecl
+    : ORIENTATION installationMountOrientation
+    ;
+
+installationAllowedOrientationsDecl
+    : ALLOWED_ORIENTATIONS installationMountOrientationList
+    ;
+
+installationClearanceDecl
+    : CLEARANCE lengthTuple4
+    ;
+
+installationCompatibleContainersDecl
+    : COMPATIBLE_CONTAINERS identList
+    ;
+
+installationMountOrientationList
+    : LBRACK installationMountOrientation (COMMA installationMountOrientation)* RBRACK
+    ;
+
+installationMountOrientation
+    : DEG0
+    | DEG90
+    | DEG180
+    | DEG270
     ;
 
 installationRouteDecl
@@ -228,6 +272,10 @@ lengthSize
 
 lengthTuple3
     : LPAREN lengthLiteral COMMA lengthLiteral COMMA lengthLiteral RPAREN
+    ;
+
+lengthTuple4
+    : LPAREN lengthLiteral COMMA lengthLiteral COMMA lengthLiteral COMMA lengthLiteral RPAREN
     ;
 
 lengthLiteral
@@ -453,15 +501,34 @@ anchorDecl
     ;
 
 anchorMember
-    : primitiveRefDecl
+    : refDecl
+    | anchorPortDecl
+    | directionDecl
+    | signalDecl
     | pointDecl
     | roleDecl
-    | acceptsDirectionDecl
-    | acceptsSignalDecl
     ;
 
-primitiveRefDecl
-    : PRIMITIVE_REF ident
+refDecl
+    : REF STRING
+    ;
+
+anchorPortDecl
+    : PORT twoPartName
+    ;
+
+directionDecl
+    : DIRECTION directionPredicate
+    ;
+
+signalDecl
+    : SIGNAL twoPartName
+    ;
+
+directionPredicate
+    : IN
+    | OUT
+    | BIDIRECTIONAL
     ;
 
 pointDecl
@@ -470,20 +537,6 @@ pointDecl
 
 roleDecl
     : ROLE ident
-    ;
-
-acceptsDirectionDecl
-    : ACCEPTS DIRECTION directionPredicate
-    ;
-
-acceptsSignalDecl
-    : ACCEPTS SIGNAL ident
-    ;
-
-directionPredicate
-    : IN
-    | OUT
-    | BIDIRECTIONAL
     ;
 
 pointTuple
@@ -558,6 +611,7 @@ ident
     | CHANNEL
     | TERMINAL_GROUP
     | MOUNT
+    | AS
     | ROUTE
     | ON
     | THROUGH
@@ -566,9 +620,18 @@ ident
     | MARGIN
     | WALL
     | MOUNTING
+    | FOOTPRINT
+    | ALLOWED_ORIENTATIONS
+    | CLEARANCE
+    | COMPATIBLE_CONTAINERS
+    | DEG0
+    | DEG90
+    | DEG180
+    | DEG270
     | SYMBOL
     | ELEMENT
     | PROFILE
+    | ROLE
     | BINDING
     | PROJECTION
     | STANDARD
@@ -608,12 +671,11 @@ ident
     | TO
     | STYLE
     | ANCHOR
-    | PRIMITIVE_REF
     | POINT
-    | ROLE
     | ACCEPTS
     | DIRECTION
     | SIGNAL
+    | REF
     | IN
     | OUT
     | BIDIRECTIONAL
@@ -649,6 +711,7 @@ DUCT : 'duct' ;
 CHANNEL : 'channel' ;
 TERMINAL_GROUP : 'terminal-group' ;
 MOUNT : 'mount' ;
+AS : 'as' ;
 ROUTE : 'route' ;
 ON : 'on' ;
 THROUGH : 'through' ;
@@ -657,6 +720,14 @@ LANES : 'lanes' ;
 MARGIN : 'margin' ;
 WALL : 'wall' ;
 MOUNTING : 'mounting' ;
+FOOTPRINT : 'footprint' ;
+ALLOWED_ORIENTATIONS : 'allowed-orientations' ;
+CLEARANCE : 'clearance' ;
+COMPATIBLE_CONTAINERS : 'compatible-containers' ;
+DEG0 : 'deg0' ;
+DEG90 : 'deg90' ;
+DEG180 : 'deg180' ;
+DEG270 : 'deg270' ;
 SYMBOL : 'symbol' ;
 ELEMENT : 'element' ;
 PROFILE : 'profile' ;
@@ -699,12 +770,12 @@ FROM : 'from' ;
 TO : 'to' ;
 STYLE : 'style' ;
 ANCHOR : 'anchor' ;
-PRIMITIVE_REF : 'primitiveRef' ;
 POINT : 'point' ;
 ROLE : 'role' ;
 ACCEPTS : 'accepts' ;
 DIRECTION : 'direction' ;
 SIGNAL : 'signal' ;
+REF : 'ref' ;
 IN : 'in' ;
 OUT : 'out' ;
 BIDIRECTIONAL : 'bidirectional' ;

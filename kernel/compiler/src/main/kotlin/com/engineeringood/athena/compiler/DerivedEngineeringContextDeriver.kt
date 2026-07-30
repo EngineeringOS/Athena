@@ -19,7 +19,7 @@ import java.math.RoundingMode
 /**
  * Derives the first narrow M9 engineering context values directly from canonical `EngineeringDocument`.
  *
- * This proof stays compiler-owned and deterministic. It does not widen parser grammar, does not emit capability
+ * This evidence stays compiler-owned and deterministic. It does not widen parser grammar, does not emit capability
  * facts, and does not depend on layout, geometry, runtime, or renderer state.
  */
 class DerivedEngineeringContextDeriver {

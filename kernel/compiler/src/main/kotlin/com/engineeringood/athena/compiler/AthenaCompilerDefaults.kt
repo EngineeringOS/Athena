@@ -7,7 +7,7 @@ import java.nio.file.Path
 /**
  * Resolves the default governed knowledge-package source for product-facing JVM compiler surfaces.
  *
- * The current product proof scans the repository `extensions/` directory for reviewed
+ * The current product evidence scans the repository `extensions/` directory for reviewed
  * `knowledge-*` packages so runtime and LSP flows can consume the same fixed M9 knowledge packs as
  * compiler tests without hard-coding one package id into frontend code.
  */

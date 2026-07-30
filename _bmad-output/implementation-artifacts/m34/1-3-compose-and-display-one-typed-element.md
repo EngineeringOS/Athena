@@ -134,19 +134,19 @@ symbol iec_switch_contact {
   }
 
   anchor line {
-    primitiveRef line
+    ref line
     point (40, 0)
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power
   }
 
   anchor load {
-    primitiveRef load
+    ref load
     point (40, 80)
     role terminal
-    accepts direction out
-    accepts signal Power
+    direction out
+    signal Power
   }
 }
 

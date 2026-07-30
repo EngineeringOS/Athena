@@ -438,7 +438,7 @@ class AthenaSemanticMacroRuntimeService internal constructor(
                     beforeDocument = execution.beforeDocument,
                     afterDocument = execution.afterDocument,
                 ),
-                reason = "Committed approved Semantic Macro bundle through the sole M8 mutation authority. Canonical, graph, inspection, and review state were refreshed.",
+                reason = "Committed approved Semantic Macro bundle through the mutation authority. Canonical, graph, inspection, and review state were refreshed.",
             )
 
             is AthenaCommandExecutionRejected -> AthenaSemanticMacroAcceptanceRejected(

@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:b52a24bc57b2b85a8f98a4f8e5790a6cce55f13759fd48d694324231cd8f51c7
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:29a62fbf353d85fa0d57578caf48d16f779dfa779311867492e75c229f342c73
 primaryPackage:
   name: com.engineeringood.m34.sample
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m34.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:98d74ff5d929417961a20b803ed5e61b3968f411d974361639a818c549bd00fc
+    snapshotDigest: package-snapshot:c72585ec44c6d6dd4de24dd97d9397942f2c4022bbefda3d55e3f812a56ca161
     sourceHashes:
       - path: com/engineeringood/m34/sample/01-native-cabinet-proof.athena
-        hash: sha256:4ea6533a1270034e5442877973c6814d90c5dd75c187ec7f127021e58cb881f2
+        hash: sha256:e83af3807459c9343fff88b9425ea0fa661e87d73720ac92910169ba3635af2f
     resourceHashes: []
     dependencies: []

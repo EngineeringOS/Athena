@@ -7,7 +7,6 @@ enum class InteractionPayloadKind {
     PREVIEW,
     REVEAL,
     DIAGNOSTIC,
-    PROOF,
 }
 
 data class InteractionEnvelope(
@@ -17,17 +16,17 @@ data class InteractionEnvelope(
     val payloadKind: InteractionPayloadKind,
     val payload: Map<String, String>,
     val adapterMetadata: Map<String, String> = emptyMap(),
-    val schemaVersion: String = M29_SCHEMA_VERSION,
+    val schemaVersion: String = INTERACTION_SCHEMA_VERSION,
 ) {
     init {
         require(requestId.isNotBlank()) { "Interaction envelope request id must not be blank." }
     }
 
     companion object {
-        const val M29_SCHEMA_VERSION = "m29.interaction.v1"
+        const val INTERACTION_SCHEMA_VERSION = "athena.interaction"
 
         fun validateSchemaVersion(schemaVersion: String): List<InteractionDiagnostic> {
-            return if (schemaVersion == M29_SCHEMA_VERSION) {
+            return if (schemaVersion == INTERACTION_SCHEMA_VERSION) {
                 emptyList()
             } else {
                 listOf(

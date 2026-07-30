@@ -31,7 +31,7 @@ data class PortPresentationRule(
 data class PortPresentationPolicy(
     val rules: List<PortPresentationRule>,
     val fallbackSide: TerminalSide = TerminalSide.RIGHT,
-    val policySource: String = "m24:schematic-default",
+    val policySource: String = "schematic-default",
 ) {
     init {
         val duplicateRoles = rules
@@ -81,5 +81,5 @@ data class TerminalAnchorFact(
     val side: TerminalSide,
     val point: SchematicRoutePoint,
     val gridPoint: SchematicRoutePoint = point,
-    val policySource: String = "m24:schematic-default",
+    val policySource: String = "schematic-default",
 )

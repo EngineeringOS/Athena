@@ -19,14 +19,14 @@ test('M25 graph workbench renders governed representation terminal and label DOM
     const presentationNodeSource = readRepoFile('ide/theia-frontend/src/browser/athena-graph-workbench-presentation-node.tsx');
 
     assert.match(widgetSource, /data-athena-representation-fact=\{node\.presentationRepresentation \? 'true' : undefined\}/);
-    assert.match(widgetSource, /data-athena-render-fallback=\{node\.presentationRepresentation \? 'false' : undefined\}/);
+    assert.match(widgetSource, /data-athena-render-fallback=\{node\.presentationRepresentation \|\| node\.presentationGraphicOccurrence \? 'false' : undefined\}/);
     assert.match(widgetSource, /data-athena-presentation-terminal='true'/);
     assert.match(widgetSource, /data-athena-presentation-terminal-number=\{terminal\.number\}/);
     assert.match(widgetSource, /data-athena-presentation-label='true'/);
     assert.match(widgetSource, /data-athena-presentation-label-role=\{label\.role\}/);
     assert.match(presentationNodeSource, /const hasPartTextSlots = node\.presentationParts\.some/);
     assert.match(presentationNodeSource, /const renderOccurrenceTextSlots = !node\.presentationRepresentation && !hasPartTextSlots/);
-    assert.match(presentationNodeSource, /renderOccurrenceTextSlots \? occurrence\.textSlots\.map/);
+    assert.match(presentationNodeSource, /renderOccurrenceTextSlots && occurrence \? occurrence\.textSlots\.map/);
     assert.match(modelSource, /presentationTerminals: representation/);
     assert.match(modelSource, /presentationLabels: representation/);
 });

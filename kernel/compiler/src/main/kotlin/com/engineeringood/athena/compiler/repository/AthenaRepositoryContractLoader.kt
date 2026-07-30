@@ -109,6 +109,17 @@ class AthenaRepositoryContractLoader {
             emptySet()
         }
 
+        if (manifest == null) {
+            return AthenaRepositoryContractValidationResult(
+                repositoryRoot = normalizedRepositoryRoot,
+                manifestPath = manifestPath,
+                lockPath = lockPath,
+                manifestPresent = manifestPresent && Files.isRegularFile(manifestPath),
+                lockPresent = lockPresent && Files.isRegularFile(lockPath),
+                diagnostics = diagnostics,
+            )
+        }
+
         val excludedGovernedRoots = if (options.allowNestedGovernedSubrepositories) {
             discoverNestedGovernedRoots(normalizedRepositoryRoot)
         } else {
@@ -120,18 +131,16 @@ class AthenaRepositoryContractLoader {
             excludedGovernedRoots = excludedGovernedRoots,
         )
 
-        if (manifest != null) {
-            diagnostics += validateSourceRootLayout(
+        diagnostics += validateSourceRootLayout(
+            repositoryRoot = normalizedRepositoryRoot,
+            sourceRoot = manifest.primaryPackage.sourceRoot,
+            excludedGovernedRoots = excludedGovernedRoots + representationPackageRoots,
+        )
+        representationPackageRoots.forEach { representationPackageRoot ->
+            diagnostics += validateGovernedSourcePackageHierarchy(
                 repositoryRoot = normalizedRepositoryRoot,
-                sourceRoot = manifest.primaryPackage.sourceRoot,
-                excludedGovernedRoots = excludedGovernedRoots + representationPackageRoots,
+                governedRoot = representationPackageRoot,
             )
-            representationPackageRoots.forEach { representationPackageRoot ->
-                diagnostics += validateGovernedSourcePackageHierarchy(
-                    repositoryRoot = normalizedRepositoryRoot,
-                    governedRoot = representationPackageRoot,
-                )
-            }
         }
 
         return AthenaRepositoryContractValidationResult(
@@ -140,12 +149,10 @@ class AthenaRepositoryContractLoader {
             lockPath = lockPath,
             manifestPresent = manifestPresent && Files.isRegularFile(manifestPath),
             lockPresent = lockPresent && Files.isRegularFile(lockPath),
-            repository = manifest?.let { loadedManifest ->
-                EngineeringRepository(
-                    manifest = loadedManifest,
-                    lock = null,
-                )
-            },
+            repository = EngineeringRepository(
+                manifest = manifest,
+                lock = null,
+            ),
             representationPackageRoots = representationPackageRoots,
             diagnostics = diagnostics,
         )
@@ -192,12 +199,12 @@ class AthenaRepositoryContractLoader {
         if (sourceRoot.isNullOrBlank()) {
             diagnostics += diagnostic(
                 code = "repository.contract.manifest.primary-package.source-root.missing",
-                message = "`primaryPackage.sourceRoot` is required and must be `src` in M5.",
+                message = "`primaryPackage.sourceRoot` is required and must be `src`.",
             )
         } else if (sourceRoot != GOVERNED_SOURCE_ROOT) {
             diagnostics += diagnostic(
                 code = "repository.contract.manifest.primary-package.source-root.unsupported",
-                message = "`primaryPackage.sourceRoot` must be `$GOVERNED_SOURCE_ROOT` in M5.",
+                message = "`primaryPackage.sourceRoot` must be `$GOVERNED_SOURCE_ROOT`.",
             )
         }
 
@@ -382,7 +389,7 @@ class AthenaRepositoryContractLoader {
                 if (source == null) {
                     diagnostics += diagnostic(
                         code = "repository.contract.manifest.dependencies.source.unsupported",
-                        message = "Dependency `${dependencyName ?: "<unknown>"}` declares unsupported `source: $rawSource`. Supported M5 sources are `local-path` and `local-package`.",
+                        message = "Dependency `${dependencyName ?: "<unknown>"}` declares unsupported `source: $rawSource`. Supported sources are `local-path` and `local-package`.",
                     )
                     hasErrors = true
                 }
@@ -433,7 +440,7 @@ class AthenaRepositoryContractLoader {
                 .map { candidate ->
                     diagnostic(
                         code = "repository.contract.manifest.nested.unsupported",
-                        message = "Nested `$MANIFEST_FILE_NAME` is not supported in M5: ${repositoryRoot.relativize(candidate).toDisplayPath()}",
+                        message = "Nested `$MANIFEST_FILE_NAME` is not supported: ${repositoryRoot.relativize(candidate).toDisplayPath()}",
                     )
                 }
                 .collect(Collectors.toList())

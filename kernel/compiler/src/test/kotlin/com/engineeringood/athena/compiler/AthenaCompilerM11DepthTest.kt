@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 class AthenaCompilerM11DepthTest {
     @Test
-    fun `dense m11 proof repository compiles into serious electrical projection depth`() {
+    fun `dense m11 evidence repository compiles into serious electrical projection depth`() {
         val repoRoot = resolveRepoRoot()
         val sourcePath = repoRoot.resolve("examples/m11/dense-electrical-proof/src/com/engineeringood/assemblyline/assemblyline.athena")
         val compiler = AthenaCompiler(

@@ -79,7 +79,7 @@ data class DrawingSheetReferencePlan(
     val placements: List<DrawingSheetReferencePlacementFact>,
 )
 
-data class DrawingSheetReferenceProof(
+data class DrawingSheetReferenceEvidence(
     val sheetId: String,
     val referenceIds: List<String>,
     val placementIds: List<String>,
@@ -99,15 +99,15 @@ data class DrawingSheetReferenceDiagnostic(
 
 data class DrawingSheetReferenceResult(
     val plan: DrawingSheetReferencePlan?,
-    val proof: DrawingSheetReferenceProof?,
+    val evidence: DrawingSheetReferenceEvidence?,
     val diagnostics: List<DrawingSheetReferenceDiagnostic>,
 ) {
     val isValid: Boolean
-        get() = plan != null && proof != null && diagnostics.isEmpty()
+        get() = plan != null && evidence != null && diagnostics.isEmpty()
 
     fun toTransportPayload(): DrawingSheetReferenceTransportPayload? {
         val resolvedPlan = plan ?: return null
-        val resolvedProof = proof ?: return null
+        val resolvedEvidence = evidence ?: return null
         if (diagnostics.isNotEmpty()) return null
         return DrawingSheetReferenceTransportPayload(
             sheetId = resolvedPlan.sheetId,
@@ -118,11 +118,11 @@ data class DrawingSheetReferenceResult(
                 )
             },
             placements = resolvedPlan.placements.map { it.toPayload() },
-            markerRepresentationIdentities = resolvedProof.markerRepresentationIdentities,
-            projectionAuthority = resolvedProof.projectionAuthority,
-            representationAuthority = resolvedProof.representationAuthority,
-            boundsAuthority = resolvedProof.boundsAuthority,
-            structureAuthority = resolvedProof.structureAuthority,
+            markerRepresentationIdentities = resolvedEvidence.markerRepresentationIdentities,
+            projectionAuthority = resolvedEvidence.projectionAuthority,
+            representationAuthority = resolvedEvidence.representationAuthority,
+            boundsAuthority = resolvedEvidence.boundsAuthority,
+            structureAuthority = resolvedEvidence.structureAuthority,
         )
     }
 }

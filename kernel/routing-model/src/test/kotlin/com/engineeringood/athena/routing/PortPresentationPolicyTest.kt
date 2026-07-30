@@ -39,7 +39,7 @@ class PortPresentationPolicyTest {
         assertEquals(ElectricalPortRole.OUTPUT, anchor.portRole)
         assertEquals(TerminalSide.RIGHT, anchor.side)
         assertEquals(SchematicRoutePoint(x = 320, y = 180), anchor.gridPoint)
-        assertEquals("m24:schematic-default", anchor.policySource)
+        assertEquals("schematic-default", anchor.policySource)
         assertSame(anchor.point, anchor.gridPoint)
     }
 
@@ -65,7 +65,7 @@ class PortPresentationPolicyTest {
                 PortPresentationRule(ElectricalPortRole.TERMINAL, TerminalSide.LEFT),
             ),
             fallbackSide = TerminalSide.RIGHT,
-            policySource = "m24:schematic-default",
+            policySource = "schematic-default",
         )
     }
 }

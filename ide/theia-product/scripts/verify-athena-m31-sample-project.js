@@ -14,7 +14,7 @@ const ATHENA_JAVA_SENTINEL = 'ATHENA_JAVA_HOME=';
 const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED=';
 const STARTUP_TIMEOUT_MS = 120000;
 const AUTHORING_SCHEMA_VERSION = 'm31.authoring.v1';
-const SOURCE_RELATIVE = 'src/01-governed-authoring-customer-source.athena';
+const SOURCE_RELATIVE = 'src/com/engineeringood/m31/sample/01-governed-authoring-customer-source.athena';
 const EXPECTED_OUTLINE_PATH = 'RollingShutterGovernedAuthoringProof > SpareTerminalXT31 > in1';
 
 // No Gradle verification runs in parallel. Windows Gradle verification must stay sequential.

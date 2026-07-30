@@ -29,9 +29,9 @@ value class SemanticSpatialIntentSnapshotId(val value: String) {
 }
 
 /**
- * Projection scope for M27 Semantic Spatial Compiler v0.
+ * Projection scope for semantic spatial intent compilation.
  *
- * M27 deliberately admits only 2D electrical schematic projection. Future values can be added for
+ * The current contract admits only 2D electrical schematic projection. Future values can be added for
  * other projections without making this contract a general CAD geometry kernel.
  */
 enum class SemanticSpatialProjectionScope {
@@ -235,7 +235,7 @@ data class SemanticSpatialIntent(
     init {
         require(relation.isNotBlank()) { "Semantic spatial relation must not be blank." }
         require(scope == SemanticSpatialProjectionScope.ELECTRICAL_SCHEMATIC_2D) {
-            "M27 Semantic Spatial Compiler v0 only admits 2D electrical schematic projection."
+            "Semantic spatial compilation only admits 2D electrical schematic projection."
         }
     }
 

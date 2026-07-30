@@ -18,7 +18,7 @@ import java.nio.file.Path
 
 class AthenaReferencedSvgGraphicCompilerTest {
     @Test
-    fun `compiles complex svg geometry with use expansion and geometry refs`() {
+    fun `compiles complex svg geometry with use expansion and data-athena-ref hints`() {
         val project = createTempProject()
         val svgPath = project.resolve("asset.svg")
         svgPath.writeText(COMPLEX_SVG)
@@ -60,7 +60,7 @@ class AthenaReferencedSvgGraphicCompilerTest {
     }
 
     @Test
-    fun `rejects geometry ref mismatches and duplicate ids`() {
+    fun `rejects legacy geometry refs and duplicate ids`() {
         val project = createTempProject()
         project.resolve("asset.svg").writeText(INVALID_GEOMETRY_REF_SVG)
 
@@ -72,7 +72,7 @@ class AthenaReferencedSvgGraphicCompilerTest {
 
         assertTrue(result.document == null)
         assertTrue(
-            result.diagnostics.any { it.code == "svg.geometry-ref.mismatch" },
+            result.diagnostics.any { it.code == "svg.metadata.forbidden" },
             result.diagnostics.joinToString("\n"),
         )
         assertTrue(
@@ -86,7 +86,7 @@ class AthenaReferencedSvgGraphicCompilerTest {
     }
 
     @Test
-    fun `rejects forbidden svg metadata unsupported namespaces and unsafe urls`() {
+    fun `rejects forbidden svg metadata unsupported namespaces event handlers and unsafe urls`() {
         val compiler = AthenaRepresentationSourceCompiler()
 
         val diagnostics = compiler.lintSvg(
@@ -96,7 +96,101 @@ class AthenaReferencedSvgGraphicCompilerTest {
 
         assertTrue(diagnostics.any { it.code == "svg.metadata.forbidden" }, diagnostics.joinToString("\n"))
         assertTrue(diagnostics.any { it.code == "svg.namespace.unsupported" }, diagnostics.joinToString("\n"))
+        assertTrue(diagnostics.any { it.code == "svg.script.forbidden" }, diagnostics.joinToString("\n"))
+        assertTrue(diagnostics.any { it.code == "svg.event.forbidden" }, diagnostics.joinToString("\n"))
         assertTrue(diagnostics.any { it.code == "svg.resource-url.forbidden" }, diagnostics.joinToString("\n"))
+    }
+
+    @Test
+    fun `rejects unsafe attributes on the svg root`() {
+        val diagnostics = AthenaRepresentationSourceCompiler().lintSvg(
+            file = "asset.svg",
+            source = UNSAFE_ROOT_ATTRIBUTES_SVG,
+        )
+
+        assertTrue(diagnostics.any { it.code == "svg.event.forbidden" }, diagnostics.joinToString("\n"))
+        assertTrue(diagnostics.any { it.code == "svg.resource-url.forbidden" }, diagnostics.joinToString("\n"))
+        assertTrue(diagnostics.any { it.code == "svg.attribute.namespace.forbidden" }, diagnostics.joinToString("\n"))
+    }
+
+    @Test
+    fun `rejects malformed and partially parsed transforms instead of lowering them as identity`() {
+        val malformedTransforms = listOf(
+            "translate(10 nope)",
+            "translate(10 20) trailing",
+            "translate(10 20 30)",
+            "rotate(20 10)",
+            "matrix(1 0 0 1 0 0)",
+        )
+
+        malformedTransforms.forEach { transform ->
+            val diagnostics = AthenaRepresentationSourceCompiler().lintSvg(
+                file = "asset.svg",
+                source = """
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+                      <line x1="1" y1="1" x2="10" y2="10" transform="$transform"/>
+                    </svg>
+                """.trimIndent(),
+            )
+
+            assertTrue(
+                diagnostics.any { it.code == "svg.transform.invalid" },
+                "Expected malformed transform `$transform` to fail, got ${diagnostics.joinToString("\n")}",
+            )
+        }
+    }
+
+    @Test
+    fun `indexes data-athena-ref without requiring an svg id`() {
+        val project = createTempProject()
+        project.resolve("asset.svg").writeText(REFERENCE_WITHOUT_ID_SVG)
+
+        val result = AthenaSvgGraphicBodyCompiler.compile(
+            athenaFile = project.resolve("source.athena").toString(),
+            definitionId = "vendor.drive.element",
+            resource = svgResource(),
+        )
+
+        assertTrue(result.diagnostics.isEmpty(), result.diagnostics.joinToString("\n"))
+        assertEquals(1, result.primitiveIdsByGeometryRef.getValue("anchor:body").size)
+    }
+
+    @Test
+    fun `rejects unsafe xml transport before svg admission`() {
+        val compiler = AthenaRepresentationSourceCompiler()
+
+        val diagnostics = compiler.lintSvg(
+            file = "asset.svg",
+            source = RAW_MARKUP_TRANSPORT_SVG,
+        )
+
+        assertTrue(diagnostics.any { it.code == "svg.xml.invalid" }, diagnostics.joinToString("\n"))
+    }
+
+    @Test
+    fun `rejects unsafe package local svg paths before admission`() {
+        val project = createTempProject()
+        project.resolve("asset.svg").writeText(ANCHOR_SVG)
+        val cases = listOf(
+            "../asset.svg" to "svg.path.invalid",
+            project.resolve("asset.svg").toAbsolutePath().toString() to "svg.path.invalid",
+            "https://example.com/vendor.svg" to "svg.path.invalid",
+            "./missing.svg" to "svg.file.missing",
+        )
+
+        cases.forEach { (path, expectedCode) ->
+            val result = AthenaSvgGraphicBodyCompiler.compile(
+                athenaFile = project.resolve("source.athena").toString(),
+                definitionId = "vendor.drive.element",
+                resource = svgResource(path),
+            )
+
+            assertTrue(result.document == null, path)
+            assertTrue(
+                result.diagnostics.any { it.code == expectedCode },
+                "Expected $expectedCode for `$path`, got ${result.diagnostics.joinToString("\n")}",
+            )
+        }
     }
 
     @Test
@@ -133,7 +227,7 @@ class AthenaReferencedSvgGraphicCompilerTest {
     @Test
     fun `svg backed symbol keeps athena authored anchors for element export`() {
         val project = createTempProject()
-        project.resolve("asset.svg").writeText(COMPLEX_SVG)
+        project.resolve("asset.svg").writeText(ANCHOR_SVG)
 
         val result = AthenaRepresentationSourceCompiler().compile(
             project.resolve("svg-symbol.athena").toString(),
@@ -147,6 +241,23 @@ class AthenaReferencedSvgGraphicCompilerTest {
         assertEquals(listOf("powerIn"), element.anchors.map { it.anchorId.value })
     }
 
+    @Test
+    fun `rejects svg-backed anchors that rely on unmarked geometry ids`() {
+        val project = createTempProject()
+        project.resolve("asset.svg").writeText(UNMARKED_SVG)
+
+        val result = AthenaRepresentationSourceCompiler().compile(
+            project.resolve("svg-symbol.athena").toString(),
+            SVG_BACKED_SYMBOL_WITH_UNMARKED_GEOMETRY,
+        )
+
+        assertTrue(result.definitions.isEmpty(), result.diagnostics.joinToString("\n"))
+        assertTrue(
+            result.diagnostics.any { it.code == "symbol.anchor.ref.unresolved" },
+            result.diagnostics.joinToString("\n"),
+        )
+    }
+
     private fun createTempProject(): Path {
         val root = Files.createTempDirectory("athena-svg-geometry-test")
         root.resolve("source.athena").writeText("package athena.vendor")
@@ -154,11 +265,11 @@ class AthenaReferencedSvgGraphicCompilerTest {
         return root
     }
 
-    private fun svgResource(): RepresentationResourceDeclaration =
+    private fun svgResource(path: String = "./asset.svg"): RepresentationResourceDeclaration =
         RepresentationResourceDeclaration(
             id = "vendor_svg",
             kind = RepresentationResourceKind.SVG,
-            path = SymbolStringField("./asset.svg", span()),
+            path = SymbolStringField(path, span()),
             span = span(),
         )
 
@@ -191,13 +302,27 @@ class AthenaReferencedSvgGraphicCompilerTest {
         val COMPLEX_SVG = """
             <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">
               <defs>
-                <g id="terminal" data-athena-geometry-ref="terminal">
+                <g id="terminal" data-athena-ref="anchor:terminal">
                   <line x1="0" y1="0" x2="0" y2="8"/>
                   <line x1="-3" y1="8" x2="3" y2="8"/>
                 </g>
               </defs>
               <use href="#terminal" x="20" y="10"/>
               <use href="#terminal" transform="translate(60 10) rotate(90)"/>
+            </svg>
+        """.trimIndent()
+
+        val ANCHOR_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">
+              <rect id="body" x="8" y="8" width="104" height="44" data-athena-ref="anchor:body"/>
+              <circle id="power-in-dot" cx="24" cy="30" r="4" data-athena-ref="anchor:power-in-dot"/>
+              <text id="tag" x="60" y="24" data-athena-ref="anchor:tag">ACS380</text>
+            </svg>
+        """.trimIndent()
+
+        val UNMARKED_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">
+              <rect id="body" x="8" y="8" width="104" height="44"/>
             </svg>
         """.trimIndent()
 
@@ -217,11 +342,22 @@ class AthenaReferencedSvgGraphicCompilerTest {
 
         val INVALID_METADATA_SVG = """
             <svg xmlns="http://www.w3.org/2000/svg" width="80" height="40" data-athena-schema="representation/v1">
-              <g id="terminal" data-athena-geometry-ref="terminal">
+              <g id="terminal" data-athena-ref="anchor:terminal">
                 <line x1="0" y1="0" x2="0" y2="8" onclick="alert(1)"/>
               </g>
               <bad:node xmlns:bad="urn:bad"/>
+              <script>alert(1)</script>
+              <foreignObject><div>bad</div></foreignObject>
               <use href="http://example.com/external.svg#terminal"/>
+            </svg>
+        """.trimIndent()
+
+        val RAW_MARKUP_TRANSPORT_SVG = """
+            <!DOCTYPE svg [
+              <!ENTITY xxe SYSTEM "file:///etc/passwd">
+            ]>
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="40">
+              <text x="0" y="10">&xxe;</text>
             </svg>
         """.trimIndent()
 
@@ -287,11 +423,11 @@ class AthenaReferencedSvgGraphicCompilerTest {
               graphic svg resource vendor_svg
 
               anchor powerIn {
-                primitiveRef vendor_svg
+                ref "anchor:power-in-dot"
                 point (20, 10)
                 role terminal
-                accepts direction in
-                accepts signal Power
+                direction in
+                signal Power.family
               }
             }
 
@@ -309,6 +445,48 @@ class AthenaReferencedSvgGraphicCompilerTest {
               }
 
               export anchor powerIn from body.powerIn
+            }
+        """.trimIndent()
+
+        val UNSAFE_ROOT_ATTRIBUTES_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 xmlns:foreign="urn:foreign"
+                 width="80"
+                 height="40"
+                 onload="alert(1)"
+                 data-source="https://example.com/asset.svg"
+                 foreign:mode="unsafe">
+              <line x1="0" y1="0" x2="8" y2="8"/>
+            </svg>
+        """.trimIndent()
+
+        val REFERENCE_WITHOUT_ID_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="40">
+              <rect x="8" y="8" width="64" height="24" data-athena-ref="anchor:body"/>
+            </svg>
+        """.trimIndent()
+
+        val SVG_BACKED_SYMBOL_WITH_UNMARKED_GEOMETRY = """
+            package athena.vendor
+
+            symbol vendor_drive_svg_symbol {
+              identity "vendor.drive.svg.symbol"
+              version "1.0.0"
+
+              resource vendor_svg {
+                kind svg
+                path "./asset.svg"
+              }
+
+              graphic svg resource vendor_svg
+
+              anchor powerIn {
+                ref "svg-0001"
+                point (20, 10)
+                role terminal
+                direction in
+                signal Power.family
+              }
             }
         """.trimIndent()
     }

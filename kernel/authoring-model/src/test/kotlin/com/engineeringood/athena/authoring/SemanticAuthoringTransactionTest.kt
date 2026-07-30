@@ -64,7 +64,7 @@ class SemanticAuthoringTransactionTest {
             provenance = AuthoringTransactionProvenance(
                 actor = "user:Aaron",
                 origin = intent.origin,
-                reason = "customer authoring proof",
+                reason = "customer authoring evidence",
             ),
         )
         val transaction = assertIs<SemanticAuthoringTransactionCreated>(result).transaction

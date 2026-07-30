@@ -95,7 +95,10 @@ class RepresentationPackageDescriptorContractTest {
             result.diagnostics.map { it.code.wireValue },
         )
         assertEquals("resourceReferences[1].kind", result.diagnostics.single().subject)
-        assertTrue(result.diagnostics.single().message.contains("deferred"))
+        assertEquals(
+            "Graphic Resource kind THREE_DIMENSIONAL_MESH is unsupported by the representation backend.",
+            result.diagnostics.single().message,
+        )
     }
 
     private fun validDescriptor(): RepresentationPackageDescriptor = RepresentationPackageDescriptor(

@@ -12,7 +12,7 @@ symbol iec_folio_continuation_reference_symbol {
   }
 
   anchor continuation {
-    primitiveRef body
+    ref "body"
     point (32, 10)
     role reference
   }
@@ -98,19 +98,19 @@ symbol cabinet_protective_device_symbol {
   }
 
   anchor line {
-    primitiveRef line
+    ref "line"
     point (36, 0)
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power.family
   }
 
   anchor load {
-    primitiveRef load
+    ref "load"
     point (36, 120)
     role terminal
-    accepts direction out
-    accepts signal Power
+    direction out
+    signal Power.family
   }
 }
 
@@ -148,19 +148,19 @@ symbol cabinet_switch_control_symbol {
   }
 
   anchor up {
-    primitiveRef up
+    ref "up"
     point (44, 0)
     role terminal
-    accepts direction out
-    accepts signal Digital
+    direction out
+    signal Digital.family
   }
 
   anchor down {
-    primitiveRef down
+    ref "down"
     point (44, 88)
     role terminal
-    accepts direction out
-    accepts signal Digital
+    direction out
+    signal Digital.family
   }
 }
 
@@ -198,21 +198,21 @@ symbol cabinet_relay_contactor_symbol {
   }
 
   anchor supply {
-    primitiveRef supply
+    ref "supply"
     point (46, 0)
     role terminal
-    accepts direction in
-    accepts signal Digital
-    accepts signal Power
+    direction in
+    signal Digital.family
+    signal Power.family
   }
 
   anchor output {
-    primitiveRef output
+    ref "output"
     point (46, 116)
     role terminal
-    accepts direction out
-    accepts signal Digital
-    accepts signal Power
+    direction out
+    signal Digital.family
+    signal Power.family
   }
 }
 
@@ -249,23 +249,23 @@ symbol cabinet_terminal_block_symbol {
   }
 
   anchor field {
-    primitiveRef field
+    ref "field"
     point (32, 0)
     role terminal
-    accepts direction in
-    accepts direction out
-    accepts signal Power
-    accepts signal Digital
+    direction in
+    direction out
+    signal Power.family
+    signal Digital.family
   }
 
   anchor panel {
-    primitiveRef panel
+    ref "panel"
     point (32, 92)
     role terminal
-    accepts direction in
-    accepts direction out
-    accepts signal Power
-    accepts signal Digital
+    direction in
+    direction out
+    signal Power.family
+    signal Digital.family
   }
 }
 
@@ -304,20 +304,20 @@ symbol cabinet_power_supply_symbol {
   }
 
   anchor input {
-    primitiveRef input
+    ref "input"
     point (56, 0)
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power.family
   }
 
   anchor output {
-    primitiveRef output
+    ref "output"
     point (56, 96)
     role terminal
-    accepts direction out
-    accepts signal Power
-    accepts signal Digital
+    direction out
+    signal Power.family
+    signal Digital.family
   }
 }
 
@@ -355,19 +355,19 @@ symbol cabinet_actuator_load_symbol {
   }
 
   anchor up {
-    primitiveRef up
+    ref "up"
     point (38, 0)
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power.family
   }
 
   anchor down {
-    primitiveRef down
+    ref "down"
     point (78, 0)
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power.family
   }
 }
 

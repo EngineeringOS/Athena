@@ -258,7 +258,7 @@ private fun semanticPlacementFacts(
     return ProjectSemanticSchematicLayoutFactDeriver().derive(bound).placementFacts.associate { fact ->
         val grid = requireNotNull(fact.gridPosition)
         val orientation = requireNotNull(fact.orientation)
-        fact.intentId.value.removePrefix("intent:m23:schematic:") to
+        fact.intentId.value.removePrefix("intent:layout:schematic:") to
             PlacementContract(grid.column, grid.row, orientation)
     }
 }

@@ -71,7 +71,7 @@ class CommandHistoryCliTest {
             assertContains(diffAfterCommand, "Latest semantic diff")
             assertContains(diffAfterCommand, "Source: COMMAND")
             assertContains(diffAfterCommand, "command-0002")
-            assertContains(diffAfterCommand, "ADDED connection:PLC1.out2->M2.in")
+            assertContains(diffAfterCommand, ":PLC1_out2_to_M2_in => connection PLC1.out2 -> M2.in")
 
             assertContains(undo, "Undo successful")
             assertContains(undo, "Command: command-0002")
@@ -80,12 +80,12 @@ class CommandHistoryCliTest {
 
             assertContains(diffAfterUndo, "Latest semantic diff")
             assertContains(diffAfterUndo, "Source: UNDO")
-            assertContains(diffAfterUndo, "REMOVED connection:PLC1.out2->M2.in")
+            assertContains(diffAfterUndo, ":PLC1_out2_to_M2_in => connection PLC1.out2 -> M2.in")
 
             assertContains(consequences, "History consequence")
             assertContains(consequences, "command-0002")
             assertContains(consequences, "Status: UNDONE")
-            assertContains(consequences, "ADDED connection:PLC1.out2->M2.in")
+            assertContains(consequences, ":PLC1_out2_to_M2_in => connection PLC1.out2 -> M2.in")
 
             assertContains(redo, "Redo successful")
             assertContains(redo, "Command: command-0002")

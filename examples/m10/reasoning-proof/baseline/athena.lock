@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:85c893b2423a886d6881a47dc5d630ed4d69131ea72f5b53375227518fe59058
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:be5c41a283106c82da70d19814a5b2ff20ef71291d8b0e9d327ffde10f056d20
 primaryPackage:
   name: com.engineeringood.m10.proof
   version: 0.1.0
@@ -11,7 +11,7 @@ packages:
   - name: com.engineeringood.m10.proof
     version: 0.1.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:e2774a4f23d15293dfde3bc6b62e2c71af1b14bed43a1d2d5bdb66aaab7cd3f4
+    snapshotDigest: package-snapshot:27df4e697174ae00fa4190f264233042f906b806a679a528ae1d42a6126f849c
     sourceHashes:
       - path: com/engineeringood/m10/proof/factoryline.athena
         hash: sha256:ea41c3002a2bfa28824af635f923dca2d5523a7c2546e2cc415ae08e1217e4e9

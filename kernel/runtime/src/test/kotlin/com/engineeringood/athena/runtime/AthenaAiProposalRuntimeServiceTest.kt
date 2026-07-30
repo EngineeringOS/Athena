@@ -26,7 +26,7 @@ class AthenaAiProposalRuntimeServiceTest {
                 context = context,
                 draft = AthenaAiCommandProposalDraft(
                     summary = "Connect PLC1.out1 to M1.in",
-                    rationale = "Suggested by the optional AI proof surface.",
+                    rationale = "Suggested by the optional AI evidence surface.",
                     command = AthenaConnectPortsCommand(
                         sourceUnitId = "ai-proposals",
                         connectionAlias = "plc1_out1_to_m1_in",
@@ -62,7 +62,7 @@ class AthenaAiProposalRuntimeServiceTest {
                     context = context,
                     draft = AthenaAiCommandProposalDraft(
                         summary = "Connect PLC1.out1 to M1.in",
-                        rationale = "Suggested by the optional AI proof surface.",
+                        rationale = "Suggested by the optional AI evidence surface.",
                         command = AthenaConnectPortsCommand(
                             sourceUnitId = "ai-proposals",
                             connectionAlias = "plc1_out1_to_m1_in",
@@ -118,7 +118,7 @@ class AthenaAiProposalRuntimeServiceTest {
                     context = context,
                     draft = AthenaAiCommandProposalDraft(
                         summary = "Connect PLC1.out1 to Missing.in",
-                        rationale = "Optional AI proof can still suggest invalid commands.",
+                        rationale = "Optional AI evidence can still suggest invalid commands.",
                         command = AthenaConnectPortsCommand(
                             sourceUnitId = "ai-proposals",
                             connectionAlias = "plc1_out1_to_missing_in",

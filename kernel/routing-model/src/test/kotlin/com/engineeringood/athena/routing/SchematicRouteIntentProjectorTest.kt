@@ -134,7 +134,7 @@ class SchematicRouteIntentProjectorTest {
             side = side,
             point = SchematicRoutePoint(x = x, y = y),
             gridPoint = SchematicRoutePoint(x = x, y = y),
-            policySource = "m24:schematic-default",
+            policySource = "schematic-default",
         )
     }
 

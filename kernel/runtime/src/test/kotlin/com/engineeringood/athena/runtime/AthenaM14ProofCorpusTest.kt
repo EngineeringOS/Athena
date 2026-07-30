@@ -11,10 +11,10 @@ import kotlin.test.assertTrue
 
 class AthenaM14ProofCorpusTest {
     @Test
-    fun `m14 siemens proof corpus resolves deterministically from a real governed repository`() {
+    fun `m14 siemens evidence corpus resolves deterministically from a real governed repository`() {
         val repositoryRoot = resolveRepoRoot().resolve("examples/m14/siemens-proof-corpus")
-        val sourcePath = repositoryRoot.resolve("src/siemens-proof-corpus.athena")
-        check(Files.exists(sourcePath)) { "Expected M14 proof corpus source at `$sourcePath`." }
+        val sourcePath = repositoryRoot.resolve("src/com/engineeringood/examples/m14/siemens/proof/corpus/siemens-proof-corpus.athena")
+        check(Files.exists(sourcePath)) { "Expected M14 evidence corpus source at `$sourcePath`." }
 
         val compiler = AthenaCompiler()
         val contractValidation = compiler.validateRepositoryContract(repositoryRoot)
@@ -58,11 +58,11 @@ class AthenaM14ProofCorpusTest {
         )
         assertEquals(
             listOf(
-                "proof.relay.overload",
-                "proof.contactor.3pole",
-                "proof.motor.ac",
-                "proof.cpu.313c",
-                "proof.power-supply.24vdc",
+                "evidence.relay.overload",
+                "evidence.contactor.3pole",
+                "evidence.motor.ac",
+                "evidence.cpu.313c",
+                "evidence.power-supply.24vdc",
             ),
             first.components.mapNotNull { entry -> entry.resolvedImplementation?.implementation?.vendorPartNumber?.value },
         )

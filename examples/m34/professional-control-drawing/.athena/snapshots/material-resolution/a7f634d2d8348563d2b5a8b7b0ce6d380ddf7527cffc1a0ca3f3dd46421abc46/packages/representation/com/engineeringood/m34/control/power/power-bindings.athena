@@ -1,0 +1,33 @@
+package com.engineeringood.m34.control.power
+
+binding IecPowerSource {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type PowerSource }
+  use element "iec.source.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecBreaker {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type Breaker }
+  use element "iec.breaker.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecFuseDisconnector {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type FuseDisconnector }
+  use element "iec.fuse-disconnector.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecTransformer {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type Transformer }
+  use element "iec.transformer.element" version "1.0.0"
+  variant "standard"
+}

@@ -145,7 +145,7 @@ object RepresentationPackageDescriptorValidator {
                 diagnostics += diagnostic(
                     code = "package.representation.resource-kind.unsupported",
                     subject = "resourceReferences[$index].kind",
-                    message = "Graphic Resource kind ${resource.kind.name} is deferred and unsupported by the M32 v0 backend.",
+                    message = "Graphic Resource kind ${resource.kind.name} is unsupported by the representation backend.",
                 )
             }
         }

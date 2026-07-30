@@ -52,7 +52,7 @@ class AthenaRepresentationMaterialResolver(
         val snapshot = staged.snapshot ?: return failure(diagnostics)
         val compiled = snapshotCompiler.compile(snapshot)
         diagnostics += compiled.diagnostics.map { issue -> materialDiagnostic(issue.code, issue.subject, issue.message) }
-        if (diagnostics.isNotEmpty()) return failure(diagnostics, compiled.proof.stagedSourcePaths)
+        if (diagnostics.isNotEmpty()) return failure(diagnostics, compiled.evidence.stagedSourcePaths)
 
         val profileCandidates = compiled.profiles.filter { profile -> projectionContext in profile.projectionContexts }
         if (profileCandidates.size != 1) {
@@ -61,7 +61,7 @@ class AthenaRepresentationMaterialResolver(
                 projectionContext.value,
                 "Exactly one compiled Presentation Profile must support the requested projection context.",
             )
-            return failure(diagnostics, compiled.proof.stagedSourcePaths)
+            return failure(diagnostics, compiled.evidence.stagedSourcePaths)
         }
 
         val packageName = primaryPackage.id.name
@@ -82,7 +82,7 @@ class AthenaRepresentationMaterialResolver(
             compiled.profiles,
             diagnostics,
         )
-        if (diagnostics.isNotEmpty()) return failure(diagnostics, compiled.proof.stagedSourcePaths)
+        if (diagnostics.isNotEmpty()) return failure(diagnostics, compiled.evidence.stagedSourcePaths)
 
         val subjects = AthenaRepresentationMaterialSubjectDeriver.derive(document, diagnostics)
         val definitionsByKey = compiled.definitions.associateBy { definition ->
@@ -106,8 +106,8 @@ class AthenaRepresentationMaterialResolver(
             definitions = compiled.definitions,
             materials = materials.takeIf { diagnostics.isEmpty() }.orEmpty(),
             diagnostics = diagnostics.sortedWith(compareBy({ it.code }, { it.subject }, { it.message })),
-            proof = AthenaRepresentationMaterialProof(
-                stagedSourcePaths = compiled.proof.stagedSourcePaths,
+            evidence = AthenaRepresentationMaterialEvidence(
+                stagedSourcePaths = compiled.evidence.stagedSourcePaths,
             ),
         )
     }
@@ -117,6 +117,6 @@ class AthenaRepresentationMaterialResolver(
         stagedSourcePaths: List<String> = emptyList(),
     ) = AthenaRepresentationMaterialResolutionResult(
         diagnostics = diagnostics.sortedWith(compareBy({ it.code }, { it.subject }, { it.message })),
-        proof = AthenaRepresentationMaterialProof(stagedSourcePaths = stagedSourcePaths),
+        evidence = AthenaRepresentationMaterialEvidence(stagedSourcePaths = stagedSourcePaths),
     )
 }

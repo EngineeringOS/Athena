@@ -31,7 +31,7 @@ data class EngineeringCapabilitySubjectFacts(
 )
 
 /**
- * Narrow first-wave capability facts published by the M9 electrical proof slice.
+ * Narrow first-wave capability facts published by the M9 electrical evidence slice.
  */
 enum class EngineeringCapabilityFactKind {
     REQUIRED_PROTECTION_CURRENT,

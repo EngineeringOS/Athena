@@ -176,7 +176,7 @@ class RepresentationBindingCompilerTest {
 
     private fun motorDefinition(): RepresentationDefinition = RepresentationDefinition(
         symbolId = RepresentationSymbolId("iec.motor.compact"),
-        libraryId = RepresentationLibraryId("athena.native.iec-v0"),
+        libraryId = RepresentationLibraryId("athena.native.iec"),
         version = RepresentationVersion("1.0.0"),
         lifecycle = RepresentationLifecycle(
             state = RepresentationLifecycleState.ACTIVE,
@@ -267,7 +267,7 @@ class RepresentationBindingCompilerTest {
 
     private fun elementDefinition(): RepresentationDefinition = RepresentationDefinition(
         symbolId = RepresentationSymbolId("athena.iec.motor-cabinet-element"),
-        libraryId = RepresentationLibraryId("athena.native.iec-v0"),
+        libraryId = RepresentationLibraryId("athena.native.iec"),
         version = RepresentationVersion("1.0.0"),
         lifecycle = RepresentationLifecycle(
             state = RepresentationLifecycleState.ACTIVE,
@@ -319,6 +319,7 @@ class RepresentationBindingCompilerTest {
         anchors = listOf(
             RepresentationAnchorContract(
                 anchorId = RepresentationAnchorId("u1"),
+                geometryRef = "u1-terminal",
                 primitiveId = GraphicPrimitiveId("u1-terminal"),
                 point = GraphicPoint(0.0, 30.0),
                 role = RepresentationAnchorRole.TERMINAL,

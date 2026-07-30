@@ -91,8 +91,8 @@ data class DocumentProjectionPolicy(
 }
 
 object BuiltInDocumentProjectionPolicies {
-    fun athenaDocumentProjectionV0(): DocumentProjectionPolicy = DocumentProjectionPolicy(
-        policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+    fun athenaDocumentProjection(): DocumentProjectionPolicy = DocumentProjectionPolicy(
+        policyId = DocumentProjectionPolicyId("athena-document-projection"),
         policyVersion = DocumentProjectionPolicyVersion("0"),
         supportedSheetViewRoles = listOf(
             DocumentProjectionSheetViewRole(
@@ -132,8 +132,8 @@ object BuiltInDocumentProjectionPolicies {
         ),
     )
 
-    fun athenaM31CustomerProjectionV0(): DocumentProjectionPolicy = DocumentProjectionPolicy(
-        policyId = DocumentProjectionPolicyId("athena-m31-customer-projection-v0"),
+    fun athenaCustomerDocumentProjection(): DocumentProjectionPolicy = DocumentProjectionPolicy(
+        policyId = DocumentProjectionPolicyId("athena-customer-projection"),
         policyVersion = DocumentProjectionPolicyVersion("0"),
         supportedSheetViewRoles = listOf(
             DocumentProjectionSheetViewRole(

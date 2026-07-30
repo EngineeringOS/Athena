@@ -14,6 +14,22 @@ class SvgRenderer {
         systemName: String,
         geometry: GeometryDocument,
     ): String {
+        val connections = geometry.elements
+            .filter { element -> element.kind == GeometryElementKind.PATH }
+            .map { element ->
+                val start = element.connectionStart()
+                val end = element.connectionEnd()
+                SvgRenderConnection(
+                    semanticId = element.semanticId,
+                    x1 = start.x,
+                    y1 = start.y,
+                    x2 = end.x,
+                    y2 = end.y,
+                    points = element.points
+                        .ifEmpty { listOf(start, end) }
+                        .map { point -> SvgRenderPoint(point.x, point.y) },
+                )
+            }
         val model = SvgRenderModel(
             systemName = systemName,
             canvasWidth = geometry.canvasWidth,
@@ -30,19 +46,8 @@ class SvgRenderer {
                         height = element.bounds.height,
                     )
                 },
-            connections = geometry.elements
-                .filter { element -> element.kind == GeometryElementKind.PATH }
-                .map { element ->
-                    val start = element.connectionStart()
-                    val end = element.connectionEnd()
-                    SvgRenderConnection(
-                        semanticId = element.semanticId,
-                        x1 = start.x,
-                        y1 = start.y,
-                        x2 = end.x,
-                        y2 = end.y,
-                    )
-                },
+            connections = connections,
+            crossings = connections.crossings(),
         )
         return render(model)
     }
@@ -57,18 +62,77 @@ class SvgRenderer {
             appendLine("""  <text x="40" y="28" class="system-label">${model.systemName.escapeXml()}</text>""")
             model.connections.forEach { connection ->
                 appendLine(
-                    """  <line x1="${connection.x1}" y1="${connection.y1}" x2="${connection.x2}" y2="${connection.y2}" class="connection" />""",
+                    """  <polyline points="${connection.points.svgPoints()}" class="connection" data-connection-id="${connection.semanticId.value.escapeXml()}" />""",
+                )
+            }
+            model.crossings.forEach { crossing ->
+                appendLine(
+                    """  <path data-athena-marker-kind="crossing" data-crossing-id="${crossing.crossingId.escapeXml()}" d="M ${crossing.x - 4} ${crossing.y - 4} L ${crossing.x + 4} ${crossing.y + 4} M ${crossing.x + 4} ${crossing.y - 4} L ${crossing.x - 4} ${crossing.y + 4}" class="route-crossing" />""",
                 )
             }
             model.boxes.forEach { box ->
                 appendLine(
-                    """  <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="8" ry="8" class="component" />""",
+                    """  <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="8" ry="8" class="component" data-subject="${box.semanticId.value.escapeXml()}" />""",
                 )
                 appendLine("""  <text x="${box.x + 12}" y="${box.y + 28}" class="label">${box.label.escapeXml()}</text>""")
             }
             append("""</svg>""")
         }
     }
+}
+
+private fun List<SvgRenderPoint>.svgPoints(): String =
+    joinToString(separator = " ") { point -> "${point.x},${point.y}" }
+
+private fun List<SvgRenderConnection>.crossings(): List<SvgRenderCrossing> {
+    val crossings = mutableListOf<SvgRenderCrossing>()
+    forEachIndexed { index, connection ->
+        drop(index + 1).forEach { other ->
+            val point = connection.crossingWith(other)
+            if (point != null) {
+                val (x, y) = point
+                crossings += SvgRenderCrossing(
+                    crossingId = "crossing:${connection.semanticId.value}:${other.semanticId.value}:$x:$y",
+                    x = x,
+                    y = y,
+                )
+            }
+        }
+    }
+    return crossings.distinctBy { crossing -> crossing.crossingId }
+        .sortedWith(compareBy<SvgRenderCrossing>({ it.y }, { it.x }, { it.crossingId }))
+}
+
+private fun SvgRenderConnection.crossingWith(other: SvgRenderConnection): Pair<Int, Int>? {
+    segments().forEach { segment ->
+        other.segments().forEach { otherSegment ->
+            val point = segment.crossingWith(otherSegment)
+            if (point != null) return point
+        }
+    }
+    return null
+}
+
+private data class RenderSegment(val x1: Int, val y1: Int, val x2: Int, val y2: Int)
+
+private fun SvgRenderConnection.segments(): List<RenderSegment> =
+    points.zipWithNext()
+        .filterNot { (from, to) -> from == to }
+        .map { (from, to) -> RenderSegment(from.x, from.y, to.x, to.y) }
+
+private fun RenderSegment.crossingWith(other: RenderSegment): Pair<Int, Int>? {
+    val denominator = ((x1 - x2) * (other.y1 - other.y2)) - ((y1 - y2) * (other.x1 - other.x2))
+    if (denominator == 0) return null
+    val determinant = ((x1 - other.x1) * (other.y1 - other.y2)) -
+        ((y1 - other.y1) * (other.x1 - other.x2))
+    val otherDeterminant = ((x1 - other.x1) * (y1 - y2)) -
+        ((y1 - other.y1) * (x1 - x2))
+    val t = determinant.toDouble() / denominator.toDouble()
+    val u = otherDeterminant.toDouble() / denominator.toDouble()
+    if (t <= 0.0 || t >= 1.0 || u <= 0.0 || u >= 1.0) return null
+    val x = x1 + ((x2 - x1) * t)
+    val y = y1 + ((y2 - y1) * t)
+    return x.toInt() to y.toInt()
 }
 
 /** Resolves the first path point used as the SVG line start. */

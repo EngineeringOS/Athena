@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:4dc7dde1ae826a14f67b89274fa09d1d6f88e3056868fbeee7d315f2f8fad798
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:73efc6c002b0618fa3c6bf40685a76ea25c9ca79fe4c9103df5fea6a492132e8
 primaryPackage:
   name: com.engineeringood.m18.vendor.controls
   version: 1.0.0
@@ -11,7 +11,7 @@ packages:
   - name: com.engineeringood.m18.vendor.controls
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:56128d440c340fad6bf3298977631e97d1f40db8b3b4dd4675c4c8ca577988b4
+    snapshotDigest: package-snapshot:b730c62d6f5e2f00c8b760c847d5d31095d341a3da83f6c94434a425846a13f1
     sourceHashes:
       - path: com/engineeringood/m18/vendor/controls/vendor-controls.athena
         hash: sha256:63ce6a68cd1951e300c9116f4a837e8260efb6bce3a3623d003f90a1506ddfef

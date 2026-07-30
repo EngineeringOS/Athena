@@ -235,6 +235,50 @@ class BackendAuthoringSourceEditPlannerTest {
     }
 
     @Test
+    fun `cabinet graphic move replaces the authoritative mount point`() {
+        val document = sourceDocument(CABINET_SOURCE)
+
+        val result = BackendAuthoringSourceEditPlanner().plan(
+            BackendCabinetPlacementPlanningRequest(
+                document = document,
+                revisionGuard = document.revisionGuard,
+                occurrenceId = "cabinet:DriveMount",
+                deltaXMillimeters = 24.0,
+                deltaYMillimeters = 12.0,
+            ),
+        )
+
+        val plan = assertIs<BackendAuthoringSourceEditPlanned>(result).plan
+        assertEquals("(44mm, 12mm)", plan.admittedText)
+        assertEquals(listOf("component:Drive"), plan.affectedSemanticIds)
+        val updated = plan.applyTo(document.sourceText)
+        assertTrue(updated.contains("mount Drive as DriveMount on HorizontalRail at (44mm, 12mm)"))
+        assertTrue(!updated.contains("// move occurrence"))
+        assertParsesAfterApplying(document, plan)
+    }
+
+    @Test
+    fun `cabinet graphic move lowers canvas delta into vertical rail local coordinates`() {
+        val document = sourceDocument(CABINET_SOURCE)
+
+        val result = BackendAuthoringSourceEditPlanner().plan(
+            BackendCabinetPlacementPlanningRequest(
+                document = document,
+                revisionGuard = document.revisionGuard,
+                occurrenceId = "cabinet:EarthMount",
+                deltaXMillimeters = -10.0,
+                deltaYMillimeters = 30.0,
+            ),
+        )
+
+        val plan = assertIs<BackendAuthoringSourceEditPlanned>(result).plan
+        assertEquals("(130mm, 10mm)", plan.admittedText)
+        val updated = plan.applyTo(document.sourceText)
+        assertTrue(updated.contains("mount Earth as EarthMount on VerticalRail at (130mm, 10mm)"))
+        assertParsesAfterApplying(document, plan)
+    }
+
+    @Test
     fun `blank relationship paths return a structured planning diagnostic`() {
         val document = sourceDocument(SOURCE)
 
@@ -328,6 +372,36 @@ class BackendAuthoringSourceEditPlannerTest {
     port in {
       direction in
       signal Digital
+    }
+  }
+}"""
+        const val CABINET_SOURCE = """system CabinetEdit {
+  device Drive {
+    type Drive
+  }
+  device Earth {
+    type Terminal
+  }
+  installation cabinet MainCabinet {
+    enclosure ENC size (600mm, 800mm, 200mm)
+    surface Backplate in ENC at (10mm, 10mm) size (580mm, 780mm) accepts [din35]
+    rail HorizontalRail on Backplate at (20mm, 100mm) length 400mm orientation horizontal mounting din35
+    rail VerticalRail on Backplate at (500mm, 100mm) length 500mm orientation vertical mounting din35
+    mount Drive as DriveMount on HorizontalRail at (20mm, 0mm) {
+      footprint (80mm, 120mm, 60mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount Earth as EarthMount on VerticalRail at (100mm, 0mm) {
+      footprint (20mm, 40mm, 40mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
     }
   }
 }"""

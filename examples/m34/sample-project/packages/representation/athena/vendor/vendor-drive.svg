@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">
   <defs>
-    <g id="terminal" data-athena-geometry-ref="terminal">
+    <g id="terminal" data-athena-ref="anchor:terminal">
       <line x1="0" y1="0" x2="0" y2="8"/>
       <line x1="-3" y1="8" x2="3" y2="8"/>
     </g>

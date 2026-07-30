@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:5d8c461bd7fef444ef6df0560f70bad13ad806806081f20aeb5fa084d7123ac9
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:ff79862684ed5ba2545df280df0390777577c1761896af681bab827eaf24c86b
 primaryPackage:
   name: com.engineeringood.m29.sample
   version: 1.0.0
@@ -11,12 +11,12 @@ packages:
   - name: com.engineeringood.m29.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:d853a4353c0c07765fa4d8e39639b9300c71da34a23885489f57148bf884831f
+    snapshotDigest: package-snapshot:06cd4b216299755fea04ebfc5498821d4e3f785955684eb95b2a88dab0c6eaea
     sourceHashes:
       - path: com/engineeringood/m29/sample/01-interaction-authoring-source.athena
-        hash: sha256:add65f1c3448e29fa1f291e88d74d2f3ff620046dfebf61dcec6de793817ee14
+        hash: sha256:935245e926688c7ede55435948e09a13b163dafae5ce6240280904fdb9da9583
       - path: com/engineeringood/m29/sample/02-interaction-candidates.athena
-        hash: sha256:181bade0afcd4b9163a383bf7b4bbaad4daa98f2cde363857ecca205d58daabe
+        hash: sha256:ff6691de27b1c46dad3f9d9ccefa21f66956e4d09257a13db9764003de17cc04
       - path: com/engineeringood/m29/sample/03-entity-creation-context.athena
         hash: sha256:d154ae8820380039f2b2c3bd8c167acf2008bfc95ef185025594882243eda43e
     resourceHashes: []

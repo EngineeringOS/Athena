@@ -46,7 +46,7 @@ class AthenaRepresentationPackageSnapshotCompiler(
             bindingRules = compiled.bindingRules,
             resources = compiled.resources,
             diagnostics = compiled.diagnostics,
-            proof = AthenaRepresentationPackageSnapshotProof(
+            evidence = AthenaRepresentationPackageSnapshotEvidence(
                 snapshotId = snapshot.snapshotId,
                 dependencyLockDigest = snapshot.dependencyLockDigest,
                 compilerSchemaVersion = snapshot.compilerSchemaVersion,
@@ -69,10 +69,10 @@ data class AthenaRepresentationPackageSnapshotCompilationResult(
     val bindingRules: List<com.engineeringood.athena.packageplatform.RepresentationBindingRule> = emptyList(),
     val resources: List<PackageResourceDeclaration> = emptyList(),
     val diagnostics: List<AthenaRepresentationSourceDiagnostic>,
-    val proof: AthenaRepresentationPackageSnapshotProof,
+    val evidence: AthenaRepresentationPackageSnapshotEvidence,
 )
 
-data class AthenaRepresentationPackageSnapshotProof(
+data class AthenaRepresentationPackageSnapshotEvidence(
     val snapshotId: String,
     val dependencyLockDigest: String,
     val compilerSchemaVersion: String,

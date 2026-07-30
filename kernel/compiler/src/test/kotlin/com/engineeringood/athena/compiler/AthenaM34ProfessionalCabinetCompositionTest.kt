@@ -52,7 +52,7 @@ class AthenaM34ProfessionalCabinetCompositionTest {
             assertTrue(projectSource.contains("device $device "), "M34 Cabinet sample is missing device $device.")
         }
         assertEquals(13, Regex("""\bdevice\s+[A-Za-z0-9_]+\s*\{""").findAll(projectSource).count())
-        assertTrue(projectSource.contains("connect cabinet_control_chain {"))
+        assertTrue(projectSource.contains("connect mainpowersupplyps34_output_to_mainbreakerqf34_line "))
         assertTrue(projectSource.contains("layout cabinet {"))
         assertFalse(projectSource.contains("layout schematic-sheet"))
         assertFalse(projectSource.contains("layout documentation"))
@@ -60,6 +60,7 @@ class AthenaM34ProfessionalCabinetCompositionTest {
         val compilation = AthenaCompiler().compile(sampleRoot.resolve("src/com/engineeringood/m34/sample/01-native-cabinet-proof.athena"))
         assertTrue(compilation is CompilerCompilationSuccess, compilation.toString())
         assertTrue(compilation.diagnosticMessages().isEmpty(), compilation.diagnosticMessages().joinToString("\n"))
+        assertTrue(compilation.connectionIr?.connections?.isNotEmpty() == true)
 
         val staged = RepresentationPackageSnapshotStager().stageRepository(
             repositoryRoot = sampleRoot,
@@ -68,8 +69,8 @@ class AthenaM34ProfessionalCabinetCompositionTest {
         assertTrue(staged.diagnostics.isEmpty(), staged.diagnostics.toString())
         val packageCompilation = AthenaRepresentationPackageSnapshotCompiler().compile(assertNotNull(staged.snapshot))
         assertTrue(packageCompilation.diagnostics.isEmpty(), packageCompilation.diagnostics.toString())
-        assertTrue(packageCompilation.proof.xmlRuntimeAuthorityAbsent)
-        assertTrue(packageCompilation.proof.rawSvgTransportAbsent)
+        assertTrue(packageCompilation.evidence.xmlRuntimeAuthorityAbsent)
+        assertTrue(packageCompilation.evidence.rawSvgTransportAbsent)
 
         val bindings = packageCompilation.bindingRules.associateBy { rule -> rule.ruleId.value }
         REQUIRED_BINDINGS.forEach { (ruleId, elementId) ->
@@ -150,10 +151,10 @@ class AthenaM34ProfessionalCabinetCompositionTest {
             ),
         )
         assertTrue(structure.isValid, structure.diagnostics.toString())
-        val proof = assertNotNull(structure.proof)
-        assertEquals(listOf("rail:lower", "rail:upper"), proof.railIds)
-        assertEquals(listOf("strip:FieldTerminalXT34"), proof.terminalStripIds)
-        assertEquals(listOf("channel:control-wiring"), proof.routeChannelIds)
+        val evidence = assertNotNull(structure.evidence)
+        assertEquals(listOf("rail:lower", "rail:upper"), evidence.railIds)
+        assertEquals(listOf("strip:FieldTerminalXT34"), evidence.terminalStripIds)
+        assertEquals(listOf("channel:control-wiring"), evidence.routeChannelIds)
         assertTrue(sheetPlan.drawingAreaBounds.containsBounds(contentBounds))
         assertTrue(VIEWPORTS.all { viewport -> fits(contentBounds, viewport) })
 
@@ -161,7 +162,7 @@ class AthenaM34ProfessionalCabinetCompositionTest {
             val document = assertNotNull(definitions[occurrence.elementId]).graphicBody
             val fragment = GraphicPrimitiveSvgAdapter().render(GraphicPrimitiveSvgRenderRequest(document, INDUSTRIAL_PALETTE))
             assertTrue(fragment.isValid, fragment.diagnostics.toString())
-            assertFalse(assertNotNull(fragment.proof).normalChromeVisible)
+            assertFalse(assertNotNull(fragment.evidence).normalChromeVisible)
             assertFalse(assertNotNull(fragment.fragment).contains("stroke-dasharray"), "Normal Cabinet chrome must not include active dotted borders.")
             document
         }
@@ -194,7 +195,7 @@ class AthenaM34ProfessionalCabinetCompositionTest {
         )
         assertFalse(
             presentation.representationFacts.any { fact ->
-                fact.anatomy.representationId.value.startsWith("athena-industrial-control-v0:")
+                fact.anatomy.representationId.value.startsWith("athena-industrial-control:")
             },
             "M34 Control Drawing must not publish legacy fallback representation facts.",
         )

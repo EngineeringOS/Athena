@@ -98,7 +98,7 @@ class AthenaProjectionM11DepthRequestTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `source mutation keeps review knowledge and repeated references coherent on dense m11 proof`() {
+    fun `source mutation keeps review knowledge and repeated references coherent on dense m11 evidence`() {
         val repository = createDenseProofRepositoryCopy()
         val repositoryRoot = repository.repositoryRoot
         val sourcePath = repository.sourcePath
@@ -180,7 +180,7 @@ class AthenaProjectionM11DepthRequestTest {
 
     private fun createDenseProofRepositoryCopy(): DenseProofRepository {
         val sourceRoot = resolveRepoRoot().resolve("examples/m11/dense-electrical-proof")
-        val repositoryRoot = createTempDirectory("athena-lsp-m11-dense-proof-")
+        val repositoryRoot = createTempDirectory("athena-lsp-m11-dense-evidence-")
         repositoryRoot.resolve("athena.yaml").writeText(sourceRoot.resolve("athena.yaml").readText())
         repositoryRoot.resolve("athena.lock").writeText(sourceRoot.resolve("athena.lock").readText())
         val copiedSourceRoot = repositoryRoot.resolve("src/com/engineeringood/assemblyline").createDirectories()

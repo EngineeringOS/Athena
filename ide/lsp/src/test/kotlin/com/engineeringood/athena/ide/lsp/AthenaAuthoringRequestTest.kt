@@ -55,7 +55,7 @@ class AthenaAuthoringRequestTest {
                             conceptTemplateId = "electrical.plc.cpu.default",
                             conceptId = "electrical.plc.cpu",
                             actor = "user:test",
-                            preferredImplementationId = "impl/electrical/plc-cpu/siemens-proof-cpu313c",
+                            preferredImplementationId = "impl/electrical/plc-cpu/siemens-evidence-cpu313c",
                             suggestedName = "PLC2",
                         ),
                     ).get(),
@@ -287,7 +287,7 @@ class AthenaAuthoringRequestTest {
                             properties = mapOf(
                                 "vendorPart" to AthenaAuthoringValuePayload(
                                     kind = "symbol",
-                                    text = "impl/electrical/plc-cpu/siemens-proof-cpu314c",
+                                    text = "impl/electrical/plc-cpu/siemens-evidence-cpu314c",
                                 ),
                                 "description" to AthenaAuthoringValuePayload(
                                     kind = "text",
@@ -653,7 +653,7 @@ class AthenaAuthoringRequestTest {
                             conceptTemplateId = "electrical.plc.cpu.default",
                             conceptId = "electrical.plc.cpu",
                             actor = "user:test",
-                            preferredImplementationId = "impl/electrical/plc-cpu/siemens-proof-cpu313c",
+                            preferredImplementationId = "impl/electrical/plc-cpu/siemens-evidence-cpu313c",
                             suggestedName = "PLC2",
                         ),
                     ).get(),
@@ -747,7 +747,7 @@ class AthenaAuthoringRequestTest {
                                 ),
                                 "preferredImplementationId" to AthenaAuthoringValuePayload(
                                     kind = "symbol",
-                                    text = "impl/electrical/plc-cpu/siemens-proof-cpu314c",
+                                    text = "impl/electrical/plc-cpu/siemens-evidence-cpu314c",
                                 ),
                             ),
                         ),
@@ -770,7 +770,7 @@ class AthenaAuthoringRequestTest {
                 assertTrue(sourceEdit.newText.contains("device PLC2"))
                 assertTrue(sourceEdit.newText.contains("label \"Main PLC 2\""))
                 assertTrue(sourceEdit.newText.contains("note \"Updated line controller\""))
-                assertTrue(sourceEdit.newText.contains("vendorPartNumber \"proof.cpu.314c\""))
+                assertTrue(sourceEdit.newText.contains("vendorPartNumber \"evidence.cpu.314c\""))
                 assertEquals("component:PLC2", sourceEdit.suggestedSemanticId)
 
                 val updatedSource = applySourceEdit(
@@ -1419,9 +1419,9 @@ class AthenaAuthoringRequestTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `guided authoring proof flow stays repository backed across create rename insert and connect`() {
+    fun `guided authoring evidence flow stays repository backed across create rename insert and connect`() {
         val repository = createGovernedTestRepository(
-            prefix = "athena-lsp-authoring-proof-",
+            prefix = "athena-lsp-authoring-evidence-",
             sourceText = guidedAuthoringProofSource,
         )
         val repositoryRoot = repository.repositoryRoot
@@ -1472,14 +1472,14 @@ class AthenaAuthoringRequestTest {
                 val plcInsert = assertNotNull(
                     server.authoringPreview(
                         AthenaAuthoringPreviewParams(
-                            intentId = "intent-proof-0001",
+                            intentId = "intent-evidence-0001",
                             intentKind = "create-entity",
                             originSurface = "palette",
                             parentSubjectId = "system:GuidedAuthoringProof",
                             conceptTemplateId = "electrical.plc.cpu.default",
                             conceptId = "electrical.plc.cpu",
                             actor = "user:test",
-                            preferredImplementationId = "impl/electrical/plc-cpu/siemens-proof-cpu313c",
+                            preferredImplementationId = "impl/electrical/plc-cpu/siemens-evidence-cpu313c",
                             suggestedName = "PLC1",
                         ),
                     ).get(),
@@ -1491,7 +1491,7 @@ class AthenaAuthoringRequestTest {
                                 previewId = plcInsert.preview.previewId,
                                 intentId = plcInsert.preview.intentId,
                                 decision = "accepted",
-                                note = "Insert PLC for guided proof.",
+                                note = "Insert PLC for guided evidence.",
                             ),
                         ).get(),
                     ),
@@ -1500,7 +1500,7 @@ class AthenaAuthoringRequestTest {
                 val plcRename = assertNotNull(
                     server.authoringPreview(
                         AthenaAuthoringPreviewParams(
-                            intentId = "intent-proof-0002",
+                            intentId = "intent-evidence-0002",
                             intentKind = "update-entity-properties",
                             originSurface = "inspector",
                             entitySubjectId = "component:PLC1",
@@ -1521,7 +1521,7 @@ class AthenaAuthoringRequestTest {
                                 previewId = plcRename.preview.previewId,
                                 intentId = plcRename.preview.intentId,
                                 decision = "accepted",
-                                note = "Rename PLC for guided proof.",
+                                note = "Rename PLC for guided evidence.",
                             ),
                         ).get(),
                     ),
@@ -1530,14 +1530,14 @@ class AthenaAuthoringRequestTest {
                 val powerInsert = assertNotNull(
                     server.authoringPreview(
                         AthenaAuthoringPreviewParams(
-                            intentId = "intent-proof-0003",
+                            intentId = "intent-evidence-0003",
                             intentKind = "create-entity",
                             originSurface = "palette",
                             parentSubjectId = "system:GuidedAuthoringProof",
                             conceptTemplateId = "electrical.power-supply.dc24.default",
                             conceptId = "electrical.power-supply.dc24",
                             actor = "user:test",
-                            preferredImplementationId = "impl/electrical/power-supply/siemens-proof-24vdc",
+                            preferredImplementationId = "impl/electrical/power-supply/siemens-evidence-24vdc",
                             suggestedName = "PWR1",
                         ),
                     ).get(),
@@ -1549,7 +1549,7 @@ class AthenaAuthoringRequestTest {
                                 previewId = powerInsert.preview.previewId,
                                 intentId = powerInsert.preview.intentId,
                                 decision = "accepted",
-                                note = "Insert power supply for guided proof.",
+                                note = "Insert power supply for guided evidence.",
                             ),
                         ).get(),
                     ),
@@ -1557,7 +1557,7 @@ class AthenaAuthoringRequestTest {
                 val connect = assertNotNull(
                     server.authoringPreview(
                         AthenaAuthoringPreviewParams(
-                            intentId = "intent-proof-0004",
+                            intentId = "intent-evidence-0004",
                             intentKind = "semantic-relationship",
                             originSurface = "graph",
                             relationshipType = "ElectricalConnectionRelationship",
@@ -1573,7 +1573,7 @@ class AthenaAuthoringRequestTest {
                                 previewId = connect.preview.previewId,
                                 intentId = connect.preview.intentId,
                                 decision = "accepted",
-                                note = "Connect compatible ports for guided proof.",
+                                note = "Connect compatible ports for guided evidence.",
                             ),
                         ).get(),
                     ),
@@ -1638,7 +1638,7 @@ private val authoringUpdateSource = """
     system FactoryLine {
       device PLC1 {
         type Switch
-        vendorPartNumber "proof.cpu.313c"
+        vendorPartNumber "evidence.cpu.313c"
         label "Main PLC"
         note "Original line controller"
       }

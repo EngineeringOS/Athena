@@ -93,7 +93,7 @@ class RouteQualityDiagnosticPublisher {
             qualityState = quality.state,
             failedConstraintIds = quality.failedConstraintIds,
             failedConstraintFamilies = failedConstraintFamilies(),
-            policySummary = "m24:route-fact:${quality.state.name}:${segments.size}-segment",
+            policySummary = "route-fact:${quality.state.name}:${segments.size}-segment",
             message = quality.message,
         )
     }

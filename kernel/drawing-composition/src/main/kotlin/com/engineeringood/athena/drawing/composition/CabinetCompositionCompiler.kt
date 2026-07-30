@@ -1,13 +1,13 @@
 package com.engineeringood.athena.drawing.composition
 
 import com.engineeringood.athena.physical.InstallationOccurrenceKey
-import com.engineeringood.athena.physical.PhysicalDuctV0
-import com.engineeringood.athena.physical.PhysicalInstallationIRV0
-import com.engineeringood.athena.physical.PhysicalMountingSurfaceV0
+import com.engineeringood.athena.physical.PhysicalDuct
+import com.engineeringood.athena.physical.PhysicalInstallationIR
+import com.engineeringood.athena.physical.PhysicalMountingSurface
 import com.engineeringood.athena.physical.PhysicalObjectId
-import com.engineeringood.athena.physical.PhysicalRailV0
-import com.engineeringood.athena.physical.PhysicalRouteChannelV0
-import com.engineeringood.athena.physical.PhysicalTerminalGroupV0
+import com.engineeringood.athena.physical.PhysicalRail
+import com.engineeringood.athena.physical.PhysicalRouteChannel
+import com.engineeringood.athena.physical.PhysicalTerminalGroup
 import com.engineeringood.athena.representation.GraphicBounds
 import com.engineeringood.athena.representation.GraphicPoint
 import com.engineeringood.athena.representation.GraphicMarkerKind
@@ -23,13 +23,13 @@ data class CabinetCompositionPolicy(
 )
 
 data class CabinetCompositionRequest(
-    val ir: PhysicalInstallationIRV0,
+    val ir: PhysicalInstallationIR,
     val joins: List<CabinetOccurrenceVisualJoin>,
     val routes: List<CabinetRouteFact> = emptyList(),
     val policy: CabinetCompositionPolicy,
 )
 
-data class CabinetCompositionProof(
+data class CabinetCompositionEvidence(
     val primitiveCount: Int,
     val boundsAuthority: String,
     val primitiveIds: List<String>,
@@ -44,7 +44,7 @@ data class CabinetCompositionDiagnostic(
 sealed interface CabinetCompositionResult {
     data class Success(
         val document: GraphicPrimitiveDocument,
-        val proof: CabinetCompositionProof,
+        val evidence: CabinetCompositionEvidence,
     ) : CabinetCompositionResult
 
     data class Failure(val diagnostics: List<CabinetCompositionDiagnostic>) : CabinetCompositionResult
@@ -128,6 +128,15 @@ object CabinetCompositionCompiler {
                 style = "cabinet.route-endpoint",
             )
         }
+        routeCrossings(request.routes).forEachIndexed { index, point ->
+            contentBounds += markerBounds(point)
+            primitives += marker(
+                id = "route-crossing:${request.policy.documentId}:$index",
+                point = point,
+                style = "cabinet.route-crossing",
+                kind = GraphicMarkerKind.CROSSING,
+            )
+        }
         request.joins.sortedBy { join -> join.key.sortKey() }.forEach { join ->
             val occurrenceId = mountedByKey.getValue(join.key).occurrenceId.value
             primitives += rectangle("mounted-body:$occurrenceId", join.body.bounds.toGraphicBounds(), "cabinet.mounted")
@@ -145,7 +154,7 @@ object CabinetCompositionCompiler {
             primitives = primitives,
             styleTokens = emptyList(),
             provenanceSources = listOf(
-                "physical-installation-ir-v0",
+                "physical-installation-ir",
                 "cabinet-occurrence-visual-join",
                 "cabinet-composition-compiler",
             ),
@@ -153,7 +162,7 @@ object CabinetCompositionCompiler {
         )
         return CabinetCompositionResult.Success(
             document = document,
-            proof = CabinetCompositionProof(
+            evidence = CabinetCompositionEvidence(
                 primitiveCount = primitives.size,
                 boundsAuthority = if (request.routes.isEmpty()) {
                     "physical-ir+joined-representation"
@@ -167,7 +176,7 @@ object CabinetCompositionCompiler {
 }
 
 private fun validateJoins(
-    ir: PhysicalInstallationIRV0,
+    ir: PhysicalInstallationIR,
     joins: List<CabinetOccurrenceVisualJoin>,
 ): List<CabinetCompositionDiagnostic> {
     val mountedKeys = ir.space.mountedOccurrences.map { occurrence -> occurrence.key }.toSet()
@@ -182,14 +191,14 @@ private fun validateJoins(
         }
 }
 
-private fun PhysicalMountingSurfaceV0.bounds(): GraphicBounds = GraphicBounds(
+private fun PhysicalMountingSurface.bounds(): GraphicBounds = GraphicBounds(
     x = at.x.toDouble(),
     y = at.y.toDouble(),
     width = size.width.toDouble(),
     height = size.height.toDouble(),
 )
 
-private fun PhysicalRailV0.bounds(surfaces: Map<PhysicalObjectId, PhysicalMountingSurfaceV0>): GraphicBounds {
+private fun PhysicalRail.bounds(surfaces: Map<PhysicalObjectId, PhysicalMountingSurface>): GraphicBounds {
     val surface = surfaces.getValue(surfaceId)
     val x = surface.at.x + at.x
     val y = surface.at.y + at.y
@@ -201,14 +210,14 @@ private fun PhysicalRailV0.bounds(surfaces: Map<PhysicalObjectId, PhysicalMounti
     }
 }
 
-private fun PhysicalDuctV0.bounds(): GraphicBounds = GraphicBounds(
+private fun PhysicalDuct.bounds(): GraphicBounds = GraphicBounds(
     x = at.x.toDouble(),
     y = at.y.toDouble(),
     width = size.width.toDouble(),
     height = size.height.toDouble(),
 )
 
-private fun PhysicalRouteChannelV0.bounds(ducts: Map<PhysicalObjectId, PhysicalDuctV0>): GraphicBounds {
+private fun PhysicalRouteChannel.bounds(ducts: Map<PhysicalObjectId, PhysicalDuct>): GraphicBounds {
     val duct = ducts.getValue(ductId)
     val offset = duct.wall.value
     return GraphicBounds(
@@ -219,7 +228,7 @@ private fun PhysicalRouteChannelV0.bounds(ducts: Map<PhysicalObjectId, PhysicalD
     )
 }
 
-private fun PhysicalTerminalGroupV0.bounds(): GraphicBounds = GraphicBounds(
+private fun PhysicalTerminalGroup.bounds(): GraphicBounds = GraphicBounds(
     x = at.x.toDouble(),
     y = at.y.toDouble(),
     width = size.width.toDouble(),
@@ -251,12 +260,17 @@ private fun polyline(id: String, points: List<GraphicPoint>, style: String): Gra
         styleTokenId = GraphicStyleTokenId(style),
     )
 
-private fun marker(id: String, point: CabinetPointD, style: String): GraphicPrimitive.Marker =
+private fun marker(
+    id: String,
+    point: CabinetPointD,
+    style: String,
+    kind: GraphicMarkerKind = GraphicMarkerKind.TERMINAL,
+): GraphicPrimitive.Marker =
     GraphicPrimitive.Marker(
         primitiveId = GraphicPrimitiveId(id),
         bounds = markerBounds(point),
         origin = GraphicPoint(point.x, point.y),
-        markerKind = GraphicMarkerKind.TERMINAL,
+        markerKind = kind,
         styleTokenId = GraphicStyleTokenId(style),
     )
 
@@ -292,6 +306,48 @@ private fun CabinetRouteFact.routePoints(): List<GraphicPoint> {
 }
 
 private fun CabinetRouteFact.routeBounds(): GraphicBounds = routePoints().bounds()
+
+private fun routeCrossings(routes: List<CabinetRouteFact>): List<CabinetPointD> {
+    val segmentsByRoute = routes.map { route -> route.connectionAlias to route.segments }
+    val crossings = mutableListOf<CabinetPointD>()
+    segmentsByRoute.forEachIndexed { routeIndex, (routeId, segments) ->
+        segmentsByRoute.drop(routeIndex + 1).forEach { (otherRouteId, otherSegments) ->
+            segments.forEach { segment ->
+                otherSegments.forEach { other ->
+                    val crossing = segment.crossingWith(other)
+                    if (crossing != null && crossing !in crossings && routeId != otherRouteId) {
+                        crossings += crossing
+                    }
+                }
+            }
+        }
+    }
+    return crossings.sortedWith(compareBy<CabinetPointD>({ it.y }, { it.x }))
+}
+
+private fun CabinetRouteSegment.crossingWith(other: CabinetRouteSegment): CabinetPointD? {
+    val thisVertical = from.x == to.x
+    val thisHorizontal = from.y == to.y
+    val otherVertical = other.from.x == other.to.x
+    val otherHorizontal = other.from.y == other.to.y
+    if (thisVertical && otherHorizontal) {
+        val point = CabinetPointD(from.x, other.from.y)
+        return point.takeIf { it.isStrictlyInside(this) && it.isStrictlyInside(other) }
+    }
+    if (thisHorizontal && otherVertical) {
+        val point = CabinetPointD(other.from.x, from.y)
+        return point.takeIf { it.isStrictlyInside(this) && it.isStrictlyInside(other) }
+    }
+    return null
+}
+
+private fun CabinetPointD.isStrictlyInside(segment: CabinetRouteSegment): Boolean {
+    val minX = minOf(segment.from.x, segment.to.x)
+    val maxX = maxOf(segment.from.x, segment.to.x)
+    val minY = minOf(segment.from.y, segment.to.y)
+    val maxY = maxOf(segment.from.y, segment.to.y)
+    return x > minX && x < maxX && y > minY && y < maxY
+}
 
 private fun List<GraphicPoint>.bounds(): GraphicBounds {
     val minX = minOf { point -> point.x }

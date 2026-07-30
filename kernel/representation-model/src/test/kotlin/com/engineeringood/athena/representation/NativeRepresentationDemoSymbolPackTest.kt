@@ -49,7 +49,7 @@ class NativeRepresentationDemoSymbolPackTest {
 
     private fun nativePackPath(): Path {
         val resource = requireNotNull(
-            javaClass.classLoader.getResource("representation-libraries/athena-native-iec-v0.properties"),
+            javaClass.classLoader.getResource("representation-libraries/athena-native-iec.properties"),
         ) { "Missing native M30 symbol pack resource." }
         return Path.of(resource.toURI())
     }

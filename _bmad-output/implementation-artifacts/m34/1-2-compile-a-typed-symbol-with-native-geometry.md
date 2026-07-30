@@ -23,7 +23,7 @@ so that the compiler and IDE can validate it before it enters a package.
    runs, **then** declaration, identity/version, graphic/bounds/line/style, anchor/reference/point,
    role, direction, and signal nodes match the ANTLR4 syntax boundary and remain syntax UX only.
 3. **Given** missing identity/version/required anchor fields, duplicate primitive or anchor ids,
-   unresolved `primitiveRef`, non-finite or invalid coordinates/bounds/styles, unsupported geometry,
+   unresolved `ref`, non-finite or invalid coordinates/bounds/styles, unsupported geometry,
    or forbidden project/renderer/XML authority, **when** compilation runs, **then** stable
    source-spanned diagnostics are emitted and no definition is admitted.
 4. **Given** human- or AI-authored Symbol source, **when** Symbol lint and formatting run twice,
@@ -43,7 +43,7 @@ so that the compiler and IDE can validate it before it enters a package.
 
 - [x] Add the Story 1.2 RED contract before production grammar edits (AC: 1..5)
   - [x] Add one valid standalone Symbol fixture using native `graphic`, explicit bounds, governed
-        `line` primitives, explicit anchors, `primitiveRef`, and explicit anchor points.
+        `line` primitives, explicit anchors, `ref`, and explicit anchor points.
   - [x] Add invalid fixtures for missing fields, duplicate ids, unresolved references, invalid
         numbers/bounds/styles, unsupported constructs, and forbidden authority vocabulary.
   - [x] Prove existing project `system` source still parses and compiles unchanged.
@@ -57,7 +57,7 @@ so that the compiler and IDE can validate it before it enters a package.
 - [x] Compile and lint one canonical Symbol (AC: 1, 3, 4)
   - [x] Add a compiler-owned Symbol source compiler/lowerer that resolves a small governed style
         vocabulary and produces `RepresentationDefinition`, never Presentation Primitive or XML.
-  - [x] Require explicit anchor point plus `primitiveRef`; validate the reference without deriving
+  - [x] Require explicit anchor point plus `ref`; validate the reference without deriving
         direction, signal, role, or point from geometry.
   - [x] Run `GraphicPrimitiveIrValidator` and representation validation before admission; map all
         failures to stable source-spanned Symbol diagnostics and return no partial definition.
@@ -113,24 +113,24 @@ symbol iec_switch_contact {
   }
 
   anchor line {
-    primitiveRef line
+    ref line
     point (40, 0)
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power
   }
 
   anchor load {
-    primitiveRef load
+    ref load
     point (40, 80)
     role terminal
-    accepts direction out
-    accepts signal Power
+    direction out
+    signal Power
   }
 }
 ```
 
-`primitiveRef` identifies the governed geometry target; `point` is explicit and authoritative for
+`ref` identifies the governed geometry target; `point` is explicit and authoritative for
 the representation anchor. The compiler must not guess an endpoint from primitive order or ids.
 
 ### Non-Negotiable Boundaries

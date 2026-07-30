@@ -62,6 +62,12 @@ data class PhysicalRigidFrame2i(
     val normalAxis: PhysicalVector2i,
 ) {
     val determinant: Int = alongAxis.x * normalAxis.y - alongAxis.y * normalAxis.x
+
+    /** Maps an `(along, normal)` target-local point into its parent coordinate system. */
+    fun toParent(point: PhysicalPoint2i): PhysicalPoint2i = PhysicalPoint2i(
+        x = origin.x + (alongAxis.x * point.x) + (normalAxis.x * point.y),
+        y = origin.y + (alongAxis.y * point.x) + (normalAxis.y * point.y),
+    )
 }
 
 data class PhysicalSourceProvenance(
@@ -70,7 +76,7 @@ data class PhysicalSourceProvenance(
     val span: PhysicalSourceSpan?,
 )
 
-data class PhysicalInstallationIntentV0(
+data class PhysicalInstallationIntent(
     val sourceUnitId: PhysicalSourceUnitId,
     val installationId: PhysicalInstallationId,
     val enclosures: List<PhysicalEnclosureIntent>,
@@ -170,30 +176,30 @@ sealed interface PhysicalMountTargetRef {
     data class TerminalGroup(override val id: PhysicalObjectId) : PhysicalMountTargetRef
 }
 
-data class PhysicalInstallationIRV0(
+data class PhysicalInstallationIR(
     val sourceUnitId: PhysicalSourceUnitId,
     val installationId: PhysicalInstallationId,
-    val space: PhysicalInstallationSpaceV0,
-    val routes: List<PhysicalRouteIntentV0>,
+    val space: PhysicalInstallationSpace,
+    val routes: List<PhysicalRouteIntent>,
 )
 
-data class PhysicalInstallationSpaceV0(
-    val enclosure: PhysicalEnclosureV0,
-    val surfaces: List<PhysicalMountingSurfaceV0>,
-    val rails: List<PhysicalRailV0>,
-    val ducts: List<PhysicalDuctV0>,
-    val channels: List<PhysicalRouteChannelV0>,
-    val terminalGroups: List<PhysicalTerminalGroupV0>,
-    val mountedOccurrences: List<PhysicalMountedOccurrenceV0>,
+data class PhysicalInstallationSpace(
+    val enclosure: PhysicalEnclosure,
+    val surfaces: List<PhysicalMountingSurface>,
+    val rails: List<PhysicalRail>,
+    val ducts: List<PhysicalDuct>,
+    val channels: List<PhysicalRouteChannel>,
+    val terminalGroups: List<PhysicalTerminalGroup>,
+    val mountedOccurrences: List<PhysicalMountedOccurrence>,
 )
 
-data class PhysicalEnclosureV0(
+data class PhysicalEnclosure(
     val id: PhysicalObjectId,
     val size: PhysicalInstallationSize3i,
     val provenance: PhysicalSourceProvenance,
 )
 
-data class PhysicalMountingSurfaceV0(
+data class PhysicalMountingSurface(
     val id: PhysicalObjectId,
     val enclosureId: PhysicalObjectId,
     val at: PhysicalPoint2i,
@@ -202,7 +208,7 @@ data class PhysicalMountingSurfaceV0(
     val provenance: PhysicalSourceProvenance,
 )
 
-data class PhysicalRailV0(
+data class PhysicalRail(
     val id: PhysicalObjectId,
     val surfaceId: PhysicalObjectId,
     val at: PhysicalPoint2i,
@@ -213,7 +219,7 @@ data class PhysicalRailV0(
     val provenance: PhysicalSourceProvenance,
 )
 
-data class PhysicalDuctV0(
+data class PhysicalDuct(
     val id: PhysicalObjectId,
     val enclosureId: PhysicalObjectId,
     val at: PhysicalPoint2i,
@@ -223,7 +229,7 @@ data class PhysicalDuctV0(
     val provenance: PhysicalSourceProvenance,
 )
 
-data class PhysicalRouteChannelV0(
+data class PhysicalRouteChannel(
     val id: PhysicalObjectId,
     val ductId: PhysicalObjectId,
     val at: PhysicalPoint2i,
@@ -234,7 +240,7 @@ data class PhysicalRouteChannelV0(
     val provenance: PhysicalSourceProvenance,
 )
 
-data class PhysicalTerminalGroupV0(
+data class PhysicalTerminalGroup(
     val id: PhysicalObjectId,
     val enclosureId: PhysicalObjectId,
     val at: PhysicalPoint2i,
@@ -245,18 +251,18 @@ data class PhysicalTerminalGroupV0(
     val provenance: PhysicalSourceProvenance,
 )
 
-data class PhysicalMountedOccurrenceV0(
+data class PhysicalMountedOccurrence(
     val occurrenceId: PhysicalObjectId,
     val key: InstallationOccurrenceKey,
     val semanticSubjectId: StableSemanticIdentity,
     val target: PhysicalMountTargetRef,
     val at: PhysicalPoint2i,
     val selectedOrientation: PhysicalInstallationOrientation,
-    val contract: PhysicalInstallationContractV0,
+    val contract: PhysicalInstallationContract,
     val provenance: PhysicalSourceProvenance,
 )
 
-data class PhysicalRouteIntentV0(
+data class PhysicalRouteIntent(
     val connectionAlias: String,
     val channelIds: List<PhysicalObjectId>,
     val provenance: PhysicalSourceProvenance,
@@ -271,7 +277,7 @@ data class PhysicalInstallationTopologyDiagnostic(
 )
 
 sealed interface PhysicalInstallationTopologyCompilation {
-    data class Success(val ir: PhysicalInstallationIRV0) : PhysicalInstallationTopologyCompilation
+    data class Success(val ir: PhysicalInstallationIR) : PhysicalInstallationTopologyCompilation
 
     data class Failure(val diagnostics: List<PhysicalInstallationTopologyDiagnostic>) :
         PhysicalInstallationTopologyCompilation

@@ -33,7 +33,7 @@ object BindingEvidencePayloadMapper {
                 .entries
                 .sortedBy { it.key.value }
                 .map { (slotId, value) -> "${slotId.value}=$value" },
-            resolverStage = "binding-resolver-v0",
+            resolverStage = "binding-resolver",
             diagnostics = result.diagnostics.map { it.toPayload() },
             rendererFallbackAccepted = result.rendererFallbackAccepted,
         )

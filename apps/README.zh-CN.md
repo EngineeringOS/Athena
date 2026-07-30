@@ -7,7 +7,6 @@
 ## 模块
 
 - `:apps:cli` -> [`cli/`](cli/README.zh-CN.md)
-- `:apps:desktop-viewer` -> [`desktop-viewer/`](desktop-viewer/README.zh-CN.md)
 
 ## 边界
 

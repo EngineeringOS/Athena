@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m22.sample
+package com.engineeringood.m22.sample
 
 system LayoutOptimizationAcceptance {
   device PowerSupply24V {

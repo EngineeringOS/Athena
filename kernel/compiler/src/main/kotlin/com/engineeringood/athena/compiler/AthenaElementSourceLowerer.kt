@@ -103,12 +103,14 @@ internal object AthenaElementSourceLowerer {
             CompiledExport(
                 contract = RepresentationAnchorContract(
                     anchorId = exportedId,
+                    geometryRef = source.geometryRef,
                     primitiveId = primitiveId,
                     point = transformPoint(source.point, child.sourceChild),
                     role = source.role,
                     required = source.required,
                     acceptedDirections = source.acceptedDirections,
                     acceptedSignals = source.acceptedSignals,
+                    port = source.port,
                 ),
                 intrinsic = RepresentationExportedAnchor(
                     anchorId = exportedId,

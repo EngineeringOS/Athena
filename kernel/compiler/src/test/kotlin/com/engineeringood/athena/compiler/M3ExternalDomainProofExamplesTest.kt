@@ -17,7 +17,7 @@ class M3ExternalDomainProofExamplesTest {
     private val expectedInventory = listOf("dual-domain-proof", "dummy-proof", "electrical-proof")
 
     @Test
-    fun `m3 proof corpus keeps the expected inventory`() {
+    fun `m3 evidence corpus keeps the expected inventory`() {
         val sourceNames = loadExamples().map(M3ProofExample::name)
         val expectationNames = loadExampleNames(".expectation.txt")
 
@@ -26,7 +26,7 @@ class M3ExternalDomainProofExamplesTest {
     }
 
     @Test
-    fun `m3 proof corpus exercises hosted external domains through explicit plugin sets`() {
+    fun `m3 evidence corpus exercises hosted external domains through explicit plugin sets`() {
         val repoRoot = resolveRepoRoot()
 
         loadExamples().forEach { example ->
@@ -34,7 +34,7 @@ class M3ExternalDomainProofExamplesTest {
             val sourcePath = repoRoot.resolve("examples/m3/${example.name}.athena")
             val result = assertIs<CompilerCompilationSuccess>(compiler.compile(sourcePath))
 
-            assertTrue(result.semanticResult.isSemanticallyValid, "Expected semantically valid proof example `${example.name}`.")
+            assertTrue(result.semanticResult.isSemanticallyValid, "Expected semantically valid evidence example `${example.name}`.")
             assertEquals(example.approvedPlugins, compiler.pluginInventory.approvedPlugins.map { plugin ->
                 plugin.candidate.manifest.pluginId
             })

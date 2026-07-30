@@ -97,7 +97,7 @@ class PresentationModelDeriverTest {
         val schematic = success.presentations.first { presentation -> presentation.view.id == "schematic" }
         val facts = schematic.representationFacts
 
-        assertTrue(facts.none { fact -> fact.anatomy.representationId.value.startsWith("athena-industrial-control-v0:") })
+        assertTrue(facts.none { fact -> fact.anatomy.representationId.value.startsWith("athena-industrial-control:") })
     }
 
     private fun resolveRepoRoot(): Path {

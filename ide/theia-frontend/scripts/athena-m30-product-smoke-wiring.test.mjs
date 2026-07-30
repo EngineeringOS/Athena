@@ -60,12 +60,12 @@ test('M30 structured product smoke asserts representation proof before UI screen
     assert.match(smoke, /No Gradle verification runs in parallel/);
     assert.match(smoke, /ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE/);
     assert.match(smoke, /ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH/);
-    assert.match(smoke, /src\/01-rolling-shutter-control-source\.athena/);
+    assert.match(smoke, /src\/com\/engineeringood\/m30\/sample\/01-rolling-shutter-control-source\.athena/);
     assert.match(smoke, /RollingShutterControlProof > ShutterMotorM30 > up/);
     assert.match(openWorkspaceMain, /SMOKE_OUTLINE_SOURCE_RELATIVE/);
     assert.match(openWorkspaceMain, /SMOKE_OUTLINE_EXPECTED_PATH/);
     assert.match(openWorkspaceMain, /isComponentBodyBox/);
-    assert.doesNotMatch(openWorkspaceMain, /routeBodyIntersectionCount:[\s\S]*port:/);
+    assert.match(openWorkspaceMain, /filter\(isComponentBodyBox\)/);
     assert.doesNotMatch(smoke, /innerText|textContent|querySelectorAll\([^)]*text/i);
 });
 
@@ -105,10 +105,10 @@ test('M30 structured representation proof payload inventory is executable', () =
             presentationTerminalCount: 8,
             presentationLabelCount: 6,
             representationIds: [
-                'athena-industrial-control-v0:power-supply',
-                'athena-industrial-control-v0:protection-device',
-                'athena-industrial-control-v0:terminal-block',
-                'athena-industrial-control-v0:load-actuator',
+                'athena-industrial-control:power-supply',
+                'athena-industrial-control:protection-device',
+                'athena-industrial-control:terminal-block',
+                'athena-industrial-control:load-actuator',
             ],
             fallbackRepresentationIds: [],
         },
@@ -146,7 +146,7 @@ test('M30 structured representation proof payload inventory is executable', () =
     const libraryProof = payloads.find(payload => payload.payload.proofKind === 'representation-library');
     assert.equal(
         libraryProof.payload.loadedRepresentationLibraryIds,
-        'athena-industrial-control-v0',
+        'athena-industrial-control',
     );
 });
 

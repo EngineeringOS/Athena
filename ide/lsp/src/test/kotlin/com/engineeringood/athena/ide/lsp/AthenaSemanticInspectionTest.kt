@@ -208,7 +208,7 @@ class AthenaSemanticInspectionTest {
     fun `semantic inspection includes current knowledge diagnostics and m9 knowledge counts`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-knowledge-inspection-",
-            sourceFileName = "motor-proof.athena",
+            sourceFileName = "motor-evidence.athena",
             sourceText = m9SemanticInspectionKnowledgeSource,
         )
         val repositoryRoot = repository.repositoryRoot

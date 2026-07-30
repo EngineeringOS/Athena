@@ -3,7 +3,7 @@ const { spawn } = require('node:child_process');
 
 const ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL = 'ATHENA_GRAPH_WORKBENCH_PROOF=';
 const STARTUP_TIMEOUT_MS = 120000;
-const SOURCE_RELATIVE = 'src/01-governed-authoring-customer-source.athena';
+const SOURCE_RELATIVE = 'src/com/engineeringood/m31/sample/01-governed-authoring-customer-source.athena';
 
 async function main() {
     const repositoryRoot = path.resolve(__dirname, '..', '..', '..', 'examples', 'm31', 'sample-project');

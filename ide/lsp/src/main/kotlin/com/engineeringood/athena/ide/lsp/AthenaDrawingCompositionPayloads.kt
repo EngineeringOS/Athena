@@ -52,6 +52,7 @@ data class AthenaDrawingStructureSubjectPayload(
     val bounds: AthenaPresentationBoundsPayload,
     val representationAuthority: String,
     val boundsAuthority: String,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 data class AthenaDrawingStructureFactPayload(
@@ -64,6 +65,7 @@ data class AthenaDrawingStructureFactPayload(
     val memberIds: List<String>,
     val authority: String,
     val boundsAuthority: String?,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 data class AthenaDrawingReferencePlacementPayload(
@@ -76,6 +78,7 @@ data class AthenaDrawingReferencePlacementPayload(
     val anchor: AthenaProjectionPointPayload,
     val compactNotation: String,
     val anatomy: AthenaPresentationAnatomyPayload,
+    val trace: AthenaPresentationTracePayload? = null,
 )
 
 data class AthenaDrawingAuthoritiesPayload(
@@ -124,6 +127,14 @@ internal fun PresentationDrawingComposition.toPayload(): AthenaDrawingCompositio
             subject.bounds.toPayload(),
             subject.representationAuthority,
             subject.boundsAuthority,
+            AthenaPresentationTracePayload(
+                sourceProvenance = listOfNotNull(
+                    subject.representationAuthority.takeIf(String::isNotBlank),
+                    subject.boundsAuthority?.takeIf(String::isNotBlank),
+                )
+                    .sorted(),
+                compilerStage = subject.representationAuthority,
+            ),
         )
     },
     structureFacts = structureFacts.map { fact ->
@@ -137,6 +148,15 @@ internal fun PresentationDrawingComposition.toPayload(): AthenaDrawingCompositio
             fact.memberIds,
             fact.authority,
             fact.boundsAuthority,
+            AthenaPresentationTracePayload(
+                sourceProvenance = listOfNotNull(
+                    fact.authority.takeIf(String::isNotBlank),
+                    fact.boundsAuthority?.takeIf(String::isNotBlank),
+                )
+                    .sorted(),
+                sourceProjectionIds = fact.memberIds.sorted(),
+                compilerStage = fact.authority,
+            ),
         )
     },
     referencePlacements = referencePlacements.map { placement ->
@@ -150,6 +170,10 @@ internal fun PresentationDrawingComposition.toPayload(): AthenaDrawingCompositio
             AthenaProjectionPointPayload(placement.anchor.x, placement.anchor.y),
             placement.compactNotation,
             placement.anatomy.toPayload(),
+            AthenaPresentationTracePayload(
+                sourceProvenance = listOf(placement.representationIdentity, placement.compactNotation).sorted(),
+                compilerStage = placement.representationIdentity,
+            ),
         )
     },
     authorities = AthenaDrawingAuthoritiesPayload(

@@ -56,10 +56,10 @@ class SvgRendererModuleMarkerTest {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 172" width="480" height="172">
                   <title>DemoCabinet</title>
                   <text x="40" y="28" class="system-label">DemoCabinet</text>
-                  <line x1="180" y1="96" x2="300" y2="96" class="connection" />
-                  <rect x="40" y="60" width="140" height="72" rx="8" ry="8" class="component" />
+                  <polyline points="180,96 300,96" class="connection" data-connection-id="connection:test:plc1_out_to_m1_in" />
+                  <rect x="40" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="component:PLC1" />
                   <text x="52" y="88" class="label">PLC1</text>
-                  <rect x="300" y="60" width="140" height="72" rx="8" ry="8" class="component" />
+                  <rect x="300" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="component:M1" />
                   <text x="312" y="88" class="label">M1</text>
                 </svg>
             """.trimIndent(),
@@ -122,10 +122,10 @@ class SvgRendererModuleMarkerTest {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 172" width="480" height="172">
                   <title>DemoCabinet</title>
                   <text x="40" y="28" class="system-label">DemoCabinet</text>
-                  <line x1="104" y1="86" x2="316" y2="86" class="connection" />
-                  <rect x="40" y="60" width="140" height="72" rx="8" ry="8" class="component" />
+                  <polyline points="104,86 210,86 210,86 316,86" class="connection" data-connection-id="connection:test:plc1_out_to_m1_in" />
+                  <rect x="40" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="component:PLC1" />
                   <text x="52" y="88" class="label">PLC1</text>
-                  <rect x="300" y="60" width="140" height="72" rx="8" ry="8" class="component" />
+                  <rect x="300" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="component:M1" />
                   <text x="312" y="88" class="label">M1</text>
                 </svg>
             """.trimIndent(),

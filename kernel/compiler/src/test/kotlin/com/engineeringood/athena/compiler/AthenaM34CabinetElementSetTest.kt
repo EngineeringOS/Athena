@@ -37,16 +37,16 @@ class AthenaM34CabinetElementSetTest {
             assertTrue(element.lifecycle.provenance.source.contains(".athena"))
             assertNotNull(element.graphicBody.bounds, "Element $elementId needs intrinsic bounds.")
             assertTrue(element.graphicBody.primitives.isNotEmpty(), "Element $elementId needs typed primitives.")
-            val proof = element.graphicBody.toM34CabinetRenderPathProof(
+            val evidence = element.graphicBody.toM34CabinetRenderPathProof(
                 documentViewBoxAuthority = "graphic-primitive-ir",
-                adapterAuthority = "story-4.1-structural-proof",
-                xmlRuntimeAuthorityAbsent = compiled.proof.xmlRuntimeAuthorityAbsent,
-                rawMarkupAuthorityAbsent = compiled.proof.rawSvgTransportAbsent,
+                adapterAuthority = "story-4.1-structural-evidence",
+                xmlRuntimeAuthorityAbsent = compiled.evidence.xmlRuntimeAuthorityAbsent,
+                rawMarkupAuthorityAbsent = compiled.evidence.rawSvgTransportAbsent,
                 fallbackAuthorityAbsent = true,
                 hardCodedDocumentBoundsAbsent = true,
                 presentationPrimitiveActiveProducerAbsent = true,
             )
-            assertTrue(proof.accepted, proof.toString())
+            assertTrue(evidence.accepted, evidence.toString())
         }
 
         CONNECTABLE_CABINET_ELEMENTS.forEach { elementId ->

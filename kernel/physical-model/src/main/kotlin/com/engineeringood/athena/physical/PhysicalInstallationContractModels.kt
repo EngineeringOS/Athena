@@ -89,20 +89,20 @@ data class PhysicalInstallationContractFieldProvenance(
     val span: PhysicalSourceSpan?,
 )
 
-data class PhysicalInstallationSizeV0(
+data class PhysicalInstallationSize(
     val width: PhysicalPositiveMillimeters,
     val height: PhysicalPositiveMillimeters,
     val depth: PhysicalPositiveMillimeters,
 )
 
-data class PhysicalInstallationClearanceV0(
+data class PhysicalInstallationClearance(
     val top: PhysicalNonNegativeMillimeters,
     val right: PhysicalNonNegativeMillimeters,
     val bottom: PhysicalNonNegativeMillimeters,
     val left: PhysicalNonNegativeMillimeters,
 )
 
-data class PhysicalInstallationContractProvenanceV0(
+data class PhysicalInstallationContractProvenance(
     val width: PhysicalInstallationContractFieldProvenance,
     val height: PhysicalInstallationContractFieldProvenance,
     val depth: PhysicalInstallationContractFieldProvenance,
@@ -115,14 +115,14 @@ data class PhysicalInstallationContractProvenanceV0(
     val compatibleContainerKinds: PhysicalInstallationContractFieldProvenance,
 )
 
-data class PhysicalInstallationContractV0(
+data class PhysicalInstallationContract(
     val subjectIdentity: StableSemanticIdentity,
-    val size: PhysicalInstallationSizeV0,
+    val size: PhysicalInstallationSize,
     val mountingTypeId: PhysicalMountingTypeId,
     val allowedOrientations: Set<PhysicalInstallationOrientation>,
-    val clearance: PhysicalInstallationClearanceV0,
+    val clearance: PhysicalInstallationClearance,
     val compatibleContainerKinds: Set<PhysicalContainerKindId>,
-    val provenance: PhysicalInstallationContractProvenanceV0,
+    val provenance: PhysicalInstallationContractProvenance,
 ) {
     val canonicalDigestMaterial: String =
         "size.width=${size.width.value};" +
@@ -150,7 +150,7 @@ data class PhysicalInstallationContractDiagnostic(
 )
 
 sealed interface PhysicalInstallationContractResolution {
-    data class Success(val contract: PhysicalInstallationContractV0) : PhysicalInstallationContractResolution
+    data class Success(val contract: PhysicalInstallationContract) : PhysicalInstallationContractResolution
 
     data class Failure(val diagnostics: List<PhysicalInstallationContractDiagnostic>) :
         PhysicalInstallationContractResolution

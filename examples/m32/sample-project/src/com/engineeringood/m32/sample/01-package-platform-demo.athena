@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m32.sample
+package com.engineeringood.m32.sample
 
 system M32PackagePlatformDemo {
   device MainPowerSupplyPS32 {
@@ -36,10 +36,8 @@ system M32PackagePlatformDemo {
     }
   }
 
-  connect con_m32_power {
-    mainpowersupplyps32_lplus_to_controlrelayk32_supply MainPowerSupplyPS32.lplus -> ControlRelayK32.supply
-    controlrelayk32_upout_to_shuttermotorm32_up ControlRelayK32.upOut -> ShutterMotorM32.up
-  }
+  connect mainpowersupplyps32_lplus_to_controlrelayk32_supply MainPowerSupplyPS32.lplus -> ControlRelayK32.supply
+  connect controlrelayk32_upout_to_shuttermotorm32_up ControlRelayK32.upOut -> ShutterMotorM32.up
 
   layout schematic-sheet {
     place ControlRelayK32 near MainPowerSupplyPS32

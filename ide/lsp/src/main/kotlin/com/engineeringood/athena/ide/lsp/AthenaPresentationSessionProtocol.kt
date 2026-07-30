@@ -43,6 +43,14 @@ import com.engineeringood.athena.representation.PresentationTerminalFact
 import com.engineeringood.athena.representation.PresentationTerminalPoint
 import com.engineeringood.athena.representation.SymbolAnatomy
 import com.engineeringood.athena.representation.TerminalNotation
+import com.engineeringood.athena.routing.RouteCrossingFact
+import com.engineeringood.athena.routing.RouteFact
+import com.engineeringood.athena.routing.RouteFactSnapshot
+import com.engineeringood.athena.routing.RouteJunctionFact
+import com.engineeringood.athena.routing.RouteQuality
+import com.engineeringood.athena.routing.RouteQualityState
+import com.engineeringood.athena.routing.RouteLabelFact
+import com.engineeringood.athena.routing.TerminalAnchorFact
 import kotlin.math.roundToInt
 
 internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload {
@@ -56,6 +64,7 @@ internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload
         connectors = connectorsForRendering().map(PresentationConnector::toPayload),
         representationFacts = representationFactsForRendering().map(PresentationRepresentationFact::toPayload),
         referenceMarkers = referenceMarkers.map(PresentationReferenceMarkerFact::toPayload),
+        routeFactSnapshot = routeFactSnapshot?.toPayload(),
         drawingComposition = drawingComposition?.toPayload(),
     )
 }
@@ -78,6 +87,11 @@ private fun PresentationGraphicOccurrence.toPayload(): AthenaPresentationGraphic
         labels = labels.map(PresentationGraphicLabel::toPayload),
         sourceProvenance = sourceProvenance.sorted(),
         authorities = authorities.toPayload(),
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = sourceProvenance.sorted(),
+            sourceProjectionIds = listOf(occurrenceId.value),
+            compilerStage = authorities.material,
+        ),
     )
 
 private fun PresentationGraphicOccurrenceAuthorities.toPayload() =
@@ -94,6 +108,11 @@ private fun PresentationGraphicTerminalBinding.toPayload() =
         terminalIdentity = terminalIdentity,
         point = AthenaProjectionPointPayload(point.x, point.y),
         side = side.name.lowercase(),
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = listOf(anchorId, terminalIdentity, side.name.lowercase()),
+            sourceProjectionIds = listOf(portSemanticId, anchorId),
+            compilerStage = "graphic-terminal-binding",
+        ),
     )
 
 private fun PresentationGraphicLabel.toPayload() =
@@ -335,12 +354,13 @@ private fun PresentationAnchorDefinition.toPayload(): AthenaPresentationAnchorDe
 }
 
 private fun PresentationOccurrence.toPayload(): AthenaPresentationOccurrencePayload {
-    val primitiveReference = reference as? PresentationPrimitiveOccurrenceReference
-    val compositeReference = reference as? PresentationCompositeOccurrenceReference
+    val occurrenceReference = reference
+    val primitiveReference = occurrenceReference as? PresentationPrimitiveOccurrenceReference
+    val compositeReference = occurrenceReference as? PresentationCompositeOccurrenceReference
     return AthenaPresentationOccurrencePayload(
         occurrenceId = occurrenceId.value,
         semanticId = semanticId.value,
-        referenceKind = when (reference) {
+        referenceKind = when (occurrenceReference) {
             is PresentationPrimitiveOccurrenceReference -> "primitive"
             is PresentationCompositeOccurrenceReference -> "composite"
         },
@@ -360,6 +380,13 @@ private fun PresentationOccurrence.toPayload(): AthenaPresentationOccurrencePayl
         anchorBindings = anchorBindings.map(PresentationAnchorBinding::toPayload),
         tokenOverrides = tokenOverrides.toSortedMap(),
         sourceProjectionIds = sourceProjectionIds.sorted(),
+        trace = AthenaPresentationTracePayload(
+            sourceProjectionIds = sourceProjectionIds.sorted(),
+            compilerStage = when (occurrenceReference) {
+                is PresentationPrimitiveOccurrenceReference -> occurrenceReference.primitiveId.value
+                is PresentationCompositeOccurrenceReference -> occurrenceReference.compositeId.value
+            },
+        ),
     )
 }
 
@@ -370,6 +397,17 @@ private fun PresentationAnchorBinding.toPayload(): AthenaPresentationAnchorBindi
         portSemanticId = portSemanticId?.value,
         ownerSemanticId = ownerSemanticId?.value,
         sourceLabelId = sourceLabelId,
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = listOfNotNull(
+                alias.value.takeIf(String::isNotBlank),
+                anchorId.takeIf(String::isNotBlank),
+                portSemanticId?.value?.takeIf(String::isNotBlank),
+                ownerSemanticId?.value?.takeIf(String::isNotBlank),
+                sourceLabelId?.takeIf(String::isNotBlank),
+            ),
+            sourceProjectionIds = listOfNotNull(anchorId, portSemanticId?.value, ownerSemanticId?.value),
+            compilerStage = "anchor-binding",
+        ),
     )
 }
 
@@ -387,6 +425,11 @@ private fun PresentationConnector.toPayload(): AthenaPresentationConnectorPayloa
         markerKeys = markerKeys,
         tokenOverrides = tokenOverrides.toSortedMap(),
         sourceProjectionIds = sourceProjectionIds.sorted(),
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = listOfNotNull(sourceAnchorId, targetAnchorId).sorted(),
+            sourceProjectionIds = sourceProjectionIds.sorted(),
+            compilerStage = primitiveId.value,
+        ),
     )
 }
 
@@ -425,6 +468,21 @@ private fun PresentationRepresentationFact.toPayload(): AthenaPresentationRepres
         terminals = terminals.map(PresentationTerminalFact::toPayload),
         labels = labels.map(LabelFact::toPayload),
         packageEvidence = packageEvidence?.toPayload(),
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = buildList {
+                packageEvidence?.let { evidence ->
+                    add(evidence.engineeringPackageId)
+                    add(evidence.presentationProfileId)
+                    add(evidence.representationPackageId)
+                    add(evidence.descriptorId)
+                    add(evidence.graphicResourceId)
+                    add(evidence.resolverStage)
+                }
+            }.sorted(),
+            sourceProjectionIds = sourceProjectionIds.sorted(),
+            compilerStage = packageEvidence?.resolverStage ?: "representation-fact-deriver",
+            packageEvidence = packageEvidence?.toPayload(),
+        ),
     )
 }
 
@@ -463,6 +521,84 @@ internal fun PresentationAnatomy.toPayload(): AthenaPresentationAnatomyPayload {
         primitives = primitives.map(PresentationPrimitive::toPayload),
         terminals = terminals.map(PresentationTerminalPoint::toPayload),
         labelAnchors = labelAnchors.map(PresentationLabelAnchor::toPayload),
+    )
+}
+
+private fun RouteFactSnapshot.toPayload(): AthenaPresentationRouteFactSnapshotPayload {
+    return AthenaPresentationRouteFactSnapshotPayload(
+        snapshotId = snapshotId.value,
+        family = family,
+        routeFacts = routeFacts.map(RouteFact::toPayload),
+        junctionFacts = junctionFacts.map(RouteJunctionFact::toPayload),
+        crossingFacts = crossingFacts.map(RouteCrossingFact::toPayload),
+    )
+}
+
+private fun RouteFact.toPayload(): AthenaPresentationRouteFactPayload {
+    return AthenaPresentationRouteFactPayload(
+        routeId = routeId.value,
+        snapshotId = snapshotId.value,
+        connectionId = connectionId.value,
+        source = source.toPayload(),
+        target = target.toPayload(),
+        segments = segments.map { segment ->
+            AthenaPresentationRouteSegmentPayload(
+                start = AthenaProjectionPointPayload(x = segment.start.x, y = segment.start.y),
+                end = AthenaProjectionPointPayload(x = segment.end.x, y = segment.end.y),
+            )
+        },
+        lane = lane.value,
+        quality = quality.toPayload(),
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = listOf(source.policySource, target.policySource).distinct().sorted(),
+            sourceProjectionIds = listOf(snapshotId.value, connectionId.value),
+            compilerStage = "route-fact-deriver",
+        ),
+    )
+}
+
+private fun TerminalAnchorFact.toPayload(): AthenaPresentationTerminalFactPayload {
+    return AthenaPresentationTerminalFactPayload(
+        presentationTerminalId = "terminal:${subjectId.value}:${anchorId.value}",
+        subjectId = subjectId.value,
+        occurrenceId = occurrenceId.value,
+        portId = portId.value,
+        physicalTerminalId = "${subjectId.value}:${anchorId.value}",
+        side = side.name.lowercase(),
+        routeAnchor = AthenaPresentationRouteAnchorPayload(
+            anchorId = anchorId.value,
+            point = AthenaProjectionPointPayload(x = point.x, y = point.y),
+        ),
+        notation = AthenaPresentationTerminalNotationPayload(
+            marker = "circle",
+            number = portId.value,
+        ),
+    )
+}
+
+private fun RouteJunctionFact.toPayload(): AthenaPresentationRouteJunctionFactPayload {
+    return AthenaPresentationRouteJunctionFactPayload(
+        junctionId = junctionId,
+        point = AthenaProjectionPointPayload(x = point.x, y = point.y),
+        routeIds = routeIds.map { routeId -> routeId.value },
+        semanticPortId = semanticPortId,
+    )
+}
+
+private fun RouteCrossingFact.toPayload(): AthenaPresentationRouteCrossingFactPayload {
+    return AthenaPresentationRouteCrossingFactPayload(
+        crossingId = crossingId,
+        point = AthenaProjectionPointPayload(x = point.x, y = point.y),
+        routeIds = routeIds.map { routeId -> routeId.value },
+        joined = joined,
+    )
+}
+
+private fun RouteQuality.toPayload(): AthenaPresentationRouteQualityPayload {
+    return AthenaPresentationRouteQualityPayload(
+        state = state.name.lowercase(),
+        failedConstraintIds = failedConstraintIds.map { constraintId -> constraintId.value }.sorted(),
+        message = message,
     )
 }
 

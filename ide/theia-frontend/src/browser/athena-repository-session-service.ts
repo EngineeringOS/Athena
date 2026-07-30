@@ -75,7 +75,7 @@ export class AthenaRepositorySessionService implements FrontendApplicationContri
         if (roots.length > 1) {
             this.setState({
                 lifecycle: 'unavailable',
-                message: 'M4 allows only one active Engineering Repository per Athena window.'
+                message: 'Only one Engineering Repository can be active in an Athena window.'
             });
             return;
         }

@@ -35,10 +35,10 @@ test('M34 Symbol and Element keywords receive syntax-only highlight captures', (
 
     assert.ok(captures.includes('athenaRepresentationKeyword:symbol'));
     assert.ok(captures.includes('athenaRepresentationKeyword:element'));
-    for (const keyword of ['identity', 'version', 'graphic', 'anchor', 'role', 'accepts', 'child', 'translate', 'rotate', 'scale', 'zOrder', 'export', 'symbol']) {
+    for (const keyword of ['identity', 'version', 'graphic', 'anchor', 'role', 'child', 'translate', 'rotate', 'scale', 'zOrder', 'export', 'symbol']) {
         assert.ok(captures.includes(`athenaRepresentationKeyword:${keyword}`), `missing representation capture for ${keyword}:\n${captures.join('\n')}`);
     }
-    for (const keyword of ['bounds', 'line', 'from', 'to', 'style', 'primitiveRef', 'point']) {
+    for (const keyword of ['bounds', 'line', 'from', 'to', 'style', 'ref', 'point']) {
         assert.ok(captures.includes(`athenaPrimitiveKeyword:${keyword}`), `missing primitive capture for ${keyword}:\n${captures.join('\n')}`);
     }
     for (const keyword of ['direction', 'signal']) {
@@ -92,7 +92,7 @@ test('M34 complete representation vocabulary parses and receives category-specif
     }
     for (const keyword of [
         'bounds', 'line', 'polyline', 'points', 'arc', 'center', 'radius', 'sweep', 'circle',
-        'rectangle', 'at', 'size', 'label', 'from', 'to', 'style', 'primitiveRef', 'point'
+        'rectangle', 'at', 'size', 'label', 'from', 'to', 'style', 'ref', 'point'
     ]) {
         assert.ok(
             captures.includes(`athenaPrimitiveKeyword:${keyword}`),

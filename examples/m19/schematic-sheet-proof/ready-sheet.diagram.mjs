@@ -70,7 +70,7 @@ export default {
         }
     ],
     notationPack: {
-        packId: 'electrical-notation/schematic/default-v1',
+        packId: 'electrical-notation/schematic/default',
         displayName: 'Electrical Schematic Default',
         subjects: [
             {

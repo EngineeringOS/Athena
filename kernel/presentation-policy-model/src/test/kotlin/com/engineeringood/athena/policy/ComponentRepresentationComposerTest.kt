@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 class ComponentRepresentationComposerTest {
     @Test
     fun `mandatory M25 families compose into supported presentation anatomy facts`() {
-        val composer = ComponentRepresentationComposer(AthenaIndustrialControlV0Profile.profile())
+        val composer = ComponentRepresentationComposer(AthenaIndustrialControlProfile.profile())
         val components = listOf(
             ComponentRepresentationRequest(ComponentSubjectKey("PLC1"), ComponentFamilyKey("plc-controller")),
             ComponentRepresentationRequest(ComponentSubjectKey("XT1"), ComponentFamilyKey("terminal-block")),
@@ -27,7 +27,7 @@ class ComponentRepresentationComposerTest {
 
     @Test
     fun `optional M25 families compose when present`() {
-        val composer = ComponentRepresentationComposer(AthenaIndustrialControlV0Profile.profile())
+        val composer = ComponentRepresentationComposer(AthenaIndustrialControlProfile.profile())
         val snapshot = composer.compose(
             listOf(
                 ComponentRepresentationRequest(ComponentSubjectKey("HMI1"), ComponentFamilyKey("hmi-operator")),
@@ -41,7 +41,7 @@ class ComponentRepresentationComposerTest {
 
     @Test
     fun `device tag labels display authored tag instead of canonical semantic prefix`() {
-        val composer = ComponentRepresentationComposer(AthenaIndustrialControlV0Profile.profile())
+        val composer = ComponentRepresentationComposer(AthenaIndustrialControlProfile.profile())
         val snapshot = composer.compose(
             listOf(
                 ComponentRepresentationRequest(

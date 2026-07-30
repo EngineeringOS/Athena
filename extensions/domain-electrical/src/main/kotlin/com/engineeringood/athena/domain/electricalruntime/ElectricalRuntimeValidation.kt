@@ -141,7 +141,7 @@ private fun connectionCompatibilityDiagnostics(
 
             val fromDirection = fromPort.direction()
             val toDirection = toPort.direction()
-            if (fromDirection != null && toDirection != null && (fromDirection != PortDirection.OUT || toDirection != PortDirection.IN)) {
+            if (fromDirection != null && toDirection != null && !fromDirection.allowsSourceConnection(toDirection)) {
                 add(
                     context.domainDiagnostic(
                         ruleId = "connection.direction.illegal",
@@ -215,6 +215,11 @@ private fun EngineeringPort.direction(): PortDirection? {
     }
 }
 
+private fun PortDirection.allowsSourceConnection(targetDirection: PortDirection): Boolean {
+    return this in setOf(PortDirection.OUT, PortDirection.BIDIRECTIONAL, PortDirection.PASSIVE) &&
+        targetDirection in setOf(PortDirection.IN, PortDirection.BIDIRECTIONAL, PortDirection.PASSIVE)
+}
+
 private fun List<EngineeringProperty>.requiredSymbolValue(name: String): PropertySymbolValue = propertySymbolValue(name)
 
 private fun List<EngineeringProperty>.optionalSymbolValue(name: String): PropertySymbolValue = propertySymbolValue(name)
@@ -266,11 +271,15 @@ private fun EngineeringPropertyValue.renderedValue(): String {
 private val VALID_DIRECTIONS = mapOf(
     "in" to PortDirection.IN,
     "out" to PortDirection.OUT,
+    "bidirectional" to PortDirection.BIDIRECTIONAL,
+    "passive" to PortDirection.PASSIVE,
 )
 
 private enum class PortDirection {
     IN,
     OUT,
+    BIDIRECTIONAL,
+    PASSIVE,
 }
 
 private sealed interface PropertySymbolValue {

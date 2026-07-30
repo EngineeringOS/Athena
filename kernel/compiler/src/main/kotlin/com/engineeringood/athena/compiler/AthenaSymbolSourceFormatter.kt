@@ -193,13 +193,14 @@ internal object AthenaRepresentationSourceFormatter {
 
     private fun StringBuilder.appendAnchor(anchor: SymbolAnchorDeclaration) {
         appendLine("  anchor ${anchor.id} {")
-        anchor.primitiveRef?.let { field -> appendLine("    primitiveRef ${field.value}") }
+        anchor.ref?.let { field -> appendLine("    ref \"${field.value}\"") }
+        anchor.port?.let { field -> appendLine("    port ${field.parts.joinToString(".")}") }
+        anchor.directions.forEach { field -> appendLine("    direction ${field.value}") }
+        anchor.signals.forEach { field -> appendLine("    signal ${field.parts.joinToString(".")}") }
         anchor.point?.let { point ->
             appendLine("    point (${point.x.renderNumber()}, ${point.y.renderNumber()})")
         }
         anchor.role?.let { field -> appendLine("    role ${field.value}") }
-        anchor.acceptedDirections.forEach { field -> appendLine("    accepts direction ${field.value}") }
-        anchor.acceptedSignals.forEach { field -> appendLine("    accepts signal ${field.value}") }
         appendLine("  }")
     }
 

@@ -1,7 +1,7 @@
 template.format.version=1
 component.supply.id=template:dc24.supply
 component.supply.conceptId=electrical.power-supply.dc24
-component.supply.implementationId=impl/electrical/power-supply/siemens-proof-24vdc
+component.supply.implementationId=impl/electrical/power-supply/siemens-evidence-24vdc
 component.supply.displayName=24V DC power supply
 component.supply.summary=Governed 24V DC supply from the M14 Siemens-first proof slice
 component.supply.tags=power,supply,24vdc

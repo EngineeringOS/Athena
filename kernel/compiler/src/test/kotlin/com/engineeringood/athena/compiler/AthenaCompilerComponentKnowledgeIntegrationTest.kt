@@ -23,12 +23,12 @@ class AthenaCompilerComponentKnowledgeIntegrationTest {
                 system ComponentKnowledgeDemo {
                   device PLC1 {
                     type Switch
-                    model "proof.cpu.313c"
+                    model "evidence.cpu.313c"
                   }
 
                   device M1 {
                     type Motor
-                    model "proof.motor.ac"
+                    model "evidence.motor.ac"
                   }
 
                   port PLC1.lplus {
@@ -72,7 +72,7 @@ class AthenaCompilerComponentKnowledgeIntegrationTest {
             knowledgeContext.resolvedComponents.map { resolved -> resolved.concept.conceptId.value },
         )
         assertEquals(
-            listOf("proof.motor.ac", "proof.cpu.313c"),
+            listOf("evidence.motor.ac", "evidence.cpu.313c"),
             knowledgeContext.resolvedImplementations.map { resolved -> resolved.implementation.vendorPartNumber.value },
         )
         assertEquals(4, knowledgeContext.resolvedSemanticPorts.size)

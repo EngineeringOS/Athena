@@ -2,36 +2,36 @@ package com.engineeringood.athena.drawing.composition
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.physical.InstallationOccurrenceKey
-import com.engineeringood.athena.physical.PhysicalDuctV0
-import com.engineeringood.athena.physical.PhysicalEnclosureV0
+import com.engineeringood.athena.physical.PhysicalDuct
+import com.engineeringood.athena.physical.PhysicalEnclosure
 import com.engineeringood.athena.physical.PhysicalContainerKindId
 import com.engineeringood.athena.physical.PhysicalContractSource
 import com.engineeringood.athena.physical.PhysicalContractSourceKind
-import com.engineeringood.athena.physical.PhysicalInstallationClearanceV0
+import com.engineeringood.athena.physical.PhysicalInstallationClearance
 import com.engineeringood.athena.physical.PhysicalInstallationContractField
 import com.engineeringood.athena.physical.PhysicalInstallationContractFieldProvenance
-import com.engineeringood.athena.physical.PhysicalInstallationContractProvenanceV0
-import com.engineeringood.athena.physical.PhysicalInstallationContractV0
+import com.engineeringood.athena.physical.PhysicalInstallationContractProvenance
+import com.engineeringood.athena.physical.PhysicalInstallationContract
 import com.engineeringood.athena.physical.PhysicalInfrastructureOrientation
 import com.engineeringood.athena.physical.PhysicalInstallationId
-import com.engineeringood.athena.physical.PhysicalInstallationIRV0
+import com.engineeringood.athena.physical.PhysicalInstallationIR
 import com.engineeringood.athena.physical.PhysicalInstallationSize3i
-import com.engineeringood.athena.physical.PhysicalInstallationSpaceV0
-import com.engineeringood.athena.physical.PhysicalMountingSurfaceV0
+import com.engineeringood.athena.physical.PhysicalInstallationSpace
+import com.engineeringood.athena.physical.PhysicalMountingSurface
 import com.engineeringood.athena.physical.PhysicalMountingTypeId
 import com.engineeringood.athena.physical.PhysicalNonNegativeMillimeters
 import com.engineeringood.athena.physical.PhysicalObjectId
 import com.engineeringood.athena.physical.PhysicalPoint2i
 import com.engineeringood.athena.physical.PhysicalPositiveMillimeters
-import com.engineeringood.athena.physical.PhysicalRailV0
+import com.engineeringood.athena.physical.PhysicalRail
 import com.engineeringood.athena.physical.PhysicalRigidFrame2i
-import com.engineeringood.athena.physical.PhysicalRouteChannelV0
+import com.engineeringood.athena.physical.PhysicalRouteChannel
 import com.engineeringood.athena.physical.PhysicalSize2i
-import com.engineeringood.athena.physical.PhysicalInstallationSizeV0
+import com.engineeringood.athena.physical.PhysicalInstallationSize
 import com.engineeringood.athena.physical.PhysicalSourceProvenance
 import com.engineeringood.athena.physical.PhysicalSourceSpan
 import com.engineeringood.athena.physical.PhysicalSourceUnitId
-import com.engineeringood.athena.physical.PhysicalTerminalGroupV0
+import com.engineeringood.athena.physical.PhysicalTerminalGroup
 import com.engineeringood.athena.physical.PhysicalVector2i
 import com.engineeringood.athena.representation.GraphicPrimitive
 import com.engineeringood.athena.representation.GraphicPrimitiveKind
@@ -86,15 +86,15 @@ class CabinetCompositionCompilerTest {
         )
         assertEquals(
             listOf(
-                "physical-installation-ir-v0",
+                "physical-installation-ir",
                 "cabinet-occurrence-visual-join",
                 "cabinet-composition-compiler",
             ),
             document.provenanceSources,
         )
         assertEquals(0, document.forbiddenAuthorityClaims.size)
-        assertEquals(9, output.proof.primitiveCount)
-        assertEquals("physical-ir+joined-representation", output.proof.boundsAuthority)
+        assertEquals(9, output.evidence.primitiveCount)
+        assertEquals("physical-ir+joined-representation", output.evidence.boundsAuthority)
     }
 
     @Test
@@ -136,20 +136,20 @@ class CabinetCompositionCompilerTest {
         assertEquals("cabinet.route-endpoint", sourceMarker.styleTokenId.value)
         assertEquals("cabinet.route-endpoint", targetMarker.styleTokenId.value)
         assertEquals(0, output.document.forbiddenAuthorityClaims.size)
-        assertEquals("physical-ir+joined-representation+route-facts", output.proof.boundsAuthority)
+        assertEquals("physical-ir+joined-representation+route-facts", output.evidence.boundsAuthority)
     }
 
-    private fun physicalIr(): PhysicalInstallationIRV0 = PhysicalInstallationIRV0(
+    private fun physicalIr(): PhysicalInstallationIR = PhysicalInstallationIR(
         sourceUnitId = sourceUnit,
         installationId = installationId,
-        space = PhysicalInstallationSpaceV0(
-            enclosure = PhysicalEnclosureV0(
+        space = PhysicalInstallationSpace(
+            enclosure = PhysicalEnclosure(
                 id = PhysicalObjectId("ENC1"),
                 size = PhysicalInstallationSize3i(800, 600, 250),
                 provenance = provenance("ENC1"),
             ),
             surfaces = listOf(
-                PhysicalMountingSurfaceV0(
+                PhysicalMountingSurface(
                     id = PhysicalObjectId("Backplate"),
                     enclosureId = PhysicalObjectId("ENC1"),
                     at = PhysicalPoint2i(20, 20),
@@ -159,7 +159,7 @@ class CabinetCompositionCompilerTest {
                 ),
             ),
             rails = listOf(
-                PhysicalRailV0(
+                PhysicalRail(
                     id = PhysicalObjectId("DIN1"),
                     surfaceId = PhysicalObjectId("Backplate"),
                     at = PhysicalPoint2i(60, 120),
@@ -171,7 +171,7 @@ class CabinetCompositionCompilerTest {
                 ),
             ),
             ducts = listOf(
-                PhysicalDuctV0(
+                PhysicalDuct(
                     id = PhysicalObjectId("D1"),
                     enclosureId = PhysicalObjectId("ENC1"),
                     at = PhysicalPoint2i(30, 60),
@@ -182,7 +182,7 @@ class CabinetCompositionCompilerTest {
                 ),
             ),
             channels = listOf(
-                PhysicalRouteChannelV0(
+                PhysicalRouteChannel(
                     id = PhysicalObjectId("CH1"),
                     ductId = PhysicalObjectId("D1"),
                     at = PhysicalPoint2i(0, 0),
@@ -193,7 +193,7 @@ class CabinetCompositionCompilerTest {
                 ),
             ),
             terminalGroups = listOf(
-                PhysicalTerminalGroupV0(
+                PhysicalTerminalGroup(
                     id = PhysicalObjectId("XT1"),
                     enclosureId = PhysicalObjectId("ENC1"),
                     at = PhysicalPoint2i(520, 420),
@@ -212,7 +212,7 @@ class CabinetCompositionCompilerTest {
     )
 
     private fun physicalOccurrenceStub(id: String, subject: String) =
-        com.engineeringood.athena.physical.PhysicalMountedOccurrenceV0(
+        com.engineeringood.athena.physical.PhysicalMountedOccurrence(
             occurrenceId = PhysicalObjectId(id),
             key = key(subject),
             semanticSubjectId = StableSemanticIdentity(subject),
@@ -223,28 +223,28 @@ class CabinetCompositionCompilerTest {
             provenance = provenance(id),
         )
 
-    private fun contract(subject: String): PhysicalInstallationContractV0 {
+    private fun contract(subject: String): PhysicalInstallationContract {
         val source = PhysicalContractSource(PhysicalContractSourceKind.Project, "project:$subject")
         val provenance = PhysicalInstallationContractField.entries.associateWith { field ->
             PhysicalInstallationContractFieldProvenance(field, source, null)
         }
-        return PhysicalInstallationContractV0(
+        return PhysicalInstallationContract(
             subjectIdentity = StableSemanticIdentity(subject),
-            size = PhysicalInstallationSizeV0(
+            size = PhysicalInstallationSize(
                 width = PhysicalPositiveMillimeters.from(45)!!,
                 height = PhysicalPositiveMillimeters.from(90)!!,
                 depth = PhysicalPositiveMillimeters.from(70)!!,
             ),
             mountingTypeId = PhysicalMountingTypeId("din35"),
             allowedOrientations = setOf(com.engineeringood.athena.physical.PhysicalInstallationOrientation.Deg0),
-            clearance = PhysicalInstallationClearanceV0(
+            clearance = PhysicalInstallationClearance(
                 top = PhysicalNonNegativeMillimeters.from(0)!!,
                 right = PhysicalNonNegativeMillimeters.from(0)!!,
                 bottom = PhysicalNonNegativeMillimeters.from(0)!!,
                 left = PhysicalNonNegativeMillimeters.from(0)!!,
             ),
             compatibleContainerKinds = setOf(PhysicalContainerKindId("cabinet")),
-            provenance = PhysicalInstallationContractProvenanceV0(
+            provenance = PhysicalInstallationContractProvenance(
                 width = provenance.getValue(PhysicalInstallationContractField.Width),
                 height = provenance.getValue(PhysicalInstallationContractField.Height),
                 depth = provenance.getValue(PhysicalInstallationContractField.Depth),

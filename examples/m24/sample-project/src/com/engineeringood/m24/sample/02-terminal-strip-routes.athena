@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m24.sample
+package com.engineeringood.m24.sample
 
 system TerminalStripRouteProof {
   device TerminalRoutePLC1 {

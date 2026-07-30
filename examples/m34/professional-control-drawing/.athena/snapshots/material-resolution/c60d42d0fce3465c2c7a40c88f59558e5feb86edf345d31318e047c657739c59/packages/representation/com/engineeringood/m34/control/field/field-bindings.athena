@@ -1,0 +1,25 @@
+package com.engineeringood.m34.control.field
+
+binding IecTerminal {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type Terminal }
+  use element "iec.terminal.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecMotor {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type Motor }
+  use element "iec.motor.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecProtectiveEarth {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type ProtectiveEarth }
+  use element "iec.protective-earth.element" version "1.0.0"
+  variant "standard"
+}

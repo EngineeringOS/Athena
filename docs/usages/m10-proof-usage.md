@@ -52,7 +52,7 @@ The proof repository intentionally keeps the slice narrow:
 ### Verification
 
 ```powershell
-cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:runtime:test --tests com.engineeringood.athena.runtime.AthenaAiDeterministicProofProviderTest --tests com.engineeringood.athena.runtime.AthenaAiReasoningSessionRuntimeServiceTest"
+cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :kernel:runtime:test --tests com.engineeringood.athena.runtime.AthenaAiDeterministicReasoningProviderTest --tests com.engineeringood.athena.runtime.AthenaAiReasoningSessionRuntimeServiceTest"
 ```
 
 What this proves:

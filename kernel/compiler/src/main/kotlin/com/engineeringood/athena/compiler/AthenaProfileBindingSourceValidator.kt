@@ -198,7 +198,12 @@ internal object AthenaProfileBindingSourceValidator {
         identities: List<RepresentationIdentityOccurrence>,
     ) {
         val subject = "binding.${binding.name}.target.element"
-        val candidates = identities.filter { candidate -> candidate.identity == identity }
+        val localCandidates = identities.filter { candidate ->
+            candidate.libraryId == occurrence.libraryId && candidate.identity == identity
+        }
+        val candidates = localCandidates.ifEmpty {
+            identities.filter { candidate -> candidate.identity == identity }
+        }
         when {
             candidates.isEmpty() -> add(
                 representationDiagnostic(

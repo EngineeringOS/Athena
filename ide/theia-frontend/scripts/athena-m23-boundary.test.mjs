@@ -21,7 +21,7 @@ test('M23 boundaries and usage stay honest across docs and sample proof', () => 
     const retrospective = readRepoFile('_bmad-output/implementation-artifacts/m23/m23-achievement-usage-retrospective-2026-07-18.md');
     const m22Usage = readRepoFile('docs/usages/m22-proof-usage.md');
     const m22Retrospective = readRepoFile('_bmad-output/implementation-artifacts/m22/m22-achievement-usage-retrospective-2026-07-18.md');
-    const sampleSource = readRepoFile('examples/m23/sample-project/src/01-layout-hints.athena');
+    const sampleSource = readRepoFile('examples/m23/sample-project/src/com/engineeringood/m23/sample/01-layout-hints.athena');
 
     [
         /EPLAN parity/i,

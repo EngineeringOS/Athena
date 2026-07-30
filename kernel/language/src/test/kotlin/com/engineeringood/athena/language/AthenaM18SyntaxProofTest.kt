@@ -12,7 +12,7 @@ class AthenaM18SyntaxProofTest {
     private val invalidNames = listOf("invalid-alias", "invalid-missing-target", "invalid-visibility", "invalid-wildcard")
 
     @Test
-    fun `m18 syntax proof corpus keeps the expected inventory`() {
+    fun `m18 syntax evidence corpus keeps the expected inventory`() {
         assertEquals((validNames + invalidNames).sorted(), sourceNames())
         assertEquals(invalidNames.sorted(), expectationNames())
     }

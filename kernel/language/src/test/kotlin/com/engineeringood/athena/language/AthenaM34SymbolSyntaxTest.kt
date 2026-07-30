@@ -48,12 +48,12 @@ class AthenaM34SymbolSyntaxTest {
     fun `accepts bidirectional anchor direction as a typed symbol predicate`() {
         val result = AthenaLanguageParser().parse(
             "bidirectional.athena",
-            VALID_SYMBOL.replace("accepts direction in", "accepts direction bidirectional"),
+            VALID_SYMBOL.replace("direction in", "direction bidirectional"),
         )
 
         val ast = assertIs<ParseSuccess>(result).ast
         val symbol = assertIs<SymbolDeclaration>(ast.representationDeclarations.single())
-        assertEquals("bidirectional", symbol.anchors.first().acceptedDirections.single().value)
+        assertEquals(setOf("bidirectional"), symbol.anchors.first().directions.map { it.value }.toSet())
     }
 
     @Test
@@ -84,19 +84,19 @@ class AthenaM34SymbolSyntaxTest {
               }
 
               anchor line {
-                primitiveRef line
+                ref "line"
                 point (40, 0)
                 role terminal
-                accepts direction in
-                accepts signal Power
+                direction in
+                signal Power.family
               }
 
               anchor load {
-                primitiveRef load
+                ref "load"
                 point (40, 80)
                 role terminal
-                accepts direction out
-                accepts signal Power
+                direction out
+                signal Power.family
               }
             }
         """.trimIndent()

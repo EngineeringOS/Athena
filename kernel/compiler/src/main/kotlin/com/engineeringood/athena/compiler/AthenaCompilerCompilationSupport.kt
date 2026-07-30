@@ -11,6 +11,8 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticNamespace
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticPackage
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceUnit
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
+import com.engineeringood.athena.connection.ConnectableEntityContractCompilation
+import com.engineeringood.athena.connection.ConnectableEntityContractCompiler
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.LayoutDocument
@@ -37,6 +39,7 @@ import com.engineeringood.athena.semantics.core.SemanticValidationResult
 import com.engineeringood.athena.repository.PackageIdentifier
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.MessageDigest
 
 internal class AthenaCompilerCompilationSupport(
     private val lowerer: EngineeringIrLowerer,
@@ -53,6 +56,7 @@ internal class AthenaCompilerCompilationSupport(
     private val capabilityFactPromoter: EngineeringCapabilityFactPromoter,
     private val constraintEvaluator: EngineeringConstraintEvaluator,
     private val domainSemanticsCoordinator: AthenaDomainSemanticsCoordinator,
+    private val connectableEntityContractCompiler: ConnectableEntityContractCompiler,
     private val supportedViewDefinitionsCache: List<ViewDefinition>,
     private val supportedRenderContributionsCache: List<CompilerRenderContributionAttribution>,
     private val supportedPrimitivePresentationPacksCache: List<PresentationPrimitivePack>,
@@ -306,6 +310,23 @@ internal class AthenaCompilerCompilationSupport(
                 .sortedBy { presentation -> presentation.view.id }
         }
         val knowledgeAttributions = buildKnowledgeAttributions(effectiveKnowledgeContext)
+        val connectionContracts = connectableEntityContractCompiler.compile(document)
+        val connectionIr = if (
+            connectionContracts is ConnectableEntityContractCompilation.Success &&
+            validationResult.validationBreakdown.connectivityDiagnostics.isEmpty()
+        ) {
+            lowerer.lowerConnectionIr(
+                document = document,
+                contracts = connectionContracts,
+                snapshot = ConnectionIrSnapshot(
+                    semanticSnapshotId = stableDigest(document.toString()),
+                    packageSnapshotId = stableDigest(effectiveKnowledgeContext.activeArtifacts.toString()),
+                    compilerIdentity = "athena.compiler.connection-ir",
+                ),
+            )
+        } else {
+            null
+        }
         return CompilerCompilationSuccess(
             source = source,
             document = document,
@@ -314,6 +335,7 @@ internal class AthenaCompilerCompilationSupport(
             constraintEvaluations = constraintEvaluationOutcome.evaluations,
             semanticResult = validationResult.semanticResult,
             validationBreakdown = validationResult.validationBreakdown,
+            connectionIr = connectionIr,
             layouts = backendPreparation.layouts,
             geometries = backendPreparation.geometries,
             projections = projections,
@@ -438,7 +460,7 @@ internal class AthenaCompilerCompilationSupport(
                 repositoryRoot = repositoryRoot,
                 document = document,
                 semanticSnapshot = professionalControlDrawingSemanticSnapshot(source, repositoryRoot),
-                policy = AthenaProfessionalDrawingPolicy.m34RollingShutter(),
+                policy = AthenaProfessionalDrawingPolicy.rollingShutterControlDrawing(),
             ),
         )
         return result.presentation
@@ -811,15 +833,30 @@ internal class AthenaCompilerCompilationSupport(
             addAll(domainSemanticsUnavailableDiagnostics(source, document))
             addAll(domainValidationContribution.diagnostics)
         }
+        val connectivityDiagnostics = when (val result = connectableEntityContractCompiler.compile(document)) {
+            is ConnectableEntityContractCompilation.Success -> emptyList()
+            is ConnectableEntityContractCompilation.Failure -> result.diagnostics.map { diagnostic ->
+                SemanticDiagnostic(
+                    severity = SemanticDiagnosticSeverity.ERROR,
+                    ruleId = SemanticRuleId(diagnostic.code),
+                    category = SemanticDiagnosticCategory.CONNECTION,
+                    subjectIdentity = null,
+                    provenance = diagnostic.provenance,
+                    message = diagnostic.message,
+                )
+            }
+        }
         val validationBreakdown = CompilerValidationBreakdown(
             semanticEnrichmentDiagnostics = enrichmentDiagnostics,
             kernelDiagnostics = kernelResult.diagnostics,
+            connectivityDiagnostics = connectivityDiagnostics,
             domainDiagnostics = domainDiagnostics,
             engineeringSufficiencyDiagnostics = engineeringSufficiencyDiagnostics,
             domainValidationAttributions = domainValidationContribution.attributions,
         )
         val diagnostics = validationBreakdown.semanticEnrichmentDiagnostics +
             validationBreakdown.kernelDiagnostics +
+            validationBreakdown.connectivityDiagnostics +
             validationBreakdown.domainDiagnostics
         val semanticResult = SemanticValidationResult(
             diagnostics = diagnostics,
@@ -943,6 +980,10 @@ internal class AthenaCompilerCompilationSupport(
         )
     }
 }
+
+private fun stableDigest(value: String): String = MessageDigest.getInstance("SHA-256")
+    .digest(value.toByteArray(Charsets.UTF_8))
+    .joinToString("") { byte -> "%02x".format(byte) }
 
 private fun CompilerSourceDocument.toAthenaSourceDocument(): AthenaSourceDocument {
     return AthenaSourceDocument(

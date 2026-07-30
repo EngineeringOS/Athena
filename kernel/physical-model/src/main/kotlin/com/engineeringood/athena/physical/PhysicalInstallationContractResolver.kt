@@ -87,23 +87,23 @@ object PhysicalInstallationContractResolver {
         }
 
         return PhysicalInstallationContractResolution.Success(
-            PhysicalInstallationContractV0(
+            PhysicalInstallationContract(
                 subjectIdentity = subjectIdentity,
-                size = PhysicalInstallationSizeV0(
+                size = PhysicalInstallationSize(
                     width = requireNotNull(width?.value),
                     height = requireNotNull(height?.value),
                     depth = requireNotNull(depth?.value),
                 ),
                 mountingTypeId = requireNotNull(mountingType?.value),
                 allowedOrientations = requireNotNull(orientations?.value).toSortedSet(),
-                clearance = PhysicalInstallationClearanceV0(
+                clearance = PhysicalInstallationClearance(
                     top = requireNotNull(clearanceTop?.value),
                     right = requireNotNull(clearanceRight?.value),
                     bottom = requireNotNull(clearanceBottom?.value),
                     left = requireNotNull(clearanceLeft?.value),
                 ),
                 compatibleContainerKinds = requireNotNull(containers?.value).toSortedSet(),
-                provenance = PhysicalInstallationContractProvenanceV0(
+                provenance = PhysicalInstallationContractProvenance(
                     width = width.provenance(),
                     height = height.provenance(),
                     depth = depth.provenance(),

@@ -38,7 +38,7 @@ class GitSemanticBaselineAdapterTest {
                 ),
             )
 
-            assertTrue(result.isResolved)
+            assertTrue(result.isResolved, result.diagnostics.joinToString { diagnostic -> "${diagnostic.ruleId.value}: ${diagnostic.message}" })
             assertEquals(
                 "com.engineeringood.baseline",
                 result.snapshot?.repositoryReport?.repository?.manifest?.primaryPackage?.id?.name,
@@ -133,6 +133,9 @@ private fun writeGovernedRepository(
         """.trimIndent(),
     )
     repositoryRoot.resolve("athena.lock").writeText("# lock")
-    val sourceRoot = repositoryRoot.resolve("src").createDirectories()
-    sourceRoot.resolve("root.athena").writeText(sourceText)
+    val sourceRoot = repositoryRoot
+        .resolve("src")
+        .resolve(packageName.replace('.', '/'))
+        .createDirectories()
+    sourceRoot.resolve("root.athena").writeText("package $packageName\n\n$sourceText")
 }

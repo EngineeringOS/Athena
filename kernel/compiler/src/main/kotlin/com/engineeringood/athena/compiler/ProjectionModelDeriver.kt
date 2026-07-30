@@ -241,7 +241,7 @@ private fun documentationSheets(
     connections: List<ProjectionConnection>,
     labels: List<ProjectionLabel>,
 ): List<ProjectionSheet> {
-    val policy = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
+    val policy = BuiltInDocumentProjectionPolicies.athenaCustomerDocumentProjection()
     val controlRole = policy.supportedSheetViewRoles.single { role ->
         role.role == SheetViewRole.CONTROL_AND_PLC_LOGIC
     }
@@ -493,7 +493,7 @@ private fun deriveNotationPack(
         }
     }
     return ProjectionNotationPack(
-        packId = ProjectionNotationPackId("electrical-notation/${family.name.lowercase()}/default-v1"),
+        packId = ProjectionNotationPackId("electrical-notation/${family.name.lowercase()}/default"),
         displayName = "Electrical ${family.name.lowercase().replaceFirstChar { character -> character.titlecase() }} Default",
         subjects = subjects.sortedBy { subject -> subject.semanticId.value },
     )

@@ -2,13 +2,13 @@ import * as monaco from '@theia/monaco-editor-core';
 import { injectable } from '@theia/core/shared/inversify';
 
 /**
- * Tree-sitter-backed syntax highlighting adapter — SYNTAX UX ONLY (AD-107).
+ * Tree-sitter-backed syntax highlighting adapter - SYNTAX UX ONLY (AD-107).
  *
  * This service is a thin adapter: it does not re-implement grammar rules (it consumes the
  * checked-in `tree-sitter-athena.wasm` + `queries/highlights.scm` from Story `3.1`'s
  * `@engineeringood/athena-tree-sitter-grammar` package) and it must never fabricate semantic
  * meaning from capture names. It degrades gracefully — falling back to the existing Monarch
- * highlighting only — if the `.wasm` fails to load or a parse throws (AD-108: this path must
+ * highlighting only - if the `.wasm` fails to load or a parse throws (AD-108: this path must
  * never emit diagnostics, markers, or problem-panel entries).
  */
 

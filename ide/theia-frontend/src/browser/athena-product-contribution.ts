@@ -19,26 +19,26 @@ import {
 
 declare global {
     interface Window {
-        __athenaWorkbenchSmoke?: {
+        __athenaWorkbenchAutomation?: {
             revealGraphicalView: () => Promise<void>;
             switchProjectionView: (viewId: string) => Promise<boolean>;
             refreshProjectionView: () => Promise<boolean>;
-            revealOutlineForSource: (sourceUri: string) => Promise<AthenaOutlineSmokeProof>;
-            openSourceEditorForSmoke: (sourceUri: string) => Promise<AthenaSourceEditorSmokeProof>;
-            revealSourceLineForSmoke: (lineNumber: number) => Promise<void>;
-            collectGraphWorkbenchProof: () => Promise<AthenaGraphWorkbenchSmokeProof>;
+            revealOutlineForSource: (sourceUri: string) => Promise<AthenaOutlineSnapshot>;
+            openSourceEditor: (sourceUri: string) => Promise<AthenaSourceEditorSnapshot>;
+            revealSourceLine: (lineNumber: number) => Promise<void>;
+            collectGraphWorkbenchSnapshot: () => Promise<AthenaGraphWorkbenchSnapshot>;
         };
     }
 }
 
-export interface AthenaOutlineSmokeProof {
+export interface AthenaOutlineSnapshot {
     readonly widgetId: string;
     readonly hasOutlineWidget: boolean;
     readonly nodeNames: string[];
     readonly paths: string[];
 }
 
-export interface AthenaSourceEditorSmokeProof {
+export interface AthenaSourceEditorSnapshot {
     readonly widgetId: string;
     readonly resourceUri: string;
     readonly currentEditorWidgetId: string;
@@ -47,7 +47,7 @@ export interface AthenaSourceEditorSmokeProof {
     readonly problemMarkers: string[];
 }
 
-export interface AthenaGraphWorkbenchSmokeProof {
+export interface AthenaGraphWorkbenchSnapshot {
     readonly available: boolean;
     readonly hasDiagram: boolean;
     readonly activeViewId: string;
@@ -114,14 +114,14 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
             });
         }
         if (typeof window !== 'undefined') {
-            window.__athenaWorkbenchSmoke = {
+            window.__athenaWorkbenchAutomation = {
                 revealGraphicalView: () => commands.executeCommand(AthenaCommands.REVEAL_GRAPHICAL_VIEW.id),
-                switchProjectionView: viewId => this.switchProjectionViewForSmoke(viewId),
-                refreshProjectionView: () => this.refreshProjectionForSmoke(),
+                switchProjectionView: viewId => this.switchProjectionView(viewId),
+                refreshProjectionView: () => this.refreshProjection(),
                 revealOutlineForSource: sourceUri => this.revealOutlineForSource(commands, sourceUri),
-                openSourceEditorForSmoke: sourceUri => this.openSourceEditorForSmoke(sourceUri),
-                revealSourceLineForSmoke: lineNumber => this.revealSourceLineForSmoke(lineNumber),
-                collectGraphWorkbenchProof: () => this.collectGraphWorkbenchProofForSmoke()
+                openSourceEditor: sourceUri => this.openSourceEditor(sourceUri),
+                revealSourceLine: lineNumber => this.revealSourceLine(lineNumber),
+                collectGraphWorkbenchSnapshot: () => this.collectGraphWorkbenchSnapshot()
             };
         }
     }
@@ -218,7 +218,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         await this.shell.activateWidget(extension.widgetId);
     }
 
-    protected async switchProjectionViewForSmoke(viewId: string): Promise<boolean> {
+    protected async switchProjectionView(viewId: string): Promise<boolean> {
         const graphExtension = ATHENA_WORKBENCH_EXTENSIONS.find(extension =>
             extension.widgetId === AthenaGraphWorkbenchWidget.ID
         );
@@ -228,13 +228,13 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         await this.revealGraphWorkbench(graphExtension);
         const widget = this.shell.getWidgetById(AthenaGraphWorkbenchWidget.ID)
             ?? await this.widgetManager.getOrCreateWidget(AthenaGraphWorkbenchWidget.ID);
-        const smokeWidget = widget as unknown as {
+        const graphWidget = widget as unknown as {
             switchActiveView: (requestedViewId: string) => Promise<boolean>;
         };
-        return smokeWidget.switchActiveView(viewId);
+        return graphWidget.switchActiveView(viewId);
     }
 
-    protected async refreshProjectionForSmoke(): Promise<boolean> {
+    protected async refreshProjection(): Promise<boolean> {
         const graphExtension = ATHENA_WORKBENCH_EXTENSIONS.find(extension =>
             extension.widgetId === AthenaGraphWorkbenchWidget.ID
         );
@@ -244,12 +244,12 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         await this.revealGraphWorkbench(graphExtension);
         const widget = this.shell.getWidgetById(AthenaGraphWorkbenchWidget.ID)
             ?? await this.widgetManager.getOrCreateWidget(AthenaGraphWorkbenchWidget.ID);
-        const smokeWidget = widget as AthenaGraphWorkbenchWidget;
-        await smokeWidget.refreshProjection();
+        const graphWidget = widget as AthenaGraphWorkbenchWidget;
+        await graphWidget.refreshProjection();
         return true;
     }
 
-    protected async collectGraphWorkbenchProofForSmoke(): Promise<AthenaGraphWorkbenchSmokeProof> {
+    protected async collectGraphWorkbenchSnapshot(): Promise<AthenaGraphWorkbenchSnapshot> {
         const widget = this.shell.getWidgetById(AthenaGraphWorkbenchWidget.ID)
             ?? await this.widgetManager.getOrCreateWidget(AthenaGraphWorkbenchWidget.ID);
         const diagram = (widget as unknown as { diagram?: {
@@ -290,7 +290,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
     protected async revealOutlineForSource(
         commands: CommandRegistry,
         sourceUri: string
-    ): Promise<AthenaOutlineSmokeProof> {
+    ): Promise<AthenaOutlineSnapshot> {
         await open(this.openerService, new URI(sourceUri));
         await this.revealWorkbenchWidget('outline-view', 'right');
         await commands.executeCommand('outlineView.expand.all').catch(() => undefined);
@@ -308,7 +308,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         };
     }
 
-    protected async openSourceEditorForSmoke(sourceUri: string): Promise<AthenaSourceEditorSmokeProof> {
+    protected async openSourceEditor(sourceUri: string): Promise<AthenaSourceEditorSnapshot> {
         const uri = new URI(sourceUri);
         await open(this.openerService, uri);
         await new Promise(resolve => window.setTimeout(resolve, 500));
@@ -335,7 +335,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         };
     }
 
-    protected async revealSourceLineForSmoke(lineNumber: number): Promise<void> {
+    protected async revealSourceLine(lineNumber: number): Promise<void> {
         const editorWidget = this.editorManager.currentEditor;
         if (!editorWidget) {
             return;

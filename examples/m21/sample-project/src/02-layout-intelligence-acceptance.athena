@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m21.sample
+package com.engineeringood.m21.sample
 
 system LayoutIntelligenceAcceptance {
   device PowerSupply24V {

@@ -24,13 +24,13 @@ sealed interface CabinetGraphicSelectionResolution {
     data class Success(
         val subject: InteractionSubject,
         val revealTarget: InteractionRevealTarget,
-        val proof: CabinetSelectionProof,
+        val evidence: CabinetSelectionEvidence,
     ) : CabinetGraphicSelectionResolution
 
     data class Failure(val diagnostics: List<CabinetSelectionDiagnostic>) : CabinetGraphicSelectionResolution
 }
 
-data class CabinetSelectionProof(
+data class CabinetSelectionEvidence(
     val occurrenceId: GraphicOccurrenceId,
     val subjectAuthority: String,
     val capabilityAuthority: String,
@@ -116,7 +116,7 @@ object CabinetGraphicSelectionResolver {
                 sourceRange = sourceRange,
                 occurrence = occurrence,
             ),
-            proof = CabinetSelectionProof(
+            evidence = CabinetSelectionEvidence(
                 occurrenceId = occurrenceId,
                 subjectAuthority = "graphic-occurrence-trace-table",
                 capabilityAuthority = "semantic-capability-registry",
@@ -155,12 +155,12 @@ enum class CabinetForbiddenMutationTarget {
 }
 
 sealed interface CabinetGovernedEditBoundaryResult {
-    data class Accepted(val proof: CabinetGovernedEditPathProof) : CabinetGovernedEditBoundaryResult
+    data class Accepted(val evidence: CabinetGovernedEditPathEvidence) : CabinetGovernedEditBoundaryResult
 
     data class Failure(val diagnostics: List<CabinetGovernedEditDiagnostic>) : CabinetGovernedEditBoundaryResult
 }
 
-data class CabinetGovernedEditPathProof(
+data class CabinetGovernedEditPathEvidence(
     val orderedStages: List<String>,
     val target: CabinetGovernedEditTarget,
 )
@@ -210,7 +210,7 @@ object CabinetGovernedEditBoundary {
         }
 
         return CabinetGovernedEditBoundaryResult.Accepted(
-            CabinetGovernedEditPathProof(
+            CabinetGovernedEditPathEvidence(
                 orderedStages = governedStages,
                 target = evidence.target,
             ),

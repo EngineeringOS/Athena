@@ -38,7 +38,7 @@ private val ELECTRICAL_SCHEMATIC_PRESENTATION_FAMILY_IDS = setOf(
 
 internal val ELECTRICAL_PRIMITIVE_PRESENTATION_PACKS = listOf(
     PresentationPrimitivePack(
-        packId = PresentationPackId("electrical-primitives/default-v1"),
+        packId = PresentationPackId("electrical-primitives/default"),
         displayName = "Electrical primitives",
         familyIds = ELECTRICAL_PRESENTATION_FAMILY_IDS,
         primitives = listOf(
@@ -181,7 +181,7 @@ internal val ELECTRICAL_PRIMITIVE_PRESENTATION_PACKS = listOf(
 
 internal val ELECTRICAL_COMPOSITE_PRESENTATION_PACKS = listOf(
     PresentationCompositePack(
-        packId = PresentationPackId("electrical-composites/panel-v1"),
+        packId = PresentationPackId("electrical-composites/panel"),
         displayName = "Electrical panel composites",
         familyIds = ELECTRICAL_PANEL_PRESENTATION_FAMILY_IDS,
         composites = listOf(
@@ -258,7 +258,7 @@ internal val ELECTRICAL_COMPOSITE_PRESENTATION_PACKS = listOf(
         ),
     ),
     PresentationCompositePack(
-        packId = PresentationPackId("electrical-composites/schematic-v1"),
+        packId = PresentationPackId("electrical-composites/schematic"),
         displayName = "Electrical schematic composites",
         familyIds = ELECTRICAL_SCHEMATIC_PRESENTATION_FAMILY_IDS,
         composites = listOf(

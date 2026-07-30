@@ -42,7 +42,7 @@ class DescriptorBackedGraphicResourceRenderPayloadTest {
     }
 
     @Test
-    fun `render payload proof prevents duplicate labels and resource semantic inference`() {
+    fun `render payload evidence prevents duplicate labels and resource semantic inference`() {
         val payload = DescriptorBackedGraphicResourceRenderPayloadMapper.from(
             evidence = evidence().copy(labelBindingSummary = listOf("device-tag=DriveA", "device-tag=DriveA")),
             descriptor = descriptor(),
@@ -67,7 +67,7 @@ class DescriptorBackedGraphicResourceRenderPayloadTest {
         variant = "standard",
         anchorMapSummary = listOf("port:DriveA.power=power"),
         labelBindingSummary = listOf("device-tag=DriveA"),
-        resolverStage = "binding-resolver-v0",
+        resolverStage = "binding-resolver",
         diagnostics = emptyList(),
         rendererFallbackAccepted = false,
     )

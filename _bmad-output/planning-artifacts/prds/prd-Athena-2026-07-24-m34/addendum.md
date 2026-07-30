@@ -83,17 +83,17 @@ symbol iec.switch_contact {
   }
 
   anchor line {
-    primitiveRef line
+    ref line
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power
   }
 
   anchor load {
-    primitiveRef load
+    ref load
     role terminal
-    accepts direction out
-    accepts signal Power
+    direction out
+    signal Power
   }
 }
 ```

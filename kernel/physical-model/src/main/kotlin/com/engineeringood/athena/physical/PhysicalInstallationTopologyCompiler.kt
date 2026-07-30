@@ -2,8 +2,8 @@ package com.engineeringood.athena.physical
 
 object PhysicalInstallationTopologyCompiler {
     fun compile(
-        intent: PhysicalInstallationIntentV0,
-        contracts: List<PhysicalInstallationContractV0>,
+        intent: PhysicalInstallationIntent,
+        contracts: List<PhysicalInstallationContract>,
     ): PhysicalInstallationTopologyCompilation {
         val diagnostics = mutableListOf<PhysicalInstallationTopologyDiagnostic>()
         val contractsBySubject = contracts.associateBy { contract -> contract.subjectIdentity }
@@ -83,7 +83,7 @@ object PhysicalInstallationTopologyCompiler {
                     subject = mount.semanticSubjectId.value,
                     span = mount.provenance.span,
                     measured = mount.semanticSubjectId.value,
-                    expected = "one resolved PhysicalInstallationContractV0",
+                    expected = "one resolved PhysicalInstallationContract",
                 )
             }
         }
@@ -124,7 +124,7 @@ object PhysicalInstallationTopologyCompiler {
                 in railIds -> PhysicalMountTargetRef.Rail(mount.targetId)
                 else -> PhysicalMountTargetRef.TerminalGroup(mount.targetId)
             }
-            PhysicalMountedOccurrenceV0(
+            PhysicalMountedOccurrence(
                 occurrenceId = mount.occurrenceId,
                 key = InstallationOccurrenceKey(
                     sourceUnitId = intent.sourceUnitId,
@@ -145,10 +145,10 @@ object PhysicalInstallationTopologyCompiler {
             .groupBy { occurrence -> occurrence.target.id }
 
         return PhysicalInstallationTopologyCompilation.Success(
-            PhysicalInstallationIRV0(
+            PhysicalInstallationIR(
                 sourceUnitId = intent.sourceUnitId,
                 installationId = intent.installationId,
-                space = PhysicalInstallationSpaceV0(
+                space = PhysicalInstallationSpace(
                     enclosure = enclosures.single().toIr(),
                     surfaces = surfaces.map { surface -> surface.toIr() },
                     rails = rails.map { rail -> rail.toIr() },
@@ -189,13 +189,13 @@ private fun diagnoseDuplicateIds(
         }
 }
 
-private fun PhysicalEnclosureIntent.toIr(): PhysicalEnclosureV0 = PhysicalEnclosureV0(
+private fun PhysicalEnclosureIntent.toIr(): PhysicalEnclosure = PhysicalEnclosure(
     id = id,
     size = size,
     provenance = provenance,
 )
 
-private fun PhysicalMountingSurfaceIntent.toIr(): PhysicalMountingSurfaceV0 = PhysicalMountingSurfaceV0(
+private fun PhysicalMountingSurfaceIntent.toIr(): PhysicalMountingSurface = PhysicalMountingSurface(
     id = id,
     enclosureId = enclosureId,
     at = at,
@@ -204,7 +204,7 @@ private fun PhysicalMountingSurfaceIntent.toIr(): PhysicalMountingSurfaceV0 = Ph
     provenance = provenance,
 )
 
-private fun PhysicalRailIntent.toIr(): PhysicalRailV0 = PhysicalRailV0(
+private fun PhysicalRailIntent.toIr(): PhysicalRail = PhysicalRail(
     id = id,
     surfaceId = surfaceId,
     at = at,
@@ -226,7 +226,7 @@ private fun PhysicalRailIntent.toIr(): PhysicalRailV0 = PhysicalRailV0(
     provenance = provenance,
 )
 
-private fun PhysicalDuctIntent.toIr(): PhysicalDuctV0 = PhysicalDuctV0(
+private fun PhysicalDuctIntent.toIr(): PhysicalDuct = PhysicalDuct(
     id = id,
     enclosureId = enclosureId,
     at = at,
@@ -236,7 +236,7 @@ private fun PhysicalDuctIntent.toIr(): PhysicalDuctV0 = PhysicalDuctV0(
     provenance = provenance,
 )
 
-private fun PhysicalRouteChannelIntent.toIr(): PhysicalRouteChannelV0 = PhysicalRouteChannelV0(
+private fun PhysicalRouteChannelIntent.toIr(): PhysicalRouteChannel = PhysicalRouteChannel(
     id = id,
     ductId = ductId,
     at = at,
@@ -249,7 +249,7 @@ private fun PhysicalRouteChannelIntent.toIr(): PhysicalRouteChannelV0 = Physical
 
 private fun PhysicalTerminalGroupIntent.toIr(
     orderedOccurrenceKeys: List<InstallationOccurrenceKey>,
-): PhysicalTerminalGroupV0 = PhysicalTerminalGroupV0(
+): PhysicalTerminalGroup = PhysicalTerminalGroup(
     id = id,
     enclosureId = enclosureId,
     at = at,
@@ -260,21 +260,14 @@ private fun PhysicalTerminalGroupIntent.toIr(
     provenance = provenance,
 )
 
-private fun PhysicalTerminalGroupIntent.terminalOccurrenceOrder(): Comparator<PhysicalMountedOccurrenceV0> =
-    when (orientation) {
-        PhysicalInfrastructureOrientation.Horizontal -> compareBy<PhysicalMountedOccurrenceV0>(
-            { it.at.x },
-            { it.at.y },
-            { it.key.canonicalSemanticSubjectId.value },
-        )
-        PhysicalInfrastructureOrientation.Vertical -> compareBy<PhysicalMountedOccurrenceV0>(
-            { it.at.y },
-            { it.at.x },
-            { it.key.canonicalSemanticSubjectId.value },
-        )
-    }
+private fun PhysicalTerminalGroupIntent.terminalOccurrenceOrder(): Comparator<PhysicalMountedOccurrence> =
+    compareBy<PhysicalMountedOccurrence>(
+        { it.at.x },
+        { it.at.y },
+        { it.key.canonicalSemanticSubjectId.value },
+    )
 
-private fun PhysicalRouteIntentSource.toIr(): PhysicalRouteIntentV0 = PhysicalRouteIntentV0(
+private fun PhysicalRouteIntentSource.toIr(): PhysicalRouteIntent = PhysicalRouteIntent(
     connectionAlias = connectionAlias,
     channelIds = channelIds,
     provenance = provenance,

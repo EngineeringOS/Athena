@@ -67,15 +67,15 @@ data class DocumentProjectionReferenceFactContainers(
     }
 }
 
-data class DocumentProjectionProofMetadata(
+data class DocumentProjectionEvidenceMetadata(
     val policyDeterministicIdentity: DocumentProjectionPolicyDeterministicIdentity,
     val sourceUnitIds: List<String>,
     val sourceRootRelativePaths: List<String>,
 ) {
     init {
-        require(sourceUnitIds.all(String::isNotBlank)) { "Document projection proof source unit ids must not be blank." }
+        require(sourceUnitIds.all(String::isNotBlank)) { "Document projection evidence source unit ids must not be blank." }
         require(sourceRootRelativePaths.all(String::isNotBlank)) {
-            "Document projection proof source root relative paths must not be blank."
+            "Document projection evidence source root relative paths must not be blank."
         }
     }
 }
@@ -90,7 +90,7 @@ data class DocumentProjectionSnapshot(
     val occurrenceIdsBySheetView: Map<SheetViewId, List<DocumentOccurrenceId>>,
     val referenceFacts: DocumentProjectionReferenceFactContainers,
     val diagnostics: List<DocumentProjectionDiagnostic> = emptyList(),
-    val proofMetadata: DocumentProjectionProofMetadata,
+    val evidenceMetadata: DocumentProjectionEvidenceMetadata,
 ) {
     init {
         require(documentProjectionId.policyId == policyId) {
@@ -112,7 +112,7 @@ data class DocumentProjectionSnapshot(
 object DocumentProjectionEntryPoint {
     fun projectWorkspace(
         workspace: DocumentProjectionWorkspaceSemanticSnapshot,
-        policy: DocumentProjectionPolicy = BuiltInDocumentProjectionPolicies.athenaDocumentProjectionV0(),
+        policy: DocumentProjectionPolicy = BuiltInDocumentProjectionPolicies.athenaDocumentProjection(),
     ): DocumentProjectionSnapshot {
         val documentProjectionId = DocumentProjectionId(
             policyId = policy.policyId,
@@ -160,7 +160,7 @@ object DocumentProjectionEntryPoint {
             occurrenceIdsBySheetView = occurrenceIdsBySheetView,
             referenceFacts = referenceFacts,
             diagnostics = diagnostics,
-            proofMetadata = DocumentProjectionProofMetadata(
+            evidenceMetadata = DocumentProjectionEvidenceMetadata(
                 policyDeterministicIdentity = policy.deterministicIdentity,
                 sourceUnitIds = sourceUnits.map { sourceUnit -> sourceUnit.sourceUnitId },
                 sourceRootRelativePaths = sourceUnits.map { sourceUnit -> sourceUnit.sourceRootRelativePath },
@@ -354,7 +354,7 @@ private fun terminalReferenceDiagnostics(
         listOf(
             DocumentProjectionDiagnostic(
                 severity = DocumentProjectionDiagnosticSeverity.ERROR,
-                code = DocumentProjectionDiagnosticCode("M26_REFERENCE_TARGET_MISSING"),
+                code = DocumentProjectionDiagnosticCode("REFERENCE_TARGET_MISSING"),
                 relationType = CrossReferenceRelationType.TERMINAL_CONTINUATION,
                 affectedIdentity = terminalIdentity,
                 message = "Terminal continuation reference target has no document occurrence.",
@@ -366,7 +366,7 @@ private fun terminalReferenceDiagnostics(
         listOf(
             DocumentProjectionDiagnostic(
                 severity = DocumentProjectionDiagnosticSeverity.WARNING,
-                code = DocumentProjectionDiagnosticCode("M26_REFERENCE_TARGET_AMBIGUOUS"),
+                code = DocumentProjectionDiagnosticCode("REFERENCE_TARGET_AMBIGUOUS"),
                 relationType = CrossReferenceRelationType.TERMINAL_CONTINUATION,
                 affectedIdentity = terminalIdentity,
                 message = "Terminal continuation reference target resolves to multiple document occurrences.",

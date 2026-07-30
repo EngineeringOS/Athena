@@ -27,7 +27,7 @@ class AthenaEngineeringGraphProjectionTest {
         assertEquals(6, ready.graph.nodes.size)
         assertEquals(6, ready.graph.relationships.size)
 
-        val connectionId = "connection:$sourcePath:plc_to_motor"
+        val connectionId = "connection:examples/m0/demo-cabinet.athena:plc_to_motor"
         val connection = ready.graph.node(connectionId)
         assertEquals(AthenaEngineeringGraphNodeKind.CONNECTION, connection?.kind)
         assertEquals(

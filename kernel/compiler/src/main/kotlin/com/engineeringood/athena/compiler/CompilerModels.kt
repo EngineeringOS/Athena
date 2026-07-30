@@ -136,6 +136,7 @@ data class CompilerCompilationParseFailure(
 data class CompilerValidationBreakdown(
     val semanticEnrichmentDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val kernelDiagnostics: List<SemanticDiagnostic> = emptyList(),
+    val connectivityDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val domainDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val engineeringSufficiencyDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val domainValidationAttributions: List<AthenaDomainValidationAttribution> = emptyList(),
@@ -150,6 +151,7 @@ data class CompilerCompilationSuccess(
     val constraintEvaluations: EngineeringConstraintEvaluations = EngineeringConstraintEvaluations.canonical(emptyList()),
     val semanticResult: SemanticValidationResult,
     val validationBreakdown: CompilerValidationBreakdown = CompilerValidationBreakdown(),
+    val connectionIr: ConnectionIr? = null,
     val layouts: List<LayoutDocument> = emptyList(),
     val geometries: List<GeometryDocument> = emptyList(),
     val projections: List<ProjectionDocument> = emptyList(),

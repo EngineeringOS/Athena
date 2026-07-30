@@ -9,7 +9,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
- * Story 5.1 proof: exercises the checked-in `examples/m17` parser-parity corpus (AD-113) end to end
+ * Story 5.1 evidence: exercises the checked-in `examples/m17` parser-parity corpus (AD-113) end to end
  * through the live compiler parser path (ANTLR4-backed since Epic 2), reusing the exact identity
  * scheme and continuity contract `AthenaParserContinuityTest` (Story 4.3) pins for `examples/m0`, so
  * both stories reinforce one shared parity definition rather than two divergent ones.
@@ -83,7 +83,7 @@ class AthenaM17ParserParityProofTest {
     fun `m17 repository-parity fixture resolves cleanly through the governed repository graph seam`() {
         val repositoryRoot = resolveRepoRoot().resolve("examples/m17/repository-parity-proof")
         val sourcePath = repositoryRoot.resolve("src/com/engineeringood/m17/parity/parity-repo.athena")
-        assertTrue(Files.exists(sourcePath), "Expected M17 repository-parity proof source at `$sourcePath`.")
+        assertTrue(Files.exists(sourcePath), "Expected M17 repository-parity evidence source at `$sourcePath`.")
 
         val contractValidation = compiler.validateRepositoryContract(repositoryRoot)
         assertTrue(contractValidation.isValid, contractValidation.diagnostics.joinToString("\n") { it.message })

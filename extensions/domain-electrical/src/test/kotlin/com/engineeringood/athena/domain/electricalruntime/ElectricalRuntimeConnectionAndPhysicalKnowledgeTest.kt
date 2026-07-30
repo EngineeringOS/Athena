@@ -27,7 +27,7 @@ class ElectricalRuntimeConnectionAndPhysicalKnowledgeTest {
 
     @Test
     fun `publishes at least one targeted physical-trait slice with dimensions and mounting type`() {
-        val traits = siemensProofResolvedPhysicalTraits()
+        val traits = siemensResolvedPhysicalTraits()
         val plcCpu = traits.single { resolved -> resolved.semanticSubjectId.value == "component:PLC1" }
 
         assertEquals("din-rail", plcCpu.definition.mountingTypeId.value)

@@ -3,6 +3,7 @@ package com.engineeringood.athena.cli
 import com.engineeringood.athena.runtime.AthenaRuntime
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Base64
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -43,11 +44,17 @@ class ConnectCliTest {
 
             assertContains(output, "Command successful")
             assertContains(output, "Command: CONNECT_PORTS")
-            assertContains(output, "Changed semantic ids: connection:PLC1.out->M1.in, port:M1.in, port:PLC1.out")
+            assertContains(output, "Changed semantic ids: connection:")
+            assertContains(output, ":PLC1_out_to_M1_in, port:M1.in, port:PLC1.out")
             assertContains(output, "connections before: 0")
             assertContains(output, "connections after: 1")
             assertContains(output, "viewer connections: 1")
             assertEquals(sourcePath, assertNotNull(runtime.activeExecutionContext).project.sourcePath)
+
+            val session = Files.readString(AthenaCliSessionStore().sessionFilePath(sourcePath))
+            assertContains(session, "version=3")
+            assertContains(session, encoded("PLC1_out_to_M1_in"))
+            assertContains(session, encoded(sourcePath.toAbsolutePath().normalize().toString().replace('\\', '/')))
         } finally {
             Files.deleteIfExists(AthenaCliSessionStore().sessionFilePath(sourcePath))
             Files.deleteIfExists(sourcePath)
@@ -90,4 +97,6 @@ class ConnectCliTest {
         Files.writeString(path, source)
         return path
     }
+
+    private fun encoded(value: String): String = Base64.getUrlEncoder().withoutPadding().encodeToString(value.toByteArray())
 }

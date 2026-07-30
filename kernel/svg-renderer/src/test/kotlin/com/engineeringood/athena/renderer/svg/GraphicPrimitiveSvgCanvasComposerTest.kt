@@ -30,10 +30,10 @@ class GraphicPrimitiveSvgCanvasComposerTest {
 
         assertTrue(result.isValid, result.diagnostics.toString())
         assertTrue(requireNotNull(result.svg).startsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"2 -13 96 56\">"))
-        assertEquals(GraphicBounds(2.0, -13.0, 96.0, 56.0), result.proof?.viewBox)
-        assertEquals(document.bounds, result.proof?.contentBounds)
-        assertEquals(8.0, result.proof?.margin)
-        assertEquals("graphic-primitive-ir", result.proof?.boundsAuthority)
+        assertEquals(GraphicBounds(2.0, -13.0, 96.0, 56.0), result.evidence?.viewBox)
+        assertEquals(document.bounds, result.evidence?.contentBounds)
+        assertEquals(8.0, result.evidence?.margin)
+        assertEquals("graphic-primitive-ir", result.evidence?.boundsAuthority)
         assertEquals(result, GraphicPrimitiveSvgCanvasComposer().compose(GraphicPrimitiveSvgCanvasRequest(document, fragment, 8.0)))
 
         val fractionalDocument = document(GraphicBounds(-2.5, 4.25, 12.5, 7.75))
@@ -41,7 +41,7 @@ class GraphicPrimitiveSvgCanvasComposerTest {
         val fractional = GraphicPrimitiveSvgCanvasComposer().compose(
             GraphicPrimitiveSvgCanvasRequest(fractionalDocument, fractionalFragment, margin = 0.25),
         )
-        assertEquals(GraphicBounds(-2.75, 4.0, 13.0, 8.25), fractional.proof?.viewBox)
+        assertEquals(GraphicBounds(-2.75, 4.0, 13.0, 8.25), fractional.evidence?.viewBox)
         assertTrue(requireNotNull(fractional.svg).contains("viewBox=\"-2.75 4 13 8.25\""))
     }
 
@@ -77,7 +77,7 @@ class GraphicPrimitiveSvgCanvasComposerTest {
         assertEquals(listOf("drawing.svg.margin.invalid"), nonFiniteMargin.diagnostics.map { it.code })
         assertFalse(unsafe.isValid)
         assertNull(unsafe.svg)
-        assertNull(unsafe.proof)
+        assertNull(unsafe.evidence)
         assertEquals(
             listOf(
                 Triple("drawing.svg.safety.center-fallback-route", "spatial-routing", "route.power"),

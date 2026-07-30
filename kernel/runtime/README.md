@@ -27,7 +27,6 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 - Preserve typed AI reasoning context, evidence, proposal category, provider status, and decision state as runtime-owned audit data.
 - Assemble deterministic AI reasoning context packages from compiled knowledge outputs and governed review facts before any provider call occurs.
 - Submit governed AI reasoning requests through replaceable runtime-owned provider boundaries while preserving typed session outcome records.
-- Provide one deterministic proof provider for explanation, impact-summary, and next-check verification before live model dependence.
 
 ## Main Types
 
@@ -46,7 +45,6 @@ The `:kernel:runtime` module owns Athena's long-lived execution boundary. It man
 - `AthenaAiProposalRuntimeService`
 - `AthenaAiReasoningRuntimeService`
 - `AthenaAiReasoningSessionRuntimeService`
-- `AthenaAiDeterministicProofProvider`
 - `AthenaAiReasoningContextRequest`
 - `AthenaAiReasoningSessionRequest`
 - `AthenaAiReasoningProvider`

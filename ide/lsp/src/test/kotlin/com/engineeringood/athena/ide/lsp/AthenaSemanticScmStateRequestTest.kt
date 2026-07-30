@@ -135,7 +135,7 @@ class AthenaSemanticScmStateRequestTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `semantic scm request exposes engineering impact and affected subjects for the m9 proof slice`() {
+    fun `semantic scm request exposes engineering impact and affected subjects for the m9 evidence slice`() {
         val root = kotlin.io.path.createTempDirectory("athena-lsp-semantic-scm-m9-")
         val current = root.resolve("current")
         val baseline = root.resolve("baseline")

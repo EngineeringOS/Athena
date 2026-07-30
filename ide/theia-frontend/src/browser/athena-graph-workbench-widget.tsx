@@ -1770,7 +1770,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
 
     protected defaultCreateEntityTag(item: AthenaComponentPanelItem | undefined): string {
         const conceptTail = item?.conceptId.split('.').filter(Boolean).at(-1) ?? 'Device';
-        return `${conceptTail.replace(/[^A-Za-z0-9_]/g, '') || 'Device'}M31`;
+        return conceptTail.replace(/[^A-Za-z0-9_]/g, '') || 'Device';
     }
 
     protected handleWorkbenchClick = (event: React.MouseEvent<HTMLDivElement>): void => {

@@ -1,5 +1,6 @@
 package com.engineeringood.athena.routing
 
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.layout.LayoutSnapshotId
 
 /** Constraint family used by governed schematic routing. */
@@ -80,6 +81,29 @@ data class RouteQuality(
     }
 }
 
+/** Measured inputs used to rank and audit one accepted route. */
+data class RouteQualityMetrics(
+    val crossingCount: Int,
+    val bendCount: Int,
+    val length: Int,
+    val channelChangeCount: Int,
+    val bundleContinuityPenalty: Int,
+    val labelClearanceViolationCount: Int,
+) {
+    init {
+        require(
+            listOf(
+                crossingCount,
+                bendCount,
+                length,
+                channelChangeCount,
+                bundleContinuityPenalty,
+                labelClearanceViolationCount,
+            ).all { value -> value >= 0 },
+        ) { "Route quality metrics must not be negative." }
+    }
+}
+
 /** Label attached to a governed route fact. */
 data class RouteLabelFact(
     val labelId: SchematicLabelId,
@@ -97,6 +121,13 @@ data class RouteFact(
     val routeId: SchematicRouteId,
     val snapshotId: LayoutSnapshotId,
     val connectionId: ElectricalConnectionId,
+    val routeIntentId: RouteIntentId,
+    val bundleId: RouteBundleId,
+    val selectedChannelIds: List<String>,
+    val plannerId: String,
+    val compilerSnapshotId: String,
+    val provenance: SourceProvenance,
+    val qualityMetrics: RouteQualityMetrics,
     val source: TerminalAnchorFact,
     val target: TerminalAnchorFact,
     val segments: List<SchematicRouteSegment>,
@@ -106,6 +137,11 @@ data class RouteFact(
     val quality: RouteQuality = RouteQuality.satisfied(),
 ) {
     init {
+        require(selectedChannelIds.distinct().size == selectedChannelIds.size) {
+            "Route facts must not repeat selected channels."
+        }
+        require(plannerId.isNotBlank()) { "Route fact planner id must not be blank." }
+        require(compilerSnapshotId.isNotBlank()) { "Route fact compiler snapshot id must not be blank." }
         require(segments.isNotEmpty()) { "Route facts require at least one schematic segment." }
         require(constraints.all { constraint -> constraint.connectionId == connectionId }) {
             "Route fact constraints must belong to the same connection id."

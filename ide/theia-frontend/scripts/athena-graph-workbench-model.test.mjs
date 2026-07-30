@@ -59,7 +59,7 @@ const readyDiagram = {
         }
     ],
     notationPack: {
-        packId: 'electrical-notation/cabinet/default-v1',
+        packId: 'electrical-notation/cabinet/default',
         displayName: 'Electrical Cabinet Default',
         subjects: [
             {
@@ -287,7 +287,7 @@ test('builds a ready graphical workbench model from the adapter diagram', () => 
     assert.equal(model.isElectricalFamily, true);
     assert.equal(model.activeSheetId, 'cabinet/sheet/01-main');
     assert.equal(model.sheetCount, 1);
-    assert.equal(model.notationPackId, 'electrical-notation/cabinet/default-v1');
+    assert.equal(model.notationPackId, 'electrical-notation/cabinet/default');
     assert.equal(model.crossReferenceCount, 1);
     assert.deepEqual(model.sheetChrome.frame, {
         width: 1440,
@@ -713,7 +713,7 @@ test('resolves the current governed document sheet selector without cross-view c
             nextSheetId: 'documentation/sheet/02-field-device',
             subjectSemanticIds: ['component:PSU1', 'component:PLC1', 'component:HMI1'],
             policyEvidence: {
-                policyId: 'athena-m31-customer-projection-v0',
+                policyId: 'athena-customer-projection',
                 policyVersion: '0',
                 policyDeterministicIdentity: 'policy:m31:test',
                 sheetViewRole: 'control-and-plc-logic',
@@ -727,7 +727,7 @@ test('resolves the current governed document sheet selector without cross-view c
             previousSheetId: 'documentation/sheet/01-control',
             subjectSemanticIds: ['component:XT1'],
             policyEvidence: {
-                policyId: 'athena-m31-customer-projection-v0',
+                policyId: 'athena-customer-projection',
                 policyVersion: '0',
                 policyDeterministicIdentity: 'policy:m31:test',
                 sheetViewRole: 'field-wiring-and-terminal-transition',
@@ -1197,7 +1197,7 @@ test('prefers Presentation IR occurrences and symbol commands when the diagram i
         canvasHeight: 900,
         primitivePacks: [
             {
-                packId: 'electrical-primitives/default-v1',
+                packId: 'electrical-primitives/default',
                 displayName: 'Electrical primitives',
                 familyIds: ['electrical/cabinet'],
                 primitives: [
@@ -1283,7 +1283,7 @@ test('prefers Presentation IR occurrences and symbol commands when the diagram i
         ],
         compositePacks: [
             {
-                packId: 'electrical-composites/panel-v1',
+                packId: 'electrical-composites/panel',
                 displayName: 'Electrical panel composites',
                 familyIds: ['electrical/cabinet'],
                 composites: [
@@ -1467,7 +1467,7 @@ test('renders M25 representation facts as governed electrical symbols without ge
                     familyId: 'plc-controller'
                 },
                 anatomy: {
-                    representationId: 'athena-industrial-control-v0:plc-controller',
+                    representationId: 'athena-industrial-control:plc-controller',
                     context: 'electrical_schematic',
                     bounds: { width: 80, height: 48 },
                     hotspot: { x: 0, y: 0 },
@@ -1552,7 +1552,7 @@ test('renders M25 representation facts as governed electrical symbols without ge
     const node = model.nodes.find(candidate => candidate.semanticId === 'component:PLC1');
 
     assert.equal(node?.renderVariant, 'electrical-device');
-    assert.equal(node?.presentationRepresentation?.representationId, 'athena-industrial-control-v0:plc-controller');
+    assert.equal(node?.presentationRepresentation?.representationId, 'athena-industrial-control:plc-controller');
     assert.equal(node?.presentationRepresentation?.fallback, false);
     assert.equal(node?.presentationParts.length, 1);
     assert.deepEqual(
@@ -1601,7 +1601,7 @@ test('renders M25 representation facts as governed electrical symbols without ge
             status: 'ready',
             subjectId: 'component:PLC1',
             occurrenceId: 'representation:PLC1@schematic-sheet',
-            representationId: 'athena-industrial-control-v0:plc-controller',
+            representationId: 'athena-industrial-control:plc-controller',
             symbolFamilyId: 'plc-controller',
             fallback: false,
             terminals: [
@@ -1676,7 +1676,7 @@ test('keeps M25 representation facts when Presentation IR occurrences drive shee
                     familyId: 'plc-controller'
                 },
                 anatomy: {
-                    representationId: 'athena-industrial-control-v0:plc-controller',
+                    representationId: 'athena-industrial-control:plc-controller',
                     context: 'electrical_schematic',
                     bounds: { width: 80, height: 48 },
                     hotspot: { x: 0, y: 0 },
@@ -1749,7 +1749,7 @@ test('keeps M25 representation facts when Presentation IR occurrences drive shee
 
     assert.equal(node?.id, 'presentation:component:PLC1');
     assert.equal(node?.renderVariant, 'electrical-device');
-    assert.equal(node?.presentationRepresentation?.representationId, 'athena-industrial-control-v0:plc-controller');
+    assert.equal(node?.presentationRepresentation?.representationId, 'athena-industrial-control:plc-controller');
     assert.equal(node?.position.x, 300);
     assert.equal(node?.position.y, 136);
     assert.equal(node?.size.width, 80);
@@ -1874,7 +1874,7 @@ test('builds route inspection from governed connector facts without canvas persi
         sourcePortSemanticId: 'port:PLC1.out',
         targetPortSemanticId: 'port:M1.in',
         routeQuality: 'SATISFIED',
-        policySummary: 'm24:route-fact:SATISFIED:3-segment',
+        policySummary: 'route-fact:SATISFIED:3-segment',
         labels: ['M1.IN'],
         persisted: false
     });

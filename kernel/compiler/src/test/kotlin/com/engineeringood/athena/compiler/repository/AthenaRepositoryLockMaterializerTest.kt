@@ -1,7 +1,7 @@
 package com.engineeringood.athena.compiler.repository
 
 import com.engineeringood.athena.compiler.AthenaCompiler
-import com.engineeringood.athena.packageplatform.PackageAdmissionLimitsV1
+import com.engineeringood.athena.packageplatform.PackageAdmissionLimits
 import java.nio.file.Files
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
@@ -58,8 +58,8 @@ class AthenaRepositoryLockMaterializerTest {
             assertEquals(first.renderedLock, firstBytes)
             assertTrue(firstBytes.contains("version: 2"))
             assertTrue(firstBytes.contains("schema: repository-lock-v2"))
-            assertTrue(firstBytes.contains("compilerSchema: athena-m35-lock-v2"))
-            assertTrue(firstBytes.contains("snapshotDigest: package-snapshot/v1:"))
+            assertTrue(firstBytes.contains("compilerSchema: athena-lock-v2"))
+            assertTrue(firstBytes.contains("snapshotDigest: package-snapshot:"))
             assertTrue(firstBytes.contains("sourceHashes:"))
             assertTrue(firstBytes.contains("primaryPackage:"))
             assertTrue(firstBytes.contains("sourceRoot: vendor/alpha/src"))
@@ -173,8 +173,8 @@ class AthenaRepositoryLockMaterializerTest {
                 """
                     version: 2
                     schema: repository-lock-v2
-                    compilerSchema: athena-m35-lock-v2
-                    validatedLockStateDigest: lock-state/v1:stale
+                    compilerSchema: athena-lock-v2
+                    validatedLockStateDigest: lock-state:stale
                     primaryPackage:
                       name: com.engineeringood.root
                       version: 1.0.0
@@ -182,7 +182,7 @@ class AthenaRepositoryLockMaterializerTest {
                       - name: com.engineeringood.root
                         version: 1.0.0
                         sourceRoot: src
-                        snapshotDigest: package-snapshot/v1:stale
+                        snapshotDigest: package-snapshot:stale
                         sourceHashes: []
                         resourceHashes: []
                         dependencies: []
@@ -301,7 +301,7 @@ class AthenaRepositoryLockMaterializerTest {
             )
 
             val result = AthenaRepositoryLockMaterializer(
-                admissionLimits = PackageAdmissionLimitsV1.STANDARD.copy(maxGovernedSourceUnitsPerPackage = 1),
+                admissionLimits = PackageAdmissionLimits.STANDARD.copy(maxGovernedSourceUnitsPerPackage = 1),
             ).materialize(repositoryRoot)
 
             assertFalse(result.isValid)

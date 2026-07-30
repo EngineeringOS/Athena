@@ -148,16 +148,16 @@ element acs380_cabinet_front {
     geometryRef svg.L1
     point (42, 0)
     role terminal
-    accepts direction in
-    accepts signal Power
+    direction in
+    signal Power
   }
 
   anchor load {
     geometryRef svg.T1
     point (42, 180)
     role terminal
-    accepts direction out
-    accepts signal Power
+    direction out
+    signal Power
   }
 
   export label deviceTag from svg.deviceTag

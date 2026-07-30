@@ -42,7 +42,7 @@ class DrawingSheetReferenceCompilerTest {
     }
 
     @Test
-    fun `proof binds native folio marker anatomy zone and slots without inference`() {
+    fun `evidence binds native folio marker anatomy zone and slots without inference`() {
         val result = DrawingSheetReferenceCompiler().compile(request())
 
         assertTrue(result.isValid, result.diagnostics.toString())
@@ -58,10 +58,10 @@ class DrawingSheetReferenceCompilerTest {
         assertEquals("drawing-symbol-anatomy", placement.representationAuthority)
         assertEquals("drawing-composition", placement.boundsAuthority)
 
-        val proof = requireNotNull(result.proof)
-        assertEquals(listOf("iec.folio-continuation-reference"), proof.markerRepresentationIdentities)
-        assertEquals("projection-cross-reference", proof.projectionAuthority)
-        assertEquals("drawing-symbol-anatomy", proof.representationAuthority)
+        val evidence = requireNotNull(result.evidence)
+        assertEquals(listOf("iec.folio-continuation-reference"), evidence.markerRepresentationIdentities)
+        assertEquals("projection-cross-reference", evidence.projectionAuthority)
+        assertEquals("drawing-symbol-anatomy", evidence.representationAuthority)
         val payload = requireNotNull(result.toTransportPayload())
         assertEquals("continuation", payload.placements.first().anchorId)
         assertEquals("cross-reference", payload.placements.first().labelSlotId)
@@ -104,7 +104,7 @@ class DrawingSheetReferenceCompilerTest {
             val result = DrawingSheetReferenceCompiler().compile(request)
             assertFalse(result.isValid, expectedCode)
             assertNull(result.plan, expectedCode)
-            assertNull(result.proof, expectedCode)
+            assertNull(result.evidence, expectedCode)
             assertNull(result.toTransportPayload(), expectedCode)
             assertTrue(result.diagnostics.any { it.code == expectedCode }, result.diagnostics.toString())
             assertTrue(result.diagnostics.all { it.authority.isNotBlank() && it.subject.isNotBlank() && it.message.isNotBlank() })

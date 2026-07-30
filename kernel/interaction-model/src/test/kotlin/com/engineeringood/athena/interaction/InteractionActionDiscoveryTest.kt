@@ -131,11 +131,11 @@ class InteractionActionDiscoveryTest {
             ),
         )
         val action = result.actions.single()
-        val proof = InteractionEnvelope(
-            requestId = "proof:entity-creation-action-discovery",
+        val evidence = InteractionEnvelope(
+            requestId = "evidence:entity-creation-action-discovery",
             activeSourceUri = "file:///workspace/main.athena",
             activeSourceRevision = "rev-entity-action",
-            payloadKind = InteractionPayloadKind.PROOF,
+            payloadKind = InteractionPayloadKind.DIAGNOSTIC,
             payload = mapOf(
                 "proofKind" to "entity-creation-action-discovery",
                 "actionIntentId" to action.actionIntentId,
@@ -151,7 +151,7 @@ class InteractionActionDiscoveryTest {
         assertEquals("component", action.parameters["entityKind"])
         assertEquals("electrical.motor.ac", action.parameters["componentConceptId"])
         assertFalse(action.parameters.containsKey("screenX"))
-        assertEquals("entity-creation-action-discovery", proof.payload["proofKind"])
-        assertEquals("640", proof.adapterMetadata["screenX"])
+        assertEquals("entity-creation-action-discovery", evidence.payload["proofKind"])
+        assertEquals("640", evidence.adapterMetadata["screenX"])
     }
 }

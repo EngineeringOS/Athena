@@ -19,7 +19,10 @@ class AthenaM31SampleProjectCompilerTest {
         val sourceText = Files.readString(source)
 
         assertTrue(sourceText.contains("    port "), "M31 sample must use nested device-owned ports.")
-        assertTrue(sourceText.contains("connect supply_feed {"), "M31 sample must use grouped relationship provenance.")
+        assertTrue(
+            sourceText.contains("connect mainpowersupplyps31_lplus_to_mainbreakerqf31_line "),
+            "M31 sample must use typed connection declarations.",
+        )
         assertFalse(
             Regex("""(?m)^\s*port\s+[A-Za-z0-9_]+\.[A-Za-z0-9_]+\s*\{""").containsMatchIn(sourceText),
             "M31 sample must not prefer legacy top-level generated device-port declarations.",
@@ -28,6 +31,7 @@ class AthenaM31SampleProjectCompilerTest {
 
         val result = compiler.compile(source)
         val success = assertSuccess(result)
+        assertTrue(success.connectionIr?.connections?.isNotEmpty() == true, "M31 connections must lower into Connection IR.")
         assertTrue(
             success.semanticResult.diagnostics.isEmpty(),
             success.semanticResult.diagnostics.joinToString(separator = "\n") { diagnostic ->

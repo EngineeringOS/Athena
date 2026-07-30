@@ -85,7 +85,6 @@ The central architectural claim remains unchanged:
 | `extensions` | `:extensions:domain-dummy` | synthetic proof domain proving the SPI is not secretly electrical-shaped |
 | `ui` | `:ui:compose-workbench` | shared Compose workbench and interaction layer |
 | `apps` | `:apps:cli` | terminal entrypoint |
-| `apps` | `:apps:desktop-viewer` | desktop Compose application entrypoint |
 
 The `ide/` group is now present physically as the primary M4 product path and already contains a runnable Node/Yarn Theia workspace. It remains separate from the Gradle module graph because cross-language boundaries are still protocol boundaries.
 
@@ -880,28 +879,6 @@ The proof is verified through the compiler test suite:
 java25; .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test
 ```
 
-### M2 Desktop Operator Proof
-
-Use [`examples/m2/operator-proof.athena`](../../examples/m2/operator-proof.athena) as the desktop seed. It starts without authored connections so the runtime can prove the command-backed creation of `connection:PLC1.out->M1.in`.
-
-Desktop verification commands:
-
-```powershell
-java25; .\gradlew.bat --no-daemon --console=plain :apps:desktop-viewer:test
-java25; .\gradlew.bat --no-daemon --console=plain :apps:desktop-viewer:bootstrapSmoke
-java25; .\gradlew.bat --no-daemon --console=plain :apps:desktop-viewer:operatorProofSmoke
-```
-
-Interactive desktop launch:
-
-```powershell
-java25; .\gradlew.bat :apps:desktop-viewer:run
-```
-
-### Focused Usage Guide
-
-For the M2 proof surfaces only, read [`docs/usages/m2-proof-usage.md`](m2-proof-usage.md).
-
 ### M3 Hosted Extensibility Proof
 
 Use the published M3 corpus:
@@ -972,13 +949,12 @@ If you want the current implementation in the right order, read:
 5. [`kernel/geometry-model/README.md`](../../kernel/geometry-model/README.md)
 6. [`kernel/projection-model/README.md`](../../kernel/projection-model/README.md)
 7. [`docs/usages/m3-proof-usage.md`](m3-proof-usage.md)
-8. [`apps/desktop-viewer/README.md`](../../apps/desktop-viewer/README.md)
-9. [`docs/usages/m4-proof-usage.md`](m4-proof-usage.md)
-10. [`docs/usages/m5-proof-usage.md`](m5-proof-usage.md)
-11. [`docs/usages/m6-proof-usage.md`](m6-proof-usage.md)
-12. [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
-13. [`docs/usages/m8-proof-usage.md`](m8-proof-usage.md)
-14. [`docs/usages/m9-proof-usage.md`](m9-proof-usage.md)
+8. [`docs/usages/m4-proof-usage.md`](m4-proof-usage.md)
+9. [`docs/usages/m5-proof-usage.md`](m5-proof-usage.md)
+10. [`docs/usages/m6-proof-usage.md`](m6-proof-usage.md)
+11. [`docs/usages/m7-proof-usage.md`](m7-proof-usage.md)
+12. [`docs/usages/m8-proof-usage.md`](m8-proof-usage.md)
+13. [`docs/usages/m9-proof-usage.md`](m9-proof-usage.md)
 15. [`_bmad-output/implementation-artifacts/m9/milestone-summary-2026-07-11.md`](../../_bmad-output/implementation-artifacts/m9/milestone-summary-2026-07-11.md)
 16. [`docs/roadmap/athena-milestone-roadmap.md`](../roadmap/athena-milestone-roadmap.md)
 17. [`manifesto/docs/architecture/03-ir.md`](../../manifesto/docs/architecture/03-ir.md)

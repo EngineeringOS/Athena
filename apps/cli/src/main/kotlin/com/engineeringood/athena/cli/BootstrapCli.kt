@@ -191,10 +191,7 @@ class BootstrapCli(
                 when (
                     val result = context.commandRuntime().execute(
                         context = context,
-                        command = AthenaConnectPortsCommand(
-                            sourcePortSemanticId = sourceSemanticId,
-                            targetPortSemanticId = targetSemanticId,
-                        ),
+                        command = connectPortsCommand(context, sourceSemanticId, targetSemanticId),
                     )
                 ) {
                     is AthenaCommandExecutionSuccess -> {
@@ -276,10 +273,7 @@ class BootstrapCli(
                     draft = AthenaAiCommandProposalDraft(
                         summary = arguments[3],
                         rationale = "Submitted through the CLI optional AI proposal surface.",
-                        command = AthenaConnectPortsCommand(
-                            sourcePortSemanticId = sourceSemanticId,
-                            targetPortSemanticId = targetSemanticId,
-                        ),
+                        command = connectPortsCommand(context, sourceSemanticId, targetSemanticId),
                     ),
                 )
                 val submitted = submission as AthenaAiCommandProposalSubmitted
@@ -719,7 +713,7 @@ class BootstrapCli(
     }
 
     private fun helpText(): String = buildString {
-        appendLine("Athena M1 runtime host")
+        appendLine("Athena runtime host")
         appendLine("Java 25")
         appendLine("Gradle 9.6.1")
         appendLine(
@@ -752,6 +746,22 @@ class BootstrapCli(
             port.authoredPath() == authoredPortPath
         }?.id?.value
     }
+
+    private fun connectPortsCommand(
+        context: AthenaExecutionContext,
+        sourcePortSemanticId: String,
+        targetPortSemanticId: String,
+    ): AthenaConnectPortsCommand {
+        return AthenaConnectPortsCommand(
+            sourceUnitId = context.project.sourcePath.toAbsolutePath().normalize().toString().replace('\\', '/'),
+            connectionAlias = "${sourcePortSemanticId.connectionAliasPart()}_to_${targetPortSemanticId.connectionAliasPart()}",
+            sourcePortSemanticId = sourcePortSemanticId,
+            targetPortSemanticId = targetPortSemanticId,
+        )
+    }
+
+    private fun String.connectionAliasPart(): String =
+        removePrefix("port:").replace('.', '_').replace('-', '_')
 
     /** Restores persisted CLI session state when necessary before a one-shot command touches runtime-owned history. */
     private fun openExecutionSession(sourceFileArgument: String): AthenaCliExecutionSessionResult {

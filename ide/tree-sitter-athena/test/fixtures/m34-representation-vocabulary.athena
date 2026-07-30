@@ -15,11 +15,11 @@ symbol iec_contactor_coil {
   }
 
   anchor A1 {
-    primitiveRef terminalA1
+    ref "terminalA1"
     point (40, 0)
     role terminal
-    accepts direction in
-    accepts signal Control
+    direction in
+    signal Control.family
   }
 }
 

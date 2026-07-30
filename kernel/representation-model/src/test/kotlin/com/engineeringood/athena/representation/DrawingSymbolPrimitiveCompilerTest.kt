@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 class DrawingSymbolPrimitiveCompilerTest {
     @Test
-    fun `compiler preserves primitive scene and emits deterministic anatomy proof`() {
+    fun `compiler preserves primitive scene and emits deterministic anatomy evidence`() {
         val anatomy = anatomy()
         val result = DrawingSymbolPrimitiveCompiler().compile(request(anatomy))
 
@@ -16,12 +16,12 @@ class DrawingSymbolPrimitiveCompilerTest {
         assertEquals(anatomy.primitives, result.document?.primitives)
         assertEquals(bounds, result.document?.bounds)
         assertEquals(styles, result.document?.styleTokens)
-        assertEquals("descriptor.test", result.proof?.descriptorId)
-        assertEquals("athena-native:resource.test", result.proof?.resourceHandle)
-        assertEquals(listOf("group", "line", "rotated", "inner-line"), result.proof?.primitiveIds)
-        assertEquals(listOf("line", "load"), result.proof?.anchorIds)
-        assertEquals(listOf("device-tag"), result.proof?.labelSlotIds)
-        assertEquals(listOf("cross-reference"), result.proof?.referenceSlotIds)
+        assertEquals("descriptor.test", result.evidence?.descriptorId)
+        assertEquals("athena-native:resource.test", result.evidence?.resourceHandle)
+        assertEquals(listOf("group", "line", "rotated", "inner-line"), result.evidence?.primitiveIds)
+        assertEquals(listOf("line", "load"), result.evidence?.anchorIds)
+        assertEquals(listOf("device-tag"), result.evidence?.labelSlotIds)
+        assertEquals(listOf("cross-reference"), result.evidence?.referenceSlotIds)
         assertEquals(result, DrawingSymbolPrimitiveCompiler().compile(request(anatomy)))
     }
 
@@ -53,7 +53,7 @@ class DrawingSymbolPrimitiveCompilerTest {
 
         assertFalse(invalid.isValid)
         assertNull(invalid.document)
-        assertNull(invalid.proof)
+        assertNull(invalid.evidence)
         assertEquals(
             listOf(
                 "graphic.ir.style-token.missing",
@@ -65,7 +65,7 @@ class DrawingSymbolPrimitiveCompilerTest {
     }
 
     @Test
-    fun `compiler diagnoses a cyclic primitive scene before proof flattening`() {
+    fun `compiler diagnoses a cyclic primitive scene before evidence flattening`() {
         val children = mutableListOf<GraphicPrimitive>()
         val cyclicGroup = GraphicPrimitive.Group(GraphicPrimitiveId("cycle"), bounds, children)
         children += cyclicGroup
@@ -74,7 +74,7 @@ class DrawingSymbolPrimitiveCompilerTest {
 
         assertFalse(result.isValid)
         assertNull(result.document)
-        assertNull(result.proof)
+        assertNull(result.evidence)
         assertEquals(listOf("graphic.ir.nesting.cycle"), result.diagnostics.map { it.code })
     }
 

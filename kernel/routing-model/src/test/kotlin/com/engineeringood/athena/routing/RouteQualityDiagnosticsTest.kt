@@ -1,5 +1,6 @@
 package com.engineeringood.athena.routing
 
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
@@ -52,9 +53,9 @@ class RouteQualityDiagnosticsTest {
         assertEquals(ElectricalPortId("HMI1.IN1"), satisfiedInspection.targetPortId)
         assertEquals(StableSemanticIdentity("port:PLC1.DO1"), satisfiedInspection.sourcePortSemanticId)
         assertEquals(StableSemanticIdentity("port:HMI1.IN1"), satisfiedInspection.targetPortSemanticId)
-        assertEquals("m24:route-fact:SATISFIED:1-segment", satisfiedInspection.policySummary)
+        assertEquals("route-fact:SATISFIED:1-segment", satisfiedInspection.policySummary)
         assertEquals(RouteQualityState.FALLBACK, fallbackInspection.qualityState)
-        assertEquals("m24:route-fact:FALLBACK:1-segment", fallbackInspection.policySummary)
+        assertEquals("route-fact:FALLBACK:1-segment", fallbackInspection.policySummary)
     }
 
     private fun routeFact(
@@ -69,6 +70,20 @@ class RouteQualityDiagnosticsTest {
             routeId = routeId,
             snapshotId = snapshotId,
             connectionId = connectionId,
+            routeIntentId = RouteIntentId("intent:${connectionId.value}"),
+            bundleId = RouteBundleId("bundle:${connectionId.value}"),
+            selectedChannelIds = listOf("channel:main"),
+            plannerId = "athena-native",
+            compilerSnapshotId = "compiler:${routeId.value}",
+            provenance = SourceProvenance("routes.athena", 1, 1, 1, 32),
+            qualityMetrics = RouteQualityMetrics(
+                crossingCount = 0,
+                bendCount = 0,
+                length = 200,
+                channelChangeCount = 0,
+                bundleContinuityPenalty = 0,
+                labelClearanceViolationCount = 0,
+            ),
             source = source,
             target = target,
             segments = listOf(

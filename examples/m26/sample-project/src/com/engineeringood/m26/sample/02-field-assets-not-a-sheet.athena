@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m26.sample
+package com.engineeringood.m26.sample
 
 system SemanticDocumentProjectionAcceptanceField {
   device FieldOutputModuleIOM1 {

@@ -196,7 +196,7 @@ class GitSemanticBaselineAdapter(
     }
 
     companion object {
-        /** Stable adapter identifier used by the current Git-backed baseline-loading proof. */
+        /** Stable adapter identifier used by the current Git-backed baseline-loading evidence. */
         const val ADAPTER_ID: String = "scm-git"
     }
 }

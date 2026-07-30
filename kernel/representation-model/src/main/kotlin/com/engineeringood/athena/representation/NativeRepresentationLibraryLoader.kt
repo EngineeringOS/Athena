@@ -21,7 +21,7 @@ data class NativeRepresentationLibraryLoadResult(
 
 class NativeRepresentationLibraryLoader {
     fun loadBundled(
-        resourcePath: String = "representation-libraries/athena-native-iec-v0.properties",
+        resourcePath: String = "representation-libraries/athena-native-iec.properties",
     ): NativeRepresentationLibraryLoadResult {
         val stream = javaClass.classLoader.getResourceAsStream(resourcePath)
             ?: return failed("Bundled native representation library `$resourcePath` was not found.")
@@ -39,7 +39,7 @@ class NativeRepresentationLibraryLoader {
             return failed("QET .elmt files are reference/import inputs only, not Athena runtime assets.")
         }
         if (!path.fileName.toString().endsWith(".properties", ignoreCase = true)) {
-            return failed("Native representation library assets must use .properties in v0.")
+            return failed("Native representation library assets must use .properties files.")
         }
 
         val properties = Properties()

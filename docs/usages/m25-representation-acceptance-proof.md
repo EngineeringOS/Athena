@@ -30,7 +30,7 @@ because component appearance is not yet governed by a presentation anatomy and p
 M25 adds:
 
 - `PresentationAnatomy` as the governed representation contract above electrical symbol anatomy
-- `athena-industrial-control-v0` as the first small presentation policy profile
+- `athena-industrial-control` as the first small presentation policy profile
 - terminal markers as facts, not renderer-invented dots
 - terminal numbers as facts, not loose canvas text
 - label anchors for device tags, type labels, terminal labels, and route labels

@@ -1,6 +1,6 @@
 package com.engineeringood.athena.compiler.repository
 
-import com.engineeringood.athena.packageplatform.PackageAdmissionLimitsV1
+import com.engineeringood.athena.packageplatform.PackageAdmissionLimits
 import com.engineeringood.athena.repository.PackageIdentifier
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
@@ -23,7 +23,7 @@ import kotlin.io.path.isRegularFile
  */
 class AthenaRepositoryLockMaterializer(
     private val graphResolver: AthenaRepositoryGraphResolver = AthenaRepositoryGraphResolver(),
-    private val admissionLimits: PackageAdmissionLimitsV1 = PackageAdmissionLimitsV1.STANDARD,
+    private val admissionLimits: PackageAdmissionLimits = PackageAdmissionLimits.STANDARD,
 ) {
     /**
      * Resolves [repositoryRoot], renders the canonical lock content, and writes it to `athena.lock`.
@@ -194,7 +194,7 @@ private data class LockLine(
 
 private fun ResolvedPackageGraph.toCanonicalRepositoryLock(
     repositoryRoot: Path,
-    limits: PackageAdmissionLimitsV1,
+    limits: PackageAdmissionLimits,
 ): CanonicalRepositoryLockBuild {
     val orderedPackages = packages
         .sortedWith(compareBy<ResolvedPackage> { it.packageId != rootPackage }.thenBy(::stableResolvedPackageKey))
@@ -207,7 +207,7 @@ private fun ResolvedPackageGraph.toCanonicalRepositoryLock(
     if (orderedPackages.size > limits.maxResolvedPackages) {
         diagnostics += diagnostic(
             code = "repository.admission.budget.resolved-packages-exceeded",
-            message = "Resolved package graph exceeds PackageAdmissionLimitsV1 package budget.",
+            message = "Resolved package graph exceeds PackageAdmissionLimits package budget.",
         )
     }
     val lockedPackageResults = orderedPackages.map { resolvedPackage ->
@@ -220,7 +220,7 @@ private fun ResolvedPackageGraph.toCanonicalRepositoryLock(
     if (admittedRepositoryBytes > limits.maxAdmittedBytesPerRepository) {
         diagnostics += diagnostic(
             code = "repository.admission.budget.repository-bytes-exceeded",
-            message = "Admitted repository content exceeds PackageAdmissionLimitsV1 repository byte budget.",
+            message = "Admitted repository content exceeds PackageAdmissionLimits repository byte budget.",
         )
     }
 
@@ -240,7 +240,7 @@ private fun ResolvedPackageGraph.toCanonicalRepositoryLock(
 
 private fun ResolvedPackage.toLockedPackage(
     repositoryRoot: Path,
-    limits: PackageAdmissionLimitsV1,
+    limits: PackageAdmissionLimits,
 ): Pair<RepositoryLockedPackage, AdmittedSourceHashResult> {
     val sourceAdmission = admittedSourceHashes(repositoryRoot, sourceRoot, limits)
     return RepositoryLockedPackage(
@@ -404,7 +404,7 @@ private fun parseLockVersion(
     if (version != REPOSITORY_LOCK_VERSION) {
         diagnostics += diagnostic(
             code = "repository.lock.version.unsupported",
-            message = "Canonical `athena.lock` version `$version` is unsupported. Expected `$REPOSITORY_LOCK_VERSION` in M5.",
+            message = "Canonical `athena.lock` version `$version` is unsupported. Expected `$REPOSITORY_LOCK_VERSION`.",
         )
         return null
     }
@@ -809,7 +809,7 @@ private fun stablePackageIdentifierKey(packageIdentifier: PackageIdentifier): St
 private fun admittedSourceHashes(
     repositoryRoot: Path,
     sourceRoot: String,
-    limits: PackageAdmissionLimitsV1,
+    limits: PackageAdmissionLimits,
 ): AdmittedSourceHashResult {
     val root = resolveSourceRoot(repositoryRoot, sourceRoot)
     val rootDiagnostics = validateAdmittedSourceRoot(repositoryRoot, sourceRoot, root)
@@ -863,13 +863,13 @@ private fun admittedSourceHashes(
     if (sourceHashes.size > limits.maxGovernedSourceUnitsPerPackage) {
         diagnostics += diagnostic(
             code = "repository.admission.budget.source-units-exceeded",
-            message = "Package source root `${root.toDisplayPath()}` exceeds PackageAdmissionLimitsV1 governed source unit budget.",
+            message = "Package source root `${root.toDisplayPath()}` exceeds PackageAdmissionLimits governed source unit budget.",
         )
     }
     if (admittedBytes > limits.maxAdmittedBytesPerPackage) {
         diagnostics += diagnostic(
             code = "repository.admission.budget.package-bytes-exceeded",
-            message = "Package source root `${root.toDisplayPath()}` exceeds PackageAdmissionLimitsV1 package byte budget.",
+            message = "Package source root `${root.toDisplayPath()}` exceeds PackageAdmissionLimits package byte budget.",
         )
     }
 
@@ -963,7 +963,7 @@ private fun packageSnapshotDigest(
     packageId: PackageIdentifier,
     sourceRoot: String,
     sourceHashes: List<RepositorySourceHash>,
-): String = "package-snapshot/v1:" + sha256(
+): String = "package-snapshot:" + sha256(
     buildString {
         appendLine("schema=$REPOSITORY_LOCK_COMPILER_SCHEMA")
         appendLine("package=${packageId.name}@${packageId.version.orEmpty()}")
@@ -975,7 +975,7 @@ private fun packageSnapshotDigest(
     }.toByteArray(Charsets.UTF_8),
 )
 
-private fun validatedLockStateDigest(packages: List<RepositoryLockedPackage>): String = "lock-state/v1:" + sha256(
+private fun validatedLockStateDigest(packages: List<RepositoryLockedPackage>): String = "lock-state:" + sha256(
     buildString {
         appendLine("schema=$REPOSITORY_LOCK_SCHEMA")
         packages.sortedBy { locked -> stablePackageIdentifierKey(locked.packageId) + "|" + locked.sourceRoot }.forEach { locked ->
@@ -1038,5 +1038,5 @@ private fun diagnostic(
 
 private const val REPOSITORY_LOCK_VERSION = 2
 private const val REPOSITORY_LOCK_SCHEMA = "repository-lock-v2"
-private const val REPOSITORY_LOCK_COMPILER_SCHEMA = "athena-m35-lock-v2"
+private const val REPOSITORY_LOCK_COMPILER_SCHEMA = "athena-lock-v2"
 private val LOCK_PACKAGE_NAME_PATTERN = Regex("^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$")

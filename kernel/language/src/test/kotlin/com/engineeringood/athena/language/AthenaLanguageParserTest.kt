@@ -389,8 +389,22 @@ class AthenaLanguageParserTest {
                 duct D1 in ENC1 at (30mm, 60mm) size (40mm, 480mm) orientation vertical wall 2mm
                 channel C1 in D1 at (4mm, 8mm) size (32mm, 464mm) lanes 4 margin 2mm
                 terminal-group XT1 in ENC1 at (560mm, 420mm) size (160mm, 80mm) orientation horizontal accepts [terminal]
-                mount QF1Mount device QF1 on DIN1 at (0mm, 0mm) orientation horizontal
-                mount M1Mount device M1 on DIN1 at (100mm, 0mm) orientation horizontal
+                mount QF1 as QF1Mount on DIN1 at (0mm, 0mm) {
+                  footprint (45mm, 90mm, 70mm)
+                  mounting din35
+                  orientation deg0
+                  allowed-orientations [deg0, deg180]
+                  clearance (10mm, 5mm, 10mm, 5mm)
+                  compatible-containers [cabinet]
+                }
+                mount M1 as M1Mount on DIN1 at (100mm, 0mm) {
+                  footprint (120mm, 160mm, 100mm)
+                  mounting din35
+                  orientation deg0
+                  allowed-orientations [deg0]
+                  clearance (5mm, 5mm, 5mm, 5mm)
+                  compatible-containers [cabinet]
+                }
                 route feeder through [C1]
               }
             }
@@ -417,6 +431,20 @@ class AthenaLanguageParserTest {
         assertEquals("QF1Mount", installation.mounts[0].id)
         assertEquals("QF1", installation.mounts[0].deviceId)
         assertEquals("DIN1", installation.mounts[0].targetId)
+        assertEquals(45.0, installation.mounts[0].footprint.width.value)
+        assertEquals(90.0, installation.mounts[0].footprint.height.value)
+        assertEquals(70.0, installation.mounts[0].footprint.depth.value)
+        assertEquals("din35", installation.mounts[0].mountingType)
+        assertEquals(InstallationMountOrientation.Deg0, installation.mounts[0].orientation)
+        assertEquals(
+            listOf(InstallationMountOrientation.Deg0, InstallationMountOrientation.Deg180),
+            installation.mounts[0].allowedOrientations,
+        )
+        assertEquals(10.0, installation.mounts[0].clearance.top.value)
+        assertEquals(5.0, installation.mounts[0].clearance.right.value)
+        assertEquals(10.0, installation.mounts[0].clearance.bottom.value)
+        assertEquals(5.0, installation.mounts[0].clearance.left.value)
+        assertEquals(listOf("cabinet"), installation.mounts[0].compatibleContainerKinds)
         assertEquals("M1Mount", installation.mounts[1].id)
         assertEquals("feeder", installation.routes.single().connectionAlias)
         assertEquals(listOf("C1"), installation.routes.single().channelIds)

@@ -19,7 +19,7 @@
     "clean": "node -e \"const fs = require('node:fs'); fs.rmSync('build', { recursive: true, force: true });\"",
     "generate": "tree-sitter generate",
     "build": "node scripts/build-tree-sitter-wasm.mjs",
-    "test": "tree-sitter generate && tree-sitter test && node --test scripts/*.test.mjs"
+    "test": "tree-sitter generate && tree-sitter test && yarn build && node --test scripts/*.test.mjs"
   },
   "devDependencies": {
     "tree-sitter-cli": ">=0.26.1",

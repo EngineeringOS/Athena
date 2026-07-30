@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:d068c9d2b4b05ad593d965cd51747fffced415c8bf362fbd4627c24cf2ba85a1
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:e041011e51c8c33c5c676b08bec6d84876fa5ba44ccc1701e0934e83f7d32421
 primaryPackage:
   name: com.engineeringood.m28.sample
   version: 1.0.0
@@ -11,11 +11,11 @@ packages:
   - name: com.engineeringood.m28.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:d34f68db6c6069c6cfa12e859287d38528851f155f202b24caeadbeb2701c234
+    snapshotDigest: package-snapshot:83741df736de46168d8b865f99454a62053b0429a2cd921a1b17412c9a1915b2
     sourceHashes:
       - path: com/engineeringood/m28/sample/01-relationship-authoring-source.athena
-        hash: sha256:48d3aa6e078af62f711e098836f8767bbd4d17e8d34efac2287c50ffb9d0ac77
+        hash: sha256:af0864206c7624cd1257bc9008f65f0405fa8ae59159cb30af82f92865801cd3
       - path: com/engineeringood/m28/sample/02-relationship-candidates.athena
-        hash: sha256:8ad085f10e1596d64809e79e71e3c7610e26cc2e544b51b81448b13eb99bc744
+        hash: sha256:5e12366b1cfb7034279a57b6cf167d81e42d524244213426738f2bb71becc0fa
     resourceHashes: []
     dependencies: []

@@ -55,6 +55,7 @@ enum class RepresentationDefinitionForbiddenAuthority {
 
 data class RepresentationAnchorContract(
     val anchorId: RepresentationAnchorId,
+    val geometryRef: String,
     val primitiveId: GraphicPrimitiveId,
     val point: GraphicPoint,
     val role: RepresentationAnchorRole,
@@ -62,8 +63,10 @@ data class RepresentationAnchorContract(
     val acceptedDirections: Set<RepresentationDirectionPredicate> = emptySet(),
     val acceptedSignals: Set<RepresentationSignalPredicate> = emptySet(),
     val terminal: PhysicalTerminalId? = null,
+    val port: String? = null,
 ) {
     init {
+        require(geometryRef.isNotBlank()) { "Representation anchor geometry reference must not be blank." }
         require(point.x.isFinite() && point.y.isFinite()) {
             "Representation anchor point coordinates must be finite."
         }
@@ -85,8 +88,8 @@ data class RepresentationExportedAnchor(
 ) {
     init {
         val childReferenceIsComplete = childId != null && childAnchorId != null && primitiveId == null
-        val primitiveReferenceIsComplete = childId == null && childAnchorId == null && primitiveId != null
-        require(childReferenceIsComplete || primitiveReferenceIsComplete) {
+        val referenceIsComplete = childId == null && childAnchorId == null && primitiveId != null
+        require(childReferenceIsComplete || referenceIsComplete) {
             "Exported anchor must reference exactly one child anchor or one graphic primitive."
         }
     }

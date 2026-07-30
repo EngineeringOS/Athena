@@ -47,7 +47,7 @@ class RepresentationModelContractTest {
         val policy = RepresentationPolicy(
             policyId = RepresentationPolicyId("policy:electrical-schematic"),
             projectionKind = RepresentationProjectionKind.ELECTRICAL_SCHEMATIC,
-            standardProfile = RepresentationStandardProfileId("athena-industrial-control-v0"),
+            standardProfile = RepresentationStandardProfileId("athena-industrial-control"),
             subjectKind = RepresentationSubjectKind.COMPONENT,
             semanticRole = RepresentationSemanticRole("power-load"),
             occurrenceRole = RepresentationOccurrenceRole.LOAD_SYMBOL,
@@ -59,7 +59,7 @@ class RepresentationModelContractTest {
         )
         val definition = RepresentationDefinition(
             symbolId = policy.symbolId,
-            libraryId = RepresentationLibraryId("athena.native.iec-v0"),
+            libraryId = RepresentationLibraryId("athena.native.iec"),
             version = RepresentationVersion("1.0.0"),
             lifecycle = RepresentationLifecycle(
                 state = RepresentationLifecycleState.ACTIVE,
@@ -141,7 +141,7 @@ class RepresentationModelContractTest {
         val policy = RepresentationPolicy(
             policyId = RepresentationPolicyId("policy:electrical-schematic"),
             projectionKind = RepresentationProjectionKind.ELECTRICAL_SCHEMATIC,
-            standardProfile = RepresentationStandardProfileId("athena-industrial-control-v0"),
+            standardProfile = RepresentationStandardProfileId("athena-industrial-control"),
             subjectKind = RepresentationSubjectKind.COMPONENT,
             semanticRole = RepresentationSemanticRole("power-load"),
             occurrenceRole = RepresentationOccurrenceRole.LOAD_SYMBOL,
@@ -153,7 +153,7 @@ class RepresentationModelContractTest {
         )
         val definition = RepresentationDefinition(
             symbolId = RepresentationSymbolId("iec.motor.compact"),
-            libraryId = RepresentationLibraryId("athena.native.iec-v0"),
+            libraryId = RepresentationLibraryId("athena.native.iec"),
             version = RepresentationVersion("1.0.0"),
             lifecycle = RepresentationLifecycle(
                 state = RepresentationLifecycleState.ACTIVE,
@@ -205,12 +205,12 @@ class RepresentationModelContractTest {
             ),
             policy.toTransportMap().keys.toList(),
         )
-        assertEquals("athena.native.iec-v0", definition.toTransportMap()["libraryId"])
+        assertEquals("athena.native.iec", definition.toTransportMap()["libraryId"])
         assertEquals("component:MotorM1", occurrence.toTransportMap()["canonicalSemanticId"])
     }
 
     private fun schematicAnatomy(family: String): PresentationAnatomy = PresentationAnatomy(
-        representationId = RepresentationId("athena-industrial-control-v0:$family"),
+        representationId = RepresentationId("athena-industrial-control:$family"),
         context = RepresentationContext.ELECTRICAL_SCHEMATIC,
         bounds = PresentationBounds(width = GridUnit(80), height = GridUnit(48)),
         hotspot = PresentationHotspot(point = PresentationPoint(GridUnit(0), GridUnit(0))),

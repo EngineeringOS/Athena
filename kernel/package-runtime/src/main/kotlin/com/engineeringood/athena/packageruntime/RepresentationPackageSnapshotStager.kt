@@ -44,7 +44,7 @@ class RepresentationPackageSnapshotStager {
                     snapshotDiagnostic(
                         "package.snapshot.repository-roots.missing",
                         manifest.toString(),
-                        "athena.yaml must declare representationPackageRoots for M34 package staging.",
+                        "athena.yaml must declare representationPackageRoots for representation package staging.",
                     ),
                 ),
             )

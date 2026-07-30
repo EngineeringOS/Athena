@@ -77,12 +77,12 @@ data class PresentationPolicyProfile(
     }
 }
 
-data class RepresentationPolicyCoverageProof(
+data class RepresentationPolicyCoverageEvidence(
     val profile: PresentationPolicyProfile,
     val mandatoryFamilies: List<ComponentFamilyKey>,
 ) {
     init {
-        require(mandatoryFamilies.isNotEmpty()) { "Coverage proof requires at least one mandatory family." }
+        require(mandatoryFamilies.isNotEmpty()) { "Coverage evidence requires at least one mandatory family." }
     }
 
     fun selections(): List<RepresentationSelection> =

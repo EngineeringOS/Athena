@@ -3,6 +3,7 @@ package com.engineeringood.athena.routing
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.LayoutSourceSpan
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,7 +13,7 @@ class AthenaRouteTopologyFactsTest {
     @Test
     fun `shared semantic endpoint produces junction while unrelated intersection produces crossing`() {
         val sharedPort = StableSemanticIdentity("port:source.out")
-        val routes = AthenaRouteEngineV0().solve(
+        val routes = AthenaRouteEngine().solve(
             AthenaRouteEngineInput(
                 snapshotId = LayoutSnapshotId("snapshot:topology"),
                 layoutContext = SchematicRoutingLayoutContext(gridSize = 20),
@@ -51,6 +52,7 @@ class AthenaRouteTopologyFactsTest {
                 targetPortSemanticId = target.portSemanticId,
                 role = ElectricalConnectionRole.CONTROL_SIGNAL,
                 signalClass = ElectricalSignalClass.CONTROL,
+                sourceSpan = LayoutSourceSpan("routes.athena", 1, 1, 1, 32),
             ),
             sourceAnchor = source,
             targetAnchor = target,

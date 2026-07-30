@@ -42,7 +42,7 @@ data class RouteChannelTopologyChannel(
     val laneCenters: List<ExactMillimeters>,
 )
 
-data class RouteChannelTopologyProof(
+data class RouteChannelTopologyEvidence(
     val channelCount: Int,
     val routeCount: Int,
     val allocatedLaneCount: Int,
@@ -54,7 +54,7 @@ data class RouteChannelTopology(
     val lanes: List<RouteChannelLaneFact>,
     val laneAssignments: List<RouteChannelLaneAssignment>,
     val adjacencies: List<RouteChannelAdjacencyFact>,
-    val proof: RouteChannelTopologyProof,
+    val evidence: RouteChannelTopologyEvidence,
 )
 
 data class RouteChannelTopologyDiagnostic(
@@ -73,8 +73,8 @@ sealed interface RouteChannelTopologyCompilation {
 
 object RouteChannelTopologyCompiler {
     fun compile(
-        channels: List<PhysicalRouteChannelV0>,
-        routes: List<PhysicalRouteIntentV0>,
+        channels: List<PhysicalRouteChannel>,
+        routes: List<PhysicalRouteIntent>,
     ): RouteChannelTopologyCompilation {
         val diagnostics = mutableListOf<RouteChannelTopologyDiagnostic>()
         val channelsById = channels.associateBy { channel -> channel.id }
@@ -148,7 +148,7 @@ object RouteChannelTopologyCompiler {
                 adjacencies = adjacencies.distinctBy { adjacency ->
                     "${adjacency.fromChannelId.value}->${adjacency.toChannelId.value}"
                 },
-                proof = RouteChannelTopologyProof(
+                evidence = RouteChannelTopologyEvidence(
                     channelCount = channels.size,
                     routeCount = routes.size,
                     allocatedLaneCount = laneAssignments.size,
@@ -160,7 +160,7 @@ object RouteChannelTopologyCompiler {
 }
 
 private fun laneCenters(
-    channel: PhysicalRouteChannelV0,
+    channel: PhysicalRouteChannel,
     diagnostics: MutableList<RouteChannelTopologyDiagnostic>,
 ): List<ExactMillimeters>? {
     if (channel.lanes <= 0) {
@@ -194,8 +194,8 @@ private fun laneCenters(
 }
 
 private fun adjacency(
-    from: PhysicalRouteChannelV0,
-    to: PhysicalRouteChannelV0,
+    from: PhysicalRouteChannel,
+    to: PhysicalRouteChannel,
 ): RouteChannelAdjacencyFact? {
     if (from.ductId != to.ductId) return null
     val a = from.bounds()
@@ -256,7 +256,7 @@ private data class ChannelRect(
         x < other.right && right > other.x && y < other.bottom && bottom > other.y
 }
 
-private fun PhysicalRouteChannelV0.bounds(): ChannelRect = ChannelRect(at.x, at.y, size.width, size.height)
+private fun PhysicalRouteChannel.bounds(): ChannelRect = ChannelRect(at.x, at.y, size.width, size.height)
 
 private fun exact(numerator: Int, denominator: Int): ExactMillimeters {
     val divisor = gcd(abs(numerator), abs(denominator))

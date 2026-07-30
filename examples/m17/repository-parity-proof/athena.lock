@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:a74c29e31bc7f6e7f74e6940bb154e4058b627899b37de95212a9e00b4e33aa4
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:51e51cb69eac0f2a808408dee79510f8bde9a24ffc1dcbdcae7bbe9bf7dc2a2a
 primaryPackage:
   name: com.engineeringood.m17.parity
   version: 1.0.0
@@ -11,7 +11,7 @@ packages:
   - name: com.engineeringood.m17.parity
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:6f7beb27264064753ee8d73ebca604b679e4d997ea3f10e4878e2fee5ba7404d
+    snapshotDigest: package-snapshot:6b1fe69184d572220bc3bc3dd23efdfb716f4eb12bdde8e2f89594c709faac1a
     sourceHashes:
       - path: com/engineeringood/m17/parity/parity-repo.athena
         hash: sha256:f0baaef48900332a898d30dd4decc93e0c147e5dfb127fabd82d61c91ad55dcf

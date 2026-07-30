@@ -39,7 +39,7 @@ async function main() {
             env: {
                 ...process.env,
                 ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN: '1',
-                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/01-rolling-shutter-control-source.athena',
+                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/com/engineeringood/m30/sample/01-rolling-shutter-control-source.athena',
                 ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH: 'RollingShutterControlProof > ShutterMotorM30 > up',
                 ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT: screenshotPath,
                 ATHENA_ELECTRON_TEMP_USER_DATA: '1',

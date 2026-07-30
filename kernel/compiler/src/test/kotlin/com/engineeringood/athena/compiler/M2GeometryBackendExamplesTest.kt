@@ -14,7 +14,7 @@ class M2GeometryBackendExamplesTest {
     private val expectedInventory = listOf("demo-cabinet")
 
     @Test
-    fun `m2 proof corpus keeps the expected inventory`() {
+    fun `m2 evidence corpus keeps the expected inventory`() {
         val sourceNames = loadExamples().map(M2ProofExample::name)
         val expectationNames = loadExampleNames(".expectation.txt")
 
@@ -23,7 +23,7 @@ class M2GeometryBackendExamplesTest {
     }
 
     @Test
-    fun `m2 proof corpus emits deterministic cabinet and wiring svg directly from geometry ir`() {
+    fun `m2 evidence corpus emits deterministic cabinet and wiring svg directly from geometry ir`() {
         val repoRoot = resolveRepoRoot()
 
         loadExamples().forEach { example ->

@@ -29,7 +29,7 @@ async function main() {
                 ATHENA_ELECTRON_SMOKE_EXIT_ON_WORKSPACE_OPEN: '1',
                 ATHENA_ELECTRON_TEMP_USER_DATA: '1',
                 ATHENA_ELECTRON_SMOKE_ACTIVE_VIEW: 'documentation',
-                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/01-workspace-semantic-source.athena',
+                ATHENA_ELECTRON_SMOKE_OUTLINE_SOURCE_RELATIVE: 'src/com/engineeringood/m27/sample/01-workspace-semantic-source.athena',
                 ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH: 'ProfessionalSheetProofAcceptance > MainPowerSupplyPS1',
                 ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT: screenshotPath,
                 ELECTRON_ENABLE_LOGGING: '1'

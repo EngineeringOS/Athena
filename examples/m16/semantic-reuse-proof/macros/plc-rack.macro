@@ -1,7 +1,7 @@
 template.format.version=1
 component.cpu.id=template:plc-rack.cpu
 component.cpu.conceptId=electrical.plc.cpu
-component.cpu.implementationId=impl/electrical/plc-cpu/siemens-proof-cpu313c
+component.cpu.implementationId=impl/electrical/plc-cpu/siemens-evidence-cpu313c
 component.cpu.displayName=PLC CPU 313C
 component.cpu.summary=Governed PLC CPU from the M14 Siemens-first proof slice
 component.cpu.tags=plc,rack,control

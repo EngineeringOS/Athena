@@ -32,7 +32,7 @@ data class DerivedEngineeringSubjectContext(
 )
 
 /**
- * Narrow governed electrical input kinds allowed in the first M9 proof slice.
+ * Narrow governed electrical input kinds allowed in the first M9 evidence slice.
  */
 enum class DerivedEngineeringInputKind {
     MOTOR_POWER,
@@ -63,7 +63,7 @@ data class DerivedEngineeringInput(
 )
 
 /**
- * Narrow first-wave derived value kinds published for the initial electrical proof slice.
+ * Narrow first-wave derived value kinds published for the initial electrical evidence slice.
  */
 enum class DerivedEngineeringValueKind {
     FULL_LOAD_CURRENT,

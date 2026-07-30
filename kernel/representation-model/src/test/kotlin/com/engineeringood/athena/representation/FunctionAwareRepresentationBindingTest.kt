@@ -207,6 +207,7 @@ class FunctionAwareRepresentationBindingTest {
             anchors = terminals.keys.mapIndexed { index, terminal ->
                 RepresentationAnchorContract(
                     anchorId = RepresentationAnchorId(terminal),
+                    geometryRef = "terminal-$terminal",
                     primitiveId = GraphicPrimitiveId("terminal-$terminal"),
                     point = GraphicPoint(index * 20.0, 0.0),
                     role = RepresentationAnchorRole.TERMINAL,

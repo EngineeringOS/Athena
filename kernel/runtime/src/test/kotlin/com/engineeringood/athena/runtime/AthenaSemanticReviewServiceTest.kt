@@ -209,7 +209,7 @@ class AthenaSemanticReviewServiceTest {
     }
 
     @Test
-    fun `extends semantic review with engineering impact and knowledge diagnostics for the m9 electrical proof slice`() {
+    fun `extends semantic review with engineering impact and knowledge diagnostics for the m9 electrical evidence slice`() {
         val root = createTempDirectory("athena-runtime-semantic-review-m9-")
         try {
             val currentRoot = root.resolve("current")
@@ -217,13 +217,13 @@ class AthenaSemanticReviewServiceTest {
             writeReviewRepository(
                 repositoryRoot = baselineRoot,
                 packageName = "com.engineeringood.demo",
-                sourceFileName = "motor-proof.athena",
+                sourceFileName = "motor-evidence.athena",
                 sourceText = reviewKnowledgeBaselineSource,
             )
             writeReviewRepository(
                 repositoryRoot = currentRoot,
                 packageName = "com.engineeringood.demo",
-                sourceFileName = "motor-proof.athena",
+                sourceFileName = "motor-evidence.athena",
                 sourceText = reviewKnowledgeChangedSource,
             )
             AthenaCompiler().materializeRepositoryLock(baselineRoot)
@@ -245,7 +245,7 @@ class AthenaSemanticReviewServiceTest {
             val workspace = runtime.openWorkspace(currentRoot)
             val session = workspace.activateRepositoryGraphSession(
                 projectName = "demo",
-                sourcePath = currentRoot.resolve("src/com/engineeringood/demo/motor-proof.athena"),
+                sourcePath = currentRoot.resolve("src/com/engineeringood/demo/motor-evidence.athena"),
             )
             val baseline = runtime.serviceRegistry.semanticBaselines().resolveBaseline(
                 session = session,

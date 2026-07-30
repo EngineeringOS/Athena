@@ -81,7 +81,7 @@ class AthenaM34ProfessionalDrawingMaterialResolutionTest {
             assertTrue(material.definition.lifecycle.provenance.source.endsWith(".athena"), subjectId)
             assertTrue(material.definition.lifecycle.provenance.source.contains("${java.io.File.separator}.athena${java.io.File.separator}snapshots"), subjectId)
         }
-        assertTrue(result.proof.stagedSourcePaths.all { path ->
+        assertTrue(result.evidence.stagedSourcePaths.all { path ->
             path.contains("packages${java.io.File.separator}representation") &&
                 !path.endsWith(".xml") &&
                 !path.endsWith(".elmt") &&
@@ -290,8 +290,8 @@ class AthenaM34ProfessionalDrawingMaterialResolutionTest {
         val sourceText = Files.readString(material)
         material.toFile().writeText(
             sourceText.replaceFirst(
-                "role terminal accepts direction out accepts signal Power",
-                "role hotspot accepts direction out accepts signal Power",
+                "role terminal direction out signal Power",
+                "role hotspot direction out signal Power",
             ),
         )
         val source = projectRoot.resolve("src/com/engineeringood/m34/professional/01-control-drawing.athena")

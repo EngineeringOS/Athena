@@ -2,8 +2,8 @@
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
 version: 2
 schema: repository-lock-v2
-compilerSchema: athena-m35-lock-v2
-validatedLockStateDigest: lock-state/v1:feebe27f6a194d1e7052c8e93bf74dd51d6c6765d42faddf81fdfea6bd3014bb
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:d017c976e555c62e4a9acb86331e8b51bc170bc5bc3ad53f4149fd1d3663683f
 primaryPackage:
   name: com.engineeringood.m18.root
   version: 1.0.0
@@ -11,7 +11,7 @@ packages:
   - name: com.engineeringood.m18.root
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot/v1:ea98c7449fa9748e12d85d1f95d4b03b58293ddb15b3114d7164b8fd2a451dbf
+    snapshotDigest: package-snapshot:a3b28cd46fb8cbeef5f5668a30c2fc4af7942a59a3ada896e4c6fc82c89bed62
     sourceHashes:
       - path: com/engineeringood/m18/root/cross-package-consumer.athena
         hash: sha256:c1c60ab4764d3f171c9256c3ca5eb0b1d6e02b70b4d0aed61ca399650277c47e
@@ -28,7 +28,7 @@ packages:
   - name: com.engineeringood.m18.vendor.controls
     version: 1.0.0
     sourceRoot: vendor/controls/src
-    snapshotDigest: package-snapshot/v1:1dbc8c086a2df71e83d8b5ca431af6298f7d7b75c6854685e14de2b23b4e372a
+    snapshotDigest: package-snapshot:6af93d9251fdf8c61a57316088302a10ca83b1cd5dde7c1adf6a2785d34ee4ef
     sourceHashes:
       - path: com/engineeringood/m18/vendor/controls/vendor-controls.athena
         hash: sha256:63ce6a68cd1951e300c9116f4a837e8260efb6bce3a3623d003f90a1506ddfef

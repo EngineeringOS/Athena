@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 class AthenaCompilerM12RendererBenchmarkTest {
     @Test
-    fun `m12 renderer benchmark repository compiles into a larger electrical proof scene`() {
+    fun `m12 renderer benchmark repository compiles into a larger electrical evidence scene`() {
         val repoRoot = resolveRepoRoot()
         val sourcePath = repoRoot.resolve("examples/m12/renderer-benchmark-proof/src/expansion-line.athena")
         val compiler = AthenaCompiler(

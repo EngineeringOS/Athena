@@ -93,7 +93,7 @@ data class SemanticMacroParameterDefinition(
 /**
  * Inspectable validation rules for one Semantic Macro parameter definition.
  *
- * Rules stay transport-safe and runtime-owned so parameter defaults, required checks, and proof-slice
+ * Rules stay transport-safe and runtime-owned so parameter defaults, required checks, and evidence-slice
  * constraints do not fragment across workbench widgets or later API surfaces.
  */
 data class SemanticMacroParameterValidationRules(

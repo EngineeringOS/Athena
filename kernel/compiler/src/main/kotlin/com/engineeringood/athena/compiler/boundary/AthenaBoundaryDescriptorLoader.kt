@@ -5,7 +5,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
 
-/** Loads and validates one local directory-backed external boundary descriptor for the M0 proof boundary. */
+/** Loads and validates one local directory-backed external boundary descriptor for the M0 evidence boundary. */
 class AthenaBoundaryDescriptorLoader {
     /** Loads the external boundary descriptor rooted at [descriptorRoot] and returns either the loaded descriptor or diagnostics. */
     fun load(descriptorRoot: Path): AthenaBoundaryDescriptorLoadResult {
@@ -126,12 +126,12 @@ class AthenaBoundaryDescriptorLoader {
             )
         }
 
-        val m0Mode = parseEnum<AthenaBoundaryM0Mode>(
+        val mode = parseEnum<AthenaBoundaryMode>(
             value = properties.requiredValue("m0.mode"),
             blankRuleId = "boundary.descriptor.mode.blank",
             unsupportedRuleId = "boundary.descriptor.mode.unsupported",
             subject = "m0.mode",
-            label = "External boundary M0 mode",
+            label = "External boundary mode",
             diagnostics = diagnostics,
         )
 
@@ -152,7 +152,7 @@ class AthenaBoundaryDescriptorLoader {
                     upstreamAuthority = checkNotNull(authority),
                     exchangeForms = parsedExchangeForms,
                     compatibilityAssumptions = parsedCompatibilityAssumptions,
-                    m0Mode = checkNotNull(m0Mode),
+                    mode = checkNotNull(mode),
                 ),
             ),
             diagnostics = emptyList(),
@@ -186,7 +186,7 @@ class AthenaBoundaryDescriptorLoader {
             diagnostics += diagnostic(
                 ruleId = unsupportedRuleId,
                 subject = subject,
-                message = "$label `$value` is not supported in M0.",
+                message = "$label `$value` is not supported.",
             )
             null
         }

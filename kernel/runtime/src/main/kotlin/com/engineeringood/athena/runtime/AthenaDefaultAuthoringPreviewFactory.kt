@@ -103,7 +103,7 @@ internal fun AuthoringIntent.toPreview(previewId: AuthoringPreviewId): Authoring
     is RemoveSemanticRelationshipIntent -> {
         val diagnostic = AuthoringDiagnostic(
             code = AuthoringDiagnosticCode.STOP_DOWNSTREAM,
-            message = "Relationship removal is available for preview and validation only in M31.",
+            message = "Relationship removal is available for preview and validation only.",
             authority = AuthoringDiagnosticAuthority.SEMANTIC_VALIDATION,
             lifecycleStage = AuthoringLifecycleState.BLOCKED,
             relatedIds = listOf(sourceSubjectId.value, targetSubjectId.value),

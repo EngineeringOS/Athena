@@ -15,9 +15,9 @@ symbol iec_source {
     label deviceTag at (0, 0) size (96, 12) role device-tag style device-label
   }
 
-  anchor phaseL { primitiveRef phaseLead point (0, 42) role terminal accepts direction out accepts signal Power }
-  anchor neutralN { primitiveRef neutralLead point (96, 42) role terminal accepts direction out accepts signal Power }
-  anchor protectivePE { primitiveRef earthLead point (48, 88) role terminal accepts direction out accepts signal Ground }
+  anchor phaseL { primitiveRef phaseLead point (0, 42) role terminal accepts direction out accepts signal Power.family }
+  anchor neutralN { primitiveRef neutralLead point (96, 42) role terminal accepts direction out accepts signal Power.family }
+  anchor protectivePE { primitiveRef earthLead point (48, 88) role terminal accepts direction out accepts signal Ground.family }
 }
 
 element iec_source_element {
@@ -51,10 +51,10 @@ symbol iec_breaker {
     label deviceTag at (0, 0) size (96, 12) role device-tag style device-label
   }
 
-  anchor lineL { primitiveRef lineLead point (28, 0) role terminal accepts direction in accepts signal Power }
-  anchor loadT { primitiveRef loadLead point (28, 96) role terminal accepts direction out accepts signal Power }
-  anchor neutralInN { primitiveRef neutralInLead point (68, 0) role terminal accepts direction in accepts signal Power }
-  anchor neutralOutN { primitiveRef neutralOutLead point (68, 96) role terminal accepts direction out accepts signal Power }
+  anchor lineL { primitiveRef lineLead point (28, 0) role terminal accepts direction in accepts signal Power.family }
+  anchor loadT { primitiveRef loadLead point (28, 96) role terminal accepts direction out accepts signal Power.family }
+  anchor neutralInN { primitiveRef neutralInLead point (68, 0) role terminal accepts direction in accepts signal Power.family }
+  anchor neutralOutN { primitiveRef neutralOutLead point (68, 96) role terminal accepts direction out accepts signal Power.family }
 }
 
 element iec_breaker_element {
@@ -90,10 +90,10 @@ symbol iec_fuse_disconnector {
     label deviceTag at (0, 0) size (96, 12) role device-tag style device-label
   }
 
-  anchor lineL { primitiveRef lineLead point (28, 0) role terminal accepts direction in accepts signal Power }
-  anchor loadT { primitiveRef loadLead point (28, 96) role terminal accepts direction out accepts signal Power }
-  anchor neutralInN { primitiveRef neutralInLead point (68, 0) role terminal accepts direction in accepts signal Power }
-  anchor neutralOutN { primitiveRef neutralOutLead point (68, 96) role terminal accepts direction out accepts signal Power }
+  anchor lineL { primitiveRef lineLead point (28, 0) role terminal accepts direction in accepts signal Power.family }
+  anchor loadT { primitiveRef loadLead point (28, 96) role terminal accepts direction out accepts signal Power.family }
+  anchor neutralInN { primitiveRef neutralInLead point (68, 0) role terminal accepts direction in accepts signal Power.family }
+  anchor neutralOutN { primitiveRef neutralOutLead point (68, 96) role terminal accepts direction out accepts signal Power.family }
 }
 
 element iec_fuse_disconnector_element {
@@ -128,10 +128,10 @@ symbol iec_transformer {
     label deviceTag at (0, 0) size (112, 12) role device-tag style device-label
   }
 
-  anchor primaryL { primitiveRef primaryLLead point (0, 30) role terminal accepts direction in accepts signal Power }
-  anchor primaryN { primitiveRef primaryNLead point (0, 70) role terminal accepts direction in accepts signal Power }
-  anchor secondaryL { primitiveRef secondaryLLead point (112, 30) role terminal accepts direction out accepts signal Control }
-  anchor secondaryN { primitiveRef secondaryNLead point (112, 70) role terminal accepts direction in accepts signal Control }
+  anchor primaryL { primitiveRef primaryLLead point (0, 30) role terminal accepts direction in accepts signal Power.family }
+  anchor primaryN { primitiveRef primaryNLead point (0, 70) role terminal accepts direction in accepts signal Power.family }
+  anchor secondaryL { primitiveRef secondaryLLead point (112, 30) role terminal accepts direction out accepts signal Control.family }
+  anchor secondaryN { primitiveRef secondaryNLead point (112, 70) role terminal accepts direction in accepts signal Control.family }
 }
 
 element iec_transformer_element {

@@ -15,8 +15,8 @@ function readRepoFile(path) {
 
 test('M26 sample project is an openable workspace with source/view anti-regression proof', () => {
     const sampleRoot = resolve(repoRoot, 'examples/m26/sample-project');
-    const sourceA = readRepoFile('examples/m26/sample-project/src/01-workspace-semantic-source.athena');
-    const sourceB = readRepoFile('examples/m26/sample-project/src/02-field-assets-not-a-sheet.athena');
+    const sourceA = readRepoFile('examples/m26/sample-project/src/com/engineeringood/m26/sample/01-workspace-semantic-source.athena');
+    const sourceB = readRepoFile('examples/m26/sample-project/src/com/engineeringood/m26/sample/02-field-assets-not-a-sheet.athena');
     const readme = readRepoFile('examples/m26/sample-project/README.md');
 
     assert.equal(existsSync(resolve(sampleRoot, 'athena.yaml')), true);
@@ -42,7 +42,7 @@ test('M26 sample project is an openable workspace with source/view anti-regressi
     assert.match(sourceB, /FieldOutputModuleIOM1/);
     assert.match(sourceB, /FieldTerminalXT1/);
     assert.match(sourceB, /ConveyorMotorM1/);
-    assert.match(`${sourceA}\n${sourceB}`, /FieldOutputModuleIOM1\.do1 -> FieldTerminalXT1\.in1/);
+    assert.match(`${sourceA}\n${sourceB}`, /connect\s+\w+\s+FieldOutputModuleIOM1\.do1 -> FieldTerminalXT1\.in1/);
 });
 
 test('M26 usage documentation states projection proof and M25 comparison without new syntax', () => {
@@ -53,7 +53,7 @@ test('M26 usage documentation states projection proof and M25 comparison without
     assert.match(usage, /Power Distribution/);
     assert.match(usage, /Control And PLC Logic/);
     assert.match(usage, /Field Wiring And Terminal Transition/);
-    assert.match(usage, /athena-document-projection-v0/);
+    assert.match(usage, /athena-document-projection/);
     assert.match(usage, /documentProjectionId \+ sheetViewId \+ canonicalSubjectId \+ occurrenceRole \+ detailRole/);
     assert.match(usage, /M25 proved professional single-sheet presentation/);
     assert.match(usage, /M26 adds semantic document projection/);

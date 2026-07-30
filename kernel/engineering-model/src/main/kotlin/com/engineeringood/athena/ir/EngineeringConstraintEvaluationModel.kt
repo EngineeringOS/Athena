@@ -31,7 +31,7 @@ data class EngineeringConstraintSubjectEvaluations(
 )
 
 /**
- * First-wave fixed electrical rule identifiers used by the M9 proof slice.
+ * First-wave fixed electrical rule identifiers used by the M9 evidence slice.
  */
 enum class EngineeringConstraintRuleKind {
     PROTECTION_SUFFICIENCY,

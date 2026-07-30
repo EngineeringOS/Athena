@@ -98,7 +98,7 @@ internal object AthenaRepresentationMaterialContractFactory {
                 },
                 lifecycle = RepresentationPackageLifecycle(RepresentationPackageLifecycleState.ACTIVE, coordinates.version),
                 provenance = RepresentationPackageProvenance(
-                    sources = compiled.proof.stagedSourcePaths,
+                    sources = compiled.evidence.stagedSourcePaths,
                     reviewedBy = "Athena representation package snapshot compiler",
                 ),
             )

@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class DrawingProofPayloadContractTest {
+class DrawingAcceptanceEvidenceContractTest {
     @Test
     fun `drawing diagnostics classify every M33 acceptance authority`() {
         assertEquals(
@@ -18,21 +18,21 @@ class DrawingProofPayloadContractTest {
                 "workbench-chrome",
                 "package-binding",
             ),
-            DrawingProofAuthority.entries.map { it.wireValue },
+            DrawingEvidenceAuthority.entries.map { it.wireValue },
         )
     }
 
     @Test
-    fun `proof payload maps to deterministic product safe transport DTOs`() {
-        val payload = DrawingProofPayload(
-            proofId = DrawingProofId("m33.contract.proof"),
-            schemaVersion = DrawingProofSchemaVersion("1.0"),
-            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_PROOF,
-            facts = DrawingProofAuthority.entries.reversed().map { authority ->
-                DrawingProofFact(
-                    factId = DrawingProofFactId("fact.${authority.wireValue}"),
+    fun `evidence payload maps to deterministic product safe transport DTOs`() {
+        val payload = DrawingAcceptanceEvidence(
+            evidenceId = DrawingEvidenceId("m33.contract.evidence"),
+            schemaVersion = DrawingEvidenceSchemaVersion("1.0"),
+            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_EVIDENCE,
+            facts = DrawingEvidenceAuthority.entries.reversed().map { authority ->
+                DrawingEvidenceFact(
+                    factId = DrawingEvidenceFactId("fact.${authority.wireValue}"),
                     authority = authority,
-                    status = DrawingProofStatus.PASS,
+                    status = DrawingEvidenceStatus.PASS,
                     subject = "subject:${authority.wireValue}",
                     evidence = mapOf("z" to "last", "a" to "first"),
                 )
@@ -46,24 +46,24 @@ class DrawingProofPayloadContractTest {
         assertTrue(first.accepted)
         assertEquals(first, second)
         assertEquals(
-            DrawingProofAuthority.entries.map { it.wireValue }.sorted(),
+            DrawingEvidenceAuthority.entries.map { it.wireValue }.sorted(),
             first.facts.map { it.authority },
         )
         assertEquals(listOf("a", "z"), first.facts.first().evidence.keys.toList())
-        assertEquals("structured-proof", first.acceptanceAuthority)
+        assertEquals("structured-evidence", first.acceptanceAuthority)
     }
 
     @Test
-    fun `proof fails closed for failed facts or error diagnostics`() {
-        val payload = DrawingProofPayload(
-            proofId = DrawingProofId("m33.failed.proof"),
-            schemaVersion = DrawingProofSchemaVersion("1.0"),
-            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_PROOF,
+    fun `evidence fails closed for failed facts or error diagnostics`() {
+        val payload = DrawingAcceptanceEvidence(
+            evidenceId = DrawingEvidenceId("m33.failed.evidence"),
+            schemaVersion = DrawingEvidenceSchemaVersion("1.0"),
+            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_EVIDENCE,
             facts = listOf(
-                DrawingProofFact(
-                    factId = DrawingProofFactId("fact.route"),
-                    authority = DrawingProofAuthority.ROUTE_ANCHOR,
-                    status = DrawingProofStatus.FAIL,
+                DrawingEvidenceFact(
+                    factId = DrawingEvidenceFactId("fact.route"),
+                    authority = DrawingEvidenceAuthority.ROUTE_ANCHOR,
+                    status = DrawingEvidenceStatus.FAIL,
                     subject = "connection:A-B",
                     evidence = emptyMap(),
                 ),
@@ -72,7 +72,7 @@ class DrawingProofPayloadContractTest {
                 DrawingDiagnostic(
                     code = DrawingDiagnosticCode("drawing.route.anchor-missing"),
                     severity = DrawingDiagnosticSeverity.ERROR,
-                    authority = DrawingProofAuthority.ROUTE_ANCHOR,
+                    authority = DrawingEvidenceAuthority.ROUTE_ANCHOR,
                     subject = "connection:A-B",
                     message = "Route anchor is missing.",
                 ),
@@ -84,38 +84,38 @@ class DrawingProofPayloadContractTest {
     }
 
     @Test
-    fun `proof rejects incomplete authority coverage empty evidence duplicate facts and unknown schema`() {
-        val fact = DrawingProofFact(
-            factId = DrawingProofFactId("fact.only"),
-            authority = DrawingProofAuthority.SYMBOL_ANATOMY,
-            status = DrawingProofStatus.PASS,
+    fun `evidence rejects incomplete authority coverage empty evidence duplicate facts and unknown schema`() {
+        val fact = DrawingEvidenceFact(
+            factId = DrawingEvidenceFactId("fact.only"),
+            authority = DrawingEvidenceAuthority.SYMBOL_ANATOMY,
+            status = DrawingEvidenceStatus.PASS,
             subject = "symbol:one",
             evidence = emptyMap(),
         )
-        val payload = DrawingProofPayload(
-            proofId = DrawingProofId("m33.incomplete.proof"),
-            schemaVersion = DrawingProofSchemaVersion("99.0"),
-            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_PROOF,
+        val payload = DrawingAcceptanceEvidence(
+            evidenceId = DrawingEvidenceId("m33.incomplete.evidence"),
+            schemaVersion = DrawingEvidenceSchemaVersion("99.0"),
+            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_EVIDENCE,
             facts = listOf(fact, fact),
             diagnostics = emptyList(),
         )
 
         assertFalse(payload.isAccepted)
         assertFalse(payload.toTransportPayload().accepted)
-        assertEquals(DrawingProofAuthority.entries.map { it.wireValue }.sorted(), payload.toTransportPayload().requiredAuthorities)
+        assertEquals(DrawingEvidenceAuthority.entries.map { it.wireValue }.sorted(), payload.toTransportPayload().requiredAuthorities)
     }
 
     @Test
-    fun `required proof authorities cannot be reduced by a producer`() {
-        val payload = DrawingProofPayload(
-            proofId = DrawingProofId("m33.fixed-authority.proof"),
-            schemaVersion = DrawingProofSchemaVersion("1.0"),
-            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_PROOF,
+    fun `required evidence authorities cannot be reduced by a producer`() {
+        val payload = DrawingAcceptanceEvidence(
+            evidenceId = DrawingEvidenceId("m33.fixed-authority.evidence"),
+            schemaVersion = DrawingEvidenceSchemaVersion("1.0"),
+            acceptanceAuthority = DrawingAcceptanceAuthority.STRUCTURED_EVIDENCE,
             facts = listOf(
-                DrawingProofFact(
-                    factId = DrawingProofFactId("fact.symbol"),
-                    authority = DrawingProofAuthority.SYMBOL_ANATOMY,
-                    status = DrawingProofStatus.PASS,
+                DrawingEvidenceFact(
+                    factId = DrawingEvidenceFactId("fact.symbol"),
+                    authority = DrawingEvidenceAuthority.SYMBOL_ANATOMY,
+                    status = DrawingEvidenceStatus.PASS,
                     subject = "symbol:one",
                     evidence = mapOf("source" to "test"),
                 ),
@@ -123,7 +123,7 @@ class DrawingProofPayloadContractTest {
             diagnostics = emptyList(),
         )
 
-        assertEquals(DrawingProofAuthority.entries.toSet(), payload.requiredAuthorities)
+        assertEquals(DrawingEvidenceAuthority.entries.toSet(), payload.requiredAuthorities)
         assertFalse(payload.isAccepted)
     }
 
@@ -146,8 +146,8 @@ class DrawingProofPayloadContractTest {
             ),
         )
 
-        assertEquals(DrawingProofAuthority.SYMBOL_ANATOMY, symbolDiagnostic.authority)
-        assertEquals(DrawingProofAuthority.GRAPHIC_PRIMITIVE_IR, primitiveDiagnostic.authority)
+        assertEquals(DrawingEvidenceAuthority.SYMBOL_ANATOMY, symbolDiagnostic.authority)
+        assertEquals(DrawingEvidenceAuthority.GRAPHIC_PRIMITIVE_IR, primitiveDiagnostic.authority)
         assertEquals("drawing.symbol.anchor.missing", symbolDiagnostic.toTransportPayload().code)
         assertEquals("graphic.ir.geometry.invalid", primitiveDiagnostic.toTransportPayload().code)
     }

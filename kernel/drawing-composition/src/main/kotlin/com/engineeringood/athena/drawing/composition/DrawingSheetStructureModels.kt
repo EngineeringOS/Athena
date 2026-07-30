@@ -158,7 +158,7 @@ data class DrawingSheetStructurePlan(
     val routeChannels: List<DrawingSheetRouteChannelFact>,
 )
 
-data class DrawingSheetStructureProof(
+data class DrawingSheetStructureEvidence(
     val sheetId: String,
     val policyId: String,
     val drawingAreaBounds: GraphicBounds,
@@ -183,20 +183,20 @@ data class DrawingSheetStructureDiagnostic(
 
 data class DrawingSheetStructureResult(
     val plan: DrawingSheetStructurePlan?,
-    val proof: DrawingSheetStructureProof?,
+    val evidence: DrawingSheetStructureEvidence?,
     val diagnostics: List<DrawingSheetStructureDiagnostic>,
 ) {
     val isValid: Boolean
-        get() = plan != null && proof != null && diagnostics.isEmpty()
+        get() = plan != null && evidence != null && diagnostics.isEmpty()
 
     fun toTransportPayload(): DrawingSheetStructureTransportPayload? {
         val resolvedPlan = plan ?: return null
-        val resolvedProof = proof ?: return null
+        val resolvedEvidence = evidence ?: return null
         if (diagnostics.isNotEmpty()) return null
         return DrawingSheetStructureTransportPayload(
             sheetId = resolvedPlan.sheetId,
-            policyId = resolvedProof.policyId,
-            drawingAreaBounds = resolvedProof.drawingAreaBounds.toStructurePayload(),
+            policyId = resolvedEvidence.policyId,
+            drawingAreaBounds = resolvedEvidence.drawingAreaBounds.toStructurePayload(),
             subjects = resolvedPlan.subjects.map { it.toPayload() },
             facts = buildList {
                 resolvedPlan.rails.forEach { add(it.toPayload()) }
@@ -205,10 +205,10 @@ data class DrawingSheetStructureResult(
                 resolvedPlan.labelBands.forEach { add(it.toPayload()) }
                 resolvedPlan.routeChannels.forEach { add(it.toPayload()) }
             },
-            boundsAuthority = resolvedProof.boundsAuthority,
-            representationAuthority = resolvedProof.representationAuthority,
-            structureIntentAuthority = resolvedProof.structureIntentAuthority,
-            policyAuthority = resolvedProof.policyAuthority,
+            boundsAuthority = resolvedEvidence.boundsAuthority,
+            representationAuthority = resolvedEvidence.representationAuthority,
+            structureIntentAuthority = resolvedEvidence.structureIntentAuthority,
+            policyAuthority = resolvedEvidence.policyAuthority,
         )
     }
 }

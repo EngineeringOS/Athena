@@ -1,5 +1,6 @@
 package com.engineeringood.athena.presentation
 
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.representation.PhysicalTerminalId
@@ -17,8 +18,11 @@ import com.engineeringood.athena.representation.TerminalNumber
 import com.engineeringood.athena.routing.ElectricalConnectionId
 import com.engineeringood.athena.routing.ElectricalPortId
 import com.engineeringood.athena.routing.ElectricalPortRole
+import com.engineeringood.athena.routing.RouteBundleId
 import com.engineeringood.athena.routing.RouteFact
 import com.engineeringood.athena.routing.RouteFactSnapshot
+import com.engineeringood.athena.routing.RouteIntentId
+import com.engineeringood.athena.routing.RouteQualityMetrics
 import com.engineeringood.athena.routing.RouteQualityState
 import com.engineeringood.athena.routing.SchematicRouteId
 import com.engineeringood.athena.routing.SchematicRoutePoint
@@ -39,6 +43,20 @@ class PresentationRouteAttachmentContractTest {
             routeId = SchematicRouteId("route:PLC1-Q1"),
             snapshotId = snapshotId,
             connectionId = ElectricalConnectionId("PLC1.Q1->XT1.1"),
+            routeIntentId = RouteIntentId("intent:PLC1.Q1->XT1.1"),
+            bundleId = RouteBundleId("bundle:PLC1.Q1->XT1.1"),
+            selectedChannelIds = listOf("channel:main"),
+            plannerId = "athena-native",
+            compilerSnapshotId = "compiler:route:PLC1-Q1",
+            provenance = SourceProvenance("routes.athena", 1, 1, 1, 24),
+            qualityMetrics = RouteQualityMetrics(
+                crossingCount = 0,
+                bendCount = 0,
+                length = 60,
+                channelChangeCount = 0,
+                bundleContinuityPenalty = 0,
+                labelClearanceViolationCount = 0,
+            ),
             source = terminalAnchor("anchor:PLC1:Q1.0", "PLC1", "Q1.0", TerminalSide.RIGHT),
             target = terminalAnchor("anchor:XT1:1", "XT1", "1", TerminalSide.LEFT),
             segments = listOf(

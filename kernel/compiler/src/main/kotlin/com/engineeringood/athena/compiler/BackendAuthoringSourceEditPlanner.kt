@@ -14,8 +14,11 @@ import com.engineeringood.athena.component.EngineeringConceptPropertyValueKind
 import com.engineeringood.athena.component.EngineeringConceptTemplate
 import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.language.AthenaLanguageParser
+import com.engineeringood.athena.language.InstallationDeclaration
+import com.engineeringood.athena.language.InstallationOrientation
 import com.engineeringood.athena.language.ParseFailure
 import com.engineeringood.athena.layout.AuthoredLayoutIntent
+import kotlin.math.roundToInt
 
 data class BackendAuthoringSourceDocument(
     val sourceUri: String,
@@ -96,6 +99,14 @@ data class BackendAuthoredLayoutPlanningRequest(
     val intent: AuthoredLayoutIntent,
 ) : BackendAuthoringSourceEditPlanningRequest
 
+data class BackendCabinetPlacementPlanningRequest(
+    override val document: BackendAuthoringSourceDocument,
+    override val revisionGuard: AuthoringRevisionGuard,
+    val occurrenceId: String,
+    val deltaXMillimeters: Double,
+    val deltaYMillimeters: Double,
+) : BackendAuthoringSourceEditPlanningRequest
+
 class BackendAuthoringSourceEditPlanner(
     private val layoutSerializer: AuthoredLayoutIntentSourceSerializer = AuthoredLayoutIntentSourceSerializer(),
     private val parser: AthenaLanguageParser = AthenaLanguageParser(),
@@ -135,6 +146,7 @@ class BackendAuthoringSourceEditPlanner(
             is BackendEntityCreationPlanningRequest -> planEntityCreation(request, insertionOffset)
             is BackendRelationshipPlanningRequest -> planRelationship(request, insertionOffset)
             is BackendAuthoredLayoutPlanningRequest -> planLayout(request, insertionOffset)
+            is BackendCabinetPlacementPlanningRequest -> planCabinetPlacement(request)
         }
     }
 
@@ -211,6 +223,85 @@ class BackendAuthoringSourceEditPlanner(
             affectedSemanticIds = listOf(request.subjectSemanticId),
         )
     }
+
+    private fun planCabinetPlacement(
+        request: BackendCabinetPlacementPlanningRequest,
+    ): BackendAuthoringSourceEditPlanningResult {
+        if (!request.deltaXMillimeters.isFinite() || !request.deltaYMillimeters.isFinite()) {
+            return invalidSource("Cabinet placement deltas must be finite millimetre values.")
+        }
+        val mountId = request.occurrenceId.removePrefix("cabinet:")
+        val matches = request.document.ast.declarations
+            .filterIsInstance<InstallationDeclaration>()
+            .flatMap { installation ->
+                installation.mounts
+                    .filter { mount -> mount.id == mountId }
+                    .map { mount -> installation to mount }
+            }
+        if (matches.size != 1) {
+            return invalidSource(
+                "Cabinet occurrence `${request.occurrenceId}` must resolve to exactly one authored installation mount.",
+            )
+        }
+        val (installation, mount) = matches.single()
+        if (mount.at.x.unit != "mm" || mount.at.y.unit != "mm") {
+            return invalidSource("Cabinet placement editing currently requires authored millimetre coordinates.")
+        }
+        val targetOrientation = installation.rails
+            .singleOrNull { rail -> rail.id == mount.targetId }
+            ?.orientation
+            ?: installation.terminalGroups
+                .singleOrNull { group -> group.id == mount.targetId }
+                ?.orientation
+            ?: InstallationOrientation.Horizontal
+        val canvasDeltaX = request.deltaXMillimeters.roundToInt()
+        val canvasDeltaY = request.deltaYMillimeters.roundToInt()
+        val (deltaAlong, deltaNormal) = when (targetOrientation) {
+            InstallationOrientation.Horizontal -> canvasDeltaX to canvasDeltaY
+            InstallationOrientation.Vertical -> canvasDeltaY to -canvasDeltaX
+        }
+        val along = mount.at.x.value.roundToInt() + deltaAlong
+        val normal = mount.at.y.value.roundToInt() + deltaNormal
+        if (along < 0 || normal < 0) {
+            return invalidSource("Cabinet placement move would produce negative target-local coordinates.")
+        }
+        val admittedText = "(${along}mm, ${normal}mm)"
+        val replacement = BackendAuthoringSourceOffsetRange(
+            startOffset = mount.at.span.start.offset,
+            endOffset = mount.at.span.end.offset,
+        )
+        val proposedSource = request.document.sourceText.substring(0, replacement.startOffset) +
+            admittedText + request.document.sourceText.substring(replacement.endOffset)
+        val parseResult = parser.parse(request.document.sourceUri, proposedSource)
+        if (parseResult is ParseFailure) {
+            return invalidSource(
+                parseResult.diagnostics.joinToString(separator = "; ") { diagnostic -> diagnostic.message },
+            )
+        }
+        return BackendAuthoringSourceEditPlanned(
+            BackendAuthoringSourceEditPlan(
+                revisionGuard = request.revisionGuard,
+                sourceUri = request.document.sourceUri,
+                replacement = replacement,
+                admittedText = admittedText,
+                selection = replacement.copy(endOffset = replacement.startOffset + admittedText.length),
+                affectedSemanticIds = listOf("component:${mount.deviceId}"),
+            ),
+        )
+    }
+
+    private fun invalidSource(message: String): BackendAuthoringSourceEditRejected =
+        BackendAuthoringSourceEditRejected(
+            diagnostics = listOf(
+                AuthoringDiagnostic(
+                    code = AuthoringDiagnosticCode.SOURCE_INVALID,
+                    message = message,
+                    authority = AuthoringDiagnosticAuthority.SOURCE_PLANNING,
+                    lifecycleStage = AuthoringLifecycleState.BLOCKED,
+                    recoveryAction = AuthoringRecoveryAction.FIX_SOURCE,
+                ),
+            ),
+        )
 
     private fun planned(
         request: BackendAuthoringSourceEditPlanningRequest,

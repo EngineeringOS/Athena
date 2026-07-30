@@ -14,8 +14,8 @@ symbol iec_contactor_coil {
     label deviceTag at (0, 0) size (36, 12) role device-tag style device-label
   }
 
-  anchor coilA1 { primitiveRef coilA1Lead point (40, 0) role terminal accepts direction in accepts signal Control }
-  anchor coilA2 { primitiveRef coilA2Lead point (40, 88) role terminal accepts direction out accepts signal Control }
+  anchor coilA1 { primitiveRef coilA1Lead point (40, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor coilA2 { primitiveRef coilA2Lead point (40, 88) role terminal accepts direction out accepts signal Control.family }
 }
 
 element iec_contactor_coil_element {
@@ -44,8 +44,8 @@ symbol iec_contactor_main_contact {
     label deviceTag at (0, 0) size (36, 12) role device-tag style device-label
   }
 
-  anchor mainL1 { primitiveRef mainL1Lead point (40, 0) role terminal accepts direction in accepts signal Power }
-  anchor mainT1 { primitiveRef mainT1Lead point (40, 88) role terminal accepts direction out accepts signal Power }
+  anchor mainL1 { primitiveRef mainL1Lead point (40, 0) role terminal accepts direction in accepts signal Power.family }
+  anchor mainT1 { primitiveRef mainT1Lead point (40, 88) role terminal accepts direction out accepts signal Power.family }
 }
 
 element iec_contactor_main_contact_element {
@@ -79,10 +79,10 @@ symbol iec_contactor_no_contact {
     label deviceTag at (0, 0) size (40, 12) role device-tag style device-label
   }
 
-  anchor auxNo13 { primitiveRef auxNo13Lead point (28, 0) role terminal accepts direction in accepts signal Control }
-  anchor auxNo14 { primitiveRef auxNo14Lead point (28, 88) role terminal accepts direction out accepts signal Control }
-  anchor statusNo53 { primitiveRef statusNo53Lead point (76, 0) role terminal accepts direction in accepts signal Control }
-  anchor statusNo54 { primitiveRef statusNo54Lead point (76, 88) role terminal accepts direction out accepts signal Control }
+  anchor auxNo13 { primitiveRef auxNo13Lead point (28, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor auxNo14 { primitiveRef auxNo14Lead point (28, 88) role terminal accepts direction out accepts signal Control.family }
+  anchor statusNo53 { primitiveRef statusNo53Lead point (76, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor statusNo54 { primitiveRef statusNo54Lead point (76, 88) role terminal accepts direction out accepts signal Control.family }
 }
 
 element iec_contactor_no_contact_element {
@@ -113,8 +113,8 @@ symbol iec_contactor_nc_contact {
     label deviceTag at (0, 0) size (36, 12) role device-tag style device-label
   }
 
-  anchor auxNc21 { primitiveRef auxNc21Lead point (40, 0) role terminal accepts direction in accepts signal Control }
-  anchor auxNc22 { primitiveRef auxNc22Lead point (40, 88) role terminal accepts direction out accepts signal Control }
+  anchor auxNc21 { primitiveRef auxNc21Lead point (40, 0) role terminal accepts direction in accepts signal Control.family }
+  anchor auxNc22 { primitiveRef auxNc22Lead point (40, 88) role terminal accepts direction out accepts signal Control.family }
 }
 
 element iec_contactor_nc_contact_element {

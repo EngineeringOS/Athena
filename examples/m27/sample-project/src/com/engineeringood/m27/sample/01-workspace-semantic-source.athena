@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m27.sample
+package com.engineeringood.m27.sample
 
 system ProfessionalSheetProofAcceptance {
   device MainPowerSupplyPS1 {

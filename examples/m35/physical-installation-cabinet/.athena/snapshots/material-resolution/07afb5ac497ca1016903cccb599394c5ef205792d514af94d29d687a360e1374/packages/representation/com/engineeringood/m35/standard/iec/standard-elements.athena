@@ -18,7 +18,7 @@ symbol power_source_symbol {
     point (0, 24)
     role terminal
     accepts direction out
-    accepts signal Power
+    accepts signal Power.family
   }
 
   anchor lminus {
@@ -26,7 +26,7 @@ symbol power_source_symbol {
     point (0, 48)
     role terminal
     accepts direction out
-    accepts signal Power
+    accepts signal Power.family
   }
 }
 
@@ -68,7 +68,7 @@ symbol breaker_symbol {
     point (32, 0)
     role terminal
     accepts direction in
-    accepts signal Power
+    accepts signal Power.family
   }
 
   anchor load {
@@ -76,7 +76,7 @@ symbol breaker_symbol {
     point (32, 96)
     role terminal
     accepts direction out
-    accepts signal Power
+    accepts signal Power.family
   }
 }
 
@@ -117,7 +117,7 @@ symbol relay_symbol {
     point (36, 0)
     role terminal
     accepts direction in
-    accepts signal Control
+    accepts signal Control.family
   }
 
   anchor a2 {
@@ -125,7 +125,7 @@ symbol relay_symbol {
     point (36, 96)
     role terminal
     accepts direction out
-    accepts signal Control
+    accepts signal Control.family
   }
 }
 
@@ -164,7 +164,7 @@ symbol terminal_block_symbol {
     point (0, 24)
     role terminal
     accepts direction in
-    accepts signal Control
+    accepts signal Control.family
   }
 
   anchor controlOut {
@@ -172,7 +172,7 @@ symbol terminal_block_symbol {
     point (96, 24)
     role terminal
     accepts direction out
-    accepts signal Control
+    accepts signal Control.family
   }
 }
 
@@ -212,7 +212,7 @@ symbol protective_earth_symbol {
     point (32, 8)
     role terminal
     accepts direction out
-    accepts signal Ground
+    accepts signal Ground.family
   }
 }
 

@@ -64,7 +64,7 @@ class AthenaM31SampleAuthoringProofTest {
                     conceptId = template.conceptId,
                     suggestedName = "ServiceMotorM31",
                     revisionGuard = document.revisionGuard,
-                    provenance = AuthoringTransactionProvenance("user:Aaron", ORIGIN, "m31 sample proof"),
+                    provenance = AuthoringTransactionProvenance("user:Aaron", ORIGIN, "m31 sample evidence"),
                 ),
                 capabilityEvidence = createCapabilityEvidence(document.sourceUri),
                 document = document,
@@ -110,7 +110,7 @@ class AthenaM31SampleAuthoringProofTest {
                     targetSubjectId = StableSemanticIdentity("port:SpareTerminalXT31.in1"),
                 ),
                 capabilityEvidence = relationshipCapabilityEvidence(document.sourceUri),
-                provenance = AuthoringTransactionProvenance("user:Aaron", ORIGIN, "m31 sample proof"),
+                provenance = AuthoringTransactionProvenance("user:Aaron", ORIGIN, "m31 sample evidence"),
                 sourceDocument = document,
                 semanticDocument = semanticDocument,
             ),
@@ -187,7 +187,7 @@ class AthenaM31SampleAuthoringProofTest {
         )
 
     private fun sampleConnectionId(): String =
-        "connection:${sampleProjectSource().toUri()}:controlrelayk31_spareout_to_spareterminalxt31_in1"
+        "connection:examples/m31/sample-project/src/com/engineeringood/m31/sample/01-governed-authoring-customer-source.athena:controlrelayk31_spareout_to_spareterminalxt31_in1"
 
     private fun resolveRepoRoot(): Path {
         var current = Path.of("").toAbsolutePath()

@@ -58,7 +58,7 @@ import com.engineeringood.athena.representation.RepresentationContext
 import com.engineeringood.athena.representation.RepresentationId
 import com.engineeringood.athena.representation.RepresentationOccurrenceId
 import com.engineeringood.athena.routing.AthenaRouteEngineInput
-import com.engineeringood.athena.routing.AthenaRouteEngineV0
+import com.engineeringood.athena.routing.AthenaRouteEngine
 import com.engineeringood.athena.routing.AthenaRouteRequest
 import com.engineeringood.athena.routing.ElectricalConnectionEndpointKind
 import com.engineeringood.athena.routing.ElectricalConnectionId
@@ -86,7 +86,7 @@ class AthenaProfessionalDrawingCompiler(
     private val materialResolver: AthenaRepresentationMaterialResolver = AthenaRepresentationMaterialResolver(),
     private val layoutDeriver: ProjectSemanticSchematicLayoutFactDeriver = ProjectSemanticSchematicLayoutFactDeriver(),
     private val sheetCompiler: DrawingSheetCompositionCompiler = DrawingSheetCompositionCompiler(),
-    private val routeEngine: AthenaRouteEngineV0 = AthenaRouteEngineV0(),
+    private val routeEngine: AthenaRouteEngine = AthenaRouteEngine(),
 ) {
     fun compile(request: AthenaProfessionalDrawingRequest): AthenaProfessionalDrawingResult {
         val material = materialResolver.resolve(
@@ -143,7 +143,7 @@ class AthenaProfessionalDrawingCompiler(
         return AthenaProfessionalDrawingResult(
             presentation = presentation,
             diagnostics = emptyList(),
-            proof = AthenaProfessionalDrawingProof(
+            evidence = AthenaProfessionalDrawingEvidence(
                 exactTerminalAttachment = routeFacts.routeFacts.all { route ->
                     route.source.point == route.segments.first().start &&
                         route.target.point == route.segments.last().end
@@ -282,6 +282,7 @@ class AthenaProfessionalDrawingCompiler(
                     connectionId = ElectricalConnectionId(connection.id.value),
                     sourcePort = sourcePort.toConnectionPortRef(sourceOccurrence),
                     targetPort = targetPort.toConnectionPortRef(targetOccurrence),
+                    sourceSpan = connection.provenance.toLayoutSourceSpanOrNull(),
                 ),
             )
             AthenaRouteRequest(
@@ -362,18 +363,18 @@ private fun DrawingSheetCompositionResult.toPresentationComposition(
     occurrences: List<PresentationGraphicOccurrence>,
 ): PresentationDrawingComposition {
     val plan = requireNotNull(plan)
-    val proof = requireNotNull(proof)
-    val drawingArea = proof.drawingAreaBounds.toPresentationBounds()
+    val evidence = requireNotNull(evidence)
+    val drawingArea = evidence.drawingAreaBounds.toPresentationBounds()
     val columnWidth = drawingArea.width / policy.columnLabels.size
     val structureFacts = professionalStructureFacts(policy, drawingArea, occurrences)
     return PresentationDrawingComposition(
         sheetId = plan.sheetId,
-        policyId = proof.policyId,
-        contentBounds = proof.contentBounds.toPresentationBounds(),
-        frameBounds = proof.frameBounds.toPresentationBounds(),
+        policyId = evidence.policyId,
+        contentBounds = evidence.contentBounds.toPresentationBounds(),
+        frameBounds = evidence.frameBounds.toPresentationBounds(),
         drawingAreaBounds = drawingArea,
-        titleBlockBounds = proof.titleBlockBounds.toPresentationBounds(),
-        sheetBounds = proof.sheetBounds.toPresentationBounds(),
+        titleBlockBounds = evidence.titleBlockBounds.toPresentationBounds(),
+        sheetBounds = evidence.sheetBounds.toPresentationBounds(),
         frameId = plan.frame.frameId,
         frameStyle = plan.frame.style,
         title = PresentationDrawingTitle(
@@ -442,12 +443,12 @@ private fun DrawingSheetCompositionResult.toPresentationComposition(
         ) + structureFacts,
         referencePlacements = professionalReferencePlacements(drawingArea),
         authorities = PresentationDrawingAuthorities(
-            contentBounds = proof.contentBoundsAuthority,
-            bounds = proof.boundsAuthority,
-            projection = proof.projectionAuthority,
+            contentBounds = evidence.contentBoundsAuthority,
+            bounds = evidence.boundsAuthority,
+            projection = evidence.projectionAuthority,
             representation = "graphic-primitive-ir",
             structureIntent = "semantic-layout-facts",
-            policy = proof.policyAuthority,
+            policy = evidence.policyAuthority,
         ),
     )
 }
@@ -635,7 +636,7 @@ private fun labelsFor(
 }
 
 private fun SchematicPlacementFact.materialSubjectId(): String {
-    val authoredSubject = intentId.value.removePrefix("intent:m23:schematic:")
+    val authoredSubject = intentId.value.removePrefix("intent:layout:schematic:")
     return if ('.' in authoredSubject) {
         "function:$authoredSubject"
     } else {

@@ -19,7 +19,7 @@ test('M24 routing acceptance names M23 baseline, M24 route facts, and deferred p
     const retrospective = readRepoFile('_bmad-output/implementation-artifacts/m24/m24-achievement-usage-retrospective-2026-07-19.md');
     const m23Usage = readRepoFile('docs/usages/m23-proof-usage.md');
     const examplesReadme = readRepoFile('examples/m24/README.md');
-    const sampleSource = readRepoFile('examples/m24/sample-project/src/02-terminal-strip-routes.athena');
+    const sampleSource = readRepoFile('examples/m24/sample-project/src/com/engineeringood/m24/sample/02-terminal-strip-routes.athena');
     const prd = readRepoFile('_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-18-m24/prd.md');
     const architecture = readRepoFile('_bmad-output/planning-artifacts/architecture/architecture-Athena-2026-07-18-m24/ARCHITECTURE-SPINE.md');
 
@@ -42,7 +42,7 @@ test('M24 routing acceptance names M23 baseline, M24 route facts, and deferred p
     assert.match(retrospective, /stale-host lesson/i);
     assert.match(m23Usage, /M23 supports system-scoped layout blocks/i);
     assert.match(examplesReadme, /routing acceptance proof/i);
-    assert.match(sampleSource, /connect TerminalRoutePLC1\.do1 -> TerminalStripXT1\.in1/);
+    assert.match(sampleSource, /connect\s+\w+\s+TerminalRoutePLC1\.do1 -> TerminalStripXT1\.in1/);
     assert.match(prd, /M23.*baseline comparison/i);
     assert.match(architecture, /M24 routing is schematic topology only/i);
 

@@ -193,13 +193,13 @@ class DocumentProjectionModelContractTest {
 
         assertEquals(
             DocumentProjectionId(
-                policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+                policyId = DocumentProjectionPolicyId("athena-document-projection"),
                 policyVersion = DocumentProjectionPolicyVersion("0"),
                 semanticGraphId = "graph:single-file",
             ),
             snapshot.documentProjectionId,
         )
-        assertEquals(DocumentProjectionPolicyId("athena-document-projection-v0"), snapshot.policyId)
+        assertEquals(DocumentProjectionPolicyId("athena-document-projection"), snapshot.policyId)
         assertEquals(DocumentProjectionPolicyVersion("0"), snapshot.policyVersion)
         assertEquals(
             listOf("sheet-view:power-distribution", "sheet-view:control-and-plc-logic", "sheet-view:field-wiring-and-terminal-transition"),
@@ -411,7 +411,7 @@ class DocumentProjectionModelContractTest {
         val diagnostic = DocumentProjectionEntryPoint.projectWorkspace(workspace).diagnostics.single()
 
         assertEquals(DocumentProjectionDiagnosticSeverity.ERROR, diagnostic.severity)
-        assertEquals(DocumentProjectionDiagnosticCode("M26_REFERENCE_TARGET_MISSING"), diagnostic.code)
+        assertEquals(DocumentProjectionDiagnosticCode("REFERENCE_TARGET_MISSING"), diagnostic.code)
         assertEquals(CrossReferenceRelationType.TERMINAL_CONTINUATION, diagnostic.relationType)
         assertEquals(missingTargetTerminal, diagnostic.affectedIdentity)
         assertEquals(DocumentProjectionDiagnosticProvenanceKind.SOURCE, diagnostic.provenance.kind)
@@ -460,7 +460,7 @@ class DocumentProjectionModelContractTest {
         val diagnostic = DocumentProjectionEntryPoint.projectWorkspace(workspace).diagnostics.single()
 
         assertEquals(DocumentProjectionDiagnosticSeverity.WARNING, diagnostic.severity)
-        assertEquals(DocumentProjectionDiagnosticCode("M26_REFERENCE_TARGET_AMBIGUOUS"), diagnostic.code)
+        assertEquals(DocumentProjectionDiagnosticCode("REFERENCE_TARGET_AMBIGUOUS"), diagnostic.code)
         assertEquals(CrossReferenceRelationType.TERMINAL_CONTINUATION, diagnostic.relationType)
         assertEquals(repeatedTargetTerminal, diagnostic.affectedIdentity)
         assertEquals(DocumentProjectionDiagnosticProvenanceKind.DERIVED_VIEW, diagnostic.provenance.kind)
@@ -494,20 +494,20 @@ class DocumentProjectionModelContractTest {
         )
         assertEquals(
             listOf("src/01-shared-components.athena", "src/02-system.athena"),
-            firstSnapshot.proofMetadata.sourceRootRelativePaths,
+            firstSnapshot.evidenceMetadata.sourceRootRelativePaths,
         )
         assertEquals(
             listOf("src/01-shared-components.athena", "src/02-system.athena"),
-            secondSnapshot.proofMetadata.sourceRootRelativePaths,
+            secondSnapshot.evidenceMetadata.sourceRootRelativePaths,
         )
     }
 
     @Test
     fun `built in document projection policy has deterministic identity and role ordering`() {
-        val first = BuiltInDocumentProjectionPolicies.athenaDocumentProjectionV0()
-        val second = BuiltInDocumentProjectionPolicies.athenaDocumentProjectionV0()
+        val first = BuiltInDocumentProjectionPolicies.athenaDocumentProjection()
+        val second = BuiltInDocumentProjectionPolicies.athenaDocumentProjection()
 
-        assertEquals(DocumentProjectionPolicyId("athena-document-projection-v0"), first.policyId)
+        assertEquals(DocumentProjectionPolicyId("athena-document-projection"), first.policyId)
         assertEquals(DocumentProjectionPolicyVersion("0"), first.policyVersion)
         assertEquals(first.deterministicIdentity, second.deterministicIdentity)
         assertEquals(
@@ -522,10 +522,10 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `m31 customer projection policy exposes exactly control and field device sheet roles`() {
-        val first = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
-        val second = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
+        val first = BuiltInDocumentProjectionPolicies.athenaCustomerDocumentProjection()
+        val second = BuiltInDocumentProjectionPolicies.athenaCustomerDocumentProjection()
 
-        assertEquals(DocumentProjectionPolicyId("athena-m31-customer-projection-v0"), first.policyId)
+        assertEquals(DocumentProjectionPolicyId("athena-customer-projection"), first.policyId)
         assertEquals(DocumentProjectionPolicyVersion("0"), first.policyVersion)
         assertEquals(first.deterministicIdentity, second.deterministicIdentity)
         assertEquals(
@@ -540,7 +540,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `m31 customer projection sheet views do not derive from source file count`() {
-        val policy = BuiltInDocumentProjectionPolicies.athenaM31CustomerProjectionV0()
+        val policy = BuiltInDocumentProjectionPolicies.athenaCustomerDocumentProjection()
         val singleSource = DocumentProjectionWorkspaceSemanticSnapshot(
             semanticGraphId = "graph:m31-customer-policy",
             sourceUnits = listOf(DocumentProjectionSourceUnitSummary("source:main", "src/01-main.athena")),
@@ -575,7 +575,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `built in policy exposes supported and reserved artifact kinds explicitly`() {
-        val policy = BuiltInDocumentProjectionPolicies.athenaDocumentProjectionV0()
+        val policy = BuiltInDocumentProjectionPolicies.athenaDocumentProjection()
 
         assertEquals(
             listOf(DocumentProjectionArtifactKind.SCHEMATIC_SHEET_VIEW),
@@ -593,7 +593,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `built in policy publishes the occurrence identity recipe`() {
-        val policy = BuiltInDocumentProjectionPolicies.athenaDocumentProjectionV0()
+        val policy = BuiltInDocumentProjectionPolicies.athenaDocumentProjection()
 
         assertEquals(
             listOf(
@@ -610,7 +610,7 @@ class DocumentProjectionModelContractTest {
     @Test
     fun `document occurrence ids serialize deterministically for component terminal route and label occurrences`() {
         val projectionId = DocumentProjectionId(
-            policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+            policyId = DocumentProjectionPolicyId("athena-document-projection"),
             policyVersion = DocumentProjectionPolicyVersion("0"),
             semanticGraphId = "workspace:sample",
         )
@@ -689,7 +689,7 @@ class DocumentProjectionModelContractTest {
     @Test
     fun `occurrence index is deterministic and supports canonical subject lookup`() {
         val projectionId = DocumentProjectionId(
-            policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+            policyId = DocumentProjectionPolicyId("athena-document-projection"),
             policyVersion = DocumentProjectionPolicyVersion("0"),
             semanticGraphId = "workspace:sample",
         )
@@ -724,7 +724,7 @@ class DocumentProjectionModelContractTest {
     @Test
     fun `occurrence rejects identity recipe mismatches`() {
         val projectionId = DocumentProjectionId(
-            policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+            policyId = DocumentProjectionPolicyId("athena-document-projection"),
             policyVersion = DocumentProjectionPolicyVersion("0"),
             semanticGraphId = "workspace:sample",
         )
@@ -772,7 +772,7 @@ class DocumentProjectionModelContractTest {
     @Test
     fun `occurrence rejects incompatible occurrence and detail roles`() {
         val projectionId = DocumentProjectionId(
-            policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+            policyId = DocumentProjectionPolicyId("athena-document-projection"),
             policyVersion = DocumentProjectionPolicyVersion("0"),
             semanticGraphId = "workspace:sample",
         )
@@ -799,7 +799,7 @@ class DocumentProjectionModelContractTest {
     @Test
     fun `occurrence index rejects duplicate occurrence identities`() {
         val projectionId = DocumentProjectionId(
-            policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+            policyId = DocumentProjectionPolicyId("athena-document-projection"),
             policyVersion = DocumentProjectionPolicyVersion("0"),
             semanticGraphId = "workspace:sample",
         )
@@ -815,12 +815,12 @@ class DocumentProjectionModelContractTest {
     @Test
     fun `occurrence index rejects mixed document projections`() {
         val firstProjectionId = DocumentProjectionId(
-            policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+            policyId = DocumentProjectionPolicyId("athena-document-projection"),
             policyVersion = DocumentProjectionPolicyVersion("0"),
             semanticGraphId = "workspace:sample",
         )
         val secondProjectionId = DocumentProjectionId(
-            policyId = DocumentProjectionPolicyId("athena-document-projection-v0"),
+            policyId = DocumentProjectionPolicyId("athena-document-projection"),
             policyVersion = DocumentProjectionPolicyVersion("1"),
             semanticGraphId = "workspace:sample",
         )
@@ -865,7 +865,7 @@ class DocumentProjectionModelContractTest {
             DocumentProjectionWorkspaceSemanticSnapshot::class,
             DocumentProjectionSubjectSummary::class,
             DocumentProjectionReferenceFactContainers::class,
-            DocumentProjectionProofMetadata::class,
+            DocumentProjectionEvidenceMetadata::class,
             DocumentProjectionSnapshot::class,
             ContinuationFactId::class,
             ContinuationFact::class,

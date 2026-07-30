@@ -47,7 +47,7 @@ test('Athena Monaco fallback highlights current DSL keywords and operators', () 
         'graphic',
         'svg',
         'anchor',
-        'primitiveRef',
+        'ref',
         'accepts',
         'child',
         'translate',

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = fileURLToPath(new URL('../../../', import.meta.url));
 const sampleRoot = path.join(repositoryRoot, 'examples', 'm34', 'professional-control-drawing');
-const sampleSourcePath = path.join(sampleRoot, 'src', '01-control-drawing.athena');
+const sampleSourcePath = path.join(sampleRoot, 'src', 'com', 'engineeringood', 'm34', 'professional', '01-control-drawing.athena');
 const layoutDeriverPath = path.join(
     repositoryRoot,
     'kernel',

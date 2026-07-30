@@ -162,7 +162,7 @@ What this proves:
 ## Interactive Use
 
 1. Open the governed repository at `examples/m14/siemens-proof-corpus`.
-2. Open `src/siemens-proof-corpus.athena`.
+2. Open `src/com/engineeringood/examples/m14/siemens/proof/corpus/siemens-proof-corpus.athena`.
 3. Request the component knowledge session through runtime or LSP-driven surfaces.
 4. Confirm the resolved components include `PS1`, `PLC1`, `KM1`, `FR1`, and `M1`.
 5. Confirm the resolved vendor part numbers include the Siemens-first proof mappings.

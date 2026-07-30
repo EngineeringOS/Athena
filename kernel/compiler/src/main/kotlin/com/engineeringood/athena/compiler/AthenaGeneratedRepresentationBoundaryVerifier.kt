@@ -17,7 +17,7 @@ class AthenaGeneratedRepresentationBoundaryVerifier(
             return AthenaGeneratedRepresentationBoundaryReport(
                 definitions = emptyList(),
                 diagnostics = preflightForeignSchemaDiagnostics.canonicalBoundaryDiagnostics(),
-                proof = null,
+                evidence = null,
             )
         }
 
@@ -40,7 +40,7 @@ class AthenaGeneratedRepresentationBoundaryVerifier(
             ?: return AthenaGeneratedRepresentationBoundaryReport(
                 definitions = emptyList(),
                 diagnostics = snapshotDiagnostics.canonicalBoundaryDiagnostics(),
-                proof = null,
+                evidence = null,
             )
 
         val compiled = snapshotCompiler.compile(snapshot)
@@ -53,20 +53,20 @@ class AthenaGeneratedRepresentationBoundaryVerifier(
         }
         val diagnostics = (snapshotDiagnostics + compilerDiagnostics)
             .canonicalBoundaryDiagnostics()
-        val proof = AthenaGeneratedRepresentationBoundaryProof(
+        val evidence = AthenaGeneratedRepresentationBoundaryEvidence(
             generatedSourceBoundary = "canonical-athena-source",
-            snapshotId = compiled.proof.snapshotId,
-            stagedSourcePaths = compiled.proof.stagedSourcePaths.map { it.replace('\\', '/') }.sorted(),
+            snapshotId = compiled.evidence.snapshotId,
+            stagedSourcePaths = compiled.evidence.stagedSourcePaths.map { it.replace('\\', '/') }.sorted(),
             qetRuntimeAuthorityAbsent = true,
             foreignRuntimeSchemaAbsent = true,
-            xmlRuntimeAuthorityAbsent = compiled.proof.xmlRuntimeAuthorityAbsent,
-            rawSvgTransportAbsent = compiled.proof.rawSvgTransportAbsent,
+            xmlRuntimeAuthorityAbsent = compiled.evidence.xmlRuntimeAuthorityAbsent,
+            rawSvgTransportAbsent = compiled.evidence.rawSvgTransportAbsent,
         )
 
         return AthenaGeneratedRepresentationBoundaryReport(
             definitions = if (diagnostics.isEmpty()) compiled.definitions else emptyList(),
             diagnostics = diagnostics,
-            proof = proof,
+            evidence = evidence,
         )
     }
 
@@ -108,7 +108,7 @@ data class AthenaGeneratedRepresentationBoundaryRequest(
 data class AthenaGeneratedRepresentationBoundaryReport(
     val definitions: List<RepresentationDefinition>,
     val diagnostics: List<AthenaGeneratedRepresentationBoundaryDiagnostic>,
-    val proof: AthenaGeneratedRepresentationBoundaryProof?,
+    val evidence: AthenaGeneratedRepresentationBoundaryEvidence?,
 )
 
 data class AthenaGeneratedRepresentationBoundaryDiagnostic(
@@ -117,7 +117,7 @@ data class AthenaGeneratedRepresentationBoundaryDiagnostic(
     val message: String,
 )
 
-data class AthenaGeneratedRepresentationBoundaryProof(
+data class AthenaGeneratedRepresentationBoundaryEvidence(
     val generatedSourceBoundary: String,
     val snapshotId: String,
     val stagedSourcePaths: List<String>,

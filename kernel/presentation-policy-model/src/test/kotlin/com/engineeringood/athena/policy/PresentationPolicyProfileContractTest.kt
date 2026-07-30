@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class PresentationPolicyProfileContractTest {
     @Test
     fun `athena industrial control v0 covers the six M25 sample families`() {
-        val profile = AthenaIndustrialControlV0Profile.profile()
+        val profile = AthenaIndustrialControlProfile.profile()
         val families = listOf(
             "plc-controller",
             "hmi-operator",
@@ -21,27 +21,27 @@ class PresentationPolicyProfileContractTest {
 
         val selections = families.map { profile.selectRepresentation(ComponentFamilyKey(it)) }
 
-        assertEquals("athena-industrial-control-v0", profile.profileId.value)
+        assertEquals("athena-industrial-control", profile.profileId.value)
         assertFalse(profile.claimsIecCompleteness)
         assertTrue(selections.all { it is RepresentationSelection.Supported })
     }
 
     @Test
     fun `unsupported families produce diagnosable fallback metadata`() {
-        val profile = AthenaIndustrialControlV0Profile.profile()
+        val profile = AthenaIndustrialControlProfile.profile()
         val selection = profile.selectRepresentation(ComponentFamilyKey("servo-drive"))
 
         assertTrue(selection is RepresentationSelection.Fallback)
         assertEquals("servo-drive", selection.family.value)
-        assertEquals("athena-industrial-control-v0", selection.profileId.value)
+        assertEquals("athena-industrial-control", selection.profileId.value)
         assertNotNull(selection.diagnostic)
         assertTrue(selection.diagnostic.message.contains("servo-drive"))
     }
 
     @Test
-    fun `accepted proof can assert zero fallback symbols`() {
-        val profile = AthenaIndustrialControlV0Profile.profile()
-        val proof = RepresentationPolicyCoverageProof(
+    fun `accepted evidence can assert zero fallback symbols`() {
+        val profile = AthenaIndustrialControlProfile.profile()
+        val evidence = RepresentationPolicyCoverageEvidence(
             profile = profile,
             mandatoryFamilies = listOf(
                 ComponentFamilyKey("plc-controller"),
@@ -51,7 +51,7 @@ class PresentationPolicyProfileContractTest {
             ),
         )
 
-        assertTrue(proof.hasZeroFallbackSymbols())
-        assertEquals(emptyList(), proof.fallbackSelections())
+        assertTrue(evidence.hasZeroFallbackSymbols())
+        assertEquals(emptyList(), evidence.fallbackSelections())
     }
 }

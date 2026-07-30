@@ -6,9 +6,9 @@ import kotlin.test.assertEquals
 
 class M30ControlSheetCompositionProofTest {
     @Test
-    fun `control sheet composition proof is dense wrapperless and label safe`() {
+    fun `control sheet composition evidence is dense wrapperless and label safe`() {
         val bindingProof = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
-        val proof = M30ControlSheetCompositionProofCompiler().compile(bindingProof, nativeLibrary())
+        val evidence = M30ControlSheetCompositionProofCompiler().compile(bindingProof, nativeLibrary())
 
         assertEquals(
             mapOf(
@@ -19,13 +19,13 @@ class M30ControlSheetCompositionProofTest {
                 "routeChannelCount" to "1",
                 "referenceZoneCount" to "1",
             ),
-            proof.toTransportPayload(),
+            evidence.toTransportPayload(),
         )
     }
 
     private fun nativeLibrary(): NativeRepresentationLibrary {
         val resource = requireNotNull(
-            javaClass.classLoader.getResource("representation-libraries/athena-native-iec-v0.properties"),
+            javaClass.classLoader.getResource("representation-libraries/athena-native-iec.properties"),
         ) { "Missing native M30 symbol pack resource." }
         val result = NativeRepresentationLibraryLoader().load(Path.of(resource.toURI()))
         return result.library

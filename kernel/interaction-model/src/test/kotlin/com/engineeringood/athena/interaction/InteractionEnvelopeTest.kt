@@ -15,7 +15,7 @@ class InteractionEnvelopeTest {
             adapterMetadata = mapOf("widgetId" to "graph-view"),
         )
 
-        assertEquals(InteractionEnvelope.M29_SCHEMA_VERSION, envelope.schemaVersion)
+        assertEquals(InteractionEnvelope.INTERACTION_SCHEMA_VERSION, envelope.schemaVersion)
         assertEquals("file:///workspace/main.athena", envelope.activeSourceUri)
         assertEquals("rev-1", envelope.activeSourceRevision)
         assertEquals("2", envelope.payload["count"])

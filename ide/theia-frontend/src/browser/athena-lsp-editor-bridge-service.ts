@@ -18,13 +18,16 @@ import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manag
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
 import { MonacoThemeRegistry } from '@theia/monaco/lib/browser/textmate/monaco-theme-registry';
 import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
-import type {
-    AthenaAuthoringDecisionParams,
-    AthenaAuthoringPreviewDecisionPayload,
-    AthenaAuthoringPreviewParams,
-    AthenaAuthoringPreviewSubmissionPayload,
-    AthenaAuthoringRevisionGuardPayload,
-    AthenaAuthoringSourceEditPayload
+import {
+    type AthenaAuthoringDecisionParams,
+    type AthenaAuthoringPreviewDecisionPayload,
+    type AthenaAuthoringPreviewParams,
+    type AthenaAuthoringPreviewSubmissionPayload,
+    type AthenaAuthoringRevisionGuardPayload,
+    type AthenaAuthoringSourceEditPayload,
+    ATHENA_GOVERNED_GRAPHIC_EDIT_PREVIEW_METHOD,
+    type AthenaGovernedGraphicEditIntentRequest,
+    type AthenaGovernedGraphicEditPreviewPayload
 } from './athena-authoring-protocol';
 import { assertAuthoringRevisionGuard } from './athena-authoring-revision-guard';
 import {
@@ -1140,7 +1143,7 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         const model = this.currentAthenaEditorModel();
         return this.sendLanguageRequest<AthenaComponentKnowledgeSessionPayload>(
             'athena/componentKnowledgeSession',
-            { marker: 'm15' },
+            { marker: 'component-knowledge' },
             model,
         );
     }
@@ -1210,6 +1213,17 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         const model = this.currentAthenaEditorModel();
         return this.sendLanguageRequest<AthenaAuthoringPreviewDecisionPayload>(
             'athena/authoringDecision',
+            params,
+            model,
+        );
+    }
+
+    async requestGovernedGraphicEditPreview(
+        params: AthenaGovernedGraphicEditIntentRequest
+    ): Promise<AthenaGovernedGraphicEditPreviewPayload | undefined> {
+        const model = this.currentAthenaEditorModel();
+        return this.sendLanguageRequest<AthenaGovernedGraphicEditPreviewPayload>(
+            ATHENA_GOVERNED_GRAPHIC_EDIT_PREVIEW_METHOD,
             params,
             model,
         );

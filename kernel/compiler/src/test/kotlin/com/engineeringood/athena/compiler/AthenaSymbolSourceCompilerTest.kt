@@ -41,23 +41,23 @@ class AthenaRepresentationSourceCompilerSymbolTest {
         val invalid = VALID_SYMBOL
             .replace("  identity \"iec.switch_contact\"\n", "")
             .replace("line load from (40, 60) to (40, 80) style conductor", "line line from (40, 60) to (40, 80) style unknown")
-            .replace("primitiveRef load", "primitiveRef missing")
+            .replace("ref load", "ref missing")
 
         val result = compiler.compile("invalid.athena", invalid)
         val ast = assertIs<ParseSuccess>(AthenaLanguageParser().parse("invalid.athena", invalid)).ast
         val symbol = assertIs<SymbolDeclaration>(ast.representationDeclarations.single())
         val duplicatePrimitive = assertNotNull(symbol.graphic).primitives[1]
-        val unresolvedReference = assertNotNull(symbol.anchors[1].primitiveRef)
+        val unresolvedReference = assertNotNull(symbol.anchors[1].ref)
 
         assertTrue(result.definitions.isEmpty())
         assertEquals(
             listOf(
                 AthenaRepresentationSourceDiagnostic(
-                    code = "symbol.anchor.primitive-ref.unresolved",
+                    code = "symbol.anchor.ref.unresolved",
                     file = "invalid.athena",
                     span = unresolvedReference.span,
-                    subject = "anchors.load.primitiveRef",
-                    message = "Symbol anchor references missing primitive `missing`.",
+                    subject = "anchors.load.ref",
+                    message = "Symbol anchor references missing geometry primitive `load`.",
                 ),
                 AthenaRepresentationSourceDiagnostic(
                     code = "symbol.identity.missing",
@@ -88,7 +88,7 @@ class AthenaRepresentationSourceCompilerSymbolTest {
     @Test
     fun `rejects incomplete duplicate and out of bounds anchors without partial definitions`() {
         val invalid = VALID_SYMBOL
-            .replaceFirst("    primitiveRef line\n", "")
+            .replaceFirst("ref \"line\"", "")
             .replaceFirst("    role terminal\n", "")
             .replace("    point (40, 80)", "    point (90, 80)")
             .replace("  anchor load {", "  anchor line {")
@@ -100,7 +100,7 @@ class AthenaRepresentationSourceCompilerSymbolTest {
             listOf(
                 "symbol.anchor.id.duplicate",
                 "symbol.anchor.point.out-of-bounds",
-                "symbol.anchor.primitive-ref.missing",
+                "symbol.anchor.ref.missing",
                 "symbol.anchor.role.missing",
             ),
             result.diagnostics.map { it.code },
@@ -127,8 +127,8 @@ class AthenaRepresentationSourceCompilerSymbolTest {
         assertTrue(invalidResult.definitions.isEmpty())
         assertEquals(
             listOf(
-                "symbol.anchor.primitive-ref.unresolved",
-                "symbol.anchor.primitive-ref.unresolved",
+                "symbol.anchor.ref.unresolved",
+                "symbol.anchor.ref.unresolved",
                 "symbol.graphic.bounds.missing",
                 "symbol.graphic.primitive.missing",
             ),
@@ -164,8 +164,8 @@ class AthenaRepresentationSourceCompilerSymbolTest {
         assertTrue(result.definitions.isEmpty())
         assertEquals(
             listOf(
-                "symbol.anchor.primitive-ref.unresolved",
-                "symbol.anchor.primitive-ref.unresolved",
+                "symbol.anchor.ref.unresolved",
+                "symbol.anchor.ref.unresolved",
                 "symbol.graphic.primitive.missing",
             ),
             result.diagnostics.map { it.code },
@@ -175,8 +175,9 @@ class AthenaRepresentationSourceCompilerSymbolTest {
     @Test
     fun `covers missing compatibility fields malformed numbers and unsupported geometry`() {
         val missingCompatibility = VALID_SYMBOL
-            .replace("    accepts direction in\n", "")
-            .replace("    accepts signal Power\n", "")
+            .replace("direction in", "")
+            .replace("direction out", "")
+            .replace("signal Power.family", "")
         val missingCompatibilityResult = compiler.compile("missing-compatibility.athena", missingCompatibility)
 
         assertTrue(missingCompatibilityResult.definitions.isEmpty())
@@ -349,19 +350,19 @@ class AthenaRepresentationSourceCompilerSymbolTest {
               }
 
               anchor line {
-                primitiveRef line
+                ref "line"
                 point (40, 0)
                 role terminal
-                accepts direction in
-                accepts signal Power
+                direction in
+                signal Power.family
               }
 
               anchor load {
-                primitiveRef load
+                ref "load"
                 point (40, 80)
                 role terminal
-                accepts direction out
-                accepts signal Power
+                direction out
+                signal Power.family
               }
             }
         """.trimIndent()

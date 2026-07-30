@@ -23,12 +23,12 @@ class AthenaProjectionPresentationComponentKnowledgeIntegrationTest {
                 system ComponentKnowledgeProjectionDemo {
                   device PLC1 {
                     type Switch
-                    model "proof.cpu.313c"
+                    model "evidence.cpu.313c"
                   }
 
                   device M1 {
                     type Motor
-                    model "proof.motor.ac"
+                    model "evidence.motor.ac"
                   }
 
                   port PLC1.lplus {
@@ -64,7 +64,7 @@ class AthenaProjectionPresentationComponentKnowledgeIntegrationTest {
         )
         val plcProjection = cabinetProjection.resolvedSubjects.first { resolved -> resolved.semanticId.value == "component:PLC1" }
         assertEquals("electrical.plc.cpu", plcProjection.conceptId)
-        assertEquals("proof.cpu.313c", plcProjection.vendorPartNumber)
+        assertEquals("evidence.cpu.313c", plcProjection.vendorPartNumber)
         assertEquals("din-rail", plcProjection.mountingTypeId)
         val plcProjectionSize = assertNotNull(plcProjection.physicalSize)
         assertTrue(plcProjectionSize.widthMillimeters > 0)
@@ -77,7 +77,7 @@ class AthenaProjectionPresentationComponentKnowledgeIntegrationTest {
             resolved.semanticId.value == "component:PLC1"
         }
         assertEquals("electrical.plc.cpu", plcPresentation.conceptId)
-        assertEquals("proof.cpu.313c", plcPresentation.vendorPartNumber)
+        assertEquals("evidence.cpu.313c", plcPresentation.vendorPartNumber)
         assertEquals("din-rail", plcPresentation.mountingTypeId)
         assertNotNull(plcPresentation.physicalSize)
         assertTrue(plcPresentation.installationMarkerIds.isNotEmpty())

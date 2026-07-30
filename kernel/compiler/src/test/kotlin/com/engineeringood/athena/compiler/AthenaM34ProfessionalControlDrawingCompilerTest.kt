@@ -31,7 +31,7 @@ class AthenaM34ProfessionalControlDrawingCompilerTest {
                 repositoryRoot = projectRoot,
                 document = compilation.document,
                 semanticSnapshot = semanticSnapshot,
-                policy = AthenaProfessionalDrawingPolicy.m34RollingShutter(),
+                policy = AthenaProfessionalDrawingPolicy.rollingShutterControlDrawing(),
             ),
         )
 
@@ -82,13 +82,13 @@ class AthenaM34ProfessionalControlDrawingCompilerTest {
         })
         assertTrue(routes.junctionFacts.isNotEmpty())
         assertTrue(routes.crossingFacts.all { crossing -> crossing.joined.not() })
-        assertTrue(result.proof.exactTerminalAttachment)
-        assertTrue(result.proof.componentAndLabelClearance)
-        assertTrue(result.proof.junctionCrossingSemanticsExplicit)
-        assertTrue(result.proof.graphicPrimitiveAuthorityOnly)
-        assertTrue(result.proof.rawMarkupAuthorityAbsent)
-        assertTrue(result.proof.fallbackAuthorityAbsent)
-        assertFalse(result.proof.rendererEngineeringInference)
+        assertTrue(result.evidence.exactTerminalAttachment)
+        assertTrue(result.evidence.componentAndLabelClearance)
+        assertTrue(result.evidence.junctionCrossingSemanticsExplicit)
+        assertTrue(result.evidence.graphicPrimitiveAuthorityOnly)
+        assertTrue(result.evidence.rawMarkupAuthorityAbsent)
+        assertTrue(result.evidence.fallbackAuthorityAbsent)
+        assertFalse(result.evidence.rendererEngineeringInference)
     }
 
     @Test
@@ -98,7 +98,7 @@ class AthenaM34ProfessionalControlDrawingCompilerTest {
         val compilation = assertIs<CompilerCompilationSuccess>(AthenaCompiler().compile(sourcePath))
         val semanticSnapshot = semanticSnapshot(compilation, Files.readString(sourcePath))
         val compiler = AthenaProfessionalDrawingCompiler()
-        val policy = AthenaProfessionalDrawingPolicy.m34RollingShutter()
+        val policy = AthenaProfessionalDrawingPolicy.rollingShutterControlDrawing()
 
         val canonical = compiler.compile(
             AthenaProfessionalDrawingRequest(projectRoot, compilation.document, semanticSnapshot, policy),

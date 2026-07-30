@@ -1,0 +1,8 @@
+package com.engineeringood.m34.control
+
+profile ControlDrawingIEC {
+  projection schematic
+  standard IEC
+  style athena-industrial-iec-v1
+  fallback fail-closed
+}

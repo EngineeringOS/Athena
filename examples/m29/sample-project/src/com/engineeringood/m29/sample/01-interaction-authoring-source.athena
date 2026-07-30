@@ -1,4 +1,4 @@
-﻿package com.engineeringood.m29.sample
+package com.engineeringood.m29.sample
 
 system InteractionAuthoringProof {
   device MainPowerSupplyPS1 {

@@ -36,7 +36,7 @@ class RouteChannelTopologyCompilerTest {
             mapOf("A" to 0, "M" to 1, "Z" to 2),
             topology.laneAssignments.associate { assignment -> assignment.connectionAlias to assignment.laneIndex },
         )
-        assertEquals(3, topology.proof.allocatedLaneCount)
+        assertEquals(3, topology.evidence.allocatedLaneCount)
     }
 
     @Test
@@ -118,7 +118,7 @@ class RouteChannelTopologyCompilerTest {
         orientation: PhysicalInfrastructureOrientation = PhysicalInfrastructureOrientation.Horizontal,
         lanes: Int = 3,
         margin: Int = 2,
-    ): PhysicalRouteChannelV0 = PhysicalRouteChannelV0(
+    ): PhysicalRouteChannel = PhysicalRouteChannel(
         id = PhysicalObjectId(id),
         ductId = PhysicalObjectId(ductId),
         at = PhysicalPoint2i(x, y),
@@ -133,7 +133,7 @@ class RouteChannelTopologyCompilerTest {
         ),
     )
 
-    private fun route(alias: String, vararg channelIds: String): PhysicalRouteIntentV0 = PhysicalRouteIntentV0(
+    private fun route(alias: String, vararg channelIds: String): PhysicalRouteIntent = PhysicalRouteIntent(
         connectionAlias = alias,
         channelIds = channelIds.map(::PhysicalObjectId),
         provenance = PhysicalSourceProvenance(

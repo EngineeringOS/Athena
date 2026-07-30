@@ -15,12 +15,14 @@ import com.engineeringood.athena.language.BindingDeclaration
 import com.engineeringood.athena.language.BindingSelectorKind
 import com.engineeringood.athena.language.ImportDeclaration
 import com.engineeringood.athena.language.InstallationChannelDeclaration
+import com.engineeringood.athena.language.InstallationClearanceLiteral
 import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.InstallationDuctDeclaration
 import com.engineeringood.athena.language.InstallationEnclosureDeclaration
 import com.engineeringood.athena.language.InstallationKind
 import com.engineeringood.athena.language.InstallationLengthLiteral
 import com.engineeringood.athena.language.InstallationMountDeclaration
+import com.engineeringood.athena.language.InstallationMountOrientation
 import com.engineeringood.athena.language.InstallationOrientation
 import com.engineeringood.athena.language.InstallationPointLiteral
 import com.engineeringood.athena.language.InstallationRailDeclaration
@@ -68,6 +70,7 @@ import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.Token
+import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.ParseTree
 import org.antlr.v4.runtime.tree.TerminalNode
 
@@ -685,14 +688,87 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         )
 
     private fun adaptInstallationMount(context: AthenaParser.InstallationMountDeclContext): InstallationMountDeclaration =
-        InstallationMountDeclaration(
-            id = context.ident(0).text,
-            deviceId = context.ident(1).text,
-            targetId = context.ident(2).text,
-            at = adaptLengthPoint(context.lengthPoint()),
-            orientation = adaptInstallationOrientation(context.installationOrientation()),
-            span = spanOfContext(context.start, context.stop),
+        context.installationMountMember().let { members ->
+            InstallationMountDeclaration(
+                deviceId = context.ident(0).text,
+                id = context.ident(1).text,
+                targetId = context.ident(2).text,
+                at = adaptLengthPoint(context.lengthPoint()),
+                footprint = adaptLengthTuple3(
+                    requiredMountMember(context, members.mapNotNull { it.installationFootprintDecl() }, "footprint").lengthTuple3(),
+                ),
+                mountingType = requiredMountMember(
+                    context,
+                    members.mapNotNull { it.installationMountingDecl() },
+                    "mounting",
+                ).ident().text,
+                orientation = adaptInstallationMountOrientation(
+                    requiredMountMember(
+                        context,
+                        members.mapNotNull { it.installationMountOrientationDecl() },
+                        "orientation",
+                    ).installationMountOrientation(),
+                ),
+                allowedOrientations = requiredMountMember(
+                    context,
+                    members.mapNotNull { it.installationAllowedOrientationsDecl() },
+                    "allowed-orientations",
+                ).installationMountOrientationList().installationMountOrientation().map(::adaptInstallationMountOrientation),
+                clearance = adaptInstallationClearance(
+                    requiredMountMember(
+                        context,
+                        members.mapNotNull { it.installationClearanceDecl() },
+                        "clearance",
+                    ).lengthTuple4(),
+                ),
+                compatibleContainerKinds = adaptIdentList(
+                    requiredMountMember(
+                        context,
+                        members.mapNotNull { it.installationCompatibleContainersDecl() },
+                        "compatible-containers",
+                    ).identList(),
+                ),
+                span = spanOfContext(context.start, context.stop),
+            )
+        }
+
+    private fun <T : ParserRuleContext> requiredMountMember(
+        mount: AthenaParser.InstallationMountDeclContext,
+        members: List<T>,
+        name: String,
+    ): T {
+        if (members.size == 1) return members.single()
+        val issue = if (members.isEmpty()) "requires one" else "must not repeat"
+        throw AthenaAntlrAdapterFailure(
+            SyntaxDiagnostic(
+                file = file,
+                line = mount.start.line,
+                column = mount.start.charPositionInLine + 1,
+                message = "Mount '${mount.ident(1).text}' $issue '$name' declaration",
+                span = spanOfContext(mount.start, mount.stop),
+            ),
         )
+    }
+
+    private fun adaptInstallationMountOrientation(
+        context: AthenaParser.InstallationMountOrientationContext,
+    ): InstallationMountOrientation = when (context.text) {
+        "deg0" -> InstallationMountOrientation.Deg0
+        "deg90" -> InstallationMountOrientation.Deg90
+        "deg180" -> InstallationMountOrientation.Deg180
+        "deg270" -> InstallationMountOrientation.Deg270
+        else -> error("ANTLR admitted unsupported mount orientation '${context.text}'.")
+    }
+
+    private fun adaptInstallationClearance(
+        context: AthenaParser.LengthTuple4Context,
+    ): InstallationClearanceLiteral = InstallationClearanceLiteral(
+        top = adaptLength(context.lengthLiteral(0)),
+        right = adaptLength(context.lengthLiteral(1)),
+        bottom = adaptLength(context.lengthLiteral(2)),
+        left = adaptLength(context.lengthLiteral(3)),
+        span = spanOfContext(context.start, context.stop),
+    )
 
     private fun adaptInstallationRoute(context: AthenaParser.InstallationRouteDeclContext): InstallationRouteDeclaration =
         InstallationRouteDeclaration(
@@ -1038,25 +1114,24 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
 
     private fun adaptAnchor(context: AthenaParser.AnchorDeclContext): SymbolAnchorDeclaration {
         val members = context.anchorMember()
-        val primitiveRef = singletonMember(members.mapNotNull { it.primitiveRefDecl() }, "primitiveRef")
+        val ref = singletonMember(members.mapNotNull { it.refDecl() }, "ref")
+        val anchorPort = singletonMember(members.mapNotNull { it.anchorPortDecl() }, "port")
+        val directions = members.mapNotNull { it.directionDecl() }
+        val signals = members.mapNotNull { it.signalDecl() }
         val point = singletonMember(members.mapNotNull { it.pointDecl() }, "point")
         val role = singletonMember(members.mapNotNull { it.roleDecl() }, "role")
         return SymbolAnchorDeclaration(
             id = context.ident().text,
-            primitiveRef = primitiveRef?.let { declaration ->
-                SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
+            ref = ref?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
             },
+            port = anchorPort?.let { declaration -> adaptQualifiedName(declaration.twoPartName(), "Expected qualified port reference in owner.port form after 'port'") },
+            directions = directions.map { declaration ->
+                SymbolIdentifierField(declaration.directionPredicate().text, spanOfContext(declaration.start, declaration.stop))
+            },
+            signals = signals.map { declaration -> adaptQualifiedName(declaration.twoPartName(), "Expected qualified signal reference in owner.signal form after 'signal'") },
             point = point?.let { declaration -> adaptPoint(declaration.pointTuple()) },
             role = role?.let { declaration ->
-                SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
-            },
-            acceptedDirections = members.mapNotNull { it.acceptsDirectionDecl() }.map { declaration ->
-                SymbolIdentifierField(
-                    declaration.directionPredicate().text,
-                    spanOfContext(declaration.start, declaration.stop),
-                )
-            },
-            acceptedSignals = members.mapNotNull { it.acceptsSignalDecl() }.map { declaration ->
                 SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
             },
             span = spanOfContext(context.start, context.stop),

@@ -73,7 +73,7 @@ class ProjectSemanticLayoutConstraintLowerer {
             }
 
         return LayoutConstraintSnapshot.canonical(
-            snapshotId = LayoutSnapshotId("snapshot:m23:layout-constraints:${snapshot.graphId.value}"),
+            snapshotId = LayoutSnapshotId("snapshot:layout-constraints:${snapshot.graphId.value}"),
             family = ElectricalProjectionFamily.SCHEMATIC,
             constraints = constraints,
         )
@@ -92,7 +92,7 @@ class ProjectSemanticLayoutConstraintLowerer {
             ResolvedLayoutSubject(declaration).toConstraintSubject(sourceUnitId, viewFamily, span)
         }
         val constraintId = LayoutConstraintId(
-            "constraint:m23:$viewFamily:${relationToken()}:$subjectName:$targetName:${span.start.offset}",
+            "constraint:$viewFamily:${relationToken()}:$subjectName:$targetName:${span.start.offset}",
         )
         return when (this) {
             is LayoutStatement.PlaceNear -> LayoutConstraint.near(constraintId, subjectRef, requireNotNull(targetRef))
@@ -127,9 +127,9 @@ class ProjectSemanticLayoutConstraintLowerer {
     ): LayoutConstraintSubject {
         val name = authoredName
         return LayoutConstraintSubject(
-            intentId = LayoutIntentId("intent:m23:$viewFamily:$name"),
+            intentId = LayoutIntentId("intent:layout:$viewFamily:$name"),
             subjectId = StableSemanticIdentity(physicalDeclaration.declarationId.value),
-            occurrenceId = LayoutOccurrenceId("occurrence:m23:$viewFamily:$name"),
+            occurrenceId = LayoutOccurrenceId("occurrence:layout:$viewFamily:$name"),
             viewId = viewFamily,
             sourceSpan = LayoutSourceSpan(
                 sourceUnitId = sourceUnitId.value,

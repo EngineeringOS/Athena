@@ -26,7 +26,7 @@ data class GraphicPrimitiveSvgCanvasDiagnostic(
     val message: String,
 )
 
-data class GraphicPrimitiveSvgCanvasProof(
+data class GraphicPrimitiveSvgCanvasEvidence(
     val contentBounds: GraphicBounds,
     val boundsAuthority: String,
     val margin: Double,
@@ -36,11 +36,11 @@ data class GraphicPrimitiveSvgCanvasProof(
 
 data class GraphicPrimitiveSvgCanvasResult(
     val svg: String?,
-    val proof: GraphicPrimitiveSvgCanvasProof?,
+    val evidence: GraphicPrimitiveSvgCanvasEvidence?,
     val diagnostics: List<GraphicPrimitiveSvgCanvasDiagnostic>,
 ) {
     val isValid: Boolean
-        get() = svg != null && proof != null && diagnostics.isEmpty()
+        get() = svg != null && evidence != null && diagnostics.isEmpty()
 }
 
 class GraphicPrimitiveSvgCanvasComposer {
@@ -58,7 +58,7 @@ class GraphicPrimitiveSvgCanvasComposer {
             )
         }
         val documentId = request.document.documentId?.value
-        if (!request.fragment.isValid || request.fragment.proof?.documentId != documentId) {
+        if (!request.fragment.isValid || request.fragment.evidence?.documentId != documentId) {
             diagnostics += diagnostic(
                 "drawing.svg.fragment.invalid",
                 "svg-adapter",
@@ -99,7 +99,7 @@ class GraphicPrimitiveSvgCanvasComposer {
         }
         return GraphicPrimitiveSvgCanvasResult(
             svg = svg,
-            proof = GraphicPrimitiveSvgCanvasProof(
+            evidence = GraphicPrimitiveSvgCanvasEvidence(
                 contentBounds = bounds,
                 boundsAuthority = "graphic-primitive-ir",
                 margin = request.margin,
@@ -128,7 +128,7 @@ class GraphicPrimitiveSvgCanvasComposer {
 
     private fun failed(diagnostics: List<GraphicPrimitiveSvgCanvasDiagnostic>) = GraphicPrimitiveSvgCanvasResult(
         svg = null,
-        proof = null,
+        evidence = null,
         diagnostics = diagnostics.distinct().sortedWith(compareBy({ it.code }, { it.authority }, { it.subject }, { it.message })),
     )
 

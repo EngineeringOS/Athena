@@ -7,7 +7,7 @@ data class DrawingSymbolPrimitiveCompilationRequest(
     val styleTokens: List<GraphicStyleToken>,
 )
 
-data class DrawingSymbolPrimitiveCompilationProof(
+data class DrawingSymbolPrimitiveCompilationEvidence(
     val descriptorId: String,
     val symbolId: String,
     val resourceHandle: String,
@@ -28,11 +28,11 @@ data class DrawingSymbolPrimitiveCompilationDiagnostic(
 
 data class DrawingSymbolPrimitiveCompilationResult(
     val document: GraphicPrimitiveDocument?,
-    val proof: DrawingSymbolPrimitiveCompilationProof?,
+    val evidence: DrawingSymbolPrimitiveCompilationEvidence?,
     val diagnostics: List<DrawingSymbolPrimitiveCompilationDiagnostic>,
 ) {
     val isValid: Boolean
-        get() = diagnostics.isEmpty() && document != null && proof != null
+        get() = diagnostics.isEmpty() && document != null && evidence != null
 }
 
 class DrawingSymbolPrimitiveCompiler(
@@ -90,7 +90,7 @@ class DrawingSymbolPrimitiveCompiler(
             return failed(diagnostics)
         }
 
-        val proof = DrawingSymbolPrimitiveCompilationProof(
+        val evidence = DrawingSymbolPrimitiveCompilationEvidence(
             descriptorId = request.descriptorId,
             symbolId = requireNotNull(request.anatomy.identity).value,
             resourceHandle = request.resourceHandle,
@@ -102,7 +102,7 @@ class DrawingSymbolPrimitiveCompiler(
             styleTokenIds = request.styleTokens.map { it.styleTokenId.value }.sorted(),
             bounds = bounds,
         )
-        return DrawingSymbolPrimitiveCompilationResult(document, proof, emptyList())
+        return DrawingSymbolPrimitiveCompilationResult(document, evidence, emptyList())
     }
 
     private fun flatten(primitive: GraphicPrimitive): List<GraphicPrimitive> = when (primitive) {
@@ -115,7 +115,7 @@ class DrawingSymbolPrimitiveCompiler(
         diagnostics: List<DrawingSymbolPrimitiveCompilationDiagnostic>,
     ): DrawingSymbolPrimitiveCompilationResult = DrawingSymbolPrimitiveCompilationResult(
         document = null,
-        proof = null,
+        evidence = null,
         diagnostics = diagnostics.distinct().sortedWith(compareBy({ it.code }, { it.subject }, { it.message })),
     )
 

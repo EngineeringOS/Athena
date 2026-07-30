@@ -270,7 +270,7 @@ class AthenaSourceMutationRequestTest {
     fun `source mutation request transports knowledge diagnostics and impact consequences for governed engineering change`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-lsp-source-mutation-knowledge-",
-            sourceFileName = "motor-proof.athena",
+            sourceFileName = "motor-evidence.athena",
             sourceText = sourceMutationKnowledgeBaselineSource,
         )
         val repositoryRoot = repository.repositoryRoot

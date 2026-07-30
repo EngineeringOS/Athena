@@ -38,8 +38,8 @@ data class AthenaProfessionalDrawingPolicy(
     }
 
     companion object {
-        fun m34RollingShutter(): AthenaProfessionalDrawingPolicy = AthenaProfessionalDrawingPolicy(
-            policyId = "m34-rolling-shutter-control-drawing-v0",
+        fun rollingShutterControlDrawing(): AthenaProfessionalDrawingPolicy = AthenaProfessionalDrawingPolicy(
+            policyId = "rolling-shutter-control-drawing",
             sheetWidth = 1050,
             sheetHeight = 720,
             frameToSheet = 5,
@@ -73,7 +73,7 @@ data class AthenaProfessionalDrawingDiagnostic(
     override fun toString(): String = "[$code] $subject: $message"
 }
 
-data class AthenaProfessionalDrawingProof(
+data class AthenaProfessionalDrawingEvidence(
     val exactTerminalAttachment: Boolean = false,
     val componentAndLabelClearance: Boolean = false,
     val junctionCrossingSemanticsExplicit: Boolean = false,
@@ -86,6 +86,5 @@ data class AthenaProfessionalDrawingProof(
 data class AthenaProfessionalDrawingResult(
     val presentation: PresentationDocument? = null,
     val diagnostics: List<AthenaProfessionalDrawingDiagnostic> = emptyList(),
-    val proof: AthenaProfessionalDrawingProof = AthenaProfessionalDrawingProof(),
+    val evidence: AthenaProfessionalDrawingEvidence = AthenaProfessionalDrawingEvidence(),
 )
-

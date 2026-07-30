@@ -797,7 +797,7 @@ export function buildAthenaGraphRouteInspection(
         sourcePortSemanticId: edge.sourcePortSemanticId,
         targetPortSemanticId: edge.targetPortSemanticId,
         routeQuality,
-        policySummary: `m24:route-fact:${routeQuality}:${routeSegmentCount}-segment`,
+        policySummary: `route-fact:${routeQuality}:${routeSegmentCount}-segment`,
         labels: edge.routeLabels.map(label => label.text),
         persisted: false,
     };
@@ -875,7 +875,7 @@ export function captureAthenaGraphLayoutAdjustmentIntent(args: {
     if (args.kind === 'route' || args.kind === 'label') {
         return {
             accepted: false,
-            reason: 'Route and label adjustment persistence is outside M22 scope.',
+            reason: 'Route and label adjustment persistence is not supported.',
         };
     }
     const activeView = args.model.supportedViews.find(view => view.isActive);
