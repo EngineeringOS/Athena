@@ -59,3 +59,47 @@ Keep Kotlin files easy to scan.
   - if a file is mostly one cohesive flow, keep it together even if not tiny
   - if a file grows past roughly 200-300 lines and contains distinct roles, split it
   - optimize first for readability and navigation, second for file count
+
+## Milestone Execution And Cleanup Lessons
+
+The M36 cleanup exposed a costly process failure: milestone proof/demo code and stale compatibility paths were allowed to enter production source sets. Treat this as a production outage class lesson.
+
+- Stay on the active milestone only. Do not jump to closed or unrelated milestones when creating stories, editing artifacts, or explaining status.
+- For milestone work, use the milestone-scoped BMad artifacts. Example: M36 implementation artifacts live under `_bmad-output/implementation-artifacts/m36`, and the M36 PRD lives under `_bmad-output/planning-artifacts/prds/prd-Athena-2026-07-28-m36`.
+- Follow the BMad story flow for milestone delivery: create the next story from the active milestone plan, implement that story, test it, update sprint status, then move to the next story in order.
+- Do not claim an epic or story is done until its acceptance checks, source-set hygiene, and relevant product E2E proof are complete.
+- Do not share examples across milestones unless the user explicitly asks. M36 work uses the M36 example project.
+
+## Source-Set Hygiene Rule
+
+Production `src/main` must contain product architecture only.
+
+- No `*Proof`, `*Demo`, `*Sample`, smoke-only, screenshot-only, or test fixture classes in `src/main`.
+- Valid proof/demo helpers belong in `src/test`, dedicated test fixtures, examples, or BMad artifacts.
+- Production class names must not include milestone names such as `M32`, `M35`, or `M36`.
+- No `V0` or `V1` suffixes for pre-public architecture. Rename to the current product concept or delete stale variants.
+- If a core production class depends on a milestone-named class, stop and refactor the dependency. That is an architecture smell, not a naming nit.
+- Run source-set hygiene audit after cleanup work:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\source-set-hygiene-audit.ps1
+```
+
+## Pre-1.0 Architecture Rule
+
+Athena is not public yet. Prefer clean architecture over compatibility.
+
+- Do not add shims, fallback paths, compatibility adapters, or roundabout migration code unless the user explicitly asks.
+- If old behavior violates the current architecture, delete or refactor it to the latest model.
+- XML is out of the active product path unless explicitly needed as a temporary import/input format. It must not become runtime authority.
+- Athena source remains the single source of truth for engineering metadata.
+- SVG may provide package-local geometry and stable geometry references. It must not own engineering facts.
+
+## E2E Proof Rule
+
+Final status must be backed by real verification, not assumptions.
+
+- Rebuild every affected runtime surface before final E2E. For IDE changes, rebuild the frontend bundle as well as LSP/kernel outputs.
+- If Electron or Theia shows stale behavior after code changes, suspect a stale frontend bundle before changing assertions.
+- Product rendering work must produce screenshots under the milestone implementation artifacts folder.
+- Final E2E evidence must include the active example project, visible product surface, occurrence/trace proof where relevant, and the screenshot paths.
