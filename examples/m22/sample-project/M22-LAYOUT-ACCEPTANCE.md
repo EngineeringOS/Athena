@@ -8,9 +8,9 @@ not a pixel-perfect target.
 Use these references together:
 
 - M21 baseline: `examples/m21/sample-project`
-- M22 baseline source: `src/01-baseline-sheet.athena`
-- M22 optimized source: `src/02-layout-optimization-acceptance.athena`
-- M22 round-trip source: `src/03-component-round-trip.athena`
+- M22 baseline source: `src/com/engineeringood/m22/sample/01-baseline-sheet.athena`
+- M22 optimized source: `src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena`
+- M22 round-trip source: `src/com/engineeringood/m22/sample/03-component-round-trip.athena`
 - visual inspiration from `draft/screenshort`, especially schematic and engineering-sheet examples
   such as `qelectrotech15.jpg`, `qelectrotech5.jpg`, `machine_no_000_-_op,_cpu.png`, and
   `nuri_bustopologie_profinet,_ethernet,_drivecliq.png`

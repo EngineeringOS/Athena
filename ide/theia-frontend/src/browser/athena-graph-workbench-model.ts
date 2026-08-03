@@ -9,6 +9,7 @@ import {
 } from '@engineeringood/athena-graph-glsp';
 import {
     AthenaGraphResolvedPresentationConnector,
+    AthenaGraphResolvedPresentationConnectorEndpoint,
     AthenaGraphResolvedPresentationGraphicOccurrence,
     AthenaGraphResolvedPresentationOccurrence,
     AthenaGraphResolvedPresentationPart,
@@ -321,7 +322,18 @@ export type AthenaGraphWorkbenchReferenceMarker = {
     sourceProjectionIds: string[];
 };
 
+export type AthenaGraphWorkbenchConnectionMarker = {
+    markerId: string;
+    kind: string;
+    point: AthenaGLSPPoint;
+    routeIds: string[];
+    connectorIds: string[];
+    joined: boolean;
+    appearanceClassId: string;
+};
+
 export type AthenaGraphDrawingComposition = NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['drawingComposition']>;
+type AthenaGraphPresentationPaintItem = NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['paintPlan']>['items'][number];
 
 export type AthenaGraphDrawingLayerModel = {
     items: AthenaGraphDrawingLayerItem[];
@@ -409,18 +421,20 @@ export type AthenaGraphDocumentReferenceInspectionEntry = {
 export type AthenaGraphWorkbenchEdge = AthenaGLSPEdge & {
     routePoints: AthenaGLSPPoint[];
     bendMarkerPoints: AthenaGLSPPoint[];
-    crossingMarkerPoints: AthenaGLSPPoint[];
-    routeLabels: AthenaGraphWorkbenchRouteLabel[];
+    crossingMarkerPoints: AthenaGraphWorkbenchConnectionMarker[];
+    connectionLabels: AthenaGraphWorkbenchConnectionLabel[];
     path: string;
     conductorStyle: 'electrical' | 'generic';
+    line: AthenaGraphResolvedPresentationConnector['line'] | undefined;
     terminals: AthenaGraphWorkbenchEdgeTerminal[];
     presentationConnector?: AthenaGraphResolvedPresentationConnector;
 };
 
-export type AthenaGraphWorkbenchRouteLabel = {
+export type AthenaGraphWorkbenchConnectionLabel = {
     text: string;
     point: AthenaGLSPPoint;
     canvasDisplay: 'always' | 'selection';
+    labelId?: string;
 };
 
 export type AthenaGraphRouteInspection =
@@ -432,6 +446,30 @@ export type AthenaGraphRouteInspection =
         routeQuality: string;
         policySummary: string;
         labels: string[];
+        persisted: false;
+    }
+    | {
+        status: 'unavailable';
+        reason: string;
+        persisted: false;
+    };
+
+export type AthenaGraphEndpointInspection =
+    | {
+        status: 'ready';
+        connectionId: string;
+        endpointRole: 'source' | 'target';
+        portSemanticId: string;
+        bindingId: string;
+        occurrenceId: string;
+        anchorId: string;
+        placedPoint: AthenaGLSPPoint;
+        routeEndpointPoint: AthenaGLSPPoint;
+        sourceProvenance: string[];
+        sourceProjectionIds: string[];
+        packageResource?: string;
+        packageId?: string;
+        elementId?: string;
         persisted: false;
     }
     | {
@@ -520,6 +558,7 @@ export type AthenaGraphWorkbenchPresentationTerminal = {
     marker: string;
     number: string;
     point: AthenaGLSPPoint;
+    labelPoint: AthenaGLSPPoint;
     anchorId: string;
 };
 
@@ -579,12 +618,34 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
     const graphEdges = rawGraphEdges
         .filter(edge => [edge.sourcePoint, ...normalizeArray(edge.bendPoints), edge.targetPoint]
             .every(point => pointIntersectsSurface(point, governedDrawingBounds, canvasWidth, canvasHeight)));
-    const presentationOccurrences = resolvePresentationOccurrences(diagram)
-        .filter(occurrence => presentationBoundsIntersectsSurface(occurrence.bounds, governedDrawingBounds, canvasWidth, canvasHeight));
-    const presentationGraphicOccurrences = resolvePresentationGraphicOccurrences(diagram)
-        .filter(occurrence => presentationBoundsIntersectsSurface(occurrence.bounds, governedDrawingBounds, canvasWidth, canvasHeight));
-    const presentationConnectors = resolvePresentationConnectors(diagram)
-        .filter(connector => connector.routePoints.every(point => pointIntersectsSurface(point, governedDrawingBounds, canvasWidth, canvasHeight)));
+    const paintItemsByTarget = resolvePaintItemsByTarget(diagram);
+    const presentationOccurrences = orderByPaintPlan(
+        resolvePresentationOccurrences(diagram)
+            .filter(occurrence => isPaintTargetVisible(occurrence.occurrenceId, paintItemsByTarget)),
+        occurrence => occurrence.occurrenceId,
+        paintItemsByTarget,
+    );
+    const presentationGraphicOccurrences = orderByPaintPlan(
+        resolvePresentationGraphicOccurrences(diagram)
+            .filter(occurrence => isPaintTargetVisible(occurrence.occurrenceId, paintItemsByTarget)),
+        occurrence => occurrence.occurrenceId,
+        paintItemsByTarget,
+    );
+    const presentationFailure = resolvePresentationFailure(diagram);
+    const presentationConnectors = presentationFailure
+        ? []
+        : orderByPaintPlan(
+            resolvePresentationConnectors(diagram)
+                .filter(connector => isPaintTargetVisible(connector.occurrenceId, paintItemsByTarget)),
+            connector => connector.occurrenceId,
+            paintItemsByTarget,
+        );
+    const presentationConnectionMarkers = orderByPaintPlan(
+        resolvePresentationConnectionMarkers(diagram)
+            .filter(marker => isPaintTargetVisible(marker.markerId, paintItemsByTarget)),
+        marker => marker.markerId,
+        paintItemsByTarget,
+    );
     const presentationRepresentations = resolvePresentationRepresentations(diagram);
     const supportedViews = normalizeArray(diagram.supportedViews);
     const diagnostics = normalizeArray(diagram.diagnostics);
@@ -636,18 +697,20 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             isElectricalFamily,
             representationByProjectionId.get(node.id) ?? representationBySubjectId.get(node.semanticId),
         ));
-    const rawEdges = presentationConnectors.length > 0
+    const rawEdges = diagram.presentation
         ? presentationConnectors.map(connector => buildWorkbenchEdgeFromPresentation(
             connector,
+            presentationConnectionMarkers,
             endpointsByConnectionId,
             anchorById,
+            paintItemsByTarget,
         ))
         : graphEdges.map(edge => buildWorkbenchEdge(
             edge,
             endpointsByConnectionId.get(edge.id) ?? [],
             anchorById,
         ));
-    const edges = withCrossingMarkers(rawEdges);
+    const edges = rawEdges;
     const sheetChrome = resolveSheetChrome(diagram, canvasWidth, canvasHeight);
     const sheetViewSelector = resolveSheetViewSelector(diagram);
     const referenceMarkers = resolveWorkbenchReferenceMarkers(diagram);
@@ -659,7 +722,7 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         viewFamilyId: activeView?.familyId,
         isElectricalFamily,
         statusLabel: diagram.status,
-        statusTone: diagram.status === 'ready' ? 'ready' : 'warning',
+        statusTone: diagram.status === 'ready' && !presentationFailure ? 'ready' : 'warning',
         semanticPath: diagram.semanticPath,
         snapshotId: resolveWorkbenchSnapshotId(diagram),
         activeSheetId: diagram.activeSheetId,
@@ -678,7 +741,14 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
             ...view,
             isActive: view.viewId === diagram.activeViewId,
         })),
-        diagnostics,
+        diagnostics: presentationFailure ? [
+            ...diagnostics,
+            {
+                severity: 'error',
+                code: 'presentation.connector.invalid',
+                message: presentationFailure,
+            },
+        ] : diagnostics,
         activeRenderContributions: renderContributions,
         ...(drawingComposition ? { drawingComposition } : {}),
         sheetChrome,
@@ -691,8 +761,51 @@ export function buildAthenaGraphWorkbenchModel(diagram: AthenaGLSPDiagram): Athe
         },
         sceneBounds,
         surfaceTokens: resolveSurfaceTokens(renderContributions),
-        emptyState: resolveEmptyState(diagram, nodes, edges),
+        emptyState: presentationFailure
+            ? {
+                title: 'Presentation rejected',
+                message: presentationFailure,
+            }
+            : resolveEmptyState(diagram, nodes, edges),
     };
+}
+
+function resolvePresentationFailure(diagram: AthenaGLSPDiagram): string | undefined {
+    if (!diagram.presentation) {
+        return undefined;
+    }
+    try {
+        resolvePresentationConnectors(diagram);
+        return undefined;
+    } catch (error) {
+        return error instanceof Error ? error.message : 'Athena rejected malformed presentation connector facts.';
+    }
+}
+
+function resolvePaintItemsByTarget(diagram: AthenaGLSPDiagram): Map<string, AthenaGraphPresentationPaintItem> {
+    return new Map((diagram.presentation?.paintPlan?.items ?? []).map(item => [item.targetId, item]));
+}
+
+function isPaintTargetVisible(targetId: string, paintItemsByTarget: Map<string, AthenaGraphPresentationPaintItem>): boolean {
+    const item = paintItemsByTarget.get(targetId);
+    return item ? item.visible : true;
+}
+
+function orderByPaintPlan<T>(
+    values: T[],
+    targetId: (value: T) => string,
+    paintItemsByTarget: Map<string, AthenaGraphPresentationPaintItem>,
+): T[] {
+    return values.map((value, index) => ({ value, index })).sort((left, right) => {
+        const leftItem = paintItemsByTarget.get(targetId(left.value));
+        const rightItem = paintItemsByTarget.get(targetId(right.value));
+        if (!leftItem && !rightItem) {
+            return left.index - right.index;
+        }
+        const leftOrder = leftItem?.order ?? Number.MAX_SAFE_INTEGER;
+        const rightOrder = rightItem?.order ?? Number.MAX_SAFE_INTEGER;
+        return leftOrder - rightOrder || left.index - right.index;
+    }).map(entry => entry.value);
 }
 
 export function buildAthenaGraphDrawingLayerModel(
@@ -756,7 +869,7 @@ export function buildAthenaGraphDrawingLayerModel(
         items.push({
             id: fact.factId,
             kind,
-            authority: fact.authority ?? drawingComposition.authorities?.structureIntent ?? 'drawing-structure-intent',
+            authority: fact.authority ?? drawingComposition.authorities?.structure ?? 'drawing-structure',
             bounds: normalizeRect(fact.bounds),
             start: normalizePoint(fact.start),
             end: normalizePoint(fact.end),
@@ -789,16 +902,67 @@ export function buildAthenaGraphRouteInspection(
             persisted: false,
         };
     }
-    const routeQuality = edge.presentationConnector.tokenOverrides.routeQuality ?? 'UNKNOWN';
-    const routeSegmentCount = edge.presentationConnector.tokenOverrides.routeSegmentCount ?? `${Math.max(0, edge.routePoints.length - 1)}`;
+    const routeQuality = edge.presentationConnector.quality;
+    const routeSegmentCount = `${Math.max(0, edge.routePoints.length - 1)}`;
     return {
         status: 'ready',
         connectionId: edge.semanticId,
-        sourcePortSemanticId: edge.sourcePortSemanticId,
-        targetPortSemanticId: edge.targetPortSemanticId,
+        sourcePortSemanticId: edge.presentationConnector.sourceEndpoint.portSemanticId,
+        targetPortSemanticId: edge.presentationConnector.targetEndpoint.portSemanticId,
         routeQuality,
         policySummary: `route-fact:${routeQuality}:${routeSegmentCount}-segment`,
-        labels: edge.routeLabels.map(label => label.text),
+        labels: edge.connectionLabels.map(label => label.text),
+        persisted: false,
+    };
+}
+
+export function buildAthenaGraphEndpointInspection(
+    model: AthenaGraphWorkbenchModel,
+    semanticId: string,
+): AthenaGraphEndpointInspection {
+    const match = findPresentationEndpoint(model, semanticId);
+    if (!match) {
+        return {
+            status: 'unavailable',
+            reason: 'No governed endpoint trace is available for the selected rendered endpoint.',
+            persisted: false,
+        };
+    }
+    const endpoint = match.role === 'source'
+        ? match.edge.presentationConnector.sourceEndpoint
+        : match.edge.presentationConnector.targetEndpoint;
+    const routeEndpointPoint = match.role === 'source'
+        ? match.edge.routePoints[0]
+        : match.edge.routePoints[match.edge.routePoints.length - 1];
+    if (!routeEndpointPoint || !samePoint(routeEndpointPoint, endpoint.point)) {
+        return {
+            status: 'unavailable',
+            reason: 'Endpoint trace does not match the current rendered route snapshot.',
+            persisted: false,
+        };
+    }
+    const packageTrace = resolveEndpointPackageTrace(model, endpoint.occurrenceId);
+    return {
+        status: 'ready',
+        connectionId: match.edge.semanticId,
+        endpointRole: match.role,
+        portSemanticId: endpoint.portSemanticId,
+        bindingId: endpoint.bindingId,
+        occurrenceId: endpoint.occurrenceId,
+        anchorId: endpoint.anchorId,
+        placedPoint: { ...endpoint.point },
+        routeEndpointPoint: { ...routeEndpointPoint },
+        sourceProvenance: [...endpoint.sourceProvenance],
+        sourceProjectionIds: [...new Set([
+            ...match.edge.presentationConnector.sourceProjectionIds,
+            endpoint.portSemanticId,
+            endpoint.bindingId,
+            endpoint.occurrenceId,
+            endpoint.anchorId,
+        ])],
+        ...(packageTrace.packageResource ? { packageResource: packageTrace.packageResource } : {}),
+        ...(packageTrace.packageId ? { packageId: packageTrace.packageId } : {}),
+        ...(packageTrace.elementId ? { elementId: packageTrace.elementId } : {}),
         persisted: false,
     };
 }
@@ -862,6 +1026,71 @@ export function buildAthenaGraphRepresentationInspection(
             || label.anchorId === semanticId
         ),
         persisted: false,
+    };
+}
+
+function findPresentationEndpoint(
+    model: AthenaGraphWorkbenchModel,
+    semanticId: string,
+): { edge: AthenaGraphWorkbenchEdge & { presentationConnector: AthenaGraphResolvedPresentationConnector }; role: 'source' | 'target' } | undefined {
+    for (const edge of model.edges) {
+        if (!edge.presentationConnector) {
+            continue;
+        }
+        const connector = edge.presentationConnector;
+        const sourceTokens = endpointSelectionTokens(edge, 'source', connector.sourceEndpoint);
+        const targetTokens = endpointSelectionTokens(edge, 'target', connector.targetEndpoint);
+        if (sourceTokens.has(semanticId)) {
+            return { edge: edge as AthenaGraphWorkbenchEdge & { presentationConnector: AthenaGraphResolvedPresentationConnector }, role: 'source' };
+        }
+        if (targetTokens.has(semanticId)) {
+            return { edge: edge as AthenaGraphWorkbenchEdge & { presentationConnector: AthenaGraphResolvedPresentationConnector }, role: 'target' };
+        }
+        if (edge.semanticId === semanticId || edge.id === semanticId) {
+            return { edge: edge as AthenaGraphWorkbenchEdge & { presentationConnector: AthenaGraphResolvedPresentationConnector }, role: 'source' };
+        }
+    }
+    return undefined;
+}
+
+function endpointSelectionTokens(
+    edge: AthenaGraphWorkbenchEdge,
+    role: 'source' | 'target',
+    endpoint: AthenaGraphResolvedPresentationConnectorEndpoint,
+): Set<string> {
+    const terminal = edge.terminals.find(candidate => candidate.role === role);
+    return new Set([
+        endpoint.portSemanticId,
+        endpoint.bindingId,
+        endpoint.occurrenceId,
+        endpoint.anchorId,
+        terminal?.endpointId,
+        terminal?.anchorId,
+        terminal?.portSemanticId,
+        terminal?.nodeId,
+        terminal?.labelId,
+    ].filter((value): value is string => !!value));
+}
+
+function samePoint(left: AthenaGLSPPoint, right: AthenaGLSPPoint): boolean {
+    return left.x === right.x && left.y === right.y;
+}
+
+function resolveEndpointPackageTrace(
+    model: AthenaGraphWorkbenchModel,
+    occurrenceId: string,
+): { packageResource?: string; packageId?: string; elementId?: string } {
+    const node = model.nodes.find(candidate =>
+        candidate.presentationGraphicOccurrence?.occurrenceId === occurrenceId ||
+        candidate.presentationRepresentation?.occurrenceId === occurrenceId ||
+        candidate.id === occurrenceId,
+    );
+    const graphicOccurrence = node?.presentationGraphicOccurrence;
+    const representation = node?.presentationRepresentation;
+    return {
+        packageResource: representation?.packageTrace?.graphicResourceId,
+        packageId: graphicOccurrence?.packageId ?? representation?.packageTrace?.representationPackageId,
+        elementId: graphicOccurrence?.definitionId ?? representation?.representationId,
     };
 }
 
@@ -1147,6 +1376,18 @@ function resolveWorkbenchReferenceMarkers(
         ...resolveCrossReferenceLinkMarkers(diagram),
     ]
         .sort(compareReferenceMarkers);
+}
+
+function resolvePresentationConnectionMarkers(diagram: AthenaGLSPDiagram): AthenaGraphWorkbenchConnectionMarker[] {
+    return (diagram.presentation?.connectionMarkers ?? []).map(marker => ({
+        markerId: marker.markerId,
+        kind: marker.kind,
+        point: { ...marker.point },
+        routeIds: [...(marker.routeIds ?? [])],
+        connectorIds: [...(marker.connectorIds ?? [])],
+        joined: marker.joined,
+        appearanceClassId: marker.appearanceClassId,
+    }));
 }
 
 function resolveCrossReferenceLinkMarkers(
@@ -1970,15 +2211,17 @@ function buildWorkbenchNodeFromGraphicOccurrence(
         },
     };
     const terminalBindings = normalizeArray(occurrence.terminalBindings);
+    const placedAnchors = normalizeArray(occurrence.placedAnchors);
+    const terminalByAnchorId = new Map(terminalBindings.map(binding => [binding.anchorId, binding]));
     return {
         ...node,
         renderVariant: 'electrical-device',
         markerKeys: [],
-        electricalAnchors: terminalBindings.map(binding => ({
-            anchorId: binding.anchorId,
-            point: { ...binding.point },
-            side: binding.side,
-            portSemanticId: binding.portSemanticId,
+        electricalAnchors: placedAnchors.map(anchor => ({
+            anchorId: anchor.anchorId,
+            point: { ...anchor.point },
+            side: terminalByAnchorId.get(anchor.anchorId)?.side ?? 'right',
+            portSemanticId: terminalByAnchorId.get(anchor.anchorId)?.portSemanticId,
         })),
         presentationOccurrence: undefined,
         presentationGraphicOccurrence: occurrence,
@@ -1994,6 +2237,7 @@ function buildWorkbenchNodeFromGraphicOccurrence(
             marker: binding.terminalIdentity,
             number: binding.terminalIdentity,
             point: { ...binding.point },
+            labelPoint: { ...binding.labelPoint },
             anchorId: binding.anchorId,
         })),
         presentationLabels: normalizeArray(occurrence.labels).map(label => ({
@@ -2169,21 +2413,38 @@ function scaleRepresentationTerminalsToNode(
     node: AthenaGLSPNode,
 ): AthenaGraphWorkbenchPresentationTerminal[] {
     const bounds = representation.parts[0]?.bounds ?? { x: 0, y: 0, width: node.size.width, height: node.size.height };
-    return normalizeArray(representation.terminals).map(terminal => ({
-        terminalId: terminal.presentationTerminalId,
-        subjectId: terminal.subjectId,
-        occurrenceId: terminal.occurrenceId,
-        portId: terminal.portId,
-        physicalTerminalId: terminal.physicalTerminalId,
-        side: terminal.side,
-        marker: terminal.notation.marker,
-        number: terminal.notation.number,
-        point: {
+    return normalizeArray(representation.terminals).map(terminal => {
+        const point = {
             x: scaleWithinNode(terminal.routeAnchor.point.x, bounds.width, node.position.x, node.size.width),
             y: scaleWithinNode(terminal.routeAnchor.point.y, bounds.height, node.position.y, node.size.height),
-        },
-        anchorId: terminal.routeAnchor.anchorId,
-    }));
+        };
+        return {
+            terminalId: terminal.presentationTerminalId,
+            subjectId: terminal.subjectId,
+            occurrenceId: terminal.occurrenceId,
+            portId: terminal.portId,
+            physicalTerminalId: terminal.physicalTerminalId,
+            side: terminal.side,
+            marker: terminal.notation.marker,
+            number: terminal.notation.number,
+            point,
+            labelPoint: defaultTerminalLabelPoint(point, terminal.side),
+            anchorId: terminal.routeAnchor.anchorId,
+        };
+    });
+}
+
+function defaultTerminalLabelPoint(point: AthenaGLSPPoint, side: string): AthenaGLSPPoint {
+    switch (side.toLowerCase()) {
+        case 'left':
+            return { x: point.x - 34, y: point.y - 8 };
+        case 'top':
+            return { x: point.x + 10, y: point.y - 14 };
+        case 'bottom':
+            return { x: point.x + 10, y: point.y + 18 };
+        default:
+            return { x: point.x + 10, y: point.y - 8 };
+    }
 }
 
 function scaleRepresentationLabelsToNode(
@@ -2300,9 +2561,10 @@ function buildWorkbenchEdge(
         routePoints,
         bendMarkerPoints: bendPoints.map(point => ({ x: point.x, y: point.y })),
         crossingMarkerPoints: [],
-        routeLabels: [],
+        connectionLabels: [],
         path: buildEdgePath(routePoints),
         conductorStyle: edge.routingStyle === 'orthogonal' || bendPoints.length > 0 ? 'electrical' : 'generic',
+        line: undefined,
         terminals: [
             buildWorkbenchTerminal('source', edge.sourcePoint, edge.sourceAnchorId, edge.sourcePortSemanticId, endpoints, anchorById),
             buildWorkbenchTerminal('target', edge.targetPoint, edge.targetAnchorId, edge.targetPortSemanticId, endpoints, anchorById),
@@ -2313,8 +2575,10 @@ function buildWorkbenchEdge(
 
 function buildWorkbenchEdgeFromPresentation(
     connector: AthenaGraphResolvedPresentationConnector,
+    connectionMarkers: AthenaGraphWorkbenchConnectionMarker[],
     endpointsByConnectionId: Map<string, AthenaGLSPElectricalConnectionEndpointSource[]>,
     anchorById: Map<string, AthenaGLSPElectricalAnchorSource>,
+    paintItemsByTarget: Map<string, AthenaGraphPresentationPaintItem>,
 ): AthenaGraphWorkbenchEdge {
     const routePoints = normalizeArray(connector.routePoints).map(point => ({ x: point.x, y: point.y }));
     const sourcePoint = routePoints[0] ?? { x: 0, y: 0 };
@@ -2330,137 +2594,39 @@ function buildWorkbenchEdgeFromPresentation(
         targetPoint,
         routingStyle: 'orthogonal',
         bendPoints: routePoints.slice(1, Math.max(routePoints.length - 1, 1)),
-        sourceAnchorId: connector.sourceAnchorId,
-        targetAnchorId: connector.targetAnchorId,
-        sourcePortSemanticId: connector.sourcePortSemanticId,
-        targetPortSemanticId: connector.targetPortSemanticId,
+        sourceAnchorId: connector.sourceEndpoint.anchorId,
+        targetAnchorId: connector.targetEndpoint.anchorId,
+        sourcePortSemanticId: connector.sourceEndpoint.portSemanticId,
+        targetPortSemanticId: connector.targetEndpoint.portSemanticId,
     };
     const built = buildWorkbenchEdge(edge, anchorScopedEndpoints, anchorById);
     return {
         ...built,
         routePoints,
         bendMarkerPoints: routePoints.slice(1, Math.max(routePoints.length - 1, 1)),
-        crossingMarkerPoints: [],
-        routeLabels: buildRouteLabels(connector, routePoints),
+        crossingMarkerPoints: connectionMarkers.filter(marker => marker.connectorIds.includes(connector.occurrenceId)),
+        connectionLabels: buildConnectionLabels(connector, paintItemsByTarget),
         path: buildEdgePath(routePoints),
+        line: connector.line,
         presentationConnector: connector,
     };
 }
 
-function buildRouteLabels(
+function buildConnectionLabels(
     connector: AthenaGraphResolvedPresentationConnector,
-    routePoints: AthenaGLSPPoint[],
-): AthenaGraphWorkbenchRouteLabel[] {
-    const labelTexts = (connector.tokenOverrides.routeLabels ?? '')
-        .split('|')
-        .map(text => text.trim())
-        .filter(Boolean);
-    if (labelTexts.length === 0 || routePoints.length < 2) {
-        return [];
-    }
-    const anchorSegment = routePointSegments(routePoints)
-        .sort((left, right) => routePointSegmentLength(right) - routePointSegmentLength(left))[0];
-    if (!anchorSegment) {
-        return [];
-    }
-    return labelTexts.map((text, index) => ({
-        text,
-        point: routeLabelPoint(anchorSegment, index),
-        canvasDisplay: resolveRouteLabelCanvasDisplay(text),
-    }));
-}
-
-function resolveRouteLabelCanvasDisplay(text: string): AthenaGraphWorkbenchRouteLabel['canvasDisplay'] {
-    const normalized = text.trim();
-    if (normalized.includes('->') || normalized.length > 24) {
-        return 'selection';
-    }
-    return 'always';
-}
-
-function routeLabelPoint(
-    segment: [AthenaGLSPPoint, AthenaGLSPPoint],
-    index: number,
-): AthenaGLSPPoint {
-    const [start, end] = segment;
-    const midpoint = {
-        x: Math.trunc((start.x + end.x) / 2),
-        y: Math.trunc((start.y + end.y) / 2),
-    };
-    const offset = 16 + (index * 14);
-    if (start.y === end.y) {
-        return { x: midpoint.x, y: Math.max(0, midpoint.y - offset) };
-    }
-    return { x: midpoint.x + offset, y: midpoint.y };
-}
-
-function withCrossingMarkers(edges: AthenaGraphWorkbenchEdge[]): AthenaGraphWorkbenchEdge[] {
-    const crossingsByEdgeId = new Map<string, AthenaGLSPPoint[]>();
-    for (let leftIndex = 0; leftIndex < edges.length; leftIndex += 1) {
-        for (let rightIndex = leftIndex + 1; rightIndex < edges.length; rightIndex += 1) {
-            for (const leftSegment of routePointSegments(edges[leftIndex].routePoints)) {
-                for (const rightSegment of routePointSegments(edges[rightIndex].routePoints)) {
-                    const crossing = routeSegmentCrossing(leftSegment, rightSegment);
-                    if (!crossing) {
-                        continue;
-                    }
-                    appendUniquePoint(crossingsByEdgeId, edges[leftIndex].id, crossing);
-                    appendUniquePoint(crossingsByEdgeId, edges[rightIndex].id, crossing);
-                }
-            }
-        }
-    }
-    return edges.map(edge => ({
-        ...edge,
-        crossingMarkerPoints: crossingsByEdgeId.get(edge.id) ?? [],
-    }));
-}
-
-function routePointSegments(routePoints: AthenaGLSPPoint[]): Array<[AthenaGLSPPoint, AthenaGLSPPoint]> {
-    const segments: Array<[AthenaGLSPPoint, AthenaGLSPPoint]> = [];
-    for (let index = 0; index < routePoints.length - 1; index += 1) {
-        segments.push([routePoints[index], routePoints[index + 1]]);
-    }
-    return segments;
-}
-
-function routePointSegmentLength(segment: [AthenaGLSPPoint, AthenaGLSPPoint]): number {
-    return Math.abs(segment[0].x - segment[1].x) + Math.abs(segment[0].y - segment[1].y);
-}
-
-function routeSegmentCrossing(
-    left: [AthenaGLSPPoint, AthenaGLSPPoint],
-    right: [AthenaGLSPPoint, AthenaGLSPPoint],
-): AthenaGLSPPoint | undefined {
-    const leftHorizontal = left[0].y === left[1].y;
-    const rightHorizontal = right[0].y === right[1].y;
-    if (leftHorizontal === rightHorizontal) {
-        return undefined;
-    }
-    const horizontal = leftHorizontal ? left : right;
-    const vertical = leftHorizontal ? right : left;
-    const y = horizontal[0].y;
-    const x = vertical[0].x;
-    const horizontalMinX = Math.min(horizontal[0].x, horizontal[1].x);
-    const horizontalMaxX = Math.max(horizontal[0].x, horizontal[1].x);
-    const verticalMinY = Math.min(vertical[0].y, vertical[1].y);
-    const verticalMaxY = Math.max(vertical[0].y, vertical[1].y);
-    if (x <= horizontalMinX || x >= horizontalMaxX || y <= verticalMinY || y >= verticalMaxY) {
-        return undefined;
-    }
-    return { x, y };
-}
-
-function appendUniquePoint(
-    pointMap: Map<string, AthenaGLSPPoint[]>,
-    edgeId: string,
-    point: AthenaGLSPPoint,
-): void {
-    const points = pointMap.get(edgeId) ?? [];
-    if (!points.some(existing => existing.x === point.x && existing.y === point.y)) {
-        points.push(point);
-    }
-    pointMap.set(edgeId, points);
+    paintItemsByTarget: Map<string, AthenaGraphPresentationPaintItem>,
+): AthenaGraphWorkbenchConnectionLabel[] {
+    return orderByPaintPlan(
+        (connector.labels ?? []).filter(label => isPaintTargetVisible(label.labelId, paintItemsByTarget)),
+        label => label.labelId,
+        paintItemsByTarget,
+    )
+        .map(label => ({
+            labelId: label.labelId,
+            text: label.text,
+            point: { ...label.point },
+            canvasDisplay: label.display === 'always' ? 'always' : 'selection',
+        }));
 }
 
 function buildWorkbenchTerminal(

@@ -4,10 +4,18 @@ import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.ConnectionGroupDeclaration
+import com.engineeringood.athena.language.RelationDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.ExternalEvidenceDeclaration
+import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.language.ProjectionConstructDeclaration
+import com.engineeringood.athena.language.ProjectionPolicyDeclaration
+import com.engineeringood.athena.language.RegionDeclaration
+import com.engineeringood.athena.language.SheetDeclaration
+import com.engineeringood.athena.language.ViewDeclaration
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
@@ -375,8 +383,16 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
                 is PortDeclaration -> portDeclarations += declaration
                 is ConnectionDeclaration -> connectionDeclarations += declaration
                 is ConnectionGroupDeclaration -> connectionDeclarations += declaration.connections
+                is RelationDeclaration -> Unit
+                is ExternalEvidenceDeclaration -> Unit
+                is ProjectionPolicyDeclaration -> Unit
                 is LayoutDeclaration -> Unit
                 is InstallationDeclaration -> Unit
+                is ViewDeclaration -> Unit
+                is SheetDeclaration -> Unit
+                is GridDeclaration -> Unit
+                is RegionDeclaration -> Unit
+                is ProjectionConstructDeclaration -> Unit
             }
         }
 

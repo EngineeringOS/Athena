@@ -1,0 +1,10 @@
+system ProjectionPolicyDemo {
+  projection ControlDrawingProjection {
+    target professional-connection-drawing
+    layout orthogonal-grid
+    drawingProfile ControlDrawingIEC
+    routeQuality ControlDrawingRouteQuality
+    proof exact-endpoints
+    proof source-trace
+  }
+}

@@ -19,6 +19,7 @@ data class AthenaDomainSchema(
     val displayName: String,
     val description: String = "",
     val capabilities: Set<String> = emptySet(),
+    val relationWords: Set<String> = emptySet(),
     val entities: List<AthenaDomainEntitySchema> = emptyList(),
     val properties: List<AthenaDomainPropertySchema> = emptyList(),
     val ports: List<AthenaDomainPortSchema> = emptyList(),

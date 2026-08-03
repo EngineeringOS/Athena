@@ -7,14 +7,34 @@
 (incomplete_package_declaration "package" @athenaDeclarationKeyword)
 (incomplete_import_declaration "import" @athenaDeclarationKeyword)
 (device_declaration "device" @athenaDeclarationKeyword)
+(interface_declaration "interface" @athenaPortKeyword)
+(interface_ports "ports" @athenaPortKeyword)
 (port_declaration "port" @athenaDeclarationKeyword)
 (nested_port_declaration "port" @athenaDeclarationKeyword)
 (function_declaration "function" @athenaFunctionKeyword)
 (function_role "role" @athenaFunctionKeyword)
 (function_ports "ports" @athenaFunctionKeyword)
 (connect_declaration "connect" @athenaRelationshipKeyword)
-(connect_declaration "->" @operator)
-(connect_group_edge "->" @operator)
+(connect_declaration "to" @athenaRelationshipKeyword)
+(connect_group_edge "to" @athenaRelationshipKeyword)
+(relation_word) @athenaRelationshipKeyword
+(relation_declaration "to" @athenaRelationshipKeyword)
+(evidence_declaration "evidence" @athenaRelationshipKeyword)
+(evidence_namespace "namespace" @athenaRelationshipKeyword)
+(evidence_reference "reference" @athenaRelationshipKeyword)
+(evidence_subject "subject" @athenaRelationshipKeyword)
+(evidence_subject (evidence_subject_kind) @athenaRelationshipKeyword)
+(evidence_provenance "provenance" @athenaRelationshipKeyword)
+(projection_policy_declaration "projection" @athenaRelationshipKeyword)
+(projection_policy_target "target" @athenaRelationshipKeyword)
+(projection_policy_layout "layout" @athenaRelationshipKeyword)
+(projection_policy_drawing_profile "drawingProfile" @athenaRelationshipKeyword)
+(projection_policy_route_quality "routeQuality" @athenaRelationshipKeyword)
+(projection_policy_proof "proof" @athenaRelationshipKeyword)
+(projection_policy_forbidden_truth "port" @athenaDeclarationKeyword)
+(projection_policy_forbidden_truth "connect" @athenaRelationshipKeyword)
+(projection_policy_forbidden_truth "evidence" @athenaRelationshipKeyword)
+(projection_policy_forbidden_truth "anchor" @athenaRepresentationKeyword)
 (layout_declaration "layout" @athenaLayoutKeyword)
 (place_statement "place" @athenaLayoutKeyword)
 (fixed_place_statement "place" @athenaLayoutKeyword)
@@ -153,9 +173,9 @@
   (#not-match? @property "^(direction|signal)$"))
 (package_name) @namespace
 ((identifier) @athenaPortKeyword
-  (#match? @athenaPortKeyword "^(in|out)$"))
+  (#match? @athenaPortKeyword "^(in|out|bidirectional|passive)$"))
 ((identifier) @variable
-  (#not-match? @variable "^(in|out)$"))
+  (#not-match? @variable "^(in|out|bidirectional|passive)$"))
 (direction_name) @athenaPortKeyword
 (number) @number
 (positive_integer) @number

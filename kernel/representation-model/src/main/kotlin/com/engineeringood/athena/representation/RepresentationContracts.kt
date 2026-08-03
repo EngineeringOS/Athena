@@ -114,11 +114,6 @@ enum class RepresentationOccurrenceRole {
     LABEL,
 }
 
-enum class RepresentationFallbackBehavior {
-    DIAGNOSTIC_ONLY,
-    ALLOW_EXPLICIT_FALLBACK,
-}
-
 enum class RepresentationSymbolKind {
     GENERIC,
     SUPPLY_REFERENCE,
@@ -173,11 +168,9 @@ data class RepresentationPolicy(
     val symbolFamilyId: SymbolFamilyId,
     val symbolId: RepresentationSymbolId,
     val variant: RepresentationVariantId? = null,
-    val fallback: RepresentationFallbackBehavior,
     val priority: RepresentationPolicyPriority,
 ) {
     fun toTransportMap(): Map<String, String> = linkedMapOf(
-        "fallback" to fallback.name,
         "occurrenceRole" to occurrenceRole.name,
         "policyId" to policyId.value,
         "priority" to priority.value.toString(),
@@ -196,10 +189,23 @@ data class RepresentationLabelBinding(
     val value: LabelValue,
 )
 
-data class RepresentationTerminalBinding(
-    val terminalId: PresentationTerminalId,
+@JvmInline
+value class RepresentationPortAnchorBindingId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Representation Port-to-Anchor binding id must not be blank." }
+    }
+}
+
+data class RepresentationPortAnchorBinding(
+    val bindingId: RepresentationPortAnchorBindingId,
     val semanticPortId: SemanticPortId,
-)
+    val anchorId: RepresentationAnchorId,
+    val provenance: RepresentationProvenance,
+) {
+    init {
+        require(provenance.source.isNotBlank()) { "Representation Port-to-Anchor binding provenance must not be blank." }
+    }
+}
 
 data class RepresentationReferenceBinding(
     val referenceId: RepresentationReferenceId,
@@ -215,7 +221,7 @@ data class RepresentationOccurrence(
     val symbolId: RepresentationSymbolId,
     val variant: RepresentationVariantId? = null,
     val labelBindings: List<RepresentationLabelBinding> = emptyList(),
-    val terminalBindings: List<RepresentationTerminalBinding> = emptyList(),
+    val portAnchorBindings: List<RepresentationPortAnchorBinding> = emptyList(),
     val referenceBindings: List<RepresentationReferenceBinding> = emptyList(),
     val compositionIntentMembership: List<CompositionIntentMembershipId> = emptyList(),
     val diagnostics: List<RepresentationDiagnostic> = emptyList(),
@@ -229,10 +235,10 @@ data class RepresentationOccurrence(
         "labelBindingCount" to labelBindings.size.toString(),
         "occurrenceId" to occurrenceId.value,
         "occurrenceRole" to occurrenceRole.name,
+        "portAnchorBindingCount" to portAnchorBindings.size.toString(),
         "projectionOccurrenceId" to projectionOccurrenceId.value,
         "referenceBindingCount" to referenceBindings.size.toString(),
         "symbolId" to symbolId.value,
-        "terminalBindingCount" to terminalBindings.size.toString(),
         "variant" to (variant?.value ?: ""),
     )
 }

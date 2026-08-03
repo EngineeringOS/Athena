@@ -1,4 +1,4 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
@@ -88,7 +88,7 @@ class RoutingBackendBoundaryTest {
         targetAnchor: TerminalAnchorFact = sampleAnchor("anchor:a:target", "component:B", "in", TerminalSide.LEFT, 320, 80),
     ): AthenaRouteRequest = AthenaRouteRequest(
         routeId = routeId,
-        connectionIntent = ElectricalConnectionIntent(
+        connectionRoleFact = ElectricalConnectionRoleFact(
             connectionId = connectionId,
             sourceSubjectId = sourceAnchor.subjectId,
             sourcePortId = sourceAnchor.portId,

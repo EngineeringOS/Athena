@@ -114,7 +114,7 @@ class AthenaLanguageParserTest {
               port PLC1.out {
                 direction out
               }
-              connect plc_self PLC1.out -> PLC1.out
+              connect plc_self PLC1.out to PLC1.out
             }
             """.trimIndent()
 
@@ -161,7 +161,7 @@ class AthenaLanguageParserTest {
         val source =
             """
             system Demo {
-              connect PLC1.out -> M1.in
+              connect PLC1.out to M1.in
             }
             """.trimIndent()
 
@@ -170,6 +170,24 @@ class AthenaLanguageParserTest {
         val failure = assertIs<ParseFailure>(result)
         assertEquals(1, failure.diagnostics.size)
         assertTrue(failure.diagnostics.single().message.isNotBlank())
+    }
+
+    @Test
+    fun `parses arrow as connect separator alias`() {
+        val source =
+            """
+            system Demo {
+              connect legacy PLC1.out -> M1.in
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("arrow-connect.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val connection = assertIs<ConnectionDeclaration>(success.ast.declarations.single())
+        assertEquals("legacy", connection.alias)
+        assertEquals(listOf("PLC1", "out"), connection.from.parts)
+        assertEquals(listOf("M1", "in"), connection.to.parts)
     }
 
     @Test
@@ -205,6 +223,50 @@ class AthenaLanguageParserTest {
     }
 
     @Test
+    fun `parses grouped connectivity interfaces with defaults and member port overrides`() {
+        val source =
+            """
+            system Demo {
+              device Drive {
+                type MotorDrive
+                connectivity enabled
+
+                interface powerInput {
+                  type power
+                  direction in
+                  signal PowerAC
+                  role line
+                  multiplicity single
+
+                  ports {
+                    L1
+                    L2
+                    PE {
+                      signal ProtectiveEarth
+                      role protective_earth
+                      direction passive
+                    }
+                  }
+                }
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("grouped-interface.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val device = assertIs<DeviceDeclaration>(success.ast.declarations.single())
+        val groupedInterface = device.interfaces.single()
+        assertEquals("powerInput", groupedInterface.name)
+        assertEquals(listOf("type", "direction", "signal", "role", "multiplicity"), groupedInterface.fields.map { it.name })
+        assertEquals(listOf("L1", "L2", "PE"), groupedInterface.ports.map { it.name })
+        assertTrue(groupedInterface.ports[0].fields.isEmpty())
+        assertEquals(listOf("signal", "role", "direction"), groupedInterface.ports[2].fields.map { it.name })
+        assertTrue(groupedInterface.span.start.offset > device.span.start.offset)
+        assertTrue(groupedInterface.span.end.offset < device.span.end.offset)
+    }
+
+    @Test
     fun `parses grouped connect syntax as authoring structure with child edge spans`() {
         val source =
             """
@@ -220,11 +282,11 @@ class AthenaLanguageParserTest {
               }
 
               connect con_01 {
-                feed_in MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
-                relay_supply MainBreakerQF30.load -> ControlRelayK30.supply
+                feed_in MainPowerSupplyPS30.lplus to MainBreakerQF30.line
+                relay_supply MainBreakerQF30.load to ControlRelayK30.supply
               }
 
-              connect relay_status ControlRelayK30.status -> MainBreakerQF30.line
+              connect relay_status ControlRelayK30.status to MainBreakerQF30.line
             }
             """.trimIndent()
 
@@ -246,6 +308,85 @@ class AthenaLanguageParserTest {
     }
 
     @Test
+    fun `parses domain relation verbs as human first relationship declarations`() {
+        val source =
+            """
+            system Demo {
+              device Supply { type PowerSource }
+              device Breaker { type Breaker }
+              port Supply.L1 { direction out signal power role line }
+              port Breaker.input { direction in signal power role line }
+
+              power Supply.L1 to Breaker.input
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("domain-relation.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val relation = assertIs<RelationDeclaration>(success.ast.declarations.last())
+        assertEquals("power", relation.word.value)
+        assertEquals(listOf("Supply", "L1"), relation.from.parts)
+        assertEquals(listOf(listOf("Breaker", "input")), relation.targets.map { target -> target.parts })
+        assertTrue(relation.word.span.start.offset < relation.from.span.start.offset)
+        assertTrue(relation.targets.single().span.start.offset > relation.from.span.end.offset)
+    }
+
+    @Test
+    fun `parses arrow as relation separator alias`() {
+        val source =
+            """
+            system Demo {
+              device Supply { type PowerSource }
+              device Breaker { type Breaker }
+              port Supply.L1 { direction out signal power role line }
+              port Breaker.input { direction in signal power role line }
+
+              power Supply.L1 -> Breaker.input
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("domain-relation-arrow.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val relation = assertIs<RelationDeclaration>(success.ast.declarations.last())
+        assertEquals("power", relation.word.value)
+        assertEquals(listOf("Supply", "L1"), relation.from.parts)
+        assertEquals(listOf("Breaker", "input"), relation.targets.single().parts)
+    }
+
+
+    @Test
+    fun `parses domain relation target lists with ordered targets and one source span`() {
+        val source =
+            """
+            system Demo {
+              device EarthBar { type ProtectiveEarth }
+              device Motor { type Motor }
+              device Cabinet { type Terminal }
+              port EarthBar.PE { direction passive signal pe role protective_earth }
+              port Motor.PE { direction passive signal pe role protective_earth }
+              port Cabinet.PE { direction passive signal pe role protective_earth }
+
+              earth EarthBar.PE to [Motor.PE, Cabinet.PE]
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("domain-relation-group.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val relation = assertIs<RelationDeclaration>(success.ast.declarations.last())
+        assertEquals("earth", relation.word.value)
+        assertEquals(listOf("EarthBar", "PE"), relation.from.parts)
+        assertEquals(
+            listOf(listOf("Motor", "PE"), listOf("Cabinet", "PE")),
+            relation.targets.map { target -> target.parts },
+        )
+        assertTrue(relation.targets[0].span.start.offset < relation.targets[1].span.start.offset)
+        assertTrue(relation.span.start.offset < relation.targets[1].span.end.offset)
+    }
+
+    @Test
     fun `parses empty grouped connect syntax as zero authoring edges`() {
         val source =
             """
@@ -261,6 +402,170 @@ class AthenaLanguageParserTest {
         val group = assertIs<ConnectionGroupDeclaration>(success.ast.declarations.single())
         assertEquals("spare_connections", group.name)
         assertTrue(group.connections.isEmpty())
+    }
+
+    @Test
+    fun `rejects removed authored intent source blocks`() {
+        val parser = AthenaLanguageParser()
+        val cases = mapOf(
+            "flat-connect-intent.athena" to
+                """
+                system Demo {
+                  connect supply Supply.L1 to Drive.L1 intent { class power }
+                }
+                """.trimIndent(),
+            "group-connect-intent.athena" to
+                """
+                system Demo {
+                  connect supply {
+                    intent { class power }
+                    drive_l1 Supply.L1 to Drive.L1
+                  }
+                }
+                """.trimIndent(),
+            "group-edge-intent.athena" to
+                """
+                system Demo {
+                  connect supply {
+                    drive_l1 Supply.L1 to Drive.L1 intent { class power }
+                  }
+                }
+                """.trimIndent(),
+            "interface-intent.athena" to
+                """
+                system Demo {
+                  device Drive {
+                    interface powerInput {
+                      intent default { class power }
+                      ports { L1 }
+                    }
+                  }
+                }
+                """.trimIndent(),
+            "profile-intent.athena" to
+                """
+                profile ControlDrawingIEC {
+                  projection schematic
+                  intent default { class control }
+                }
+                """.trimIndent(),
+        )
+
+        cases.forEach { (name, source) ->
+            val failure = assertIs<ParseFailure>(parser.parse(name, source), "Expected $name to reject removed intent syntax")
+            assertTrue(failure.diagnostics.isNotEmpty(), "Expected diagnostics for $name")
+        }
+    }
+
+    @Test
+    fun `parses typed external evidence declarations without creating engineering facts`() {
+        val source =
+            """
+            system EvidenceDemo {
+              evidence DriveContractIec {
+                namespace iec
+                reference "IEC:60204-1:clause-13"
+                subject contract Drive
+                provenance "IEC 60204-1 clause 13 citation"
+              }
+              evidence DriveInterfaceClass {
+                namespace classification
+                reference "neutral:drive.power-input"
+                subject interface Drive.powerInput
+                provenance "Neutral classification registry"
+              }
+              evidence DrivePortIec {
+                namespace iec
+                reference "IEC:60204-1:protective-conductor"
+                subject port Drive.PE
+                provenance "IEC 60204-1 PE evidence"
+              }
+              evidence DriveRelationIec {
+                namespace iec
+                reference "IEC:60204-1:routing"
+                subject relation-contract drive_pe
+                provenance "IEC relation contract citation"
+              }
+              evidence PowerRoutePolicyClass {
+                namespace classification
+                reference "neutral:route.power"
+                subject route-policy powerRoutes
+                provenance "Neutral route policy class"
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("external-evidence.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val declarations = success.ast.declarations.filterIsInstance<ExternalEvidenceDeclaration>()
+        assertEquals(5, declarations.size)
+        assertEquals("DriveContractIec", declarations[0].name)
+        assertEquals("iec", declarations[0].namespace.value)
+        assertEquals("IEC:60204-1:clause-13", declarations[0].reference.value)
+        assertEquals(ExternalEvidenceSubjectKind.CONTRACT, declarations[0].subject.kind)
+        assertEquals(listOf("Drive"), declarations[0].subject.target.parts)
+        assertEquals(ExternalEvidenceSubjectKind.INTERFACE, declarations[1].subject.kind)
+        assertEquals(listOf("Drive", "powerInput"), declarations[1].subject.target.parts)
+        assertEquals(ExternalEvidenceSubjectKind.PORT, declarations[2].subject.kind)
+        assertEquals(ExternalEvidenceSubjectKind.RELATION_CONTRACT, declarations[3].subject.kind)
+        assertEquals(ExternalEvidenceSubjectKind.ROUTE_POLICY, declarations[4].subject.kind)
+        assertTrue(declarations.all { declaration -> declaration.span.start.line < declaration.span.end.line })
+        assertTrue(declarations.all { declaration -> declaration.provenance.value.isNotBlank() })
+    }
+
+    @Test
+    fun `parses typed projection policy declarations without engineering truth`() {
+        val source =
+            """
+            system ProjectionPolicyDemo {
+              projection ControlDrawingProjection {
+                target professional-connection-drawing
+                layout orthogonal-grid
+                drawingProfile ControlDrawingIEC
+                routeQuality ControlDrawingRouteQuality
+                proof exact-endpoints
+                proof source-trace
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("projection-policy.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val policy = assertIs<ProjectionPolicyDeclaration>(success.ast.declarations.single())
+        assertEquals("ControlDrawingProjection", policy.name)
+        assertEquals("professional-connection-drawing", assertNotNull(policy.target).value)
+        assertEquals("orthogonal-grid", assertNotNull(policy.layoutStrategy).value)
+        assertEquals("ControlDrawingIEC", assertNotNull(policy.drawingProfile).value)
+        assertEquals("ControlDrawingRouteQuality", assertNotNull(policy.routeQualityPolicy).value)
+        assertEquals(listOf("exact-endpoints", "source-trace"), policy.proofObligations.map { it.value })
+        assertTrue(policy.forbiddenEngineeringTruth.isEmpty())
+        assertTrue(policy.span.start.line < policy.span.end.line)
+    }
+
+    @Test
+    fun `parses projection owned engineering truth for compiler rejection`() {
+        val source =
+            """
+            system ProjectionPolicyInvalid {
+              projection BadProjection {
+                target professional-connection-drawing
+                layout orthogonal-grid
+                drawingProfile ControlDrawingIEC
+                routeQuality ControlDrawingRouteQuality
+                port Drive.L1 input
+                connect bad Drive.L1 to Motor.U
+              }
+            }
+            """.trimIndent()
+
+        val result = AthenaLanguageParser().parse("projection-policy-invalid.athena", source)
+
+        val success = assertIs<ParseSuccess>(result)
+        val policy = assertIs<ProjectionPolicyDeclaration>(success.ast.declarations.single())
+        assertEquals(listOf("port", "connect"), policy.forbiddenEngineeringTruth.map { it.kind })
+        assertTrue(policy.forbiddenEngineeringTruth.all { truth -> truth.span.start.offset > policy.span.start.offset })
     }
 
     @Test
@@ -380,7 +685,7 @@ class AthenaLanguageParserTest {
               port M1.line {
                 direction in
               }
-              connect feeder QF1.line -> M1.line
+              connect feeder QF1.line to M1.line
 
               installation cabinet MainCabinet {
                 enclosure ENC1 size (800mm, 600mm, 250mm)
@@ -573,7 +878,7 @@ class AthenaLanguageParserTest {
                 signal Digital
               }
             
-              connect plc_self PLC1.out -> PLC1.out
+              connect plc_self PLC1.out to PLC1.out
             }
         """.trimIndent()
 
@@ -604,7 +909,7 @@ class AthenaLanguageParserTest {
         assertEquals("broken.athena", failure.diagnostics.single().file)
         assertEquals(6, failure.diagnostics.single().line)
         assertTrue(failure.diagnostics.single().column > 0)
-        assertTrue(failure.diagnostics.single().message.contains("->"))
+        assertTrue(failure.diagnostics.single().message.contains("to"))
     }
 
     @Test

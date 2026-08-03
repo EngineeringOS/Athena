@@ -8,14 +8,21 @@ import com.engineeringood.athena.presentation.PresentationCompositeOccurrenceRef
 import com.engineeringood.athena.presentation.PresentationCompositePack
 import com.engineeringood.athena.presentation.PresentationCompositePart
 import com.engineeringood.athena.presentation.PresentationConnector
+import com.engineeringood.athena.presentation.PresentationConnectorEndpoint
+import com.engineeringood.athena.presentation.PresentationConnectorLabel
+import com.engineeringood.athena.presentation.PresentationConnectorLine
+import com.engineeringood.athena.presentation.PresentationConnectionMarker
 import com.engineeringood.athena.presentation.PresentationDocument
 import com.engineeringood.athena.presentation.PresentationDrawingBounds
 import com.engineeringood.athena.presentation.PresentationGraphicLabel
 import com.engineeringood.athena.presentation.PresentationGraphicOccurrence
 import com.engineeringood.athena.presentation.PresentationGraphicOccurrenceAuthorities
 import com.engineeringood.athena.presentation.PresentationGraphicTerminalBinding
+import com.engineeringood.athena.presentation.PresentationPlacedAnchor
 import com.engineeringood.athena.presentation.PresentationOccurrence
-import com.engineeringood.athena.presentation.PresentationPackageEvidence
+import com.engineeringood.athena.presentation.PresentationPackageTrace
+import com.engineeringood.athena.presentation.PresentationPaintItem
+import com.engineeringood.athena.presentation.PresentationPaintPlan
 import com.engineeringood.athena.presentation.PresentationPrimitiveDefinition
 import com.engineeringood.athena.presentation.PresentationPrimitiveOccurrenceReference
 import com.engineeringood.athena.presentation.PresentationPrimitivePack
@@ -26,29 +33,22 @@ import com.engineeringood.athena.presentation.PresentationStrokeLine
 import com.engineeringood.athena.presentation.PresentationStrokeRectangle
 import com.engineeringood.athena.presentation.PresentationSvgPath
 import com.engineeringood.athena.presentation.PresentationTextSlot
-import com.engineeringood.athena.presentation.connectorsForRendering
 import com.engineeringood.athena.presentation.representationFactsForRendering
+import com.engineeringood.athena.ir.SourceProvenance
+import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.representation.LabelFact
 import com.engineeringood.athena.representation.GraphicBounds
 import com.engineeringood.athena.representation.GraphicPoint
 import com.engineeringood.athena.representation.GraphicPrimitive
 import com.engineeringood.athena.representation.GraphicPrimitiveDocument
-import com.engineeringood.athena.representation.PresentationAnatomy
 import com.engineeringood.athena.representation.PresentationLabelAnchor
 import com.engineeringood.athena.representation.PresentationPoint
-import com.engineeringood.athena.representation.PresentationPrimitive
 import com.engineeringood.athena.representation.PresentationRouteAnchor
-import com.engineeringood.athena.representation.PresentationSize
 import com.engineeringood.athena.representation.PresentationTerminalFact
-import com.engineeringood.athena.representation.PresentationTerminalPoint
-import com.engineeringood.athena.representation.SymbolAnatomy
+import com.engineeringood.athena.representation.RepresentationAnchorContract
+import com.engineeringood.athena.representation.RepresentationDefinition
+import com.engineeringood.athena.representation.RepresentationLabelSlot
 import com.engineeringood.athena.representation.TerminalNotation
-import com.engineeringood.athena.routing.RouteCrossingFact
-import com.engineeringood.athena.routing.RouteFact
-import com.engineeringood.athena.routing.RouteFactSnapshot
-import com.engineeringood.athena.routing.RouteJunctionFact
-import com.engineeringood.athena.routing.RouteQuality
-import com.engineeringood.athena.routing.RouteQualityState
 import com.engineeringood.athena.routing.RouteLabelFact
 import com.engineeringood.athena.routing.TerminalAnchorFact
 import kotlin.math.roundToInt
@@ -61,13 +61,30 @@ internal fun PresentationDocument.toPayload(): AthenaPresentationDocumentPayload
         compositePacks = compositePacks.map(PresentationCompositePack::toPayload),
         occurrences = occurrences.map(PresentationOccurrence::toPayload),
         graphicOccurrences = graphicOccurrences.map(PresentationGraphicOccurrence::toPayload),
-        connectors = connectorsForRendering().map(PresentationConnector::toPayload),
+        connectors = connectors.map(PresentationConnector::toPayload),
+        connectionMarkers = connectionMarkers.map(PresentationConnectionMarker::toPayload),
+        paintPlan = requireNotNull(paintPlan) {
+            "Presentation Document requires paint plan before LSP publication."
+        }.toPayload(),
         representationFacts = representationFactsForRendering().map(PresentationRepresentationFact::toPayload),
         referenceMarkers = referenceMarkers.map(PresentationReferenceMarkerFact::toPayload),
-        routeFactSnapshot = routeFactSnapshot?.toPayload(),
         drawingComposition = drawingComposition?.toPayload(),
     )
 }
+
+private fun PresentationPaintPlan.toPayload(): AthenaPresentationPaintPlanPayload =
+    AthenaPresentationPaintPlanPayload(
+        items = items.map(PresentationPaintItem::toPayload),
+    )
+
+private fun PresentationPaintItem.toPayload(): AthenaPresentationPaintItemPayload =
+    AthenaPresentationPaintItemPayload(
+        itemId = itemId,
+        targetId = targetId,
+        kind = kind,
+        visible = visible,
+        order = order,
+    )
 
 private fun PresentationGraphicOccurrence.toPayload(): AthenaPresentationGraphicOccurrencePayload =
     AthenaPresentationGraphicOccurrencePayload(
@@ -83,6 +100,7 @@ private fun PresentationGraphicOccurrence.toPayload(): AthenaPresentationGraphic
         definitionId = definitionId,
         bindingRuleId = bindingRuleId,
         graphic = graphic.toPayload(),
+        placedAnchors = placedAnchors.map(PresentationPlacedAnchor::toPayload),
         terminalBindings = terminalBindings.map(PresentationGraphicTerminalBinding::toPayload),
         labels = labels.map(PresentationGraphicLabel::toPayload),
         sourceProvenance = sourceProvenance.sorted(),
@@ -91,6 +109,22 @@ private fun PresentationGraphicOccurrence.toPayload(): AthenaPresentationGraphic
             sourceProvenance = sourceProvenance.sorted(),
             sourceProjectionIds = listOf(occurrenceId.value),
             compilerStage = authorities.material,
+        ),
+	    )
+
+private fun PresentationPlacedAnchor.toPayload() =
+    AthenaPresentationPlacedAnchorPayload(
+        anchorId = anchorId.value,
+        geometryRef = geometryRef,
+        primitiveId = primitiveId.value,
+        point = AthenaPointPayload(point.x, point.y),
+        role = role.name.lowercase(),
+        required = required,
+        sourceProvenance = sourceProvenance.sorted(),
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = sourceProvenance.sorted(),
+            sourceProjectionIds = listOf(anchorId.value, primitiveId.value),
+            compilerStage = "graphic-occurrence-anchor",
         ),
     )
 
@@ -102,11 +136,13 @@ private fun PresentationGraphicOccurrenceAuthorities.toPayload() =
     )
 
 private fun PresentationGraphicTerminalBinding.toPayload() =
-    AthenaPresentationGraphicTerminalBindingPayload(
-        portSemanticId = portSemanticId,
-        anchorId = anchorId,
-        terminalIdentity = terminalIdentity,
-        point = AthenaProjectionPointPayload(point.x, point.y),
+	        AthenaPresentationGraphicTerminalBindingPayload(
+	            portSemanticId = portSemanticId,
+	            bindingId = bindingId.value,
+	            anchorId = anchorId,
+	            terminalIdentity = terminalIdentity,
+        point = AthenaPointPayload(point.x, point.y),
+        labelPoint = AthenaPointPayload(labelPoint.x, labelPoint.y),
         side = side.name.lowercase(),
         trace = AthenaPresentationTracePayload(
             sourceProvenance = listOf(anchorId, terminalIdentity, side.name.lowercase()),
@@ -123,7 +159,7 @@ private fun PresentationGraphicLabel.toPayload() =
         bounds = bounds.toPayload(),
     )
 
-private fun GraphicPrimitiveDocument.toPayload() =
+internal fun GraphicPrimitiveDocument.toPayload() =
     AthenaGraphicPrimitiveDocumentPayload(
         documentId = documentId?.value,
         bounds = bounds?.toPayload(),
@@ -291,7 +327,7 @@ private fun GraphicBounds.toPayload() = AthenaPresentationBoundsPayload(
     height = height.roundToInt().coerceAtLeast(1),
 )
 
-private fun GraphicPoint.toPayload() = AthenaProjectionPointPayload(
+private fun GraphicPoint.toPayload() = AthenaPointPayload(
     x = x.roundToInt(),
     y = y.roundToInt(),
 )
@@ -313,15 +349,15 @@ private fun PresentationShapeCommand.toPayload(): AthenaPresentationShapeCommand
 
         is PresentationStrokeLine -> AthenaPresentationShapeCommandPayload(
             kind = "stroke_line",
-            start = AthenaProjectionPointPayload(x = start.x, y = start.y),
-            end = AthenaProjectionPointPayload(x = end.x, y = end.y),
+            start = AthenaPointPayload(x = start.x, y = start.y),
+            end = AthenaPointPayload(x = end.x, y = end.y),
             strokeTokenKey = strokeTokenKey,
             strokeWidthTokenKey = strokeWidthTokenKey,
         )
 
         is PresentationCircle -> AthenaPresentationShapeCommandPayload(
             kind = "circle",
-            center = AthenaProjectionPointPayload(x = center.x, y = center.y),
+            center = AthenaPointPayload(x = center.x, y = center.y),
             radius = radius,
             strokeTokenKey = strokeTokenKey,
             strokeWidthTokenKey = strokeWidthTokenKey,
@@ -341,7 +377,7 @@ private fun PresentationShapeCommand.toPayload(): AthenaPresentationShapeCommand
 private fun PresentationTextSlot.toPayload(): AthenaPresentationTextSlotPayload {
     return AthenaPresentationTextSlotPayload(
         slotId = slotId.value,
-        origin = AthenaProjectionPointPayload(x = origin.x, y = origin.y),
+        origin = AthenaPointPayload(x = origin.x, y = origin.y),
         tokenKey = tokenKey,
     )
 }
@@ -349,7 +385,7 @@ private fun PresentationTextSlot.toPayload(): AthenaPresentationTextSlotPayload 
 private fun PresentationAnchorDefinition.toPayload(): AthenaPresentationAnchorDefinitionPayload {
     return AthenaPresentationAnchorDefinitionPayload(
         alias = alias.value,
-        point = AthenaProjectionPointPayload(x = point.x, y = point.y),
+        point = AthenaPointPayload(x = point.x, y = point.y),
     )
 }
 
@@ -415,23 +451,106 @@ private fun PresentationConnector.toPayload(): AthenaPresentationConnectorPayloa
     return AthenaPresentationConnectorPayload(
         occurrenceId = occurrenceId.value,
         semanticId = semanticId.value,
-        primitiveId = primitiveId.value,
-        routePoints = routePoints.map { point -> AthenaProjectionPointPayload(x = point.x, y = point.y) },
-        layer = layer.name.lowercase(),
-        sourceAnchorId = sourceAnchorId,
-        targetAnchorId = targetAnchorId,
-        sourcePortSemanticId = sourcePortSemanticId?.value,
-        targetPortSemanticId = targetPortSemanticId?.value,
-        markerKeys = markerKeys,
-        tokenOverrides = tokenOverrides.toSortedMap(),
-        sourceProjectionIds = sourceProjectionIds.sorted(),
+	        primitiveId = primitiveId.value,
+	        routePoints = routePoints.map { point -> AthenaPointPayload(x = point.x, y = point.y) },
+	        lineClassId = line.classId,
+	        line = line.toPayload(),
+		        routeId = routeId,
+	        bundleId = bundleId,
+	        laneId = laneId,
+	        laneRouteIds = laneRouteIds.sorted(),
+	        selectedChannelIds = selectedChannelIds.sorted(),
+	        labels = labels.map(PresentationConnectorLabel::toPayload),
+	        quality = quality,
+	        sourceEndpoint = sourceEndpoint.toPayload(),
+	        targetEndpoint = targetEndpoint.toPayload(),
+	        layer = layer.name.lowercase(),
+	        markerIds = markerIds.map { markerId -> markerId.value }.sorted(),
+	        tokenOverrides = tokenOverrides.toSortedMap(),
+	        sourceProjectionIds = sourceProjectionIds.sorted(),
+	        trace = AthenaPresentationTracePayload(
+	            sourceProvenance = (sourceEndpoint.sourceProvenance + targetEndpoint.sourceProvenance).distinct().sorted(),
+	            sourceProjectionIds = sourceProjectionIds.sorted(),
+	            compilerStage = primitiveId.value,
+	            sourceSpan = sourceSpan.toPayload(),
+	        ),
+	        sourceSpan = sourceSpan.toPayload(),
+	    )
+	}
+
+private fun PresentationConnectorLine.toPayload(): AthenaPresentationConnectorLinePayload =
+    AthenaPresentationConnectorLinePayload(
+        classId = classId,
+        lineKind = lineKind,
+        lineStyleId = lineStyleId,
+        weight = weight,
+        style = style,
+        colorKey = colorKey,
+        endpointBehavior = endpointBehavior,
+        labelPolicy = labelPolicy,
+        crossingBehavior = crossingBehavior,
+        policyId = policyId,
+        compilerSnapshotId = compilerSnapshotId,
+    )
+
+private fun PresentationConnectorLabel.toPayload(): AthenaPresentationConnectorLabelPayload =
+    AthenaPresentationConnectorLabelPayload(
+        labelId = labelId,
+        text = text,
+        point = AthenaPointPayload(point.x, point.y),
+        bounds = bounds.toPayload(),
+        labelClassId = labelClassId,
+        display = display.name.lowercase(),
+        sourceProvenance = sourceProvenance.sorted(),
+        compilerSnapshotId = compilerSnapshotId,
         trace = AthenaPresentationTracePayload(
-            sourceProvenance = listOfNotNull(sourceAnchorId, targetAnchorId).sorted(),
-            sourceProjectionIds = sourceProjectionIds.sorted(),
-            compilerStage = primitiveId.value,
+            sourceProvenance = sourceProvenance.sorted(),
+            sourceProjectionIds = listOf(labelId),
+            compilerStage = labelClassId,
+            compilerSnapshotId = compilerSnapshotId,
         ),
     )
-}
+
+private fun PresentationConnectorEndpoint.toPayload(): AthenaPresentationConnectorEndpointPayload =
+    AthenaPresentationConnectorEndpointPayload(
+        portSemanticId = portSemanticId.value,
+        bindingId = bindingId.value,
+        occurrenceId = occurrenceId.value,
+        anchorId = anchorId.value,
+        point = AthenaPointPayload(point.x, point.y),
+        sourceProvenance = sourceProvenance.sorted(),
+	        trace = AthenaPresentationTracePayload(
+	            sourceProvenance = sourceProvenance.sorted(),
+	            sourceProjectionIds = listOf(
+	                portSemanticId.value,
+	                bindingId.value,
+	                occurrenceId.value,
+	                anchorId.value,
+	            ).sorted(),
+	            compilerStage = "presentation-connector-endpoint",
+	        ),
+	    )
+
+private fun PresentationConnectionMarker.toPayload(): AthenaPresentationConnectionMarkerPayload =
+    AthenaPresentationConnectionMarkerPayload(
+        markerId = markerId.value,
+        kind = kind.name.lowercase(),
+        point = AthenaPointPayload(point.x, point.y),
+        routeIds = routeIds.sorted(),
+        connectorIds = connectorIds.map { connectorId -> connectorId.value }.sorted(),
+        semanticId = semanticId?.value,
+        joined = joined,
+        appearanceClassId = appearanceClassId,
+        sourceProjectionIds = sourceProjectionIds.sorted(),
+        sourceProvenance = sourceProvenance.sorted(),
+        compilerSnapshotId = compilerSnapshotId,
+        trace = AthenaPresentationTracePayload(
+            sourceProvenance = sourceProvenance.sorted(),
+            sourceProjectionIds = sourceProjectionIds.sorted(),
+            compilerStage = appearanceClassId,
+            compilerSnapshotId = compilerSnapshotId,
+        ),
+    )
 
 private fun PresentationReferenceMarkerFact.toPayload(): AthenaPresentationReferenceMarkerPayload {
     return AthenaPresentationReferenceMarkerPayload(
@@ -463,31 +582,30 @@ private fun PresentationRepresentationFact.toPayload(): AthenaPresentationRepres
         subjectId = subjectId.value,
         occurrenceId = occurrenceId.value,
         sourceProjectionIds = sourceProjectionIds.sorted(),
-        symbol = symbol.toPayload(),
-        anatomy = anatomy.toPayload(),
+        definition = definition.toPayload(),
         terminals = terminals.map(PresentationTerminalFact::toPayload),
         labels = labels.map(LabelFact::toPayload),
-        packageEvidence = packageEvidence?.toPayload(),
+        packageTrace = packageTrace?.toPayload(),
         trace = AthenaPresentationTracePayload(
             sourceProvenance = buildList {
-                packageEvidence?.let { evidence ->
-                    add(evidence.engineeringPackageId)
-                    add(evidence.presentationProfileId)
-                    add(evidence.representationPackageId)
-                    add(evidence.descriptorId)
-                    add(evidence.graphicResourceId)
-                    add(evidence.resolverStage)
+                packageTrace?.let { trace ->
+                    add(trace.engineeringPackageId)
+                    add(trace.presentationProfileId)
+                    add(trace.representationPackageId)
+                    add(trace.descriptorId)
+                    add(trace.graphicResourceId)
+                    add(trace.resolverStage)
                 }
             }.sorted(),
             sourceProjectionIds = sourceProjectionIds.sorted(),
-            compilerStage = packageEvidence?.resolverStage ?: "representation-fact-deriver",
-            packageEvidence = packageEvidence?.toPayload(),
+            compilerStage = packageTrace?.resolverStage ?: "representation-fact-deriver",
+            packageTrace = packageTrace?.toPayload(),
         ),
     )
 }
 
-private fun PresentationPackageEvidence.toPayload(): AthenaPresentationPackageEvidencePayload =
-    AthenaPresentationPackageEvidencePayload(
+private fun PresentationPackageTrace.toPayload(): AthenaPresentationPackageTracePayload =
+    AthenaPresentationPackageTracePayload(
         engineeringPackageId = engineeringPackageId,
         engineeringPackageVersion = engineeringPackageVersion,
         presentationProfileId = presentationProfileId,
@@ -500,62 +618,57 @@ private fun PresentationPackageEvidence.toPayload(): AthenaPresentationPackageEv
         anchorMapSummary = anchorMapSummary,
         labelBindingSummary = labelBindingSummary,
         resolverStage = resolverStage,
-        rendererFallbackAccepted = rendererFallbackAccepted,
     )
 
-private fun SymbolAnatomy.toPayload(): AthenaPresentationSymbolAnatomyPayload {
-    return AthenaPresentationSymbolAnatomyPayload(
-        familyId = familyId.value,
+private fun RepresentationDefinition.toPayload(): AthenaRepresentationDefinitionPayload =
+    AthenaRepresentationDefinitionPayload(
+        symbolId = symbolId.value,
+        libraryId = libraryId.value,
+        version = version.value,
+        kind = kind.name.lowercase(),
+        definitionKind = definitionKind.name.lowercase(),
+        graphicBody = graphicBody.toPayload(),
+        anchors = anchors.map(RepresentationAnchorContract::toPayload),
+        labelSlots = labelSlots.map(RepresentationLabelSlot::toPayload),
+        provenance = lifecycle.provenance.source,
     )
-}
 
-internal fun PresentationAnatomy.toPayload(): AthenaPresentationAnatomyPayload {
-    return AthenaPresentationAnatomyPayload(
-        representationId = representationId.value,
-        context = context.name.lowercase(),
-        bounds = AthenaPresentationSizePayload(
-            width = bounds.width.value,
-            height = bounds.height.value,
-        ),
-        hotspot = hotspot.point.toPayload(),
-        primitives = primitives.map(PresentationPrimitive::toPayload),
-        terminals = terminals.map(PresentationTerminalPoint::toPayload),
-        labelAnchors = labelAnchors.map(PresentationLabelAnchor::toPayload),
+private fun RepresentationAnchorContract.toPayload(): AthenaRepresentationAnchorPayload =
+    AthenaRepresentationAnchorPayload(
+        anchorId = anchorId.value,
+        geometryRef = geometryRef,
+        primitiveId = primitiveId.value,
+        point = point.toPayload(),
+        role = role.name.lowercase(),
+        required = required,
     )
-}
 
-private fun RouteFactSnapshot.toPayload(): AthenaPresentationRouteFactSnapshotPayload {
-    return AthenaPresentationRouteFactSnapshotPayload(
-        snapshotId = snapshotId.value,
-        family = family,
-        routeFacts = routeFacts.map(RouteFact::toPayload),
-        junctionFacts = junctionFacts.map(RouteJunctionFact::toPayload),
-        crossingFacts = crossingFacts.map(RouteCrossingFact::toPayload),
+private fun RepresentationLabelSlot.toPayload(): AthenaRepresentationLabelSlotPayload =
+    AthenaRepresentationLabelSlotPayload(
+        slotId = slotId.value,
+        role = role.name.lowercase(),
+        origin = origin?.toPayload(),
+        bounds = bounds?.toPayload(),
+        styleTokenId = styleTokenId?.value,
     )
-}
 
-private fun RouteFact.toPayload(): AthenaPresentationRouteFactPayload {
-    return AthenaPresentationRouteFactPayload(
-        routeId = routeId.value,
-        snapshotId = snapshotId.value,
-        connectionId = connectionId.value,
-        source = source.toPayload(),
-        target = target.toPayload(),
-        segments = segments.map { segment ->
-            AthenaPresentationRouteSegmentPayload(
-                start = AthenaProjectionPointPayload(x = segment.start.x, y = segment.start.y),
-                end = AthenaProjectionPointPayload(x = segment.end.x, y = segment.end.y),
-            )
-        },
-        lane = lane.value,
-        quality = quality.toPayload(),
-        trace = AthenaPresentationTracePayload(
-            sourceProvenance = listOf(source.policySource, target.policySource).distinct().sorted(),
-            sourceProjectionIds = listOf(snapshotId.value, connectionId.value),
-            compilerStage = "route-fact-deriver",
-        ),
+private fun SourceProvenance.toPayload(): AthenaPresentationSourceSpanPayload =
+    AthenaPresentationSourceSpanPayload(
+        file = file,
+        startLine = startLine,
+        startColumn = startColumn,
+        endLine = endLine,
+        endColumn = endColumn,
     )
-}
+
+private fun LayoutSourceSpan.toPayload(): AthenaPresentationSourceSpanPayload =
+    AthenaPresentationSourceSpanPayload(
+        file = sourceUnitId,
+        startLine = startLine,
+        startColumn = startColumn,
+        endLine = endLine,
+        endColumn = endColumn,
+    )
 
 private fun TerminalAnchorFact.toPayload(): AthenaPresentationTerminalFactPayload {
     return AthenaPresentationTerminalFactPayload(
@@ -567,89 +680,12 @@ private fun TerminalAnchorFact.toPayload(): AthenaPresentationTerminalFactPayloa
         side = side.name.lowercase(),
         routeAnchor = AthenaPresentationRouteAnchorPayload(
             anchorId = anchorId.value,
-            point = AthenaProjectionPointPayload(x = point.x, y = point.y),
+            point = AthenaPointPayload(x = point.x, y = point.y),
         ),
         notation = AthenaPresentationTerminalNotationPayload(
             marker = "circle",
             number = portId.value,
         ),
-    )
-}
-
-private fun RouteJunctionFact.toPayload(): AthenaPresentationRouteJunctionFactPayload {
-    return AthenaPresentationRouteJunctionFactPayload(
-        junctionId = junctionId,
-        point = AthenaProjectionPointPayload(x = point.x, y = point.y),
-        routeIds = routeIds.map { routeId -> routeId.value },
-        semanticPortId = semanticPortId,
-    )
-}
-
-private fun RouteCrossingFact.toPayload(): AthenaPresentationRouteCrossingFactPayload {
-    return AthenaPresentationRouteCrossingFactPayload(
-        crossingId = crossingId,
-        point = AthenaProjectionPointPayload(x = point.x, y = point.y),
-        routeIds = routeIds.map { routeId -> routeId.value },
-        joined = joined,
-    )
-}
-
-private fun RouteQuality.toPayload(): AthenaPresentationRouteQualityPayload {
-    return AthenaPresentationRouteQualityPayload(
-        state = state.name.lowercase(),
-        failedConstraintIds = failedConstraintIds.map { constraintId -> constraintId.value }.sorted(),
-        message = message,
-    )
-}
-
-private fun PresentationPrimitive.toPayload(): AthenaPresentationAnatomyPrimitivePayload {
-    return when (this) {
-        is PresentationPrimitive.Rectangle -> AthenaPresentationAnatomyPrimitivePayload(
-            kind = "rectangle",
-            primitiveId = primitiveId.value,
-            origin = origin.toPayload(),
-            size = AthenaPresentationSizePayload(
-                width = size.width.value,
-                height = size.height.value,
-            ),
-        )
-
-        is PresentationPrimitive.Line -> AthenaPresentationAnatomyPrimitivePayload(
-            kind = "line",
-            primitiveId = primitiveId.value,
-            start = start.toPayload(),
-            end = end.toPayload(),
-        )
-
-        is PresentationPrimitive.Polyline -> AthenaPresentationAnatomyPrimitivePayload(
-            kind = "polyline",
-            primitiveId = primitiveId.value,
-            points = points.map(PresentationPoint::toPayload),
-        )
-
-        is PresentationPrimitive.Circle -> AthenaPresentationAnatomyPrimitivePayload(
-            kind = "circle",
-            primitiveId = primitiveId.value,
-            center = center.toPayload(),
-            radius = radius.value,
-        )
-
-        is PresentationPrimitive.Text -> AthenaPresentationAnatomyPrimitivePayload(
-            kind = "text",
-            primitiveId = primitiveId.value,
-            origin = origin.toPayload(),
-            text = text,
-        )
-    }
-}
-
-private fun PresentationTerminalPoint.toPayload(): AthenaPresentationTerminalPointPayload {
-    return AthenaPresentationTerminalPointPayload(
-        terminalId = terminalId.value,
-        role = role.name.lowercase(),
-        localPoint = localPoint.toPayload(),
-        side = side.name.lowercase(),
-        notation = notation.toPayload(),
     )
 }
 
@@ -699,8 +735,8 @@ private fun PresentationLabelAnchor.toPayload(): AthenaPresentationLabelAnchorPa
     )
 }
 
-private fun PresentationPoint.toPayload(): AthenaProjectionPointPayload {
-    return AthenaProjectionPointPayload(
+private fun PresentationPoint.toPayload(): AthenaPointPayload {
+    return AthenaPointPayload(
         x = x.value,
         y = y.value,
     )

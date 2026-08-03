@@ -1,5 +1,10 @@
 package com.engineeringood.athena.ide.lsp
 
+data class AthenaPointPayload(
+    val x: Int,
+    val y: Int,
+)
+
 /**
  * Rebuildable Presentation IR payload exposed through the Athena LSP boundary.
  */
@@ -11,10 +16,23 @@ data class AthenaPresentationDocumentPayload(
     val occurrences: List<AthenaPresentationOccurrencePayload>,
     val graphicOccurrences: List<AthenaPresentationGraphicOccurrencePayload> = emptyList(),
     val connectors: List<AthenaPresentationConnectorPayload>,
+    val connectionMarkers: List<AthenaPresentationConnectionMarkerPayload> = emptyList(),
+    val paintPlan: AthenaPresentationPaintPlanPayload,
     val representationFacts: List<AthenaPresentationRepresentationFactPayload> = emptyList(),
     val referenceMarkers: List<AthenaPresentationReferenceMarkerPayload> = emptyList(),
-    val routeFactSnapshot: AthenaPresentationRouteFactSnapshotPayload? = null,
     val drawingComposition: AthenaDrawingCompositionPayload? = null,
+)
+
+data class AthenaPresentationPaintPlanPayload(
+    val items: List<AthenaPresentationPaintItemPayload>,
+)
+
+data class AthenaPresentationPaintItemPayload(
+    val itemId: String,
+    val targetId: String,
+    val kind: String,
+    val visible: Boolean,
+    val order: Int,
 )
 
 data class AthenaPresentationGraphicOccurrencePayload(
@@ -30,10 +48,22 @@ data class AthenaPresentationGraphicOccurrencePayload(
     val definitionId: String,
     val bindingRuleId: String,
     val graphic: AthenaGraphicPrimitiveDocumentPayload,
+    val placedAnchors: List<AthenaPresentationPlacedAnchorPayload> = emptyList(),
     val terminalBindings: List<AthenaPresentationGraphicTerminalBindingPayload>,
     val labels: List<AthenaPresentationGraphicLabelPayload>,
     val sourceProvenance: List<String>,
     val authorities: AthenaPresentationGraphicOccurrenceAuthoritiesPayload,
+    val trace: AthenaPresentationTracePayload? = null,
+)
+
+data class AthenaPresentationPlacedAnchorPayload(
+    val anchorId: String,
+    val geometryRef: String,
+    val primitiveId: String,
+    val point: AthenaPointPayload,
+    val role: String,
+    val required: Boolean,
+    val sourceProvenance: List<String>,
     val trace: AthenaPresentationTracePayload? = null,
 )
 
@@ -45,9 +75,11 @@ data class AthenaPresentationGraphicOccurrenceAuthoritiesPayload(
 
 data class AthenaPresentationGraphicTerminalBindingPayload(
     val portSemanticId: String,
+    val bindingId: String,
     val anchorId: String,
     val terminalIdentity: String,
-    val point: AthenaProjectionPointPayload,
+    val point: AthenaPointPayload,
+    val labelPoint: AthenaPointPayload,
     val side: String,
     val trace: AthenaPresentationTracePayload? = null,
 )
@@ -72,11 +104,11 @@ data class AthenaGraphicPrimitivePayload(
     val kind: String,
     val bounds: AthenaPresentationBoundsPayload,
     val styleTokenId: String?,
-    val start: AthenaProjectionPointPayload? = null,
-    val end: AthenaProjectionPointPayload? = null,
-    val points: List<AthenaProjectionPointPayload> = emptyList(),
-    val center: AthenaProjectionPointPayload? = null,
-    val origin: AthenaProjectionPointPayload? = null,
+    val start: AthenaPointPayload? = null,
+    val end: AthenaPointPayload? = null,
+    val points: List<AthenaPointPayload> = emptyList(),
+    val center: AthenaPointPayload? = null,
+    val origin: AthenaPointPayload? = null,
     val radius: Int? = null,
     val startAngleDegrees: Double? = null,
     val sweepAngleDegrees: Double? = null,
@@ -152,10 +184,10 @@ data class AthenaPresentationCompositePartPayload(
 data class AthenaPresentationShapeCommandPayload(
     val kind: String,
     val bounds: AthenaPresentationBoundsPayload? = null,
-    val start: AthenaProjectionPointPayload? = null,
-    val end: AthenaProjectionPointPayload? = null,
-    val center: AthenaProjectionPointPayload? = null,
-    val origin: AthenaProjectionPointPayload? = null,
+    val start: AthenaPointPayload? = null,
+    val end: AthenaPointPayload? = null,
+    val center: AthenaPointPayload? = null,
+    val origin: AthenaPointPayload? = null,
     val radius: Int? = null,
     val text: String? = null,
     val pathData: String? = null,
@@ -192,20 +224,79 @@ data class AthenaPresentationConnectorPayload(
     val occurrenceId: String,
     val semanticId: String,
     val primitiveId: String,
-    val routePoints: List<AthenaProjectionPointPayload>,
+    val routePoints: List<AthenaPointPayload>,
+    val lineClassId: String,
+    val line: AthenaPresentationConnectorLinePayload,
+    val routeId: String,
+    val bundleId: String,
+    val laneId: String,
+    val laneRouteIds: List<String>,
+    val selectedChannelIds: List<String>,
+    val labels: List<AthenaPresentationConnectorLabelPayload>,
+    val quality: String,
+    val sourceEndpoint: AthenaPresentationConnectorEndpointPayload,
+    val targetEndpoint: AthenaPresentationConnectorEndpointPayload,
     val layer: String,
-    val sourceAnchorId: String? = null,
-    val targetAnchorId: String? = null,
-    val sourcePortSemanticId: String? = null,
-    val targetPortSemanticId: String? = null,
-    val markerKeys: List<String>,
+    val markerIds: List<String>,
     val tokenOverrides: Map<String, String>,
     val sourceProjectionIds: List<String>,
+    val trace: AthenaPresentationTracePayload? = null,
+    val sourceSpan: AthenaPresentationSourceSpanPayload? = null,
+)
+
+data class AthenaPresentationConnectorLinePayload(
+    val classId: String,
+    val lineKind: String,
+    val lineStyleId: String,
+    val weight: Double,
+    val style: String,
+    val colorKey: String,
+    val endpointBehavior: String,
+    val labelPolicy: String,
+    val crossingBehavior: String,
+    val policyId: String,
+    val compilerSnapshotId: String,
+)
+
+data class AthenaPresentationConnectorLabelPayload(
+    val labelId: String,
+    val text: String,
+    val point: AthenaPointPayload,
+    val bounds: AthenaPresentationBoundsPayload,
+    val labelClassId: String,
+    val display: String,
+    val sourceProvenance: List<String>,
+    val compilerSnapshotId: String,
+    val trace: AthenaPresentationTracePayload? = null,
+)
+
+data class AthenaPresentationConnectorEndpointPayload(
+    val portSemanticId: String,
+    val bindingId: String,
+    val occurrenceId: String,
+    val anchorId: String,
+    val point: AthenaPointPayload,
+    val sourceProvenance: List<String>,
+    val trace: AthenaPresentationTracePayload? = null,
+)
+
+data class AthenaPresentationConnectionMarkerPayload(
+    val markerId: String,
+    val kind: String,
+    val point: AthenaPointPayload,
+    val routeIds: List<String>,
+    val connectorIds: List<String>,
+    val semanticId: String?,
+    val joined: Boolean,
+    val appearanceClassId: String,
+    val sourceProjectionIds: List<String>,
+    val sourceProvenance: List<String>,
+    val compilerSnapshotId: String,
     val trace: AthenaPresentationTracePayload? = null,
 )
 
 /**
- * M26 compact document reference marker exposed through the Athena LSP boundary.
+ * Compact document reference marker exposed through the Athena LSP boundary.
  */
 data class AthenaPresentationReferenceMarkerPayload(
     val markerId: String,
@@ -238,12 +329,20 @@ data class AthenaPresentationBoundsPayload(
     val height: Int,
 )
 
+data class AthenaPresentationSourceSpanPayload(
+    val file: String,
+    val startLine: Int,
+    val startColumn: Int,
+    val endLine: Int,
+    val endColumn: Int,
+)
+
 /**
  * Text-slot payload exposed through the Athena LSP boundary.
  */
 data class AthenaPresentationTextSlotPayload(
     val slotId: String,
-    val origin: AthenaProjectionPointPayload,
+    val origin: AthenaPointPayload,
     val tokenKey: String,
 )
 
@@ -252,7 +351,7 @@ data class AthenaPresentationTextSlotPayload(
  */
 data class AthenaPresentationAnchorDefinitionPayload(
     val alias: String,
-    val point: AthenaProjectionPointPayload,
+    val point: AthenaPointPayload,
 )
 
 /**
@@ -268,21 +367,49 @@ data class AthenaPresentationAnchorBindingPayload(
 )
 
 /**
- * M25 governed representation fact exposed through the Athena LSP boundary.
+ * Governed representation fact exposed through the Athena LSP boundary.
  */
 data class AthenaPresentationRepresentationFactPayload(
     val subjectId: String,
     val occurrenceId: String,
     val sourceProjectionIds: List<String>,
-    val symbol: AthenaPresentationSymbolAnatomyPayload,
-    val anatomy: AthenaPresentationAnatomyPayload,
+    val definition: AthenaRepresentationDefinitionPayload,
     val terminals: List<AthenaPresentationTerminalFactPayload>,
     val labels: List<AthenaPresentationLabelFactPayload>,
-    val packageEvidence: AthenaPresentationPackageEvidencePayload? = null,
+    val packageTrace: AthenaPresentationPackageTracePayload? = null,
     val trace: AthenaPresentationTracePayload? = null,
 )
 
-data class AthenaPresentationPackageEvidencePayload(
+data class AthenaRepresentationDefinitionPayload(
+    val symbolId: String,
+    val libraryId: String,
+    val version: String,
+    val kind: String,
+    val definitionKind: String,
+    val graphicBody: AthenaGraphicPrimitiveDocumentPayload,
+    val anchors: List<AthenaRepresentationAnchorPayload>,
+    val labelSlots: List<AthenaRepresentationLabelSlotPayload>,
+    val provenance: String,
+)
+
+data class AthenaRepresentationAnchorPayload(
+    val anchorId: String,
+    val geometryRef: String,
+    val primitiveId: String,
+    val point: AthenaPointPayload,
+    val role: String,
+    val required: Boolean,
+)
+
+data class AthenaRepresentationLabelSlotPayload(
+    val slotId: String,
+    val role: String,
+    val origin: AthenaPointPayload? = null,
+    val bounds: AthenaPresentationBoundsPayload? = null,
+    val styleTokenId: String? = null,
+)
+
+data class AthenaPresentationPackageTracePayload(
     val engineeringPackageId: String,
     val engineeringPackageVersion: String,
     val presentationProfileId: String,
@@ -295,34 +422,6 @@ data class AthenaPresentationPackageEvidencePayload(
     val anchorMapSummary: List<String>,
     val labelBindingSummary: List<String>,
     val resolverStage: String,
-    val rendererFallbackAccepted: Boolean,
-)
-
-data class AthenaPresentationSymbolAnatomyPayload(
-    val familyId: String,
-)
-
-data class AthenaPresentationAnatomyPayload(
-    val representationId: String,
-    val context: String,
-    val bounds: AthenaPresentationSizePayload,
-    val hotspot: AthenaProjectionPointPayload,
-    val primitives: List<AthenaPresentationAnatomyPrimitivePayload>,
-    val terminals: List<AthenaPresentationTerminalPointPayload>,
-    val labelAnchors: List<AthenaPresentationLabelAnchorPayload>,
-)
-
-data class AthenaPresentationAnatomyPrimitivePayload(
-    val kind: String,
-    val primitiveId: String,
-    val origin: AthenaProjectionPointPayload? = null,
-    val size: AthenaPresentationSizePayload? = null,
-    val start: AthenaProjectionPointPayload? = null,
-    val end: AthenaProjectionPointPayload? = null,
-    val points: List<AthenaProjectionPointPayload> = emptyList(),
-    val center: AthenaProjectionPointPayload? = null,
-    val radius: Int? = null,
-    val text: String? = null,
 )
 
 data class AthenaPresentationSizePayload(
@@ -333,7 +432,7 @@ data class AthenaPresentationSizePayload(
 data class AthenaPresentationTerminalPointPayload(
     val terminalId: String,
     val role: String,
-    val localPoint: AthenaProjectionPointPayload,
+    val localPoint: AthenaPointPayload,
     val side: String,
     val notation: AthenaPresentationTerminalNotationPayload,
 )
@@ -351,7 +450,7 @@ data class AthenaPresentationTerminalFactPayload(
 
 data class AthenaPresentationRouteAnchorPayload(
     val anchorId: String,
-    val point: AthenaProjectionPointPayload,
+    val point: AthenaPointPayload,
 )
 
 data class AthenaPresentationTerminalNotationPayload(
@@ -362,7 +461,7 @@ data class AthenaPresentationTerminalNotationPayload(
 data class AthenaPresentationLabelAnchorPayload(
     val anchorId: String,
     val role: String,
-    val point: AthenaProjectionPointPayload,
+    val point: AthenaPointPayload,
 )
 
 data class AthenaPresentationLabelFactPayload(

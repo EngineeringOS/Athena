@@ -36,10 +36,8 @@ import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionVali
 import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionRejected
 import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionSuccess
 import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandExecutionUnavailable
-import com.engineeringood.athena.runtime.AthenaRuntimeViewerReadyProjection
 import com.engineeringood.athena.runtime.AthenaSemanticDiffInspection
 import com.engineeringood.athena.runtime.RuntimeModuleMarker
-import com.engineeringood.athena.runtime.projectViewerProjection
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -196,21 +194,13 @@ class BootstrapCli(
                 ) {
                     is AthenaCommandExecutionSuccess -> {
                         persistExecutionSession(context)
-                        val viewerProjection = context.projectViewerProjection()
-                        val viewerConnectionCount = if (viewerProjection is AthenaRuntimeViewerReadyProjection) {
-                            viewerProjection.scene.connections.size
-                        } else {
-                            0
-                        }
-
                         buildString {
                             appendLine("Command successful")
                             appendLine("Project: ${result.projectName}")
                             appendLine("Command: ${result.commandKind}")
                             appendLine("Changed semantic ids: ${result.changedSemanticIds.sorted().joinToString(", ")}")
                             appendLine("connections before: ${result.beforeDocument.connections.size}")
-                            appendLine("connections after: ${result.afterDocument.connections.size}")
-                            append("viewer connections: $viewerConnectionCount")
+                            append("connections after: ${result.afterDocument.connections.size}")
                         }
                     }
 

@@ -152,20 +152,10 @@ private fun AthenaExecutionContext.buildProjectionSnapshot(
                         crossReferences = projection.crossReferences.map { crossReference ->
                             crossReference.toRuntimeProjectionCrossReference()
                         },
-                        electricalAnchors = activeProjection.electricalAnchors.map { anchor ->
-                            anchor.toRuntimeProjectionElectricalAnchor()
-                        },
-                        electricalConnectionEndpoints = activeProjection.electricalConnectionEndpoints.map { endpoint ->
-                            endpoint.toRuntimeProjectionElectricalConnectionEndpoint()
-                        },
-                        electricalRoutingCorridors = activeProjection.electricalRoutingCorridors.map { corridor ->
-                            corridor.toRuntimeProjectionElectricalRoutingCorridor()
-                        },
                         activeRenderContributions = activeProjectionRenderContributions(
                             viewId = viewId,
                             rendererTarget = GRAPH_WORKBENCH_RENDERER_TARGET,
                         ),
-                        sheetLayout = activeProjection.toRuntimeProjectionSheetLayout(scene, activeSheetId),
                     )
                 }
 
@@ -247,24 +237,13 @@ private fun ProjectionDocument.scopedToActiveSheet(
         ?: return this
     val nodeIds = activeSheet.subjects.flatMap { subject -> subject.nodeIds }.toSet()
     val connectionIds = activeSheet.subjects.flatMap { subject -> subject.connectionIds }.toSet()
-    val labelIds = activeSheet.subjects.flatMap { subject -> subject.labelIds }.toSet()
     val activeSemanticIds = activeSheet.subjects.map { subject -> subject.semanticId }.toSet()
     return copy(
         nodes = nodes.filter { node -> node.projectionId in nodeIds },
         connections = connections.filter { connection -> connection.projectionId in connectionIds },
-        labels = labels.filter { label -> label.projectionId in labelIds },
         resolvedSubjects = resolvedSubjects.filter { subject -> subject.semanticId in activeSemanticIds },
         notationPack = notationPack.let { pack ->
             pack?.copy(subjects = pack.subjects.filter { subject -> subject.semanticId in activeSemanticIds })
-        },
-        electricalAnchors = electricalAnchors.filter { anchor ->
-            anchor.nodeId in nodeIds || anchor.labelId in labelIds
-        },
-        electricalConnectionEndpoints = electricalConnectionEndpoints.filter { endpoint ->
-            endpoint.projectionConnectionId in connectionIds
-        },
-        electricalRoutingCorridors = electricalRoutingCorridors.filter { corridor ->
-            corridor.projectionConnectionId in connectionIds
         },
     )
 }
@@ -275,10 +254,9 @@ private fun com.engineeringood.athena.presentation.PresentationDocument.scopedTo
     val projectionIds = buildSet {
         addAll(projection.nodes.map { node -> node.projectionId.value })
         addAll(projection.connections.map { connection -> connection.projectionId.value })
-        addAll(projection.labels.map { label -> label.projectionId.value })
     }
     val connectionSemanticIds = projection.connections.map { connection -> connection.semanticId.value }.toSet()
-    val occurrenceSemanticIds = (projection.nodes.map { node -> node.semanticId.value } + projection.labels.map { label -> label.semanticId.value }).toSet()
+    val occurrenceSemanticIds = projection.nodes.map { node -> node.semanticId.value }.toSet()
     return scopedToProjectionMembership(
         sourceProjectionIds = projectionIds,
         connectionSemanticIds = connectionSemanticIds,

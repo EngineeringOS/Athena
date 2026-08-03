@@ -1,4 +1,4 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 class M24RoutingContractTest {
     @Test
     fun `contracts represent governed terminal-anchor route evidence`() {
-        val connection = ElectricalConnectionIntent(
+        val connection = ElectricalConnectionRoleFact(
             connectionId = ElectricalConnectionId("connection:plc1-do1-to-xt1-1"),
             sourceSubjectId = StableSemanticIdentity("component:PLC1"),
             sourcePortId = ElectricalPortId("DO1"),

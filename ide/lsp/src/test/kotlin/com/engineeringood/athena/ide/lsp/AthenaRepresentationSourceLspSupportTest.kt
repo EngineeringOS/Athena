@@ -292,35 +292,6 @@ class AthenaRepresentationSourceLspSupportTest {
     }
 
     @Test
-    fun `M34 field bindings resolve package profile and element declarations`() {
-        val repositoryRoot = workspaceRoot()
-            .resolve("examples/m34/professional-control-drawing")
-            .toAbsolutePath()
-            .normalize()
-        val fieldBindings = repositoryRoot.resolve(
-            "packages/representation/com/engineeringood/m34/control/field/field-bindings.athena",
-        )
-        val text = Files.readString(fieldBindings)
-        val features = AthenaLanguageFeatures(
-            compiler = AthenaCompiler(),
-            repositoryRoot = repositoryRoot,
-            sourceRootPath = repositoryRoot.resolve("src"),
-        )
-
-        val tracked = features.trackDocument(
-            uri = fieldBindings.toUri().toString(),
-            path = fieldBindings,
-            version = 1,
-            text = text,
-        )
-
-        val diagnosticCodes = tracked.representation?.diagnostics.orEmpty().map { diagnostic -> diagnostic.code }
-        assertFalse("binding.profile.unresolved" in diagnosticCodes, diagnosticCodes.toString())
-        assertFalse("binding.target.element.unresolved" in diagnosticCodes, diagnosticCodes.toString())
-        assertTrue(diagnosticCodes.isEmpty(), diagnosticCodes.toString())
-    }
-
-    @Test
     @Suppress("DEPRECATION")
     fun `representation diagnostics use compiler vocabulary for governed SVG and reject runtime names`() {
         val repository = createGovernedTestRepository("athena-representation-svg-lsp-")

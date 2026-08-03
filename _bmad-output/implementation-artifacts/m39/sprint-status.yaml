@@ -1,0 +1,70 @@
+# generated: 2026-08-01T09:55:00+08:00
+# last_updated: 2026-08-02T09:00:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m39
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic: backlog | in-progress | done
+# Story: backlog | ready-for-dev | in-progress | review | done
+# Retrospective: optional | done
+
+# WORKFLOW RULES:
+# ===============
+# - This file tracks M39 only.
+# - Epic 1 is complete Human DSL work.
+# - Epic 2 onward proves four realities and their transformation chain.
+# - Create and implement stories in numeric order unless explicit correction changes it.
+# - M39 source must stay human-first, natural, concrete, and K.I.S.S.
+# - Do not restore M38 `intent` boilerplate into normal source.
+# - `to` is preferred; `->` is the same relation alias through one compiler path.
+# - Domain packages define relation words; Athena kernel does not hardcode electrical vocabulary.
+# - No stale Diagram Grammar-first stories remain active in M39.
+# - Theia remains domain-neutral and paint-only.
+# - Gradle verification on Windows is strictly sequential.
+
+generated: 2026-08-01T09:55:00+08:00
+last_updated: 2026-08-02T09:00:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m39
+
+development_status:
+  m39-e1: done
+  1-1-replace-arrow-connections-with-to: done
+  1-2-add-domain-connection-verbs: done
+  1-3-remove-intent-from-normal-m39-source: done
+  m39-e1-retrospective: optional
+
+  m39-e2: in-progress
+  2-1-define-four-reality-roots: review
+  2-2-remove-spatial-facts-from-projection-models: review
+  2-3-declare-reality-authority-and-validation: review
+  m39-e2-retrospective: optional
+
+  m39-e3: in-progress
+  3-1-transform-engineering-to-projection: review
+  3-2-transform-projection-to-spatial: review
+  3-3-transform-spatial-to-presentation: review
+  m39-e3-retrospective: optional
+
+  m39-e4: in-progress
+  4-1-build-spatial-placement-authority: review
+  4-2-build-anchor-and-route-authority: review
+  4-3-capture-spatial-quality-baseline: review
+  m39-e4-retrospective: optional
+
+  m39-e5: in-progress
+  5-1-build-dynamic-connection-appearance: review
+  5-2-build-labels-visibility-and-paint-order: review
+  5-3-clean-presentation-naming-and-dead-paths: review
+  m39-e5-retrospective: optional
+
+  m39-e6: in-progress
+  6-1-keep-theia-and-svg-export-paint-only: review
+  6-2-build-dedicated-m39-product-proof: review
+  6-3-close-m39-with-honest-retrospective: review
+  m39-e6-retrospective: optional

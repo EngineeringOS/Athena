@@ -43,7 +43,7 @@ class AthenaAuthoringSupportTest {
               }
 
               con
-              connect plc1_out_to_plc1_out PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out PLC1.out to PLC1.out
             }
         """.trimIndent()
         val validSourceText = """
@@ -57,7 +57,7 @@ class AthenaAuthoringSupportTest {
                 signal Digital
               }
 
-              connect plc1_out_to_plc1_out_2 PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out_2 PLC1.out to PLC1.out
             }
         """.trimIndent()
         sourcePath.writeText(governedAthenaSource(validSourceText))
@@ -103,7 +103,10 @@ class AthenaAuthoringSupportTest {
             ).get()
             val systemSymbol = symbols.single().right
             assertEquals("FactoryLine", systemSymbol.name)
-            assertEquals(listOf("PLC1", "PLC1.out", "connect plc1_out_to_plc1_out_2 PLC1.out -> PLC1.out"), systemSymbol.children.map { child -> child.name })
+            assertEquals(
+                listOf("PLC1", "PLC1.out", "connect plc1_out_to_plc1_out_2 PLC1.out to PLC1.out"),
+                systemSymbol.children.map { child -> child.name },
+            )
 
             val definition = server.textDocumentService.definition(
                 DefinitionParams().apply {
@@ -217,7 +220,7 @@ class AthenaAuthoringSupportTest {
               }
 
               connect control_feed {
-                plc1_out_to_m1_in PLC1.out -> M1.in
+                plc1_out_to_m1_in PLC1.out to M1.in
               }
             }
         """.trimIndent()
@@ -252,10 +255,16 @@ class AthenaAuthoringSupportTest {
             assertEquals(SymbolKind.Module, groupSymbol.kind)
             assertEquals("connect group", groupSymbol.detail)
             assertEquals(
-                listOf("plc1_out_to_m1_in PLC1.out -> M1.in"),
+                listOf("plc1_out_to_m1_in PLC1.out to M1.in"),
                 groupSymbol.children.map { child -> child.name },
             )
             assertEquals("connect edge", groupSymbol.children.single().detail)
+
+            val formatted = server.textDocumentService.formatting(
+                DocumentFormattingParams(TextDocumentIdentifier(documentUri), FormattingOptions()),
+            ).get().single().newText
+            assertTrue("    plc1_out_to_m1_in PLC1.out to M1.in" in formatted)
+            assertTrue("->" !in formatted)
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
@@ -383,7 +392,7 @@ class AthenaAuthoringSupportTest {
               port M1.line {
                 direction in
               }
-              connect feeder QF1.line -> M1.line
+              connect feeder QF1.line to M1.line
 
               installation cabinet MainCabinet {
                 enclosure ENC1 size (800mm, 600mm, 250mm)
@@ -513,7 +522,7 @@ class AthenaAuthoringSupportTest {
                     direction in
                   }
 
-                  connect feeder QF1.line -> M1.line
+                  connect feeder QF1.line to M1.line
 
                   installation cabinet MainCabinet {
                     enclosure ENC1 size (800mm, 600mm, 250mm)

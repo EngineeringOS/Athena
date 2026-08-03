@@ -6,20 +6,37 @@ import com.engineeringood.athena.ir.EngineeringConnectionNetworkMember
 import com.engineeringood.athena.ir.EngineeringComponent
 import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringExternalEvidenceMapping
+import com.engineeringood.athena.ir.EngineeringExternalEvidenceSubject
+import com.engineeringood.athena.ir.EngineeringExternalEvidenceSubjectKind
 import com.engineeringood.athena.ir.EngineeringFunction
 import com.engineeringood.athena.ir.EngineeringFunctionRole
 import com.engineeringood.athena.ir.EngineeringNetworkCompatibilityEvidence
 import com.engineeringood.athena.ir.EngineeringNetworkJunction
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringProjectionForbiddenTruth
+import com.engineeringood.athena.ir.EngineeringProjectionConstruct
+import com.engineeringood.athena.ir.EngineeringProjectionGrid
+import com.engineeringood.athena.ir.EngineeringProjectionPolicy
+import com.engineeringood.athena.ir.EngineeringProjectionRegion
+import com.engineeringood.athena.ir.EngineeringProjectionSheet
+import com.engineeringood.athena.ir.EngineeringProjectionView
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.EngineeringSystem
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
-import com.engineeringood.athena.connection.ConnectableEntityContractCompilation
+import com.engineeringood.athena.connection.EngineeringConnectivityCompilation
 import com.engineeringood.athena.language.ConnectionGroupDeclaration
+import com.engineeringood.athena.language.ExternalEvidenceDeclaration
+import com.engineeringood.athena.language.PropertyAssignment
+import com.engineeringood.athena.language.ProjectionPolicyDeclaration
+import com.engineeringood.athena.language.QualifiedName
+import com.engineeringood.athena.language.RelationDeclaration
+import com.engineeringood.athena.language.ScalarValue
 import com.engineeringood.athena.language.SourceSpan
+import com.engineeringood.athena.language.ViewDeclaration
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
 
@@ -37,14 +54,13 @@ class EngineeringIrLowerer(
 ) {
     /** Lowers [source] deterministically into the canonical semantic document used by later compiler passes.
      *
-     * M17 lowering-continuity guardrail (AD-106): the only legal input is the authored `SourceFileAst`
+     * Lowering-continuity guardrail: the only legal input is the authored `SourceFileAst`
      * carried by [CompilerSourceDocument] (read directly as `source.ast.system` and, through
      * [AthenaDomainSemanticsCoordinator], as `SourceFileAst.declarations`). This function must never be
      * changed to accept or read an ANTLR4 parse-tree/visitor result (Epic 2) or a Tree-sitter CST node
      * (Epic 3) directly. Parser migration must preserve the same canonical `EngineeringDocument` shape
      * (identity scheme `system:`/`component:`/`port:`/`connection:` and `SourceProvenance` mapping) for
-     * the current supported syntax subset, as pinned by `AthenaCompilerTest` and
-     * `AthenaM17ParserParityProofTest`.
+     * the current supported syntax subset, as pinned by the parser parity regression tests.
      */
     fun lower(source: CompilerSourceDocument, sourceUnitId: String = source.file): EngineeringDocument {
         val contribution = domainSemantics.lower(source)
@@ -94,12 +110,13 @@ class EngineeringIrLowerer(
                     provenance = blueprint.toProvenance,
                 ),
                 provenance = blueprint.provenance,
+                properties = blueprint.properties,
             )
         }
         val connectionsByAlias = contribution.connections.zip(connections).associate { (blueprint, connection) ->
             blueprint.alias to connection
         }
-        val connectionNetworks = source.ast.declarations
+        val connectionGroupNetworks = source.ast.declarations
             .filterIsInstance<ConnectionGroupDeclaration>()
             .withDuplicateOrdinals { it.name }
             .map { (group, duplicateOrdinal) ->
@@ -196,6 +213,47 @@ class EngineeringIrLowerer(
                     provenance = group.span.toProvenance(source.file),
                 )
             }
+        val relationNetworks = source.ast.declarations
+            .filterIsInstance<RelationDeclaration>()
+            .filter { relation -> relation.targets.size > 1 }
+            .withDuplicateOrdinals { relation -> relationNetworkName(relation.word.value, relation.from) }
+            .mapNotNull { (relation, duplicateOrdinal) ->
+                val members = relation.targets.map { target ->
+                    val connection = connectionsByAlias[relationMemberAlias(relation.word.value, relation.from, target)]
+                        ?: return@mapNotNull null
+                    EngineeringConnectionNetworkMember(
+                        connectionReference = EngineeringReference(
+                            authoredPath = listOf(relationNetworkName(relation.word.value, relation.from), connection.id.value.substringAfterLast(':')),
+                            resolvedIdentity = connection.id,
+                            provenance = relation.span.toProvenance(source.file),
+                        ),
+                        fromPortReference = connection.from,
+                        toPortReference = connection.to,
+                    )
+                }
+                EngineeringConnectionNetwork(
+                    id = StableSemanticIdentity(
+                        "network:$portableSourceUnitId:${relationNetworkName(relation.word.value, relation.from)}#$duplicateOrdinal",
+                    ),
+                    name = relationNetworkName(relation.word.value, relation.from),
+                    members = members,
+                    junctions = emptyList(),
+                    compatibilityEvidence = listOf(
+                        EngineeringNetworkCompatibilityEvidence(
+                            kind = "member-count",
+                            value = members.size.toString(),
+                            provenance = relation.span.toProvenance(source.file),
+                        ),
+                    ),
+                    provenance = relation.span.toProvenance(source.file),
+                    properties = listOf(
+                        EngineeringProperty(
+                            name = "relation.kind",
+                            value = EngineeringPropertyValue.Symbol(relation.word.value),
+                        ),
+                    ),
+                )
+            }
 
         val functions = contribution.functions.withDuplicateOrdinals {
             pathKey(it.ownerPath + it.name)
@@ -230,17 +288,25 @@ class EngineeringIrLowerer(
             ports = ports,
             connections = connections,
             functions = functions,
-            connectionNetworks = connectionNetworks,
+            connectionNetworks = connectionGroupNetworks + relationNetworks,
+            externalEvidence = source.ast.declarations
+                .filterIsInstance<ExternalEvidenceDeclaration>()
+                .map { evidence -> evidence.toExternalEvidence(source.file) },
+            projectionPolicies = source.ast.declarations
+                .filterIsInstance<ProjectionPolicyDeclaration>()
+                .map { policy -> policy.toProjectionPolicy(source.file) },
+            projectionViews = source.ast.declarations
+                .filterIsInstance<ViewDeclaration>()
+                .map { view -> view.toProjectionView(source.file) },
         )
     }
 
     /** Lowers validated canonical connectivity into compiler-owned transient Connection IR. */
     fun lowerConnectionIr(
-        document: EngineeringDocument,
-        contracts: ConnectableEntityContractCompilation.Success,
+        connectivity: EngineeringConnectivityCompilation.Success,
         snapshot: ConnectionIrSnapshot,
     ): ConnectionIr {
-        return ConnectionIrLowerer().lower(document, contracts, snapshot)
+        return ConnectionIrLowerer().lower(connectivity, snapshot)
     }
 
     private fun systemIdentity(name: String): StableSemanticIdentity = StableSemanticIdentity("system:$name")
@@ -283,6 +349,12 @@ private fun String.toPortableSourceUnitId(): String {
     return normalized
 }
 
+private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
+    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"
+
+private fun relationNetworkName(relationWord: String, from: QualifiedName): String =
+    "${relationWord}_${from.parts.joinToString("_")}"
+
 /** Converts a syntax-layer span into stable provenance carried by canonical semantic objects. */
 private fun SourceSpan.toProvenance(file: String): SourceProvenance {
     return SourceProvenance(
@@ -292,6 +364,98 @@ private fun SourceSpan.toProvenance(file: String): SourceProvenance {
         endLine = end.line,
         endColumn = end.column,
     )
+}
+
+private fun ExternalEvidenceDeclaration.toExternalEvidence(file: String): EngineeringExternalEvidenceMapping =
+    EngineeringExternalEvidenceMapping(
+        name = name,
+        namespace = namespace.value,
+        reference = reference.value,
+        subject = EngineeringExternalEvidenceSubject(
+            kind = when (subject.kind) {
+                com.engineeringood.athena.language.ExternalEvidenceSubjectKind.CONTRACT ->
+                    EngineeringExternalEvidenceSubjectKind.CONTRACT
+                com.engineeringood.athena.language.ExternalEvidenceSubjectKind.INTERFACE ->
+                    EngineeringExternalEvidenceSubjectKind.INTERFACE
+                com.engineeringood.athena.language.ExternalEvidenceSubjectKind.PORT ->
+                    EngineeringExternalEvidenceSubjectKind.PORT
+                com.engineeringood.athena.language.ExternalEvidenceSubjectKind.RELATION_CONTRACT ->
+                    EngineeringExternalEvidenceSubjectKind.RELATION_CONTRACT
+                com.engineeringood.athena.language.ExternalEvidenceSubjectKind.ROUTE_POLICY ->
+                    EngineeringExternalEvidenceSubjectKind.ROUTE_POLICY
+            },
+            authoredPath = subject.target.parts,
+        ),
+        externalProvenance = provenance.value,
+        provenance = span.toProvenance(file),
+    )
+
+private fun ProjectionPolicyDeclaration.toProjectionPolicy(file: String): EngineeringProjectionPolicy =
+    EngineeringProjectionPolicy(
+        name = name,
+        targetSurface = target?.value,
+        layoutStrategy = layoutStrategy?.value,
+        drawingProfile = drawingProfile?.value,
+        routeQualityPolicy = routeQualityPolicy?.value,
+        proofObligations = proofObligations.map { proof -> proof.value },
+        forbiddenEngineeringTruth = forbiddenEngineeringTruth.map { truth ->
+            EngineeringProjectionForbiddenTruth(
+                kind = truth.kind,
+                provenance = truth.span.toProvenance(file),
+            )
+        },
+        provenance = span.toProvenance(file),
+    )
+
+private fun ViewDeclaration.toProjectionView(file: String): EngineeringProjectionView =
+    EngineeringProjectionView(
+        name = name,
+        sheets = sheets.mapIndexed { index, sheet ->
+            EngineeringProjectionSheet(
+                name = sheet.name,
+                order = index + 1,
+                provenance = sheet.span.toProvenance(file),
+            )
+        },
+        regions = regions.map { region ->
+            EngineeringProjectionRegion(
+                name = region.name,
+                sheetName = sheets.lastOrNull { sheet -> sheet.span.start.offset < region.span.start.offset }?.name.orEmpty(),
+                occurrences = region.occurrences,
+                provenance = region.span.toProvenance(file),
+            )
+        },
+        constructs = constructs.map { construct ->
+            EngineeringProjectionConstruct(
+                name = construct.name.orEmpty(),
+                kind = construct.kind,
+                sheetName = sheets.lastOrNull { sheet -> sheet.span.start.offset < construct.span.start.offset }?.name.orEmpty(),
+                occurrences = construct.occurrences,
+                provenance = construct.span.toProvenance(file),
+            )
+        },
+        readingOrder = readingOrder,
+        grid = grid?.let { declaredGrid ->
+            EngineeringProjectionGrid(
+                name = declaredGrid.name,
+                rows = declaredGrid.rows,
+                columns = declaredGrid.columns,
+                provenance = declaredGrid.span.toProvenance(file),
+            )
+        },
+        provenance = span.toProvenance(file),
+    )
+
+private fun List<PropertyAssignment>.toEngineeringProperties(): List<EngineeringProperty> {
+    return map { assignment ->
+        EngineeringProperty(
+            name = assignment.name,
+            value = when (val value = assignment.value) {
+                is ScalarValue.Identifier -> EngineeringPropertyValue.Symbol(value.text)
+                is ScalarValue.StringLiteral -> EngineeringPropertyValue.Text(value.text)
+            },
+        )
+    }
 }
 
 /** Tags authored declarations deterministically when duplicate semantic keys occur in one source. */

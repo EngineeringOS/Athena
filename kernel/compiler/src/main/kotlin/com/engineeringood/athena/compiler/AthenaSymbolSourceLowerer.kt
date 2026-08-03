@@ -1,7 +1,6 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.language.SymbolAnchorDeclaration
-import com.engineeringood.athena.language.SymbolBounds
 import com.engineeringood.athena.language.SymbolDeclaration
 import com.engineeringood.athena.language.SymbolGraphicPrimitiveDeclaration
 import com.engineeringood.athena.representation.GraphicBounds
@@ -11,34 +10,22 @@ import com.engineeringood.athena.representation.GraphicPrimitiveDocument
 import com.engineeringood.athena.representation.GraphicPrimitiveDocumentId
 import com.engineeringood.athena.representation.GraphicPrimitiveId
 import com.engineeringood.athena.representation.GraphicPrimitiveIrValidator
-import com.engineeringood.athena.representation.GridUnit
-import com.engineeringood.athena.representation.PresentationAnatomy
-import com.engineeringood.athena.representation.PresentationAnatomyAuthority
-import com.engineeringood.athena.representation.PresentationBounds
-import com.engineeringood.athena.representation.PresentationHotspot
-import com.engineeringood.athena.representation.PresentationPoint
 import com.engineeringood.athena.representation.RepresentationAnchorContract
 import com.engineeringood.athena.representation.RepresentationAnchorId
-import com.engineeringood.athena.representation.RepresentationBodyAuthority
-import com.engineeringood.athena.representation.RepresentationContext
 import com.engineeringood.athena.representation.RepresentationContractValidator
 import com.engineeringood.athena.representation.RepresentationDefinition
 import com.engineeringood.athena.representation.RepresentationDefinitionKind
-import com.engineeringood.athena.representation.RepresentationDirectionPredicate
-import com.engineeringood.athena.representation.RepresentationId
 import com.engineeringood.athena.representation.RepresentationLibraryId
 import com.engineeringood.athena.representation.RepresentationLifecycle
 import com.engineeringood.athena.representation.RepresentationLifecycleState
 import com.engineeringood.athena.representation.RepresentationLabelSlot
 import com.engineeringood.athena.representation.RepresentationLabelSlotId
 import com.engineeringood.athena.representation.RepresentationProvenance
-import com.engineeringood.athena.representation.RepresentationSignalPredicate
 import com.engineeringood.athena.representation.RepresentationSymbolId
 import com.engineeringood.athena.representation.RepresentationSymbolKind
 import com.engineeringood.athena.representation.RepresentationValidationInput
 import com.engineeringood.athena.representation.RepresentationVariantId
 import com.engineeringood.athena.representation.RepresentationVersion
-import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 
@@ -89,7 +76,6 @@ internal object AthenaSymbolSourceLowerer {
                 provenance = RepresentationProvenance(file),
             ),
             kind = RepresentationSymbolKind.GENERIC,
-            anatomy = compatibilityAnatomy(identity.value, bounds),
             labelSlots = graphic.labels.map { label ->
                 RepresentationLabelSlot(
                     slotId = RepresentationLabelSlotId(label.id),
@@ -100,7 +86,6 @@ internal object AthenaSymbolSourceLowerer {
                 )
             },
             variants = listOf(RepresentationVariantId("standard")),
-            bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.SYMBOL,
             graphicBody = graphicBody,
             anchors = emptyList(),
@@ -175,10 +160,8 @@ internal object AthenaSymbolSourceLowerer {
                 provenance = RepresentationProvenance(file),
             ),
             kind = RepresentationSymbolKind.GENERIC,
-            anatomy = compatibilityAnatomy(identity, SymbolBounds(bounds.x, bounds.y, bounds.width, bounds.height, resource.span)),
             labelSlots = emptyList(),
             variants = listOf(RepresentationVariantId("standard")),
-            bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.SYMBOL,
             graphicBody = graphicBody,
             anchors = emptyList(),
@@ -324,12 +307,6 @@ private fun lowerAnchor(
             ),
         )
     }
-    val directions = anchor.directions.map { directionField ->
-        requireNotNull(directionField.value.toAnchorDirectionPredicate()) {
-            "Symbol anchor direction is validated before lowering."
-        }
-    }
-    val signals = anchor.signals
     val role = requireNotNull(anchor.role) {
         "Symbol anchor role is validated before lowering."
     }
@@ -344,9 +321,6 @@ private fun lowerAnchor(
             point = GraphicPoint(point.x, point.y),
             role = requireNotNull(role.value.toAnchorRole()),
             required = true,
-            acceptedDirections = directions.toSet(),
-            acceptedSignals = signals.map { RepresentationSignalPredicate(it.parts.joinToString(".")) }.toSet(),
-            port = anchor.port?.parts?.joinToString("."),
         ),
         diagnostic = null,
     )
@@ -355,15 +329,4 @@ private fun lowerAnchor(
 private data class LoweredAnchor(
     val anchor: RepresentationAnchorContract?,
     val diagnostic: AthenaRepresentationSourceDiagnostic?,
-)
-
-internal fun compatibilityAnatomy(identity: String, bounds: SymbolBounds) = PresentationAnatomy(
-    representationId = RepresentationId(identity),
-    context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-    bounds = PresentationBounds(GridUnit(ceil(bounds.width).toInt()), GridUnit(ceil(bounds.height).toInt())),
-    hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-    primitives = emptyList(),
-    terminals = emptyList(),
-    labelAnchors = emptyList(),
-    authority = PresentationAnatomyAuthority.COMPATIBILITY_SHELL,
 )

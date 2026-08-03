@@ -49,6 +49,16 @@ export type AthenaGraphResolvedPresentationOccurrence = {
 };
 
 export type AthenaGraphResolvedPresentationGraphicOccurrence = AthenaGLSPPresentationGraphicOccurrenceSource & {
+    bounds: AthenaGLSPPresentationBoundsSource;
+    placedAnchors: Array<{
+        anchorId: string;
+        geometryRef: string;
+        primitiveId: string;
+        point: AthenaGLSPPoint;
+        role: string;
+        required: boolean;
+        sourceProvenance: string[];
+    }>;
     parts: AthenaGraphResolvedPresentationPart[];
 };
 
@@ -58,13 +68,31 @@ export type AthenaGraphResolvedPresentationConnector = {
     primitiveId: string;
     layer: string;
     routePoints: AthenaGLSPPoint[];
-    sourceAnchorId?: string;
-    targetAnchorId?: string;
-    sourcePortSemanticId?: string;
-    targetPortSemanticId?: string;
-    markerKeys: string[];
+    lineClassId: string;
+    line: NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['connectors']>[number]['line'];
+    routeId: string;
+    bundleId: string;
+    laneId: string;
+    laneRouteIds: string[];
+    selectedChannelIds: string[];
+    labels: NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['connectors']>[number]['labels'];
+    quality: string;
+    sourceEndpoint: AthenaGraphResolvedPresentationConnectorEndpoint;
+    targetEndpoint: AthenaGraphResolvedPresentationConnectorEndpoint;
+    markerIds: string[];
     tokenOverrides: Record<string, string>;
     sourceProjectionIds: string[];
+    trace?: NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['connectors']>[number]['trace'];
+    sourceSpan?: NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['connectors']>[number]['sourceSpan'];
+};
+
+export type AthenaGraphResolvedPresentationConnectorEndpoint = {
+    portSemanticId: string;
+    bindingId: string;
+    occurrenceId: string;
+    anchorId: string;
+    point: AthenaGLSPPoint;
+    sourceProvenance: string[];
 };
 
 export type AthenaGraphResolvedPresentationRepresentation = {
@@ -75,7 +103,7 @@ export type AthenaGraphResolvedPresentationRepresentation = {
     symbolFamilyId: string;
     fallback: false;
     sourceProjectionIds: string[];
-    packageEvidence?: AthenaGLSPPresentationRepresentationFactSource['packageEvidence'];
+    packageTrace?: AthenaGLSPPresentationRepresentationFactSource['packageTrace'];
     parts: AthenaGraphResolvedPresentationPart[];
     terminals: AthenaGLSPPresentationRepresentationFactSource['terminals'];
     labels: AthenaGLSPPresentationRepresentationFactSource['labels'];
@@ -127,13 +155,13 @@ export function resolvePresentationGraphicOccurrences(
 ): AthenaGraphResolvedPresentationGraphicOccurrence[] {
     return (diagram.presentation?.graphicOccurrences ?? []).map(occurrence => ({
         ...occurrence,
-        bounds: { ...occurrence.bounds },
+        bounds: { ...requiredGraphicOccurrenceBounds(occurrence) },
         graphic: {
             ...occurrence.graphic,
             ...(occurrence.graphic.bounds ? { bounds: { ...occurrence.graphic.bounds } } : {}),
             primitives: (occurrence.graphic.primitives ?? []).map(primitive => ({
                 ...primitive,
-                bounds: { ...primitive.bounds },
+                ...(primitive.bounds ? { bounds: { ...primitive.bounds } } : {}),
                 ...(primitive.start ? { start: { ...primitive.start } } : {}),
                 ...(primitive.end ? { end: { ...primitive.end } } : {}),
                 points: (primitive.points ?? []).map(point => ({ ...point })),
@@ -143,11 +171,17 @@ export function resolvePresentationGraphicOccurrences(
             provenanceSources: [...(occurrence.graphic.provenanceSources ?? [])],
             forbiddenAuthorityClaims: [...(occurrence.graphic.forbiddenAuthorityClaims ?? [])],
         },
+        placedAnchors: (((occurrence as unknown as { placedAnchors?: AthenaGraphResolvedPresentationGraphicOccurrence['placedAnchors'] }).placedAnchors) ?? []).map(anchor => ({
+            ...anchor,
+            point: { ...anchor.point },
+            sourceProvenance: [...(anchor.sourceProvenance ?? [])],
+        })),
         terminalBindings: (occurrence.terminalBindings ?? []).map(binding => ({
             ...binding,
             point: { ...binding.point },
+            labelPoint: { ...binding.labelPoint },
         })),
-        labels: (occurrence.labels ?? []).map(label => ({
+        labels: (occurrence.labels ?? []).filter(label => !!label.bounds).map(label => ({
             ...label,
             bounds: { ...label.bounds },
         })),
@@ -160,29 +194,113 @@ export function resolvePresentationGraphicOccurrences(
 export function resolvePresentationConnectors(
     diagram: AthenaGLSPDiagram,
 ): AthenaGraphResolvedPresentationConnector[] {
-    return (diagram.presentation?.connectors ?? []).map(connector => ({
+    return (diagram.presentation?.connectors ?? []).map(connector => {
+        assertPresentationConnector(connector);
+        return {
         occurrenceId: connector.occurrenceId,
         semanticId: connector.semanticId,
         primitiveId: connector.primitiveId,
         layer: connector.layer,
-        routePoints: (connector.routePoints ?? []).map(point => ({ ...point })),
-        sourceAnchorId: connector.sourceAnchorId,
-        targetAnchorId: connector.targetAnchorId,
-        sourcePortSemanticId: connector.sourcePortSemanticId,
-        targetPortSemanticId: connector.targetPortSemanticId,
-        markerKeys: [...(connector.markerKeys ?? [])],
+        routePoints: connector.routePoints.map(point => ({ ...point })),
+        lineClassId: connector.lineClassId,
+        line: { ...connector.line },
+        routeId: connector.routeId,
+        bundleId: connector.bundleId,
+        laneId: connector.laneId,
+        laneRouteIds: [...connector.laneRouteIds],
+        selectedChannelIds: [...connector.selectedChannelIds],
+        labels: connector.labels.map(label => ({
+            ...label,
+            point: { ...label.point },
+            bounds: { ...label.bounds },
+            sourceProvenance: [...label.sourceProvenance],
+        })),
+        quality: connector.quality,
+        sourceEndpoint: {
+            ...connector.sourceEndpoint,
+            point: { ...connector.sourceEndpoint.point },
+            sourceProvenance: [...connector.sourceEndpoint.sourceProvenance],
+        },
+        targetEndpoint: {
+            ...connector.targetEndpoint,
+            point: { ...connector.targetEndpoint.point },
+            sourceProvenance: [...connector.targetEndpoint.sourceProvenance],
+        },
+        markerIds: [...connector.markerIds],
         tokenOverrides: { ...(connector.tokenOverrides ?? {}) },
-        sourceProjectionIds: [...(connector.sourceProjectionIds ?? [])],
-    }));
+        sourceProjectionIds: [...connector.sourceProjectionIds],
+        trace: connector.trace ? { ...connector.trace } : undefined,
+        sourceSpan: connector.sourceSpan ? { ...connector.sourceSpan } : undefined,
+        };
+    });
+}
+
+function assertPresentationConnector(
+    connector: NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['connectors']>[number],
+): void {
+    const subject = connector.occurrenceId || connector.semanticId || 'presentation connector';
+    if (!Array.isArray(connector.routePoints) || connector.routePoints.length < 2) {
+        throw new Error(`${subject}: connector route requires at least two compiler-supplied points.`);
+    }
+    if (!connector.sourceEndpoint?.point || !connector.targetEndpoint?.point) {
+        throw new Error(`${subject}: connector endpoints must be supplied by compiler.`);
+    }
+    const first = connector.routePoints[0];
+    const last = connector.routePoints[connector.routePoints.length - 1];
+    if (!samePoint(first, connector.sourceEndpoint.point) || !samePoint(last, connector.targetEndpoint.point)) {
+        throw new Error(`${subject}: connector route endpoints must equal supplied Anchor endpoint points.`);
+    }
+    if (!connector.line || !connector.line.classId || !connector.line.lineStyleId) {
+        throw new Error(`${subject}: connector line appearance must be supplied by compiler.`);
+    }
+    if (!Array.isArray(connector.labels) || !Array.isArray(connector.markerIds) || !Array.isArray(connector.sourceProjectionIds)) {
+        throw new Error(`${subject}: connector labels, markers, and trace must be typed arrays.`);
+    }
+    if (connector.sourceProjectionIds.length === 0) {
+        throw new Error(`${subject}: connector requires compiler source projection trace.`);
+    }
+    assertPresentationConnectorEndpoint(subject, 'source', connector.sourceEndpoint);
+    assertPresentationConnectorEndpoint(subject, 'target', connector.targetEndpoint);
+}
+
+function assertPresentationConnectorEndpoint(
+    subject: string,
+    role: 'source' | 'target',
+    endpoint: NonNullable<NonNullable<AthenaGLSPDiagram['presentation']>['connectors']>[number]['sourceEndpoint'],
+): void {
+    if (!endpoint.portSemanticId || !endpoint.bindingId || !endpoint.occurrenceId || !endpoint.anchorId) {
+        throw new Error(`${subject}: ${role} endpoint requires port, binding, occurrence, and anchor trace.`);
+    }
+    if (!Array.isArray(endpoint.sourceProvenance) || endpoint.sourceProvenance.length === 0) {
+        throw new Error(`${subject}: ${role} endpoint requires Athena source trace.`);
+    }
+    if (!endpoint.trace || !Array.isArray(endpoint.trace.sourceProjectionIds) || endpoint.trace.sourceProjectionIds.length === 0) {
+        throw new Error(`${subject}: ${role} endpoint requires compiler projection trace.`);
+    }
+}
+
+function samePoint(left: AthenaGLSPPoint, right: AthenaGLSPPoint): boolean {
+    return left.x === right.x && left.y === right.y;
+}
+
+function requiredGraphicOccurrenceBounds(
+    occurrence: AthenaGLSPPresentationGraphicOccurrenceSource,
+): AthenaGLSPPresentationBoundsSource {
+    const bounds = occurrence.bounds ?? occurrence.graphic.bounds;
+    if (!bounds) {
+        throw new Error(`Graphic occurrence ${occurrence.occurrenceId} requires compiler-owned placement bounds.`);
+    }
+    return bounds;
 }
 
 function resolveGraphicOccurrencePart(
     occurrence: AthenaGLSPPresentationGraphicOccurrenceSource,
 ): AthenaGraphResolvedPresentationPart {
+    const bounds = requiredGraphicOccurrenceBounds(occurrence);
     return {
         partId: occurrence.graphic.documentId ?? occurrence.definitionId,
         primitiveId: occurrence.definitionId,
-        bounds: { ...(occurrence.graphic.bounds ?? occurrence.bounds) },
+        bounds: { ...bounds },
         commands: (occurrence.graphic.primitives ?? [])
             .map(graphicPrimitiveToCommand)
             .filter(isPresentationShapeCommand),
@@ -211,13 +329,15 @@ function graphicPrimitiveToCommand(
                 }
                 : undefined;
         case 'rectangle':
-            return {
-                kind: 'stroke_rectangle',
-                bounds: { ...primitive.bounds },
-                radius: primitive.cornerRadius,
-                strokeTokenKey: 'stroke',
-                strokeWidthTokenKey: 'strokeWidth',
-            };
+            return primitive.bounds
+                ? {
+                    kind: 'stroke_rectangle',
+                    bounds: { ...primitive.bounds },
+                    radius: primitive.cornerRadius,
+                    strokeTokenKey: 'stroke',
+                    strokeWidthTokenKey: 'strokeWidth',
+                }
+                : undefined;
         case 'circle':
         case 'connection-dot':
             return primitive.center && primitive.radius
@@ -262,16 +382,18 @@ function graphicPrimitiveToCommand(
                     fillTokenKey: 'label',
                 }
                 : undefined;
-        case 'marker':
-            return primitive.origin
+        case 'marker': {
+            const radius = markerPrimitiveRadius(primitive);
+            return primitive.origin && radius !== undefined
                 ? {
                     kind: 'circle',
                     center: { ...primitive.origin },
-                    radius: Math.max(2, primitive.bounds.width / 2, primitive.bounds.height / 2),
+                    radius,
                     strokeTokenKey: 'stroke',
                     strokeWidthTokenKey: 'strokeWidth',
                 }
                 : undefined;
+        }
         case 'reference-arrow':
             return primitive.start && primitive.end
                 ? {
@@ -285,6 +407,21 @@ function graphicPrimitiveToCommand(
         default:
             return undefined;
     }
+}
+
+function markerPrimitiveRadius(
+    primitive: AthenaGLSPPresentationGraphicOccurrenceSource['graphic']['primitives'][number],
+): number | undefined {
+    if (primitive.bounds) {
+        return Math.max(2, primitive.bounds.width / 2, primitive.bounds.height / 2);
+    }
+    if (primitive.radius !== undefined) {
+        return primitive.radius;
+    }
+    if (primitive.headSize !== undefined) {
+        return primitive.headSize / 2;
+    }
+    return undefined;
 }
 
 function arcPrimitivePathData(
@@ -323,10 +460,10 @@ export function resolvePresentationRepresentations(
         symbolFamilyId: fact.symbol.familyId,
         fallback: false,
         sourceProjectionIds: [...(fact.sourceProjectionIds ?? [])],
-        packageEvidence: fact.packageEvidence ? {
-            ...fact.packageEvidence,
-            anchorMapSummary: [...(fact.packageEvidence.anchorMapSummary ?? [])],
-            labelBindingSummary: [...(fact.packageEvidence.labelBindingSummary ?? [])],
+        packageTrace: fact.packageTrace ? {
+            ...fact.packageTrace,
+            anchorMapSummary: [...(fact.packageTrace.anchorMapSummary ?? [])],
+            labelBindingSummary: [...(fact.packageTrace.labelBindingSummary ?? [])],
         } : undefined,
         parts: [
             resolveRepresentationPart(fact),

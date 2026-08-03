@@ -53,7 +53,5 @@ class M32SamplePackageSetTest {
         assertNotEquals(iec.resolution?.presentationProfileId, compact.resolution?.presentationProfileId)
         assertNotEquals(iec.resolution?.representationPackageId, compact.resolution?.representationPackageId)
         assertNotEquals(iec.resolution?.descriptorId, compact.resolution?.descriptorId)
-        assertFalse(iec.rendererFallbackAccepted)
-        assertFalse(compact.rendererFallbackAccepted)
     }
 }

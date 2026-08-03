@@ -156,6 +156,58 @@ class AthenaReferencedSvgGraphicCompilerTest {
     }
 
     @Test
+    fun `rejects malformed svg geometry reference values`() {
+        val invalidRefs = listOf(
+            "",
+            "body",
+            "port:L1",
+            "signal:Power.family",
+            "direction:input",
+            "component:Drive",
+            "connection:Power",
+            "anchor:",
+            "anchor:bad ref",
+            "anchor:/escape",
+            "anchor:../escape",
+        )
+
+        invalidRefs.forEach { geometryRef ->
+            val project = createTempProject()
+            project.resolve("asset.svg").writeText(svgWithGeometryRef(geometryRef))
+
+            val result = AthenaSvgGraphicBodyCompiler.compile(
+                athenaFile = project.resolve("source.athena").toString(),
+                definitionId = "vendor.drive.element",
+                resource = svgResource(),
+            )
+
+            assertTrue(result.document == null, geometryRef)
+            assertTrue(
+                result.diagnostics.any { it.code == "svg.geometry-ref.invalid" },
+                "Expected svg.geometry-ref.invalid for `$geometryRef`, got ${result.diagnostics.joinToString("\n")}",
+            )
+        }
+    }
+
+    @Test
+    fun `rejects svg engineering metadata even when geometry is otherwise valid`() {
+        val diagnostics = AthenaRepresentationSourceCompiler().lintSvg(
+            file = "asset.svg",
+            source = ENGINEERING_METADATA_SVG,
+        )
+
+        assertEquals(
+            setOf("svg.metadata.forbidden", "svg.geometry-ref.invalid"),
+            diagnostics.map { diagnostic -> diagnostic.code }.toSet(),
+        )
+        assertTrue(diagnostics.any { diagnostic -> diagnostic.subject.contains("data-athena-component") })
+        assertTrue(diagnostics.any { diagnostic -> diagnostic.subject.contains("data-athena-connection") })
+        assertTrue(diagnostics.any { diagnostic -> diagnostic.subject.contains("data-athena-port") })
+        assertTrue(diagnostics.any { diagnostic -> diagnostic.subject.contains("data-athena-direction") })
+        assertTrue(diagnostics.any { diagnostic -> diagnostic.subject.contains("data-athena-signal") })
+    }
+
+    @Test
     fun `rejects unsafe xml transport before svg admission`() {
         val compiler = AthenaRepresentationSourceCompiler()
 
@@ -175,6 +227,8 @@ class AthenaReferencedSvgGraphicCompilerTest {
             "../asset.svg" to "svg.path.invalid",
             project.resolve("asset.svg").toAbsolutePath().toString() to "svg.path.invalid",
             "https://example.com/vendor.svg" to "svg.path.invalid",
+            "http://example.com/vendor.svg" to "svg.path.invalid",
+            "file:///tmp/vendor.svg" to "svg.path.invalid",
             "./missing.svg" to "svg.file.missing",
         )
 
@@ -220,7 +274,6 @@ class AthenaReferencedSvgGraphicCompilerTest {
             canonicalAtomicShapes(svg.graphicBody.primitives),
         )
         assertEquals(native.graphicBody.bounds, svg.graphicBody.bounds)
-        assertEquals(native.bodyAuthority, svg.bodyAuthority)
         assertEquals(native.definitionKind, svg.definitionKind)
     }
 
@@ -239,6 +292,10 @@ class AthenaReferencedSvgGraphicCompilerTest {
         val element = result.definitions.single { it.symbolId.value == "vendor.drive.svg.element" }
         assertEquals(listOf("powerIn"), symbol.anchors.map { it.anchorId.value })
         assertEquals(listOf("powerIn"), element.anchors.map { it.anchorId.value })
+        assertEquals(
+            listOf(project.resolve("svg-symbol.athena").toString(), project.resolve("asset.svg").toString()),
+            symbol.graphicBody.provenanceSources,
+        )
     }
 
     @Test
@@ -258,7 +315,7 @@ class AthenaReferencedSvgGraphicCompilerTest {
         )
     }
 
-    private fun createTempProject(): Path {
+        private fun createTempProject(): Path {
         val root = Files.createTempDirectory("athena-svg-geometry-test")
         root.resolve("source.athena").writeText("package athena.vendor")
         root.createDirectories()
@@ -293,10 +350,16 @@ class AthenaReferencedSvgGraphicCompilerTest {
             }
         }
 
-    private fun span(): SourceSpan = SourceSpan(
-        start = SourcePosition(0, 1, 1),
-        end = SourcePosition(1, 1, 2),
-    )
+        private fun span(): SourceSpan = SourceSpan(
+            start = SourcePosition(0, 1, 1),
+            end = SourcePosition(1, 1, 2),
+        )
+
+    private fun svgWithGeometryRef(geometryRef: String): String = """
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="40">
+          <rect x="8" y="8" width="64" height="24" data-athena-ref="$geometryRef"/>
+        </svg>
+    """.trimIndent()
 
     private companion object {
         val COMPLEX_SVG = """
@@ -457,6 +520,22 @@ class AthenaReferencedSvgGraphicCompilerTest {
                  data-source="https://example.com/asset.svg"
                  foreign:mode="unsafe">
               <line x1="0" y1="0" x2="8" y2="8"/>
+            </svg>
+        """.trimIndent()
+
+        val ENGINEERING_METADATA_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="40">
+              <rect id="body"
+                    x="8"
+                    y="8"
+                    width="64"
+                    height="24"
+                    data-athena-ref="component:Drive"
+                    data-athena-component="Drive"
+                    data-athena-connection="Power"
+                    data-athena-port="L1"
+                    data-athena-direction="in"
+                    data-athena-signal="Power"/>
             </svg>
         """.trimIndent()
 

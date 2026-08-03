@@ -77,7 +77,7 @@ class AthenaGrammarSmokeTest {
             """
             package com.engineeringood.factory-line
             system Demo {
-              connect plc_loop plc.out -> plc.input
+              connect plc_loop plc.out to plc.input
             }
             """.trimIndent()
 
@@ -92,7 +92,7 @@ class AthenaGrammarSmokeTest {
     }
 
     @Test
-    fun `keeps package contextual without breaking arrow or dotted reference parsing`() {
+    fun `keeps package contextual without breaking natural connection or dotted reference parsing`() {
         val source =
             """
             system Demo {
@@ -102,7 +102,7 @@ class AthenaGrammarSmokeTest {
               port plc.out {
                 package package
               }
-              connect plc_loop plc.out -> plc.input
+              connect plc_loop plc.out to plc.input
             }
             """.trimIndent()
 
@@ -111,7 +111,7 @@ class AthenaGrammarSmokeTest {
         assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
         assertEquals(3, parse.tree.systemDecl().declaration().size)
         val connect = parse.tree.systemDecl().declaration(2).connectDecl()
-        assertEquals("->", connect.ARROW().text)
+        assertEquals("to", connect.text.substringAfter("plc.out").substringBefore("plc.input").trim())
         assertEquals(listOf("plc.out", "plc.input"), connect.twoPartName().map { it.text })
         assertEquals("plc_loop", connect.ident().text)
     }
@@ -156,7 +156,7 @@ class AthenaGrammarSmokeTest {
               port PLC1.out {
                 direction out
               }
-              connect plc_self PLC1.out -> PLC1.out
+              connect plc_self PLC1.out to PLC1.out
             }
             """.trimIndent()
 

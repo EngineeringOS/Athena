@@ -1,0 +1,199 @@
+package com.engineeringood.m35.physicalinstallationcabinet
+
+system M35PhysicalInstallationCabinet {
+  device Supply35 {
+    type PowerSource
+    connectivity enabled
+    model "24VDC-10A"
+    tag "PS35"
+
+    port lplus {
+      direction out
+      signal Power
+      terminal "L+"
+    }
+    port lminus {
+      direction out
+      signal Power
+      terminal "L-"
+    }
+  }
+
+  device BreakerQF35 {
+    type Breaker
+    connectivity enabled
+    model "1P-C6"
+    tag "QF35"
+
+    port line {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port load {
+      direction out
+      signal Power
+      terminal "2"
+    }
+  }
+
+  device RelayK35 {
+    type Contactor
+    connectivity enabled
+    model "24VDC"
+    tag "K35"
+
+    port a1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port a2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+  }
+
+  device PFEA112 {
+    type Terminal
+    connectivity enabled
+    model "ABB-PFEA112-IP20 m35.productSurface cabinet-only"
+    tag "U35"
+
+    port supplyPlus {
+      direction in
+      signal Power
+      terminal "L+"
+    }
+    port supplyMinus {
+      direction in
+      signal Power
+      terminal "L-"
+    }
+    port signalOut {
+      direction out
+      signal Control
+      terminal "OUT"
+    }
+    port controlReturn {
+      direction in
+      signal Control
+      terminal "0V"
+    }
+    port pe {
+      direction in
+      signal Ground
+      terminal "PE"
+    }
+  }
+
+  device TerminalXT35 {
+    type Terminal
+    connectivity enabled
+    model "8-POLE"
+    tag "XT35"
+
+    port controlIn {
+      direction in
+      signal Control
+      terminal "1"
+    }
+    port controlOut {
+      direction out
+      signal Control
+      terminal "2"
+    }
+  }
+
+  device ProtectiveEarthPE35 {
+    type ProtectiveEarth
+    connectivity enabled
+    model "PE-BAR"
+    tag "PE35"
+
+    port bond {
+      direction out
+      signal Ground
+      terminal "PE"
+    }
+  }
+
+  connect supply_to_breaker Supply35.lplus to BreakerQF35.line
+  connect breaker_to_vendor BreakerQF35.load to PFEA112.supplyPlus
+  connect supply_return Supply35.lminus to PFEA112.supplyMinus
+  connect vendor_signal_to_terminal PFEA112.signalOut to TerminalXT35.controlIn
+  connect terminal_to_relay TerminalXT35.controlOut to RelayK35.a1
+  connect relay_return RelayK35.a2 to PFEA112.controlReturn
+  connect cabinet_bond ProtectiveEarthPE35.bond to PFEA112.pe
+
+  installation cabinet MainCabinet {
+    enclosure ENC35 size (800mm, 600mm, 250mm)
+    surface Backplate in ENC35 at (20mm, 20mm) size (760mm, 560mm) accepts [din35, screw]
+    rail DIN35A on Backplate at (80mm, 120mm) length 620mm orientation horizontal mounting din35
+    rail DIN35B on Backplate at (120mm, 300mm) length 520mm orientation horizontal mounting din35
+    rail DIN35V on Backplate at (620mm, 140mm) length 280mm orientation vertical mounting din35
+    duct WireDuctLeft in ENC35 at (40mm, 80mm) size (48mm, 420mm) orientation vertical wall 2mm
+    duct WireDuctTop in ENC35 at (100mm, 60mm) size (560mm, 44mm) orientation horizontal wall 2mm
+    duct WireDuctRight in ENC35 at (662mm, 80mm) size (48mm, 420mm) orientation vertical wall 2mm
+    channel LeftControlChannel in WireDuctLeft at (4mm, 8mm) size (36mm, 404mm) lanes 6 margin 2mm
+    channel TopPowerChannel in WireDuctTop at (8mm, 4mm) size (544mm, 32mm) lanes 6 margin 2mm
+    channel RightFieldChannel in WireDuctRight at (4mm, 8mm) size (36mm, 404mm) lanes 6 margin 2mm
+    terminal-group XT35 in ENC35 at (500mm, 428mm) size (170mm, 90mm) orientation horizontal accepts [terminal]
+    mount Supply35 as SupplyMount on DIN35A at (100mm, 0mm) {
+      footprint (88mm, 72mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount BreakerQF35 as BreakerMount on DIN35A at (220mm, 0mm) {
+      footprint (64mm, 96mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount PFEA112 as PFEA112Mount on DIN35A at (390mm, 0mm) {
+      footprint (132mm, 112mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount RelayK35 as RelayMount on DIN35B at (300mm, 0mm) {
+      footprint (72mm, 96mm, 70mm)
+      mounting din35
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount ProtectiveEarthPE35 as PEMount on DIN35V at (100mm, 0mm) {
+      footprint (64mm, 64mm, 35mm)
+      mounting din35
+      orientation deg90
+      allowed-orientations [deg90]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    mount TerminalXT35 as TerminalMount on XT35 at (0mm, 0mm) {
+      footprint (96mm, 48mm, 35mm)
+      mounting terminal
+      orientation deg0
+      allowed-orientations [deg0]
+      clearance (0mm, 0mm, 0mm, 0mm)
+      compatible-containers [cabinet]
+    }
+    route supply_to_breaker through [LeftControlChannel]
+    route breaker_to_vendor through [TopPowerChannel]
+    route supply_return through [TopPowerChannel]
+    route vendor_signal_to_terminal through [RightFieldChannel]
+    route terminal_to_relay through [LeftControlChannel]
+    route relay_return through [RightFieldChannel]
+    route cabinet_bond through [RightFieldChannel]
+  }
+}

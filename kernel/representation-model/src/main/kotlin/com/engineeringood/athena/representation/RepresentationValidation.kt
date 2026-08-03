@@ -1,8 +1,8 @@
 package com.engineeringood.athena.representation
 
-data class RepresentationCompatibleTerminalBinding(
-    val terminalId: PresentationTerminalId,
+data class RepresentationCompatiblePortAnchorBinding(
     val semanticPortId: SemanticPortId,
+    val anchorId: RepresentationAnchorId,
 )
 
 data class RepresentationValidationInput(
@@ -11,7 +11,7 @@ data class RepresentationValidationInput(
     val policies: List<RepresentationPolicy>,
     val definitions: List<RepresentationDefinition>,
     val occurrences: List<RepresentationOccurrence>,
-    val compatibleTerminalBindings: Set<RepresentationCompatibleTerminalBinding> = emptySet(),
+    val compatiblePortAnchorBindings: Set<RepresentationCompatiblePortAnchorBinding> = emptySet(),
     val compositionMemberships: Set<CompositionIntentMembershipId> = emptySet(),
 )
 
@@ -58,14 +58,12 @@ object RepresentationContractValidator {
                     definition,
                 )
             }
-            if (definition.bodyAuthority == RepresentationBodyAuthority.GRAPHIC_PRIMITIVE) {
-                GraphicPrimitiveIrValidator.validate(definition.graphicBody).diagnostics.forEach { bodyDiagnostic ->
-                    diagnostics += diagnostic(
-                        RepresentationDiagnosticCode.GRAPHIC_BODY_INVALID,
-                        "${bodyDiagnostic.code.wireValue}: ${bodyDiagnostic.message}",
-                        definition,
-                    )
-                }
+            GraphicPrimitiveIrValidator.validate(definition.graphicBody).diagnostics.forEach { bodyDiagnostic ->
+                diagnostics += diagnostic(
+                    RepresentationDiagnosticCode.GRAPHIC_BODY_INVALID,
+                    "${bodyDiagnostic.code.wireValue}: ${bodyDiagnostic.message}",
+                    definition,
+                )
             }
             definition.forbiddenAuthorityClaims
                 .sortedBy { claim -> claim.name }
@@ -161,30 +159,56 @@ object RepresentationContractValidator {
                     )
                 }
 
-            val terminalIds = when (definition?.bodyAuthority) {
-                RepresentationBodyAuthority.GRAPHIC_PRIMITIVE -> definition.anchors
-                    .filter { anchor -> anchor.role == RepresentationAnchorRole.TERMINAL }
-                    .map { anchor -> PresentationTerminalId(anchor.anchorId.value) }
-                    .toSet()
-                RepresentationBodyAuthority.LEGACY_PRESENTATION_ANATOMY -> definition.anatomy.terminals
-                    .map { terminal -> terminal.terminalId }
-                    .toSet()
-                null -> emptySet()
-            }
-            occurrence.terminalBindings.forEach { binding ->
-                if (binding.terminalId !in terminalIds) {
+            occurrence.portAnchorBindings
+                .groupBy { binding -> binding.bindingId }
+                .filterValues { bindings -> bindings.size > 1 }
+                .keys
+                .forEach { bindingId ->
                     diagnostics += diagnostic(
-                        RepresentationDiagnosticCode.ANCHOR_MISSING,
-                        "Occurrence `${occurrence.occurrenceId.value}` binds missing terminal anchor `${binding.terminalId.value}`.",
+                        RepresentationDiagnosticCode.BINDING_AMBIGUOUS,
+                        "Occurrence `${occurrence.occurrenceId.value}` declares duplicate Port-to-Anchor binding `${bindingId.value}`.",
+                        occurrence.canonicalSemanticId,
+                    )
+                }
+            occurrence.portAnchorBindings
+                .groupBy { binding -> binding.semanticPortId }
+                .filterValues { bindings -> bindings.size > 1 }
+                .keys
+                .forEach { semanticPortId ->
+                    diagnostics += diagnostic(
+                        RepresentationDiagnosticCode.BINDING_AMBIGUOUS,
+                        "Occurrence `${occurrence.occurrenceId.value}` binds semantic port `${semanticPortId.value}` more than once.",
+                        occurrence.canonicalSemanticId,
+                    )
+                }
+            occurrence.portAnchorBindings
+                .groupBy { binding -> binding.anchorId }
+                .filterValues { bindings -> bindings.size > 1 }
+                .keys
+                .forEach { anchorId ->
+                    diagnostics += diagnostic(
+                        RepresentationDiagnosticCode.ANCHOR_DUPLICATE,
+                        "Occurrence `${occurrence.occurrenceId.value}` binds anchor `${anchorId.value}` more than once.",
                         occurrence.canonicalSemanticId,
                         definition?.lifecycle?.provenance,
                     )
                 }
-                val compatibleBinding = RepresentationCompatibleTerminalBinding(binding.terminalId, binding.semanticPortId)
-                if (compatibleBinding !in input.compatibleTerminalBindings) {
+            val anchorsById = definition?.anchors.orEmpty().associateBy { anchor -> anchor.anchorId }
+            occurrence.portAnchorBindings.forEach { binding ->
+                val anchor = anchorsById[binding.anchorId]
+                if (anchor == null) {
+                    diagnostics += diagnostic(
+                        RepresentationDiagnosticCode.ANCHOR_MISSING,
+                        "Occurrence `${occurrence.occurrenceId.value}` binds missing anchor `${binding.anchorId.value}`.",
+                        occurrence.canonicalSemanticId,
+                        definition?.lifecycle?.provenance,
+                    )
+                }
+                val compatibleBinding = RepresentationCompatiblePortAnchorBinding(binding.semanticPortId, binding.anchorId)
+                if (compatibleBinding !in input.compatiblePortAnchorBindings) {
                     diagnostics += diagnostic(
                         RepresentationDiagnosticCode.TERMINAL_INCOMPATIBLE,
-                        "Terminal `${binding.terminalId.value}` is not compatible with semantic port `${binding.semanticPortId.value}`.",
+                        "Anchor `${binding.anchorId.value}` is not compatible with semantic port `${binding.semanticPortId.value}`.",
                         occurrence.canonicalSemanticId,
                         definition?.lifecycle?.provenance,
                     )

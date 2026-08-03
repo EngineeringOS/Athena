@@ -25,14 +25,19 @@ import com.engineeringood.athena.language.ElementDeclaration
 import com.engineeringood.athena.language.ElementLabelExportDeclaration
 import com.engineeringood.athena.language.ElementNumberField
 import com.engineeringood.athena.language.EngineeringFunctionDeclaration
+import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.LayoutStatement
 import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.language.ProjectionConstructDeclaration
+import com.engineeringood.athena.language.ProjectionPolicyDeclaration
+import com.engineeringood.athena.language.RegionDeclaration
 import com.engineeringood.athena.language.ProfileDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.QualifiedName
+import com.engineeringood.athena.language.RelationDeclaration
 import com.engineeringood.athena.language.RepresentationDeclaration
 import com.engineeringood.athena.language.RepresentationResourceDeclaration
 import com.engineeringood.athena.language.RepresentationSourceUnit
@@ -46,6 +51,9 @@ import com.engineeringood.athena.language.SymbolDynamicLabelDeclaration
 import com.engineeringood.athena.language.SymbolGraphicDeclaration
 import com.engineeringood.athena.language.SymbolGraphicPrimitiveDeclaration
 import com.engineeringood.athena.language.SymbolIdentifierField
+import com.engineeringood.athena.language.ViewDeclaration
+import com.engineeringood.athena.language.SheetDeclaration
+import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.repository.PackageIdentifier
 import java.io.File
@@ -742,7 +750,7 @@ class AthenaLanguageFeatures(
     /**
      * Builds a read-only semantic inspection snapshot for the latest tracked document at [uri].
      *
-     * M17 semantic-authority guardrail (AD-108 / AD-107): this payload is built purely from
+     * Semantic-authority guardrail: this payload is built purely from
      * `CompilerCompilationParseFailure` / `CompilerCompilationSuccess` fields
      * (`semanticResult.diagnostics`, `validationBreakdown.engineeringSufficiencyDiagnostics`,
      * `derivedContext`, `capabilityFacts`, `constraintEvaluations`) plus `AthenaNavigationIndex`
@@ -1080,7 +1088,7 @@ class AthenaRepresentationNavigationIndex(
 /**
  * Small server-owned navigation index derived from the current source AST.
  *
- * M17 migration-continuity guardrail (AD-109 / AD-106): every lookup here depends only on the
+ * Migration-continuity guardrail: every lookup here depends only on the
  * authored `SourceFileAst` (`DeviceDeclaration`, `PortDeclaration`, `ConnectionDeclaration`,
  * `ConnectionGroupDeclaration`, `QualifiedName`) and its `SourceSpan`/`SourcePosition` values.
  * Now that Epic 2 has replaced the handwritten parser with ANTLR4-backed parsing,
@@ -1102,6 +1110,16 @@ class AthenaNavigationIndex(
         ).associateBy { declaration ->
         declaration.qualifiedName.parts.joinToString(".")
     }
+    private val groupedInterfacePortSpans = ast.declarations
+        .filterIsInstance<DeviceDeclaration>()
+        .flatMap { device ->
+            device.interfaces.flatMap { connectivityInterface ->
+                connectivityInterface.ports.map { port ->
+                    "${device.name}.${port.name}" to port.span
+                }
+            }
+        }
+        .toMap()
     private val functionDeclarations = ast.declarations
         .filterIsInstance<DeviceDeclaration>()
         .flatMap { device ->
@@ -1146,7 +1164,11 @@ class AthenaNavigationIndex(
                 .orEmpty()
 
             is AthenaTarget.Port -> portDeclarations[target.qualifiedName]
-                ?.let { declaration -> listOf(documentLocation(declaration.qualifiedName.span)) }
+                ?.qualifiedName
+                ?.span
+                ?.let { span -> listOf(documentLocation(span)) }
+                ?: groupedInterfacePortSpans[target.qualifiedName]
+                    ?.let { span -> listOf(documentLocation(span)) }
                 .orEmpty()
 
             is AthenaTarget.Function -> functionDeclarations[target.qualifiedName]
@@ -1172,7 +1194,11 @@ class AthenaNavigationIndex(
 
             is AthenaTarget.Port -> buildList {
                 if (includeDeclaration) {
-                    portDeclarations[target.qualifiedName]?.let { declaration -> add(documentLocation(declaration.qualifiedName.span)) }
+                    portDeclarations[target.qualifiedName]
+                        ?.qualifiedName
+                        ?.span
+                        ?.let { span -> add(documentLocation(span)) }
+                    groupedInterfacePortSpans[target.qualifiedName]?.let { span -> add(documentLocation(span)) }
                 }
                 portReferences
                     .filter { reference -> reference.qualifiedName == target.qualifiedName }
@@ -1203,6 +1229,7 @@ class AthenaNavigationIndex(
      */
     fun portSourceRange(qualifiedName: String): Range? {
         return portDeclarations[qualifiedName]?.span?.toLspRange()
+            ?: groupedInterfacePortSpans[qualifiedName]?.toLspRange()
     }
 
     /**
@@ -1247,10 +1274,26 @@ private fun SourceFileAst.authoredConnectionDeclarations(): List<ConnectionDecla
         when (declaration) {
             is ConnectionDeclaration -> listOf(declaration)
             is ConnectionGroupDeclaration -> declaration.connections
+            is RelationDeclaration -> declaration.targets.map { target ->
+                ConnectionDeclaration(
+                    alias = relationMemberAlias(declaration.word.value, declaration.from, target),
+                    aliasSpan = declaration.word.span,
+                    from = declaration.from,
+                    to = target,
+                    span = declaration.span,
+                )
+            }
             is DeviceDeclaration -> emptyList()
+            is ExternalEvidenceDeclaration -> emptyList()
+            is ProjectionPolicyDeclaration -> emptyList()
             is PortDeclaration -> emptyList()
             is LayoutDeclaration -> emptyList()
             is InstallationDeclaration -> emptyList()
+            is ViewDeclaration -> emptyList()
+            is SheetDeclaration -> emptyList()
+            is GridDeclaration -> emptyList()
+            is RegionDeclaration -> emptyList()
+            is ProjectionConstructDeclaration -> emptyList()
         }
     }
 }
@@ -1566,7 +1609,7 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
         is PortDeclaration -> toDocumentSymbol(displayName = qualifiedName.parts.joinToString("."))
 
         is ConnectionDeclaration -> DocumentSymbol().apply {
-            name = "connect $alias ${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
+            name = "connect $alias ${from.parts.joinToString(".")} to ${to.parts.joinToString(".")}"
             kind = SymbolKind.Operator
             detail = "connect"
             range = span.toLspRange()
@@ -1580,6 +1623,53 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
             range = span.toLspRange()
             selectionRange = span.toLspRange()
             children = connections.map { connection -> connection.toConnectEdgeDocumentSymbol() }
+        }
+
+        is RelationDeclaration -> DocumentSymbol().apply {
+            val targetLabel = if (targets.size == 1) {
+                targets.single().parts.joinToString(".")
+            } else {
+                targets.joinToString(prefix = "[", postfix = "]") { target -> target.parts.joinToString(".") }
+            }
+            name = "${word.value} ${from.parts.joinToString(".")} to $targetLabel"
+            kind = SymbolKind.Operator
+            detail = "relation"
+            range = span.toLspRange()
+            selectionRange = word.span.toLspRange()
+        }
+
+        is ExternalEvidenceDeclaration -> DocumentSymbol().apply {
+            name = "evidence ${this@toDocumentSymbol.name}"
+            kind = SymbolKind.Object
+            detail = "external evidence"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+            children = listOf(
+                namespace.toDocumentSymbol("namespace"),
+                reference.toDocumentSymbol("reference"),
+                DocumentSymbol().apply {
+                    name = "subject ${subject.kind.name.lowercase()} ${subject.target.parts.joinToString(".")}"
+                    kind = SymbolKind.Key
+                    detail = "subject"
+                    range = subject.span.toLspRange()
+                    selectionRange = subject.span.toLspRange()
+                },
+                provenance.toDocumentSymbol("provenance"),
+            )
+        }
+
+        is ProjectionPolicyDeclaration -> DocumentSymbol().apply {
+            name = "projection ${this@toDocumentSymbol.name}"
+            kind = SymbolKind.Object
+            detail = "projection policy"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+            children = listOfNotNull(
+                target?.toDocumentSymbol("target"),
+                layoutStrategy?.toDocumentSymbol("layout"),
+                drawingProfile?.toDocumentSymbol("drawingProfile"),
+                routeQualityPolicy?.toDocumentSymbol("routeQuality"),
+            ) + proofObligations.map { proof -> proof.toDocumentSymbol("proof") }
         }
 
         is LayoutDeclaration -> DocumentSymbol().apply {
@@ -1616,6 +1706,47 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
                 }
             }
         }
+
+        is ViewDeclaration -> DocumentSymbol().apply {
+            name = "view ${this@toDocumentSymbol.name}"
+            kind = SymbolKind.Object
+            detail = "projection view"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+            children = sheets.map { sheet -> sheet.toDocumentSymbol() }
+        }
+
+        is SheetDeclaration -> DocumentSymbol().apply {
+            name = this@toDocumentSymbol.name
+            kind = SymbolKind.Module
+            detail = "projection sheet"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+        }
+
+        is GridDeclaration -> DocumentSymbol().apply {
+            name = this@toDocumentSymbol.name
+            kind = SymbolKind.Module
+            detail = "sheet grid"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+        }
+
+        is RegionDeclaration -> DocumentSymbol().apply {
+            name = this@toDocumentSymbol.name
+            kind = SymbolKind.Object
+            detail = "functional region"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+        }
+
+        is ProjectionConstructDeclaration -> DocumentSymbol().apply {
+            name = this@toDocumentSymbol.name ?: this@toDocumentSymbol.kind
+            kind = SymbolKind.Object
+            detail = "projection construct (${this@toDocumentSymbol.kind})"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+        }
     }
 }
 
@@ -1641,13 +1772,16 @@ private fun Any.toInstallationDocumentSymbol(kindName: String): DocumentSymbol {
 
 private fun ConnectionDeclaration.toConnectEdgeDocumentSymbol(): DocumentSymbol {
     return DocumentSymbol().apply {
-        name = "$alias ${from.parts.joinToString(".")} -> ${to.parts.joinToString(".")}"
+        name = "$alias ${from.parts.joinToString(".")} to ${to.parts.joinToString(".")}"
         kind = SymbolKind.Operator
         detail = "connect edge"
         range = span.toLspRange()
         selectionRange = span.toLspRange()
     }
 }
+
+private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
+    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"
 
 private fun PortDeclaration.toDocumentSymbol(displayName: String): DocumentSymbol {
     return DocumentSymbol().apply {

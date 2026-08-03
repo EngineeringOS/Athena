@@ -5,7 +5,7 @@ import com.engineeringood.athena.language.LayoutStatement
 import com.engineeringood.athena.language.SourceSpan
 
 /**
- * Binds M23 authored layout-hint references against compiler-owned semantic declarations.
+ * Binds authored layout-hint references against compiler-owned semantic declarations.
  *
  * This pass resolves only names that already exist in the semantic declaration index. It does not
  * lower constraints, infer engineering meaning, or consult frontend/parser-generator state.

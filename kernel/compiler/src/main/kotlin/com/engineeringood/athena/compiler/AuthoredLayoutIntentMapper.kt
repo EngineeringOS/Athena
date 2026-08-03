@@ -13,7 +13,7 @@ import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.language.LayoutAxis as SyntaxLayoutAxis
 
 /**
- * Converts M23 authored layout syntax into source-owned layout intent.
+ * Converts authored layout syntax into source-owned layout intent.
  *
  * This mapper deliberately does not resolve subjects or produce constraints. That keeps semantic
  * binding in the compiler-owned Epic 3 path and prevents syntax from leaking into solver behavior.

@@ -20,5 +20,5 @@ system AcceptanceSheetShowcase {
     signal Control24V
   }
 
-  connect acceptancesw1_out_to_acceptancem1_in AcceptanceSW1.out -> AcceptanceM1.in
+  connect acceptancesw1_out_to_acceptancem1_in AcceptanceSW1.out to AcceptanceM1.in
 }

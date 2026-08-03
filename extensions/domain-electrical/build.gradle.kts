@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":kernel:part-model"))
     implementation(project(":kernel:connection-model"))
     implementation(project(":kernel:physical-model"))
+    implementation(project(":kernel:projection-model"))
     implementation(project(":kernel:runtime"))
     implementation(project(":kernel:representation-model"))
 }

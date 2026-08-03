@@ -38,6 +38,8 @@ internal val VALID_DEVICE_TYPES = setOf(
 )
 
 internal val ELECTRICAL_RUNTIME_CAPABILITIES: Set<String> = setOf(ELECTRICAL_DOMAIN_ID)
+internal val ELECTRICAL_RELATION_WORD_LIST: List<String> = listOf("power", "control", "earth")
+internal val ELECTRICAL_RELATION_WORDS: Set<String> = ELECTRICAL_RELATION_WORD_LIST.toSet()
 
 internal val ELECTRICAL_RUNTIME_MANIFEST = AthenaPluginManifest(
     pluginId = "com.engineeringood.athena.domain.electrical-runtime",
@@ -59,6 +61,7 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
     displayName = "Electrical Runtime",
     description = "Reference real evidence-domain schema for hosted electrical semantics on the Athena JVM-first path.",
     capabilities = setOf(ELECTRICAL_DOMAIN_ID),
+    relationWords = ELECTRICAL_RELATION_WORDS,
     entities = listOf(
         electricalComponent("Breaker", "Circuit protection and isolation device."),
         electricalComponent("Contactor", "Electromagnetically operated switching device with partitioned functions."),

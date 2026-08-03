@@ -5,49 +5,91 @@ object NativeRepresentationPrimitiveEmitter {
         return library.definitions
             .sortedBy { definition -> definition.symbolId.value }
             .flatMap { definition ->
-                definition.anatomy.primitives
+                definition.graphicBody.primitives
                     .sortedBy { primitive -> primitive.primitiveId.value }
                     .map { primitive -> "${definition.symbolId.value}:${primitive.toStablePayload()}" }
             }
             .sorted()
     }
 
-    private fun PresentationPrimitive.toStablePayload(): String {
+    private fun GraphicPrimitive.toStablePayload(): String {
         return when (this) {
-            is PresentationPrimitive.Circle -> listOf(
+            is GraphicPrimitive.Circle -> listOf(
                 "circle",
                 primitiveId.value,
-                center.x.value,
-                center.y.value,
-                radius.value,
+                center.x,
+                center.y,
+                radius,
             ).joinToString(":")
-            is PresentationPrimitive.Line -> listOf(
+            is GraphicPrimitive.Line -> listOf(
                 "line",
                 primitiveId.value,
-                start.x.value,
-                start.y.value,
-                end.x.value,
-                end.y.value,
+                start.x,
+                start.y,
+                end.x,
+                end.y,
             ).joinToString(":")
-            is PresentationPrimitive.Polyline -> listOf(
+            is GraphicPrimitive.Polyline -> listOf(
                 "polyline",
                 primitiveId.value,
-                points.joinToString(separator = ";") { point -> "${point.x.value},${point.y.value}" },
+                points.joinToString(separator = ";") { point -> "${point.x},${point.y}" },
             ).joinToString(":")
-            is PresentationPrimitive.Rectangle -> listOf(
+            is GraphicPrimitive.Rectangle -> listOf(
                 "rectangle",
                 primitiveId.value,
-                origin.x.value,
-                origin.y.value,
-                size.width.value,
-                size.height.value,
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
             ).joinToString(":")
-            is PresentationPrimitive.Text -> listOf(
+            is GraphicPrimitive.Text -> listOf(
                 "text",
                 primitiveId.value,
-                origin.x.value,
-                origin.y.value,
+                origin.x,
+                origin.y,
                 text,
+            ).joinToString(":")
+            is GraphicPrimitive.Arc -> listOf(
+                "arc",
+                primitiveId.value,
+                center.x,
+                center.y,
+                radius,
+                startAngleDegrees,
+                sweepAngleDegrees,
+            ).joinToString(":")
+            is GraphicPrimitive.Marker -> listOf(
+                "marker",
+                primitiveId.value,
+                origin.x,
+                origin.y,
+                markerKind.name,
+            ).joinToString(":")
+            is GraphicPrimitive.ConnectionDot -> listOf(
+                "connection-dot",
+                primitiveId.value,
+                center.x,
+                center.y,
+                radius,
+            ).joinToString(":")
+            is GraphicPrimitive.ReferenceArrow -> listOf(
+                "reference-arrow",
+                primitiveId.value,
+                start.x,
+                start.y,
+                end.x,
+                end.y,
+                headSize,
+            ).joinToString(":")
+            is GraphicPrimitive.Group -> listOf(
+                "group",
+                primitiveId.value,
+                children.joinToString(separator = "|") { child -> child.toStablePayload() },
+            ).joinToString(":")
+            is GraphicPrimitive.Transformed -> listOf(
+                "transform",
+                primitiveId.value,
+                child.toStablePayload(),
             ).joinToString(":")
         }
     }

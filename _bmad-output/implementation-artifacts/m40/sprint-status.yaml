@@ -1,0 +1,63 @@
+# generated: 2026-08-02T11:00:00+08:00
+# last_updated: 2026-08-02T13:40:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m40
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic: backlog | in-progress | done
+# Story: backlog | ready-for-dev | in-progress | review | done
+# Retrospective: optional | done
+
+# WORKFLOW RULES:
+# ===============
+# - This file tracks M40 only.
+# - M40 establishes Projection Reality as the authoritative owner of engineering views.
+# - Composition is one projection capability; constructs are domain-contributed under a
+#   kernel-owned ProjectionConstruct contract, exactly like M39 domain relation verbs.
+# - Spatial Quality metrics are acceptance evidence, not an epic.
+# - Create and implement stories in numeric order unless explicit correction changes it.
+# - M40 source stays human-first: `to` preferred, no `intent`, no second DSL.
+# - The stale :kernel:drawing-composition authority is retired in Epic 2.
+# - Kernel stays domain-neutral; electrical vocabulary lives in extensions/domain-electrical.
+# - Theia remains domain-neutral and paint-only.
+# - Gradle verification on Windows is strictly sequential.
+
+generated: 2026-08-02T11:00:00+08:00
+last_updated: 2026-08-02T13:40:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m40
+
+development_status:
+  m40-e1: in-progress
+  1-1-establish-projection-view-and-sheet-authority: review
+  1-2-add-occurrence-identity-and-functional-regions: review
+  1-3-add-deterministic-reading-order-and-projection-selection: review
+  m40-e1-retrospective: optional
+
+  m40-e2: in-progress
+  2-1-retire-the-drawing-composition-authority: review
+  2-2-define-the-domain-neutral-projectionconstruct-contract: review
+  2-3-add-electrical-package-construct-implementations: review
+  2-4-validate-constructs-and-preserve-grouped-endpoint-integrity: review
+  m40-e2-retrospective: optional
+
+  m40-e3: in-progress
+  3-1-transform-engineering-to-projection-with-constructs: review
+  3-2-enforce-projection-boundary-validation: review
+  m40-e3-retrospective: optional
+
+  m40-e4: in-progress
+  4-1-derive-placement-from-projection-constructs: review
+  4-2-measure-spatial-quality-against-the-m40-target: review
+  m40-e4-retrospective: optional
+
+  m40-e5: in-progress
+  5-1-build-the-dedicated-m40-example: review
+  5-2-build-the-m40-e2e-evidence: review
+  5-3-close-m40-with-an-honest-retrospective: review
+  m40-e5-retrospective: optional

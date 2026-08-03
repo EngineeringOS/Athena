@@ -19,7 +19,7 @@ import com.engineeringood.athena.runtime.AthenaComponentKnowledgeReady
 /**
  * Computes an accepted semantic-entity property update anchored to authored AST spans.
  *
- * M17 migration-continuity guardrail (AD-109 / AD-106): this edit is computed from
+ * Migration-continuity guardrail: this edit is computed from
  * `DeviceDeclaration.span`, `PortDeclaration.qualifiedName.span`, and `ConnectionDeclaration.from`/`to`
  * spans on `compilation.source.ast`, then rewritten over the tracked document's raw text. It must
  * keep depending only on the authored `SourceFileAst` and its `SourceSpan`s, never on a

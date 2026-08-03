@@ -1,9 +1,7 @@
 package com.engineeringood.athena.representation
 
-import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class RepresentationBindingStatusPayloadTest {
@@ -20,7 +18,6 @@ class RepresentationBindingStatusPayloadTest {
                         occurrenceRole = RepresentationOccurrenceRole.LOAD_SYMBOL,
                         symbolFamilyId = SymbolFamilyId("missing"),
                         symbolId = RepresentationSymbolId("missing.symbol"),
-                        fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
                         priority = RepresentationPolicyPriority(100),
                     ),
                     RepresentationPolicy(
@@ -30,7 +27,6 @@ class RepresentationBindingStatusPayloadTest {
                         occurrenceRole = RepresentationOccurrenceRole.COIL_ACTUATOR,
                         symbolFamilyId = SymbolFamilyId("iec.motor"),
                         symbolId = RepresentationSymbolId("iec.motor.compact"),
-                        fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
                         priority = RepresentationPolicyPriority(100),
                     ),
                     RepresentationPolicy(
@@ -40,7 +36,6 @@ class RepresentationBindingStatusPayloadTest {
                         occurrenceRole = RepresentationOccurrenceRole.LOAD_SYMBOL,
                         symbolFamilyId = SymbolFamilyId("iec.motor"),
                         symbolId = RepresentationSymbolId("iec.motor.compact"),
-                        fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
                         priority = RepresentationPolicyPriority(100),
                     ),
                 ),
@@ -55,13 +50,21 @@ class RepresentationBindingStatusPayloadTest {
                         labelBindings = listOf(
                             RepresentationLabelBinding(RepresentationLabelSlotId("missing-slot"), LabelValue("M1")),
                         ),
-                        terminalBindings = listOf(
-                            RepresentationTerminalBinding(PresentationTerminalId("missing-terminal"), SemanticPortId("MotorM1.u1")),
+                        portAnchorBindings = listOf(
+                            RepresentationPortAnchorBinding(
+                                bindingId = RepresentationPortAnchorBindingId("binding:MotorM1.u1:missing-terminal"),
+                                semanticPortId = SemanticPortId("MotorM1.u1"),
+                                anchorId = RepresentationAnchorId("missing-terminal"),
+                                provenance = RepresentationProvenance("source:motor.athena:1:1"),
+                            ),
                         ),
                     ),
                 ),
-                compatibleTerminalBindings = setOf(
-                    RepresentationCompatibleTerminalBinding(PresentationTerminalId("missing-terminal"), SemanticPortId("MotorM1.u1")),
+                compatiblePortAnchorBindings = setOf(
+                    RepresentationCompatiblePortAnchorBinding(
+                        SemanticPortId("MotorM1.u1"),
+                        RepresentationAnchorId("missing-terminal"),
+                    ),
                 ),
             ),
         ).diagnostics.map { diagnostic -> diagnostic.code.wireValue }.distinct()
@@ -78,46 +81,16 @@ class RepresentationBindingStatusPayloadTest {
         )
     }
 
-    @Test
-    fun `accepted demo evidence exposes clean binding status payload`() {
-        val evidence = M30DemoRepresentationBinder().bind(M30DemoRepresentationSample.controlSheet(), nativeLibrary())
-
-        assertTrue(evidence.diagnostics.isEmpty(), evidence.diagnostics.toString())
-        assertEquals(
-            mapOf(
-                "accepted" to "true",
-                "deviceOccurrenceCount" to "7",
-                "referenceOccurrenceCount" to "1",
-                "diagnosticCount" to "0",
-                "missingBindingDiagnosticCount" to "0",
-                "deviceSymbolIds" to "iec.coil.compact,iec.lamp.compact,iec.motor.compact,iec.protective-device.compact,iec.supply-reference.compact,iec.switch-contact.no.compact,iec.terminal.compact",
-                "occurrenceRoles" to "COIL_ACTUATOR,FOLIO_REFERENCE,LAMP_INDICATOR,LOAD_SYMBOL,PROTECTIVE_DEVICE,SUPPLY_REFERENCE,SWITCH_CONTACT,TERMINAL",
-                "compositionMembershipCount" to "0",
-            ),
-            evidence.toBindingStatusPayload(),
-        )
-    }
-
-    @Test
-    fun `renderer fallback is rejected when no binding diagnostic exists`() {
-        assertFalse(
-            RepresentationFallbackGuard.acceptsRendererFallback(
-                fallbackUsed = true,
-                diagnostics = emptyList(),
-            ),
-        )
-    }
+    private fun motorDefinition(): RepresentationDefinition = nativeLibrary()
+        .definitions
+        .single { definition -> definition.symbolId == RepresentationSymbolId("iec.motor.compact") }
 
     private fun nativeLibrary(): NativeRepresentationLibrary {
         val resource = requireNotNull(
             javaClass.classLoader.getResource("representation-libraries/athena-native-iec.properties"),
-        ) { "Missing native M30 symbol pack resource." }
-        val result = NativeRepresentationLibraryLoader().load(Path.of(resource.toURI()))
+        ) { "Missing native symbol pack resource." }
+        val result = NativeRepresentationLibraryLoader().load(java.nio.file.Path.of(resource.toURI()))
         assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
         return result.library
     }
-
-    private fun motorDefinition(): RepresentationDefinition = nativeLibrary()
-        .definitions
-        .single { definition -> definition.symbolId == RepresentationSymbolId("iec.motor.compact") }
 }

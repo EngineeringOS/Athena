@@ -3,5 +3,5 @@
 system UnresolvedSymbol {
   device Unresolved {}
   port Unresolved.out {}
-  connect missing_out_to_unresolved_out Missing.out -> Unresolved.out
+  connect missing_out_to_unresolved_out Missing.out to Unresolved.out
 }

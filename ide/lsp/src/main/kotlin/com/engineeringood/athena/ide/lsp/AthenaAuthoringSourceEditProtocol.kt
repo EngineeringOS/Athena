@@ -46,7 +46,7 @@ data class AthenaAuthoringSourceRangePayload(
 /**
  * One backend-generated source edit emitted after an accepted guided authoring preview.
  *
- * The first M15 insertion slice stays source-backed. The backend returns the canonical authored
+ * The insertion slice stays source-backed. The backend returns the canonical authored
  * text consequence and the frontend applies it into the active `.athena` buffer.
  */
 data class AthenaAuthoringSourceEditPayload(

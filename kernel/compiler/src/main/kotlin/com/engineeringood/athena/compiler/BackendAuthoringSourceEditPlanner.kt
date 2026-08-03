@@ -204,7 +204,7 @@ class BackendAuthoringSourceEditPlanner(
         return planned(
             request = request,
             insertionOffset = insertionOffset,
-            admittedText = "\n\n  connect $alias ${request.sourceAuthoredPath} -> ${request.targetAuthoredPath}\n",
+            admittedText = "\n\n  connect $alias ${request.sourceAuthoredPath} to ${request.targetAuthoredPath}\n",
             affectedSemanticIds = listOf(semanticId),
         )
     }

@@ -24,10 +24,10 @@ test('M22 sample project is an openable IDE proof with real Athena sources', () 
         `${sampleRoot}/README.md`,
         `${sampleRoot}/athena.yaml`,
         `${sampleRoot}/athena.lock`,
-        `${sampleRoot}/src/01-baseline-sheet.athena`,
-        `${sampleRoot}/src/02-layout-optimization-acceptance.athena`,
-        `${sampleRoot}/src/03-component-round-trip.athena`,
-        `${sampleRoot}/src/04-boundary-scope.athena`,
+        `${sampleRoot}/src/com/engineeringood/m22/sample/01-baseline-sheet.athena`,
+        `${sampleRoot}/src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena`,
+        `${sampleRoot}/src/com/engineeringood/m22/sample/03-component-round-trip.athena`,
+        `${sampleRoot}/src/com/engineeringood/m22/sample/04-boundary-scope.athena`,
         'docs/usages/m22-proof-usage.md',
         'ide/theia-product/scripts/verify-athena-m22-sample-project.js'
     ];
@@ -55,10 +55,10 @@ test('M22 sample project is an openable IDE proof with real Athena sources', () 
 
 test('M22 sample sources stay inside the accepted local Athena syntax', () => {
     const sources = [
-        'examples/m22/sample-project/src/01-baseline-sheet.athena',
-        'examples/m22/sample-project/src/02-layout-optimization-acceptance.athena',
-        'examples/m22/sample-project/src/03-component-round-trip.athena',
-        'examples/m22/sample-project/src/04-boundary-scope.athena'
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/01-baseline-sheet.athena',
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena',
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/03-component-round-trip.athena',
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/04-boundary-scope.athena'
     ];
 
     sources.forEach(sourcePath => {
@@ -67,15 +67,15 @@ test('M22 sample sources stay inside the accepted local Athena syntax', () => {
         assert.match(source, /\bsystem\s+\w+\s+\{/);
         assert.match(source, /\bdevice\s+\w+\s+\{/);
         assert.match(source, /\bport\s+\w+\.\w+\s+\{/);
-        assert.match(source, /\bconnect\s+\w+\s+\w+\.\w+\s+->\s+\w+\.\w+/);
+        assert.match(source, /\bconnect\s+\w+\s+\w+\.\w+\s+to\s+\w+\.\w+/);
         assert.doesNotMatch(source, /\bimport\b/);
         assert.doesNotMatch(source, /\bregistry\b|\bmarketplace\b|\bcabinet\b|\bharness\b|\bcable tray\b|\b3D installation\b/i);
     });
 });
 
 test('M22 sample names expose layout optimization and round-trip subjects', () => {
-    const optimizationSource = readRepoFile('examples/m22/sample-project/src/02-layout-optimization-acceptance.athena');
-    const roundTripSource = readRepoFile('examples/m22/sample-project/src/03-component-round-trip.athena');
+    const optimizationSource = readRepoFile('examples/m22/sample-project/src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena');
+    const roundTripSource = readRepoFile('examples/m22/sample-project/src/com/engineeringood/m22/sample/03-component-round-trip.athena');
     const expectedOptimizationSubjects = [
         'PowerSupply24V',
         'ProtectionQF1',

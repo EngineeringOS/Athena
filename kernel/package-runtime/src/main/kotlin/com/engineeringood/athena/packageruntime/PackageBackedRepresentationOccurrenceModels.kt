@@ -24,5 +24,4 @@ data class PackageBackedRepresentationOccurrenceRequest(
 data class PackageBackedRepresentationOccurrenceResult(
     val occurrence: RepresentationOccurrence?,
     val diagnostics: List<RepresentationDiagnostic>,
-    val rendererFallbackAccepted: Boolean = false,
 )

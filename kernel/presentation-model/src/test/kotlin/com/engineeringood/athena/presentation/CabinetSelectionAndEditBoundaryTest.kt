@@ -36,21 +36,21 @@ class CabinetSelectionAndEditBoundaryTest {
         assertEquals(StableSemanticIdentity("component:Source"), success.subject.key.canonicalSubjectId)
         assertEquals(InteractionSubjectKind.COMPONENT, success.subject.key.subjectKind)
         assertEquals(
-            CabinetSelectionEvidence(
+            CabinetSelectionTrace(
                 occurrenceId = GraphicOccurrenceId("occ:SRC"),
                 subjectAuthority = "graphic-occurrence-trace-table",
                 capabilityAuthority = "semantic-capability-registry",
                 revealAuthority = "trace-source-span",
                 fallbackUsed = false,
             ),
-            success.evidence,
+            success.trace,
         )
         assertEquals("src/main.athena", success.revealTarget.sourceRange?.sourceUri)
         assertEquals(listOf("cabinet.reveal-source"), success.subject.capabilities.map { capability -> capability.capabilityId })
     }
 
     @Test
-    fun `rejects selection fallback and direct graphic mutation while accepting governed edit evidence`() {
+    fun `rejects selection fallback and direct graphic mutation while accepting governed edit request`() {
         val fallback = CabinetGraphicSelectionResolver.resolve(
             CabinetGraphicSelectionRequest(
                 selectedOccurrenceId = null,
@@ -62,18 +62,18 @@ class CabinetSelectionAndEditBoundaryTest {
         )
         val directMutation = CabinetGovernedEditBoundary.rejectDirectMutation(CabinetForbiddenMutationTarget.GRAPHIC_PRIMITIVE_IR)
         val governed = CabinetGovernedEditBoundary.acceptGovernedPath(
-            CabinetGovernedEditEvidence(
-                semanticActionIntent = SemanticActionIntent(
+            CabinetEditRequest(
+                action = SemanticActionIntent(
                     actionIntentId = "action:move-src",
                     actionFamily = InteractionActionFamily.MUTATE,
                     subject = registry().subjects.single().key,
                     requestedBy = InteractionProvenance(originSurface = InteractionOriginSurface.GRAPH),
                     parameters = mapOf("intent" to "cabinet.move"),
                 ),
-                authoringIntentId = AuthoringIntentId("authoring:move-src"),
+                authoringRequestId = AuthoringIntentId("authoring:move-src"),
                 transactionId = SemanticAuthoringTransactionId("transaction:move-src"),
                 previewId = AuthoringPreviewId("preview:move-src"),
-                sourceEditEvidence = AuthoringSourceEditEvidence(
+                sourceEditTrace = AuthoringSourceEditEvidence(
                     revisionGuard = revisionGuard,
                     sourceUri = revisionGuard.sourceUri,
                     startOffset = 12,
@@ -96,19 +96,19 @@ class CabinetSelectionAndEditBoundaryTest {
             assertIs<CabinetGovernedEditBoundaryResult.Failure>(directMutation).diagnostics.map { diagnostic -> diagnostic.code }.toSet(),
         )
         assertEquals(
-            CabinetGovernedEditPathEvidence(
+            CabinetEditPath(
                 orderedStages = listOf(
-                    "SemanticActionIntent",
-                    "AuthoringIntent",
+                    "SemanticAction",
+                    "AuthoringRequest",
                     "SemanticAuthoringTransaction",
                     "AuthoringPreview",
-                    "AuthoringSourceEditEvidence",
+                    "SourceEditTrace",
                     "compile-lint",
                     "rerender",
                 ),
                 target = CabinetGovernedEditTarget.INSTALLATION_DECLARATION,
             ),
-            assertIs<CabinetGovernedEditBoundaryResult.Accepted>(governed).evidence,
+            assertIs<CabinetGovernedEditBoundaryResult.Accepted>(governed).path,
         )
     }
 
@@ -156,7 +156,7 @@ class CabinetSelectionAndEditBoundaryTest {
                 ),
             ),
         ),
-        evidence = GraphicOccurrenceTraceEvidence(
+        stats = GraphicOccurrenceTraceStats(
             selectablePrimitiveCount = 1,
             decorativePrimitiveCount = 0,
             traceEntryCount = 1,

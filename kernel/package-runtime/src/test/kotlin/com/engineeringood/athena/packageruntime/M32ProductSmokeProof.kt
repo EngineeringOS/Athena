@@ -39,7 +39,6 @@ data class M32ProductSmokeSubjectProof(
     val labelBound: Boolean,
     val occurrenceCreated: Boolean,
     val derivedBounds: Boolean,
-    val rendererFallbackAccepted: Boolean,
 ) {
     val isValid: Boolean
         get() = engineeringPackageResolved &&
@@ -49,8 +48,7 @@ data class M32ProductSmokeSubjectProof(
             anchorMapped &&
             labelBound &&
             occurrenceCreated &&
-            derivedBounds &&
-            !rendererFallbackAccepted
+            derivedBounds
 }
 
 data class M32ProductSmokeRouteProof(
@@ -146,7 +144,6 @@ class M32ProductSmokeProofRunner {
             labelBound = evidence.labelBindingSummary.isNotEmpty(),
             occurrenceCreated = occurrence.occurrence != null,
             derivedBounds = derivedBounds,
-            rendererFallbackAccepted = evidence.rendererFallbackAccepted || occurrence.rendererFallbackAccepted,
         )
     }
 

@@ -1,0 +1,53 @@
+# generated: 2026-07-31T12:25:42+08:00
+# last_updated: 2026-07-31T23:24:00+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m38
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic: backlog | in-progress | done
+# Story: backlog | ready-for-dev | in-progress | review | done
+# Retrospective: optional | done
+
+# WORKFLOW RULES:
+# ===============
+# - This file tracks M38 only.
+# - Create and implement stories in numeric order unless an explicit sprint correction changes it.
+# - Never claim completion without acceptance checks and fresh evidence.
+# - Replace wrong pre-public architecture directly; no compatibility path.
+# - Gradle verification on Windows is strictly sequential.
+
+generated: 2026-07-31T12:25:42+08:00
+last_updated: 2026-08-01T09:37:10+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m38
+
+development_status:
+  m38-e1: done
+  1-1-make-representation-definition-the-only-geometry-contract: done
+  1-2-compile-native-and-svg-geometry-through-one-contract: done
+  1-3-bind-every-port-to-one-anchor: done
+  m38-e1-retrospective: optional
+
+  m38-e2: done
+  2-1-place-body-and-anchors-with-one-transform: done
+  2-2-lower-route-candidates-into-exact-connectors: done
+  2-3-publish-complete-connection-facts-atomically: done
+  m38-e2-retrospective: optional
+
+  m38-e3: done
+  3-1-carry-one-presentation-document-through-every-visible-path: done
+  3-2-paint-exact-connections-without-frontend-repair: done
+  3-3-inspect-every-endpoint-back-to-source: done
+  m38-e3-retrospective: optional
+
+  m38-e4: done
+  4-1-author-the-dedicated-m38-example: done
+  4-2-purge-every-competing-drawing-authority: done
+  4-3-prove-exact-connections-end-to-end: done
+  4-4-close-m38-and-hand-off-placement-and-routing: done
+  m38-e4-retrospective: optional

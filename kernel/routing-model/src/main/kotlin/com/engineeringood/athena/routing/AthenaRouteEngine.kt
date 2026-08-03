@@ -1,4 +1,4 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.ir.SourceProvenance
@@ -9,9 +9,16 @@ import com.engineeringood.athena.layout.LayoutSnapshotId
 /** Minimal schematic layout context consumed by the Athena route engine. */
 data class SchematicRoutingLayoutContext(
     val gridSize: Int,
+    val routeLaneCapacity: Int = 1,
+    val routeLaneCount: Int = Int.MAX_VALUE,
+    val routeLaneSpacing: Int = gridSize,
+    val routeLaneOrientation: RouteLaneOrientation = RouteLaneOrientation.MIXED,
 ) {
     init {
         require(gridSize > 0) { "Schematic routing grid size must be positive." }
+        require(routeLaneCapacity > 0) { "Route lane capacity must be positive." }
+        require(routeLaneCount > 0) { "Route lane count must be positive." }
+        require(routeLaneSpacing > 0) { "Route lane spacing must be positive." }
     }
 }
 
@@ -58,7 +65,7 @@ data class SchematicComponentBounds(
 /** One governed route request consumed by the Athena route engine. */
 data class AthenaRouteRequest(
     val routeId: SchematicRouteId,
-    val connectionIntent: ElectricalConnectionIntent,
+    val connectionRoleFact: ElectricalConnectionRoleFact,
     val sourceAnchor: TerminalAnchorFact,
     val targetAnchor: TerminalAnchorFact,
     val bundleId: RouteBundleId? = null,
@@ -76,16 +83,10 @@ data class AthenaRouteEngineInput(
 /** First deterministic, Athena-owned schematic route engine. */
 class AthenaRouteEngine {
     fun solve(input: AthenaRouteEngineInput): RouteFactSnapshot {
-        val facts = input.requests
-            .sortedWith(
-                compareBy<AthenaRouteRequest>(
-                    { request -> request.routeId.value },
-                    { request -> request.connectionIntent.connectionId.value },
-                    { request -> request.sourceAnchor.anchorId.value },
-                    { request -> request.targetAnchor.anchorId.value },
-                ),
-            )
-            .map { request -> request.toRouteFact(input) }
+        val lanePlan = allocateLanes(input)
+        val facts = lanePlan.orderedRequests.map { request ->
+            request.toRouteFact(input, lanePlan.assignmentByRouteId.getValue(request.routeId))
+        }
         val topology = deriveRouteTopology(facts)
         return RouteFactSnapshot.canonical(
             snapshotId = input.snapshotId,
@@ -93,10 +94,14 @@ class AthenaRouteEngine {
             routeFacts = facts,
             junctionFacts = topology.junctions,
             crossingFacts = topology.crossings,
+            laneDiagnostics = lanePlan.diagnostics,
         )
     }
 
-    private fun AthenaRouteRequest.toRouteFact(input: AthenaRouteEngineInput): RouteFact {
+    private fun AthenaRouteRequest.toRouteFact(
+        input: AthenaRouteEngineInput,
+        laneAssignment: RouteLaneAssignment,
+    ): RouteFact {
         require(sourceAnchor.gridPoint.isGridAligned(input.layoutContext.gridSize)) {
             "Source terminal anchor `${sourceAnchor.anchorId}` is not aligned to the schematic routing grid."
         }
@@ -104,7 +109,7 @@ class AthenaRouteEngine {
             "Target terminal anchor `${targetAnchor.anchorId}` is not aligned to the schematic routing grid."
         }
         val segments = routeSegments(sourceAnchor, targetAnchor, input)
-        val provenance = requireNotNull(connectionIntent.sourceSpan) {
+        val provenance = requireNotNull(connectionRoleFact.sourceSpan) {
             "Route '${routeId.value}' requires authored connection provenance."
         }.let { span ->
             SourceProvenance(
@@ -118,9 +123,9 @@ class AthenaRouteEngine {
         return RouteFact(
             routeId = routeId,
             snapshotId = input.snapshotId,
-            connectionId = connectionIntent.connectionId,
-            routeIntentId = RouteIntentId("route:${connectionIntent.connectionId.value}"),
-            bundleId = bundleId ?: RouteBundleId("bundle:${connectionIntent.connectionId.value}"),
+            connectionId = connectionRoleFact.connectionId,
+            routeIntentId = RouteIntentId("route:${connectionRoleFact.connectionId.value}"),
+            bundleId = bundleId ?: RouteBundleId("bundle:${connectionRoleFact.connectionId.value}"),
             selectedChannelIds = emptyList(),
             plannerId = "athena-route-engine",
             compilerSnapshotId = input.snapshotId.value,
@@ -135,15 +140,17 @@ class AthenaRouteEngine {
             ),
             source = sourceAnchor,
             target = targetAnchor,
+            connectionRole = connectionRoleFact.role,
             segments = segments,
-            lane = SchematicRouteLane(input.requests.sortedBy { request -> request.routeId.value }.indexOf(this)),
+            lane = laneAssignment.lane,
+            laneAssignment = laneAssignment,
             constraints = constraints,
-            labels = routeLabels(segments, input),
+            labels = connectionLabels(segments, input),
             quality = routeQuality(sourceAnchor, targetAnchor, segments, input),
         )
     }
 
-    private fun AthenaRouteRequest.routeLabels(
+    private fun AthenaRouteRequest.connectionLabels(
         segments: List<SchematicRouteSegment>,
         input: AthenaRouteEngineInput,
     ): List<RouteLabelFact> {
@@ -152,9 +159,9 @@ class AthenaRouteEngine {
             .firstOrNull { segment -> input.componentBounds.none { bounds -> bounds.intersects(segment) } }
             ?: segments.maxByOrNull { segment -> segment.manhattanLength() }
             ?: return emptyList()
-        val text = when (connectionIntent.role) {
+        val text = when (connectionRoleFact.role) {
             ElectricalConnectionRole.TERMINAL_TRANSITION -> targetAnchor.portId.value
-            else -> connectionIntent.connectionId.value.removePrefix("connection:")
+            else -> "${sourceAnchor.portId.value}-${targetAnchor.portId.value}"
         }
         val labelFact = RuleBasedSchematicLabelStrategy().solve(
             SchematicLabelSnapshot(
@@ -246,17 +253,43 @@ class AthenaRouteEngine {
         componentBounds: List<SchematicComponentBounds>,
         layoutContext: SchematicRoutingLayoutContext,
     ): List<SchematicRouteSegment>? {
-        val laneY = componentBounds.minOfOrNull { bounds -> bounds.topLeft.y }?.minus(layoutContext.gridSize)
-            ?.takeIf { candidate -> candidate >= 0 }
-            ?: return null
-        val firstTurn = SchematicRoutePoint(x = source.x, y = laneY)
-        val secondTurn = SchematicRoutePoint(x = target.x, y = laneY)
-        val candidate = buildList {
-            addSegment(source, firstTurn)
-            addSegment(firstTurn, secondTurn)
-            addSegment(secondTurn, target)
+        if (componentBounds.isEmpty()) return null
+        val grid = layoutContext.gridSize
+        val horizontalLaneCandidates = listOf(
+            componentBounds.minOf { bounds -> bounds.topLeft.y } - grid,
+            componentBounds.maxOf { bounds -> bounds.topLeft.y + bounds.height } + grid,
+        ).filter { laneY -> laneY >= 0 }.distinct()
+        val verticalLaneCandidates = listOf(
+            componentBounds.minOf { bounds -> bounds.topLeft.x } - grid,
+            componentBounds.maxOf { bounds -> bounds.topLeft.x + bounds.width } + grid,
+        ).filter { laneX -> laneX >= 0 }.distinct()
+
+        val candidates = buildList {
+            horizontalLaneCandidates.forEach { laneY ->
+                add(
+                    buildList {
+                        addSegment(source, SchematicRoutePoint(x = source.x, y = laneY))
+                        addSegment(SchematicRoutePoint(x = source.x, y = laneY), SchematicRoutePoint(x = target.x, y = laneY))
+                        addSegment(SchematicRoutePoint(x = target.x, y = laneY), target)
+                    },
+                )
+            }
+            verticalLaneCandidates.forEach { laneX ->
+                add(
+                    buildList {
+                        addSegment(source, SchematicRoutePoint(x = laneX, y = source.y))
+                        addSegment(SchematicRoutePoint(x = laneX, y = source.y), SchematicRoutePoint(x = laneX, y = target.y))
+                        addSegment(SchematicRoutePoint(x = laneX, y = target.y), target)
+                    },
+                )
+            }
         }
-        return candidate.takeIf { segments -> segments.none { segment -> componentBounds.any { bounds -> bounds.intersects(segment) } } }
+        return candidates
+            .filter { segments -> segments.none { segment -> componentBounds.any { bounds -> bounds.intersects(segment) } } }
+            .minWithOrNull(compareBy<List<SchematicRouteSegment>>(
+                { segments -> segments.sumOf { segment -> segment.manhattanLength() } },
+                { segments -> segments.size },
+            ))
     }
 
     private fun sideStubPoint(
@@ -300,7 +333,7 @@ class AthenaRouteEngine {
                     }
                     .map(RouteConstraint::constraintId)
                 if (avoidanceConstraintIds.isEmpty()) {
-                    add(RouteConstraintId("constraint:${connectionIntent.connectionId.value}:avoid-component-body"))
+                    add(RouteConstraintId("constraint:${connectionRoleFact.connectionId.value}:avoid-component-body"))
                 } else {
                     addAll(avoidanceConstraintIds)
                 }
@@ -362,7 +395,83 @@ class AthenaRouteEngine {
         }
         return toInt()
     }
+
+    private fun allocateLanes(input: AthenaRouteEngineInput): RouteLanePlan {
+        val orderedRequests = input.requests.sortedWith(
+            compareBy<AthenaRouteRequest>(
+                { request -> request.connectionRoleFact.role.name },
+                { request -> request.connectionRoleFact.connectionId.value },
+                { request -> request.routeId.value },
+                { request -> request.sourceAnchor.anchorId.value },
+                { request -> request.targetAnchor.anchorId.value },
+            ),
+        )
+        val diagnostics = laneDiagnostics(input, orderedRequests.size)
+        val assignmentByLane = orderedRequests
+            .mapIndexed { index, request -> routeLane(index, input.layoutContext) to request.routeId }
+            .groupBy({ it.first }, { it.second })
+        val assignmentByRouteId = orderedRequests.mapIndexed { index, request ->
+            val lane = routeLane(index, input.layoutContext)
+            val conflicts = diagnostics
+                .filter { diagnostic -> diagnostic.affectedRouteIds.isEmpty() || request.routeId in diagnostic.affectedRouteIds }
+                .map { diagnostic -> RouteLaneConflict(diagnostic.code, diagnostic.message) }
+            val laneAssignment = RouteLaneAssignment(
+                laneId = RouteLaneId("lane:${lane.value}"),
+                lane = lane,
+                orientation = input.layoutContext.routeLaneOrientation,
+                capacity = RouteLaneCapacity(input.layoutContext.routeLaneCapacity),
+                occupancy = RouteLaneOccupancy(
+                    usedRoutes = assignmentByLane.getValue(lane).size,
+                    routeIds = assignmentByLane.getValue(lane).sortedBy(SchematicRouteId::value),
+                ),
+                conflicts = conflicts,
+            )
+            request.routeId to laneAssignment
+        }.toMap()
+        return RouteLanePlan(
+            orderedRequests = orderedRequests,
+            assignmentByRouteId = assignmentByRouteId,
+            diagnostics = diagnostics,
+        )
+    }
+
+    private fun laneDiagnostics(
+        input: AthenaRouteEngineInput,
+        requestCount: Int,
+    ): List<RouteLaneDiagnostic> = buildList {
+        val capacity = input.layoutContext.routeLaneCapacity.toLong() * input.layoutContext.routeLaneCount.toLong()
+        if (requestCount.toLong() > capacity) {
+            add(
+                RouteLaneDiagnostic(
+                    code = "route.lane.capacity.exceeded",
+                    message = "Route requests exceed configured lane capacity.",
+                    affectedRouteIds = input.requests.map { request -> request.routeId }.sortedBy(SchematicRouteId::value),
+                ),
+            )
+        }
+        if (input.layoutContext.routeLaneSpacing < input.layoutContext.gridSize) {
+            add(
+                RouteLaneDiagnostic(
+                    code = "route.lane.spacing.conflict",
+                    message = "Route lane spacing is smaller than the routing grid.",
+                    affectedRouteIds = input.requests.map { request -> request.routeId }.sortedBy(SchematicRouteId::value),
+                ),
+            )
+        }
+    }
+
+    private fun routeLane(
+        index: Int,
+        layoutContext: SchematicRoutingLayoutContext,
+    ): SchematicRouteLane = SchematicRouteLane((index / layoutContext.routeLaneCapacity).coerceAtMost(layoutContext.routeLaneCount - 1))
+
 }
+
+private data class RouteLanePlan(
+    val orderedRequests: List<AthenaRouteRequest>,
+    val assignmentByRouteId: Map<SchematicRouteId, RouteLaneAssignment>,
+    val diagnostics: List<RouteLaneDiagnostic>,
+)
 
 private data class DerivedRouteTopology(
     val junctions: List<RouteJunctionFact>,

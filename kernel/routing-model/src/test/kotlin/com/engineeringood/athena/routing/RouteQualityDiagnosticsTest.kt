@@ -41,7 +41,7 @@ class RouteQualityDiagnosticsTest {
         assertEquals(1, diagnostics.size)
         assertEquals(ElectricalConnectionId("connection:test:plc1_do2_to_xt1_1"), diagnostics.single().connectionId)
         assertEquals(SchematicRouteId("route:fallback"), diagnostics.single().routeId)
-        assertEquals(RouteQualityState.FALLBACK, diagnostics.single().qualityState)
+        assertEquals(RouteQualityState.DEGRADED, diagnostics.single().qualityState)
         assertEquals(listOf(fallbackConstraintId), diagnostics.single().failedConstraintIds)
         assertEquals(listOf(RouteConstraintKind.PREFERRED_EXIT_SIDE), diagnostics.single().failedConstraintFamilies)
         assertTrue(diagnostics.single().message.contains("preferred terminal side"))
@@ -54,8 +54,8 @@ class RouteQualityDiagnosticsTest {
         assertEquals(StableSemanticIdentity("port:PLC1.DO1"), satisfiedInspection.sourcePortSemanticId)
         assertEquals(StableSemanticIdentity("port:HMI1.IN1"), satisfiedInspection.targetPortSemanticId)
         assertEquals("route-fact:SATISFIED:1-segment", satisfiedInspection.policySummary)
-        assertEquals(RouteQualityState.FALLBACK, fallbackInspection.qualityState)
-        assertEquals("route-fact:FALLBACK:1-segment", fallbackInspection.policySummary)
+        assertEquals(RouteQualityState.DEGRADED, fallbackInspection.qualityState)
+        assertEquals("route-fact:DEGRADED:1-segment", fallbackInspection.policySummary)
     }
 
     private fun routeFact(

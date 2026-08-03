@@ -1,26 +1,18 @@
 package com.engineeringood.athena.presentation
 
-import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.document.CrossReferenceFact
 import com.engineeringood.athena.document.CrossReferenceRelationType
 import com.engineeringood.athena.document.DocumentLocation
 import com.engineeringood.athena.document.DocumentOccurrenceId
 import com.engineeringood.athena.document.DocumentProjectionSnapshot
 import com.engineeringood.athena.document.SheetViewId
+import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.representation.LabelFact
-import com.engineeringood.athena.representation.PresentationAnatomy
 import com.engineeringood.athena.representation.PresentationTerminalFact
+import com.engineeringood.athena.representation.RepresentationDefinition
 import com.engineeringood.athena.representation.RepresentationOccurrenceId
 import com.engineeringood.athena.representation.RepresentationSubjectId
-import com.engineeringood.athena.representation.SymbolAnatomy
-import com.engineeringood.athena.routing.ElectricalConnectionId
-import com.engineeringood.athena.routing.RouteFact
-import com.engineeringood.athena.routing.RouteFactSnapshot
-import com.engineeringood.athena.routing.RouteQualityState
-import com.engineeringood.athena.routing.RouteLabelFact
-import com.engineeringood.athena.routing.SchematicRouteId
-import com.engineeringood.athena.routing.SchematicRoutePoint
 
 /**
  * Rebuildable downstream presentation document for one supported projection view.
@@ -39,7 +31,8 @@ data class PresentationDocument(
     val occurrences: List<PresentationOccurrence>,
     val graphicOccurrences: List<PresentationGraphicOccurrence> = emptyList(),
     val connectors: List<PresentationConnector> = emptyList(),
-    val routeFactSnapshot: RouteFactSnapshot? = null,
+    val connectionMarkers: List<PresentationConnectionMarker> = emptyList(),
+    val paintPlan: PresentationPaintPlan? = null,
     val representationFacts: List<PresentationRepresentationFact> = emptyList(),
     val referenceMarkers: List<PresentationReferenceMarkerFact> = emptyList(),
     val drawingComposition: PresentationDrawingComposition? = null,
@@ -49,19 +42,14 @@ data class PresentationDocument(
 data class PresentationRepresentationFact(
     val subjectId: RepresentationSubjectId,
     val occurrenceId: RepresentationOccurrenceId,
-    val symbol: SymbolAnatomy,
-    val anatomy: PresentationAnatomy,
+    val definition: RepresentationDefinition,
     val terminals: List<PresentationTerminalFact>,
     val labels: List<LabelFact>,
     val sourceProjectionIds: List<String> = emptyList(),
-    val packageEvidence: PresentationPackageEvidence? = null,
-) {
-    init {
-        require(symbol.anatomy == anatomy) { "Presentation representation fact symbol must wrap the same anatomy." }
-    }
-}
+    val packageTrace: PresentationPackageTrace? = null,
+)
 
-data class PresentationPackageEvidence(
+data class PresentationPackageTrace(
     val engineeringPackageId: String,
     val engineeringPackageVersion: String,
     val presentationProfileId: String,
@@ -74,15 +62,14 @@ data class PresentationPackageEvidence(
     val anchorMapSummary: List<String>,
     val labelBindingSummary: List<String>,
     val resolverStage: String,
-    val rendererFallbackAccepted: Boolean,
 ) {
     init {
-        require(engineeringPackageId.isNotBlank()) { "Engineering package evidence id must not be blank." }
-        require(presentationProfileId.isNotBlank()) { "Presentation profile evidence id must not be blank." }
-        require(bindingManifestId.isNotBlank()) { "Binding manifest evidence id must not be blank." }
-        require(representationPackageId.isNotBlank()) { "Representation package evidence id must not be blank." }
-        require(descriptorId.isNotBlank()) { "Representation descriptor evidence id must not be blank." }
-        require(graphicResourceId.isNotBlank()) { "Graphic resource evidence id must not be blank." }
+        require(engineeringPackageId.isNotBlank()) { "Engineering package trace id must not be blank." }
+        require(presentationProfileId.isNotBlank()) { "Presentation profile trace id must not be blank." }
+        require(bindingManifestId.isNotBlank()) { "Binding descriptor trace id must not be blank." }
+        require(representationPackageId.isNotBlank()) { "Representation package trace id must not be blank." }
+        require(descriptorId.isNotBlank()) { "Representation descriptor trace id must not be blank." }
+        require(graphicResourceId.isNotBlank()) { "Graphic resource trace id must not be blank." }
     }
 }
 
@@ -115,11 +102,10 @@ fun PresentationDocument.scopedToProjectionMembership(
             connector.semanticId.value in connectionSemanticIds ||
                 connector.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds }
         },
-        routeFactSnapshot = routeFactSnapshot?.copy(
-            routeFacts = routeFactSnapshot.routeFacts.filter { routeFact ->
-                routeFact.connectionId.value in connectionSemanticIds
-            },
-        ),
+        connectionMarkers = connectionMarkers.filter { marker ->
+            marker.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds } ||
+                marker.connectorIds.any { connectorId -> connectorId.value in connectionSemanticIds }
+        },
         representationFacts = representationFacts.filter { fact ->
             fact.subjectId.value in occurrenceSemanticIds ||
                 fact.sourceProjectionIds.any { projectionId -> projectionId in sourceProjectionIds }
@@ -130,81 +116,7 @@ fun PresentationDocument.scopedToProjectionMembership(
     )
 }
 
-data class PresentationRouteAttachmentFact(
-    val routeId: SchematicRouteId,
-    val connectionId: ElectricalConnectionId,
-    val sourcePresentationTerminalId: com.engineeringood.athena.representation.PresentationTerminalId,
-    val targetPresentationTerminalId: com.engineeringood.athena.representation.PresentationTerminalId,
-    val routeQuality: RouteQualityState,
-) {
-    val usesCenterFallback: Boolean
-        get() = false
-}
-
-fun attachRoutesToPresentationTerminals(
-    routeFactSnapshot: RouteFactSnapshot,
-    terminals: List<PresentationTerminalFact>,
-): List<PresentationRouteAttachmentFact> {
-    val terminalsByAnchor = terminals.associateBy { terminal -> terminal.routeAnchor.anchorId.value }
-    return routeFactSnapshot.routeFacts.mapNotNull { route ->
-        val sourceTerminal = terminalsByAnchor[route.source.anchorId.value]
-        val targetTerminal = terminalsByAnchor[route.target.anchorId.value]
-        if (sourceTerminal == null || targetTerminal == null) {
-            null
-        } else {
-            PresentationRouteAttachmentFact(
-                routeId = route.routeId,
-                connectionId = route.connectionId,
-                sourcePresentationTerminalId = sourceTerminal.presentationTerminalId,
-                targetPresentationTerminalId = targetTerminal.presentationTerminalId,
-                routeQuality = route.quality.state,
-            )
-        }
-    }.sortedBy { attachment -> attachment.routeId.value }
-}
-
-/**
- * Renderer-facing connector list. M24 route facts take precedence over legacy edge route points
- * because route facts carry terminal anchors, segments, labels, and quality state.
- */
-fun PresentationDocument.connectorsForRendering(): List<PresentationConnector> {
-    val routeFacts = routeFactSnapshot?.routeFacts.orEmpty()
-    return if (routeFacts.isEmpty()) {
-        connectors
-    } else {
-        routeFacts.map(RouteFact::toPresentationConnector)
-    }
-}
-
-private fun RouteFact.toPresentationConnector(): PresentationConnector {
-    return PresentationConnector(
-        occurrenceId = PresentationOccurrenceId(routeId.value),
-        semanticId = StableSemanticIdentity(connectionId.value),
-        primitiveId = PresentationPrimitiveId("electrical.conductor.orthogonal"),
-        routePoints = routePoints(),
-        sourceAnchorId = source.anchorId.value,
-        targetAnchorId = target.anchorId.value,
-        sourcePortSemanticId = source.portSemanticId ?: StableSemanticIdentity("port:${source.portId.value}"),
-        targetPortSemanticId = target.portSemanticId ?: StableSemanticIdentity("port:${target.portId.value}"),
-        tokenOverrides = buildMap {
-            put("routeLane", lane.value.toString())
-            put("routeQuality", quality.state.name)
-            put("routeSegmentCount", segments.size.toString())
-            if (labels.isNotEmpty()) {
-                put("routeLabels", labels.joinToString(separator = "|", transform = RouteLabelFact::text))
-            }
-        },
-    )
-}
-
-private fun RouteFact.routePoints(): List<PresentationPoint> {
-    return buildList {
-        add(segments.first().start.toPresentationPoint())
-        segments.forEach { segment -> add(segment.end.toPresentationPoint()) }
-    }
-}
-
-private fun SchematicRoutePoint.toPresentationPoint(): PresentationPoint = PresentationPoint(x = x, y = y)
+fun PresentationDocument.connectorsForRendering(): List<PresentationConnector> = connectors
 
 @JvmInline
 value class PresentationReferenceMarkerId(val value: String) {

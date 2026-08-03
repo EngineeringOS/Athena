@@ -20,5 +20,5 @@ system BoundaryScopeShowcase {
     signal Control24V
   }
 
-  connect boundaryswitch_out_to_boundarylamp_in BoundarySwitch.out -> BoundaryLamp.in
+  connect boundaryswitch_out_to_boundarylamp_in BoundarySwitch.out to BoundaryLamp.in
 }

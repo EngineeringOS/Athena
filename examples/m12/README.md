@@ -9,7 +9,7 @@ English | [Chinese (Simplified)](README.zh-CN.md)
 - `renderer-benchmark-proof/` - governed repository fixture for the M12 electrical renderer benchmark
 - `renderer-benchmark-proof/athena.yaml` - authored repository and primary-package intent
 - `renderer-benchmark-proof/athena.lock` - canonical derived lock state for the same repository
-- `renderer-benchmark-proof/src/expansion-line.athena` - larger electrical source used to validate connection readability, viewport behavior, and cross-reference reveal beyond the M11 baseline
+- `renderer-benchmark-proof/src/com/engineeringood/rendererbenchmark/expansion-line.athena` - larger electrical source used to validate connection readability, viewport behavior, and cross-reference reveal beyond the M11 baseline
 
 ## What It Proves
 

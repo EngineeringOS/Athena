@@ -74,7 +74,6 @@ class BindingResolver {
         return BindingResolutionResult(
             resolution = resolution,
             diagnostics = diagnostics,
-            rendererFallbackAccepted = false,
         )
     }
 

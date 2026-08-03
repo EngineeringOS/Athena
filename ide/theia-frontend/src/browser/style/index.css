@@ -43,6 +43,11 @@
     --athena-graph-reference-marker-size: 10px;
 }
 
+.theia-preload {
+    display: none !important;
+    pointer-events: none !important;
+}
+
 .athena-home-widget,
 .athena-semantic-macro-catalog-widget,
 .athena-semantic-inspection-widget,

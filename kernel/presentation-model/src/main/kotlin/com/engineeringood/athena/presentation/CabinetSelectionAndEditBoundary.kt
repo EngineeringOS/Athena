@@ -24,13 +24,13 @@ sealed interface CabinetGraphicSelectionResolution {
     data class Success(
         val subject: InteractionSubject,
         val revealTarget: InteractionRevealTarget,
-        val evidence: CabinetSelectionEvidence,
+        val trace: CabinetSelectionTrace,
     ) : CabinetGraphicSelectionResolution
 
     data class Failure(val diagnostics: List<CabinetSelectionDiagnostic>) : CabinetGraphicSelectionResolution
 }
 
-data class CabinetSelectionEvidence(
+data class CabinetSelectionTrace(
     val occurrenceId: GraphicOccurrenceId,
     val subjectAuthority: String,
     val capabilityAuthority: String,
@@ -116,7 +116,7 @@ object CabinetGraphicSelectionResolver {
                 sourceRange = sourceRange,
                 occurrence = occurrence,
             ),
-            evidence = CabinetSelectionEvidence(
+            trace = CabinetSelectionTrace(
                 occurrenceId = occurrenceId,
                 subjectAuthority = "graphic-occurrence-trace-table",
                 capabilityAuthority = "semantic-capability-registry",
@@ -127,12 +127,12 @@ object CabinetGraphicSelectionResolver {
     }
 }
 
-data class CabinetGovernedEditEvidence(
-    val semanticActionIntent: SemanticActionIntent,
-    val authoringIntentId: AuthoringIntentId,
+data class CabinetEditRequest(
+    val action: SemanticActionIntent,
+    val authoringRequestId: AuthoringIntentId,
     val transactionId: SemanticAuthoringTransactionId,
     val previewId: AuthoringPreviewId,
-    val sourceEditEvidence: AuthoringSourceEditEvidence,
+    val sourceEditTrace: AuthoringSourceEditEvidence,
     val target: CabinetGovernedEditTarget,
     val compileLintRequired: Boolean,
     val rerenderRequired: Boolean,
@@ -155,12 +155,12 @@ enum class CabinetForbiddenMutationTarget {
 }
 
 sealed interface CabinetGovernedEditBoundaryResult {
-    data class Accepted(val evidence: CabinetGovernedEditPathEvidence) : CabinetGovernedEditBoundaryResult
+    data class Accepted(val path: CabinetEditPath) : CabinetGovernedEditBoundaryResult
 
     data class Failure(val diagnostics: List<CabinetGovernedEditDiagnostic>) : CabinetGovernedEditBoundaryResult
 }
 
-data class CabinetGovernedEditPathEvidence(
+data class CabinetEditPath(
     val orderedStages: List<String>,
     val target: CabinetGovernedEditTarget,
 )
@@ -173,11 +173,11 @@ data class CabinetGovernedEditDiagnostic(
 
 object CabinetGovernedEditBoundary {
     private val governedStages = listOf(
-        "SemanticActionIntent",
-        "AuthoringIntent",
+        "SemanticAction",
+        "AuthoringRequest",
         "SemanticAuthoringTransaction",
         "AuthoringPreview",
-        "AuthoringSourceEditEvidence",
+        "SourceEditTrace",
         "compile-lint",
         "rerender",
     )
@@ -193,16 +193,16 @@ object CabinetGovernedEditBoundary {
             ),
         )
 
-    fun acceptGovernedPath(evidence: CabinetGovernedEditEvidence): CabinetGovernedEditBoundaryResult {
+    fun acceptGovernedPath(request: CabinetEditRequest): CabinetGovernedEditBoundaryResult {
         val diagnostics = buildList {
-            if (!evidence.compileLintRequired) {
-                add(diagnostic("cabinet.edit.compile_lint_required", evidence.target))
+            if (!request.compileLintRequired) {
+                add(diagnostic("cabinet.edit.compile_lint_required", request.target))
             }
-            if (!evidence.rerenderRequired) {
-                add(diagnostic("cabinet.edit.rerender_required", evidence.target))
+            if (!request.rerenderRequired) {
+                add(diagnostic("cabinet.edit.rerender_required", request.target))
             }
-            if (evidence.semanticActionIntent.subject.canonicalSubjectId.value !in evidence.sourceEditEvidence.affectedSemanticIds) {
-                add(diagnostic("cabinet.edit.source_subject_mismatch", evidence.target))
+            if (request.action.subject.canonicalSubjectId.value !in request.sourceEditTrace.affectedSemanticIds) {
+                add(diagnostic("cabinet.edit.source_subject_mismatch", request.target))
             }
         }
         if (diagnostics.isNotEmpty()) {
@@ -210,9 +210,9 @@ object CabinetGovernedEditBoundary {
         }
 
         return CabinetGovernedEditBoundaryResult.Accepted(
-            CabinetGovernedEditPathEvidence(
+            CabinetEditPath(
                 orderedStages = governedStages,
-                target = evidence.target,
+                target = request.target,
             ),
         )
     }
@@ -220,7 +220,7 @@ object CabinetGovernedEditBoundary {
     private fun diagnostic(code: String, target: CabinetGovernedEditTarget): CabinetGovernedEditDiagnostic =
         CabinetGovernedEditDiagnostic(
             code = code,
-            message = "Governed cabinet edit evidence is incomplete.",
+            message = "Governed cabinet edit request is incomplete.",
             target = target.name,
         )
 }

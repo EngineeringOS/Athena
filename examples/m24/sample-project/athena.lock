@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:aaf51383107024787eeb0876227fc350f091f9af530ecc3c9a059d01ba0ed103
+validatedLockStateDigest: lock-state:24329e2551fd875cae6ecc16f779a291c9952c6fbec5f0d65969be75a1947acc
 primaryPackage:
   name: com.engineeringood.m24.sample
   version: 1.0.0
@@ -11,13 +11,13 @@ packages:
   - name: com.engineeringood.m24.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:2f52b33765df18b6e6cfe33691ef6a78ad857d8acac737bd80aa9bab05ae43f1
+    snapshotDigest: package-snapshot:8cdc78ce72b847711aa9d282c007d3de69b6d3891a875219919dfa406e1c0da9
     sourceHashes:
       - path: com/engineeringood/m24/sample/01-control-route.athena
-        hash: sha256:9eda2222a047b5b8951b6f89a5d492a818242f8cb46b322c06c5b4d7eaac2ba3
+        hash: sha256:befb58b18f5f9bf6bc02105f49ae34b35155b5559af780245861dadd691e5f21
       - path: com/engineeringood/m24/sample/02-terminal-strip-routes.athena
-        hash: sha256:750ffa23c4dfb1bc417dd183779b70fcf9b1b63e81d52f8b9a16eba4edbf6294
+        hash: sha256:68b1e7bb8d8b42d63901ad5084f98a90803a0e96018c598b3af7cc2ae66440a2
       - path: com/engineeringood/m24/sample/03-power-protection-load.athena
-        hash: sha256:d51a619f4769debf9e1cd5ee56e33ef83a032cfb9b38ed16adc4e4601bcd0102
+        hash: sha256:fcc018b637ab50fb35f52036319dac22beefa2d058b110d5ec0cfeedaf984de9
     resourceHashes: []
     dependencies: []

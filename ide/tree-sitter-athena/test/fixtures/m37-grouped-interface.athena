@@ -1,0 +1,22 @@
+system EngineeringConnectivity {
+  device Drive {
+    type MotorDrive
+    connectivity enabled
+
+    interface powerInput {
+      type power
+      direction in
+      signal PowerAC
+      role line
+
+      ports {
+        L1
+        PE {
+          signal ProtectiveEarth
+          role protective_earth
+          direction passive
+        }
+      }
+    }
+  }
+}

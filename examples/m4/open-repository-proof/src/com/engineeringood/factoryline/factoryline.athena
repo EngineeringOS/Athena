@@ -102,14 +102,14 @@ system MachineNo000OpCpu {
     signal MPIBus
   }
 
-  connect rail302_out_to_cpu313c_lplus Rail302.out -> CPU313C.lplus
-  connect rail301_out_to_cpu313c_m Rail301.out -> CPU313C.m
-  connect railpe_out_to_cpu313c_pe RailPE.out -> CPU313C.pe
+  connect rail302_out_to_cpu313c_lplus Rail302.out to CPU313C.lplus
+  connect rail301_out_to_cpu313c_m Rail301.out to CPU313C.m
+  connect railpe_out_to_cpu313c_pe RailPE.out to CPU313C.pe
 
-  connect rail302_out_to_op77b_lplus Rail302.out -> OP77B.lplus
-  connect rail301_out_to_op77b_m Rail301.out -> OP77B.m
-  connect railpe_out_to_op77b_pe RailPE.out -> OP77B.pe
+  connect rail302_out_to_op77b_lplus Rail302.out to OP77B.lplus
+  connect rail301_out_to_op77b_m Rail301.out to OP77B.m
+  connect railpe_out_to_op77b_pe RailPE.out to OP77B.pe
 
-  connect cpu313c_mpi_to_op77b_if1a CPU313C.mpi -> OP77B.if1a
-  connect cpu313c_mpi_to_op77b_if1b CPU313C.mpi -> OP77B.if1b
+  connect cpu313c_mpi_to_op77b_if1a CPU313C.mpi to OP77B.if1a
+  connect cpu313c_mpi_to_op77b_if1b CPU313C.mpi to OP77B.if1b
 }

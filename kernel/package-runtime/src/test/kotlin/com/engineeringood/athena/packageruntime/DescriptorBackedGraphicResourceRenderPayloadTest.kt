@@ -69,7 +69,6 @@ class DescriptorBackedGraphicResourceRenderPayloadTest {
         labelBindingSummary = listOf("device-tag=DriveA"),
         resolverStage = "binding-resolver",
         diagnostics = emptyList(),
-        rendererFallbackAccepted = false,
     )
 
     private fun descriptor(): RepresentationDescriptor = RepresentationDescriptor(

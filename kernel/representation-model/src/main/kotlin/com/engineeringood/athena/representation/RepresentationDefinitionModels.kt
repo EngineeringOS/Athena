@@ -26,11 +26,6 @@ enum class RepresentationDefinitionKind {
     ELEMENT,
 }
 
-enum class RepresentationBodyAuthority {
-    GRAPHIC_PRIMITIVE,
-    LEGACY_PRESENTATION_ANATOMY,
-}
-
 enum class RepresentationAnchorRole {
     TERMINAL,
     REFERENCE,
@@ -60,10 +55,6 @@ data class RepresentationAnchorContract(
     val point: GraphicPoint,
     val role: RepresentationAnchorRole,
     val required: Boolean,
-    val acceptedDirections: Set<RepresentationDirectionPredicate> = emptySet(),
-    val acceptedSignals: Set<RepresentationSignalPredicate> = emptySet(),
-    val terminal: PhysicalTerminalId? = null,
-    val port: String? = null,
 ) {
     init {
         require(geometryRef.isNotBlank()) { "Representation anchor geometry reference must not be blank." }
@@ -152,18 +143,11 @@ data class RepresentationDefinition(
     val version: RepresentationVersion,
     val lifecycle: RepresentationLifecycle,
     val kind: RepresentationSymbolKind,
-    val anatomy: PresentationAnatomy,
     val labelSlots: List<RepresentationLabelSlot>,
     val variants: List<RepresentationVariantId> = emptyList(),
     val styleTokens: List<RepresentationStyleToken> = emptyList(),
-    val bodyAuthority: RepresentationBodyAuthority = RepresentationBodyAuthority.LEGACY_PRESENTATION_ANATOMY,
     val definitionKind: RepresentationDefinitionKind = RepresentationDefinitionKind.SYMBOL,
-    val graphicBody: GraphicPrimitiveDocument = GraphicPrimitiveDocument(
-        documentId = null,
-        bounds = null,
-        primitives = emptyList(),
-        styleTokens = emptyList(),
-    ),
+    val graphicBody: GraphicPrimitiveDocument,
     val anchors: List<RepresentationAnchorContract> = emptyList(),
     val intrinsicComposition: RepresentationIntrinsicComposition? = null,
     val forbiddenAuthorityClaims: Set<RepresentationDefinitionForbiddenAuthority> = emptySet(),
@@ -172,27 +156,10 @@ data class RepresentationDefinition(
         require(definitionKind == RepresentationDefinitionKind.ELEMENT || intrinsicComposition == null) {
             "Atomic Symbol definitions cannot own intrinsic child composition."
         }
-        when (bodyAuthority) {
-            RepresentationBodyAuthority.GRAPHIC_PRIMITIVE -> require(
-                anatomy.authority == PresentationAnatomyAuthority.COMPATIBILITY_SHELL,
-            ) {
-                "Canonical Graphic Primitive definitions require a non-authoritative presentation compatibility shell."
-            }
-            RepresentationBodyAuthority.LEGACY_PRESENTATION_ANATOMY -> {
-                require(labelSlots.isNotEmpty()) { "Legacy representation definition requires at least one label slot." }
-                require(anatomy.authority == PresentationAnatomyAuthority.LEGACY_VISUAL) {
-                    "Legacy presentation definitions require authoritative legacy anatomy."
-                }
-                require(graphicBody.primitives.isEmpty() && anchors.isEmpty() && intrinsicComposition == null) {
-                    "Legacy presentation definitions cannot own canonical Graphic Primitive or composition facts."
-                }
-            }
-        }
     }
 
     fun toTransportMap(): Map<String, String> = linkedMapOf(
         "anchorCount" to anchors.size.toString(),
-        "bodyAuthority" to bodyAuthority.name,
         "compositionChildCount" to intrinsicComposition?.children?.size.orZero().toString(),
         "definitionKind" to definitionKind.name,
         "graphicPrimitiveCount" to graphicBody.primitives.size.toString(),

@@ -20,5 +20,5 @@
     signal Digital
   }
 
-  connect controllera_out_to_driveb_in ControllerA.out -> DriveB.in
+  connect controllera_out_to_driveb_in ControllerA.out to DriveB.in
 }

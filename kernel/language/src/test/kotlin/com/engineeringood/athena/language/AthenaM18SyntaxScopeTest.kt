@@ -22,7 +22,7 @@ class AthenaM18SyntaxScopeTest {
               port package.out {
                 direction out
               }
-              connect package_out_to_package_out package.out -> package.out
+              connect package_out_to_package_out package.out to package.out
             }
             """.trimIndent()
 
@@ -38,8 +38,16 @@ class AthenaM18SyntaxScopeTest {
                 is PortDeclaration -> it.qualifiedName.parts.first()
                 is ConnectionDeclaration -> it.from.parts.first()
                 is ConnectionGroupDeclaration -> it.name
+                is RelationDeclaration -> error("Relation declarations are outside this M18 compatibility fixture")
+                is ExternalEvidenceDeclaration -> error("Evidence declarations are outside this M18 compatibility fixture")
+                is ProjectionPolicyDeclaration -> error("Projection Policy declarations are outside this M18 compatibility fixture")
                 is LayoutDeclaration -> error("Layout declarations are outside this M18 compatibility fixture")
                 is InstallationDeclaration -> error("Installation declarations are outside this M18 compatibility fixture")
+                is ViewDeclaration -> error("View declarations are outside this M18 compatibility fixture")
+                is SheetDeclaration -> error("Sheet declarations are outside this M18 compatibility fixture")
+                is GridDeclaration -> error("Grid declarations are outside this M18 compatibility fixture")
+                is RegionDeclaration -> error("Region declarations are outside this M18 compatibility fixture")
+                is ProjectionConstructDeclaration -> error("Projection construct declarations are outside this M18 compatibility fixture")
             }
         })
     }
@@ -75,7 +83,7 @@ class AthenaM18SyntaxScopeTest {
             "export-device" to "export device PLC1 {}",
             "public-device" to "public device PLC1 {}",
             "private-port" to "private port PLC1.out {}",
-            "internal-connect" to "internal connect plc1_out_to_plc1_out PLC1.out -> PLC1.out",
+            "internal-connect" to "internal connect plc1_out_to_plc1_out PLC1.out to PLC1.out",
         )
 
         declarations.forEach { (name, declaration) ->

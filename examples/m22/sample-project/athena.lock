@@ -1,6 +1,9 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:1f23d94a9c98a7e63ed7b7e46a9d60cabedcce2410f927d8186ffc99baf8516a
 primaryPackage:
   name: com.engineeringood.m22.sample
   version: 1.0.0
@@ -8,4 +11,15 @@ packages:
   - name: com.engineeringood.m22.sample
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot:8f29fd2f75a83e3dbf2e37b0cf4629fe41a65c75a39076317a84780f8f988c20
+    sourceHashes:
+      - path: com/engineeringood/m22/sample/01-baseline-sheet.athena
+        hash: sha256:036b1f2f40709feffad7d1cb5076042c21642bcec9507d0a397c386639586c3f
+      - path: com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena
+        hash: sha256:456bfe9014b09f64f615a96dfb122148de1585fed3d75c3b234788125df8fd87
+      - path: com/engineeringood/m22/sample/03-component-round-trip.athena
+        hash: sha256:d2909565a1e9be0ba6e892597a71e7f8853cb00439b03c73bc944521c0e613c9
+      - path: com/engineeringood/m22/sample/04-boundary-scope.athena
+        hash: sha256:d25f91554fd10d4b9687603b111eccbe71906b30af93f2763f92c731c5ec7d5a
+    resourceHashes: []
     dependencies: []

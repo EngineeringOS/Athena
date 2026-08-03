@@ -1,0 +1,19 @@
+# Derived resolution state for the Athena package graph.
+# Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:c36ae21c243a26a394a7278c3708a7bfaa3111c17a93e4a0a9e951344a027ca9
+primaryPackage:
+  name: com.engineeringood.m41.rollingshutter
+  version: 1.0.0
+packages:
+  - name: com.engineeringood.m41.rollingshutter
+    version: 1.0.0
+    sourceRoot: src
+    snapshotDigest: package-snapshot:94821e1de90b4a6a085972dc5d7ed9812aecfbe12dc97ed7e811e712c0e6b28b
+    sourceHashes:
+      - path: com/engineeringood/m41/rollingshutter/01-rolling-shutter-spatial.athena
+        hash: sha256:3af530db2f1390c5b873ed1f5134766293bf390301535adfcb94dfd3cb1a773e
+    resourceHashes: []
+    dependencies: []

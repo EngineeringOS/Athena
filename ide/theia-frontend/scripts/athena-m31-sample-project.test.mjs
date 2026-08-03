@@ -33,9 +33,9 @@ test('M31 sample project is an openable governed authoring workspace', () => {
     assert.match(source, /\bsystem RollingShutterGovernedAuthoringProof\b/);
     assert.match(source, /device MainPowerSupplyPS31 \{[\s\S]*?\n\s+port lplus \{/);
     assert.match(source, /device SpareTerminalXT31 \{[\s\S]*?\n\s+port in1 \{/);
-    assert.match(source, /connect mainpowersupplyps31_lplus_to_mainbreakerqf31_line MainPowerSupplyPS31\.lplus -> MainBreakerQF31\.line/);
-    assert.match(source, /connect fieldterminalxt31_motorup_to_shuttermotorm31_up FieldTerminalXT31\.motorUp -> ShutterMotorM31\.up/);
-    assert.match(source, /connect\s+\w+\s+ControlRelayK31\.status -> PilotLampHL31\.status/);
+    assert.match(source, /connect mainpowersupplyps31_lplus_to_mainbreakerqf31_line MainPowerSupplyPS31\.lplus to MainBreakerQF31\.line/);
+    assert.match(source, /connect fieldterminalxt31_motorup_to_shuttermotorm31_up FieldTerminalXT31\.motorUp to ShutterMotorM31\.up/);
+    assert.match(source, /connect\s+\w+\s+ControlRelayK31\.status to PilotLampHL31\.status/);
     assert.match(source, /layout schematic-sheet \{/);
     assert.doesNotMatch(source, /^\s*port\s+[A-Za-z0-9_]+\.[A-Za-z0-9_]+\s*\{/m);
     assert.doesNotMatch(source, /qelectrotech|\.elmt|svg|viewBox|path|rectangle|circle|stroke/i);

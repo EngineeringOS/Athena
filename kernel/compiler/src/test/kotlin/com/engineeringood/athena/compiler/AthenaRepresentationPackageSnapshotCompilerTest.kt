@@ -45,7 +45,7 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         assertEquals("lock:abc", result.evidence.dependencyLockDigest)
         assertEquals(setOf("athena", "svg"), result.evidence.stagedSourceExtensions)
         assertTrue(result.evidence.generatedResourceIds.all { resourceId -> resourceId.startsWith("generated:athena.vendor:") })
-        assertEquals(setOf("GRAPHIC_PRIMITIVE"), result.evidence.compiledBodyAuthorities)
+        assertTrue(result.definitions.all { definition -> definition.graphicBody.primitives.isNotEmpty() })
         assertTrue(result.evidence.rendererFileAccessAuthorityAbsent)
         assertTrue(result.evidence.xmlRuntimeAuthorityAbsent)
         assertTrue(result.evidence.rawSvgTransportAbsent)
@@ -211,7 +211,10 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         assertEquals(first.evidence.compilerSchemaVersion, second.evidence.compilerSchemaVersion)
         assertEquals(first.evidence.sourceHashes, second.evidence.sourceHashes)
         assertEquals(first.evidence.generatedResourceIds, second.evidence.generatedResourceIds)
-        assertEquals(first.evidence.compiledBodyAuthorities, second.evidence.compiledBodyAuthorities)
+        assertEquals(
+            first.definitions.map { definition -> definition.graphicBody.bounds to definition.graphicBody.primitives },
+            second.definitions.map { definition -> definition.graphicBody.bounds to definition.graphicBody.primitives },
+        )
         assertEquals(
             listOf("iec.protective-earth.element", "vendor.abb.pfea112.element"),
             first.definitions
@@ -224,7 +227,7 @@ class AthenaRepresentationPackageSnapshotCompilerTest {
         assertTrue(first.evidence.xmlRuntimeAuthorityAbsent)
         assertTrue(first.evidence.rawSvgTransportAbsent)
         assertTrue(first.evidence.rendererFileAccessAuthorityAbsent)
-        assertEquals(setOf("GRAPHIC_PRIMITIVE"), first.evidence.compiledBodyAuthorities)
+        assertTrue(first.definitions.all { definition -> definition.graphicBody.primitives.isNotEmpty() })
     }
 
     @Test

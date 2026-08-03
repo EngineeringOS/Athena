@@ -1,4 +1,4 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.connection.SemanticPortDirection
 import com.engineeringood.athena.connection.SemanticSignalFamilyId
@@ -33,7 +33,7 @@ class SchematicRouteIntentProjectorTest {
             viewId = "schematic",
             sheetId = "schematic/sheet/01-main",
             layoutContext = layoutContext,
-            connectionIntents = intents,
+            connectionRoleFacts = intents,
             anchors = anchors,
         )
 
@@ -47,7 +47,7 @@ class SchematicRouteIntentProjectorTest {
                 ElectricalConnectionId("connection:test:plc1_do2_to_xt1_1"),
                 ElectricalConnectionId("connection:test:ps1_lplus_to_qf1_lplus"),
             ),
-            snapshot.routeIntents.map { intent -> intent.connectionIntent.connectionId },
+            snapshot.routeIntents.map { intent -> intent.connectionRoleFact.connectionId },
         )
         assertEquals(
             listOf(
@@ -55,7 +55,7 @@ class SchematicRouteIntentProjectorTest {
                 ElectricalPortId("PLC1.DO2") to ElectricalPortId("XT1.1"),
                 ElectricalPortId("PS1.L+") to ElectricalPortId("QF1.L+"),
             ),
-            snapshot.routeIntents.map { intent -> intent.connectionIntent.sourcePortId to intent.connectionIntent.targetPortId },
+            snapshot.routeIntents.map { intent -> intent.connectionRoleFact.sourcePortId to intent.connectionRoleFact.targetPortId },
         )
         assertEquals(
             listOf(
@@ -63,7 +63,7 @@ class SchematicRouteIntentProjectorTest {
                 ElectricalConnectionRole.TERMINAL_TRANSITION,
                 ElectricalConnectionRole.POWER_FEED,
             ),
-            snapshot.routeIntents.map { intent -> intent.connectionIntent.role },
+            snapshot.routeIntents.map { intent -> intent.connectionRoleFact.role },
         )
         assertEquals(
             listOf(
@@ -83,7 +83,7 @@ class SchematicRouteIntentProjectorTest {
         targetSubject: String,
         targetPort: String,
         signalClass: ElectricalSignalClass,
-    ): ElectricalConnectionIntent {
+    ): ElectricalConnectionRoleFact {
         val source = portRef(sourceSubject, sourcePort, SemanticPortDirection.OUTPUT, signalClass)
         val targetKind = if (targetSubject.startsWith("XT")) {
             ElectricalConnectionEndpointKind.TERMINAL
@@ -91,8 +91,8 @@ class SchematicRouteIntentProjectorTest {
             ElectricalConnectionEndpointKind.DEVICE
         }
         val target = portRef(targetSubject, targetPort, SemanticPortDirection.INPUT, signalClass, targetKind)
-        return ElectricalConnectionIntentClassifier().classify(
-            ElectricalConnectionIntentInput(
+        return ElectricalConnectionRoleClassifier().classify(
+            ElectricalConnectionRoleInput(
                 connectionId = ElectricalConnectionId(connectionId),
                 sourcePort = source,
                 targetPort = target,

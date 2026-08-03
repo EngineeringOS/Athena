@@ -69,7 +69,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect plc1_out_to_m1_in PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in PLC1.out to M1.in
                     }
                 """.trimIndent(),
             )
@@ -162,7 +162,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect plc1_out_to_m1_in_2 PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in_2 PLC1.out to M1.in
                     }
                 """.trimIndent(),
             )
@@ -250,7 +250,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect plc1_out_to_m1_in_3 PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in_3 PLC1.out to M1.in
                     }
                 """.trimIndent(),
             )
@@ -282,7 +282,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                     signal Digital
                   }
 
-                  connect plc1_out_to_missing_in PLC1.out -> Missing.in
+                  connect plc1_out_to_missing_in PLC1.out to Missing.in
                 }
             """.trimIndent(),
         )
@@ -318,7 +318,7 @@ class AthenaSourceMutationRuntimeServiceTest {
                         signal Digital
                       }
 
-                      connect plc1_out_to_m1_in_4 PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in_4 PLC1.out to M1.in
                     }
                 """.trimIndent(),
             )

@@ -14,9 +14,9 @@ The openable proof project is:
 
 The source files to open are:
 
-- `../../examples/m25/sample-project/src/01-professional-symbol-sheet.athena`
-- `../../examples/m25/sample-project/src/02-terminal-labels-and-routes.athena`
-- `../../examples/m25/sample-project/src/03-six-family-acceptance.athena`
+- `../../examples/m25/sample-project/src/com/engineeringood/m25/sample/01-professional-symbol-sheet.athena`
+- `../../examples/m25/sample-project/src/com/engineeringood/m25/sample/02-terminal-labels-and-routes.athena`
+- `../../examples/m25/sample-project/src/com/engineeringood/m25/sample/03-six-family-acceptance.athena`
 
 The M24-vs-M25 comparison is recorded in
 `m25-representation-acceptance-proof.md`.

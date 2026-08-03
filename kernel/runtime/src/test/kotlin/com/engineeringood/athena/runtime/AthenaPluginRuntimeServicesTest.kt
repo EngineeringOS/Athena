@@ -218,7 +218,7 @@ class AthenaPluginRuntimeServicesTest {
                     tint Amber
                   }
 
-                  connect g1_emit_to_p1_absorb G1.emit -> P1.absorb
+                  connect g1_emit_to_p1_absorb G1.emit to P1.absorb
                 }
             """.trimIndent(),
         )

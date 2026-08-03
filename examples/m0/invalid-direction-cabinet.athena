@@ -17,5 +17,5 @@
     signal Digital
   }
 
-  connect m1_in_to_m2_in M1.in -> M2.in
+  connect m1_in_to_m2_in M1.in to M2.in
 }

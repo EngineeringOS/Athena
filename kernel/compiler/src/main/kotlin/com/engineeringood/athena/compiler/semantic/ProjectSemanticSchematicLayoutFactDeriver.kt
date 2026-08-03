@@ -16,7 +16,7 @@ import com.engineeringood.athena.layout.engine.SchematicLayoutOptimizationResult
 import java.util.Locale
 
 /**
- * Feeds compiler-owned M23 layout constraints into the existing governed schematic layout engine.
+ * Feeds compiler-owned layout constraints into the existing governed schematic layout engine.
  */
 class ProjectSemanticSchematicLayoutFactDeriver(
     private val constraintLowerer: ProjectSemanticLayoutConstraintLowerer = ProjectSemanticLayoutConstraintLowerer(),

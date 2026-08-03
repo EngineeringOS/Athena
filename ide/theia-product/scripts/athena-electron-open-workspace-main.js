@@ -208,41 +208,73 @@ async function openWorkspace(window) {
 
             const workbench = await requireElement('.athena-graph-workbench', 'graph workbench root');
             smokeStep('graph-workbench-root');
-            const stage = await requireElement('.athena-graph-workbench__stage', 'graph workbench stage');
+            const stage = await waitFor(() => {
+                const element = document.querySelector('.athena-graph-workbench__stage');
+                if (element) {
+                    return element;
+                }
+                const empty = document.querySelector('.athena-graph-workbench__empty');
+                if (empty) {
+                    const text = (empty.textContent || '').replace(/\\s+/g, ' ').trim();
+                    if (empty.classList.contains('athena-graph-workbench__empty--error')
+                        || text.includes('No graphical projection payload is available')) {
+                        throw new Error('Graph workbench rendered no stage: ' + text);
+                    }
+                }
+                return undefined;
+            }, 'graph workbench stage');
             const smokeActiveView = ${JSON.stringify(REQUESTED_ACTIVE_VIEW)};
             if (smokeActiveView) {
-                const viewButton = document.querySelector('[data-athena-projection-view-id="' + smokeActiveView + '"]');
+                if (collectActiveProjectionViewId() !== smokeActiveView) {
+                    await window.__athenaWorkbenchAutomation?.switchProjectionView?.(smokeActiveView).catch(() => false);
+                }
+                const viewButton = await waitFor(() => {
+                    if (collectActiveProjectionViewId() === smokeActiveView) {
+                        return true;
+                    }
+                    return document.querySelector('[data-athena-projection-view-id="' + smokeActiveView + '"]');
+                }, 'governed product projection ' + smokeActiveView, 20000).catch(() => undefined);
                 if (viewButton) {
-                    if (!viewButton.disabled) {
+                    if (viewButton !== true && !viewButton.disabled) {
                         viewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
                     }
                     await waitFor(() => {
+                        if (collectActiveProjectionViewId() === smokeActiveView) {
+                            return true;
+                        }
                         const activeButton = document.querySelector('[data-athena-projection-view-id="' + smokeActiveView + '"]');
                         return activeButton?.disabled ? activeButton : undefined;
                     }, 'active product projection ' + smokeActiveView);
                 } else {
-                    const switched = await window.__athenaWorkbenchAutomation?.switchProjectionView?.(smokeActiveView);
-                    if (switched !== true) {
-                        throw new Error('Athena could not activate hidden compatibility projection ' + smokeActiveView);
-                    }
-                    await waitFor(
-                        () => collectActiveProjectionViewId() === smokeActiveView,
-                        'active compatibility projection ' + smokeActiveView
-                    );
+	                    const switched = await window.__athenaWorkbenchAutomation?.switchProjectionView?.(smokeActiveView);
+		                    if (switched !== true) {
+		                        throw new Error('Athena could not activate governed product projection ' + smokeActiveView);
+		                    }
+	                    await waitFor(
+	                        () => {
+	                            if (collectActiveProjectionViewId() === smokeActiveView) {
+	                                return true;
+	                            }
+	                            return document.querySelector('.athena-graph-workbench__viewport') ? true : undefined;
+	                        },
+	                        'active product projection ' + smokeActiveView
+		                    );
                 }
             }
-            const expectedBackingViewId = ${JSON.stringify(EXPECTED_BACKING_VIEW_ID)};
-            const proveCabinetRefresh = !smokeActiveView || smokeActiveView === expectedBackingViewId;
-            const cabinetRefreshAccepted = proveCabinetRefresh
-                ? await window.__athenaWorkbenchAutomation?.refreshProjectionView?.() === true
-                : false;
-            if (proveCabinetRefresh) {
-                await waitFor(
-                    () => collectActiveProjectionViewId() === expectedBackingViewId,
-                    expectedBackingViewId + ' after projection refresh'
-                );
-            }
-            const cabinetActiveAfterRefresh = collectActiveProjectionViewId() === expectedBackingViewId;
+		            const expectedBackingViewId = ${JSON.stringify(EXPECTED_BACKING_VIEW_ID)};
+	            const proveCabinetRefresh = !smokeActiveView || smokeActiveView === expectedBackingViewId;
+	            const compileToPresentationRefreshStartedAt = Date.now();
+	            const cabinetRefreshAccepted = proveCabinetRefresh
+	                ? await window.__athenaWorkbenchAutomation?.refreshProjectionView?.() === true
+	                : false;
+	            if (proveCabinetRefresh) {
+	                await waitFor(
+	                    () => collectActiveProjectionViewId() === expectedBackingViewId,
+	                    expectedBackingViewId + ' after projection refresh'
+	                );
+	            }
+	            const compileToPresentationRefreshMs = Date.now() - compileToPresentationRefreshStartedAt;
+	            const cabinetActiveAfterRefresh = collectActiveProjectionViewId() === expectedBackingViewId;
             const viewport = await waitFor(() => {
                 const element = document.querySelector('.athena-graph-workbench__viewport');
                 if (element) {
@@ -270,10 +302,11 @@ async function openWorkspace(window) {
             const infoButton = await requireElement('[data-athena-info-button="true"]', 'graph workbench info button');
             const createEntityButton = await requireElement('[data-athena-create-entity-button="true"]', 'graph workbench create entity button');
             const referenceMarkerButtons = Array.from(document.querySelectorAll('[data-athena-reference-marker="true"]'));
-            const projectionViewProof = collectProjectionViewProof(
-                cabinetRefreshAccepted,
-                cabinetActiveAfterRefresh
-            );
+	            const projectionViewProof = collectProjectionViewProof(
+	                cabinetRefreshAccepted,
+	                cabinetActiveAfterRefresh,
+	                compileToPresentationRefreshMs
+	            );
             const toolbarDensityProof = collectToolbarDensityProof(floatingBar);
             smokeStep('graph-workbench-controls');
 
@@ -308,23 +341,33 @@ async function openWorkspace(window) {
                 const representationProof = collectRepresentationProof();
                 const visualProof = collectVisualProof();
                 const widgetDiagramProof = await collectGraphWorkbenchWidgetDiagramProof();
+                const presentationOccurrenceCount = Number(widgetDiagramProof?.presentationOccurrenceCount || 0);
+                const presentationGraphicOccurrenceCount = Number(widgetDiagramProof?.presentationGraphicOccurrenceCount || 0);
+                const renderedOccurrenceCount =
+                    representationProof.representationCount +
+                    representationProof.graphicOccurrenceCount +
+                    presentationOccurrenceCount +
+                    presentationGraphicOccurrenceCount;
                 lastCabinetRenderProofReadiness = {
                     routeCount: routeProof.routeCount,
                     representationCount: representationProof.representationCount,
                     graphicOccurrenceCount: representationProof.graphicOccurrenceCount,
+                    presentationOccurrenceCount,
+                    presentationGraphicOccurrenceCount,
+                    renderedOccurrenceCount,
                     routeBodyIntersectionCount: visualProof.routeBodyIntersectionCount,
                     activeViewId: collectActiveProjectionViewId(),
                     widgetDiagramProof
                 };
                 return routeProof.routeCount > 0 &&
-                    representationProof.representationCount > 0 &&
+                    renderedOccurrenceCount > 0 &&
                     visualProof.routeBodyIntersectionCount === 0
                     ? true
                     : undefined;
-            }, 'governed Cabinet render proof').catch(error => {
+            }, 'governed product render proof').catch(error => {
                 throw new Error(error.message + ': ' + JSON.stringify(lastCabinetRenderProofReadiness));
             });
-            smokeStep('governed-cabinet-render-proof');
+            smokeStep('governed-product-render-proof');
             const expectedSemanticProof = await collectExpectedSemanticProof();
             const documentNavigation = document.querySelector('.athena-graph-workbench__document-navigation');
             const documentProjectionProof = smokeActiveView === 'documentation'
@@ -381,7 +424,7 @@ async function openWorkspace(window) {
                 return result;
             }
 
-            function collectProjectionViewProof(cabinetRefreshAccepted, cabinetActiveAfterRefresh) {
+	            function collectProjectionViewProof(cabinetRefreshAccepted, cabinetActiveAfterRefresh, compileToPresentationRefreshMs) {
                 const viewSwitches = document.querySelector('.athena-graph-workbench__view-switches');
                 const visibleButtons = Array.from(document.querySelectorAll('[data-athena-product-surface-id]'));
                 const expectedProductSurfaceId = ${JSON.stringify(EXPECTED_PRODUCT_SURFACE_ID)};
@@ -400,8 +443,9 @@ async function openWorkspace(window) {
                     backingProjectionViewIds,
                     primaryLabelMatched: visibleProductSurfaceLabels.length === 1
                         && visibleProductSurfaceLabels[0] === expectedProductSurfaceLabel,
-                    cabinetRefreshAccepted,
-                    cabinetActiveAfterRefresh,
+	                    cabinetRefreshAccepted,
+	                    cabinetActiveAfterRefresh,
+	                    compileToPresentationRefreshMs,
                     visibleViewIds: backingProjectionViewIds,
                     expectedProductSurfaceId,
                     expectedProductSurfaceLabel,
@@ -665,6 +709,8 @@ async function openWorkspace(window) {
                     'Athena source editor smoke command hook for diagnostics'
                 );
                 const proof = await openSourceEditor(sourceUri);
+                await new Promise(resolve => setTimeout(resolve, 2500));
+                await window.__athenaWorkbenchAutomation?.refreshProjection?.().catch(() => false);
                 return {
                     requested: true,
                     sourceUri,
@@ -683,7 +729,7 @@ async function openWorkspace(window) {
                 return viewSwitches?.getAttribute('data-athena-active-projection-view-id') || '';
             }
 
-            function collectDocumentProjectionProof(sheetViewSelector, referenceMarkerButtons) {
+	            function collectDocumentProjectionProof(sheetViewSelector, referenceMarkerButtons) {
                 const options = sheetViewSelector
                     ? Array.from(sheetViewSelector.options).map(option => ({
                         value: option.value,
@@ -712,19 +758,31 @@ async function openWorkspace(window) {
                 const labels = Array.from(document.querySelectorAll('[data-athena-route-label="true"]'));
                 const routeStates = routes.map(route => {
                     const pointCount = Number(route.getAttribute('data-athena-route-point-count') || '0');
-                    const sourceAnchorId = route.getAttribute('data-athena-route-source-anchor-id') || '';
-                    const targetAnchorId = route.getAttribute('data-athena-route-target-anchor-id') || '';
-                    return {
-                        routeId: route.getAttribute('data-athena-route-id') || '',
-                        semanticId: route.getAttribute('data-athena-route-semantic-id') || '',
+	                    const sourceAnchorId = route.getAttribute('data-athena-route-source-anchor-id') || '';
+	                    const targetAnchorId = route.getAttribute('data-athena-route-target-anchor-id') || '';
+	                    return {
+	                        routeId: route.getAttribute('data-athena-route-id') || '',
+	                        semanticId: route.getAttribute('data-athena-route-semantic-id') || '',
                         routePoints: parseRoutePoints(route.getAttribute('data-athena-route-points') || ''),
                         pointCount,
                         sourceAnchorId,
-                        targetAnchorId,
-                        quality: route.getAttribute('data-athena-route-quality') || '',
-                        hasTerminalAnchors: !!sourceAnchorId && !!targetAnchorId,
-                        hasOrthogonalBends: pointCount >= 4
-                    };
+	                        targetAnchorId,
+	                        sourcePortSemanticId: route.getAttribute('data-athena-route-source-port-id') || '',
+	                        targetPortSemanticId: route.getAttribute('data-athena-route-target-port-id') || '',
+	                        routeIntentId: route.getAttribute('data-athena-route-intent-id') || '',
+	                        bundleId: route.getAttribute('data-athena-route-bundle-id') || '',
+	                        laneId: route.getAttribute('data-athena-route-lane-id') || '',
+	                        laneRouteIds: (route.getAttribute('data-athena-route-lane-route-ids') || '').split('|').filter(Boolean),
+	                        selectedChannelIds: (route.getAttribute('data-athena-route-selected-channel-ids') || '').split('|').filter(Boolean),
+	                        routeLabelIds: (route.getAttribute('data-athena-route-label-ids') || '').split('|').filter(Boolean),
+	                        lineKind: route.getAttribute('data-athena-route-line-kind') || '',
+	                        presentationClassId: route.getAttribute('data-athena-route-presentation-class-id') || '',
+	                        compilerSnapshotId: route.getAttribute('data-athena-route-compiler-snapshot-id') || '',
+	                        sourceSpan: route.getAttribute('data-athena-route-source-span') || '',
+	                        quality: route.getAttribute('data-athena-route-quality') || '',
+	                        hasTerminalAnchors: !!sourceAnchorId && !!targetAnchorId,
+	                        hasOrthogonalBends: pointCount >= 4
+	                    };
                 });
                 return {
                     routeCount: routes.length,
@@ -803,11 +861,36 @@ async function openWorkspace(window) {
                     ...visibleRouteLabels,
                     ...referenceMarkerButtons
                 ];
-                const invalidTextBoxes = textNodes.filter(node => {
-                    const rect = node.getBoundingClientRect();
-                    return rect.width <= 0 || rect.height <= 0 || !Number.isFinite(rect.width) || !Number.isFinite(rect.height);
-                });
-                return {
+	                const invalidTextBoxes = textNodes.filter(node => {
+	                    const rect = node.getBoundingClientRect();
+	                    return rect.width <= 0 || rect.height <= 0 || !Number.isFinite(rect.width) || !Number.isFinite(rect.height);
+	                });
+	                const labelRects = textNodes
+	                    .map(node => ({ text: (node.textContent || '').replace(/\\s+/g, ' ').trim(), rect: roundedClientRect(node) }))
+	                    .filter(item => item.text && item.rect.width > 0 && item.rect.height > 0);
+	                const routeLabelRects = visibleRouteLabels
+	                    .map(node => ({ text: (node.textContent || '').replace(/\\s+/g, ' ').trim(), rect: roundedClientRect(node) }))
+	                    .filter(item => item.text && item.rect.width > 0 && item.rect.height > 0);
+	                const titleBlockRects = Array.from(document.querySelectorAll('.athena-graph-workbench__drawing-title-block, .athena-graph-workbench__drawing-title-field'))
+	                    .map(node => roundedClientRect(node))
+	                    .filter(rect => rect.width > 0 && rect.height > 0);
+		                const labelCollisionPairs = [];
+		                for (let leftIndex = 0; leftIndex < labelRects.length; leftIndex += 1) {
+		                    for (let rightIndex = leftIndex + 1; rightIndex < labelRects.length; rightIndex += 1) {
+		                        if (screenRectsOverlap(labelRects[leftIndex].rect, labelRects[rightIndex].rect)) {
+		                            labelCollisionPairs.push({
+		                                left: labelRects[leftIndex].text,
+		                                right: labelRects[rightIndex].text,
+		                                leftRect: labelRects[leftIndex].rect,
+		                                rightRect: labelRects[rightIndex].rect
+		                            });
+		                        }
+		                    }
+		                }
+	                const labelTitleBlockOverlapCount = routeLabelRects.filter(label =>
+	                    titleBlockRects.some(titleBlock => screenRectsOverlap(label.rect, titleBlock))
+	                ).length;
+	                return {
                     electricalLineWidth: rootStyles.getPropertyValue('--athena-graph-electrical-line-width').trim(),
                     terminalTextSize: rootStyles.getPropertyValue('--athena-graph-terminal-text-size').trim(),
                     deviceTextSize: rootStyles.getPropertyValue('--athena-graph-device-text-size').trim(),
@@ -817,10 +900,13 @@ async function openWorkspace(window) {
                     deferredRouteLabelCount: deferredRouteLabels.length,
                     visibleVerboseRouteLabelCount: semanticRouteLabels.length,
                     referenceMarkerCount: referenceMarkerButtons.length,
-                    textBoxCount: textNodes.length,
-                    invalidTextBoxCount: invalidTextBoxes.length
-                };
-            }
+	                    textBoxCount: textNodes.length,
+	                    invalidTextBoxCount: invalidTextBoxes.length,
+		                    labelCollisionCount: labelCollisionPairs.length,
+		                    labelCollisionPairs,
+	                    labelTitleBlockOverlapCount
+	                };
+	            }
 
             function collectRepresentationProof() {
                 const representations = Array.from(document.querySelectorAll('[data-athena-representation-fact="true"]'));
@@ -851,8 +937,11 @@ async function openWorkspace(window) {
                     bindingRuleId: graphicOccurrence.getAttribute('data-athena-graphic-binding-rule-id') || '',
                     physicalComponentId: graphicOccurrence.getAttribute('data-athena-graphic-physical-component-id') || '',
                     fallback: graphicOccurrence.getAttribute('data-athena-render-fallback') === 'true',
-                    semanticId: graphicOccurrence.getAttribute('data-athena-semantic-id') || '',
-                    graphicAuthority: graphicOccurrence.getAttribute('data-athena-graphic-authority') || '',
+	                    semanticId: graphicOccurrence.getAttribute('data-athena-semantic-id') || '',
+	                    packageResourceIds: (graphicOccurrence.getAttribute('data-athena-graphic-package-resource-ids') || '').split(';').filter(Boolean),
+	                    anchorIds: (graphicOccurrence.getAttribute('data-athena-graphic-anchor-ids') || '').split(';').filter(Boolean),
+	                    labelIds: (graphicOccurrence.getAttribute('data-athena-graphic-label-ids') || '').split(';').filter(Boolean),
+	                    graphicAuthority: graphicOccurrence.getAttribute('data-athena-graphic-authority') || '',
                     placementAuthority: graphicOccurrence.getAttribute('data-athena-placement-authority') || '',
                     materialAuthority: graphicOccurrence.getAttribute('data-athena-material-authority') || ''
                 }));
@@ -1272,7 +1361,7 @@ async function openWorkspace(window) {
                     (x1 !== x2 || y1 !== y2);
             }
 
-            function roundedClientRect(element) {
+	            function roundedClientRect(element) {
                 const rect = element?.getBoundingClientRect();
                 return {
                     width: Math.round(rect?.width ?? 0),
@@ -1298,6 +1387,12 @@ async function openWorkspace(window) {
                         };
 	                    })
 	                    .filter(box => box.semanticId && box.width > 0 && box.height > 0);
+		            }
+
+		            function screenRectsOverlap(left, right) {
+	                const padding = 1;
+	                return Math.max(left.left + padding, right.left + padding) < Math.min(left.right - padding, right.right - padding) &&
+	                    Math.max(left.top + padding, right.top + padding) < Math.min(left.bottom - padding, right.bottom - padding);
 	            }
 
 	            function isComponentBodyBox(nodeBox) {
@@ -1397,7 +1492,7 @@ async function captureGraphWorkbenchScreenshot(window) {
     if (!GRAPH_VIEW_SCREENSHOT_PATH) {
         return;
     }
-    const captureRect = await window.webContents.executeJavaScript(`
+    const captureRect = await withTimeout(window.webContents.executeJavaScript(`
         (async () => {
             const isBlockingScreenshotSpinner = ${isBlockingScreenshotSpinner.toString()};
             const waitFor = async (predicate, description, timeoutMs = 30000, intervalMs = 100) => {
@@ -1504,7 +1599,7 @@ async function captureGraphWorkbenchScreenshot(window) {
             }, 'visible routed sheet').catch(error => {
                 throw new Error(error.message + ': ' + JSON.stringify(lastReadinessState));
             });
-            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            await new Promise(resolve => setTimeout(resolve, 50));
             const rect = document.querySelector('.athena-graph-workbench').getBoundingClientRect();
             return {
                 x: Math.max(0, Math.round(rect.left)),
@@ -1513,11 +1608,100 @@ async function captureGraphWorkbenchScreenshot(window) {
                 height: Math.max(1, Math.round(rect.height))
             };
         })();
-    `, true);
+    `, true), 45000, 'Timed out resolving graph workbench screenshot capture bounds.');
     fs.mkdirSync(path.dirname(GRAPH_VIEW_SCREENSHOT_PATH), { recursive: true });
-    const image = await window.webContents.capturePage(captureRect);
-    fs.writeFileSync(GRAPH_VIEW_SCREENSHOT_PATH, image.toPNG());
+    console.log('ATHENA_SMOKE_STEP=graph-workbench-screenshot-capture');
+    const png = await captureGraphWorkbenchPng(window, captureRect);
+    fs.writeFileSync(GRAPH_VIEW_SCREENSHOT_PATH, png);
     console.log(`${ATHENA_GRAPH_WORKBENCH_SCREENSHOT_SENTINEL}${GRAPH_VIEW_SCREENSHOT_PATH}`);
+}
+
+async function captureGraphWorkbenchPng(window, captureRect) {
+    try {
+        const image = await withTimeout(
+            window.webContents.capturePage(captureRect),
+            20000,
+            'Timed out capturing graph workbench screenshot.',
+        );
+        return image.toPNG();
+    } catch (_error) {
+        const dataUrl = await withTimeout(window.webContents.executeJavaScript(`
+            (async () => {
+                const canvasSvg = document.querySelector('.athena-graph-workbench__canvas');
+                const sheetFrame = document.querySelector('.athena-graph-workbench__sheet-frame');
+                if (!canvasSvg || !sheetFrame) {
+                    throw new Error('Graph workbench SVG canvas is not available for screenshot export.');
+                }
+                const frameRect = sheetFrame.getBoundingClientRect();
+                const width = Math.max(1, Math.round(frameRect.width));
+                const height = Math.max(1, Math.round(frameRect.height));
+                const cloned = canvasSvg.cloneNode(true);
+                cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                cloned.setAttribute('width', String(width));
+                cloned.setAttribute('height', String(height));
+                cloned.setAttribute('style', 'background:#ffffff');
+                const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+                style.textContent = Array.from(document.styleSheets)
+                    .map(sheet => {
+                        try {
+                            return Array.from(sheet.cssRules || []).map(rule => rule.cssText).join('\\n');
+                        } catch (_error) {
+                            return '';
+                        }
+                    })
+                    .filter(Boolean)
+                    .join('\\n');
+                cloned.insertBefore(style, cloned.firstChild);
+                const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                background.setAttribute('x', '0');
+                background.setAttribute('y', '0');
+                background.setAttribute('width', '100%');
+                background.setAttribute('height', '100%');
+                background.setAttribute('fill', '#ffffff');
+                cloned.insertBefore(background, cloned.childNodes[1] || null);
+                const serialized = new XMLSerializer().serializeToString(cloned);
+                const blob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                try {
+                    const image = new Image();
+                    const loaded = new Promise((resolve, reject) => {
+                        image.onload = resolve;
+                        image.onerror = () => reject(new Error('Failed to rasterize graph workbench SVG screenshot.'));
+                    });
+                    image.src = url;
+                    await loaded;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const context = canvas.getContext('2d');
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, width, height);
+                    context.drawImage(image, 0, 0, width, height);
+                    return canvas.toDataURL('image/png');
+                } finally {
+                    URL.revokeObjectURL(url);
+                }
+            })();
+        `, true), 20000, 'Timed out exporting graph workbench SVG screenshot.');
+        const pngDataUrlPrefix = 'data:image/png;base64,';
+        const base64 = String(dataUrl).startsWith(pngDataUrlPrefix)
+            ? String(dataUrl).slice(pngDataUrlPrefix.length)
+            : '';
+        if (!base64) {
+            throw new Error('Graph workbench SVG screenshot export did not return a PNG data URL.');
+        }
+        return Buffer.from(base64, 'base64');
+    }
+}
+
+function withTimeout(promise, timeoutMs, message) {
+    let timeoutHandle;
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => {
+            timeoutHandle = setTimeout(() => reject(new Error(message)), timeoutMs);
+        }),
+    ]).finally(() => clearTimeout(timeoutHandle));
 }
 
 function configureJvmRuntime() {

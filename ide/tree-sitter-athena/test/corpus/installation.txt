@@ -15,7 +15,7 @@ system Demo {
   port M1.line {
     direction in
   }
-  connect feeder QF1.line -> M1.line
+  connect feeder QF1.line to M1.line
 
   installation cabinet MainCabinet {
     enclosure ENC1 size (800mm, 600mm, 250mm)

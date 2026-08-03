@@ -7,8 +7,6 @@ import com.engineeringood.athena.representation.GraphicPrimitiveId
 import com.engineeringood.athena.representation.GraphicStyleTokenId
 import com.engineeringood.athena.representation.PresentationLabelRole
 import com.engineeringood.athena.representation.RepresentationAnchorRole
-import com.engineeringood.athena.representation.RepresentationDirectionPredicate
-import com.engineeringood.athena.representation.RepresentationSignalPredicate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -72,8 +70,6 @@ class AthenaM34DrawingPrimitiveCompilerTest {
         assertEquals(GraphicPrimitiveId("lead"), anchor.primitiveId)
         assertEquals(GraphicPoint(40.0, 0.0), anchor.point)
         assertEquals(RepresentationAnchorRole.TERMINAL, anchor.role)
-        assertEquals(setOf(RepresentationDirectionPredicate.BIDIRECTIONAL), anchor.acceptedDirections)
-        assertEquals(setOf(RepresentationSignalPredicate("Control.family")), anchor.acceptedSignals)
 
         val symbolLabel = symbol.labelSlots.single { slot -> slot.slotId.value == "deviceTag" }
         assertEquals("deviceTag", symbolLabel.slotId.value)

@@ -29,9 +29,9 @@ test('M30 sample project is an openable semantic customer-demo workspace', () =>
     assert.match(source, /device FieldTerminalXT30/);
     assert.match(source, /device ShutterMotorM30/);
     assert.match(source, /port lplus \{/);
-    assert.match(source, /connect mainpowersupplyps30_lplus_to_mainbreakerqf30_line MainPowerSupplyPS30\.lplus -> MainBreakerQF30\.line/);
-    assert.match(source, /connect fieldterminalxt30_motorup_to_shuttermotorm30_up FieldTerminalXT30\.motorUp -> ShutterMotorM30\.up/);
-    assert.match(source, /connect\s+\w+\s+ControlRelayK30\.status -> PilotLampHL30\.status/);
+    assert.match(source, /connect mainpowersupplyps30_lplus_to_mainbreakerqf30_line MainPowerSupplyPS30\.lplus to MainBreakerQF30\.line/);
+    assert.match(source, /connect fieldterminalxt30_motorup_to_shuttermotorm30_up FieldTerminalXT30\.motorUp to ShutterMotorM30\.up/);
+    assert.match(source, /connect\s+\w+\s+ControlRelayK30\.status to PilotLampHL30\.status/);
     assert.match(source, /layout schematic-sheet \{/);
 
     assert.doesNotMatch(source, /qelectrotech|\.elmt|svg|viewBox|path|rectangle|circle|stroke/i);

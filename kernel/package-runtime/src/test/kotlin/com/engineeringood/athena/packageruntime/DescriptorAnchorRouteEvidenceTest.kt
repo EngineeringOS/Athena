@@ -76,7 +76,6 @@ class DescriptorAnchorRouteEvidenceTest {
         labelBindingSummary = emptyList(),
         resolverStage = "binding-resolver",
         diagnostics = emptyList(),
-        rendererFallbackAccepted = false,
     )
 
     private fun descriptor(id: String, anchorId: String, x: Double, y: Double): RepresentationDescriptor = RepresentationDescriptor(

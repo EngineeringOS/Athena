@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:c9c9fe7f4dcfbeabd0ba69abd663243168b5b3332a70b03e9acfd1625c41b34e
+validatedLockStateDigest: lock-state:97486b0bf4ad344fcf256249d45f8f9080512d77acd63e5de0c1997c11d2e3c6
 primaryPackage:
   name: com.engineeringood.m31.sample
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m31.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:6567e2f90e93d6957e89d1d1ad14eb616533530e5e1f97b5dd923171a23d1daf
+    snapshotDigest: package-snapshot:e13d9baf2202c875eb449a6a8f7f88188e73b4ecb22dc9a516e9dd21c521baed
     sourceHashes:
       - path: com/engineeringood/m31/sample/01-governed-authoring-customer-source.athena
-        hash: sha256:b02e313fa156bc710407610d671e9b9032725ec408bf5fbcc99d40945880449d
+        hash: sha256:27ac4b002e349688d12da25e511f6feac04784d95d4b373c83050ddd3ba4f73d
     resourceHashes: []
     dependencies: []

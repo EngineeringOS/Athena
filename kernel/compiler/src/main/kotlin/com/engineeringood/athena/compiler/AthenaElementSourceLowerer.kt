@@ -14,7 +14,6 @@ import com.engineeringood.athena.representation.GraphicStyleToken
 import com.engineeringood.athena.representation.GraphicTransform
 import com.engineeringood.athena.representation.RepresentationAnchorContract
 import com.engineeringood.athena.representation.RepresentationAnchorId
-import com.engineeringood.athena.representation.RepresentationBodyAuthority
 import com.engineeringood.athena.representation.RepresentationCompositionChild
 import com.engineeringood.athena.representation.RepresentationCompositionChildId
 import com.engineeringood.athena.representation.RepresentationContractValidator
@@ -108,9 +107,6 @@ internal object AthenaElementSourceLowerer {
                     point = transformPoint(source.point, child.sourceChild),
                     role = source.role,
                     required = source.required,
-                    acceptedDirections = source.acceptedDirections,
-                    acceptedSignals = source.acceptedSignals,
-                    port = source.port,
                 ),
                 intrinsic = RepresentationExportedAnchor(
                     anchorId = exportedId,
@@ -157,10 +153,8 @@ internal object AthenaElementSourceLowerer {
                 RepresentationProvenance(file),
             ),
             kind = RepresentationSymbolKind.GENERIC,
-            anatomy = compatibilityAnatomy(identity.value, bounds),
             labelSlots = labelExports.map(CompiledLabelExport::slot),
             variants = listOf(RepresentationVariantId("standard")),
-            bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.ELEMENT,
             graphicBody = graphicBody,
             anchors = exports.map(CompiledExport::contract),
@@ -232,10 +226,8 @@ internal object AthenaElementSourceLowerer {
                 RepresentationProvenance(file),
             ),
             kind = RepresentationSymbolKind.GENERIC,
-            anatomy = compatibilityAnatomy(identity, SymbolBounds(bounds.x, bounds.y, bounds.width, bounds.height, resource.span)),
             labelSlots = emptyList(),
             variants = listOf(RepresentationVariantId("standard")),
-            bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.ELEMENT,
             graphicBody = graphicBody,
             anchors = emptyList(),
@@ -390,7 +382,7 @@ internal object AthenaElementSourceLowerer {
                             file,
                             child.sourceChild.headerSpan,
                             "$subject.children.${child.childId.value}.anchors.${anchor.anchorId.value}",
-                            "Connectable child anchor `${child.childId.value}.${anchor.anchorId.value}` must be exported exactly once.",
+                            "Required child anchor `${child.childId.value}.${anchor.anchorId.value}` must be exported exactly once.",
                         ),
                     )
                 }

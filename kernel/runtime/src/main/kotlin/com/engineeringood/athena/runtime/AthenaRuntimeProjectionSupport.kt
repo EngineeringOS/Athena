@@ -3,15 +3,11 @@ package com.engineeringood.athena.runtime
 import com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
 import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
-import com.engineeringood.athena.projection.ElectricalAnchor
-import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
-import com.engineeringood.athena.projection.ElectricalRoutingCorridor
 import com.engineeringood.athena.projection.ProjectionCrossReference
 import com.engineeringood.athena.projection.ProjectionCrossReferenceLink
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationSubject
-import com.engineeringood.athena.projection.ProjectionPoint
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetPolicyEvidence
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -88,65 +84,6 @@ private fun ProjectionSheetPolicyEvidence.toRuntimeProjectionSheetPolicyEvidence
         policyDeterministicIdentity = policyDeterministicIdentity,
         sheetViewRole = sheetViewRole,
         sheetViewRoleOrder = sheetViewRoleOrder,
-    )
-}
-
-internal fun ProjectionDocument.toRuntimeProjectionSheetLayout(
-    scene: AthenaRuntimeViewerScene,
-    activeSheetId: String? = null,
-): AthenaRuntimeProjectionSheetLayout? {
-    val sheet = activeSheetId?.let { selectedSheetId -> sheets.find { sheet -> sheet.sheetId.value == selectedSheetId } }
-        ?: sheets.firstOrNull()
-        ?: return null
-    val connectionById = connections.associateBy { connection -> connection.projectionId.value }
-    return AthenaRuntimeProjectionSheetLayout(
-        sheetId = sheet.sheetId.value,
-        displayName = sheet.displayName,
-        order = sheet.order,
-        subjectSemanticIds = sheet.subjects.map { subject -> subject.semanticId.value },
-        representationFamilyId = sheet.composition.representationFamilyId,
-        frame = AthenaRuntimeProjectionSheetLayoutFrame(
-            canvasWidth = scene.canvasWidth,
-            canvasHeight = scene.canvasHeight,
-        ),
-        placements = scene.components
-            .sortedBy { component -> component.projectionId }
-            .map { component ->
-                AthenaRuntimeProjectionSheetLayoutPlacement(
-                    projectionId = component.projectionId,
-                    semanticId = component.semanticId,
-                    x = component.x,
-                    y = component.y,
-                    width = component.width,
-                    height = component.height,
-                )
-            },
-        routingGuidance = electricalRoutingCorridors
-            .sortedBy { corridor -> corridor.corridorId.value }
-            .mapNotNull { corridor ->
-                val connection = connectionById[corridor.projectionConnectionId.value] ?: return@mapNotNull null
-                AthenaRuntimeProjectionSheetLayoutRoutingGuidance(
-                    projectionConnectionId = corridor.projectionConnectionId.value,
-                    connectionSemanticId = corridor.connectionSemanticId.value,
-                    sourcePoint = connection.start.toRuntimeProjectionPoint(),
-                    targetPoint = connection.end.toRuntimeProjectionPoint(),
-                    routingStyle = corridor.routingStyle.name.lowercase(),
-                    bendPoints = corridor.preferredBendPoints.map(ProjectionPoint::toRuntimeProjectionPoint),
-                )
-            },
-        labelLayouts = scene.labels
-            .sortedBy { label -> label.projectionId }
-            .map { label ->
-                AthenaRuntimeProjectionSheetLayoutLabelLayout(
-                    projectionId = label.projectionId,
-                    semanticId = label.semanticId,
-                    label = label.label,
-                    x = label.x,
-                    y = label.y,
-                    width = label.width,
-                    height = label.height,
-                )
-            },
     )
 }
 
@@ -229,42 +166,6 @@ private fun ProjectionCrossReferenceLink.toRuntimeProjectionCrossReferenceLink()
     )
 }
 
-internal fun ElectricalAnchor.toRuntimeProjectionElectricalAnchor(): AthenaRuntimeProjectionElectricalAnchor {
-    return AthenaRuntimeProjectionElectricalAnchor(
-        anchorId = anchorId.value,
-        portSemanticId = portSemanticId.value,
-        ownerSemanticId = ownerSemanticId.value,
-        nodeId = nodeId.value,
-        labelId = labelId?.value,
-        x = position.x,
-        y = position.y,
-        side = side.name.lowercase(),
-    )
-}
-
-internal fun ElectricalConnectionEndpoint.toRuntimeProjectionElectricalConnectionEndpoint(): AthenaRuntimeProjectionElectricalConnectionEndpoint {
-    return AthenaRuntimeProjectionElectricalConnectionEndpoint(
-        endpointId = endpointId.value,
-        projectionConnectionId = projectionConnectionId.value,
-        connectionSemanticId = connectionSemanticId.value,
-        endpointRole = endpointRole.name.lowercase(),
-        portSemanticId = portSemanticId.value,
-        anchorId = anchorId.value,
-    )
-}
-
-internal fun ElectricalRoutingCorridor.toRuntimeProjectionElectricalRoutingCorridor(): AthenaRuntimeProjectionElectricalRoutingCorridor {
-    return AthenaRuntimeProjectionElectricalRoutingCorridor(
-        corridorId = corridorId.value,
-        projectionConnectionId = projectionConnectionId.value,
-        connectionSemanticId = connectionSemanticId.value,
-        sourceAnchorId = sourceAnchorId.value,
-        targetAnchorId = targetAnchorId.value,
-        routingStyle = routingStyle.name.lowercase(),
-        preferredBendPoints = preferredBendPoints.map(ProjectionPoint::toRuntimeProjectionPoint),
-    )
-}
-
 internal fun com.engineeringood.athena.layout.ProjectionFamilyContract?.toRuntimeProjectionFamilyId(): String? {
     return when (this) {
         is ElectricalProjectionDescriptor -> "electrical/${family.name.lowercase()}"
@@ -278,12 +179,5 @@ private fun ProjectionNotationSubject.toRuntimeProjectionNotationSubject(): Athe
         symbolKey = symbolKey.value,
         labelPolicy = labelPolicy.name.lowercase(),
         markerKeys = markerKeys,
-    )
-}
-
-private fun ProjectionPoint.toRuntimeProjectionPoint(): AthenaRuntimeProjectionPoint {
-    return AthenaRuntimeProjectionPoint(
-        x = x,
-        y = y,
     )
 }

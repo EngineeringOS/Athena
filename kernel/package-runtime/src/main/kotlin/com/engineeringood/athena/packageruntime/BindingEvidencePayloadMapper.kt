@@ -35,7 +35,6 @@ object BindingEvidencePayloadMapper {
                 .map { (slotId, value) -> "${slotId.value}=$value" },
             resolverStage = "binding-resolver",
             diagnostics = result.diagnostics.map { it.toPayload() },
-            rendererFallbackAccepted = result.rendererFallbackAccepted,
         )
     }
 

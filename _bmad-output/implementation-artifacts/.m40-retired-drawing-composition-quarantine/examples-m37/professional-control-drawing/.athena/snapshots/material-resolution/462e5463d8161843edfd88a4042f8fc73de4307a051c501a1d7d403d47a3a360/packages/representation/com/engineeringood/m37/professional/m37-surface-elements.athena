@@ -1,0 +1,195 @@
+package com.engineeringood.m37.professional
+
+symbol m37_power_source_symbol {
+  identity "m37.power-source.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 96, 72)
+    rectangle body at (16, 10) size (64, 52) style symbol
+    line lplus from (0, 18) to (16, 18) style conductor
+    line lminus from (0, 34) to (16, 34) style conductor
+    line controlPlus from (96, 18) to (80, 18) style conductor
+    line controlMinus from (96, 34) to (80, 34) style conductor
+    label deviceTag at (22, 24) size (48, 12) role device-tag style device-label
+  }
+
+  anchor lplus { ref "lplus" point (0, 18) role terminal direction out signal Power.family }
+  anchor lminus { ref "lminus" point (0, 34) role terminal direction out signal Power.family }
+  anchor controlPlus { ref "controlPlus" point (96, 18) role terminal direction out signal Control.family }
+  anchor controlMinus { ref "controlMinus" point (96, 34) role terminal direction out signal Control.family }
+}
+
+element m37_power_source_element {
+  identity "m37.power-source.element"
+  version "1.0.0"
+  bounds (0, 0, 96, 72)
+
+  child glyph { symbol "m37.power-source.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor lplus from glyph.lplus
+  export anchor lminus from glyph.lminus
+  export anchor controlPlus from glyph.controlPlus
+  export anchor controlMinus from glyph.controlMinus
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m37_control_contact_symbol {
+  identity "m37.control-contact.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 88)
+    line input from (40, 0) to (40, 30) style conductor
+    line output from (40, 58) to (40, 88) style conductor
+    circle fixedContact center (40, 30) radius 3 style terminal
+    circle movingPivot center (40, 58) radius 3 style terminal
+    line blade from (40, 54) to (56, 34) style symbol
+    label deviceTag at (0, 0) size (36, 12) role device-tag style device-label
+  }
+
+  anchor input { ref "input" point (40, 0) role terminal direction in signal Control.family }
+  anchor output { ref "output" point (40, 88) role terminal direction out signal Control.family }
+}
+
+element m37_control_contact_element {
+  identity "m37.control-contact.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 88)
+
+  child glyph { symbol "m37.control-contact.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor input from glyph.input
+  export anchor output from glyph.output
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m37_relay_symbol {
+  identity "m37.relay.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 96, 104)
+    line a1 from (28, 0) to (28, 24) style conductor
+    rectangle coil at (10, 24) size (36, 36) style symbol
+    line a2 from (28, 60) to (28, 104) style conductor
+    line load from (76, 64) to (76, 104) style conductor
+    line contact from (62, 64) to (82, 38) style symbol
+    label deviceTag at (0, 0) size (40, 12) role device-tag style device-label
+  }
+
+  anchor a1 { ref "a1" point (28, 0) role terminal direction in signal Control.family }
+  anchor a2 { ref "a2" point (28, 104) role terminal direction out signal Control.family }
+  anchor load { ref "load" point (76, 104) role terminal direction out signal Power.family }
+}
+
+element m37_relay_element {
+  identity "m37.relay.element"
+  version "1.0.0"
+  bounds (0, 0, 96, 104)
+
+  child glyph { symbol "m37.relay.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor a1 from glyph.a1
+  export anchor a2 from glyph.a2
+  export anchor load from glyph.load
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m37_motor_symbol {
+  identity "m37.motor.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 112, 96)
+    circle motorBody center (56, 48) radius 30 style symbol
+    line up from (0, 28) to (26, 28) style conductor
+    line down from (0, 68) to (26, 68) style conductor
+    line pe from (112, 48) to (86, 48) style conductor
+    label deviceTag at (44, 42) size (28, 12) role device-tag style device-label
+  }
+
+  anchor up { ref "up" point (0, 28) role terminal direction in signal Power.family }
+  anchor down { ref "down" point (0, 68) role terminal direction in signal Power.family }
+  anchor pe { ref "pe" point (112, 48) role terminal direction in signal Ground.family }
+}
+
+element m37_motor_element {
+  identity "m37.motor.element"
+  version "1.0.0"
+  bounds (0, 0, 112, 96)
+
+  child glyph { symbol "m37.motor.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor up from glyph.up
+  export anchor down from glyph.down
+  export anchor pe from glyph.pe
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m37_terminal_symbol {
+  identity "m37.terminal.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 136, 112)
+    rectangle body at (16, 8) size (104, 96) style terminal
+    line plus from (0, 16) to (16, 16) style conductor
+    line minus from (136, 16) to (120, 16) style conductor
+    line controlOut from (136, 32) to (120, 32) style conductor
+    line motorUpIn from (0, 48) to (16, 48) style conductor
+    line motorUpOut from (136, 64) to (120, 64) style conductor
+    line motorDownIn from (0, 80) to (16, 80) style conductor
+    line motorDownOut from (136, 96) to (120, 96) style conductor
+    line pe from (136, 108) to (120, 108) style conductor
+    label deviceTag at (42, 48) size (44, 12) role device-tag style device-label
+  }
+
+  anchor plus { ref "plus" point (0, 16) role terminal direction in signal Control.family }
+  anchor minus { ref "minus" point (136, 16) role terminal direction out signal Control.family }
+  anchor controlOut { ref "controlOut" point (136, 32) role terminal direction out signal Control.family }
+  anchor motorUpIn { ref "motorUpIn" point (0, 48) role terminal direction in signal Power.family }
+  anchor motorUpOut { ref "motorUpOut" point (136, 64) role terminal direction out signal Power.family }
+  anchor motorDownIn { ref "motorDownIn" point (0, 80) role terminal direction in signal Power.family }
+  anchor motorDownOut { ref "motorDownOut" point (136, 96) role terminal direction out signal Power.family }
+  anchor pe { ref "pe" point (136, 108) role terminal direction out signal Ground.family }
+}
+
+element m37_terminal_element {
+  identity "m37.terminal.element"
+  version "1.0.0"
+  bounds (0, 0, 136, 112)
+
+  child glyph { symbol "m37.terminal.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor plus from glyph.plus
+  export anchor minus from glyph.minus
+  export anchor controlOut from glyph.controlOut
+  export anchor motorUpIn from glyph.motorUpIn
+  export anchor motorUpOut from glyph.motorUpOut
+  export anchor motorDownIn from glyph.motorDownIn
+  export anchor motorDownOut from glyph.motorDownOut
+  export anchor pe from glyph.pe
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m37_protective_earth_symbol {
+  identity "m37.protective-earth.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 64)
+    line bond from (40, 0) to (40, 24) style conductor
+    line earthA from (20, 24) to (60, 24) style symbol
+    line earthB from (28, 34) to (52, 34) style symbol
+    line earthC from (34, 44) to (46, 44) style symbol
+    label deviceTag at (18, 50) size (44, 12) role device-tag style device-label
+  }
+
+  anchor bond { ref "bond" point (40, 0) role terminal direction out signal Ground.family }
+}
+
+element m37_protective_earth_element {
+  identity "m37.protective-earth.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 64)
+
+  child glyph { symbol "m37.protective-earth.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor bond from glyph.bond
+  export label deviceTag from glyph.deviceTag
+}

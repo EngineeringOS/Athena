@@ -1,11 +1,19 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:69489bd542d1a999be0c026ea7b0ae50f74d691f84ad2b1bc60f8975819d2d34
 primaryPackage:
-  name: com.engineeringood.renderer-benchmark
+  name: com.engineeringood.rendererbenchmark
   version: 1.0.0
 packages:
-  - name: com.engineeringood.renderer-benchmark
+  - name: com.engineeringood.rendererbenchmark
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot:4bbb681587aff592c0fed6ec04e592081f31e89543c1bb720b5f698fe7a14173
+    sourceHashes:
+      - path: com/engineeringood/rendererbenchmark/expansion-line.athena
+        hash: sha256:415308d73b3c6d8b2f45894267a89b28fb5fa871aa614d1328ce6bef9c38b525
+    resourceHashes: []
     dependencies: []

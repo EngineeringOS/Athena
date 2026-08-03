@@ -123,7 +123,7 @@ class AthenaM31SampleAuthoringProofTest {
             listOf(sampleConnectionId()),
             evidence.affectedSemanticIds,
         )
-        assertTrue(checkNotNull(evidence.sourceEdit).admittedText.contains("ControlRelayK31.spareOut -> SpareTerminalXT31.in1"))
+        assertTrue(checkNotNull(evidence.sourceEdit).admittedText.contains("ControlRelayK31.spareOut to SpareTerminalXT31.in1"))
         assertTrue(ready.transaction.preview?.acceptanceEligibility?.eligible == true)
     }
 

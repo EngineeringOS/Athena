@@ -48,11 +48,11 @@ That command opens the sample project at `../../examples/m21/sample-project/`.
 In the IDE:
 
 - open the `.athena` source files in the sample project
-- review `src/01-baseline-sheet.athena` for the accepted M20 canvas baseline
-- review `src/02-layout-intelligence-acceptance.athena` for power, control, terminal, and load
+- review `src/com/engineeringood/m21/sample/01-baseline-sheet.athena` for the accepted M20 canvas baseline
+- review `src/com/engineeringood/m21/sample/02-layout-intelligence-acceptance.athena` for power, control, terminal, and load
   readability intent
-- review `src/03-routing-and-label-readability.athena` for schematic routing and label readability
-- review `src/04-boundary-scope.athena` for deferred-scope guardrails
+- review `src/com/engineeringood/m21/sample/03-routing-and-label-readability.athena` for schematic routing and label readability
+- review `src/com/engineeringood/m21/sample/04-boundary-scope.athena` for deferred-scope guardrails
 - switch to the schematic sheet surface
 - inspect source and Problems against the same canonical subject
 - use outline navigation in the same editor tab for `.athena` files

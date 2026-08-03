@@ -60,7 +60,7 @@ The central M12 claim is:
 
 ### M12 Renderer Benchmark Tier
 
-- [`examples/m12/renderer-benchmark-proof/src/expansion-line.athena`](../../examples/m12/renderer-benchmark-proof/src/expansion-line.athena)
+- [`examples/m12/renderer-benchmark-proof/src/com/engineeringood/rendererbenchmark/expansion-line.athena`](../../examples/m12/renderer-benchmark-proof/src/com/engineeringood/rendererbenchmark/expansion-line.athena)
 - 24 components
 - 74 ports
 - 45 connections

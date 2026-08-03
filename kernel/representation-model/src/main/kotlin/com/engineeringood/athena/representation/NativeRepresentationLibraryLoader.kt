@@ -98,10 +98,19 @@ private fun Properties.definition(
 ): RepresentationDefinition {
     val prefix = "symbol.$index"
     val symbolId = RepresentationSymbolId(required("$prefix.id"))
-    val bounds = PresentationBounds(
-        width = GridUnit(required("$prefix.bounds.width").toInt()),
-        height = GridUnit(required("$prefix.bounds.height").toInt()),
+    val bounds = GraphicBounds(
+        x = 0.0,
+        y = 0.0,
+        width = required("$prefix.bounds.width").toDouble(),
+        height = required("$prefix.bounds.height").toDouble(),
     )
+    val styleTokenId = GraphicStyleTokenId("native.stroke")
+    val primitiveIndexes = indexed("$prefix.primitive")
+    val primitives = primitiveIndexes.map { primitiveIndex ->
+        primitive("$prefix.primitive.$primitiveIndex", styleTokenId)
+    }
+    val anchorPrimitiveId = primitives.firstOrNull()?.primitiveId
+        ?: error("Native representation `$symbolId` must declare at least one primitive before terminals.")
     return RepresentationDefinition(
         symbolId = symbolId,
         libraryId = libraryId,
@@ -111,21 +120,6 @@ private fun Properties.definition(
             provenance = RepresentationProvenance("native-library:$symbolId"),
         ),
         kind = enumValueOf(required("$prefix.kind")),
-        anatomy = PresentationAnatomy(
-            representationId = RepresentationId(symbolId.value),
-            context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-            bounds = bounds,
-            hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-            primitives = indexed("$prefix.primitive").map { primitiveIndex ->
-                primitive("$prefix.primitive.$primitiveIndex")
-            },
-            terminals = indexed("$prefix.terminal").map { terminalIndex ->
-                terminal("$prefix.terminal.$terminalIndex")
-            },
-            labelAnchors = indexed("$prefix.label-anchor").map { anchorIndex ->
-                labelAnchor("$prefix.label-anchor.$anchorIndex")
-            },
-        ),
         labelSlots = indexed("$prefix.label-slot").map { slotIndex ->
             RepresentationLabelSlot(
                 slotId = RepresentationLabelSlotId(required("$prefix.label-slot.$slotIndex.id")),
@@ -141,66 +135,86 @@ private fun Properties.definition(
                 value = required("$prefix.style-token.$tokenIndex.value"),
             )
         },
+        graphicBody = GraphicPrimitiveDocument(
+            documentId = GraphicPrimitiveDocumentId(symbolId.value),
+            bounds = bounds,
+            primitives = primitives,
+            styleTokens = listOf(
+                GraphicStyleToken(
+                    styleTokenId = styleTokenId,
+                    stroke = GraphicPaintToken("foreground"),
+                    strokeWidth = 1.0,
+                    fill = GraphicFill.TRANSPARENT,
+                    lineCap = GraphicLineCap.BUTT,
+                    lineJoin = GraphicLineJoin.MITER,
+                ),
+            ),
+            provenanceSources = listOf("native-library:$symbolId"),
+        ),
+        anchors = indexed("$prefix.terminal").map { terminalIndex ->
+            terminalAnchor("$prefix.terminal.$terminalIndex", anchorPrimitiveId)
+        },
     )
 }
 
-private fun Properties.primitive(prefix: String): PresentationPrimitive {
+private fun Properties.primitive(prefix: String, styleTokenId: GraphicStyleTokenId): GraphicPrimitive {
     return when (val type = required("$prefix.type")) {
-        "rectangle" -> PresentationPrimitive.Rectangle(
-            primitiveId = PresentationPrimitiveId(required("$prefix.id")),
-            origin = PresentationPoint(GridUnit(required("$prefix.x").toInt()), GridUnit(required("$prefix.y").toInt())),
-            size = PresentationSize(
-                width = GridUnit(required("$prefix.width").toInt()),
-                height = GridUnit(required("$prefix.height").toInt()),
+        "rectangle" -> GraphicPrimitive.Rectangle(
+            primitiveId = GraphicPrimitiveId(required("$prefix.id")),
+            bounds = GraphicBounds(
+                required("$prefix.x").toDouble(),
+                required("$prefix.y").toDouble(),
+                required("$prefix.width").toDouble(),
+                required("$prefix.height").toDouble(),
             ),
+            cornerRadius = 0.0,
+            styleTokenId = styleTokenId,
         )
-        "line" -> PresentationPrimitive.Line(
-            primitiveId = PresentationPrimitiveId(required("$prefix.id")),
-            start = PresentationPoint(
-                x = GridUnit(required("$prefix.x1").toInt()),
-                y = GridUnit(required("$prefix.y1").toInt()),
-            ),
-            end = PresentationPoint(
-                x = GridUnit(required("$prefix.x2").toInt()),
-                y = GridUnit(required("$prefix.y2").toInt()),
-            ),
-        )
-        "circle" -> PresentationPrimitive.Circle(
-            primitiveId = PresentationPrimitiveId(required("$prefix.id")),
-            center = PresentationPoint(
-                x = GridUnit(required("$prefix.cx").toInt()),
-                y = GridUnit(required("$prefix.cy").toInt()),
-            ),
-            radius = GridUnit(required("$prefix.r").toInt()),
-        )
+        "line" -> {
+            val start = GraphicPoint(required("$prefix.x1").toDouble(), required("$prefix.y1").toDouble())
+            val end = GraphicPoint(required("$prefix.x2").toDouble(), required("$prefix.y2").toDouble())
+            GraphicPrimitive.Line(
+                primitiveId = GraphicPrimitiveId(required("$prefix.id")),
+                bounds = GraphicBounds(
+                    minOf(start.x, end.x),
+                    minOf(start.y, end.y),
+                    (maxOf(start.x, end.x) - minOf(start.x, end.x)).coerceAtLeast(0.001),
+                    (maxOf(start.y, end.y) - minOf(start.y, end.y)).coerceAtLeast(0.001),
+                ),
+                start = start,
+                end = end,
+                styleTokenId = styleTokenId,
+            )
+        }
+        "circle" -> {
+            val center = GraphicPoint(required("$prefix.cx").toDouble(), required("$prefix.cy").toDouble())
+            val radius = required("$prefix.r").toDouble()
+            GraphicPrimitive.Circle(
+                primitiveId = GraphicPrimitiveId(required("$prefix.id")),
+                bounds = GraphicBounds(center.x - radius, center.y - radius, radius * 2.0, radius * 2.0),
+                center = center,
+                radius = radius,
+                styleTokenId = styleTokenId,
+            )
+        }
         else -> error("Unsupported representation primitive type `$type`.")
     }
 }
 
-private fun Properties.terminal(prefix: String): PresentationTerminalPoint {
-    return PresentationTerminalPoint(
-        terminalId = PresentationTerminalId(required("$prefix.id")),
-        role = enumValueOf(required("$prefix.role")),
-        localPoint = PresentationPoint(
-            x = GridUnit(required("$prefix.x").toInt()),
-            y = GridUnit(required("$prefix.y").toInt()),
+private fun Properties.terminalAnchor(
+    prefix: String,
+    primitiveId: GraphicPrimitiveId,
+): RepresentationAnchorContract {
+    return RepresentationAnchorContract(
+        anchorId = RepresentationAnchorId(required("$prefix.id")),
+        geometryRef = required("$prefix.id"),
+        primitiveId = primitiveId,
+        point = GraphicPoint(
+            x = required("$prefix.x").toDouble(),
+            y = required("$prefix.y").toDouble(),
         ),
-        side = enumValueOf(required("$prefix.side")),
-        notation = TerminalNotation(
-            marker = enumValueOf(required("$prefix.marker")),
-            number = TerminalNumber(required("$prefix.number")),
-        ),
-    )
-}
-
-private fun Properties.labelAnchor(prefix: String): PresentationLabelAnchor {
-    return PresentationLabelAnchor(
-        anchorId = PresentationLabelAnchorId(required("$prefix.id")),
-        role = enumValueOf(required("$prefix.role")),
-        point = PresentationPoint(
-            x = GridUnit(required("$prefix.x").toInt()),
-            y = GridUnit(required("$prefix.y").toInt()),
-        ),
+        role = RepresentationAnchorRole.TERMINAL,
+        required = true,
     )
 }
 

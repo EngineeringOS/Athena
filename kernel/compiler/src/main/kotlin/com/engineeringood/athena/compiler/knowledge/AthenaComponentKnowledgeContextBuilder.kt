@@ -13,7 +13,7 @@ data class AthenaComponentKnowledgeContributionSource(
     val contribution: AthenaComponentKnowledgeContribution,
 )
 
-/** Deterministic compiler-owned snapshot of resolved M14 component knowledge for one document. */
+/** Deterministic compiler-owned snapshot of resolved component knowledge for one document. */
 data class AthenaResolvedComponentKnowledgeSnapshot(
     val contributingArtifactIds: List<String>,
     val activeConceptCount: Int,
@@ -26,7 +26,7 @@ data class AthenaResolvedComponentKnowledgeSnapshot(
 )
 
 /**
- * Builds compiler-owned resolved component knowledge from plugin-published M14 contributions.
+ * Builds compiler-owned resolved component knowledge from plugin-published contributions.
  *
  * The builder stays read-only. It enriches the compilation knowledge boundary without creating a
  * second mutation authority.
@@ -34,7 +34,7 @@ data class AthenaResolvedComponentKnowledgeSnapshot(
 class AthenaComponentKnowledgeContextBuilder(
     private val resolver: AthenaComponentKnowledgeResolver = AthenaComponentKnowledgeResolver(),
 ) {
-    /** Resolves M14 component knowledge for [document] from deterministic plugin-owned [contributions]. */
+    /** Resolves component knowledge for [document] from deterministic plugin-owned [contributions]. */
     fun build(
         document: EngineeringDocument,
         contributions: List<AthenaComponentKnowledgeContributionSource>,

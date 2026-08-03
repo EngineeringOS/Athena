@@ -1,0 +1,116 @@
+package com.engineeringood.m37.professional.control.field
+
+symbol iec_terminal_strip {
+  identity "iec.terminal.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 128, 96)
+    line controlUpInLead from (0, 28) to (24, 28) style conductor
+    line controlUpOutLead from (104, 28) to (128, 28) style conductor
+    line controlDownInLead from (0, 44) to (24, 44) style conductor
+    line controlDownOutLead from (104, 44) to (128, 44) style conductor
+    line motorUpInLead from (0, 60) to (24, 60) style conductor
+    line motorUpOutLead from (104, 60) to (128, 60) style conductor
+    line motorDownInLead from (0, 76) to (24, 76) style conductor
+    line motorDownOutLead from (104, 76) to (128, 76) style conductor
+    rectangle body at (24, 20) size (80, 64) style symbol
+    line row1 from (24, 36) to (104, 36) style reference
+    line row2 from (24, 52) to (104, 52) style reference
+    line row3 from (24, 68) to (104, 68) style reference
+    circle point1 center (64, 28) radius 3 style terminal
+    circle point2 center (64, 44) radius 3 style terminal
+    circle point3 center (64, 60) radius 3 style terminal
+    circle point4 center (64, 76) radius 3 style terminal
+    label deviceTag at (0, 0) size (128, 12) role device-tag style device-label
+  }
+
+  anchor controlUpIn { ref "controlUpInLead" point (0, 28) role terminal direction in signal Control.family }
+  anchor controlUpOut { ref "controlUpOutLead" point (128, 28) role terminal direction out signal Control.family }
+  anchor controlDownIn { ref "controlDownInLead" point (0, 44) role terminal direction in signal Control.family }
+  anchor controlDownOut { ref "controlDownOutLead" point (128, 44) role terminal direction out signal Control.family }
+  anchor motorUpIn { ref "motorUpInLead" point (0, 60) role terminal direction in signal Power.family }
+  anchor motorUpOut { ref "motorUpOutLead" point (128, 60) role terminal direction out signal Power.family }
+  anchor motorDownIn { ref "motorDownInLead" point (0, 76) role terminal direction in signal Power.family }
+  anchor motorDownOut { ref "motorDownOutLead" point (128, 76) role terminal direction out signal Power.family }
+}
+
+element iec_terminal_element {
+  identity "iec.terminal.element"
+  version "1.0.0"
+  bounds (0, 0, 128, 96)
+
+  child glyph { symbol "iec.terminal.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor controlUpIn from glyph.controlUpIn
+  export anchor controlUpOut from glyph.controlUpOut
+  export anchor controlDownIn from glyph.controlDownIn
+  export anchor controlDownOut from glyph.controlDownOut
+  export anchor motorUpIn from glyph.motorUpIn
+  export anchor motorUpOut from glyph.motorUpOut
+  export anchor motorDownIn from glyph.motorDownIn
+  export anchor motorDownOut from glyph.motorDownOut
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_motor {
+  identity "iec.motor.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 112, 96)
+    line upLead from (0, 34) to (28, 34) style conductor
+    line downLead from (0, 66) to (28, 66) style conductor
+    line neutralLead from (84, 34) to (112, 34) style conductor
+    line earthLead from (84, 66) to (112, 66) style conductor
+    circle motorBody center (56, 50) radius 28 style symbol
+    polyline motorMark points ((42, 62), (42, 38), (56, 54), (70, 38), (70, 62)) style symbol
+    line earthBarLong from (88, 74) to (108, 74) style terminal
+    line earthBarMid from (91, 80) to (105, 80) style terminal
+    line earthBarShort from (95, 86) to (101, 86) style terminal
+    label deviceTag at (0, 0) size (112, 12) role device-tag style device-label
+  }
+
+  anchor up { ref "upLead" point (0, 34) role terminal direction in signal Power.family }
+  anchor down { ref "downLead" point (0, 66) role terminal direction in signal Power.family }
+  anchor neutral { ref "neutralLead" point (112, 34) role terminal direction in signal Power.family }
+  anchor earth { ref "earthLead" point (112, 66) role terminal direction in signal Ground.family }
+}
+
+element iec_motor_element {
+  identity "iec.motor.element"
+  version "1.0.0"
+  bounds (0, 0, 112, 96)
+
+  child glyph { symbol "iec.motor.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor up from glyph.up
+  export anchor down from glyph.down
+  export anchor neutral from glyph.neutral
+  export anchor earth from glyph.earth
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_protective_earth {
+  identity "iec.protective-earth.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 80)
+    line bondLead from (40, 0) to (40, 38) style conductor
+    line earthBarLong from (20, 38) to (60, 38) style symbol
+    line earthBarMid from (26, 48) to (54, 48) style symbol
+    line earthBarShort from (32, 58) to (48, 58) style symbol
+    label deviceTag at (0, 66) size (80, 12) role device-tag style device-label
+  }
+
+  anchor bond { ref "bondLead" point (40, 0) role terminal direction in signal Ground.family }
+}
+
+element iec_protective_earth_element {
+  identity "iec.protective-earth.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 80)
+
+  child glyph { symbol "iec.protective-earth.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor bond from glyph.bond
+  export label deviceTag from glyph.deviceTag
+}

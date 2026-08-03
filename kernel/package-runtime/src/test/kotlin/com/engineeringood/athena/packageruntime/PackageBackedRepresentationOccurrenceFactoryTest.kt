@@ -38,7 +38,6 @@ class PackageBackedRepresentationOccurrenceFactoryTest {
             ),
         )
 
-        assertFalse(result.rendererFallbackAccepted)
         assertEquals(emptyList(), result.diagnostics)
         val occurrence = assertNotNull(result.occurrence)
         assertEquals(RepresentationSubjectId("device:DriveA"), occurrence.canonicalSemanticId)
@@ -46,7 +45,7 @@ class PackageBackedRepresentationOccurrenceFactoryTest {
         assertEquals("descriptor.drive.iec.standard", occurrence.symbolId.value)
         assertEquals("standard", occurrence.variant?.value)
         assertEquals(LabelValue("DriveA"), occurrence.labelBindings.single().value)
-        assertEquals(SemanticPortId("port:DriveA.power"), occurrence.terminalBindings.single().semanticPortId)
+        assertEquals(SemanticPortId("port:DriveA.power"), occurrence.portAnchorBindings.single().semanticPortId)
     }
 
     @Test
@@ -97,7 +96,6 @@ class PackageBackedRepresentationOccurrenceFactoryTest {
             ),
         )
 
-        assertFalse(result.rendererFallbackAccepted)
         assertNull(result.occurrence)
         assertEquals(
             listOf(
@@ -135,7 +133,6 @@ class PackageBackedRepresentationOccurrenceFactoryTest {
         labelBindingSummary = listOf("device-tag=DriveA"),
         resolverStage = "binding-resolver",
         diagnostics = emptyList(),
-        rendererFallbackAccepted = false,
     )
 
     private fun descriptor(): RepresentationDescriptor = RepresentationDescriptor(

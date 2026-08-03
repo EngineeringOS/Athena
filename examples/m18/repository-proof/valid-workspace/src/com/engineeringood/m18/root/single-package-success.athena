@@ -3,5 +3,5 @@
 system SinglePackageSuccess {
   device Single {}
   port Single.out {}
-  connect single_out_to_single_out Single.out -> Single.out
+  connect single_out_to_single_out Single.out to Single.out
 }

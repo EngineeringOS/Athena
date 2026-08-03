@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 112">
+  <rect id="body" x="4" y="4" width="124" height="96" data-athena-ref="anchor:body"/>
+  <rect id="display" x="18" y="16" width="54" height="18" data-athena-ref="anchor:display"/>
+  <text id="model" x="22" y="29" data-athena-ref="anchor:model">DRV38</text>
+  <circle id="supply-l" cx="6" cy="24" r="3" data-athena-ref="anchor:supply-l"/>
+  <circle id="supply-n" cx="6" cy="44" r="3" data-athena-ref="anchor:supply-n"/>
+  <circle id="control-in" cx="126" cy="26" r="3" data-athena-ref="anchor:control-in"/>
+  <circle id="control-out" cx="126" cy="48" r="3" data-athena-ref="anchor:control-out"/>
+  <circle id="pe" cx="66" cy="104" r="3" data-athena-ref="anchor:pe"/>
+  <line id="bus" x1="84" y1="24" x2="116" y2="24" data-athena-ref="anchor:status-line"/>
+</svg>

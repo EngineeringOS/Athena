@@ -3,6 +3,7 @@ package com.engineeringood.m34.sample
 system M34NativeCabinetProof {
   device MainPowerSupplyPS34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-POWER-SUPPLY"
 
     port input {
@@ -18,6 +19,7 @@ system M34NativeCabinetProof {
 
   device MainBreakerQF34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-BREAKER"
 
     port line {
@@ -33,6 +35,7 @@ system M34NativeCabinetProof {
 
   device WallSwitchS34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-WALL-SWITCH"
 
     port up {
@@ -48,6 +51,7 @@ system M34NativeCabinetProof {
 
   device ControlRelayK34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-CONTROL-RELAY"
 
     port supply {
@@ -63,6 +67,7 @@ system M34NativeCabinetProof {
 
   device FieldTerminalXT34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-FIELD-TERMINAL"
 
     port field {
@@ -78,6 +83,7 @@ system M34NativeCabinetProof {
 
   device SpareTerminalXT34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-SPARE-TERMINAL"
 
     port field {
@@ -93,6 +99,7 @@ system M34NativeCabinetProof {
 
   device ShutterMotorM34 {
     type Motor
+    connectivity enabled
     model "ATHENA-M34-SHUTTER-MOTOR"
 
     port up {
@@ -108,6 +115,7 @@ system M34NativeCabinetProof {
 
   device PilotLampHL34 {
     type Lamp
+    connectivity enabled
     model "ATHENA-M34-PILOT-LAMP"
 
     port status {
@@ -118,6 +126,7 @@ system M34NativeCabinetProof {
 
   device UpperRail34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-DIN-RAIL"
 
     port mount {
@@ -128,6 +137,7 @@ system M34NativeCabinetProof {
 
   device LowerRail34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-DIN-RAIL"
 
     port mount {
@@ -138,6 +148,7 @@ system M34NativeCabinetProof {
 
   device CabinetEnclosure34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-CABINET-ENCLOSURE"
 
     port body {
@@ -148,6 +159,7 @@ system M34NativeCabinetProof {
 
   device RouteChannel34 {
     type Switch
+    connectivity enabled
     model "ATHENA-M34-ROUTE-CHANNEL"
 
     port channel {
@@ -158,6 +170,7 @@ system M34NativeCabinetProof {
 
   device CabinetTitleLabel34 {
     type Lamp
+    connectivity enabled
     model "ATHENA-M34-CABINET-TITLE"
 
     port label {
@@ -166,13 +179,13 @@ system M34NativeCabinetProof {
     }
   }
 
-  connect mainpowersupplyps34_output_to_mainbreakerqf34_line MainPowerSupplyPS34.output -> MainBreakerQF34.line
-  connect mainbreakerqf34_load_to_controlrelayk34_supply MainBreakerQF34.load -> ControlRelayK34.supply
-  connect controlrelayk34_output_to_fieldterminalxt34_field ControlRelayK34.output -> FieldTerminalXT34.field
-  connect fieldterminalxt34_panel_to_shuttermotorm34_up FieldTerminalXT34.panel -> ShutterMotorM34.up
-  connect wallswitchs34_up_to_pilotlamphl34_status WallSwitchS34.up -> PilotLampHL34.status
-  connect wallswitchs34_down_to_spareterminalxt34_field WallSwitchS34.down -> SpareTerminalXT34.field
-  connect spareterminalxt34_panel_to_shuttermotorm34_down SpareTerminalXT34.panel -> ShutterMotorM34.down
+  connect mainpowersupplyps34_output_to_mainbreakerqf34_line MainPowerSupplyPS34.output to MainBreakerQF34.line
+  connect mainbreakerqf34_load_to_controlrelayk34_supply MainBreakerQF34.load to ControlRelayK34.supply
+  connect controlrelayk34_output_to_fieldterminalxt34_field ControlRelayK34.output to FieldTerminalXT34.field
+  connect fieldterminalxt34_panel_to_shuttermotorm34_up FieldTerminalXT34.panel to ShutterMotorM34.up
+  connect wallswitchs34_up_to_pilotlamphl34_status WallSwitchS34.up to PilotLampHL34.status
+  connect wallswitchs34_down_to_spareterminalxt34_field WallSwitchS34.down to SpareTerminalXT34.field
+  connect spareterminalxt34_panel_to_shuttermotorm34_down SpareTerminalXT34.panel to ShutterMotorM34.down
 
   layout cabinet {
     place MainBreakerQF34 near MainPowerSupplyPS34

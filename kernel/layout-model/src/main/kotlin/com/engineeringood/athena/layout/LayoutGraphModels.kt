@@ -125,8 +125,6 @@ data class LayoutGraphAnchor(
     val point: LayoutGraphPoint,
     val role: String,
     val required: Boolean,
-    val acceptedDirections: List<String>,
-    val acceptedSignals: List<String>,
     val provenance: LayoutGraphProvenance,
 ) {
     init {

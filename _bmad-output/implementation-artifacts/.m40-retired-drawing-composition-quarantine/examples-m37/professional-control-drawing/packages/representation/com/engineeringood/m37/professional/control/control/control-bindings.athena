@@ -1,0 +1,65 @@
+package com.engineeringood.m37.professional.control.control
+
+binding IecContactorCoil {
+  profile ControlDrawingIEC
+  priority 220
+  select function where { type Contactor role coil }
+  use element "iec.contactor.coil.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecContactorMainContact {
+  profile ControlDrawingIEC
+  priority 220
+  select function where { type Contactor role mainContact }
+  use element "iec.contactor.main-contact.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecContactorNoContact {
+  profile ControlDrawingIEC
+  priority 220
+  select function where { type Contactor role noContact }
+  use element "iec.contactor.no-contact.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecContactorNcContact {
+  profile ControlDrawingIEC
+  priority 220
+  select function where { type Contactor role ncContact }
+  use element "iec.contactor.nc-contact.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecPushButtonNo {
+  profile ControlDrawingIEC
+  priority 210
+  select device where { type PushButton model "NO" }
+  use element "iec.push-button.no.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecPushButtonNc {
+  profile ControlDrawingIEC
+  priority 210
+  select device where { type PushButton model "NC" }
+  use element "iec.push-button.nc.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecLimitSwitchNc {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type LimitSwitch model "NC" }
+  use element "iec.limit-switch.nc.element" version "1.0.0"
+  variant "standard"
+}
+
+binding IecLamp {
+  profile ControlDrawingIEC
+  priority 200
+  select device where { type Lamp }
+  use element "iec.lamp.element" version "1.0.0"
+  variant "standard"
+}

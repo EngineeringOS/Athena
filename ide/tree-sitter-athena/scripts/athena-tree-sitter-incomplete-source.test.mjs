@@ -15,8 +15,8 @@ import { Parser, Language } from 'web-tree-sitter';
 //   unclosed-device-block.athena.txt  -> Tree-sitter: usable tree, well-formed system/device prefix intact.
 //                                         Compiler: fails, "Expected '}' after device body" (or EOF variant).
 //   dangling-connect.athena.txt       -> Tree-sitter: usable tree, connect_declaration node present
-//                                         (missing `-> target`) without collapsing the sibling declarations.
-//                                         Compiler: fails, "Expected '->' between connection endpoints".
+//                                         (missing `to target`) without collapsing the sibling declarations.
+//                                         Compiler: fails, "Expected 'to' between connection endpoints".
 //   unterminated-string.athena.txt    -> Tree-sitter: usable tree, well-formed device/property prefix intact.
 //                                         Compiler: fails, "Unterminated string literal".
 
@@ -147,7 +147,7 @@ test('a syntactically valid but semantically invalid fixture parses with zero ER
 
     // AD-108: Tree-sitter's clean tree here must never be mistaken for semantic validity —
     // only compiler-owned semantic validation (see AthenaLanguageIncompleteSourceTest.kt) flags
-    // this fixture's `in -> in` direction mismatch. This test asserts only the syntax-level claim.
+    // this fixture's `in to in` direction mismatch. This test asserts only the syntax-level claim.
     assert.equal(tree.rootNode.hasError, false, 'invalid-direction-cabinet.athena is syntactically clean');
 });
 
@@ -160,7 +160,7 @@ test('a syntactically valid but semantically invalid fixture parses with zero ER
 const repoRoot = path.resolve(packageRoot, '..', '..');
 const M17_TREE_SITTER_UX_FIXTURES = [
     'examples/m17/invalid-and-incomplete-proof/incomplete-brace.athena',
-    'examples/m17/invalid-and-incomplete-proof/missing-arrow.athena',
+    'examples/m17/invalid-and-incomplete-proof/missing-to.athena',
 ];
 
 for (const relativeFixturePath of M17_TREE_SITTER_UX_FIXTURES) {

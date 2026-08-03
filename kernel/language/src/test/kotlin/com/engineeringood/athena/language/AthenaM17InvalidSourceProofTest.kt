@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
  * incomplete syntax-level fixtures through the live compiler parser path (ANTLR4-backed since Epic 2).
  *
  * Each fixture isolates exactly one syntax failure mode (AD-109): an unterminated string literal, a
- * missing closing brace, a missing `->` in a `connect` declaration, and an over-qualified port
+ * missing closing brace, a missing `to` in a `connect` declaration, and an over-qualified port
  * reference. Every fixture must surface as a typed [SyntaxDiagnostic] via [ParseFailure] with real file,
  * line, and message provenance -- never an uncaught exception or a positionless error.
  *
@@ -24,7 +24,7 @@ import kotlin.test.assertTrue
 class AthenaM17InvalidSourceProofTest {
     private val expectedInventory = listOf(
         "incomplete-brace",
-        "missing-arrow",
+        "missing-to",
         "over-qualified-port",
         "unterminated-string",
     )

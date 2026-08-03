@@ -21,9 +21,10 @@ test('M30 SVG viewBox is content-derived and duplicate-safe', () => {
     assert.match(modelSource, /const sceneBounds = resolveSceneBounds\(nodes, edges, canvasWidth, canvasHeight, governedDrawingBounds\);/);
     assert.match(modelSource, /if \(governedBounds && governedBounds\.width > 0 && governedBounds\.height > 0\)/);
     assert.match(modelSource, /svgViewBox: formatSvgViewBox\(sceneBounds\)/);
-    assert.match(
+    assert.match(modelSource, /resolvePaintItemsByTarget\(diagram\)/);
+    assert.doesNotMatch(
         modelSource,
-        /presentationBoundsIntersectsSurface\(occurrence\.bounds, governedDrawingBounds, canvasWidth, canvasHeight\)/,
+        /resolvePresentationOccurrences\(diagram\)[\s\S]*presentationBoundsIntersectsSurface\(occurrence\.bounds, governedDrawingBounds, canvasWidth, canvasHeight\)/,
     );
     assert.doesNotMatch(modelSource, /svgViewBox:\s*['"`]0 0 (1680|960)/);
     assert.doesNotMatch(widgetSource, /viewBox=['"`]0 0 (1680|960)/);

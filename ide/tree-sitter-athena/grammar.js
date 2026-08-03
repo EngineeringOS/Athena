@@ -3,7 +3,8 @@
 // AD-107: Tree-sitter owns syntax UX only (highlighting/structure), never semantic truth.
 // AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset,
 // M23 system-scoped layout-block admission, M28 nested device-owned ports, compact grouped connect
-// authoring, the frozen M34 native Symbol/Element syntax subset, and M35 installation cabinet syntax.
+// authoring, the frozen M34 native Symbol/Element syntax subset, M35 installation cabinet syntax,
+// M37 grouped connectivity Interface syntax, external evidence mapping syntax, and Projection Policy syntax.
 // `kernel/language/src/main/kotlin/com/engineeringood/athena/language/AthenaLanguageModel.kt` /
 // `AthenaLanguageParser.kt`: optional package, repeated imports, one system block, and the
 // existing device/port/connect, layout, qualified-name, string, identifier, property, and M34
@@ -23,7 +24,7 @@ module.exports = grammar({
   extras: $ => [/\s/],
 
   // Enables Tree-sitter's keyword-extraction optimization so the `system`/`device`/`port`/
-  // `connect`/`->`-adjacent literal tokens below take priority over the generic identifier
+  // `connect`/`to`-adjacent literal tokens below take priority over the generic identifier
   // token when they match the same text, mirroring how the handwritten JVM tokenizer treats
   // keywords as identifier lexemes matched positionally rather than as reserved words.
   word: $ => $.identifier,
@@ -37,6 +38,11 @@ module.exports = grammar({
     [$.binding_declaration],
     [$.binding_select],
     [$.installation_declaration],
+    [$.interface_declaration],
+    [$.interface_ports],
+    [$.interface_port_member],
+    [$.evidence_declaration],
+    [$.projection_policy_declaration],
   ],
 
   rules: {
@@ -99,6 +105,9 @@ module.exports = grammar({
       $.device_declaration,
       $.port_declaration,
       $.connect_declaration,
+      $.relation_declaration,
+      $.evidence_declaration,
+      $.projection_policy_declaration,
       $.layout_declaration,
       $.installation_declaration,
     ),
@@ -521,9 +530,34 @@ module.exports = grammar({
     ),
 
     _device_member: $ => choice(
+      $.interface_declaration,
       $.property_assignment,
       $.nested_port_declaration,
       $.function_declaration,
+    ),
+
+    interface_declaration: $ => seq(
+      token(prec(1, 'interface')),
+      field('name', alias($.identifier, $.name)),
+      '{',
+      repeat(choice($.property_assignment, $.interface_ports)),
+      optional('}'),
+    ),
+
+    interface_ports: $ => seq(
+      token(prec(1, 'ports')),
+      '{',
+      repeat($.interface_port_member),
+      optional('}'),
+    ),
+
+    interface_port_member: $ => seq(
+      field('name', alias($.identifier, $.name)),
+      optional(seq(
+        '{',
+        repeat($.property_assignment),
+        optional('}'),
+      )),
     ),
 
     function_declaration: $ => seq(
@@ -573,7 +607,7 @@ module.exports = grammar({
       choice(
         seq(
           field('from', $.qualified_name),
-          '->',
+          $._connection_separator,
           field('to', $.qualified_name),
         ),
         seq(
@@ -587,9 +621,116 @@ module.exports = grammar({
     connect_group_edge: $ => seq(
       field('name', alias($.identifier, $.name)),
       field('from', $.qualified_name),
-      '->',
+      $._connection_separator,
       field('to', $.qualified_name),
     ),
+
+    relation_declaration: $ => seq(
+      field('word', alias($.identifier, $.relation_word)),
+      field('from', $.qualified_name),
+      $._connection_separator,
+      field('targets', $.relation_targets),
+    ),
+
+    _connection_separator: _ => choice('to', '->'),
+
+    relation_targets: $ => choice(
+      $.qualified_name,
+      seq('[', commaSep1($.qualified_name), ']'),
+    ),
+
+    evidence_declaration: $ => seq(
+      token(prec(1, 'evidence')),
+      field('name', alias($.identifier, $.name)),
+      '{',
+      repeat($._evidence_member),
+      optional('}'),
+    ),
+
+    _evidence_member: $ => choice(
+      $.evidence_namespace,
+      $.evidence_reference,
+      $.evidence_subject,
+      $.evidence_provenance,
+    ),
+
+    evidence_namespace: $ => seq(
+      'namespace',
+      field('value', $.identifier),
+    ),
+
+    evidence_reference: $ => seq(
+      'reference',
+      field('value', $.string),
+    ),
+
+    evidence_subject: $ => seq(
+      'subject',
+      field('kind', $.evidence_subject_kind),
+      field('target', $.qualified_name),
+    ),
+
+    evidence_subject_kind: _ => choice(
+      'contract',
+      'interface',
+      'port',
+      'relation-contract',
+      'route-policy',
+    ),
+
+    evidence_provenance: $ => seq(
+      'provenance',
+      field('value', $.string),
+    ),
+
+    projection_policy_declaration: $ => seq(
+      token(prec(1, 'projection')),
+      field('name', alias($.identifier, $.name)),
+      '{',
+      repeat($._projection_policy_member),
+      optional('}'),
+    ),
+
+    _projection_policy_member: $ => choice(
+      $.projection_policy_target,
+      $.projection_policy_layout,
+      $.projection_policy_drawing_profile,
+      $.projection_policy_route_quality,
+      $.projection_policy_proof,
+      $.projection_policy_forbidden_truth,
+    ),
+
+    projection_policy_target: $ => seq(
+      'target',
+      field('value', $.profile_value_name),
+    ),
+
+    projection_policy_layout: $ => seq(
+      'layout',
+      field('value', $.profile_value_name),
+    ),
+
+    projection_policy_drawing_profile: $ => seq(
+      'drawingProfile',
+      field('value', $.identifier),
+    ),
+
+    projection_policy_route_quality: $ => seq(
+      'routeQuality',
+      field('value', $.identifier),
+    ),
+
+    projection_policy_proof: $ => seq(
+      'proof',
+      field('value', $.profile_value_name),
+    ),
+
+    projection_policy_forbidden_truth: $ => prec.right(choice(
+      seq('port', $.qualified_name, optional($.identifier)),
+      seq('connect', $.identifier, $.qualified_name, 'to', $.qualified_name),
+      seq('evidence', optional($.identifier)),
+      seq('anchor', optional($.identifier)),
+    )),
 
     layout_declaration: $ => seq(
       'layout',

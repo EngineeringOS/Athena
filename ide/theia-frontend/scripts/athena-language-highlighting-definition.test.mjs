@@ -119,8 +119,8 @@ test('Athena Tree-sitter syntax highlighting covers layout and port authoring to
         '(align_statement "aligned-with" @athenaLayoutOperator)',
         '(group_statement "grouped-with" @athenaLayoutOperator)',
         '(connect_declaration "connect" @athenaRelationshipKeyword)',
-        '(connect_declaration "->" @operator)',
-        '(connect_group_edge "->" @operator)'
+        '(connect_declaration "to" @athenaRelationshipKeyword)',
+        '(connect_group_edge "to" @athenaRelationshipKeyword)'
     ].forEach(expectedCapture => {
         assert.ok(
             highlightQuery.includes(expectedCapture),
@@ -128,7 +128,7 @@ test('Athena Tree-sitter syntax highlighting covers layout and port authoring to
         );
     });
     assert.match(highlightQuery, /\^\(direction\|signal\)\$/);
-    assert.match(highlightQuery, /\^\(in\|out\)\$/);
+    assert.match(highlightQuery, /\^\(in\|out\|bidirectional\|passive\)\$/);
 });
 
 test('Athena product exposes color rules for custom syntax token classes', () => {

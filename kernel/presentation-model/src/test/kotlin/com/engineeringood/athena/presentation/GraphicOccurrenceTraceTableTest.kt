@@ -60,7 +60,7 @@ class GraphicOccurrenceTraceTableTest {
         assertEquals(listOf(GraphicOccurrenceId("occ:SRC"), GraphicOccurrenceId("route:Main")), table.entries.map { it.occurrenceId })
         assertNotEquals(table.selectablePrimitives.first().primitiveId.value, table.selectablePrimitives.first().occurrenceId.value)
         assertEquals(
-            GraphicOccurrenceTraceEvidence(
+            GraphicOccurrenceTraceStats(
                 selectablePrimitiveCount = 3,
                 decorativePrimitiveCount = 1,
                 traceEntryCount = 2,
@@ -68,7 +68,7 @@ class GraphicOccurrenceTraceTableTest {
                 unusedTraceCount = 0,
                 duplicatePrimitiveOwnerCount = 0,
             ),
-            table.evidence,
+            table.stats,
         )
 
         val firstBytes = table.toStableTransportString()

@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:2c8975fc434e27b0ebae67bb86c8aba456a13f36122f9c46c227829ff2f2653c
+validatedLockStateDigest: lock-state:4624910f480960ddd9d13f70c050ee1dc4387401434955430c2eba2a1895de57
 primaryPackage:
   name: com.engineeringood.examples.m14.siemens.proof.corpus
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.examples.m14.siemens.proof.corpus
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:c6b0a312396e71407b590e3b4c230e88490b6049e1bdb2df34b80a55f32e00df
+    snapshotDigest: package-snapshot:6301bb0aeb1ae6e547522e72034caedf4d7c00b1d03bd53a207e4f088941e670
     sourceHashes:
       - path: com/engineeringood/examples/m14/siemens/proof/corpus/siemens-proof-corpus.athena
-        hash: sha256:e967d9dc1c0b98c81ec733fed647ae45713ca4198492a3b6c309a0b37703354e
+        hash: sha256:92d8ebcf5e313b69e403d399feb88e770c3e4304635319d2968409216909cbef
     resourceHashes: []
     dependencies: []

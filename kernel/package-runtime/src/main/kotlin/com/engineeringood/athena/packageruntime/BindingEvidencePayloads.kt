@@ -14,7 +14,6 @@ data class BindingEvidencePayload(
     val labelBindingSummary: List<String>,
     val resolverStage: String,
     val diagnostics: List<BindingEvidenceDiagnosticPayload>,
-    val rendererFallbackAccepted: Boolean,
 )
 
 data class BindingEvidenceDiagnosticPayload(

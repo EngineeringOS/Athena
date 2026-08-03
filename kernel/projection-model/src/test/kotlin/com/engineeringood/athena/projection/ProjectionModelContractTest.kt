@@ -10,57 +10,27 @@ import com.engineeringood.athena.layout.ProjectionOwnershipContract
 import com.engineeringood.athena.layout.ViewDefinition
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class ProjectionModelContractTest {
     @Test
-    fun `projection document keeps layout owned view definition and geometry origin references`() {
+    fun `projection document can be built without spatial or presentation facts`() {
         val document = ProjectionDocument(
-            view = ViewDefinition(
-                id = "cabinet",
-                displayName = "Cabinet",
-                layoutIntent = LayoutIntent.STRUCTURAL,
-                description = "Structural view",
-                ownershipContract = ProjectionOwnershipContract(
-                    interactivity = ProjectionInteractivity.INTERACTIVE,
-                    displayScopes = listOf("devices", "ports"),
-                    projectionCommandIds = listOf("move-projection-node"),
-                    transientInteractionKinds = listOf("pan", "zoom"),
-                    persistedProjectionMetadataKeys = listOf("node-position"),
-                ),
-                familyContract = ElectricalProjectionDescriptor(
-                    family = ElectricalProjectionFamily.CABINET,
-                ),
-            ),
-            canvasWidth = 480,
-            canvasHeight = 172,
+            view = cabinetView(),
             nodes = listOf(
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("cabinet/node/component_PLC1"),
+                    projectionId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
                     semanticId = StableSemanticIdentity("component:PLC1"),
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 40, y = 60, width = 140, height = 72),
                     originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_PLC1"),
                 ),
             ),
             connections = listOf(
                 ProjectionConnection(
-                    projectionId = ProjectionConnectionId("cabinet/connection/PLC1_out_M1_in"),
+                    projectionId = ProjectionConnectionId("cabinet/projection/connection/PLC1_out_M1_in"),
                     semanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
-                    start = ProjectionPoint(x = 104, y = 86),
-                    end = ProjectionPoint(x = 316, y = 86),
                     originGeometryElementId = GeometryElementId("cabinet/geometry/path/connection_PLC1_out_M1_in"),
-                ),
-            ),
-            labels = listOf(
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId("cabinet/label/port_PLC1_out"),
-                    semanticId = StableSemanticIdentity("port:PLC1.out"),
-                    label = "out",
-                    bounds = ProjectionBounds(x = 56, y = 78, width = 48, height = 16),
-                    originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_PLC1_out"),
                 ),
             ),
         )
@@ -71,37 +41,59 @@ class ProjectionModelContractTest {
             "cabinet/geometry/path/connection_PLC1_out_M1_in",
             document.connections.single().originGeometryElementId.value,
         )
-        assertEquals("cabinet/geometry/label/port_PLC1_out", document.labels.single().originGeometryElementId.value)
         assertEquals(true, document.view.ownershipContract.isInteractive)
         assertEquals(listOf("move-projection-node"), document.view.ownershipContract.projectionCommandIds)
         assertEquals(ElectricalProjectionFamily.CABINET, assertIs<ElectricalProjectionDescriptor>(document.view.familyContract).family)
     }
 
     @Test
+    fun `projection root publishes view sheets occurrences projection groups and reading order only`() {
+        val documentProperties = ProjectionDocument::class.java.declaredFields.map { field -> field.name }.toSet()
+        val nodeProperties = ProjectionNode::class.java.declaredFields.map { field -> field.name }.toSet()
+        val connectionProperties = ProjectionConnection::class.java.declaredFields.map { field -> field.name }.toSet()
+
+        assertEquals(
+            setOf("view", "nodes", "connections", "resolvedSubjects", "sheets", "notationPack", "crossReferences"),
+            documentProperties,
+        )
+        assertEquals(setOf("projectionId", "semanticId", "label", "originGeometryElementId"), nodeProperties)
+        assertEquals(
+            setOf(
+                "projectionId",
+                "semanticId",
+                "originGeometryElementId",
+                "sourceOccurrenceId",
+                "targetOccurrenceId",
+                "sourcePortId",
+                "targetPortId",
+            ),
+            connectionProperties,
+        )
+        assertFalse("canvasWidth" in documentProperties)
+        assertFalse("canvasHeight" in documentProperties)
+        assertFalse("labels" in documentProperties)
+        assertFalse("electricalAnchors" in documentProperties)
+        assertFalse("electricalConnectionEndpoints" in documentProperties)
+        assertFalse("electricalRoutingCorridors" in documentProperties)
+        assertFalse("bounds" in nodeProperties)
+        assertFalse("start" in connectionProperties)
+        assertFalse("end" in connectionProperties)
+    }
+
+    @Test
     fun `projection documents preserve one canonical subject identity across multiple electrical families`() {
         val componentSemanticId = StableSemanticIdentity("component:PLC1")
         val cabinetDocument = ProjectionDocument(
-            view = ViewDefinition(
-                id = "cabinet",
-                displayName = "Cabinet",
-                layoutIntent = LayoutIntent.STRUCTURAL,
-                familyContract = ElectricalProjectionDescriptor(
-                    family = ElectricalProjectionFamily.CABINET,
-                ),
-            ),
-            canvasWidth = 320,
-            canvasHeight = 180,
+            view = cabinetView(),
             nodes = listOf(
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("cabinet/node/component_PLC1"),
+                    projectionId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
                     semanticId = componentSemanticId,
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 24, y = 40, width = 120, height = 56),
                     originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_PLC1"),
                 ),
             ),
             connections = emptyList(),
-            labels = emptyList(),
         )
         val schematicDocument = ProjectionDocument(
             view = ViewDefinition(
@@ -112,19 +104,15 @@ class ProjectionModelContractTest {
                     family = ElectricalProjectionFamily.SCHEMATIC,
                 ),
             ),
-            canvasWidth = 360,
-            canvasHeight = 200,
             nodes = listOf(
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("schematic/node/component_PLC1"),
+                    projectionId = ProjectionNodeId("schematic/projection/node/component_PLC1"),
                     semanticId = componentSemanticId,
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 32, y = 52, width = 100, height = 40),
                     originGeometryElementId = GeometryElementId("schematic/geometry/box/component_PLC1"),
                 ),
             ),
             connections = emptyList(),
-            labels = emptyList(),
         )
 
         assertEquals(componentSemanticId, cabinetDocument.nodes.single().semanticId)
@@ -144,57 +132,8 @@ class ProjectionModelContractTest {
         val componentSemanticId = StableSemanticIdentity("component:PLC1")
         val overviewSheetId = ProjectionSheetId("documentation/sheet/01-overview")
         val referenceSheetId = ProjectionSheetId("documentation/sheet/02-reference")
-        val overviewNodeId = ProjectionNodeId("documentation/node/component_PLC1_overview")
-        val referenceNodeId = ProjectionNodeId("documentation/node/component_PLC1_reference")
-        val expectedOverviewPublication = ProjectionSheetPublication.fromProjectionState(
-            sheetId = overviewSheetId,
-            displayName = "Overview",
-            order = 0,
-            subjects = listOf(
-                ProjectionSheetSubject(
-                    semanticId = componentSemanticId,
-                    nodeIds = listOf(overviewNodeId),
-                ),
-            ),
-        )
-        val expectedOverviewComposition = ProjectionSheetComposition.fromProjectionState(
-            sheetId = overviewSheetId,
-            displayName = "Overview",
-            order = 0,
-            subjects = listOf(
-                ProjectionSheetSubject(
-                    semanticId = componentSemanticId,
-                    nodeIds = listOf(overviewNodeId),
-                ),
-            ),
-            publication = expectedOverviewPublication,
-            representationFamilyId = "schematic-sheet",
-        )
-        val expectedReferencePublication = ProjectionSheetPublication.fromProjectionState(
-            sheetId = referenceSheetId,
-            displayName = "Reference",
-            order = 1,
-            subjects = listOf(
-                ProjectionSheetSubject(
-                    semanticId = componentSemanticId,
-                    nodeIds = listOf(referenceNodeId),
-                ),
-            ),
-        )
-        val expectedReferenceComposition = ProjectionSheetComposition.fromProjectionState(
-            sheetId = referenceSheetId,
-            displayName = "Reference",
-            order = 1,
-            subjects = listOf(
-                ProjectionSheetSubject(
-                    semanticId = componentSemanticId,
-                    nodeIds = listOf(referenceNodeId),
-                ),
-            ),
-            publication = expectedReferencePublication,
-            representationFamilyId = "schematic-sheet",
-        )
-
+        val overviewNodeId = ProjectionNodeId("documentation/projection/node/component_PLC1_overview")
+        val referenceNodeId = ProjectionNodeId("documentation/projection/node/component_PLC1_reference")
         val document = ProjectionDocument(
             view = ViewDefinition(
                 id = "documentation",
@@ -204,26 +143,21 @@ class ProjectionModelContractTest {
                     family = ElectricalProjectionFamily.DOCUMENTATION,
                 ),
             ),
-            canvasWidth = 640,
-            canvasHeight = 360,
             nodes = listOf(
                 ProjectionNode(
                     projectionId = overviewNodeId,
                     semanticId = componentSemanticId,
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 32, y = 40, width = 120, height = 48),
                     originGeometryElementId = GeometryElementId("documentation/geometry/box/component_PLC1_overview"),
                 ),
                 ProjectionNode(
                     projectionId = referenceNodeId,
                     semanticId = componentSemanticId,
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 240, y = 56, width = 120, height = 48),
                     originGeometryElementId = GeometryElementId("documentation/geometry/box/component_PLC1_reference"),
                 ),
             ),
             connections = emptyList(),
-            labels = emptyList(),
             sheets = listOf(
                 ProjectionSheet(
                     sheetId = overviewSheetId,
@@ -258,169 +192,14 @@ class ProjectionModelContractTest {
         )
         assertEquals("documentation/sheet/02-reference", document.sheets.first().nextSheetId?.value)
         assertEquals("documentation/sheet/01-overview", document.sheets.last().previousSheetId?.value)
-        assertEquals(
-            componentSemanticId,
-            document.sheets.first().subjects.single().semanticId,
-        )
-        assertEquals(
-            componentSemanticId,
-            document.sheets.last().subjects.single().semanticId,
-        )
-        assertEquals(
-            listOf("documentation/node/component_PLC1_overview"),
-            document.sheets.first().subjects.single().nodeIds.map { nodeId -> nodeId.value },
-        )
-        assertEquals(
-            listOf("documentation/node/component_PLC1_reference"),
-            document.sheets.last().subjects.single().nodeIds.map { nodeId -> nodeId.value },
-        )
+        assertEquals(componentSemanticId, document.sheets.first().subjects.single().semanticId)
+        assertEquals(listOf("documentation/projection/node/component_PLC1_overview"), document.sheets.first().subjects.single().nodeIds.map { nodeId -> nodeId.value })
         assertEquals("A3", document.sheets.first().publication.pageSize.format)
-        assertEquals("landscape", document.sheets.first().publication.pageSize.orientation)
-        assertEquals("engineering-sheet-frame", document.sheets.first().publication.frame.frameId)
-        assertEquals("schematic", document.sheets.first().publication.frame.style)
-        assertEquals(listOf("header", "body", "title-block"), document.sheets.first().publication.coordinateZones.map { zone -> zone.zoneId })
-        assertEquals("Overview", document.sheets.first().publication.titleBlock.sheetTitle)
-        assertEquals("documentation", document.sheets.first().publication.titleBlock.sheetFamily)
-        assertEquals("01-overview", document.sheets.first().publication.titleBlock.sheetNumber)
-        assertEquals("A", document.sheets.first().publication.revisionMetadata.revisionCode)
-        assertEquals("documentation", document.sheets.first().publication.viewComposition.primaryViewId)
-        assertEquals(0, document.sheets.first().publication.viewComposition.primarySheetOrder)
-        assertEquals(
-            listOf("component:PLC1"),
-            document.sheets.first().publication.viewComposition.subjectSemanticIds,
-        )
         assertEquals("schematic-sheet", document.sheets.first().composition.representationFamilyId)
-        assertEquals(expectedOverviewComposition, document.sheets.first().composition)
-        assertEquals(expectedOverviewPublication, document.sheets.first().publication)
-        assertEquals("schematic-sheet", document.sheets.last().composition.representationFamilyId)
-        assertEquals(expectedReferenceComposition, document.sheets.last().composition)
-        assertEquals(expectedReferencePublication, document.sheets.last().publication)
     }
 
     @Test
-    fun `projection documents derive deterministic sheet layout facts before rendering`() {
-        val componentSemanticId = StableSemanticIdentity("component:PLC1")
-        val connectionSemanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in")
-        val overviewSheetId = ProjectionSheetId("schematic/sheet/01-main")
-        val layoutDocument = ProjectionDocument(
-            view = ViewDefinition(
-                id = "schematic",
-                displayName = "Schematic",
-                layoutIntent = LayoutIntent.CONNECTIVITY,
-                familyContract = ElectricalProjectionDescriptor(
-                    family = ElectricalProjectionFamily.SCHEMATIC,
-                ),
-            ),
-            canvasWidth = 640,
-            canvasHeight = 360,
-            nodes = listOf(
-                ProjectionNode(
-                    projectionId = ProjectionNodeId("schematic/node/component_PLC1"),
-                    semanticId = componentSemanticId,
-                    label = "PLC1",
-                    bounds = ProjectionBounds(x = 32, y = 40, width = 120, height = 48),
-                    originGeometryElementId = GeometryElementId("schematic/geometry/box/component_PLC1"),
-                ),
-                ProjectionNode(
-                    projectionId = ProjectionNodeId("schematic/node/component_M1"),
-                    semanticId = StableSemanticIdentity("component:M1"),
-                    label = "M1",
-                    bounds = ProjectionBounds(x = 248, y = 56, width = 120, height = 48),
-                    originGeometryElementId = GeometryElementId("schematic/geometry/box/component_M1"),
-                ),
-            ),
-            connections = listOf(
-                ProjectionConnection(
-                    projectionId = ProjectionConnectionId("schematic/connection/PLC1_out_M1_in"),
-                    semanticId = connectionSemanticId,
-                    start = ProjectionPoint(x = 104, y = 64),
-                    end = ProjectionPoint(x = 308, y = 64),
-                    originGeometryElementId = GeometryElementId("schematic/geometry/path/connection_PLC1_out_M1_in"),
-                ),
-            ),
-            labels = listOf(
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId("schematic/label/port_PLC1_out"),
-                    semanticId = StableSemanticIdentity("port:PLC1.out"),
-                    label = "out",
-                    bounds = ProjectionBounds(x = 56, y = 72, width = 48, height = 16),
-                    originGeometryElementId = GeometryElementId("schematic/geometry/label/port_PLC1_out"),
-                ),
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId("schematic/label/port_M1_in"),
-                    semanticId = StableSemanticIdentity("port:M1.in"),
-                    label = "in",
-                    bounds = ProjectionBounds(x = 272, y = 88, width = 40, height = 16),
-                    originGeometryElementId = GeometryElementId("schematic/geometry/label/port_M1_in"),
-                ),
-            ),
-            sheets = listOf(
-                ProjectionSheet(
-                    sheetId = overviewSheetId,
-                    displayName = "24V Control Power",
-                    order = 0,
-                    subjects = listOf(
-                        ProjectionSheetSubject(
-                            semanticId = componentSemanticId,
-                            nodeIds = listOf(ProjectionNodeId("schematic/node/component_PLC1")),
-                        ),
-                        ProjectionSheetSubject(
-                            semanticId = StableSemanticIdentity("component:M1"),
-                            nodeIds = listOf(ProjectionNodeId("schematic/node/component_M1")),
-                        ),
-                    ),
-                ),
-            ),
-            electricalRoutingCorridors = listOf(
-                ElectricalRoutingCorridor(
-                    corridorId = ElectricalRoutingCorridorId("schematic/connection/PLC1_out_M1_in/corridor"),
-                    projectionConnectionId = ProjectionConnectionId("schematic/connection/PLC1_out_M1_in"),
-                    connectionSemanticId = connectionSemanticId,
-                    sourceAnchorId = ElectricalAnchorId("schematic/anchor/source"),
-                    targetAnchorId = ElectricalAnchorId("schematic/anchor/target"),
-                    routingStyle = ElectricalRoutingStyle.ORTHOGONAL,
-                    preferredBendPoints = listOf(
-                        ProjectionPoint(x = 180, y = 64),
-                        ProjectionPoint(x = 180, y = 128),
-                    ),
-                ),
-            ),
-        )
-
-        val firstLayout = assertNotNull(layoutDocument.toProjectionSheetLayout())
-        val secondLayout = assertNotNull(layoutDocument.toProjectionSheetLayout())
-
-        assertEquals(overviewSheetId, firstLayout.sheetId)
-        assertEquals("24V Control Power", firstLayout.displayName)
-        assertEquals(0, firstLayout.order)
-        assertEquals("schematic-sheet", firstLayout.representationFamilyId)
-        assertEquals(listOf("component:PLC1", "component:M1"), firstLayout.subjectSemanticIds)
-        assertEquals(640, firstLayout.frame.canvasWidth)
-        assertEquals(360, firstLayout.frame.canvasHeight)
-        assertEquals(120, firstLayout.frame.gridMajorStep)
-        assertEquals(24, firstLayout.frame.gridMinorStep)
-        assertEquals(
-            listOf("schematic/node/component_M1", "schematic/node/component_PLC1"),
-            firstLayout.placements.map { placement -> placement.projectionId.value },
-        )
-        assertEquals(
-            listOf("schematic/label/port_M1_in", "schematic/label/port_PLC1_out"),
-            firstLayout.labelLayouts.map { label -> label.projectionId.value },
-        )
-        assertEquals(
-            listOf("schematic/connection/PLC1_out_M1_in"),
-            firstLayout.routingGuidance.map { guidance -> guidance.projectionConnectionId.value },
-        )
-        assertEquals("orthogonal", firstLayout.routingGuidance.single().routingStyle)
-        assertEquals(
-            listOf(ProjectionPoint(x = 180, y = 64), ProjectionPoint(x = 180, y = 128)),
-            firstLayout.routingGuidance.single().bendPoints,
-        )
-        assertEquals(firstLayout, secondLayout)
-    }
-
-    @Test
-    fun `projection notation packs keep symbol and label choices downstream of canonical semantics`() {
+    fun `projection notation packs keep symbol choices downstream of canonical semantics`() {
         val componentSemanticId = StableSemanticIdentity("component:PLC1")
         val document = ProjectionDocument(
             view = ViewDefinition(
@@ -431,19 +210,15 @@ class ProjectionModelContractTest {
                     family = ElectricalProjectionFamily.SCHEMATIC,
                 ),
             ),
-            canvasWidth = 640,
-            canvasHeight = 320,
             nodes = listOf(
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("schematic/node/component_PLC1"),
+                    projectionId = ProjectionNodeId("schematic/projection/node/component_PLC1"),
                     semanticId = componentSemanticId,
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 40, y = 60, width = 120, height = 48),
                     originGeometryElementId = GeometryElementId("schematic/geometry/box/component_PLC1"),
                 ),
             ),
             connections = emptyList(),
-            labels = emptyList(),
             notationPack = ProjectionNotationPack(
                 packId = ProjectionNotationPackId("electrical-notation/schematic/default"),
                 displayName = "Electrical Schematic Default",
@@ -461,139 +236,24 @@ class ProjectionModelContractTest {
         assertEquals("electrical-notation/schematic/default", document.notationPack?.packId?.value)
         assertEquals(componentSemanticId, document.notationPack?.subjects?.single()?.semanticId)
         assertEquals("device.schematic.default", document.notationPack?.subjects?.single()?.symbolKey?.value)
-        assertEquals(ProjectionLabelPolicy.SUBJECT_LABEL, document.notationPack?.subjects?.single()?.labelPolicy)
-        assertEquals(listOf("canonical-device"), document.notationPack?.subjects?.single()?.markerKeys)
     }
+}
 
-    @Test
-    fun `projection electrical anchors and routing corridors stay downstream of canonical identity`() {
-        val plcSemanticId = StableSemanticIdentity("component:PLC1")
-        val motorSemanticId = StableSemanticIdentity("component:M1")
-        val sourcePortSemanticId = StableSemanticIdentity("port:PLC1.out")
-        val targetPortSemanticId = StableSemanticIdentity("port:M1.in")
-        val connectionSemanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in")
-        val sourceNodeId = ProjectionNodeId("wiring/node/component_PLC1")
-        val targetNodeId = ProjectionNodeId("wiring/node/component_M1")
-        val sourceLabelId = ProjectionLabelId("wiring/label/port_PLC1_out")
-        val targetLabelId = ProjectionLabelId("wiring/label/port_M1_in")
-        val connectionId = ProjectionConnectionId("wiring/connection/PLC1_out_M1_in")
-        val sourceAnchorId = ElectricalAnchorId("wiring/label/port_PLC1_out/anchor")
-        val targetAnchorId = ElectricalAnchorId("wiring/label/port_M1_in/anchor")
-        val document = ProjectionDocument(
-            view = ViewDefinition(
-                id = "wiring",
-                displayName = "Wiring",
-                layoutIntent = LayoutIntent.CONNECTIVITY,
-                familyContract = ElectricalProjectionDescriptor(
-                    family = ElectricalProjectionFamily.WIRING,
-                ),
-            ),
-            canvasWidth = 640,
-            canvasHeight = 320,
-            nodes = listOf(
-                ProjectionNode(
-                    projectionId = sourceNodeId,
-                    semanticId = plcSemanticId,
-                    label = "PLC1",
-                    bounds = ProjectionBounds(x = 40, y = 60, width = 120, height = 48),
-                    originGeometryElementId = GeometryElementId("wiring/geometry/box/component_PLC1"),
-                ),
-                ProjectionNode(
-                    projectionId = targetNodeId,
-                    semanticId = motorSemanticId,
-                    label = "M1",
-                    bounds = ProjectionBounds(x = 320, y = 172, width = 120, height = 48),
-                    originGeometryElementId = GeometryElementId("wiring/geometry/box/component_M1"),
-                ),
-            ),
-            connections = listOf(
-                ProjectionConnection(
-                    projectionId = connectionId,
-                    semanticId = connectionSemanticId,
-                    start = ProjectionPoint(x = 160, y = 84),
-                    end = ProjectionPoint(x = 320, y = 196),
-                    originGeometryElementId = GeometryElementId("wiring/geometry/path/connection_PLC1_out_M1_in"),
-                ),
-            ),
-            labels = listOf(
-                ProjectionLabel(
-                    projectionId = sourceLabelId,
-                    semanticId = sourcePortSemanticId,
-                    label = "out",
-                    bounds = ProjectionBounds(x = 168, y = 76, width = 40, height = 16),
-                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_PLC1_out"),
-                ),
-                ProjectionLabel(
-                    projectionId = targetLabelId,
-                    semanticId = targetPortSemanticId,
-                    label = "in",
-                    bounds = ProjectionBounds(x = 272, y = 188, width = 32, height = 16),
-                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_M1_in"),
-                ),
-            ),
-            electricalAnchors = listOf(
-                ElectricalAnchor(
-                    anchorId = sourceAnchorId,
-                    portSemanticId = sourcePortSemanticId,
-                    ownerSemanticId = plcSemanticId,
-                    nodeId = sourceNodeId,
-                    labelId = sourceLabelId,
-                    position = ProjectionPoint(x = 160, y = 84),
-                    side = ElectricalAnchorSide.RIGHT,
-                ),
-                ElectricalAnchor(
-                    anchorId = targetAnchorId,
-                    portSemanticId = targetPortSemanticId,
-                    ownerSemanticId = motorSemanticId,
-                    nodeId = targetNodeId,
-                    labelId = targetLabelId,
-                    position = ProjectionPoint(x = 320, y = 196),
-                    side = ElectricalAnchorSide.LEFT,
-                ),
-            ),
-            electricalConnectionEndpoints = listOf(
-                ElectricalConnectionEndpoint(
-                    endpointId = ElectricalConnectionEndpointId("wiring/connection/PLC1_out_M1_in/endpoint/source"),
-                    projectionConnectionId = connectionId,
-                    connectionSemanticId = connectionSemanticId,
-                    endpointRole = ElectricalConnectionEndpointRole.SOURCE,
-                    portSemanticId = sourcePortSemanticId,
-                    anchorId = sourceAnchorId,
-                ),
-                ElectricalConnectionEndpoint(
-                    endpointId = ElectricalConnectionEndpointId("wiring/connection/PLC1_out_M1_in/endpoint/target"),
-                    projectionConnectionId = connectionId,
-                    connectionSemanticId = connectionSemanticId,
-                    endpointRole = ElectricalConnectionEndpointRole.TARGET,
-                    portSemanticId = targetPortSemanticId,
-                    anchorId = targetAnchorId,
-                ),
-            ),
-            electricalRoutingCorridors = listOf(
-                ElectricalRoutingCorridor(
-                    corridorId = ElectricalRoutingCorridorId("wiring/connection/PLC1_out_M1_in/corridor"),
-                    projectionConnectionId = connectionId,
-                    connectionSemanticId = connectionSemanticId,
-                    sourceAnchorId = sourceAnchorId,
-                    targetAnchorId = targetAnchorId,
-                    routingStyle = ElectricalRoutingStyle.ORTHOGONAL,
-                    preferredBendPoints = listOf(
-                        ProjectionPoint(x = 240, y = 84),
-                        ProjectionPoint(x = 240, y = 196),
-                    ),
-                ),
-            ),
-        )
-
-        assertEquals(sourcePortSemanticId, document.electricalAnchors.first().portSemanticId)
-        assertEquals(plcSemanticId, document.electricalAnchors.first().ownerSemanticId)
-        assertEquals(connectionSemanticId, document.electricalConnectionEndpoints.first().connectionSemanticId)
-        assertEquals(ElectricalConnectionEndpointRole.SOURCE, document.electricalConnectionEndpoints.first().endpointRole)
-        assertEquals(ElectricalRoutingStyle.ORTHOGONAL, document.electricalRoutingCorridors.single().routingStyle)
-        assertEquals(
-            listOf(ProjectionPoint(x = 240, y = 84), ProjectionPoint(x = 240, y = 196)),
-            document.electricalRoutingCorridors.single().preferredBendPoints,
-        )
-        assertTrue(document.electricalConnectionEndpoints.all { endpoint -> endpoint.connectionSemanticId == connectionSemanticId })
-    }
+private fun cabinetView(): ViewDefinition {
+    return ViewDefinition(
+        id = "cabinet",
+        displayName = "Cabinet",
+        layoutIntent = LayoutIntent.STRUCTURAL,
+        description = "Structural view",
+        ownershipContract = ProjectionOwnershipContract(
+            interactivity = ProjectionInteractivity.INTERACTIVE,
+            displayScopes = listOf("devices", "ports"),
+            projectionCommandIds = listOf("move-projection-node"),
+            transientInteractionKinds = listOf("pan", "zoom"),
+            persistedProjectionMetadataKeys = listOf("node-position"),
+        ),
+        familyContract = ElectricalProjectionDescriptor(
+            family = ElectricalProjectionFamily.CABINET,
+        ),
+    )
 }

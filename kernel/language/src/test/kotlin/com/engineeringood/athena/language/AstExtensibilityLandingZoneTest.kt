@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
  */
 class AstExtensibilityLandingZoneTest {
     @Test
-    fun `Declaration consumers see exactly the six current sealed variants`() {
+    fun `Declaration consumers see exactly the nine current sealed variants`() {
         val span = SourceSpan(SourcePosition(0, 1, 1), SourcePosition(1, 1, 2))
         val connection = ConnectionDeclaration(
             alias = "plc_to_motor",
@@ -31,6 +31,34 @@ class AstExtensibilityLandingZoneTest {
             ),
             connection,
             ConnectionGroupDeclaration(name = "control_feed", connections = listOf(connection), span = span),
+            RelationDeclaration(
+                word = SymbolIdentifierField("power", span),
+                from = QualifiedName(listOf("PLC1", "out"), span),
+                targets = listOf(QualifiedName(listOf("M1", "in"), span)),
+                span = span,
+            ),
+            ExternalEvidenceDeclaration(
+                name = "DriveEvidence",
+                namespace = SymbolIdentifierField("iec", span),
+                reference = SymbolStringField("IEC:60204-1:clause-13", span),
+                subject = ExternalEvidenceSubjectDeclaration(
+                    kind = ExternalEvidenceSubjectKind.CONTRACT,
+                    target = QualifiedName(listOf("PLC1"), span),
+                    span = span,
+                ),
+                provenance = SymbolStringField("test", span),
+                span = span,
+            ),
+            ProjectionPolicyDeclaration(
+                name = "ControlDrawingProjection",
+                target = SymbolIdentifierField("professional-connection-drawing", span),
+                layoutStrategy = SymbolIdentifierField("orthogonal-grid", span),
+                drawingProfile = SymbolIdentifierField("ControlDrawingIEC", span),
+                routeQualityPolicy = SymbolIdentifierField("ControlDrawingRouteQuality", span),
+                proofObligations = listOf(SymbolIdentifierField("exact-endpoints", span)),
+                forbiddenEngineeringTruth = emptyList(),
+                span = span,
+            ),
             LayoutDeclaration(
                 viewFamily = "schematic-sheet",
                 statements = listOf(LayoutStatement.PlaceNear("HMI1", "PLC1", span)),
@@ -52,7 +80,7 @@ class AstExtensibilityLandingZoneTest {
         )
 
         assertEquals(
-            listOf("device", "port", "connect", "connect-group", "layout", "installation"),
+            listOf("device", "port", "connect", "connect-group", "relation", "evidence", "projection", "layout", "installation"),
             declarations.map { declaration -> classifyDeclaration(declaration) },
         )
     }
@@ -82,8 +110,16 @@ class AstExtensibilityLandingZoneTest {
             is PortDeclaration -> "port"
             is ConnectionDeclaration -> "connect"
             is ConnectionGroupDeclaration -> "connect-group"
+            is RelationDeclaration -> "relation"
+            is ExternalEvidenceDeclaration -> "evidence"
+            is ProjectionPolicyDeclaration -> "projection"
             is LayoutDeclaration -> "layout"
             is InstallationDeclaration -> "installation"
+            is ViewDeclaration -> "view"
+            is SheetDeclaration -> "sheet"
+            is GridDeclaration -> "grid"
+            is RegionDeclaration -> "region"
+            is ProjectionConstructDeclaration -> "construct"
         }
     }
 

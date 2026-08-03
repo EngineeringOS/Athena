@@ -17,7 +17,17 @@ export function AthenaGraphWorkbenchEdgeLayer(
             const sourceSelected = !!edge.sourcePortSemanticId && selectedSemanticId === edge.sourcePortSemanticId;
             const targetSelected = !!edge.targetPortSemanticId && selectedSemanticId === edge.targetPortSemanticId;
             const edgeSelected = selectedSemanticId === edge.semanticId || sourceSelected || targetSelected;
-            const tooltipLabels = edge.routeLabels.map(label => label.text).filter(Boolean).join(' | ');
+            const tooltipLabels = edge.connectionLabels.map(label => label.text).filter(Boolean).join(' | ');
+            const lineStyle = edge.line?.style.toLowerCase();
+            const strokeDasharray = lineStyle === 'dashed'
+                ? '8 5'
+                : lineStyle === 'dotted'
+                    ? '2 5'
+                    : undefined;
+            const strokeColor = edge.line?.colorKey ? `var(--athena-${edge.line.colorKey.replace(/\./g, '-')})` : undefined;
+            const sourceSpan = formatSourceSpan(
+                edge.presentationConnector?.sourceSpan ?? edge.presentationConnector?.trace?.sourceSpan
+            );
 
             return <React.Fragment key={edge.id}>
                 <g
@@ -50,8 +60,25 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         data-athena-route-points={edge.routePoints.map(point => `${point.x},${point.y}`).join(';')}
                         data-athena-route-point-count={edge.routePoints.length}
                         data-athena-route-source-anchor-id={edge.terminals[0]?.anchorId ?? ''}
-                        data-athena-route-target-anchor-id={edge.terminals[1]?.anchorId ?? ''}
-                        data-athena-route-quality={edge.presentationConnector?.tokenOverrides.routeQuality ?? ''}
+	                        data-athena-route-target-anchor-id={edge.terminals[1]?.anchorId ?? ''}
+	                        data-athena-route-source-port-id={edge.sourcePortSemanticId ?? ''}
+		                    data-athena-route-target-port-id={edge.targetPortSemanticId ?? ''}
+		                    data-athena-presentation-route-id={edge.presentationConnector?.routeId ?? ''}
+	                        data-athena-route-bundle-id={edge.presentationConnector?.bundleId ?? ''}
+	                        data-athena-route-lane-id={edge.presentationConnector?.laneId ?? ''}
+	                        data-athena-route-lane-route-ids={edge.presentationConnector?.laneRouteIds.join('|') ?? ''}
+	                        data-athena-route-selected-channel-ids={edge.presentationConnector?.selectedChannelIds.join('|') ?? ''}
+	                        data-athena-route-label-ids={edge.presentationConnector?.labels.map(label => label.labelId).join('|') ?? ''}
+	                        data-athena-route-line-kind={edge.presentationConnector?.line.lineKind ?? ''}
+	                        data-athena-route-presentation-class-id={edge.presentationConnector?.line.classId ?? ''}
+	                        data-athena-route-compiler-snapshot-id={edge.presentationConnector?.line.compilerSnapshotId ?? ''}
+                            data-athena-route-source-span={sourceSpan}
+	                        data-athena-route-quality={edge.presentationConnector?.quality ?? ''}
+                        strokeDasharray={strokeDasharray}
+                        style={{
+                            ...(edge.line?.weight ? { strokeWidth: edge.line.weight } : {}),
+                            ...(strokeColor ? { stroke: strokeColor } : {}),
+                        }}
                         fill='none'
                         vectorEffect='non-scaling-stroke'
                     />
@@ -63,16 +90,19 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         r={4}
                         vectorEffect='non-scaling-stroke'
                     />)}
-                    {edge.crossingMarkerPoints.map((point, index) => <circle
-                        key={`${edge.id}:crossing:${index}`}
+                    {edge.crossingMarkerPoints.map(marker => <circle
+                        key={`${edge.id}:marker:${marker.markerId}`}
                         className={`athena-graph-workbench__edge-crossing ${edgeSelected ? 'athena-graph-workbench__edge-crossing--selected' : ''}`}
-                        cx={point.x}
-                        cy={point.y}
-                        r={6}
+                        data-athena-connection-marker-id={marker.markerId}
+                        data-athena-connection-marker-kind={marker.kind}
+                        data-athena-connection-marker-appearance={marker.appearanceClassId}
+                        cx={marker.point.x}
+                        cy={marker.point.y}
+                        r={marker.kind === 'junction' ? 3.5 : 6}
                         vectorEffect='non-scaling-stroke'
                     />)}
                 </g>
-                {edge.routeLabels.map((label, index) => {
+                {edge.connectionLabels.map((label, index) => {
                     const deferred = label.canvasDisplay === 'selection' && !edgeSelected;
                     return <text
                         key={`${edge.id}:route-label:${index}`}
@@ -88,40 +118,16 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         {label.text}
                     </text>;
                 })}
-                {edge.terminals.map(terminal => {
-                    const terminalSemanticId = terminal.portSemanticId ?? edge.semanticId;
-                    const terminalSelected = selectedSemanticId === edge.semanticId || selectedSemanticId === terminal.portSemanticId;
-                    return <circle
-                        key={`${edge.id}:terminal:${terminal.role}`}
-                        className={`athena-graph-workbench__edge-terminal ${terminalSelected ? 'athena-graph-workbench__edge-terminal--selected' : ''}`}
-                        data-athena-graph-interactive='true'
-                        data-athena-route-terminal='true'
-                        data-athena-route-terminal-for={edge.id}
-                        data-athena-route-terminal-role={terminal.role}
-                        data-athena-route-terminal-anchor-id={terminal.anchorId ?? ''}
-                        data-athena-route-terminal-port-id={terminal.portSemanticId ?? ''}
-                        role='button'
-                        tabIndex={0}
-                        aria-label={`${terminal.role} terminal`}
-                        cx={terminal.point.x}
-                        cy={terminal.point.y}
-                        r={4.5}
-                        vectorEffect='non-scaling-stroke'
-                        onClick={event => {
-                            event.stopPropagation();
-                            void onSelectSemanticId(terminalSemanticId);
-                        }}
-                        onKeyDown={event => {
-                            if (event.key !== 'Enter' && event.key !== ' ') {
-                                return;
-                            }
-                            event.preventDefault();
-                            event.stopPropagation();
-                            void onSelectSemanticId(terminalSemanticId);
-                        }}
-                    />;
-                })}
             </React.Fragment>;
         })}
     </>;
+}
+
+function formatSourceSpan(
+    sourceSpan: NonNullable<AthenaGraphWorkbenchEdge['presentationConnector']>['sourceSpan'],
+): string {
+    if (!sourceSpan?.file) {
+        return '';
+    }
+    return `${sourceSpan.file}:${sourceSpan.startLine}:${sourceSpan.startColumn}-${sourceSpan.endLine}:${sourceSpan.endColumn}`;
 }

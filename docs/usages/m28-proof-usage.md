@@ -62,7 +62,7 @@ For today's `.athena` source, an accepted electrical relationship serializes as 
 connection syntax:
 
 ```athena
-connect SourceDevice.out -> TargetDevice.in
+connect source_to_target SourceDevice.out to TargetDevice.in
 ```
 
 The architecture is intentionally not named around wires. Later relationships such as flow,

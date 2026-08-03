@@ -20,13 +20,11 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
             interactivity = ProjectionInteractivity.INTERACTIVE,
             displayScopes = listOf(
                 "devices",
-                "ports",
-                "ownership-relationships",
-                "connectivity-relationships",
-                "grouped-placement",
-                "electrical-anchors",
-                "electrical-routing-corridors",
-            ),
+                    "ports",
+                    "ownership-relationships",
+                    "connectivity-relationships",
+                    "grouped-placement",
+                ),
             semanticCommandIds = listOf("create-semantic-relationship"),
             projectionCommandIds = listOf(
                 "adjust-layout-placement",
@@ -57,12 +55,10 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
             interactivity = ProjectionInteractivity.INSPECT_ONLY,
             displayScopes = listOf(
                 "devices",
-                "ports",
-                "signal-groups",
-                "connectivity-relationships",
-                "electrical-anchors",
-                "electrical-routing-corridors",
-            ),
+                    "ports",
+                    "signal-groups",
+                    "connectivity-relationships",
+                ),
             transientInteractionKinds = listOf(
                 "navigate-view",
                 "inspect-selection",
@@ -75,11 +71,11 @@ internal val ELECTRICAL_RUNTIME_VIEW_DEFINITIONS = listOf(
     ),
     ViewDefinition(
         id = "schematic",
-        displayName = "Schematic",
+        displayName = "Control Drawing",
         layoutIntent = LayoutIntent.CONNECTIVITY,
         groupingRules = listOf("group-by-signal", "group-by-component"),
         viewEmphasis = listOf(ViewEmphasis.CONNECTIVITY, ViewEmphasis.SIGNAL_FLOW),
-        description = "Highlights canonical electrical connectivity as a schematic-oriented presentation family.",
+        description = "Compiles canonical electrical connectivity into the professional Control Drawing product surface.",
         ownershipContract = ProjectionOwnershipContract(
             interactivity = ProjectionInteractivity.INSPECT_ONLY,
             displayScopes = listOf(

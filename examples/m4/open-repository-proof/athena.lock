@@ -1,6 +1,9 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:45282c6722ae16d1b0f748478cbf7194aebe4f501f202a45a93d77fcc4476734
 primaryPackage:
   name: com.engineeringood.factoryline
   version: 1.0.0
@@ -8,4 +11,9 @@ packages:
   - name: com.engineeringood.factoryline
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot:7e6f08e148d5709ef502bcd9dd395e05770c29ad3e72b3075fd8ab40c4a7e078
+    sourceHashes:
+      - path: com/engineeringood/factoryline/factoryline.athena
+        hash: sha256:bec7de21af97238d6fcff4560838afd4d9a927194d89b4fe66542b4e520ac5b5
+    resourceHashes: []
     dependencies: []

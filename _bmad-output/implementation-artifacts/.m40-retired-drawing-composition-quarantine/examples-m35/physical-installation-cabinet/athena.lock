@@ -1,0 +1,19 @@
+# Derived resolution state for the Athena package graph.
+# Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:5bb8b9fc69e6c219fc5f9da560a3413236898a77c82ac302daa30541e72c6d59
+primaryPackage:
+  name: com.engineeringood.m35.physicalinstallationcabinet
+  version: 1.0.0
+packages:
+  - name: com.engineeringood.m35.physicalinstallationcabinet
+    version: 1.0.0
+    sourceRoot: src
+    snapshotDigest: package-snapshot:50905b4538e8706aa448bde0e90d43450eccdbd74998ad48d6f6517021d15f82
+    sourceHashes:
+      - path: com/engineeringood/m35/physicalinstallationcabinet/01-physical-installation-cabinet.athena
+        hash: sha256:617f9e888eccedf68e5988648a40ebe333882648cb8f73ac8569d714eee1e464
+    resourceHashes: []
+    dependencies: []

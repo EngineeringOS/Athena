@@ -12,7 +12,7 @@ change the sheet behavior.
    yarn start:m22
    ```
 
-2. Open `src/01-baseline-sheet.athena`.
+2. Open `src/com/engineeringood/m22/sample/01-baseline-sheet.athena`.
 3. Launch `Graphical View`.
 4. Confirm the graph workbench renders the active source file from `examples/m22/sample-project`.
 

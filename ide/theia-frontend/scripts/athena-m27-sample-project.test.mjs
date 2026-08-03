@@ -44,11 +44,11 @@ test('M27 sample project is an openable semantic proof workspace', () => {
     assert.match(sourceB, /SpareTerminalXT99/);
 
     const combined = `${sourceA}\n${sourceB}`;
-    assert.match(combined, /connect\s+\w+\s+MainPowerSupplyPS1\.lplus -> MainBreakerQF1\.line/);
-    assert.match(combined, /connect\s+\w+\s+ControllerPLC1\.hmiStatus -> OperatorHMI1\.status/);
-    assert.match(combined, /connect\s+\w+\s+FieldOutputModuleIOM1\.do1 -> FieldTerminalXT1\.in1/);
-    assert.match(combined, /connect\s+\w+\s+FieldTerminalXT1\.out1 -> ConveyorMotorM1\.u1/);
-    assert.match(sourceB, /connect\s+\w+\s+SpareFieldGatewayGW1\.do1 -> SpareTerminalXT99\.in1/);
+    assert.match(combined, /connect\s+\w+\s+MainPowerSupplyPS1\.lplus to MainBreakerQF1\.line/);
+    assert.match(combined, /connect\s+\w+\s+ControllerPLC1\.hmiStatus to OperatorHMI1\.status/);
+    assert.match(combined, /connect\s+\w+\s+FieldOutputModuleIOM1\.do1 to FieldTerminalXT1\.in1/);
+    assert.match(combined, /connect\s+\w+\s+FieldTerminalXT1\.out1 to ConveyorMotorM1\.u1/);
+    assert.match(sourceB, /connect\s+\w+\s+SpareFieldGatewayGW1\.do1 to SpareTerminalXT99\.in1/);
     assert.doesNotMatch(sourceB, /FieldOutputModuleIOM1|FieldTerminalXT1|ConveyorMotorM1/);
     assert.doesNotMatch(sourceB, /device\s+ControllerPLC1\b/);
 });

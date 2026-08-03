@@ -1,0 +1,15 @@
+package com.engineeringood.m37.professional
+
+profile ControlDrawingIEC {
+  projection schematic
+  standard IEC
+  style athena-industrial-iec-v1
+  fallback fail-closed
+}
+
+profile ControlDrawingRouteQuality {
+  projection schematic
+  standard IEC
+  style athena-industrial-route-quality
+  fallback fail-closed
+}

@@ -21,7 +21,7 @@ system ControlRouteProof {
     signal Digital
   }
 
-  connect controllerplc1_statusout_to_operatorhmi1_statusin ControllerPLC1.statusOut -> OperatorHMI1.statusIn
+  connect controllerplc1_statusout_to_operatorhmi1_statusin ControllerPLC1.statusOut to OperatorHMI1.statusIn
 
   layout schematic-sheet {
     place OperatorHMI1 near ControllerPLC1

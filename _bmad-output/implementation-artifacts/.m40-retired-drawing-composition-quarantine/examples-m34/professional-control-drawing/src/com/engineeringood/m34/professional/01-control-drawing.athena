@@ -1,0 +1,524 @@
+package com.engineeringood.m34.professional
+
+system M34ProfessionalControlDrawing {
+  device PowerSourceG34 {
+    type PowerSource
+    model "400V-3PH-N-PE"
+    tag "G34"
+
+    port phaseL {
+      direction out
+      signal Power
+      terminal "L"
+    }
+    port neutralN {
+      direction out
+      signal Power
+      terminal "N"
+    }
+    port protectivePE {
+      direction out
+      signal Ground
+      terminal "PE"
+    }
+  }
+
+  device MainBreakerQF34 {
+    type Breaker
+    model "2P-C10"
+    tag "QF34"
+
+    port lineL {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port loadT {
+      direction out
+      signal Power
+      terminal "2"
+    }
+    port neutralInN {
+      direction in
+      signal Power
+      terminal "N1"
+    }
+    port neutralOutN {
+      direction out
+      signal Power
+      terminal "N2"
+    }
+  }
+
+  device FuseDisconnectorQS34 {
+    type FuseDisconnector
+    model "2P-10A"
+    tag "QS34"
+
+    port lineL {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port loadT {
+      direction out
+      signal Power
+      terminal "2"
+    }
+    port neutralInN {
+      direction in
+      signal Power
+      terminal "3"
+    }
+    port neutralOutN {
+      direction out
+      signal Power
+      terminal "4"
+    }
+  }
+
+  device ControlTransformerT34 {
+    type Transformer
+    model "400V-24V-100VA"
+    tag "T34"
+
+    port primaryL {
+      direction in
+      signal Power
+      terminal "1"
+    }
+    port primaryN {
+      direction in
+      signal Power
+      terminal "2"
+    }
+    port secondaryL {
+      direction out
+      signal Control
+      terminal "X1"
+    }
+    port secondaryN {
+      direction in
+      signal Control
+      terminal "X2"
+    }
+  }
+
+  device ForwardContactorKM1 {
+    type Contactor
+    model "4P-24VAC"
+    tag "KM1"
+
+    port coilA1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port coilA2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+    port mainL1 {
+      direction in
+      signal Power
+      terminal "1L1"
+    }
+    port mainT1 {
+      direction out
+      signal Power
+      terminal "2T1"
+    }
+    port auxNo13 {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port auxNo14 {
+      direction out
+      signal Control
+      terminal "14"
+    }
+    port auxNc21 {
+      direction in
+      signal Control
+      terminal "21"
+    }
+    port auxNc22 {
+      direction out
+      signal Control
+      terminal "22"
+    }
+    port statusNo53 {
+      direction in
+      signal Control
+      terminal "53"
+    }
+    port statusNo54 {
+      direction out
+      signal Control
+      terminal "54"
+    }
+
+    function coil {
+      role coil
+      ports (coilA1, coilA2)
+    }
+    function mainContact {
+      role mainContact
+      ports (mainL1, mainT1)
+    }
+    function noContact {
+      role noContact
+      ports (auxNo13, auxNo14, statusNo53, statusNo54)
+    }
+    function ncContact {
+      role ncContact
+      ports (auxNc21, auxNc22)
+    }
+  }
+
+  device ReverseContactorKM2 {
+    type Contactor
+    model "4P-24VAC"
+    tag "KM2"
+
+    port coilA1 {
+      direction in
+      signal Control
+      terminal "A1"
+    }
+    port coilA2 {
+      direction out
+      signal Control
+      terminal "A2"
+    }
+    port mainL1 {
+      direction in
+      signal Power
+      terminal "1L1"
+    }
+    port mainT1 {
+      direction out
+      signal Power
+      terminal "2T1"
+    }
+    port auxNo13 {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port auxNo14 {
+      direction out
+      signal Control
+      terminal "14"
+    }
+    port auxNc21 {
+      direction in
+      signal Control
+      terminal "21"
+    }
+    port auxNc22 {
+      direction out
+      signal Control
+      terminal "22"
+    }
+    port statusNo53 {
+      direction in
+      signal Control
+      terminal "53"
+    }
+    port statusNo54 {
+      direction out
+      signal Control
+      terminal "54"
+    }
+
+    function coil {
+      role coil
+      ports (coilA1, coilA2)
+    }
+    function mainContact {
+      role mainContact
+      ports (mainL1, mainT1)
+    }
+    function noContact {
+      role noContact
+      ports (auxNo13, auxNo14, statusNo53, statusNo54)
+    }
+    function ncContact {
+      role ncContact
+      ports (auxNc21, auxNc22)
+    }
+  }
+
+  device StopButtonS0 {
+    type PushButton
+    model "NC"
+    tag "S0"
+
+    port common {
+      direction in
+      signal Control
+      terminal "11"
+    }
+    port switched {
+      direction out
+      signal Control
+      terminal "12"
+    }
+  }
+
+  device RaiseButtonS1 {
+    type PushButton
+    model "NO"
+    tag "S1"
+
+    port common {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port switched {
+      direction out
+      signal Control
+      terminal "14"
+    }
+  }
+
+  device LowerButtonS2 {
+    type PushButton
+    model "NO"
+    tag "S2"
+
+    port common {
+      direction in
+      signal Control
+      terminal "13"
+    }
+    port switched {
+      direction out
+      signal Control
+      terminal "14"
+    }
+  }
+
+  device UpperLimitSQ1 {
+    type LimitSwitch
+    model "NC"
+    tag "SQ1"
+
+    port common {
+      direction in
+      signal Control
+      terminal "21"
+    }
+    port switched {
+      direction out
+      signal Control
+      terminal "22"
+    }
+  }
+
+  device LowerLimitSQ2 {
+    type LimitSwitch
+    model "NC"
+    tag "SQ2"
+
+    port common {
+      direction in
+      signal Control
+      terminal "21"
+    }
+    port switched {
+      direction out
+      signal Control
+      terminal "22"
+    }
+  }
+
+  device ForwardLampHL1 {
+    type Lamp
+    model "GREEN-24VAC"
+    tag "HL1"
+
+    port signal {
+      direction in
+      signal Control
+      terminal "X1"
+    }
+    port return {
+      direction out
+      signal Control
+      terminal "X2"
+    }
+  }
+
+  device ReverseLampHL2 {
+    type Lamp
+    model "AMBER-24VAC"
+    tag "HL2"
+
+    port signal {
+      direction in
+      signal Control
+      terminal "X1"
+    }
+    port return {
+      direction out
+      signal Control
+      terminal "X2"
+    }
+  }
+
+  device FieldTerminalXT1 {
+    type Terminal
+    model "8-POLE"
+    tag "XT1"
+
+    port controlUpIn {
+      direction in
+      signal Control
+      terminal "1-IN"
+    }
+    port controlUpOut {
+      direction out
+      signal Control
+      terminal "1-OUT"
+    }
+    port controlDownIn {
+      direction in
+      signal Control
+      terminal "2-IN"
+    }
+    port controlDownOut {
+      direction out
+      signal Control
+      terminal "2-OUT"
+    }
+    port motorUpIn {
+      direction in
+      signal Power
+      terminal "3-IN"
+    }
+    port motorUpOut {
+      direction out
+      signal Power
+      terminal "3-OUT"
+    }
+    port motorDownIn {
+      direction in
+      signal Power
+      terminal "4-IN"
+    }
+    port motorDownOut {
+      direction out
+      signal Power
+      terminal "4-OUT"
+    }
+  }
+
+  device ShutterMotorM34 {
+    type Motor
+    model "ROLLER-SHUTTER-230V"
+    tag "M34"
+
+    port up {
+      direction in
+      signal Power
+      terminal "U"
+    }
+    port down {
+      direction in
+      signal Power
+      terminal "D"
+    }
+    port neutral {
+      direction in
+      signal Power
+      terminal "N"
+    }
+    port earth {
+      direction in
+      signal Ground
+      terminal "PE"
+    }
+  }
+
+  device ProtectiveEarthPE34 {
+    type ProtectiveEarth
+    model "PE-BAR"
+    tag "PE34"
+
+    port bond {
+      direction in
+      signal Ground
+      terminal "PE"
+    }
+  }
+
+  connect powersourceg34_phasel_to_mainbreakerqf34_linel PowerSourceG34.phaseL to MainBreakerQF34.lineL
+  connect powersourceg34_neutraln_to_mainbreakerqf34_neutralinn PowerSourceG34.neutralN to MainBreakerQF34.neutralInN
+  connect mainbreakerqf34_loadt_to_fusedisconnectorqs34_linel MainBreakerQF34.loadT to FuseDisconnectorQS34.lineL
+  connect mainbreakerqf34_neutraloutn_to_fusedisconnectorqs34_neutralinn MainBreakerQF34.neutralOutN to FuseDisconnectorQS34.neutralInN
+  connect fusedisconnectorqs34_loadt_to_controltransformert34_primaryl FuseDisconnectorQS34.loadT to ControlTransformerT34.primaryL
+  connect fusedisconnectorqs34_neutraloutn_to_controltransformert34_primaryn FuseDisconnectorQS34.neutralOutN to ControlTransformerT34.primaryN
+  connect controltransformert34_secondaryl_to_stopbuttons0_common ControlTransformerT34.secondaryL to StopButtonS0.common
+  connect stopbuttons0_switched_to_reversecontactorkm2_auxnc21 StopButtonS0.switched to ReverseContactorKM2.auxNc21
+  connect reversecontactorkm2_auxnc22_to_raisebuttons1_common ReverseContactorKM2.auxNc22 to RaiseButtonS1.common
+  connect raisebuttons1_switched_to_upperlimitsq1_common RaiseButtonS1.switched to UpperLimitSQ1.common
+  connect upperlimitsq1_switched_to_fieldterminalxt1_controlupin UpperLimitSQ1.switched to FieldTerminalXT1.controlUpIn
+  connect fieldterminalxt1_controlupout_to_forwardcontactorkm1_coila1 FieldTerminalXT1.controlUpOut to ForwardContactorKM1.coilA1
+  connect forwardcontactorkm1_coila2_to_controltransformert34_secondaryn ForwardContactorKM1.coilA2 to ControlTransformerT34.secondaryN
+  connect stopbuttons0_switched_to_forwardcontactorkm1_auxnc21 StopButtonS0.switched to ForwardContactorKM1.auxNc21
+  connect forwardcontactorkm1_auxnc22_to_lowerbuttons2_common ForwardContactorKM1.auxNc22 to LowerButtonS2.common
+  connect lowerbuttons2_switched_to_lowerlimitsq2_common LowerButtonS2.switched to LowerLimitSQ2.common
+  connect lowerlimitsq2_switched_to_fieldterminalxt1_controldownin LowerLimitSQ2.switched to FieldTerminalXT1.controlDownIn
+  connect fieldterminalxt1_controldownout_to_reversecontactorkm2_coila1 FieldTerminalXT1.controlDownOut to ReverseContactorKM2.coilA1
+  connect reversecontactorkm2_coila2_to_controltransformert34_secondaryn ReverseContactorKM2.coilA2 to ControlTransformerT34.secondaryN
+  connect fusedisconnectorqs34_loadt_to_forwardcontactorkm1_mainl1 FuseDisconnectorQS34.loadT to ForwardContactorKM1.mainL1
+  connect fusedisconnectorqs34_loadt_to_reversecontactorkm2_mainl1 FuseDisconnectorQS34.loadT to ReverseContactorKM2.mainL1
+  connect forwardcontactorkm1_maint1_to_fieldterminalxt1_motorupin ForwardContactorKM1.mainT1 to FieldTerminalXT1.motorUpIn
+  connect fieldterminalxt1_motorupout_to_shuttermotorm34_up FieldTerminalXT1.motorUpOut to ShutterMotorM34.up
+  connect reversecontactorkm2_maint1_to_fieldterminalxt1_motordownin ReverseContactorKM2.mainT1 to FieldTerminalXT1.motorDownIn
+  connect fieldterminalxt1_motordownout_to_shuttermotorm34_down FieldTerminalXT1.motorDownOut to ShutterMotorM34.down
+  connect fusedisconnectorqs34_neutraloutn_to_shuttermotorm34_neutral FuseDisconnectorQS34.neutralOutN to ShutterMotorM34.neutral
+  connect controltransformert34_secondaryl_to_forwardcontactorkm1_statusno53 ControlTransformerT34.secondaryL to ForwardContactorKM1.statusNo53
+  connect forwardcontactorkm1_statusno54_to_forwardlamphl1_signal ForwardContactorKM1.statusNo54 to ForwardLampHL1.signal
+  connect forwardlamphl1_return_to_controltransformert34_secondaryn ForwardLampHL1.return to ControlTransformerT34.secondaryN
+  connect controltransformert34_secondaryl_to_reversecontactorkm2_statusno53 ControlTransformerT34.secondaryL to ReverseContactorKM2.statusNo53
+  connect reversecontactorkm2_statusno54_to_reverselamphl2_signal ReverseContactorKM2.statusNo54 to ReverseLampHL2.signal
+  connect reverselamphl2_return_to_controltransformert34_secondaryn ReverseLampHL2.return to ControlTransformerT34.secondaryN
+
+  connect protective_earth {
+    powersourceg34_protectivepe_to_shuttermotorm34_earth PowerSourceG34.protectivePE to ShutterMotorM34.earth
+    powersourceg34_protectivepe_to_protectiveearthpe34_bond PowerSourceG34.protectivePE to ProtectiveEarthPE34.bond
+  }
+
+  layout schematic {
+    place PowerSourceG34 at (2, 1) orientation horizontal
+    place MainBreakerQF34 at (4, 1) orientation horizontal
+    place FuseDisconnectorQS34 at (6, 1) orientation horizontal
+    place ControlTransformerT34 at (8, 1) orientation horizontal
+    place ForwardContactorKM1.mainContact at (10, 1) orientation horizontal
+    place ReverseContactorKM2.mainContact at (12, 1) orientation horizontal
+    place ShutterMotorM34 at (15, 1) orientation horizontal
+
+    place StopButtonS0 at (2, 3) orientation vertical
+    place RaiseButtonS1 at (4, 3) orientation vertical
+    place LowerButtonS2 at (6, 3) orientation vertical
+    place UpperLimitSQ1 at (8, 3) orientation vertical
+    place LowerLimitSQ2 at (10, 3) orientation vertical
+    place ForwardContactorKM1.coil at (12, 3) orientation vertical
+    place ReverseContactorKM2.coil at (14, 3) orientation vertical
+    place ForwardContactorKM1.ncContact at (7, 4) orientation vertical
+    place ReverseContactorKM2.ncContact at (9, 4) orientation vertical
+
+    place ForwardContactorKM1.noContact at (12, 5) orientation vertical
+    place ReverseContactorKM2.noContact at (14, 5) orientation vertical
+    place ForwardLampHL1 at (16, 5) orientation vertical
+    place ReverseLampHL2 at (16, 6) orientation vertical
+    place FieldTerminalXT1 at (15, 7) orientation horizontal
+    place ProtectiveEarthPE34 at (17, 8) orientation vertical
+  }
+}

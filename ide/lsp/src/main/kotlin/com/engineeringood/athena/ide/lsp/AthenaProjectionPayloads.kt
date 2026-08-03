@@ -63,21 +63,12 @@ data class AthenaProjectionReadyPayload(
     val viewId: String,
     val familyId: String? = null,
     val systemName: String,
-    val canvasWidth: Int,
-    val canvasHeight: Int,
     val presentation: AthenaPresentationDocumentPayload? = null,
     val activeSheetId: String? = null,
     val sheets: List<AthenaProjectionSheetPayload> = emptyList(),
-    val sheetLayout: AthenaProjectionSheetLayoutPayload? = null,
     val notationPack: AthenaProjectionNotationPackPayload? = null,
     val crossReferences: List<AthenaProjectionCrossReferencePayload> = emptyList(),
-    val electricalAnchors: List<AthenaProjectionElectricalAnchorPayload> = emptyList(),
-    val electricalConnectionEndpoints: List<AthenaProjectionElectricalConnectionEndpointPayload> = emptyList(),
-    val electricalRoutingCorridors: List<AthenaProjectionElectricalRoutingCorridorPayload> = emptyList(),
     val activeRenderContributions: List<AthenaProjectionRenderContributionPayload>,
-    val components: List<AthenaProjectionComponentPayload>,
-    val connections: List<AthenaProjectionConnectionPayload>,
-    val labels: List<AthenaProjectionLabelPayload>,
 )
 
 /**
@@ -221,68 +212,6 @@ data class AthenaProjectionSheetCompositionPayload(
 }
 
 /**
- * One governed sheet layout exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionSheetLayoutPayload(
-    val sheetId: String,
-    val displayName: String,
-    val order: Int,
-    val subjectSemanticIds: List<String> = emptyList(),
-    val representationFamilyId: String = "schematic-sheet",
-    val frame: AthenaProjectionSheetLayoutFramePayload,
-    val placements: List<AthenaProjectionSheetLayoutPlacementPayload> = emptyList(),
-    val routingGuidance: List<AthenaProjectionSheetLayoutRoutingGuidancePayload> = emptyList(),
-    val labelLayouts: List<AthenaProjectionSheetLayoutLabelLayoutPayload> = emptyList(),
-)
-
-/**
- * One governed sheet layout frame exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionSheetLayoutFramePayload(
-    val canvasWidth: Int,
-    val canvasHeight: Int,
-    val gridMajorStep: Int = 120,
-    val gridMinorStep: Int = 24,
-)
-
-/**
- * One governed sheet layout placement exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionSheetLayoutPlacementPayload(
-    val projectionId: String,
-    val semanticId: String,
-    val x: Int,
-    val y: Int,
-    val width: Int,
-    val height: Int,
-)
-
-/**
- * One governed sheet layout routing guidance exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionSheetLayoutRoutingGuidancePayload(
-    val projectionConnectionId: String,
-    val connectionSemanticId: String,
-    val sourcePoint: AthenaProjectionPointPayload,
-    val targetPoint: AthenaProjectionPointPayload,
-    val routingStyle: String,
-    val bendPoints: List<AthenaProjectionPointPayload> = emptyList(),
-)
-
-/**
- * One governed sheet layout label layout exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionSheetLayoutLabelLayoutPayload(
-    val projectionId: String,
-    val semanticId: String,
-    val label: String,
-    val x: Int,
-    val y: Int,
-    val width: Int,
-    val height: Int,
-)
-
-/**
  * One governed page size exposed through the Athena LSP boundary.
  */
 data class AthenaProjectionSheetPageSizePayload(
@@ -374,55 +303,6 @@ data class AthenaProjectionCrossReferenceLinkPayload(
 )
 
 /**
- * One typed projection point exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionPointPayload(
-    val x: Int,
-    val y: Int,
-)
-
-/**
- * One typed electrical anchor occurrence exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionElectricalAnchorPayload(
-    val anchorId: String,
-    val portSemanticId: String,
-    val ownerSemanticId: String,
-    val nodeId: String,
-    val labelId: String? = null,
-    val x: Int,
-    val y: Int,
-    val side: String,
-)
-
-/**
- * One typed electrical connection endpoint occurrence exposed through the Athena LSP boundary.
- */
-data class AthenaProjectionElectricalConnectionEndpointPayload(
-    val endpointId: String,
-    val projectionConnectionId: String,
-    val connectionSemanticId: String,
-    val endpointRole: String,
-    val portSemanticId: String,
-    val anchorId: String,
-)
-
-/**
- * One preferred electrical routing corridor exposed through the Athena LSP boundary.
- *
- * The corridor is guidance for downstream renderers only and does not become engineering truth.
- */
-data class AthenaProjectionElectricalRoutingCorridorPayload(
-    val corridorId: String,
-    val projectionConnectionId: String,
-    val connectionSemanticId: String,
-    val sourceAnchorId: String,
-    val targetAnchorId: String,
-    val routingStyle: String,
-    val preferredBendPoints: List<AthenaProjectionPointPayload> = emptyList(),
-)
-
-/**
  * One active render contribution exposed through the Athena LSP boundary for the current graphical view.
  */
 data class AthenaProjectionRenderContributionPayload(
@@ -440,44 +320,6 @@ data class AthenaProjectionRenderContributionPayload(
 data class AthenaProjectionSurfaceMappingPayload(
     val surface: String,
     val tokens: Map<String, String> = emptyMap(),
-)
-
-/**
- * One projection-facing component box derived from the runtime-owned scene.
- */
-data class AthenaProjectionComponentPayload(
-    val projectionId: String,
-    val semanticId: String,
-    val label: String,
-    val x: Int,
-    val y: Int,
-    val width: Int,
-    val height: Int,
-)
-
-/**
- * One projection-facing connection line derived from the runtime-owned scene.
- */
-data class AthenaProjectionConnectionPayload(
-    val projectionId: String,
-    val semanticId: String,
-    val x1: Int,
-    val y1: Int,
-    val x2: Int,
-    val y2: Int,
-)
-
-/**
- * One projection-facing semantic label derived from the runtime-owned scene.
- */
-data class AthenaProjectionLabelPayload(
-    val projectionId: String,
-    val semanticId: String,
-    val label: String,
-    val x: Int,
-    val y: Int,
-    val width: Int,
-    val height: Int,
 )
 
 /**

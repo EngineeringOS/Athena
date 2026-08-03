@@ -37,7 +37,6 @@ enum class AthenaGovernedGraphicMutationTarget {
     DomNode,
     GraphicPrimitiveIr,
     PlacementFact,
-    RouteFact,
 }
 
 enum class AthenaGovernedGraphicEditDecision {

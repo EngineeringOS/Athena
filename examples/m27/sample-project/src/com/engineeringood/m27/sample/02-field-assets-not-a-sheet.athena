@@ -21,7 +21,7 @@ system ProfessionalSheetProofSupportCatalog {
     signal Digital
   }
 
-  connect sparefieldgatewaygw1_do1_to_spareterminalxt99_in1 SpareFieldGatewayGW1.do1 -> SpareTerminalXT99.in1
+  connect sparefieldgatewaygw1_do1_to_spareterminalxt99_in1 SpareFieldGatewayGW1.do1 to SpareTerminalXT99.in1
 
   layout schematic-sheet {
     place SpareTerminalXT99 below SpareFieldGatewayGW1

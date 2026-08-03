@@ -9,6 +9,7 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutIntent
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.presentation.PresentationDocument
+import com.engineeringood.athena.presentation.PresentationPaintPlan
 import com.engineeringood.athena.presentation.PresentationReferenceMarkerFact
 import com.engineeringood.athena.presentation.PresentationReferenceMarkerId
 import com.engineeringood.athena.presentation.PresentationReferenceMarkerKind
@@ -79,6 +80,7 @@ class AthenaPresentationReferenceMarkerPayloadTest {
             primitivePacks = emptyList(),
             compositePacks = emptyList(),
             occurrences = emptyList(),
+            paintPlan = PresentationPaintPlan(emptyList()),
             referenceMarkers = referenceMarkers,
         )
 }

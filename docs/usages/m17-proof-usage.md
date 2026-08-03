@@ -145,7 +145,7 @@ structural comparison between `examples/m0/demo-cabinet.athena` and
 
 Corpus: `examples/m17/invalid-and-incomplete-proof/*.athena` (+ extended `.expectation.txt`
 sidecars carrying `syntaxErrorLine=`/`syntaxErrorMessageContains=`) -- one fixture each for an
-unterminated string literal, a missing closing brace, a missing `connect` `->`, and an
+unterminated string literal, a missing closing brace, a missing `connect` `to`, and an
 over-qualified port reference.
 
 ```powershell

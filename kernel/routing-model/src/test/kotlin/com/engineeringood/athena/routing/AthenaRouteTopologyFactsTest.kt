@@ -1,4 +1,4 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
@@ -42,7 +42,7 @@ class AthenaRouteTopologyFactsTest {
         val connectionId = ElectricalConnectionId("connection:$id")
         return AthenaRouteRequest(
             routeId = SchematicRouteId("route:$id"),
-            connectionIntent = ElectricalConnectionIntent(
+            connectionRoleFact = ElectricalConnectionRoleFact(
                 connectionId = connectionId,
                 sourceSubjectId = source.subjectId,
                 sourcePortId = source.portId,

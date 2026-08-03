@@ -85,7 +85,6 @@ class BindingEvidencePayloadTest {
         assertEquals(listOf("device-tag=DriveA"), payload.labelBindingSummary)
         assertEquals("binding-resolver", payload.resolverStage)
         assertEquals(emptyList(), payload.diagnostics)
-        assertFalse(payload.rendererFallbackAccepted)
     }
 
     @Test
@@ -98,7 +97,6 @@ class BindingEvidencePayloadTest {
         assertEquals("device:DriveA", payload.semanticSubjectId)
         assertNull(payload.descriptorId)
         assertNull(payload.variant)
-        assertFalse(payload.rendererFallbackAccepted)
         assertEquals(
             listOf("binding.resolution.descriptor.missing", "binding.resolution.anchor.missing", "binding.resolution.label-slot.missing"),
             payload.diagnostics.map { it.code },

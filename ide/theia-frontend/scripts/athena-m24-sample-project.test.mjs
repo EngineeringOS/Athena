@@ -46,10 +46,10 @@ test('M24 sample project is an openable IDE proof with real Athena sources', () 
     assert.match(joinedSources, /system ControlRouteProof/);
     assert.match(joinedSources, /system TerminalStripRouteProof/);
     assert.match(joinedSources, /system PowerProtectionRouteProof/);
-    assert.match(joinedSources, /connect\s+\w+\s+ControllerPLC1\.statusOut -> OperatorHMI1\.statusIn/);
-    assert.match(joinedSources, /connect\s+\w+\s+TerminalRoutePLC1\.do1 -> TerminalStripXT1\.in1/);
-    assert.match(joinedSources, /connect\s+\w+\s+TerminalStripXT1\.out1 -> ValveY1\.command/);
-    assert.match(joinedSources, /connect\s+\w+\s+PowerSupplyPS1\.lplus -> BreakerQF1\.line/);
-    assert.match(joinedSources, /connect\s+\w+\s+ContactorKM1\.t1 -> MotorM1\.u1/);
+    assert.match(joinedSources, /connect\s+\w+\s+ControllerPLC1\.statusOut to OperatorHMI1\.statusIn/);
+    assert.match(joinedSources, /connect\s+\w+\s+TerminalRoutePLC1\.do1 to TerminalStripXT1\.in1/);
+    assert.match(joinedSources, /connect\s+\w+\s+TerminalStripXT1\.out1 to ValveY1\.command/);
+    assert.match(joinedSources, /connect\s+\w+\s+PowerSupplyPS1\.lplus to BreakerQF1\.line/);
+    assert.match(joinedSources, /connect\s+\w+\s+ContactorKM1\.t1 to MotorM1\.u1/);
     assert.match(joinedSources, /layout schematic-sheet/);
 });

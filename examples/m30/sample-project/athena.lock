@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:21df6d5465fac60070ade956ec7ace469eb016a1af15158b7047b6dad8a5c4dc
+validatedLockStateDigest: lock-state:c65333d6bf41808127200711ac14da350ddfb85894d250824c99d2861062cdef
 primaryPackage:
   name: com.engineeringood.m30.sample
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m30.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:f4155be2fa65ef1e35ced3de12996b4c511b89b0468ce455af347c798693b621
+    snapshotDigest: package-snapshot:801bcc63052e9d13a82290b0d4bc2ad4e3c2fc260aa86323d07f193e32df668a
     sourceHashes:
       - path: com/engineeringood/m30/sample/01-rolling-shutter-control-source.athena
-        hash: sha256:e983afd6a8b57b009b67be7bd870a4623bde8327f614841105c4a45d59490bc0
+        hash: sha256:d5d7b1fb4e92fe7dde4afa83402bae7f7d32ae17a9c0252e99b919880f0b4550
     resourceHashes: []
     dependencies: []

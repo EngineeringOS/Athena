@@ -355,7 +355,7 @@ class GovernedRelationshipPreviewServiceTest {
 
         val SOURCE_WITH_CONNECTION = SOURCE.replace(
             "\n}",
-            "\n\n  connect source_out_to_load_in Source.out -> Load.in\n}",
+            "\n\n  connect source_out_to_load_in Source.out to Load.in\n}",
         )
 
         fun sourceDocument(source: String): BackendAuthoringSourceDocument {

@@ -81,7 +81,7 @@ class AthenaCommandHistoryTest {
             assertEquals(2, undoSuccess.beforeDocument.connections.size)
             assertEquals(1, undoSuccess.afterDocument.connections.size)
             assertEquals(1, assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document.connections.size)
-            assertEquals(1, assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection()).scene.connections.size)
+            assertEquals(0, assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection()).scene.connections.size)
 
             val historyAfterUndo = context.commandRuntime().history(context)
             assertEquals(1, historyAfterUndo.appliedRecordCount)
@@ -100,7 +100,7 @@ class AthenaCommandHistoryTest {
             assertEquals(1, redoSuccess.beforeDocument.connections.size)
             assertEquals(2, redoSuccess.afterDocument.connections.size)
             assertEquals(2, assertIs<CompilerCompilationSuccess>(context.compileActiveProject()).document.connections.size)
-            assertEquals(2, assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection()).scene.connections.size)
+            assertEquals(0, assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection()).scene.connections.size)
         } finally {
             Files.deleteIfExists(sourcePath)
         }

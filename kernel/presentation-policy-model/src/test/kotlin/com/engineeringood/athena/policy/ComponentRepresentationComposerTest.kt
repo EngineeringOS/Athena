@@ -1,6 +1,5 @@
 package com.engineeringood.athena.policy
 
-import com.engineeringood.athena.representation.RepresentationContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -20,7 +19,7 @@ class ComponentRepresentationComposerTest {
 
         assertTrue(snapshot.hasZeroFallbackSymbols())
         assertEquals(4, snapshot.facts.size)
-        assertTrue(snapshot.facts.all { it.anatomy.context == RepresentationContext.ELECTRICAL_SCHEMATIC })
+        assertTrue(snapshot.facts.all { it.definition.graphicBody.primitives.isNotEmpty() })
         assertTrue(snapshot.facts.all { it.terminals.isNotEmpty() })
         assertTrue(snapshot.facts.all { it.labels.isNotEmpty() })
     }

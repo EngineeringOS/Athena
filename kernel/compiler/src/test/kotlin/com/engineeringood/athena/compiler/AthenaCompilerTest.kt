@@ -49,28 +49,15 @@ import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaRenderSurface
 import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
-import com.engineeringood.athena.projection.ProjectionBounds
 import com.engineeringood.athena.projection.ProjectionConnection
 import com.engineeringood.athena.projection.ProjectionConnectionId
-import com.engineeringood.athena.projection.ElectricalAnchor
-import com.engineeringood.athena.projection.ElectricalAnchorId
-import com.engineeringood.athena.projection.ElectricalAnchorSide
-import com.engineeringood.athena.projection.ElectricalConnectionEndpoint
-import com.engineeringood.athena.projection.ElectricalConnectionEndpointId
-import com.engineeringood.athena.projection.ElectricalConnectionEndpointRole
-import com.engineeringood.athena.projection.ElectricalRoutingCorridor
-import com.engineeringood.athena.projection.ElectricalRoutingCorridorId
-import com.engineeringood.athena.projection.ElectricalRoutingStyle
 import com.engineeringood.athena.projection.ProjectionDocument
-import com.engineeringood.athena.projection.ProjectionLabel
-import com.engineeringood.athena.projection.ProjectionLabelId
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
 import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationPackId
 import com.engineeringood.athena.projection.ProjectionNotationSubject
 import com.engineeringood.athena.projection.ProjectionLabelPolicy
-import com.engineeringood.athena.projection.ProjectionPoint
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetId
 import com.engineeringood.athena.projection.ProjectionSheetSubject
@@ -759,8 +746,8 @@ class AthenaCompilerTest {
                 signal Digital
               }
 
-              connect plc1_out_to_plc1_out PLC1.out -> PLC1.out
-              connect plc1_out_to_plc1_out_2 PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out PLC1.out to PLC1.out
+              connect plc1_out_to_plc1_out_2 PLC1.out to PLC1.out
             }
         """.trimIndent()
         val duplicatePath = Files.createTempFile("athena-kernel-validation-without-plugins-", ".athena")
@@ -1019,8 +1006,8 @@ class AthenaCompilerTest {
                 signal Digital
               }
 
-              connect plc1_out_to_plc1_out_3 PLC1.out -> PLC1.out
-              connect plc1_out_to_plc1_out_4 PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out_3 PLC1.out to PLC1.out
+              connect plc1_out_to_plc1_out_4 PLC1.out to PLC1.out
             }
         """.trimIndent()
         val duplicatePath = Files.createTempFile("athena-duplicate-connections-", ".athena")
@@ -1264,7 +1251,7 @@ class AthenaCompilerTest {
                 direction out
               }
 
-              connect plc1_out_to_missing_in PLC1.out -> Missing.in
+              connect plc1_out_to_missing_in PLC1.out to Missing.in
             }
         """.trimIndent()
         val unresolvedPath = Files.createTempFile("athena-unresolved-", ".athena")
@@ -1306,8 +1293,8 @@ class AthenaCompilerTest {
                 direction out
               }
 
-              connect plc1_out_to_plc1_out_5 PLC1.out -> PLC1.out
-              connect plc1_out_to_plc1_out_6 PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out_5 PLC1.out to PLC1.out
+              connect plc1_out_to_plc1_out_6 PLC1.out to PLC1.out
             }
         """.trimIndent()
         val duplicatePath = Files.createTempFile("athena-duplicate-", ".athena")
@@ -1368,7 +1355,7 @@ class AthenaCompilerTest {
                 signal Digital
               }
 
-              connect plc1_out_to_m1_in PLC1.out -> M1.in
+              connect plc1_out_to_m1_in PLC1.out to M1.in
             }
         """.trimIndent()
         val duplicateSignalPath = Files.createTempFile("athena-duplicate-signal-", ".athena")
@@ -1952,21 +1939,17 @@ class AthenaCompilerTest {
         val connectionKey = demoConnectionKey(examplePath)
         return ProjectionDocument(
             view = cabinetViewDefinition(),
-            canvasWidth = 480,
-            canvasHeight = 172,
             nodes = listOf(
                 ProjectionNode(
                     projectionId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
                     semanticId = StableSemanticIdentity("component:PLC1"),
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 40, y = 60, width = 140, height = 72),
                     originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_PLC1"),
                 ),
                 ProjectionNode(
                     projectionId = ProjectionNodeId("cabinet/projection/node/component_M1"),
                     semanticId = StableSemanticIdentity("component:M1"),
                     label = "M1",
-                    bounds = ProjectionBounds(x = 300, y = 60, width = 140, height = 72),
                     originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_M1"),
                 ),
             ),
@@ -1974,25 +1957,7 @@ class AthenaCompilerTest {
                 ProjectionConnection(
                     projectionId = ProjectionConnectionId("cabinet/projection/connection/$connectionKey"),
                     semanticId = connectionId,
-                    start = ProjectionPoint(x = 104, y = 86),
-                    end = ProjectionPoint(x = 316, y = 86),
                     originGeometryElementId = GeometryElementId("cabinet/geometry/path/$connectionKey"),
-                ),
-            ),
-            labels = listOf(
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId("cabinet/projection/label/port_PLC1_out"),
-                    semanticId = StableSemanticIdentity("port:PLC1.out"),
-                    label = "out",
-                    bounds = ProjectionBounds(x = 56, y = 78, width = 48, height = 16),
-                    originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_PLC1_out"),
-                ),
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId("cabinet/projection/label/port_M1_in"),
-                    semanticId = StableSemanticIdentity("port:M1.in"),
-                    label = "in",
-                    bounds = ProjectionBounds(x = 316, y = 78, width = 48, height = 16),
-                    originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_M1_in"),
                 ),
             ),
             sheets = listOf(
@@ -2014,14 +1979,6 @@ class AthenaCompilerTest {
                             connectionIds = listOf(
                                 ProjectionConnectionId("cabinet/projection/connection/$connectionKey"),
                             ),
-                        ),
-                        ProjectionSheetSubject(
-                            semanticId = StableSemanticIdentity("port:M1.in"),
-                            labelIds = listOf(ProjectionLabelId("cabinet/projection/label/port_M1_in")),
-                        ),
-                        ProjectionSheetSubject(
-                            semanticId = StableSemanticIdentity("port:PLC1.out"),
-                            labelIds = listOf(ProjectionLabelId("cabinet/projection/label/port_PLC1_out")),
                         ),
                     ),
                 ),
@@ -2047,76 +2004,6 @@ class AthenaCompilerTest {
                         symbolKey = ProjectionSymbolKey("connection.cabinet.default"),
                         labelPolicy = ProjectionLabelPolicy.HIDDEN,
                     ),
-                    ProjectionNotationSubject(
-                        semanticId = StableSemanticIdentity("port:M1.in"),
-                        symbolKey = ProjectionSymbolKey("port.cabinet.default"),
-                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
-                    ),
-                    ProjectionNotationSubject(
-                        semanticId = StableSemanticIdentity("port:PLC1.out"),
-                        symbolKey = ProjectionSymbolKey("port.cabinet.default"),
-                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
-                    ),
-                ),
-            ),
-            electricalAnchors = listOf(
-                ElectricalAnchor(
-                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_PLC1_out/anchor"),
-                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
-                    ownerSemanticId = StableSemanticIdentity("component:PLC1"),
-                    nodeId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
-                    labelId = ProjectionLabelId("cabinet/projection/label/port_PLC1_out"),
-                    position = ProjectionPoint(x = 80, y = 60),
-                    side = ElectricalAnchorSide.TOP,
-                ),
-                ElectricalAnchor(
-                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_M1_in/anchor"),
-                    portSemanticId = StableSemanticIdentity("port:M1.in"),
-                    ownerSemanticId = StableSemanticIdentity("component:M1"),
-                    nodeId = ProjectionNodeId("cabinet/projection/node/component_M1"),
-                    labelId = ProjectionLabelId("cabinet/projection/label/port_M1_in"),
-                    position = ProjectionPoint(x = 340, y = 60),
-                    side = ElectricalAnchorSide.TOP,
-                ),
-            ),
-            electricalConnectionEndpoints = listOf(
-                ElectricalConnectionEndpoint(
-                    endpointId = ElectricalConnectionEndpointId(
-                        "cabinet/projection/connection/$connectionKey/endpoint/source",
-                    ),
-                    projectionConnectionId = ProjectionConnectionId(
-                        "cabinet/projection/connection/$connectionKey",
-                    ),
-                    connectionSemanticId = connectionId,
-                    endpointRole = ElectricalConnectionEndpointRole.SOURCE,
-                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
-                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_PLC1_out/anchor"),
-                ),
-                ElectricalConnectionEndpoint(
-                    endpointId = ElectricalConnectionEndpointId(
-                        "cabinet/projection/connection/$connectionKey/endpoint/target",
-                    ),
-                    projectionConnectionId = ProjectionConnectionId(
-                        "cabinet/projection/connection/$connectionKey",
-                    ),
-                    connectionSemanticId = connectionId,
-                    endpointRole = ElectricalConnectionEndpointRole.TARGET,
-                    portSemanticId = StableSemanticIdentity("port:M1.in"),
-                    anchorId = ElectricalAnchorId("cabinet/projection/label/port_M1_in/anchor"),
-                ),
-            ),
-            electricalRoutingCorridors = listOf(
-                ElectricalRoutingCorridor(
-                    corridorId = ElectricalRoutingCorridorId(
-                        "cabinet/projection/connection/$connectionKey/corridor",
-                    ),
-                    projectionConnectionId = ProjectionConnectionId(
-                        "cabinet/projection/connection/$connectionKey",
-                    ),
-                    connectionSemanticId = connectionId,
-                    sourceAnchorId = ElectricalAnchorId("cabinet/projection/label/port_PLC1_out/anchor"),
-                    targetAnchorId = ElectricalAnchorId("cabinet/projection/label/port_M1_in/anchor"),
-                    routingStyle = ElectricalRoutingStyle.ORTHOGONAL,
                 ),
             ),
         )
@@ -2127,21 +2014,17 @@ class AthenaCompilerTest {
         val connectionKey = demoConnectionKey(examplePath)
         return ProjectionDocument(
             view = wiringViewDefinition(),
-            canvasWidth = 490,
-            canvasHeight = 244,
             nodes = listOf(
                 ProjectionNode(
                     projectionId = ProjectionNodeId("wiring/projection/node/component_PLC1"),
                     semanticId = StableSemanticIdentity("component:PLC1"),
                     label = "PLC1",
-                    bounds = ProjectionBounds(x = 40, y = 40, width = 110, height = 44),
                     originGeometryElementId = GeometryElementId("wiring/geometry/box/component_PLC1"),
                 ),
                 ProjectionNode(
                     projectionId = ProjectionNodeId("wiring/projection/node/component_M1"),
                     semanticId = StableSemanticIdentity("component:M1"),
                     label = "M1",
-                    bounds = ProjectionBounds(x = 40, y = 160, width = 110, height = 44),
                     originGeometryElementId = GeometryElementId("wiring/geometry/box/component_M1"),
                 ),
             ),
@@ -2149,25 +2032,7 @@ class AthenaCompilerTest {
                 ProjectionConnection(
                     projectionId = ProjectionConnectionId("wiring/projection/connection/$connectionKey"),
                     semanticId = connectionId,
-                    start = ProjectionPoint(x = 300, y = 81),
-                    end = ProjectionPoint(x = 390, y = 81),
                     originGeometryElementId = GeometryElementId("wiring/geometry/path/$connectionKey"),
-                ),
-            ),
-            labels = listOf(
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId("wiring/projection/label/port_PLC1_out"),
-                    semanticId = StableSemanticIdentity("port:PLC1.out"),
-                    label = "out",
-                    bounds = ProjectionBounds(x = 240, y = 72, width = 60, height = 18),
-                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_PLC1_out"),
-                ),
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId("wiring/projection/label/port_M1_in"),
-                    semanticId = StableSemanticIdentity("port:M1.in"),
-                    label = "in",
-                    bounds = ProjectionBounds(x = 390, y = 72, width = 60, height = 18),
-                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_M1_in"),
                 ),
             ),
             sheets = listOf(
@@ -2189,14 +2054,6 @@ class AthenaCompilerTest {
                             connectionIds = listOf(
                                 ProjectionConnectionId("wiring/projection/connection/$connectionKey"),
                             ),
-                        ),
-                        ProjectionSheetSubject(
-                            semanticId = StableSemanticIdentity("port:M1.in"),
-                            labelIds = listOf(ProjectionLabelId("wiring/projection/label/port_M1_in")),
-                        ),
-                        ProjectionSheetSubject(
-                            semanticId = StableSemanticIdentity("port:PLC1.out"),
-                            labelIds = listOf(ProjectionLabelId("wiring/projection/label/port_PLC1_out")),
                         ),
                     ),
                 ),
@@ -2223,76 +2080,6 @@ class AthenaCompilerTest {
                         labelPolicy = ProjectionLabelPolicy.HIDDEN,
                         markerKeys = listOf("signal-flow"),
                     ),
-                    ProjectionNotationSubject(
-                        semanticId = StableSemanticIdentity("port:M1.in"),
-                        symbolKey = ProjectionSymbolKey("port.wiring.default"),
-                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
-                    ),
-                    ProjectionNotationSubject(
-                        semanticId = StableSemanticIdentity("port:PLC1.out"),
-                        symbolKey = ProjectionSymbolKey("port.wiring.default"),
-                        labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
-                    ),
-                ),
-            ),
-            electricalAnchors = listOf(
-                ElectricalAnchor(
-                    anchorId = ElectricalAnchorId("wiring/projection/label/port_PLC1_out/anchor"),
-                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
-                    ownerSemanticId = StableSemanticIdentity("component:PLC1"),
-                    nodeId = ProjectionNodeId("wiring/projection/node/component_PLC1"),
-                    labelId = ProjectionLabelId("wiring/projection/label/port_PLC1_out"),
-                    position = ProjectionPoint(x = 150, y = 81),
-                    side = ElectricalAnchorSide.RIGHT,
-                ),
-                ElectricalAnchor(
-                    anchorId = ElectricalAnchorId("wiring/projection/label/port_M1_in/anchor"),
-                    portSemanticId = StableSemanticIdentity("port:M1.in"),
-                    ownerSemanticId = StableSemanticIdentity("component:M1"),
-                    nodeId = ProjectionNodeId("wiring/projection/node/component_M1"),
-                    labelId = ProjectionLabelId("wiring/projection/label/port_M1_in"),
-                    position = ProjectionPoint(x = 150, y = 160),
-                    side = ElectricalAnchorSide.RIGHT,
-                ),
-            ),
-            electricalConnectionEndpoints = listOf(
-                ElectricalConnectionEndpoint(
-                    endpointId = ElectricalConnectionEndpointId(
-                        "wiring/projection/connection/$connectionKey/endpoint/source",
-                    ),
-                    projectionConnectionId = ProjectionConnectionId(
-                        "wiring/projection/connection/$connectionKey",
-                    ),
-                    connectionSemanticId = connectionId,
-                    endpointRole = ElectricalConnectionEndpointRole.SOURCE,
-                    portSemanticId = StableSemanticIdentity("port:PLC1.out"),
-                    anchorId = ElectricalAnchorId("wiring/projection/label/port_PLC1_out/anchor"),
-                ),
-                ElectricalConnectionEndpoint(
-                    endpointId = ElectricalConnectionEndpointId(
-                        "wiring/projection/connection/$connectionKey/endpoint/target",
-                    ),
-                    projectionConnectionId = ProjectionConnectionId(
-                        "wiring/projection/connection/$connectionKey",
-                    ),
-                    connectionSemanticId = connectionId,
-                    endpointRole = ElectricalConnectionEndpointRole.TARGET,
-                    portSemanticId = StableSemanticIdentity("port:M1.in"),
-                    anchorId = ElectricalAnchorId("wiring/projection/label/port_M1_in/anchor"),
-                ),
-            ),
-            electricalRoutingCorridors = listOf(
-                ElectricalRoutingCorridor(
-                    corridorId = ElectricalRoutingCorridorId(
-                        "wiring/projection/connection/$connectionKey/corridor",
-                    ),
-                    projectionConnectionId = ProjectionConnectionId(
-                        "wiring/projection/connection/$connectionKey",
-                    ),
-                    connectionSemanticId = connectionId,
-                    sourceAnchorId = ElectricalAnchorId("wiring/projection/label/port_PLC1_out/anchor"),
-                    targetAnchorId = ElectricalAnchorId("wiring/projection/label/port_M1_in/anchor"),
-                    routingStyle = ElectricalRoutingStyle.ORTHOGONAL,
                 ),
             ),
         )
@@ -2314,8 +2101,6 @@ class AthenaCompilerTest {
                     "ownership-relationships",
                     "connectivity-relationships",
                     "grouped-placement",
-                    "electrical-anchors",
-                    "electrical-routing-corridors",
                 ),
                 semanticCommandIds = listOf(
                     "create-semantic-relationship",
@@ -2355,8 +2140,6 @@ class AthenaCompilerTest {
                     "ports",
                     "signal-groups",
                     "connectivity-relationships",
-                    "electrical-anchors",
-                    "electrical-routing-corridors",
                 ),
                 transientInteractionKinds = listOf(
                     "navigate-view",

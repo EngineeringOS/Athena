@@ -42,7 +42,7 @@ test('M24 routing acceptance names M23 baseline, M24 route facts, and deferred p
     assert.match(retrospective, /stale-host lesson/i);
     assert.match(m23Usage, /M23 supports system-scoped layout blocks/i);
     assert.match(examplesReadme, /routing acceptance proof/i);
-    assert.match(sampleSource, /connect\s+\w+\s+TerminalRoutePLC1\.do1 -> TerminalStripXT1\.in1/);
+    assert.match(sampleSource, /connect\s+\w+\s+TerminalRoutePLC1\.do1 to TerminalStripXT1\.in1/);
     assert.match(prd, /M23.*baseline comparison/i);
     assert.match(architecture, /M24 routing is schematic topology only/i);
 

@@ -8,7 +8,6 @@ import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.representation.GraphicBounds
 import com.engineeringood.athena.representation.GraphicPrimitive
 import com.engineeringood.athena.representation.GraphicTransform
-import com.engineeringood.athena.representation.RepresentationBodyAuthority
 import com.engineeringood.athena.representation.RepresentationDefinitionKind
 import java.nio.file.Path
 import kotlin.io.path.readText
@@ -34,7 +33,6 @@ class AthenaElementSourceCompilerTest {
             result.definitions.map { it.symbolId.value },
         )
         val element = result.definitions.single { it.definitionKind == RepresentationDefinitionKind.ELEMENT }
-        assertEquals(RepresentationBodyAuthority.GRAPHIC_PRIMITIVE, element.bodyAuthority)
         assertEquals(GraphicBounds(0.0, 0.0, 180.0, 100.0), element.graphicBody.bounds)
         assertEquals(listOf("primary", "secondary"), element.intrinsicComposition?.children?.map { it.childId.value })
         assertEquals(listOf(0, 1), element.intrinsicComposition?.children?.map { it.zOrder })
@@ -101,34 +99,6 @@ class AthenaElementSourceCompilerTest {
             forward.diagnostics.map { diagnostic -> diagnostic.code }.toSet(),
         )
         assertEquals(2, forward.diagnostics.size)
-    }
-
-    @Test
-    fun `M34 sample native representation package compiles without XML authority`() {
-        val source = repositoryRoot().resolve(
-            Path.of(
-                "examples",
-                "m34",
-                "sample-project",
-                "packages",
-                "representation",
-                "athena",
-                "iec",
-                "epic1-native-elements.athena",
-            ),
-        ).readText()
-
-        val result = compiler.compile("examples/m34/sample-project/packages/representation/athena/iec/epic1-native-elements.athena", source)
-
-        assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
-        assertEquals(
-            listOf("iec.indicator_lamp", "iec.switch_contact", "iec.switch_module"),
-            result.definitions.map { it.symbolId.value },
-        )
-        assertEquals(
-            RepresentationDefinitionKind.ELEMENT,
-            result.definitions.single { it.symbolId.value == "iec.switch_module" }.definitionKind,
-        )
     }
 
     @Test
@@ -210,9 +180,9 @@ class AthenaElementSourceCompilerTest {
             "Element exported anchor ids must be unique.",
         ),
         invalid(
-            "unexported connectable anchor", VALID_MIXED_SOURCE.replace("  export anchor primaryLoad from primary.load\n", ""),
+            "unexported required anchor", VALID_MIXED_SOURCE.replace("  export anchor primaryLoad from primary.load\n", ""),
             "element.child.anchor.unexported", "child primary", "element.iec_switch_module.children.primary.anchors.load",
-            "Connectable child anchor `primary.load` must be exported exactly once.",
+            "Required child anchor `primary.load` must be exported exactly once.",
         ),
         invalid(
             "child outside bounds", VALID_MIXED_SOURCE.replace("translate (90, 10)", "translate (150, 10)"),

@@ -44,6 +44,8 @@ internal object AthenaSvgGraphicBodySupport {
         "data-athena-ref",
     )
 
+    private val geometryReferencePattern = Regex("""anchor:[A-Za-z][A-Za-z0-9_.-]*""")
+
     private val forbiddenMetadataAttributes = setOf(
         "data-athena-schema",
         "data-athena-identity",
@@ -143,6 +145,17 @@ internal object AthenaSvgGraphicBodySupport {
                 attribute.name in allowedAthenaAttributes -> {
                     if (element.localName !in referenceableGeometryNodes) {
                         add(issue("svg.metadata.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG geometry-reference hints may only annotate referenceable geometry nodes."))
+                    } else if (!geometryReferencePattern.matches(attribute.value)) {
+                        val token = attribute.value.takeIf(String::isNotBlank) ?: attribute.name
+                        add(
+                            issue(
+                                "svg.geometry-ref.invalid",
+                                file,
+                                source.spanOf(token),
+                                "svg.${element.localName}.${attribute.name}",
+                                "SVG geometry-reference hints must use `anchor:<id>` and carry no engineering meaning.",
+                            ),
+                        )
                     }
                 }
                 attribute.name in forbiddenMetadataAttributes -> add(issue("svg.metadata.forbidden", file, source.spanOf(attribute.name), "svg.${element.localName}.${attribute.name}", "SVG nodes must not declare Athena metadata."))

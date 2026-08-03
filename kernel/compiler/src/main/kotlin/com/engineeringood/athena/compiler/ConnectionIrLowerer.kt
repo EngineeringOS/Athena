@@ -1,109 +1,112 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.connection.ConnectableEntityContractCompilation
-import com.engineeringood.athena.ir.EngineeringConnection
-import com.engineeringood.athena.ir.EngineeringConnectionNetwork
-import com.engineeringood.athena.ir.EngineeringConnectionNetworkMember
-import com.engineeringood.athena.ir.EngineeringDocument
-import com.engineeringood.athena.ir.EngineeringNetworkCompatibilityEvidence
-import com.engineeringood.athena.ir.EngineeringNetworkJunction
-import com.engineeringood.athena.ir.EngineeringPort
-import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.connection.EngineeringConnectivityCompilation
+import com.engineeringood.athena.connection.EngineeringConnectivityEvidenceReference
+import com.engineeringood.athena.connection.EngineeringConnectivityPhysicalReference
+import com.engineeringood.athena.connection.EngineeringConnectivityReferenceContract
+import com.engineeringood.athena.connection.EngineeringConnectivityRepresentationReference
+import com.engineeringood.athena.ir.SourceProvenance
+import com.engineeringood.athena.ir.StableSemanticIdentity
 
 /** Lowers validated canonical engineering connectivity into disposable Connection IR. */
 class ConnectionIrLowerer {
     fun lower(
-        document: EngineeringDocument,
-        contracts: ConnectableEntityContractCompilation.Success,
+        connectivity: EngineeringConnectivityCompilation.Success,
         snapshot: ConnectionIrSnapshot,
     ): ConnectionIr {
-        val contractByPortId = contracts.entities.flatMap { it.ports }.associateBy { it.id }
-        val connectionIds = contracts.connections.map { it.id }.toSet()
         return ConnectionIr(
-            entities = contracts.entities.map { component ->
+            entities = connectivity.contracts.map { component ->
                 ConnectionIrEntity(
                     id = component.id,
                     name = component.name,
                     kind = component.kind,
                     provenance = component.provenance,
+                    physicalInstallationReferences = component.physicalInstallationReferences.map { it.toConnectionIrReference() },
+                    representationBindings = component.representationBindings.map { it.toConnectionIrReference() },
+                    externalEvidenceReferences = component.externalEvidenceReferences.map { it.toConnectionIrReference() },
                 )
             },
-            ports = document.ports.filter { it.id in contractByPortId }.map { port ->
-                val contract = requireNotNull(contractByPortId[port.id]) {
-                    "Validated Connection IR cannot contain an untyped Port '${port.id.value}'."
-                }
+            ports = connectivity.contracts.flatMap { component -> component.ports }.map { port ->
                 ConnectionIrPort(
                     id = port.id,
-                    ownerId = requireNotNull(port.ownerReference.resolvedIdentity) {
-                        "Validated Connection IR cannot contain unresolved Port owner '${port.id.value}'."
-                    },
+                    ownerId = port.ownerId,
                     name = port.name,
-                    interfaceIds = contract.interfaceIds,
+                    interfaceIds = port.interfaceIds,
                     compatibility = ConnectionIrPortCompatibility(
-                        direction = contract.compatibility.direction,
-                        multiplicity = contract.compatibility.multiplicity,
-                        signalKind = contract.compatibility.signalKind,
-                        role = contract.compatibility.role,
-                        parameters = contract.compatibility.parameters,
-                        owner = contract.compatibility.owner.toConnectionIrOwner(),
-                        strength = contract.compatibility.strength.toConnectionIrStrength(),
+                        direction = port.compatibility.direction,
+                        multiplicity = port.compatibility.multiplicity,
+                        signalKind = port.compatibility.signalKind,
+                        role = port.compatibility.role,
+                        parameters = port.compatibility.parameters,
+                        owner = port.compatibility.owner.toConnectionIrOwner(),
+                        strength = port.compatibility.strength.toConnectionIrStrength(),
                     ),
                     provenance = port.provenance,
                 )
             },
-            connections = document.connections.filter { it.id in connectionIds }.map { connection ->
+            connections = connectivity.connections.map { connection ->
                 ConnectionIrConnection(
                     id = connection.id,
-                    from = connection.from.toConnectionIrReference(),
-                    to = connection.to.toConnectionIrReference(),
+                    from = connection.from.port.toConnectionIrReference(),
+                    to = connection.to.port.toConnectionIrReference(),
                     provenance = connection.provenance,
                 )
             },
-            networks = document.connectionNetworks.map { network ->
+            networks = connectivity.networks.map { network ->
                 ConnectionIrNetwork(
                     id = network.id,
                     name = network.name,
-                    members = network.members.map { it.toConnectionIrMember() },
-                    junctions = network.junctions.map { it.toConnectionIrJunction() },
-                    compatibilityEvidence = network.compatibilityEvidence.map { it.toConnectionIrEvidence() },
+                    members = network.members.map { member ->
+                        ConnectionIrNetworkMember(
+                            connectionReference = member.connection.toConnectionIrReference(),
+                            fromPortReference = member.fromPort.toConnectionIrReference(),
+                            toPortReference = member.toPort.toConnectionIrReference(),
+                        )
+                    },
+                    junctions = network.junctions.map { junction ->
+                        ConnectionIrNetworkJunction(
+                            id = junction.id,
+                            sharedPortReference = junction.sharedPort.toConnectionIrReference(),
+                            memberConnectionReferences = junction.memberConnections.map { it.toConnectionIrReference() },
+                            provenance = junction.provenance,
+                        )
+                    },
+                    compatibilityEvidence = network.compatibilityEvidence.map { evidence ->
+                        ConnectionIrCompatibilityEvidence(
+                            kind = evidence.kind,
+                            value = evidence.value,
+                            owner = ConnectionIrConstraintOwner.SEMANTIC,
+                            strength = ConnectionIrConstraintStrength.REQUIRED,
+                            provenance = evidence.provenance,
+                        )
+                    },
                     provenance = network.provenance,
                 )
             },
-            provenance = document.system.provenance,
+            provenance = connectivity.provenance,
             snapshot = snapshot,
         )
     }
 }
 
-private fun EngineeringReference.toConnectionIrReference(): ConnectionIrReference =
-    ConnectionIrReference(
-        authoredPath = authoredPath,
-        resolvedIdentity = requireNotNull(resolvedIdentity) {
-            "Validated Connection IR cannot contain unresolved reference '${authoredPath.joinToString(".")}'."
-        },
-        provenance = provenance,
+private fun EngineeringConnectivityReferenceContract.toConnectionIrReference(): ConnectionIrReference =
+    connectionIrReference(authoredPath, targetId, provenance)
+
+private fun EngineeringConnectivityPhysicalReference.toConnectionIrReference(): ConnectionIrReference =
+    connectionIrReference(authoredPath, targetId, provenance)
+
+private fun EngineeringConnectivityRepresentationReference.toConnectionIrReference(): ConnectionIrReference =
+    connectionIrReference(authoredPath, targetId, provenance)
+
+private fun EngineeringConnectivityEvidenceReference.toConnectionIrReference(): ConnectionIrReference =
+    connectionIrReference(
+        subject.authoredPath,
+        requireNotNull(subject.targetId) { "Entity-scoped evidence must resolve to a target identity." },
+        provenance,
     )
 
-private fun EngineeringConnectionNetworkMember.toConnectionIrMember(): ConnectionIrNetworkMember =
-    ConnectionIrNetworkMember(
-        connectionReference = connectionReference.toConnectionIrReference(),
-        fromPortReference = fromPortReference.toConnectionIrReference(),
-        toPortReference = toPortReference.toConnectionIrReference(),
-    )
-
-private fun EngineeringNetworkJunction.toConnectionIrJunction(): ConnectionIrNetworkJunction =
-    ConnectionIrNetworkJunction(
-        id = id,
-        sharedPortReference = sharedPortReference.toConnectionIrReference(),
-        memberConnectionReferences = memberConnectionReferences.map(EngineeringReference::toConnectionIrReference),
-        provenance = provenance,
-    )
-
-private fun EngineeringNetworkCompatibilityEvidence.toConnectionIrEvidence(): ConnectionIrCompatibilityEvidence =
-    ConnectionIrCompatibilityEvidence(
-        kind = kind,
-        value = value,
-        owner = ConnectionIrConstraintOwner.SEMANTIC,
-        strength = ConnectionIrConstraintStrength.REQUIRED,
-        provenance = provenance,
-    )
+private fun connectionIrReference(
+    authoredPath: List<String>,
+    targetId: StableSemanticIdentity,
+    provenance: SourceProvenance,
+): ConnectionIrReference = ConnectionIrReference(authoredPath, targetId, provenance)

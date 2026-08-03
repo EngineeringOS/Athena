@@ -56,7 +56,7 @@ class AthenaRepresentationPackageSnapshotCompiler(
                     file.repositoryRelativePath.substringAfterLast('.', missingDelimiterValue = "").lowercase()
                 }.toSortedSet(),
                 generatedResourceIds = generatedDescriptors.map { descriptor -> descriptor.resource.resourceId.value }.sorted(),
-                compiledBodyAuthorities = compiled.definitions.map { definition -> definition.bodyAuthority.name }.toSortedSet(),
+                compiledGeometryContracts = compiled.definitions.map { "RepresentationDefinition.graphicBody" }.toSortedSet(),
             ),
         )
     }
@@ -80,7 +80,7 @@ data class AthenaRepresentationPackageSnapshotEvidence(
     val sourceHashes: Map<String, String>,
     val stagedSourceExtensions: Set<String>,
     val generatedResourceIds: List<String>,
-    val compiledBodyAuthorities: Set<String>,
+    val compiledGeometryContracts: Set<String>,
 ) {
     val rendererFileAccessAuthorityAbsent: Boolean
         get() = generatedResourceIds.isNotEmpty() && generatedResourceIds.all { resourceId ->
@@ -91,21 +91,16 @@ data class AthenaRepresentationPackageSnapshotEvidence(
         get() = stagedSourceExtensions.none { extension -> extension in FOREIGN_RUNTIME_EXTENSIONS }
 
     val rawSvgTransportAbsent: Boolean
-        get() = compiledBodyAuthorities.isNotEmpty() && compiledBodyAuthorities == setOf("GRAPHIC_PRIMITIVE")
+        get() = compiledGeometryContracts == setOf("RepresentationDefinition.graphicBody")
 }
 
 private val FOREIGN_RUNTIME_EXTENSIONS = setOf("elmt", "qet", "xml", "xsd")
 
 private fun RepresentationDefinition.toGeneratedDescriptor(): RepresentationDescriptor {
-    val bounds = graphicBody.bounds
-    val descriptorBounds = if (bounds != null) {
-        RepresentationDescriptorBounds(width = bounds.width, height = bounds.height)
-    } else {
-        RepresentationDescriptorBounds(
-            width = anatomy.bounds.width.value.toDouble(),
-            height = anatomy.bounds.height.value.toDouble(),
-        )
+    val bounds = requireNotNull(graphicBody.bounds) {
+        "Compiled RepresentationDefinition `${symbolId.value}` must have local bounds before descriptor generation."
     }
+    val descriptorBounds = RepresentationDescriptorBounds(width = bounds.width, height = bounds.height)
     return RepresentationDescriptor(
         descriptorId = RepresentationDescriptorId(symbolId.value),
         resource = RepresentationDescriptorResourceBinding(

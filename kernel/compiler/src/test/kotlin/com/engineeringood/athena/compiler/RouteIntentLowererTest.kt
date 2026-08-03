@@ -1,6 +1,6 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.connection.ConnectablePortDirection
+import com.engineeringood.athena.connection.EngineeringConnectivityPortDirection
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
@@ -162,7 +162,7 @@ class RouteIntentLowererTest {
         ownerId = StableSemanticIdentity(ownerId),
         name = id.substringAfterLast(':'),
         compatibility = ConnectionIrPortCompatibility(
-            direction = ConnectablePortDirection.BIDIRECTIONAL,
+            direction = EngineeringConnectivityPortDirection.BIDIRECTIONAL,
             signalKind = "control",
             role = "line",
         ),

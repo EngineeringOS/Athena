@@ -67,7 +67,7 @@ test('M21 graph workbench visual proof keeps the accepted canvas contract visibl
     assert.doesNotMatch(styles, /backdrop-filter\s*:/);
     assert.match(opener, /ATHENA_GRAPH_WORKBENCH_PROOF=/);
     assert.match(opener, /Graphical View quick action/);
-    assert.match(opener, /requireElement\('\.athena-graph-workbench__stage'/);
+    assert.match(opener, /athena-graph-workbench__stage/);
     assert.match(opener, /infoPopoverClosedOnWhitespace/);
     assert.match(smoke, /missingGraphProof/);
     assert.match(smoke, /graph-workbench DOM proof passed/);

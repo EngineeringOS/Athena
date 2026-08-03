@@ -2,5 +2,5 @@
 
 system Unresolved {
   port Local.out {}
-  connect missing_out_to_local_out Missing.out -> Local.out
+  connect missing_out_to_local_out Missing.out to Local.out
 }

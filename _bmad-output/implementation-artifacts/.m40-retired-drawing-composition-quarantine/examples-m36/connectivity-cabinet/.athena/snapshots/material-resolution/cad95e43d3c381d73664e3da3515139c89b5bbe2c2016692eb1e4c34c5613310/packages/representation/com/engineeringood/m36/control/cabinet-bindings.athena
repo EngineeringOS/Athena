@@ -1,0 +1,80 @@
+package com.engineeringood.m36.control
+
+profile PhysicalCabinetIEC {
+  projection cabinet
+  standard IEC
+  style athena-industrial-cabinet-v1
+  fallback fail-closed
+}
+
+binding M36PowerSourceCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type PowerSource }
+  use element "iec.power-source.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36BreakerCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type Breaker }
+  use element "iec.breaker.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36RelayCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type Contactor }
+  use element "iec.relay.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36TerminalCabinet {
+  profile PhysicalCabinetIEC
+  priority 100
+  select device where { type Terminal }
+  use element "iec.terminal-block.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36ProtectiveEarthCabinet {
+  profile PhysicalCabinetIEC
+  priority 200
+  select device where { type ProtectiveEarth }
+  use element "iec.protective-earth.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36PowerJunctionCabinet {
+  profile PhysicalCabinetIEC
+  priority 250
+  select device where { type Terminal model "BUS-4" }
+  use element "iec.power-junction.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36ControlJunctionCabinet {
+  profile PhysicalCabinetIEC
+  priority 300
+  select device where { type Terminal model "BUS-6" }
+  use element "iec.control-junction.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36FeedbackJunctionCabinet {
+  profile PhysicalCabinetIEC
+  priority 250
+  select device where { type Terminal model "BUS-RETURN" }
+  use element "iec.feedback-junction.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M36Pfea112Cabinet {
+  profile PhysicalCabinetIEC
+  priority 300
+  select device where { type Terminal model "ABB-PFEA112-IP20" }
+  use element "vendor.abb.pfea112.element" version "1.0.0"
+  variant "standard"
+}

@@ -39,8 +39,8 @@ class AthenaGroupedConnectLoweringTest {
                 signal Digital
               }
 
-              connect feed_in MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
-              connect relay_supply MainBreakerQF30.load -> ControlRelayK30.supply
+              connect feed_in MainPowerSupplyPS30.lplus to MainBreakerQF30.line
+              connect relay_supply MainBreakerQF30.load to ControlRelayK30.supply
             }
             """.trimIndent()
         val groupedSource =
@@ -74,8 +74,8 @@ class AthenaGroupedConnectLoweringTest {
               }
 
               connect con_01 {
-                feed_in MainPowerSupplyPS30.lplus -> MainBreakerQF30.line
-                relay_supply MainBreakerQF30.load -> ControlRelayK30.supply
+                feed_in MainPowerSupplyPS30.lplus to MainBreakerQF30.line
+                relay_supply MainBreakerQF30.load to ControlRelayK30.supply
               }
             }
             """.trimIndent()

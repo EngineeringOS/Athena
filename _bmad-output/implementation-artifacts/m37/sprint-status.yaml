@@ -1,0 +1,78 @@
+# generated: 2026-07-30T14:26:38+08:00
+# last_updated: 2026-07-31T05:04:20+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m37
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+# Story Status:
+#   - backlog: Story exists only in epics.md
+#   - ready-for-dev: Dedicated story file exists
+#   - in-progress: Story implementation is active
+#   - review: Story implementation awaits review
+#   - done: Story acceptance and verification are complete
+# Retrospective Status:
+#   - optional: Retrospective is available but not required yet
+#   - done: Retrospective is complete
+
+# WORKFLOW NOTES:
+# ===============
+# - This file tracks M37 only. Do not load or update another milestone from this sprint.
+# - Stories are created and implemented in numeric order unless an explicit sprint correction says otherwise.
+# - Status advances only from a dedicated story artifact and fresh evidence, never from a claim.
+# - Athena source SSOT, computed proof, paint-only rendering, and pre-public direct refactoring apply to every story.
+# - Gradle verification on Windows is strictly sequential.
+
+generated: 2026-07-30T14:26:38+08:00
+last_updated: 2026-07-31T05:04:20+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m37
+
+development_status:
+  m37-e1: in-progress
+  1-1-evolve-the-connectivity-contract-in-place: done
+  1-2-author-grouped-interfaces-and-ports: review
+  1-3-author-deterministic-connection-intent: review
+  1-4-lower-intent-into-traceable-route-facts: review
+  m37-e1-retrospective: optional
+
+  m37-e2: in-progress
+  2-1-attach-typed-external-evidence: review
+  2-2-select-a-typed-projection-policy: review
+  2-3-prove-projection-neutral-semantic-truth: review
+  m37-e2-retrospective: optional
+
+  m37-e3: in-progress
+  3-1-allocate-route-lanes-deterministically: review
+  3-2-author-and-validate-route-quality-policy: review
+  3-3-validate-and-compare-planner-candidates: review
+  3-4-emit-explainable-route-quality-evidence: review
+  m37-e3-retrospective: optional
+
+  m37-e4: in-progress
+  4-1-compile-drawing-profiles-and-line-classes: review
+  4-2-enforce-exact-endpoint-attachment: review
+  4-3-compile-junction-and-crossing-semantics: review
+  4-4-compile-collision-aware-route-labels: review
+  m37-e4-retrospective: optional
+
+  m37-e5: in-progress
+  5-1-author-the-dedicated-m37-example: review
+  5-2-compile-the-professional-drawing-surface: review
+  5-3-expose-computed-source-and-route-evidence: review
+  5-4-prove-m37-end-to-end-with-screenshots: review
+  m37-e5-retrospective: optional
+
+  m37-e6: in-progress
+  6-1-harden-package-local-geometry-references: review
+  6-2-purge-stale-and-fabricated-authority-paths: review
+  6-3-close-the-m37-architecture-and-regression-gate: review
+  m37-e6-retrospective: optional

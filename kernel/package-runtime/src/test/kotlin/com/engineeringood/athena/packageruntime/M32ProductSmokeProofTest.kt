@@ -21,7 +21,6 @@ class M32ProductSmokeProofTest {
         assertTrue(evidence.subjects.all { it.labelBound })
         assertTrue(evidence.subjects.all { it.occurrenceCreated })
         assertTrue(evidence.subjects.all { it.derivedBounds })
-        assertTrue(evidence.subjects.all { !it.rendererFallbackAccepted })
         assertTrue(evidence.routes.any { it.routeAnchored })
         assertTrue(evidence.routes.all { !it.centerFallbackAccepted })
         assertTrue(evidence.profileSwitch.sourceUnchanged)

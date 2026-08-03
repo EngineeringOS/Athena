@@ -85,10 +85,8 @@ data class BindingResolution(
 data class BindingResolutionResult(
     val resolution: BindingResolution?,
     val diagnostics: List<BindingResolverDiagnostic>,
-    val rendererFallbackAccepted: Boolean = false,
 ) {
     val isValid: Boolean
         get() = resolution != null &&
-            diagnostics.none { it.severity == BindingResolverDiagnosticSeverity.ERROR } &&
-            !rendererFallbackAccepted
+            diagnostics.none { it.severity == BindingResolverDiagnosticSeverity.ERROR }
 }

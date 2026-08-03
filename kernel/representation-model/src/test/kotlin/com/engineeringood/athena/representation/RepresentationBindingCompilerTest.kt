@@ -16,7 +16,6 @@ class RepresentationBindingCompilerTest {
             symbolFamilyId = SymbolFamilyId("iec.motor"),
             symbolId = RepresentationSymbolId("iec.motor.compact"),
             variant = RepresentationVariantId("compact"),
-            fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
             priority = RepresentationPolicyPriority(100),
         )
         val definition = motorDefinition()
@@ -30,7 +29,7 @@ class RepresentationBindingCompilerTest {
                 policy = policy,
                 definition = definition,
                 labelValues = mapOf(RepresentationLabelSlotId("device-tag") to LabelValue("M1")),
-                terminalPorts = mapOf(PresentationTerminalId("u1") to SemanticPortId("MotorM1.power")),
+                portAnchorBindings = listOf(portAnchorBinding("MotorM1.power", "u1")),
                 projectPorts = listOf(
                     RepresentationProjectPortFact(
                         semanticPortId = SemanticPortId("MotorM1.power"),
@@ -56,14 +55,15 @@ class RepresentationBindingCompilerTest {
         assertEquals(policy.variant, occurrence.variant)
         assertEquals(RepresentationOccurrenceRole.LOAD_SYMBOL, occurrence.occurrenceRole)
         assertEquals(LabelValue("M1"), occurrence.labelBindings.single().value)
-        assertEquals(SemanticPortId("MotorM1.power"), occurrence.terminalBindings.single().semanticPortId)
+        assertEquals(SemanticPortId("MotorM1.power"), occurrence.portAnchorBindings.single().semanticPortId)
+        assertEquals(RepresentationAnchorId("u1"), occurrence.portAnchorBindings.single().anchorId)
     }
 
     @Test
-    fun `binding validates authored project port facts against element anchor compatibility`() {
+    fun `binding validates authored project port facts against element anchors`() {
         val result = RepresentationBindingCompiler().bind(
             compatibleGraphicRequest(
-                terminalPorts = mapOf(PresentationTerminalId("u1") to SemanticPortId("MotorM1.power")),
+                portAnchorBindings = listOf(portAnchorBinding("MotorM1.power", "u1")),
                 projectPorts = listOf(
                     RepresentationProjectPortFact(
                         semanticPortId = SemanticPortId("MotorM1.power"),
@@ -78,31 +78,23 @@ class RepresentationBindingCompilerTest {
         )
 
         assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
-        assertEquals(SemanticPortId("MotorM1.power"), result.occurrence.terminalBindings.single().semanticPortId)
+        assertEquals(SemanticPortId("MotorM1.power"), result.occurrence.portAnchorBindings.single().semanticPortId)
     }
 
     @Test
-    fun `binding rejects missing incompatible and unproven project port anchors without fallback`() {
+    fun `binding rejects missing and unproven project port anchors without fallback`() {
         val cases = listOf(
             compatibleGraphicRequest(
-                terminalPorts = mapOf(PresentationTerminalId("missing") to SemanticPortId("MotorM1.power")),
+                portAnchorBindings = listOf(portAnchorBinding("MotorM1.power", "missing")),
                 projectPorts = listOf(powerPort()),
             ) to "representation.anchor.missing",
             compatibleGraphicRequest(
-                terminalPorts = mapOf(PresentationTerminalId("u1") to SemanticPortId("MotorM1.power")),
+                portAnchorBindings = listOf(portAnchorBinding("MotorM1.power", "u1")),
                 projectPorts = emptyList(),
             ) to "representation.terminal.incompatible",
             compatibleGraphicRequest(
-                terminalPorts = mapOf(PresentationTerminalId("u1") to SemanticPortId("MotorM1.power")),
-                projectPorts = listOf(powerPort(direction = RepresentationDirectionPredicate.OUT)),
-            ) to "representation.terminal.incompatible",
-            compatibleGraphicRequest(
-                terminalPorts = mapOf(PresentationTerminalId("u1") to SemanticPortId("MotorM1.power")),
-                projectPorts = listOf(powerPort(signal = RepresentationSignalPredicate("Digital"))),
-            ) to "representation.terminal.incompatible",
-            compatibleGraphicRequest(
-                terminalPorts = mapOf(PresentationTerminalId("u1") to SemanticPortId("MotorM1.power")),
-                projectPorts = listOf(powerPort(terminal = PhysicalTerminalId("V1"))),
+                portAnchorBindings = emptyList(),
+                projectPorts = listOf(powerPort()),
             ) to "representation.terminal.incompatible",
             compatibleGraphicRequest(labelValues = emptyMap()) to "representation.label-slot.missing",
         )
@@ -112,13 +104,86 @@ class RepresentationBindingCompilerTest {
 
             assertEquals(null, result.occurrenceOrNull, expectedCode)
             assertTrue(
-                result.diagnostics.any { diagnostic ->
-                    diagnostic.code.wireValue == expectedCode &&
-                        diagnostic.provenance?.source == "test/element.athena"
-                },
-                "Expected $expectedCode with representation provenance, got ${result.diagnostics}",
+                result.diagnostics.any { diagnostic -> diagnostic.code.wireValue == expectedCode },
+                "Expected $expectedCode, got ${result.diagnostics}",
             )
         }
+    }
+
+    @Test
+    fun `binding rejects duplicate explicit port or anchor bindings`() {
+        val cases = listOf(
+            compatibleGraphicRequest(
+                portAnchorBindings = listOf(
+                    portAnchorBinding("MotorM1.power", "u1", "bind:1"),
+                    portAnchorBinding("MotorM1.power", "u2", "bind:2"),
+                ),
+                projectPorts = listOf(powerPort()),
+                definition = elementDefinition().copy(
+                    anchors = elementDefinition().anchors + RepresentationAnchorContract(
+                        anchorId = RepresentationAnchorId("u2"),
+                        geometryRef = "u2-terminal",
+                        primitiveId = GraphicPrimitiveId("u1-terminal"),
+                        point = GraphicPoint(100.0, 30.0),
+                        role = RepresentationAnchorRole.TERMINAL,
+                        required = true,
+                    ),
+                ),
+            ) to "representation.binding.ambiguous",
+            compatibleGraphicRequest(
+                portAnchorBindings = listOf(
+                    portAnchorBinding("MotorM1.power", "u1", "bind:1"),
+                    portAnchorBinding("MotorM1.control", "u1", "bind:2"),
+                ),
+                projectPorts = listOf(powerPort(), powerPort("MotorM1.control")),
+            ) to "representation.anchor.duplicate",
+            compatibleGraphicRequest(
+                portAnchorBindings = listOf(
+                    portAnchorBinding("MotorM1.power", "u1", "bind:1"),
+                    portAnchorBinding("MotorM1.control", "u2", "bind:1"),
+                ),
+                projectPorts = listOf(powerPort(), powerPort("MotorM1.control")),
+                definition = elementDefinition().copy(
+                    anchors = elementDefinition().anchors + RepresentationAnchorContract(
+                        anchorId = RepresentationAnchorId("u2"),
+                        geometryRef = "u2-terminal",
+                        primitiveId = GraphicPrimitiveId("u1-terminal"),
+                        point = GraphicPoint(100.0, 30.0),
+                        role = RepresentationAnchorRole.TERMINAL,
+                        required = true,
+                    ),
+                ),
+            ) to "representation.binding.ambiguous",
+        )
+
+        cases.forEach { (request, expectedCode) ->
+            val result = RepresentationBindingCompiler().bind(request)
+
+            assertEquals(null, result.occurrenceOrNull)
+            assertTrue(
+                result.diagnostics.any { diagnostic -> diagnostic.code.wireValue == expectedCode },
+                "Expected $expectedCode, got ${result.diagnostics}",
+            )
+        }
+    }
+
+    @Test
+    fun `binding never infers port anchor binding from matching names`() {
+        val result = RepresentationBindingCompiler().bind(
+            compatibleGraphicRequest(
+                portAnchorBindings = emptyList(),
+                projectPorts = listOf(powerPort(portId = "u1")),
+            ),
+        )
+
+        assertEquals(null, result.occurrenceOrNull)
+        assertTrue(
+            result.diagnostics.any { diagnostic ->
+                diagnostic.code.wireValue == "representation.terminal.incompatible" &&
+                    diagnostic.message.contains("requires one explicit Port-to-Anchor binding")
+            },
+            "Expected explicit binding diagnostic, got ${result.diagnostics}",
+        )
     }
 
     @Test
@@ -141,7 +206,7 @@ class RepresentationBindingCompilerTest {
     }
 
     @Test
-    fun `binding emits diagnostics instead of renderer fallback when policy and definition disagree`() {
+    fun `binding emits diagnostics when policy and definition disagree`() {
         val result = RepresentationBindingCompiler().bind(
             RepresentationBindingRequest(
                 canonicalSemanticId = RepresentationSubjectId("component:MotorM1"),
@@ -157,12 +222,11 @@ class RepresentationBindingCompilerTest {
                     occurrenceRole = RepresentationOccurrenceRole.COIL_ACTUATOR,
                     symbolFamilyId = SymbolFamilyId("iec.motor"),
                     symbolId = RepresentationSymbolId("iec.motor.compact"),
-                    fallback = RepresentationFallbackBehavior.ALLOW_EXPLICIT_FALLBACK,
                     priority = RepresentationPolicyPriority(100),
                 ),
                 definition = motorDefinition(),
                 labelValues = mapOf(RepresentationLabelSlotId("device-tag") to LabelValue("M1")),
-                terminalPorts = emptyMap(),
+                portAnchorBindings = emptyList(),
                 priority = RepresentationPolicyPriority(100),
             ),
         )
@@ -183,35 +247,6 @@ class RepresentationBindingCompilerTest {
             provenance = RepresentationProvenance("test"),
         ),
         kind = RepresentationSymbolKind.MOTOR_LOAD,
-        anatomy = PresentationAnatomy(
-            representationId = RepresentationId("iec.motor.compact"),
-            context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-            bounds = PresentationBounds(GridUnit(44), GridUnit(44)),
-            hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-            primitives = listOf(
-                PresentationPrimitive.Circle(
-                    primitiveId = PresentationPrimitiveId("body"),
-                    center = PresentationPoint(GridUnit(22), GridUnit(22)),
-                    radius = GridUnit(15),
-                ),
-            ),
-            terminals = listOf(
-                PresentationTerminalPoint(
-                    terminalId = PresentationTerminalId("u1"),
-                    role = TerminalPresentationRole.POWER_INPUT,
-                    localPoint = PresentationPoint(GridUnit(0), GridUnit(22)),
-                    side = PresentationSide.LEFT,
-                    notation = TerminalNotation(TerminalMarker.CIRCLE, TerminalNumber("U1")),
-                ),
-            ),
-            labelAnchors = listOf(
-                PresentationLabelAnchor(
-                    anchorId = PresentationLabelAnchorId("device-tag"),
-                    role = PresentationLabelRole.DEVICE_TAG,
-                    point = PresentationPoint(GridUnit(0), GridUnit(-8)),
-                ),
-            ),
-        ),
         labelSlots = listOf(
             RepresentationLabelSlot(
                 slotId = RepresentationLabelSlotId("device-tag"),
@@ -219,14 +254,39 @@ class RepresentationBindingCompilerTest {
             ),
         ),
         variants = listOf(RepresentationVariantId("compact")),
+        graphicBody = GraphicPrimitiveDocument(
+            documentId = GraphicPrimitiveDocumentId("iec.motor.compact"),
+            bounds = GraphicBounds(0.0, 0.0, 44.0, 44.0),
+            primitives = listOf(
+                GraphicPrimitive.Circle(
+                    primitiveId = GraphicPrimitiveId("body"),
+                    bounds = GraphicBounds(7.0, 7.0, 30.0, 30.0),
+                    center = GraphicPoint(22.0, 22.0),
+                    radius = 15.0,
+                    styleTokenId = GraphicStyleTokenId("stroke"),
+                ),
+            ),
+            styleTokens = listOf(defaultStroke()),
+        ),
+        anchors = listOf(
+            RepresentationAnchorContract(
+                anchorId = RepresentationAnchorId("u1"),
+                geometryRef = "body",
+                primitiveId = GraphicPrimitiveId("body"),
+                point = GraphicPoint(0.0, 22.0),
+                role = RepresentationAnchorRole.TERMINAL,
+                required = true,
+            ),
+        ),
     )
 
     private fun compatibleGraphicRequest(
         labelValues: Map<RepresentationLabelSlotId, LabelValue> =
             mapOf(RepresentationLabelSlotId("device-tag") to LabelValue("M1")),
-        terminalPorts: Map<PresentationTerminalId, SemanticPortId> =
-            mapOf(PresentationTerminalId("u1") to SemanticPortId("MotorM1.power")),
+        portAnchorBindings: List<RepresentationPortAnchorBinding> =
+            listOf(portAnchorBinding("MotorM1.power", "u1")),
         projectPorts: List<RepresentationProjectPortFact> = listOf(powerPort()),
+        definition: RepresentationDefinition = elementDefinition(),
     ): RepresentationBindingRequest = RepresentationBindingRequest(
         canonicalSemanticId = RepresentationSubjectId("component:MotorM1"),
         projectionOccurrenceId = RepresentationProjectionOccurrenceId("cabinet:main/occurrence:motor"),
@@ -242,27 +302,38 @@ class RepresentationBindingCompilerTest {
             symbolFamilyId = SymbolFamilyId("athena.element.motor"),
             symbolId = RepresentationSymbolId("athena.iec.motor-cabinet-element"),
             variant = RepresentationVariantId("cabinet"),
-            fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
             priority = RepresentationPolicyPriority(100),
         ),
-        definition = elementDefinition(),
+        definition = definition,
         labelValues = labelValues,
-        terminalPorts = terminalPorts,
+        portAnchorBindings = portAnchorBindings,
         projectPorts = projectPorts,
         priority = RepresentationPolicyPriority(100),
     )
 
     private fun powerPort(
+        portId: String = "MotorM1.power",
         direction: RepresentationDirectionPredicate = RepresentationDirectionPredicate.IN,
         signal: RepresentationSignalPredicate = RepresentationSignalPredicate("Power"),
         terminal: PhysicalTerminalId = PhysicalTerminalId("U1"),
     ): RepresentationProjectPortFact = RepresentationProjectPortFact(
-        semanticPortId = SemanticPortId("MotorM1.power"),
+        semanticPortId = SemanticPortId(portId),
         role = RepresentationAnchorRole.TERMINAL,
         direction = direction,
         signal = signal,
         terminal = terminal,
         provenance = RepresentationProvenance("src/01-native-cabinet-proof.athena:12:7"),
+    )
+
+    private fun portAnchorBinding(
+        portId: String,
+        anchorId: String,
+        bindingId: String = "binding:$portId:$anchorId",
+    ): RepresentationPortAnchorBinding = RepresentationPortAnchorBinding(
+        bindingId = RepresentationPortAnchorBindingId(bindingId),
+        semanticPortId = SemanticPortId(portId),
+        anchorId = RepresentationAnchorId(anchorId),
+        provenance = RepresentationProvenance("src/01-native-cabinet-proof.athena:13:9"),
     )
 
     private fun elementDefinition(): RepresentationDefinition = RepresentationDefinition(
@@ -274,16 +345,6 @@ class RepresentationBindingCompilerTest {
             provenance = RepresentationProvenance("test/element.athena"),
         ),
         kind = RepresentationSymbolKind.MOTOR_LOAD,
-        anatomy = PresentationAnatomy(
-            representationId = RepresentationId("athena.iec.motor-cabinet-element"),
-            context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-            bounds = PresentationBounds(GridUnit(100), GridUnit(60)),
-            hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-            primitives = emptyList(),
-            terminals = emptyList(),
-            labelAnchors = emptyList(),
-            authority = PresentationAnatomyAuthority.COMPATIBILITY_SHELL,
-        ),
         labelSlots = listOf(
             RepresentationLabelSlot(
                 slotId = RepresentationLabelSlotId("device-tag"),
@@ -291,7 +352,6 @@ class RepresentationBindingCompilerTest {
             ),
         ),
         variants = listOf(RepresentationVariantId("cabinet")),
-        bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
         definitionKind = RepresentationDefinitionKind.ELEMENT,
         graphicBody = GraphicPrimitiveDocument(
             documentId = GraphicPrimitiveDocumentId("athena.iec.motor-cabinet-element"),
@@ -324,10 +384,16 @@ class RepresentationBindingCompilerTest {
                 point = GraphicPoint(0.0, 30.0),
                 role = RepresentationAnchorRole.TERMINAL,
                 required = true,
-                acceptedDirections = setOf(RepresentationDirectionPredicate.IN),
-                acceptedSignals = setOf(RepresentationSignalPredicate("Power")),
-                terminal = PhysicalTerminalId("U1"),
             ),
         ),
+    )
+
+    private fun defaultStroke(): GraphicStyleToken = GraphicStyleToken(
+        styleTokenId = GraphicStyleTokenId("stroke"),
+        stroke = GraphicPaintToken("foreground"),
+        strokeWidth = 1.0,
+        fill = GraphicFill.TRANSPARENT,
+        lineCap = GraphicLineCap.BUTT,
+        lineJoin = GraphicLineJoin.MITER,
     )
 }

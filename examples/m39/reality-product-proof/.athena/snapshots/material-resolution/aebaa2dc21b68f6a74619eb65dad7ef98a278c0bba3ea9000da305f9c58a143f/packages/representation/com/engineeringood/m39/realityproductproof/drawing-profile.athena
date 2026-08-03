@@ -1,0 +1,8 @@
+package com.engineeringood.m39.realityproductproof
+
+profile ControlDrawingIEC {
+  projection schematic
+  standard IEC
+  style athena-industrial-iec
+  fallback fail-closed
+}

@@ -1,6 +1,7 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
+import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.layout.LayoutSourceSpan
@@ -73,13 +74,64 @@ class AthenaRouteEngineTest {
         assertFalse(route.segments.any { segment -> segment.start == SchematicRoutePoint(x = 300, y = 180) })
     }
 
+    @Test
+    fun `route engine assigns lanes deterministically from connection role and stable ids`() {
+        val power = sampleRequest(
+            routeId = SchematicRouteId("route:z"),
+            connectionId = ElectricalConnectionId("connection:z"),
+            role = ElectricalConnectionRole.POWER_FEED,
+        )
+        val control = sampleRequest(
+            routeId = SchematicRouteId("route:a"),
+            connectionId = ElectricalConnectionId("connection:a"),
+            role = ElectricalConnectionRole.CONTROL_SIGNAL,
+        )
+        val input = sampleInput(
+            requests = listOf(control, power),
+            layoutContext = SchematicRoutingLayoutContext(gridSize = 20, routeLaneCapacity = 1, routeLaneCount = 4),
+        )
+
+        val routes = AthenaRouteEngine().solve(input).routeFacts.associateBy { route -> route.routeId.value }
+
+        assertEquals(SchematicRouteLane(0), routes.getValue("route:a").lane)
+        assertEquals(SchematicRouteLane(1), routes.getValue("route:z").lane)
+        assertEquals("lane:0", routes.getValue("route:a").laneAssignment.laneId.value)
+        assertEquals(listOf(SchematicRouteId("route:a")), routes.getValue("route:a").laneAssignment.occupancy.routeIds)
+        assertEquals(RouteLaneOrientation.MIXED, routes.getValue("route:a").laneAssignment.orientation)
+    }
+
+    @Test
+    fun `route engine reports route lane capacity and spacing diagnostics`() {
+        val input = sampleInput(
+            requests = listOf(
+                sampleRequest(routeId = SchematicRouteId("route:a"), connectionId = ElectricalConnectionId("connection:a")),
+                sampleRequest(routeId = SchematicRouteId("route:b"), connectionId = ElectricalConnectionId("connection:b")),
+            ),
+            layoutContext = SchematicRoutingLayoutContext(
+                gridSize = 20,
+                routeLaneCapacity = 1,
+                routeLaneCount = 1,
+                routeLaneSpacing = 10,
+            ),
+        )
+
+        val snapshot = AthenaRouteEngine().solve(input)
+
+        assertEquals(
+            setOf("route.lane.capacity.exceeded", "route.lane.spacing.conflict"),
+            snapshot.laneDiagnostics.map { diagnostic -> diagnostic.code }.toSet(),
+        )
+        assertTrue(snapshot.routeFacts.all { route -> route.laneAssignment.conflicts.isNotEmpty() })
+    }
+
     private fun sampleInput(
         requests: List<AthenaRouteRequest>,
         componentBounds: List<SchematicComponentBounds> = emptyList(),
+        layoutContext: SchematicRoutingLayoutContext = SchematicRoutingLayoutContext(gridSize = 20),
     ): AthenaRouteEngineInput {
         return AthenaRouteEngineInput(
             snapshotId = LayoutSnapshotId("snapshot:m24:route-engine"),
-            layoutContext = SchematicRoutingLayoutContext(gridSize = 20),
+            layoutContext = layoutContext,
             componentBounds = componentBounds,
             requests = requests,
         )
@@ -90,16 +142,17 @@ class AthenaRouteEngineTest {
         connectionId: ElectricalConnectionId = ElectricalConnectionId("connection:a"),
         sourceAnchor: TerminalAnchorFact = sampleAnchor("anchor:a:source", "component:A", "out", TerminalSide.RIGHT, 120, 80),
         targetAnchor: TerminalAnchorFact = sampleAnchor("anchor:a:target", "component:B", "in", TerminalSide.LEFT, 320, 80),
+        role: ElectricalConnectionRole = ElectricalConnectionRole.CONTROL_SIGNAL,
     ): AthenaRouteRequest {
         return AthenaRouteRequest(
             routeId = routeId,
-            connectionIntent = ElectricalConnectionIntent(
+            connectionRoleFact = ElectricalConnectionRoleFact(
                 connectionId = connectionId,
                 sourceSubjectId = sourceAnchor.subjectId,
                 sourcePortId = sourceAnchor.portId,
                 targetSubjectId = targetAnchor.subjectId,
                 targetPortId = targetAnchor.portId,
-                role = ElectricalConnectionRole.CONTROL_SIGNAL,
+                role = role,
                 signalClass = ElectricalSignalClass.DIGITAL_OUTPUT,
                 sourceSpan = LayoutSourceSpan("routes.athena", 1, 1, 1, 32),
             ),

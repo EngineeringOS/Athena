@@ -27,7 +27,7 @@ test('M22 documents the IDE-visible baseline proof path', () => {
     const smoke = readRepoFile('ide/theia-product/scripts/verify-athena-m22-sample-project.js');
 
     assert.match(proof, /^# M22 IDE-Visible Baseline Proof/m);
-    assert.match(proof, /src\/01-baseline-sheet\.athena/);
+    assert.match(proof, /src\/com\/engineeringood\/m22\/sample\/01-baseline-sheet\.athena/);
     assert.match(proof, /Graphical View/);
     assert.match(proof, /stage grid/i);
     assert.match(proof, /sheet and component bodies/i);

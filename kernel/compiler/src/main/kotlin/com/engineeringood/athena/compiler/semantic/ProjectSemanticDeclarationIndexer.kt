@@ -5,6 +5,8 @@ import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
 import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.language.QualifiedName
+import com.engineeringood.athena.language.RelationDeclaration
 
 class ProjectSemanticDeclarationIndexer {
     fun index(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
@@ -87,11 +89,19 @@ class ProjectSemanticDeclarationIndexer {
             is DeviceDeclaration -> listOf(
                 "device" to listOf(name) to span,
             ) + nestedPorts.map { port -> "port" to port.qualifiedName.parts to port.span } +
+                interfaces.flatMap { connectivityInterface ->
+                    connectivityInterface.ports.map { port ->
+                        "port" to listOf(name, port.name) to port.span
+                    }
+                } +
                 nestedFunctions.map { function -> "function" to listOf(name, function.name) to function.span }
             is PortDeclaration -> listOf("port" to qualifiedName.parts to span)
             is ConnectionDeclaration -> listOf(CONNECTION_DECLARATION_KIND to listOf(alias) to aliasSpan)
             is ConnectionGroupDeclaration -> connections.map { connection ->
                 CONNECTION_DECLARATION_KIND to listOf(connection.alias) to connection.aliasSpan
+            }
+            is RelationDeclaration -> targets.map { target ->
+                CONNECTION_DECLARATION_KIND to listOf(relationMemberAlias(word.value, from, target)) to word.span
             }
             else -> return emptyList()
         }
@@ -134,3 +144,6 @@ class ProjectSemanticDeclarationIndexer {
         )
     }
 }
+
+private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
+    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"

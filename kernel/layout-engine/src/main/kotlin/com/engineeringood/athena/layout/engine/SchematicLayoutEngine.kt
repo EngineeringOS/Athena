@@ -269,23 +269,31 @@ class RuleBasedSchematicLayoutOptimizer(
 class RuleBasedSchematicLayoutStrategy(
     private val zoneSpacing: Int = 240,
     private val itemSpacing: Int = 120,
+    private val engine: RuleBasedLayoutEngine = RuleBasedLayoutEngine(),
 ) : SchematicLayoutStrategy {
     override fun solve(snapshot: LayoutIntentSnapshot): SchematicLayoutStrategyResult {
         require(snapshot.family == ElectricalProjectionFamily.SCHEMATIC) {
             "Rule-based schematic layout strategy only accepts schematic layout intent snapshots."
         }
-        val orderedItems = snapshot.items.sortedWith(
-            compareBy<LayoutIntentItem>(
-                { item -> item.preferredZone.ordinal },
-                { item -> item.priority.ordinal },
-                { item -> item.intentId.value },
-            ),
-        )
-        val indexByZone = mutableMapOf<SchematicLayoutZone, Int>()
-        val facts = orderedItems.map { item ->
-            val zoneIndex = item.preferredZone.ordinal
-            val itemIndex = indexByZone.getOrDefault(item.preferredZone, 0)
-            indexByZone[item.preferredZone] = itemIndex + 1
+        val items = snapshot.items.map { item ->
+            RuleBasedLayoutItem(
+                stableId = item.intentId.value,
+                groupId = item.preferredZone.name,
+                groupRank = item.preferredZone.ordinal,
+                itemRank = item.priority.ordinal,
+                size = item.role.defaultSize().let { size ->
+                    RuleBasedLayoutSize(width = size.width, height = size.height)
+                },
+                payload = item,
+            )
+        }
+        val facts = engine.place(items) { context ->
+            RuleBasedLayoutPoint(
+                x = context.item.groupRank * zoneSpacing,
+                y = context.itemIndex * itemSpacing,
+            )
+        }.map { placement ->
+            val item = placement.payload
             SchematicPlacementFact(
                 intentId = item.intentId,
                 subjectId = item.subjectId,
@@ -294,10 +302,13 @@ class RuleBasedSchematicLayoutStrategy(
                 role = item.role,
                 preferredZone = item.preferredZone,
                 position = SchematicLayoutPoint(
-                    x = zoneIndex * zoneSpacing,
-                    y = itemIndex * itemSpacing,
+                    x = placement.position.x,
+                    y = placement.position.y,
                 ),
-                size = item.role.defaultSize(),
+                size = SchematicLayoutSize(
+                    width = placement.size.width,
+                    height = placement.size.height,
+                ),
                 sourceSpan = item.sourceSpan,
             )
         }

@@ -3,6 +3,88 @@ import test from 'node:test';
 
 const graphWorkbenchModel = await import('../lib/browser/athena-graph-workbench-model.js');
 
+function presentationConnector(overrides = {}) {
+    const routePoints = overrides.routePoints ?? [{ x: 10, y: 10 }, { x: 70, y: 10 }];
+    const occurrenceId = overrides.occurrenceId ?? 'route:connection:main';
+    const semanticId = overrides.semanticId ?? 'connection:main';
+    return {
+        occurrenceId,
+        semanticId,
+        primitiveId: 'electrical.conductor.orthogonal',
+        routePoints,
+        lineClassId: 'line:power',
+        line: {
+            classId: 'line:power',
+            lineKind: 'POWER',
+            lineStyleId: 'stroke:power',
+            weight: 1.4,
+            style: 'SOLID',
+            colorKey: 'drawing.power',
+            endpointBehavior: 'ATTACH_TO_ANCHOR',
+            labelPolicy: 'TERMINAL_PAIR',
+            crossingBehavior: 'EXPLICIT_MARKER_ONLY',
+            policyId: 'control-drawing-iec',
+            compilerSnapshotId: 'snapshot:main'
+        },
+        routeId: `route:${semanticId}`,
+        bundleId: `bundle:${semanticId}`,
+        laneId: 'lane:main',
+        laneRouteIds: [occurrenceId],
+        selectedChannelIds: ['channel:main'],
+        labels: (overrides.labels ?? []).map(label => ({
+            labelId: label.labelId,
+            text: label.text,
+            point: label.point ?? routePoints[0],
+            bounds: label.bounds ?? { x: routePoints[0].x, y: routePoints[0].y, width: 80, height: 16 },
+            labelClassId: label.labelClassId ?? 'label:route',
+            display: label.display ?? 'always',
+            sourceProvenance: label.sourceProvenance ?? ['source.athena:1:1'],
+            compilerSnapshotId: label.compilerSnapshotId ?? 'snapshot:main'
+        })),
+        quality: 'SATISFIED',
+        sourceEndpoint: {
+            portSemanticId: overrides.sourcePortSemanticId ?? 'port:source',
+            bindingId: overrides.sourceBindingId ?? 'binding:source',
+            occurrenceId: overrides.sourceOccurrenceId ?? 'occurrence:source',
+            anchorId: overrides.sourceAnchorId ?? 'anchor:source',
+            point: routePoints[0],
+            sourceProvenance: ['source.athena:1:1'],
+            trace: {
+                sourceProvenance: ['source.athena:1:1'],
+                sourceProjectionIds: [
+                    overrides.sourcePortSemanticId ?? 'port:source',
+                    overrides.sourceBindingId ?? 'binding:source',
+                    overrides.sourceOccurrenceId ?? 'occurrence:source',
+                    overrides.sourceAnchorId ?? 'anchor:source',
+                ],
+                compilerStage: 'presentation-connector-endpoint'
+            }
+        },
+        targetEndpoint: {
+            portSemanticId: overrides.targetPortSemanticId ?? 'port:target',
+            bindingId: overrides.targetBindingId ?? 'binding:target',
+            occurrenceId: overrides.targetOccurrenceId ?? 'occurrence:target',
+            anchorId: overrides.targetAnchorId ?? 'anchor:target',
+            point: routePoints[routePoints.length - 1],
+            sourceProvenance: ['source.athena:1:1'],
+            trace: {
+                sourceProvenance: ['source.athena:1:1'],
+                sourceProjectionIds: [
+                    overrides.targetPortSemanticId ?? 'port:target',
+                    overrides.targetBindingId ?? 'binding:target',
+                    overrides.targetOccurrenceId ?? 'occurrence:target',
+                    overrides.targetAnchorId ?? 'anchor:target',
+                ],
+                compilerStage: 'presentation-connector-endpoint'
+            }
+        },
+        layer: 'connection',
+        markerIds: overrides.markerIds ?? [],
+        tokenOverrides: {},
+        sourceProjectionIds: overrides.sourceProjectionIds ?? [semanticId],
+    };
+}
+
 const readyDiagram = {
     kind: 'athena-glsp-diagram',
     projectName: 'FactoryLine',
@@ -469,8 +551,8 @@ test('uses governed presentation sheet surface facts before canvas-derived sheet
     ]);
     assert.equal(model.sheetChrome.metadata?.sheetSize, 'A3');
     assert.equal(model.sheetChrome.metadata?.orientation, 'landscape');
-    assert.equal(model.svgViewBox, '120 80 600 188');
-    assert.equal(model.canvas.width, 600);
+    assert.equal(model.svgViewBox, '120 80 540 188');
+    assert.equal(model.canvas.width, 540);
     assert.equal(model.canvas.height, 188);
     assert.deepEqual(second.sheetChrome, model.sheetChrome);
 });
@@ -1393,25 +1475,21 @@ test('prefers Presentation IR occurrences and symbol commands when the diagram i
             }
         ],
         connectors: [
-            {
+            presentationConnector({
                 occurrenceId: 'cabinet/presentation/connector/connection_PLC1_out_M1_in',
                 semanticId: 'connection:PLC1.out->M1.in',
-                primitiveId: 'electrical.conductor.orthogonal',
                 routePoints: [
                     { x: 380, y: 160 },
                     { x: 540, y: 160 },
                     { x: 540, y: 260 },
                     { x: 720, y: 260 }
                 ],
-                layer: 'connection',
                 sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
                 targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
                 sourcePortSemanticId: 'port:PLC1.out',
                 targetPortSemanticId: 'port:M1.in',
-                markerKeys: [],
-                tokenOverrides: {},
                 sourceProjectionIds: ['cabinet/projection/connection/connection_PLC1_out_M1_in']
-            }
+            })
         ]
     };
     diagram.graph.nodes = [];
@@ -1447,6 +1525,160 @@ test('prefers Presentation IR occurrences and symbol commands when the diagram i
     assert.equal(model.edges[0].terminals[0].portSemanticId, 'port:PLC1.out');
     assert.equal(model.edges[0].terminals[1].anchorId, 'cabinet/projection/label/port_M1_in/anchor');
     assert.equal(model.edges[0].terminals[1].portSemanticId, 'port:M1.in');
+});
+
+test('uses presentation paint plan for connector visibility and order', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    const first = presentationConnector({
+        occurrenceId: 'connector:first',
+        semanticId: 'connection:first',
+        routePoints: [
+            { x: 1200, y: 1200 },
+            { x: 1300, y: 1200 }
+        ],
+        labels: [{ labelId: 'label:first', text: 'first' }]
+    });
+    const hidden = presentationConnector({
+        occurrenceId: 'connector:hidden',
+        semanticId: 'connection:hidden',
+        routePoints: [
+            { x: 20, y: 20 },
+            { x: 80, y: 20 }
+        ],
+        labels: [{ labelId: 'label:hidden', text: 'hidden' }]
+    });
+    const second = presentationConnector({
+        occurrenceId: 'connector:second',
+        semanticId: 'connection:second',
+        routePoints: [
+            { x: 40, y: 40 },
+            { x: 100, y: 40 }
+        ],
+        labels: [{ labelId: 'label:second', text: 'second' }]
+    });
+    diagram.presentation = {
+        canvasWidth: 1440,
+        canvasHeight: 900,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [second, hidden, first],
+        connectionMarkers: [],
+        paintPlan: {
+            items: [
+                { itemId: 'paint:item:connector:hidden', targetId: 'connector:hidden', kind: 'connector', visible: false, order: 1 },
+                { itemId: 'paint:item:connector:first', targetId: 'connector:first', kind: 'connector', visible: true, order: 2 },
+                { itemId: 'paint:item:connector:second', targetId: 'connector:second', kind: 'connector', visible: true, order: 3 }
+            ]
+        }
+    };
+    diagram.graph.nodes = [];
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.deepEqual(model.edges.map(edge => edge.id), ['connector:first', 'connector:second']);
+    assert.deepEqual(model.edges[0].routePoints, first.routePoints);
+    assert.equal(model.edges.some(edge => edge.id === 'connector:hidden'), false);
+});
+
+test('builds graphic occurrences when drawable primitives do not carry local bounds', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 1440,
+        canvasHeight: 900,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [],
+        graphicOccurrences: [
+            {
+                occurrenceId: 'm38/presentation/graphic/component_PLC1',
+                semanticSubjectId: 'component:PLC1',
+                physicalComponentId: 'physical:PLC1',
+                functionId: 'function:control',
+                bounds: { x: 120, y: 80, width: 260, height: 160 },
+                orientation: 'horizontal',
+                deviceLabel: 'PLC1',
+                modelLabel: 'M38 exact attachment sample',
+                packageId: 'com.engineeringood.m38.professionalcontroldrawing',
+                definitionId: 'graphic:m38:plc',
+                bindingRuleId: 'binding:m38:plc',
+                graphic: {
+                    documentId: 'svg:m38:plc',
+                    primitives: [
+                        {
+                            primitiveId: 'svg:m38:plc:terminal-line',
+                            kind: 'line',
+                            start: { x: 120, y: 160 },
+                            end: { x: 380, y: 160 },
+                            styleTokenId: 'stroke:power'
+                        },
+                        {
+                            primitiveId: 'svg:m38:plc:tag',
+                            kind: 'text',
+                            origin: { x: 140, y: 110 },
+                            text: 'PLC1',
+                            styleTokenId: 'label:device'
+                        },
+                        {
+                            primitiveId: 'svg:m38:plc:endpoint',
+                            kind: 'marker',
+                            origin: { x: 380, y: 160 },
+                            radius: 3,
+                            markerKind: 'terminal',
+                            styleTokenId: 'marker:terminal'
+                        }
+                    ],
+                    provenanceSources: ['src/01-professional-control-drawing.athena:42:1'],
+                    forbiddenAuthorityClaims: []
+                },
+                placedAnchors: [
+                    {
+                        anchorId: 'anchor:PLC1:Q1',
+                        geometryRef: 'terminal-line:end',
+                        primitiveId: 'svg:m38:plc:terminal-line',
+                        point: { x: 380, y: 160 },
+                        role: 'terminal',
+                        required: true,
+                        sourceProvenance: ['src/01-professional-control-drawing.athena:42:1']
+                    }
+                ],
+                terminalBindings: [
+                    {
+                        portSemanticId: 'port:PLC1.Q1',
+                        anchorId: 'anchor:PLC1:Q1',
+                        terminalIdentity: 'Q1',
+                        point: { x: 380, y: 160 },
+                        labelPoint: { x: 390, y: 152 },
+                        side: 'right'
+                    }
+                ],
+                labels: [],
+                sourceProvenance: ['src/01-professional-control-drawing.athena:42:1'],
+                authorities: {
+                    geometry: 'svg',
+                    semantics: 'athena',
+                    placement: 'compiler'
+                }
+            }
+        ]
+    };
+    diagram.graph.nodes = [];
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const node = model.nodes.find(candidate => candidate.id === 'm38/presentation/graphic/component_PLC1');
+
+    assert.equal(model.nodes.length, 1);
+    assert.equal(node?.presentationParts[0].commands.length, 3);
+    assert.deepEqual(node?.presentationParts[0].commands[0].start, { x: 120, y: 160 });
+    assert.deepEqual(node?.presentationParts[0].commands[0].end, { x: 380, y: 160 });
+    assert.deepEqual(node?.presentationParts[0].commands[1].origin, { x: 140, y: 110 });
+    assert.deepEqual(node?.presentationParts[0].commands[2].center, { x: 380, y: 160 });
+    assert.equal(node?.presentationParts[0].commands[2].radius, 3);
+    assert.equal(node?.electricalAnchors[0].anchorId, 'anchor:PLC1:Q1');
+    assert.deepEqual(node?.electricalAnchors[0].point, { x: 380, y: 160 });
 });
 
 test('renders M25 representation facts as governed electrical symbols without generic fallback', () => {
@@ -1578,6 +1810,7 @@ test('renders M25 representation facts as governed electrical symbols without ge
             marker: 'circle',
             number: 'Q1.0',
             point: { x: 380, y: 160 },
+            labelPoint: { x: 390, y: 152 },
             anchorId: 'anchor:PLC1:Q1.0'
         }
     ]);
@@ -1593,7 +1826,7 @@ test('renders M25 representation facts as governed electrical symbols without ge
             anchorId: 'representation:PLC1@schematic-sheet:component:PLC1:device_tag'
         }
     ]);
-    assert.ok(node?.presentationLabels[0].point.y < model.edges[0].routePoints[0].y);
+    assert.equal(model.edges.length, 0);
 
     assert.deepEqual(
         graphWorkbenchModel.buildAthenaGraphRepresentationInspection(model, 'component:PLC1'),
@@ -1764,7 +1997,7 @@ test('keeps M25 representation facts when Presentation IR occurrences drive shee
     );
 });
 
-test('filters off-sheet duplicate presentation occurrences from the active sheet model', () => {
+test('uses paint plan visibility for duplicate presentation occurrences', () => {
     const diagram = JSON.parse(JSON.stringify(readyDiagram));
     diagram.graph.canvas = { width: 1680, height: 1188 };
     diagram.presentation = {
@@ -1808,6 +2041,31 @@ test('filters off-sheet duplicate presentation occurrences from the active sheet
             }
         ],
         connectors: [],
+        paintPlan: {
+            items: [
+                {
+                    itemId: 'paint:item:occurrence:active',
+                    targetId: 'documentation/presentation/occurrence/MainBreakerQF1/active',
+                    kind: 'shape',
+                    visible: true,
+                    order: 1
+                },
+                {
+                    itemId: 'paint:item:occurrence:off-sheet',
+                    targetId: 'documentation/presentation/occurrence/MainBreakerQF1/off-sheet',
+                    kind: 'shape',
+                    visible: false,
+                    order: 2
+                },
+                {
+                    itemId: 'paint:item:occurrence:partial-overflow',
+                    targetId: 'documentation/presentation/occurrence/MainBreakerQF1/partial-overflow',
+                    kind: 'shape',
+                    visible: true,
+                    order: 3
+                }
+            ]
+        },
         representationFacts: []
     };
 
@@ -1837,30 +2095,22 @@ test('builds route inspection from governed connector facts without canvas persi
         compositePacks: [],
         occurrences: [],
         connectors: [
-            {
+            presentationConnector({
                 occurrenceId: 'route:PLC1.out:M1.in',
                 semanticId: 'connection:PLC1.out->M1.in',
-                primitiveId: 'electrical.conductor.orthogonal',
                 routePoints: [
                     { x: 380, y: 160 },
                     { x: 540, y: 160 },
                     { x: 540, y: 260 },
                     { x: 720, y: 260 }
                 ],
-                layer: 'connection',
                 sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
                 targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
                 sourcePortSemanticId: 'port:PLC1.out',
                 targetPortSemanticId: 'port:M1.in',
-                markerKeys: [],
-                tokenOverrides: {
-                    routeQuality: 'SATISFIED',
-                    routeLane: '0',
-                    routeSegmentCount: '3',
-                    routeLabels: 'M1.IN'
-                },
-                sourceProjectionIds: []
-            }
+                labels: [{ labelId: 'label:PLC1.out:M1.in', text: 'M1.IN' }],
+                sourceProjectionIds: ['connection:PLC1.out->M1.in']
+            })
         ]
     };
     diagram.graph.edges = [];
@@ -1883,6 +2133,66 @@ test('builds route inspection from governed connector facts without canvas persi
     assert.equal(graphWorkbenchModel.buildAthenaGraphRouteInspection(model, 'connection:missing').status, 'unavailable');
 });
 
+test('builds endpoint inspection from governed connector endpoint trace only', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [
+            presentationConnector({
+                occurrenceId: 'route:PLC1.out:M1.in',
+                semanticId: 'connection:PLC1.out->M1.in',
+                routePoints: [
+                    { x: 380, y: 160 },
+                    { x: 540, y: 160 },
+                    { x: 540, y: 260 },
+                    { x: 720, y: 260 }
+                ],
+                sourceAnchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+                sourceBindingId: 'binding:PLC1.out',
+                sourceOccurrenceId: 'occurrence:PLC1',
+                sourcePortSemanticId: 'port:PLC1.out',
+                targetAnchorId: 'cabinet/projection/label/port_M1_in/anchor',
+                targetBindingId: 'binding:M1.in',
+                targetOccurrenceId: 'occurrence:M1',
+                targetPortSemanticId: 'port:M1.in',
+                sourceProjectionIds: ['connection:PLC1.out->M1.in']
+            })
+        ]
+    };
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+    const inspection = graphWorkbenchModel.buildAthenaGraphEndpointInspection(model, 'port:PLC1.out');
+
+    assert.deepEqual(inspection, {
+        status: 'ready',
+        connectionId: 'connection:PLC1.out->M1.in',
+        endpointRole: 'source',
+        portSemanticId: 'port:PLC1.out',
+        bindingId: 'binding:PLC1.out',
+        occurrenceId: 'occurrence:PLC1',
+        anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
+        placedPoint: { x: 380, y: 160 },
+        routeEndpointPoint: { x: 380, y: 160 },
+        sourceProvenance: ['source.athena:1:1'],
+        sourceProjectionIds: [
+            'connection:PLC1.out->M1.in',
+            'port:PLC1.out',
+            'binding:PLC1.out',
+            'occurrence:PLC1',
+            'cabinet/projection/label/port_PLC1_out/anchor'
+        ],
+        persisted: false
+    });
+    assert.equal(Object.hasOwn(inspection, 'domNode'), false);
+    assert.equal(Object.hasOwn(inspection, 'svgMetadata'), false);
+    assert.equal(graphWorkbenchModel.buildAthenaGraphEndpointInspection(model, 'anchor:missing').status, 'unavailable');
+});
+
 test('keeps verbose semantic route labels selection-only to avoid crowding the sheet canvas', () => {
     const diagram = JSON.parse(JSON.stringify(readyDiagram));
     diagram.presentation = {
@@ -1892,34 +2202,31 @@ test('keeps verbose semantic route labels selection-only to avoid crowding the s
         compositePacks: [],
         occurrences: [],
         connectors: [
-            {
+            presentationConnector({
                 occurrenceId: 'route:ControllerPLC3.hmi:OperatorHMI3.status',
                 semanticId: 'connection:ControllerPLC3.hmi->OperatorHMI3.status',
-                primitiveId: 'electrical.conductor.orthogonal',
                 routePoints: [
                     { x: 160, y: 200 },
                     { x: 320, y: 200 },
                     { x: 320, y: 280 },
                     { x: 480, y: 280 }
                 ],
-                layer: 'connection',
-                markerKeys: [],
-                tokenOverrides: {
-                    routeQuality: 'SATISFIED',
-                    routeLabels: 'ControllerPLC3.hmi -> OperatorHMI3.status|HMI.OK'
-                },
-                sourceProjectionIds: []
-            }
+                labels: [
+                    { labelId: 'label:verbose', text: 'ControllerPLC3.hmi -> OperatorHMI3.status', display: 'selection' },
+                    { labelId: 'label:short', text: 'HMI.OK', display: 'always' }
+                ],
+                sourceProjectionIds: ['connection:ControllerPLC3.hmi->OperatorHMI3.status']
+            })
         ]
     };
     diagram.graph.edges = [];
 
     const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
 
-    assert.equal(model.edges[0].routeLabels[0].text, 'ControllerPLC3.hmi -> OperatorHMI3.status');
-    assert.equal(model.edges[0].routeLabels[0].canvasDisplay, 'selection');
-    assert.equal(model.edges[0].routeLabels[1].text, 'HMI.OK');
-    assert.equal(model.edges[0].routeLabels[1].canvasDisplay, 'always');
+    assert.equal(model.edges[0].connectionLabels[0].text, 'ControllerPLC3.hmi -> OperatorHMI3.status');
+    assert.equal(model.edges[0].connectionLabels[0].canvasDisplay, 'selection');
+    assert.equal(model.edges[0].connectionLabels[1].text, 'HMI.OK');
+    assert.equal(model.edges[0].connectionLabels[1].canvasDisplay, 'always');
     assert.deepEqual(
         graphWorkbenchModel.buildAthenaGraphRouteInspection(model, 'connection:ControllerPLC3.hmi->OperatorHMI3.status').labels,
         ['ControllerPLC3.hmi -> OperatorHMI3.status', 'HMI.OK']
@@ -1935,31 +2242,41 @@ test('marks deliberate crossings between governed presentation route facts', () 
         compositePacks: [],
         occurrences: [],
         connectors: [
-            {
+            presentationConnector({
                 occurrenceId: 'route:crossing:a',
                 semanticId: 'connection:A.out->B.in',
-                primitiveId: 'electrical.conductor.orthogonal',
                 routePoints: [
                     { x: 100, y: 200 },
                     { x: 300, y: 200 }
                 ],
-                layer: 'connection',
-                markerKeys: [],
-                tokenOverrides: { routeLabels: 'A1' },
-                sourceProjectionIds: []
-            },
-            {
+                labels: [{ labelId: 'label:a', text: 'A1', point: { x: 200, y: 184 } }],
+                markerIds: ['marker:crossing:a-b'],
+                sourceProjectionIds: ['connection:A.out->B.in']
+            }),
+            presentationConnector({
                 occurrenceId: 'route:crossing:b',
                 semanticId: 'connection:C.out->D.in',
-                primitiveId: 'electrical.conductor.orthogonal',
                 routePoints: [
                     { x: 200, y: 100 },
                     { x: 200, y: 300 }
                 ],
-                layer: 'connection',
-                markerKeys: [],
-                tokenOverrides: { routeLabels: 'B1' },
-                sourceProjectionIds: []
+                labels: [{ labelId: 'label:b', text: 'B1', point: { x: 216, y: 200 } }],
+                markerIds: ['marker:crossing:a-b'],
+                sourceProjectionIds: ['connection:C.out->D.in']
+            })
+        ],
+        connectionMarkers: [
+            {
+                markerId: 'marker:crossing:a-b',
+                kind: 'no_connect_crossing',
+                point: { x: 200, y: 200 },
+                routeIds: ['route:crossing:a', 'route:crossing:b'],
+                connectorIds: ['route:crossing:a', 'route:crossing:b'],
+                joined: false,
+                appearanceClassId: 'marker:no-connect',
+                sourceProjectionIds: ['marker:crossing:a-b'],
+                sourceProvenance: ['source.athena:1:1'],
+                compilerSnapshotId: 'snapshot:main'
             }
         ]
     };
@@ -1967,12 +2284,116 @@ test('marks deliberate crossings between governed presentation route facts', () 
 
     const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
 
-    assert.deepEqual(model.edges[0].crossingMarkerPoints, [{ x: 200, y: 200 }]);
-    assert.deepEqual(model.edges[1].crossingMarkerPoints, [{ x: 200, y: 200 }]);
-    assert.equal(model.edges[0].routeLabels[0].text, 'A1');
-    assert.deepEqual(model.edges[0].routeLabels[0].point, { x: 200, y: 184 });
-    assert.equal(model.edges[1].routeLabels[0].text, 'B1');
-    assert.deepEqual(model.edges[1].routeLabels[0].point, { x: 216, y: 200 });
+    assert.deepEqual(model.edges[0].crossingMarkerPoints.map(marker => marker.point), [{ x: 200, y: 200 }]);
+    assert.deepEqual(model.edges[1].crossingMarkerPoints.map(marker => marker.point), [{ x: 200, y: 200 }]);
+    assert.equal(model.edges[0].connectionLabels[0].text, 'A1');
+    assert.deepEqual(model.edges[0].connectionLabels[0].point, { x: 200, y: 184 });
+    assert.equal(model.edges[1].connectionLabels[0].text, 'B1');
+    assert.deepEqual(model.edges[1].connectionLabels[0].point, { x: 216, y: 200 });
+});
+
+test('rejects malformed presentation connector instead of repairing endpoints', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [
+            {
+                ...presentationConnector({
+                    occurrenceId: 'route:bad',
+                    semanticId: 'connection:bad',
+                    routePoints: [{ x: 10, y: 10 }, { x: 70, y: 10 }]
+                }),
+                sourceEndpoint: {
+                    portSemanticId: 'port:source',
+                    bindingId: 'binding:source',
+                    occurrenceId: 'occurrence:source',
+                    anchorId: 'anchor:source',
+                    point: { x: 0, y: 0 },
+                    sourceProvenance: ['source.athena:1:1'],
+                    trace: {
+                        sourceProvenance: ['source.athena:1:1'],
+                        sourceProjectionIds: ['port:source', 'binding:source', 'occurrence:source', 'anchor:source'],
+                        compilerStage: 'presentation-connector-endpoint'
+                    }
+                }
+            }
+        ]
+    };
+    diagram.graph.edges = [
+        {
+            id: 'legacy-edge',
+            semanticId: 'connection:bad',
+            type: 'edge',
+            sourcePoint: { x: 10, y: 10 },
+            targetPoint: { x: 70, y: 10 },
+            routingStyle: 'orthogonal',
+            bendPoints: []
+        }
+    ];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.edges.length, 0);
+    assert.equal(model.emptyState?.title, 'Presentation rejected');
+    assert.equal(model.diagnostics.at(-1)?.code, 'presentation.connector.invalid');
+    assert.match(model.emptyState?.message ?? '', /route endpoints must equal supplied Anchor endpoint points/);
+});
+
+test('rejects connector endpoints with missing compiler trace instead of inferring from SVG or DOM', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    const connector = presentationConnector({
+        occurrenceId: 'route:missing-endpoint-trace',
+        semanticId: 'connection:missing-endpoint-trace'
+    });
+    delete connector.sourceEndpoint.trace;
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: [connector]
+    };
+    diagram.graph.edges = [];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.edges.length, 0);
+    assert.equal(model.emptyState?.title, 'Presentation rejected');
+    assert.match(model.emptyState?.message ?? '', /source endpoint requires compiler projection trace/);
+    assert.doesNotMatch(model.emptyState?.message ?? '', /SVG|DOM|data-athena/i);
+});
+
+test('does not fall back to raw graph edges when presentation document is present', () => {
+    const diagram = JSON.parse(JSON.stringify(readyDiagram));
+    diagram.presentation = {
+        canvasWidth: 960,
+        canvasHeight: 540,
+        primitivePacks: [],
+        compositePacks: [],
+        occurrences: [],
+        connectors: []
+    };
+    diagram.graph.edges = [
+        {
+            id: 'legacy-edge',
+            semanticId: 'connection:legacy',
+            type: 'edge',
+            sourcePoint: { x: 10, y: 10 },
+            targetPoint: { x: 70, y: 10 },
+            routingStyle: 'orthogonal',
+            bendPoints: []
+        }
+    ];
+
+    const model = graphWorkbenchModel.buildAthenaGraphWorkbenchModel(diagram);
+
+    assert.equal(model.edges.length, 0);
+    assert.equal(model.edges.some(edge => edge.id === 'legacy-edge'), false);
 });
 
 test('keeps schematic sheet chrome and identity mapping deterministic across repeated builds', () => {
@@ -2202,7 +2623,7 @@ test('builds a safe model even when optional diagram arrays are missing at runti
     assert.equal(model.emptyState?.title, 'Projection is empty');
 });
 
-test('resolves one Cabinet product surface backed only by cabinet projection', () => {
+test('resolves Control Drawing as the primary electrical product surface', () => {
     const ownershipContract = {
         interactivity: 'interactive',
         displayScopes: ['devices'],
@@ -2223,25 +2644,47 @@ test('resolves one Cabinet product surface backed only by cabinet projection', (
     const views = [
         cabinet,
         projection('documentation', 'Documentation', 'electrical/documentation'),
-        projection('schematic', 'Schematic', 'electrical/schematic'),
+        projection('schematic', 'Control Drawing', 'electrical/schematic'),
     ];
 
     assert.deepEqual(graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface(views), {
-        surfaceId: 'cabinet',
-        displayName: 'Cabinet',
-        description: 'Physical installation Cabinet projection',
-        backingViewId: 'cabinet',
-        backingFamilyId: 'electrical/cabinet',
-        isActive: true,
+        surfaceId: 'control-drawing',
+        displayName: 'Control Drawing',
+        description: 'Professional engineering control drawing',
+        backingViewId: 'schematic',
+        backingFamilyId: 'electrical/schematic',
+        isActive: false,
     });
     assert.equal(typeof graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId, 'function');
-    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'schematic'), 'cabinet');
-    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'cabinet'), undefined);
+    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'cabinet'), 'schematic');
+    assert.equal(graphWorkbenchModel.resolveAthenaGraphPrimaryProductActivationViewId(views, 'schematic'), undefined);
+});
+
+test('resolves Cabinet product surface only when Control Drawing is unavailable', () => {
+    const ownershipContract = {
+        interactivity: 'interactive',
+        displayScopes: ['devices'],
+        semanticCommandIds: [],
+        projectionCommandIds: [],
+        transientInteractionKinds: ['navigate-view'],
+        persistedProjectionMetadataKeys: [],
+    };
+    const projection = (viewId, displayName, familyId, isActive = false) => ({
+        viewId,
+        displayName,
+        description: `${displayName} projection`,
+        familyId,
+        ownershipContract,
+        isActive,
+    });
+    const views = [
+        projection('cabinet', 'Cabinet', 'electrical/cabinet', true),
+        projection('documentation', 'Documentation', 'electrical/documentation'),
+    ];
+
     assert.equal(
-        graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface([
-            projection('schematic', 'Schematic', 'electrical/schematic', true),
-        ]),
-        undefined,
+        graphWorkbenchModel.resolveAthenaGraphPrimaryProductSurface(views)?.surfaceId,
+        'cabinet',
     );
 });
 

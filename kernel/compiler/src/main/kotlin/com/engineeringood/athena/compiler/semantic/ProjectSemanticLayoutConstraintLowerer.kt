@@ -20,7 +20,7 @@ import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.language.LayoutAxis as SyntaxLayoutAxis
 
 /**
- * Lowers semantically bindable M23 layout hints into governed layout constraints.
+ * Lowers semantically bindable layout hints into governed layout constraints.
  */
 class ProjectSemanticLayoutConstraintLowerer {
     fun lower(snapshot: ProjectSemanticGraphSnapshot): LayoutConstraintSnapshot {

@@ -45,8 +45,8 @@ class FunctionAwareRepresentationBindingTest {
         assertEquals(coilId, coil.functionSemanticId)
         assertEquals(contactId, contact.functionSemanticId)
         assertNotEquals(coil.occurrenceId, contact.occurrenceId)
-        assertEquals(setOf("port:KM1.A1", "port:KM1.A2"), coil.terminalBindings.map { it.semanticPortId.value }.toSet())
-        assertEquals(setOf("port:KM1.13", "port:KM1.14"), contact.terminalBindings.map { it.semanticPortId.value }.toSet())
+        assertEquals(setOf("port:KM1.A1", "port:KM1.A2"), coil.portAnchorBindings.map { it.semanticPortId.value }.toSet())
+        assertEquals(setOf("port:KM1.13", "port:KM1.14"), contact.portAnchorBindings.map { it.semanticPortId.value }.toSet())
         assertEquals(contactId, coil.referenceBindings.single().targetSemanticId)
         assertEquals(coilId, contact.referenceBindings.single().targetSemanticId)
     }
@@ -129,7 +129,7 @@ class FunctionAwareRepresentationBindingTest {
         assertEquals(8, occurrences.map { it.occurrenceId }.distinct().size)
         assertTrue(
             occurrences.all { occurrence ->
-                occurrence.terminalBindings.all { binding ->
+                occurrence.portAnchorBindings.all { binding ->
                     binding.semanticPortId.value.substringAfter("port:").substringBefore('.') ==
                         occurrence.canonicalSemanticId.value.substringAfter("component:")
                 }
@@ -169,17 +169,6 @@ class FunctionAwareRepresentationBindingTest {
                 provenance = RepresentationProvenance("test/function-elements.athena"),
             ),
             kind = symbolKind,
-            anatomy = PresentationAnatomy(
-                representationId = RepresentationId(symbolId.value),
-                context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-                bounds = PresentationBounds(GridUnit(40), GridUnit(40)),
-                hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-                primitives = emptyList(),
-                terminals = emptyList(),
-                labelAnchors = emptyList(),
-                authority = PresentationAnatomyAuthority.COMPATIBILITY_SHELL,
-            ),
-            bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
             definitionKind = RepresentationDefinitionKind.ELEMENT,
             graphicBody = GraphicPrimitiveDocument(
                 documentId = GraphicPrimitiveDocumentId(symbolId.value),
@@ -212,9 +201,6 @@ class FunctionAwareRepresentationBindingTest {
                     point = GraphicPoint(index * 20.0, 0.0),
                     role = RepresentationAnchorRole.TERMINAL,
                     required = true,
-                    acceptedDirections = setOf(RepresentationDirectionPredicate.BIDIRECTIONAL),
-                    acceptedSignals = setOf(signal),
-                    terminal = PhysicalTerminalId(terminal.uppercase()),
                 )
             },
             labelSlots = emptyList(),
@@ -227,7 +213,6 @@ class FunctionAwareRepresentationBindingTest {
             occurrenceRole = role,
             symbolFamilyId = SymbolFamilyId(symbolId.value),
             symbolId = symbolId,
-            fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
             priority = RepresentationPolicyPriority(100),
         )
         val result = RepresentationBindingCompiler().bind(
@@ -241,7 +226,14 @@ class FunctionAwareRepresentationBindingTest {
                 policy = policy,
                 definition = definition,
                 labelValues = emptyMap(),
-                terminalPorts = terminals.map { (terminal, port) -> PresentationTerminalId(terminal) to SemanticPortId(port) }.toMap(),
+                portAnchorBindings = terminals.map { (terminal, port) ->
+                    RepresentationPortAnchorBinding(
+                        bindingId = RepresentationPortAnchorBindingId("binding:${functionId.value}:$port:$terminal"),
+                        semanticPortId = SemanticPortId(port),
+                        anchorId = RepresentationAnchorId(terminal),
+                        provenance = RepresentationProvenance("test/function.athena"),
+                    )
+                },
                 projectPorts = terminals.map { (terminal, port) ->
                     RepresentationProjectPortFact(
                         semanticPortId = SemanticPortId(port),

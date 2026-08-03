@@ -58,13 +58,12 @@ class NativeRepresentationLibraryLoaderTest {
         assertEquals(RepresentationVersion("1.0.0"), definition.version)
         assertEquals(RepresentationLifecycleState.ACTIVE, definition.lifecycle.state)
         assertEquals(RepresentationSymbolKind.MOTOR_LOAD, definition.kind)
-        assertEquals(PresentationBounds(GridUnit(32), GridUnit(32)), definition.anatomy.bounds)
+        assertEquals(GraphicBounds(0.0, 0.0, 32.0, 32.0), definition.graphicBody.bounds)
         assertEquals(listOf(RepresentationVariantId("compact")), definition.variants)
         assertEquals(listOf(RepresentationStyleToken("stroke", "iec.black")), definition.styleTokens)
-        assertEquals(PresentationPrimitiveId("body"), definition.anatomy.primitives.single().primitiveId)
-        assertEquals(PresentationTerminalId("terminal-1"), definition.anatomy.terminals.single().terminalId)
-        assertEquals(TerminalNumber("1"), definition.anatomy.terminals.single().notation.number)
-        assertEquals(PresentationLabelAnchorId("device-tag"), definition.anatomy.labelAnchors.single().anchorId)
+        assertEquals(GraphicPrimitiveId("body"), definition.graphicBody.primitives.single().primitiveId)
+        assertEquals(RepresentationAnchorId("terminal-1"), definition.anchors.single().anchorId)
+        assertEquals(GraphicPoint(0.0, 16.0), definition.anchors.single().point)
         assertEquals(RepresentationLabelSlotId("device-tag"), definition.labelSlots.single().slotId)
     }
 

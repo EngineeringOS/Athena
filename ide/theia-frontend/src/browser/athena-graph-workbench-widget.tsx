@@ -22,6 +22,7 @@ import {
     type AthenaGraphViewportSize,
     type AthenaGraphViewportTransform,
     buildAthenaGraphDocumentReferenceInspection,
+    buildAthenaGraphEndpointInspection,
     buildAthenaGraphRepresentationInspection,
     resolveAthenaGraphReferenceMarkerNavigation,
     resolveAthenaGraphPrimaryProductSurface,
@@ -304,7 +305,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             if (requestToken !== this.diagramRequestToken || this.repositorySessionService.state.repositoryRoot !== currentRepositoryRoot) {
                 return;
             }
-            this.errorMessage = error instanceof Error ? error.message : String(error);
+            console.error('Athena Graphical View refresh failed', error);
+            this.errorMessage = error instanceof Error ? (error.stack ?? error.message) : String(error);
             this.diagram = undefined;
             this.componentKnowledge = undefined;
             this.semanticInspection = undefined;
@@ -502,6 +504,9 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         const routeInspection = selectedSemanticId
             ? buildAthenaGraphRouteInspection(model, selectedSemanticId)
             : undefined;
+        const endpointInspection = selectedSemanticId
+            ? buildAthenaGraphEndpointInspection(model, selectedSemanticId)
+            : undefined;
         const representationInspection = selectedSemanticId
             ? buildAthenaGraphRepresentationInspection(model, selectedSemanticId)
             : undefined;
@@ -518,6 +523,25 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     code: true,
                 },
                 { key: 'route-policy', label: 'Route policy', value: routeInspection.policySummary, code: true },
+            ]
+            : [];
+        const endpointRows = endpointInspection?.status === 'ready'
+            ? [
+                { key: 'endpoint-role', label: 'Endpoint role', value: endpointInspection.endpointRole },
+                { key: 'endpoint-port', label: 'Endpoint port', value: endpointInspection.portSemanticId, code: true },
+                { key: 'endpoint-anchor', label: 'Endpoint anchor', value: endpointInspection.anchorId, code: true },
+                {
+                    key: 'endpoint-point',
+                    label: 'Endpoint point',
+                    value: `${endpointInspection.placedPoint.x}, ${endpointInspection.placedPoint.y}`,
+                    code: true,
+                },
+                {
+                    key: 'endpoint-source',
+                    label: 'Endpoint source',
+                    value: endpointInspection.sourceProvenance.join(', '),
+                    code: true,
+                },
             ]
             : [];
         const representationRows = representationInspection?.status === 'ready'
@@ -568,6 +592,7 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             { key: 'related', label: 'Related', value: relatedSummary, code: true },
             ...documentReferenceRows,
             ...representationRows,
+            ...endpointRows,
             ...routeRows,
             { key: 'source', label: 'Source', value: sourceSummary, code: true },
         ];
@@ -1131,17 +1156,20 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
             data-athena-graphic-package-id={node.presentationGraphicOccurrence?.packageId}
             data-athena-graphic-binding-rule-id={node.presentationGraphicOccurrence?.bindingRuleId}
             data-athena-graphic-physical-component-id={node.presentationGraphicOccurrence?.physicalComponentId}
+            data-athena-graphic-package-resource-ids={node.presentationGraphicOccurrence?.sourceProvenance?.join(';')}
+            data-athena-graphic-anchor-ids={node.presentationGraphicOccurrence?.terminalBindings?.map(binding => binding.anchorId).join(';')}
+            data-athena-graphic-label-ids={node.presentationGraphicOccurrence?.labels?.map(label => label.labelId).join(';')}
             data-athena-graphic-authority={node.presentationGraphicOccurrence?.authorities?.graphic}
             data-athena-placement-authority={node.presentationGraphicOccurrence?.authorities?.placement}
             data-athena-material-authority={node.presentationGraphicOccurrence?.authorities?.material}
-            data-athena-engineering-package-id={node.presentationRepresentation?.packageEvidence?.engineeringPackageId}
-            data-athena-presentation-profile-id={node.presentationRepresentation?.packageEvidence?.presentationProfileId}
-            data-athena-binding-manifest-id={node.presentationRepresentation?.packageEvidence?.bindingManifestId}
-            data-athena-representation-package-id={node.presentationRepresentation?.packageEvidence?.representationPackageId}
-            data-athena-representation-descriptor-id={node.presentationRepresentation?.packageEvidence?.descriptorId}
-            data-athena-graphic-resource-id={node.presentationRepresentation?.packageEvidence?.graphicResourceId}
-            data-athena-representation-anchor-map={node.presentationRepresentation?.packageEvidence?.anchorMapSummary?.join(';')}
-            data-athena-representation-label-binding={node.presentationRepresentation?.packageEvidence?.labelBindingSummary?.join(';')}
+            data-athena-engineering-package-id={node.presentationRepresentation?.packageTrace?.engineeringPackageId}
+            data-athena-presentation-profile-id={node.presentationRepresentation?.packageTrace?.presentationProfileId}
+            data-athena-binding-manifest-id={node.presentationRepresentation?.packageTrace?.bindingManifestId}
+            data-athena-representation-package-id={node.presentationRepresentation?.packageTrace?.representationPackageId}
+            data-athena-representation-descriptor-id={node.presentationRepresentation?.packageTrace?.descriptorId}
+            data-athena-graphic-resource-id={node.presentationRepresentation?.packageTrace?.graphicResourceId}
+            data-athena-representation-anchor-map={node.presentationRepresentation?.packageTrace?.anchorMapSummary?.join(';')}
+            data-athena-representation-label-binding={node.presentationRepresentation?.packageTrace?.labelBindingSummary?.join(';')}
             data-athena-semantic-id={node.semanticId}
             data-athena-relationship-candidate-reason={relationshipCandidateReason}
             data-athena-render-fallback={node.presentationRepresentation || node.presentationGraphicOccurrence ? 'false' : undefined}
@@ -1257,7 +1285,6 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
         selected: boolean,
     ): React.ReactNode {
         const markerClassName = `athena-graph-workbench__presentation-terminal ${selected ? 'athena-graph-workbench__presentation-terminal--selected' : ''}`;
-        const numberOffset = terminal.side.toLowerCase() === 'left' ? -34 : 10;
         const marker = terminal.marker.toLowerCase();
         return <g
             key={terminal.terminalId}
@@ -1297,8 +1324,8 @@ export class AthenaGraphWorkbenchWidget extends ReactWidget {
                     />}
             <text
                 className='athena-graph-workbench__presentation-terminal-number'
-                x={terminal.point.x + numberOffset}
-                y={terminal.point.y - 8}
+                x={terminal.labelPoint.x}
+                y={terminal.labelPoint.y}
             >
                 {terminal.number}
             </text>

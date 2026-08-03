@@ -12,12 +12,12 @@ class NativeRepresentationSymbolQualityTest {
 
         definitions.forEach { definition ->
             assertTrue(
-                definition.anatomy.terminals.isNotEmpty(),
+                definition.anchors.isNotEmpty(),
                 "Route-attached symbol `${definition.symbolId.value}` must expose at least one terminal anchor.",
             )
-            definition.anatomy.terminals.forEach { terminal ->
-                assertTrue(terminal.terminalId.value.isNotBlank())
-                assertTrue(terminal.notation.number.value.isNotBlank())
+            definition.anchors.forEach { anchor ->
+                assertTrue(anchor.anchorId.value.isNotBlank())
+                assertTrue(anchor.geometryRef.isNotBlank())
             }
         }
     }
@@ -30,10 +30,9 @@ class NativeRepresentationSymbolQualityTest {
             assertTrue(definition.version.value.matches(Regex("""\d+\.\d+\.\d+""")))
             assertEquals(RepresentationLifecycleState.ACTIVE, definition.lifecycle.state)
             assertTrue(definition.lifecycle.provenance.source.isNotBlank())
-            assertTrue(definition.anatomy.bounds.width.value > 0)
-            assertTrue(definition.anatomy.bounds.height.value > 0)
-            assertTrue(definition.anatomy.hotspot.point.x.value >= 0)
-            assertTrue(definition.anatomy.hotspot.point.y.value >= 0)
+            val bounds = requireNotNull(definition.graphicBody.bounds)
+            assertTrue(bounds.width > 0.0)
+            assertTrue(bounds.height > 0.0)
             assertTrue(definition.labelSlots.isNotEmpty())
             assertTrue(definition.variants.isNotEmpty())
             assertTrue(definition.styleTokens.isNotEmpty())

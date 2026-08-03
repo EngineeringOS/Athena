@@ -1,0 +1,7 @@
+primaryPackage:
+  name: com.engineeringood.m37.professionalcontroldrawing
+  version: 1.0.0
+  sourceRoot: src
+
+representationPackageRoots:
+  - packages/representation

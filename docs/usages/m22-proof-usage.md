@@ -57,19 +57,19 @@ In the IDE:
 - open the `.athena` source files in the sample project
 - verify active-source projection by opening a non-baseline source before Graphical View; the graph
   does not fall back to the baseline seed file after the graph widget receives focus
-- review `src/01-baseline-sheet.athena` for the accepted M21 graph workbench baseline
-- review `src/02-layout-optimization-acceptance.athena` for power, protection, controller, HMI,
+- review `src/com/engineeringood/m22/sample/01-baseline-sheet.athena` for the accepted M21 graph workbench baseline
+- review `src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena` for power, protection, controller, HMI,
   terminal, and load readability subjects
 - use `M22-LAYOUT-ACCEPTANCE.md` to inspect Story 2.3 governed placement and grouping evidence:
   preferred-zone constraints, grouped-with constraints, explicit group facts, and no renderer
   inference
 - inspect Story 2.4 route and label evidence through basic route-lane preference and subject-bound
   label placement; this remains schematic topology and non-standards-specific label behavior
-- review `src/03-component-round-trip.athena` for placement, alignment, grouping, and source
+- review `src/com/engineeringood/m22/sample/03-component-round-trip.athena` for placement, alignment, grouping, and source
   round-trip subject identities
 - review the graph workbench placement, alignment, or grouping preview path; M22 can construct the
   selected layout-block snippet, but the real `.athena` language does not yet accept that block
-- review `src/04-boundary-scope.athena` for deferred-scope guardrails
+- review `src/com/engineeringood/m22/sample/04-boundary-scope.athena` for deferred-scope guardrails
 - review `M22-LAYOUT-ACCEPTANCE.md` for the named comparison set and required layout acceptance
   checks
 - review `M22-BASELINE-PROOF.md` for the accepted graph workbench baseline proof

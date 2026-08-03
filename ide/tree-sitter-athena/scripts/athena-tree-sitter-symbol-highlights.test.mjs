@@ -16,6 +16,9 @@ const REPRESENTATION_VOCABULARY_SOURCE = readFileSync(
     path.join(packageRoot, 'test', 'fixtures', 'm34-representation-vocabulary.athena'),
     'utf8'
 );
+const GROUPED_INTERFACE_SOURCE = readFileSync(path.join(packageRoot, 'test', 'fixtures', 'm37-grouped-interface.athena'), 'utf8');
+const PROJECTION_POLICY_SOURCE = readFileSync(path.join(packageRoot, 'test', 'fixtures', 'm37-projection-policy.athena'), 'utf8');
+const CONNECTION_SOURCE = 'system Demo { connect feeder Supply.L1 to Drive.L1 }';
 
 let language;
 
@@ -111,4 +114,45 @@ test('M34 complete representation vocabulary parses and receives category-specif
             `missing binding capture for ${keyword}:\n${captures.join('\n')}`
         );
     }
+});
+
+test('M37 grouped Interface syntax receives syntax-only highlight captures', () => {
+    const parser = new Parser();
+    parser.setLanguage(language);
+    const tree = parser.parse(GROUPED_INTERFACE_SOURCE);
+    assert.equal(tree.rootNode.hasError, false, tree.rootNode.toString());
+
+    const query = new Query(language, readFileSync(path.join(packageRoot, 'queries', 'highlights.scm'), 'utf8'));
+    const captures = query.captures(tree.rootNode).map(capture => `${capture.name}:${capture.node.text}`);
+
+    for (const keyword of ['interface', 'ports', 'direction', 'signal', 'in', 'passive']) {
+        assert.ok(captures.includes(`athenaPortKeyword:${keyword}`), `missing grouped Interface capture for ${keyword}:\n${captures.join('\n')}`);
+    }
+});
+
+test('M37 Projection Policy syntax receives syntax-only highlight captures', () => {
+    const parser = new Parser();
+    parser.setLanguage(language);
+    const tree = parser.parse(PROJECTION_POLICY_SOURCE);
+    assert.equal(tree.rootNode.hasError, false, tree.rootNode.toString());
+
+    const query = new Query(language, readFileSync(path.join(packageRoot, 'queries', 'highlights.scm'), 'utf8'));
+    const captures = query.captures(tree.rootNode).map(capture => `${capture.name}:${capture.node.text}`);
+
+    for (const keyword of ['projection', 'target', 'layout', 'drawingProfile', 'routeQuality', 'proof']) {
+        assert.ok(captures.includes(`athenaRelationshipKeyword:${keyword}`), `missing Projection Policy capture for ${keyword}:\n${captures.join('\n')}`);
+    }
+});
+
+test('connection to keyword receives relationship highlight rather than operator highlight', () => {
+    const parser = new Parser();
+    parser.setLanguage(language);
+    const tree = parser.parse(CONNECTION_SOURCE);
+    assert.equal(tree.rootNode.hasError, false, tree.rootNode.toString());
+
+    const query = new Query(language, readFileSync(path.join(packageRoot, 'queries', 'highlights.scm'), 'utf8'));
+    const captures = query.captures(tree.rootNode).map(capture => `${capture.name}:${capture.node.text}`);
+
+    assert.ok(captures.includes('athenaRelationshipKeyword:to'), captures.join('\n'));
+    assert.ok(!captures.includes('operator:to'), captures.join('\n'));
 });

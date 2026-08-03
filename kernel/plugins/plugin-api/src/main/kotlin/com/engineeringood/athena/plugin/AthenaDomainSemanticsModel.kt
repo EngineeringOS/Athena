@@ -59,6 +59,7 @@ data class AthenaDomainConnectionBlueprint(
     val toPath: List<String>,
     val toProvenance: SourceProvenance,
     val provenance: SourceProvenance,
+    val properties: List<EngineeringProperty> = emptyList(),
 )
 
 /** Domain-owned lowering contribution aggregated by the compiler inside the declared lowering stage. */
@@ -158,6 +159,7 @@ data class AthenaDomainLoweringContext(
         toPath: List<String>,
         toProvenance: SourceProvenance = provenance(source.ast.system.span),
         provenance: SourceProvenance = provenance(source.ast.system.span),
+        properties: List<EngineeringProperty> = emptyList(),
     ): AthenaDomainConnectionBlueprint {
         return AthenaDomainConnectionBlueprint(
             alias = alias,
@@ -166,6 +168,7 @@ data class AthenaDomainLoweringContext(
             toPath = toPath,
             toProvenance = toProvenance,
             provenance = provenance,
+            properties = properties,
         )
     }
 

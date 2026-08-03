@@ -1,0 +1,19 @@
+# Derived resolution state for the Athena package graph.
+# Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:73d20443e38c1c6f66e793ee04e4f40341150cd75cf2155d56116e2d876eb956
+primaryPackage:
+  name: com.engineeringood.m36.connectivitycabinet
+  version: 1.0.0
+packages:
+  - name: com.engineeringood.m36.connectivitycabinet
+    version: 1.0.0
+    sourceRoot: src
+    snapshotDigest: package-snapshot:1ab73044f6417c73b543824eb731574d37f69e4d4b6b4d94fe399cfca2f11386
+    sourceHashes:
+      - path: com/engineeringood/m36/connectivitycabinet/01-connectivity-cabinet.athena
+        hash: sha256:1132c1963af381997bf6267c50e1f351f4f1bbd191452208ea0cf86c049f6bdf
+    resourceHashes: []
+    dependencies: []

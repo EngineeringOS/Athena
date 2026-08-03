@@ -1,0 +1,49 @@
+package com.engineeringood.m38.professional
+
+binding M38PowerSource {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type PowerSource }
+  use element "m38.power-source.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M38Breaker {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type Breaker }
+  use element "m38.breaker.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M38VendorDrive {
+  profile ControlDrawingIEC
+  priority 950
+  select device where { type Drive }
+  use element "m38.vendor-drive.element" version "1.0.0"
+  variant "svg-vendor"
+}
+
+binding M38Terminal {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type Terminal }
+  use element "m38.terminal.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M38Motor {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type Motor }
+  use element "m38.motor.element" version "1.0.0"
+  variant "standard"
+}
+
+binding M38ProtectiveEarth {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type ProtectiveEarth }
+  use element "m38.protective-earth.element" version "1.0.0"
+  variant "standard"
+}

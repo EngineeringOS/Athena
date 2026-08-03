@@ -1,6 +1,9 @@
 # Derived resolution state for the Athena package graph.
 # Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
-version: 1
+version: 2
+schema: repository-lock-v2
+compilerSchema: athena-lock-v2
+validatedLockStateDigest: lock-state:5d6df16884bd71c85eb1a187f316d9a2919ca2742288e4b33497d977a55ee0ca
 primaryPackage:
   name: com.engineeringood.m25.sample
   version: 1.0.0
@@ -8,4 +11,13 @@ packages:
   - name: com.engineeringood.m25.sample
     version: 1.0.0
     sourceRoot: src
+    snapshotDigest: package-snapshot:ee6ae08d210bf84c40d01b927eed21ffcef02a03c198392e1fe069f995a85a26
+    sourceHashes:
+      - path: com/engineeringood/m25/sample/01-professional-symbol-sheet.athena
+        hash: sha256:12ed261141c8d35bb0c3b0498ce7dad6210098c1248d2bc1ab4ddda4d7a0b201
+      - path: com/engineeringood/m25/sample/02-terminal-labels-and-routes.athena
+        hash: sha256:f10bf4c4a956139775d1037425d39085e9898a56649a0887a4421ea2338ce247
+      - path: com/engineeringood/m25/sample/03-six-family-acceptance.athena
+        hash: sha256:69338d29fdfccfe160d8ae0666b7dd30750b20134ebc4946f47dc68c4ea41a8b
+    resourceHashes: []
     dependencies: []

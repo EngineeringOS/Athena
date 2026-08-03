@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:ff79862684ed5ba2545df280df0390777577c1761896af681bab827eaf24c86b
+validatedLockStateDigest: lock-state:83c5c1efe04376f90de0c64e3dfd7e30ff4a3d78920aa84ac1d6431a708aff61
 primaryPackage:
   name: com.engineeringood.m29.sample
   version: 1.0.0
@@ -11,12 +11,12 @@ packages:
   - name: com.engineeringood.m29.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:06cd4b216299755fea04ebfc5498821d4e3f785955684eb95b2a88dab0c6eaea
+    snapshotDigest: package-snapshot:0604c9314214193acd1776274c7ef8c846b1fdd2dbd96733e10edbfd94b43e5e
     sourceHashes:
       - path: com/engineeringood/m29/sample/01-interaction-authoring-source.athena
-        hash: sha256:935245e926688c7ede55435948e09a13b163dafae5ce6240280904fdb9da9583
+        hash: sha256:918478b0c658e4ed51745ef5e1575b78a48edfe4391b80072dcea593fd9aded2
       - path: com/engineeringood/m29/sample/02-interaction-candidates.athena
-        hash: sha256:ff6691de27b1c46dad3f9d9ccefa21f66956e4d09257a13db9764003de17cc04
+        hash: sha256:dc19a4e8c055b3a2dea72b39c841dc33a6c69a946a75f0fdb7275942da71dd34
       - path: com/engineeringood/m29/sample/03-entity-creation-context.athena
         hash: sha256:d154ae8820380039f2b2c3bd8c167acf2008bfc95ef185025594882243eda43e
     resourceHashes: []

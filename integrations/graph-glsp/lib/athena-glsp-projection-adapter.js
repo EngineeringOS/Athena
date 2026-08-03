@@ -183,6 +183,13 @@ function toGraph(args) {
 function normalizeArray(value) {
     return Array.isArray(value) ? [...value] : [];
 }
+function requiredGraphicOccurrenceBounds(occurrence) {
+    const bounds = occurrence.bounds ?? occurrence.graphic.bounds;
+    if (!bounds) {
+        throw new Error(`Graphic occurrence ${occurrence.occurrenceId} requires compiler-owned placement bounds.`);
+    }
+    return bounds;
+}
 function normalizeOwnershipContract(ownershipContract) {
     return {
         interactivity: ownershipContract?.interactivity ?? 'inspect_only',
@@ -202,6 +209,11 @@ function normalizePresentationDocument(document) {
         canvasHeight: document.canvasHeight,
         ...(document.sheetSurface ? { sheetSurface: normalizeSheetSurface(document.sheetSurface) } : {}),
         ...(document.drawingComposition ? { drawingComposition: normalizeDrawingComposition(document.drawingComposition) } : {}),
+        ...(document.paintPlan ? {
+            paintPlan: {
+                items: normalizeArray(document.paintPlan.items).map(item => ({ ...item })),
+            },
+        } : {}),
         primitivePacks: normalizeArray(document.primitivePacks).map(pack => ({
             packId: pack.packId,
             displayName: pack.displayName,
@@ -288,7 +300,7 @@ function normalizePresentationDocument(document) {
             semanticSubjectId: occurrence.semanticSubjectId,
             physicalComponentId: occurrence.physicalComponentId,
             functionId: occurrence.functionId,
-            bounds: { ...occurrence.bounds },
+            bounds: { ...requiredGraphicOccurrenceBounds(occurrence) },
             orientation: occurrence.orientation,
             deviceLabel: occurrence.deviceLabel,
             modelLabel: occurrence.modelLabel,
@@ -301,7 +313,7 @@ function normalizePresentationDocument(document) {
                 primitives: normalizeArray(occurrence.graphic.primitives).map(primitive => ({
                     primitiveId: primitive.primitiveId,
                     kind: primitive.kind,
-                    bounds: { ...primitive.bounds },
+                    ...(primitive.bounds ? { bounds: { ...primitive.bounds } } : {}),
                     styleTokenId: primitive.styleTokenId,
                     ...(primitive.start ? { start: { ...primitive.start } } : {}),
                     ...(primitive.end ? { end: { ...primitive.end } } : {}),
@@ -324,6 +336,7 @@ function normalizePresentationDocument(document) {
                 anchorId: binding.anchorId,
                 terminalIdentity: binding.terminalIdentity,
                 point: { ...binding.point },
+                labelPoint: { ...binding.labelPoint },
                 side: binding.side,
             })),
             labels: normalizeArray(occurrence.labels).map(label => ({
@@ -340,14 +353,44 @@ function normalizePresentationDocument(document) {
             semanticId: connector.semanticId,
             primitiveId: connector.primitiveId,
             routePoints: normalizeArray(connector.routePoints).map(point => ({ ...point })),
+            lineClassId: connector.lineClassId,
+            line: { ...connector.line },
+            routeId: connector.routeId,
+            bundleId: connector.bundleId,
+            laneId: connector.laneId,
+            laneRouteIds: [...normalizeArray(connector.laneRouteIds)],
+            selectedChannelIds: [...normalizeArray(connector.selectedChannelIds)],
+            labels: normalizeArray(connector.labels).map(label => ({
+                ...label,
+                point: { ...label.point },
+                bounds: { ...label.bounds },
+                sourceProvenance: [...normalizeArray(label.sourceProvenance)],
+            })),
+            quality: connector.quality,
+            sourceEndpoint: {
+                ...connector.sourceEndpoint,
+                point: { ...connector.sourceEndpoint.point },
+                sourceProvenance: [...normalizeArray(connector.sourceEndpoint.sourceProvenance)],
+            },
+            targetEndpoint: {
+                ...connector.targetEndpoint,
+                point: { ...connector.targetEndpoint.point },
+                sourceProvenance: [...normalizeArray(connector.targetEndpoint.sourceProvenance)],
+            },
             layer: connector.layer,
-            sourceAnchorId: connector.sourceAnchorId,
-            targetAnchorId: connector.targetAnchorId,
-            sourcePortSemanticId: connector.sourcePortSemanticId,
-            targetPortSemanticId: connector.targetPortSemanticId,
-            markerKeys: [...normalizeArray(connector.markerKeys)],
+            markerIds: [...normalizeArray(connector.markerIds)],
             tokenOverrides: { ...connector.tokenOverrides },
             sourceProjectionIds: [...normalizeArray(connector.sourceProjectionIds)],
+            trace: connector.trace ? { ...connector.trace } : undefined,
+            sourceSpan: connector.sourceSpan ? { ...connector.sourceSpan } : undefined,
+        })),
+        connectionMarkers: normalizeArray(document.connectionMarkers).map(marker => ({
+            ...marker,
+            point: { ...marker.point },
+            routeIds: [...normalizeArray(marker.routeIds)],
+            connectorIds: [...normalizeArray(marker.connectorIds)],
+            sourceProjectionIds: [...normalizeArray(marker.sourceProjectionIds)],
+            sourceProvenance: [...normalizeArray(marker.sourceProvenance)],
         })),
         representationFacts: normalizeArray(document.representationFacts).map(fact => ({
             subjectId: fact.subjectId,
@@ -400,21 +443,21 @@ function normalizePresentationDocument(document) {
                     point: { ...label.anchor.point },
                 },
             })),
-            ...(fact.packageEvidence ? {
-                packageEvidence: {
-                    engineeringPackageId: fact.packageEvidence.engineeringPackageId,
-                    engineeringPackageVersion: fact.packageEvidence.engineeringPackageVersion,
-                    presentationProfileId: fact.packageEvidence.presentationProfileId,
-                    bindingManifestId: fact.packageEvidence.bindingManifestId,
-                    representationPackageId: fact.packageEvidence.representationPackageId,
-                    representationPackageVersion: fact.packageEvidence.representationPackageVersion,
-                    descriptorId: fact.packageEvidence.descriptorId,
-                    graphicResourceId: fact.packageEvidence.graphicResourceId,
-                    variant: fact.packageEvidence.variant,
-                    anchorMapSummary: [...normalizeArray(fact.packageEvidence.anchorMapSummary)],
-                    labelBindingSummary: [...normalizeArray(fact.packageEvidence.labelBindingSummary)],
-                    resolverStage: fact.packageEvidence.resolverStage,
-                    rendererFallbackAccepted: fact.packageEvidence.rendererFallbackAccepted === true,
+            ...(fact.packageTrace ? {
+                packageTrace: {
+                    engineeringPackageId: fact.packageTrace.engineeringPackageId,
+                    engineeringPackageVersion: fact.packageTrace.engineeringPackageVersion,
+                    presentationProfileId: fact.packageTrace.presentationProfileId,
+                    bindingManifestId: fact.packageTrace.bindingManifestId,
+                    representationPackageId: fact.packageTrace.representationPackageId,
+                    representationPackageVersion: fact.packageTrace.representationPackageVersion,
+                    descriptorId: fact.packageTrace.descriptorId,
+                    graphicResourceId: fact.packageTrace.graphicResourceId,
+                    variant: fact.packageTrace.variant,
+                    anchorMapSummary: [...normalizeArray(fact.packageTrace.anchorMapSummary)],
+                    labelBindingSummary: [...normalizeArray(fact.packageTrace.labelBindingSummary)],
+                    resolverStage: fact.packageTrace.resolverStage,
+                    rendererFallbackAccepted: fact.packageTrace.rendererFallbackAccepted === true,
                 },
             } : {}),
         })),
@@ -449,23 +492,9 @@ function normalizeDrawingComposition(composition) {
         })),
         referencePlacements: normalizeArray(composition.referencePlacements).map(placement => ({
             ...placement,
-            bounds: { ...placement.bounds },
-            anchor: { ...placement.anchor },
-            anatomy: {
-                ...placement.anatomy,
-                bounds: { ...placement.anatomy.bounds },
-                hotspot: { ...placement.anatomy.hotspot },
-                primitives: normalizeArray(placement.anatomy.primitives).map(normalizeRepresentationPrimitive),
-                terminals: normalizeArray(placement.anatomy.terminals).map(terminal => ({
-                    ...terminal,
-                    localPoint: { ...terminal.localPoint },
-                    notation: { ...terminal.notation },
-                })),
-                labelAnchors: normalizeArray(placement.anatomy.labelAnchors).map(anchor => ({
-                    ...anchor,
-                    point: { ...anchor.point },
-                })),
-            },
+            ...(placement.bounds ? { bounds: { ...placement.bounds } } : {}),
+            ...(placement.anchor ? { anchor: { ...placement.anchor } } : {}),
+            ...(placement.anatomy ? { anatomy: normalizePresentationAnatomy(placement.anatomy) } : {}),
         })),
         authorities: { ...composition.authorities },
     };
@@ -538,5 +567,22 @@ function normalizeRepresentationPrimitive(primitive) {
                 text: primitive.text,
             };
     }
+}
+function normalizePresentationAnatomy(anatomy) {
+    return {
+        ...anatomy,
+        bounds: { ...anatomy.bounds },
+        hotspot: { ...anatomy.hotspot },
+        primitives: normalizeArray(anatomy.primitives).map(normalizeRepresentationPrimitive),
+        terminals: normalizeArray(anatomy.terminals).map(terminal => ({
+            ...terminal,
+            localPoint: { ...terminal.localPoint },
+            notation: { ...terminal.notation },
+        })),
+        labelAnchors: normalizeArray(anatomy.labelAnchors).map(anchor => ({
+            ...anchor,
+            point: { ...anchor.point },
+        })),
+    };
 }
 //# sourceMappingURL=athena-glsp-projection-adapter.js.map

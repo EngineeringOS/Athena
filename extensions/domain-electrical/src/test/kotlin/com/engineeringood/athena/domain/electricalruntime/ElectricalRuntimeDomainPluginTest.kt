@@ -74,8 +74,6 @@ class ElectricalRuntimeDomainPluginTest {
                 "ownership-relationships",
                 "connectivity-relationships",
                 "grouped-placement",
-                "electrical-anchors",
-                "electrical-routing-corridors",
             ),
             cabinet.ownershipContract.displayScopes,
         )
@@ -99,8 +97,6 @@ class ElectricalRuntimeDomainPluginTest {
                 "ports",
                 "signal-groups",
                 "connectivity-relationships",
-                "electrical-anchors",
-                "electrical-routing-corridors",
             ),
             wiring.ownershipContract.displayScopes,
         )
@@ -110,6 +106,11 @@ class ElectricalRuntimeDomainPluginTest {
         )
         assertEquals(emptyList(), wiring.ownershipContract.persistedProjectionMetadataKeys)
         assertEquals(LayoutIntent.CONNECTIVITY, schematic.layoutIntent)
+        assertEquals("Control Drawing", schematic.displayName)
+        assertEquals(
+            "Compiles canonical electrical connectivity into the professional Control Drawing product surface.",
+            schematic.description,
+        )
         assertEquals(ProjectionInteractivity.INSPECT_ONLY, schematic.ownershipContract.interactivity)
         assertEquals(ElectricalProjectionFamily.SCHEMATIC, schematicFamily.family)
         assertEquals(LayoutIntent.STRUCTURAL, documentation.layoutIntent)
@@ -144,6 +145,7 @@ class ElectricalRuntimeDomainPluginTest {
             listOf("Wire"),
             plugin.domainSchema.connections.map { connection -> connection.typeId },
         )
+        assertEquals(setOf("power", "control", "earth"), plugin.domainSchema.relationWords)
         assertEquals(
             setOf(
                 "Breaker",

@@ -1,0 +1,15 @@
+package com.engineeringood.m37.professional
+
+profile ControlDrawingIEC {
+  projection schematic
+  standard iec
+  style professional
+  fallback failClosed
+}
+
+profile ControlDrawingRouteQuality {
+  projection schematic
+  standard iec
+  style routeQuality
+  fallback failClosed
+}

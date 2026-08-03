@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 class NativeRepresentationDemoSymbolPackTest {
     @Test
-    fun `native iec v0 pack contains focused industrial control demo symbols`() {
+    fun `native iec pack contains focused industrial control symbols`() {
         val assetPath = nativePackPath()
 
         val result = NativeRepresentationLibraryLoader().load(assetPath)
@@ -27,15 +27,13 @@ class NativeRepresentationDemoSymbolPackTest {
             ),
             result.library.definitions.map { definition -> definition.kind }.toSet(),
         )
-        assertTrue(result.library.definitions.all { definition -> definition.anatomy.primitives.isNotEmpty() })
+        assertTrue(result.library.definitions.all { definition -> definition.graphicBody.primitives.isNotEmpty() })
         assertTrue(result.library.definitions.all { definition -> definition.labelSlots.isNotEmpty() })
-        assertTrue(result.library.definitions.all { definition ->
-            definition.anatomy.terminals.isNotEmpty() || definition.anatomy.labelAnchors.isNotEmpty()
-        })
+        assertTrue(result.library.definitions.all { definition -> definition.anchors.isNotEmpty() })
     }
 
     @Test
-    fun `native iec v0 pack has no qet xml theia or svg snippet source truth`() {
+    fun `native iec pack has no qet xml theia or svg snippet source truth`() {
         val assetPath = nativePackPath()
         val text = assetPath.readText()
 

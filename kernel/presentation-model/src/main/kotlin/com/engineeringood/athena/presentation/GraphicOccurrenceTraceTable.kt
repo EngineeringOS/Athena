@@ -75,7 +75,7 @@ data class GraphicSelectablePrimitiveTraceRef(
     val semanticSubjectId: StableSemanticIdentity,
 )
 
-data class GraphicOccurrenceTraceEvidence(
+data class GraphicOccurrenceTraceStats(
     val selectablePrimitiveCount: Int,
     val decorativePrimitiveCount: Int,
     val traceEntryCount: Int,
@@ -89,7 +89,7 @@ data class GraphicOccurrenceTraceTable(
     val selectablePrimitives: List<GraphicSelectablePrimitiveTraceRef>,
     val decorativePrimitiveIds: List<GraphicPrimitiveId>,
     val entries: List<GraphicOccurrenceTraceEntry>,
-    val evidence: GraphicOccurrenceTraceEvidence,
+    val stats: GraphicOccurrenceTraceStats,
 ) {
     fun toStableTransportString(): String = buildString {
         append("version=").append(version.value).append('\n')
@@ -115,15 +115,15 @@ data class GraphicOccurrenceTraceTable(
             append(entry.sourceChain.owningDeclarations.joinToString(","))
             append('\n')
         }
-        append("evidence=")
+        append("stats=")
         append(
             listOf(
-                evidence.selectablePrimitiveCount,
-                evidence.decorativePrimitiveCount,
-                evidence.traceEntryCount,
-                evidence.missingTraceCount,
-                evidence.unusedTraceCount,
-                evidence.duplicatePrimitiveOwnerCount,
+                stats.selectablePrimitiveCount,
+                stats.decorativePrimitiveCount,
+                stats.traceEntryCount,
+                stats.missingTraceCount,
+                stats.unusedTraceCount,
+                stats.duplicatePrimitiveOwnerCount,
             ).joinToString(","),
         )
     }
@@ -258,7 +258,7 @@ object GraphicOccurrenceTraceTableCompiler {
         )
         val decorative = request.decorativePrimitiveIds.distinctBy { id -> id.value }.sortedBy { id -> id.value }
         val entries = request.traceEntries.sortedBy { entry -> entry.occurrenceId.value }
-        val evidence = GraphicOccurrenceTraceEvidence(
+        val stats = GraphicOccurrenceTraceStats(
             selectablePrimitiveCount = selectable.size,
             decorativePrimitiveCount = decorative.size,
             traceEntryCount = entries.size,
@@ -273,7 +273,7 @@ object GraphicOccurrenceTraceTableCompiler {
                 selectablePrimitives = selectable,
                 decorativePrimitiveIds = decorative,
                 entries = entries,
-                evidence = evidence,
+                stats = stats,
             ),
         )
     }

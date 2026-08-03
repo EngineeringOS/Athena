@@ -63,7 +63,7 @@ class RepresentationDiagnosticSerializationTest {
                         compositionMembership = null,
                     ),
                 ),
-                compatibleTerminalBindings = emptySet(),
+                compatiblePortAnchorBindings = emptySet(),
                 compositionMemberships = emptySet(),
             ),
         )
@@ -91,7 +91,7 @@ class RepresentationDiagnosticSerializationTest {
     }
 
     @Test
-    fun `explicit fallback policy still fails evidence when symbol is missing`() {
+    fun `missing policy symbol fails closed`() {
         val result = RepresentationContractValidator.validate(
             RepresentationValidationInput(
                 allowedLibraries = setOf(RepresentationLibraryId("athena.native.iec")),
@@ -100,7 +100,6 @@ class RepresentationDiagnosticSerializationTest {
                         policyId = "policy:fallback",
                         symbolId = "missing.symbol",
                         role = RepresentationOccurrenceRole.LOAD_SYMBOL,
-                        fallback = RepresentationFallbackBehavior.ALLOW_EXPLICIT_FALLBACK,
                     ),
                 ),
                 definitions = emptyList(),
@@ -119,7 +118,6 @@ class RepresentationDiagnosticSerializationTest {
         policyId: String,
         symbolId: String,
         role: RepresentationOccurrenceRole,
-        fallback: RepresentationFallbackBehavior = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
     ): RepresentationPolicy = RepresentationPolicy(
         policyId = RepresentationPolicyId(policyId),
         projectionKind = RepresentationProjectionKind.ELECTRICAL_SCHEMATIC,
@@ -128,7 +126,6 @@ class RepresentationDiagnosticSerializationTest {
         occurrenceRole = role,
         symbolFamilyId = SymbolFamilyId(symbolId.removeSuffix(".compact")),
         symbolId = RepresentationSymbolId(symbolId),
-        fallback = fallback,
         priority = RepresentationPolicyPriority(10),
     )
 
@@ -146,11 +143,42 @@ class RepresentationDiagnosticSerializationTest {
             provenance = RepresentationProvenance("test"),
         ),
         kind = kind,
-        anatomy = anatomy(symbolId),
         labelSlots = listOf(
             RepresentationLabelSlot(
                 slotId = RepresentationLabelSlotId("device-tag"),
                 role = PresentationLabelRole.DEVICE_TAG,
+            ),
+        ),
+        graphicBody = GraphicPrimitiveDocument(
+            documentId = GraphicPrimitiveDocumentId(symbolId),
+            bounds = GraphicBounds(0.0, 0.0, 32.0, 32.0),
+            primitives = listOf(
+                GraphicPrimitive.Rectangle(
+                    primitiveId = GraphicPrimitiveId("$symbolId-body"),
+                    bounds = GraphicBounds(0.0, 0.0, 32.0, 32.0),
+                    cornerRadius = 0.0,
+                    styleTokenId = GraphicStyleTokenId("stroke"),
+                ),
+            ),
+            styleTokens = listOf(
+                GraphicStyleToken(
+                    styleTokenId = GraphicStyleTokenId("stroke"),
+                    stroke = GraphicPaintToken("foreground"),
+                    strokeWidth = 1.0,
+                    fill = GraphicFill.TRANSPARENT,
+                    lineCap = GraphicLineCap.BUTT,
+                    lineJoin = GraphicLineJoin.MITER,
+                ),
+            ),
+        ),
+        anchors = listOf(
+            RepresentationAnchorContract(
+                anchorId = RepresentationAnchorId("terminal-1"),
+                geometryRef = "$symbolId-body",
+                primitiveId = GraphicPrimitiveId("$symbolId-body"),
+                point = GraphicPoint(0.0, 16.0),
+                role = RepresentationAnchorRole.TERMINAL,
+                required = true,
             ),
         ),
     )
@@ -172,8 +200,15 @@ class RepresentationDiagnosticSerializationTest {
         labelBindings = labelSlotId?.let { slotId ->
             listOf(RepresentationLabelBinding(RepresentationLabelSlotId(slotId), LabelValue("M1")))
         }.orEmpty(),
-        terminalBindings = if (terminalId != null && semanticPortId != null) {
-            listOf(RepresentationTerminalBinding(PresentationTerminalId(terminalId), SemanticPortId(semanticPortId)))
+        portAnchorBindings = if (terminalId != null && semanticPortId != null) {
+            listOf(
+                RepresentationPortAnchorBinding(
+                    bindingId = RepresentationPortAnchorBindingId("binding:$semanticPortId:$terminalId"),
+                    semanticPortId = SemanticPortId(semanticPortId),
+                    anchorId = RepresentationAnchorId(terminalId),
+                    provenance = RepresentationProvenance("source:diagnostic-test.athena:1:1"),
+                ),
+            )
         } else {
             emptyList()
         },
@@ -182,33 +217,4 @@ class RepresentationDiagnosticSerializationTest {
         }.orEmpty(),
     )
 
-    private fun anatomy(symbolId: String): PresentationAnatomy = PresentationAnatomy(
-        representationId = RepresentationId(symbolId),
-        context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-        bounds = PresentationBounds(width = GridUnit(32), height = GridUnit(32)),
-        hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-        primitives = listOf(
-            PresentationPrimitive.Rectangle(
-                primitiveId = PresentationPrimitiveId("$symbolId-body"),
-                origin = PresentationPoint(GridUnit(0), GridUnit(0)),
-                size = PresentationSize(GridUnit(32), GridUnit(32)),
-            ),
-        ),
-        terminals = listOf(
-            PresentationTerminalPoint(
-                terminalId = PresentationTerminalId("terminal-1"),
-                role = TerminalPresentationRole.POWER_INPUT,
-                localPoint = PresentationPoint(GridUnit(0), GridUnit(16)),
-                side = PresentationSide.LEFT,
-                notation = TerminalNotation(TerminalMarker.CIRCLE, TerminalNumber("1")),
-            ),
-        ),
-        labelAnchors = listOf(
-            PresentationLabelAnchor(
-                anchorId = PresentationLabelAnchorId("device-tag"),
-                role = PresentationLabelRole.DEVICE_TAG,
-                point = PresentationPoint(GridUnit(0), GridUnit(-8)),
-            ),
-        ),
-    )
 }

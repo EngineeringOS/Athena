@@ -70,8 +70,8 @@ class ProjectSemanticLinkedLowererTest {
             package com.root
             system Root {
               port PLC1.out {}
-              connect duplicate_alias PLC1.out -> PLC1.out
-              connect duplicate_alias PLC1.out -> PLC1.out
+              connect duplicate_alias PLC1.out to PLC1.out
+              connect duplicate_alias PLC1.out to PLC1.out
             }
             """.trimIndent(),
         )
@@ -149,7 +149,7 @@ class ProjectSemanticLinkedLowererTest {
         val providerSource = parse("provider.athena", "package com.root\nsystem Provider {\n  port PLC1.out {}\n}")
         val consumerSource = parse(
             "consumer.athena",
-            "package com.root\nsystem Consumer {\n  connect provider_loop PLC1.out -> PLC1.out\n}",
+            "package com.root\nsystem Consumer {\n  connect provider_loop PLC1.out to PLC1.out\n}",
         )
         val providerUnit = sourceUnit(rootKey, "provider.athena", providerSource.content, providerSource.parsed.source.ast.declarations)
         val consumerUnit = sourceUnit(rootKey, "consumer.athena", consumerSource.content, consumerSource.parsed.source.ast.declarations)

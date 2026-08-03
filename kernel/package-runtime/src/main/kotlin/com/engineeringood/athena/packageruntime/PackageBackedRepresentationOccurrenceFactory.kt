@@ -5,23 +5,23 @@ import com.engineeringood.athena.packageplatform.RepresentationAnchorId
 import com.engineeringood.athena.packageplatform.RepresentationAnchorSide
 import com.engineeringood.athena.packageplatform.RepresentationDescriptor
 import com.engineeringood.athena.packageplatform.RepresentationLabelSlotRole
+import com.engineeringood.athena.representation.GraphicBounds
+import com.engineeringood.athena.representation.GraphicFill
+import com.engineeringood.athena.representation.GraphicLineCap
+import com.engineeringood.athena.representation.GraphicLineJoin
+import com.engineeringood.athena.representation.GraphicPaintToken
+import com.engineeringood.athena.representation.GraphicPoint
+import com.engineeringood.athena.representation.GraphicPrimitive
+import com.engineeringood.athena.representation.GraphicPrimitiveDocument
+import com.engineeringood.athena.representation.GraphicPrimitiveDocumentId
+import com.engineeringood.athena.representation.GraphicPrimitiveId
+import com.engineeringood.athena.representation.GraphicStyleToken
+import com.engineeringood.athena.representation.GraphicStyleTokenId
 import com.engineeringood.athena.representation.CompositionIntentMembershipId
-import com.engineeringood.athena.representation.GridUnit
 import com.engineeringood.athena.representation.LabelValue
-import com.engineeringood.athena.representation.PresentationAnatomy
-import com.engineeringood.athena.representation.PresentationBounds
-import com.engineeringood.athena.representation.PresentationHotspot
-import com.engineeringood.athena.representation.PresentationLabelAnchor
-import com.engineeringood.athena.representation.PresentationLabelAnchorId
 import com.engineeringood.athena.representation.PresentationLabelRole
-import com.engineeringood.athena.representation.PresentationPoint
-import com.engineeringood.athena.representation.PresentationPrimitive
-import com.engineeringood.athena.representation.PresentationPrimitiveId
-import com.engineeringood.athena.representation.PresentationSide
-import com.engineeringood.athena.representation.PresentationSize
-import com.engineeringood.athena.representation.PresentationTerminalId
-import com.engineeringood.athena.representation.PresentationTerminalPoint
 import com.engineeringood.athena.representation.PhysicalTerminalId
+import com.engineeringood.athena.representation.RepresentationAnchorContract
 import com.engineeringood.athena.representation.RepresentationAnchorRole
 import com.engineeringood.athena.representation.RepresentationBindingCompiler
 import com.engineeringood.athena.representation.RepresentationBindingRequest
@@ -29,13 +29,14 @@ import com.engineeringood.athena.representation.RepresentationDefinition
 import com.engineeringood.athena.representation.RepresentationDiagnostic
 import com.engineeringood.athena.representation.RepresentationDiagnosticCode
 import com.engineeringood.athena.representation.RepresentationDirectionPredicate
-import com.engineeringood.athena.representation.RepresentationFallbackBehavior
-import com.engineeringood.athena.representation.RepresentationId
 import com.engineeringood.athena.representation.RepresentationLabelSlot
+import com.engineeringood.athena.representation.RepresentationLabelSlotId
 import com.engineeringood.athena.representation.RepresentationLibraryId
 import com.engineeringood.athena.representation.RepresentationLifecycle
 import com.engineeringood.athena.representation.RepresentationLifecycleState
 import com.engineeringood.athena.representation.RepresentationOccurrenceRole
+import com.engineeringood.athena.representation.RepresentationPortAnchorBinding
+import com.engineeringood.athena.representation.RepresentationPortAnchorBindingId
 import com.engineeringood.athena.representation.RepresentationPolicy
 import com.engineeringood.athena.representation.RepresentationPolicyId
 import com.engineeringood.athena.representation.RepresentationPolicyPriority
@@ -48,10 +49,6 @@ import com.engineeringood.athena.representation.RepresentationSymbolKind
 import com.engineeringood.athena.representation.RepresentationVariantId
 import com.engineeringood.athena.representation.SemanticPortId
 import com.engineeringood.athena.representation.SymbolFamilyId
-import com.engineeringood.athena.representation.TerminalMarker
-import com.engineeringood.athena.representation.TerminalNotation
-import com.engineeringood.athena.representation.TerminalNumber
-import com.engineeringood.athena.representation.TerminalPresentationRole
 
 class PackageBackedRepresentationOccurrenceFactory(
     private val compiler: RepresentationBindingCompiler = RepresentationBindingCompiler(),
@@ -62,7 +59,6 @@ class PackageBackedRepresentationOccurrenceFactory(
             return PackageBackedRepresentationOccurrenceResult(
                 occurrence = null,
                 diagnostics = diagnostics.sortedRepresentationDiagnostics(),
-                rendererFallbackAccepted = false,
             )
         }
 
@@ -85,7 +81,6 @@ class PackageBackedRepresentationOccurrenceFactory(
             symbolFamilyId = SymbolFamilyId(symbolId.value),
             symbolId = symbolId,
             variant = evidence.variant?.let(::RepresentationVariantId),
-            fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
             priority = RepresentationPolicyPriority(100),
         )
         val binding = compiler.bind(
@@ -98,7 +93,7 @@ class PackageBackedRepresentationOccurrenceFactory(
                 policy = policy,
                 definition = definition,
                 labelValues = evidence.labelBindingSummary.toLabelValues(),
-                terminalPorts = evidence.anchorMapSummary.toTerminalPorts(),
+                portAnchorBindings = evidence.anchorMapSummary.toPortAnchorBindings(evidence.semanticSubjectId),
                 projectPorts = evidence.anchorMapSummary.toProjectPortFacts(evidence.semanticSubjectId),
                 priority = RepresentationPolicyPriority(100),
                 compositionIntentMembership = listOf(CompositionIntentMembershipId("package:${evidence.resolverStage}")),
@@ -108,7 +103,6 @@ class PackageBackedRepresentationOccurrenceFactory(
         return PackageBackedRepresentationOccurrenceResult(
             occurrence = binding.occurrenceOrNull,
             diagnostics = binding.diagnostics,
-            rendererFallbackAccepted = false,
         )
     }
 
@@ -159,53 +153,56 @@ class PackageBackedRepresentationOccurrenceFactory(
             provenance = RepresentationProvenance("package-runtime"),
         ),
         kind = occurrenceRole.toSymbolKind(),
-        anatomy = PresentationAnatomy(
-            representationId = RepresentationId(descriptorId.value),
-            context = com.engineeringood.athena.representation.RepresentationContext.ELECTRICAL_SCHEMATIC,
-            bounds = PresentationBounds(GridUnit(bounds.width.toInt()), GridUnit(bounds.height.toInt())),
-            hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-            primitives = listOf(
-                PresentationPrimitive.Rectangle(
-                    primitiveId = PresentationPrimitiveId("descriptor-bounds"),
-                    origin = PresentationPoint(GridUnit(0), GridUnit(0)),
-                    size = PresentationSize(GridUnit(bounds.width.toInt()), GridUnit(bounds.height.toInt())),
-                ),
-            ),
-            terminals = anchors.map { it.toTerminalPoint() },
-            labelAnchors = labelSlots.map { slot ->
-                PresentationLabelAnchor(
-                    anchorId = PresentationLabelAnchorId(slot.slotId.value),
-                    role = slot.role.toPresentationRole(),
-                    point = PresentationPoint(GridUnit(0), GridUnit(0)),
-                )
-            },
-        ),
         labelSlots = labelSlots.map { slot ->
             RepresentationLabelSlot(
-                slotId = com.engineeringood.athena.representation.RepresentationLabelSlotId(slot.slotId.value),
+                slotId = RepresentationLabelSlotId(slot.slotId.value),
                 role = slot.role.toPresentationRole(),
+                origin = slot.placement?.let { placement -> GraphicPoint(placement.originX, placement.originY) },
+                bounds = slot.placement?.let { placement ->
+                    GraphicBounds(placement.boundsX, placement.boundsY, placement.width, placement.height)
+                },
+                styleTokenId = slot.styleTokenRef?.let { ref -> GraphicStyleTokenId(ref.value) },
             )
         },
         variants = variants.map { RepresentationVariantId(it.value) },
+        graphicBody = descriptorGraphicBody(symbolId),
+        anchors = anchors.map { anchor -> anchor.toRepresentationAnchor() },
     )
 
-    private fun RepresentationAnchorDefinition.toTerminalPoint(): PresentationTerminalPoint =
-        PresentationTerminalPoint(
-            terminalId = PresentationTerminalId(anchorId.value),
-            role = TerminalPresentationRole.POWER_INPUT,
-            localPoint = PresentationPoint(GridUnit(x.toInt()), GridUnit(y.toInt())),
-            side = side.toPresentationSide(),
-            notation = TerminalNotation(TerminalMarker.CIRCLE, TerminalNumber(anchorId.value.uppercase())),
+    private fun RepresentationDescriptor.descriptorGraphicBody(symbolId: RepresentationSymbolId): GraphicPrimitiveDocument =
+        GraphicPrimitiveDocument(
+            documentId = GraphicPrimitiveDocumentId(symbolId.value),
+            bounds = GraphicBounds(0.0, 0.0, bounds.width, bounds.height),
+            primitives = listOf(
+                GraphicPrimitive.Rectangle(
+                    primitiveId = GraphicPrimitiveId("descriptor-bounds"),
+                    bounds = GraphicBounds(0.0, 0.0, bounds.width, bounds.height),
+                    cornerRadius = 0.0,
+                    styleTokenId = GraphicStyleTokenId("descriptor.stroke"),
+                ),
+            ),
+            styleTokens = listOf(
+                GraphicStyleToken(
+                    styleTokenId = GraphicStyleTokenId("descriptor.stroke"),
+                    stroke = GraphicPaintToken("foreground"),
+                    strokeWidth = 1.0,
+                    fill = GraphicFill.TRANSPARENT,
+                    lineCap = GraphicLineCap.BUTT,
+                    lineJoin = GraphicLineJoin.MITER,
+                ),
+            ),
+            provenanceSources = listOf("package-runtime:${descriptorId.value}"),
         )
 
-    private fun RepresentationAnchorSide.toPresentationSide(): PresentationSide =
-        when (this) {
-            RepresentationAnchorSide.LEFT -> PresentationSide.LEFT
-            RepresentationAnchorSide.RIGHT -> PresentationSide.RIGHT
-            RepresentationAnchorSide.TOP -> PresentationSide.TOP
-            RepresentationAnchorSide.BOTTOM -> PresentationSide.BOTTOM
-            RepresentationAnchorSide.CENTER -> PresentationSide.LEFT
-        }
+    private fun RepresentationAnchorDefinition.toRepresentationAnchor(): RepresentationAnchorContract =
+        RepresentationAnchorContract(
+            anchorId = com.engineeringood.athena.representation.RepresentationAnchorId(anchorId.value),
+            geometryRef = anchorId.value,
+            primitiveId = GraphicPrimitiveId("descriptor-bounds"),
+            point = GraphicPoint(x, y),
+            role = RepresentationAnchorRole.TERMINAL,
+            required = true,
+        )
 
     private fun RepresentationLabelSlotRole.toPresentationRole(): PresentationLabelRole =
         when (this) {
@@ -236,10 +233,15 @@ class PackageBackedRepresentationOccurrenceFactory(
         parsePairs().mapKeys { (slotId, _) -> com.engineeringood.athena.representation.RepresentationLabelSlotId(slotId) }
             .mapValues { (_, value) -> LabelValue(value) }
 
-    private fun List<String>.toTerminalPorts(): Map<PresentationTerminalId, SemanticPortId> =
-        parsePairs()
-            .map { (semanticPortId, anchorId) -> PresentationTerminalId(anchorId) to SemanticPortId(semanticPortId) }
-            .toMap()
+    private fun List<String>.toPortAnchorBindings(semanticSubjectId: String): List<RepresentationPortAnchorBinding> =
+        parsePairs().map { (semanticPortId, anchorId) ->
+            RepresentationPortAnchorBinding(
+                bindingId = RepresentationPortAnchorBindingId("binding:$semanticSubjectId:$semanticPortId:$anchorId"),
+                semanticPortId = SemanticPortId(semanticPortId),
+                anchorId = com.engineeringood.athena.representation.RepresentationAnchorId(anchorId),
+                provenance = RepresentationProvenance("binding-evidence:$semanticSubjectId"),
+            )
+        }
 
     private fun List<String>.toProjectPortFacts(semanticSubjectId: String): List<RepresentationProjectPortFact> =
         parsePairs().map { (semanticPortId, anchorId) ->

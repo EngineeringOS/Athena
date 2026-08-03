@@ -22,7 +22,7 @@ class AthenaPackageAwareNavigationTest {
             system Consumer {
               device Local {}
               port Local.in {}
-              connect shared_out_to_local_in Shared.out -> Local.in
+              connect shared_out_to_local_in Shared.out to Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -108,7 +108,7 @@ class AthenaPackageAwareNavigationTest {
             system Consumer {
               device Local {}
               port Local.in {}
-              connect shared_out_to_local_in_2 Shared.out -> Local.in
+              connect shared_out_to_local_in_2 Shared.out to Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(

@@ -1,4 +1,4 @@
-import { AbstractViewContribution, ApplicationShell, FrontendApplicationContribution, OpenerService, open } from '@theia/core/lib/browser';
+import { AbstractViewContribution, ApplicationShell, FrontendApplication, FrontendApplicationContribution, OpenerService, open } from '@theia/core/lib/browser';
 import { CommonMenus } from '@theia/core/lib/browser/common-frontend-contribution';
 import { CommandContribution, CommandRegistry } from '@theia/core/lib/common/command';
 import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu';
@@ -94,6 +94,10 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         await this.ensureProfessionalWorkbenchLayout();
     }
 
+    onStart(_app: FrontendApplication): void {
+        this.clearGeneratedPreloadOverlay();
+    }
+
     registerCommands(commands: CommandRegistry): void {
         super.registerCommands(commands);
         commands.registerCommand(AthenaCommands.CREATE_ENGINEERING_REPOSITORY, {
@@ -156,6 +160,18 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
                 order: extension.menuOrder
             });
         }
+    }
+
+    protected clearGeneratedPreloadOverlay(): void {
+        if (typeof document === 'undefined') {
+            return;
+        }
+        window.requestAnimationFrame(() => {
+            document.querySelectorAll<HTMLElement>('.theia-preload').forEach(preload => {
+                preload.style.display = 'none';
+                preload.style.pointerEvents = 'none';
+            });
+        });
     }
 
     protected async ensureProfessionalWorkbenchLayout(): Promise<void> {

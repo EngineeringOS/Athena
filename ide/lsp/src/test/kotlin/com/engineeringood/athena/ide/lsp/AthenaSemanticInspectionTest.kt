@@ -25,7 +25,7 @@ class AthenaSemanticInspectionTest {
 
         val invalidText = """
             system FactoryLine {
-              connect motor1_out_to_missing_in Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in Motor1.out to Missing.in
             }
         """.trimIndent()
         val validText = """
@@ -48,7 +48,7 @@ class AthenaSemanticInspectionTest {
                 signal Digital
               }
 
-              connect motor1_out_to_missing_in_2 Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in_2 Motor1.out to Missing.in
             }
         """.trimIndent()
 
@@ -158,7 +158,7 @@ class AthenaSemanticInspectionTest {
               }
 
               connect control_group {
-                plc1_out_to_m1_in PLC1.out -> M1.in
+                plc1_out_to_m1_in PLC1.out to M1.in
               }
             }
         """.trimIndent()
@@ -197,6 +197,75 @@ class AthenaSemanticInspectionTest {
             assertEquals(17, connectionRange.end.line)
             assertTrue(connectionRange.start.character > 0)
             assertTrue(connectionRange.end.character > connectionRange.start.character)
+        } finally {
+            server.shutdown().get()
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `semantic inspection resolves source ranges for grouped interface ports`() {
+        val repository = createGovernedTestRepository("athena-lsp-interface-port-inspection-")
+        val repositoryRoot = repository.repositoryRoot
+        val sourcePath = repository.seedSourcePath
+        val sourceText = """
+            system InterfacePortInspection {
+              device TerminalX37 {
+                type Terminal
+                port motorDownOut { direction out signal Power role switched terminal "3O" }
+              }
+
+              device MotorM37 {
+                type Motor
+                interface powerInput {
+                  ports {
+                    down { direction in signal Power role switched terminal "D" }
+                  }
+                }
+              }
+
+              power TerminalX37.motorDownOut to MotorM37.down
+            }
+        """.trimIndent()
+
+        val server = AthenaLanguageServer()
+        try {
+            server.initialize(
+                InitializeParams().apply {
+                    rootUri = repositoryRoot.toUri().toString()
+                },
+            ).get()
+
+            val documentUri = sourcePath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(
+                    TextDocumentItem(
+                        documentUri,
+                        "athena",
+                        1,
+                        sourceText,
+                    ),
+                ),
+            )
+
+            val inspection = server.semanticInspection(
+                AthenaSemanticInspectionParams(
+                    AthenaSemanticInspectionTextDocument(documentUri),
+                ),
+            ).get()
+
+            assertNotNull(inspection)
+            assertEquals("ready", inspection.status)
+            assertEquals(2, inspection.portCount)
+            val interfacePort = inspection.ports.single { port -> port.path == "MotorM37.down" }
+            assertEquals(
+                Range(
+                    org.eclipse.lsp4j.Position(10, 8),
+                    org.eclipse.lsp4j.Position(10, 69),
+                ),
+                interfacePort.sourceRange,
+            )
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()

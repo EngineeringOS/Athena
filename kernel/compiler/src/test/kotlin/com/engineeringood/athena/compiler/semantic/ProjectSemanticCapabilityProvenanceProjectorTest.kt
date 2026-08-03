@@ -127,7 +127,7 @@ class ProjectSemanticCapabilityProvenanceProjectorTest {
             package com.root
             import com.vendor
             system Consumer {
-              connect vendor_out_to_local_out Vendor.out -> Local.out
+              connect vendor_out_to_local_out Vendor.out to Local.out
               port Local.out {}
             }
             """.trimIndent(),

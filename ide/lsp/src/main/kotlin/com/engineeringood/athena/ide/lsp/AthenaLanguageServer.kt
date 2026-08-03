@@ -962,7 +962,7 @@ class AthenaLanguageServer(
     }
 
     /**
-     * M17 semantic-authority guardrail (AD-108 / AD-107).
+     * Semantic-authority guardrail.
      *
      * This is the single diagnostics-publishing path for the Athena IDE. Every published
      * [Diagnostic] must originate from compiler-owned parsing and later compiler/runtime stages,
@@ -1165,7 +1165,7 @@ private fun String.toDocumentPath(): Path? {
 /**
  * Converts one compiler-owned [CompilerCompilationResult] into published LSP diagnostics.
  *
- * M17 semantic-authority guardrail (AD-108 / AD-107): this function may only ever pattern-match on
+ * Semantic-authority guardrail: this function may only ever pattern-match on
  * the compiler-owned result cases and read `CompilerSyntaxDiagnostic` / `SemanticDiagnostic` (from
  * `com.engineeringood.athena.compiler` and `com.engineeringood.athena.semantics.core`). It must never
  * be changed to accept, read, or merge a Tree-sitter tree/query result (Epic 3) or any ANTLR4

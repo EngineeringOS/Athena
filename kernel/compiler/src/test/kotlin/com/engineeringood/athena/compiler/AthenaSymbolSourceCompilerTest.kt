@@ -5,7 +5,6 @@ import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.language.SourcePosition
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.language.SymbolDeclaration
-import com.engineeringood.athena.representation.RepresentationBodyAuthority
 import com.engineeringood.athena.representation.RepresentationDefinitionKind
 import java.nio.file.Path
 import kotlin.test.Test
@@ -25,7 +24,6 @@ class AthenaRepresentationSourceCompilerSymbolTest {
         assertTrue(result.diagnostics.isEmpty(), result.diagnostics.toString())
         val definition = result.definitions.single()
         assertEquals(RepresentationDefinitionKind.SYMBOL, definition.definitionKind)
-        assertEquals(RepresentationBodyAuthority.GRAPHIC_PRIMITIVE, definition.bodyAuthority)
         assertEquals("iec.switch_contact", definition.symbolId.value)
         assertEquals("athena.iec", definition.libraryId.value)
         assertEquals("1.0.0", definition.version.value)
@@ -33,7 +31,6 @@ class AthenaRepresentationSourceCompilerSymbolTest {
         assertEquals(listOf("line", "load"), definition.anchors.map { it.anchorId.value })
         assertEquals(listOf("line", "load"), definition.anchors.map { it.primitiveId.value })
         assertTrue(definition.labelSlots.isEmpty())
-        assertTrue(definition.anatomy.primitives.isEmpty())
     }
 
     @Test
@@ -173,17 +170,7 @@ class AthenaRepresentationSourceCompilerSymbolTest {
     }
 
     @Test
-    fun `covers missing compatibility fields malformed numbers and unsupported geometry`() {
-        val missingCompatibility = VALID_SYMBOL
-            .replace("direction in", "")
-            .replace("direction out", "")
-            .replace("signal Power.family", "")
-        val missingCompatibilityResult = compiler.compile("missing-compatibility.athena", missingCompatibility)
-
-        assertTrue(missingCompatibilityResult.definitions.isEmpty())
-        assertTrue(missingCompatibilityResult.diagnostics.any { it.code == "symbol.anchor.direction.missing" })
-        assertEquals(2, missingCompatibilityResult.diagnostics.count { it.code == "symbol.anchor.signal.missing" })
-
+    fun `covers malformed numbers and unsupported geometry`() {
         for ((name, source) in listOf(
             "leading-plus" to VALID_SYMBOL.replace("(40, 0)", "(+40, 0)"),
             "leading-decimal" to VALID_SYMBOL.replace("(40, 0)", "(.5, 0)"),

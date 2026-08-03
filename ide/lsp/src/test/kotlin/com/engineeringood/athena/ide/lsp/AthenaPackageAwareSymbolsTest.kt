@@ -21,7 +21,7 @@ class AthenaPackageAwareSymbolsTest {
             system Consumer {
               device Local {}
               port Local.in {}
-              connect shared_out_to_local_in Shared.out -> Local.in
+              connect shared_out_to_local_in Shared.out to Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -75,7 +75,7 @@ class AthenaPackageAwareSymbolsTest {
             assertEquals("Consumer", systemSymbol.name)
             assertEquals(SymbolKind.Module, systemSymbol.kind)
             assertEquals(
-                listOf("Local", "Local.in", "connect shared_out_to_local_in Shared.out -> Local.in"),
+                listOf("Local", "Local.in", "connect shared_out_to_local_in Shared.out to Local.in"),
                 systemSymbol.children.map { symbol -> symbol.name },
             )
         } finally {

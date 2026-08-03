@@ -3,6 +3,7 @@ package com.engineeringood.athena.compiler.semantic
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.QualifiedName
+import com.engineeringood.athena.language.RelationDeclaration
 
 class ProjectSemanticReferenceLinker {
     fun link(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
@@ -33,6 +34,15 @@ class ProjectSemanticReferenceLinker {
                     when (declaration) {
                         is ConnectionDeclaration -> listOf(declaration)
                         is ConnectionGroupDeclaration -> declaration.connections
+                        is RelationDeclaration -> declaration.targets.map { target ->
+                            ConnectionDeclaration(
+                                alias = relationMemberAlias(declaration.word.value, declaration.from, target),
+                                aliasSpan = declaration.word.span,
+                                from = declaration.from,
+                                to = target,
+                                span = declaration.span,
+                            )
+                        }
                         else -> emptyList()
                     }
                 }
@@ -109,3 +119,6 @@ class ProjectSemanticReferenceLinker {
         private const val PORT_DECLARATION_KIND = "port"
     }
 }
+
+private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
+    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"

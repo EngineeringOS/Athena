@@ -1,0 +1,112 @@
+package com.engineeringood.m38.professionalcontroldrawing
+
+system ExactAttachmentControl {
+  device Supply24V38 {
+    type PowerSource
+    connectivity enabled
+    tag "PS38"
+    port lplus { direction out signal Power role line terminal "L+" }
+    port lminus { direction out signal Power role neutral terminal "L-" }
+    port pe { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  device BreakerQF38 {
+    type Breaker
+    connectivity enabled
+    tag "QF38"
+    port line { direction in signal Power role line terminal "1" }
+    port load { direction out signal Power role switched terminal "2" }
+  }
+
+  device VendorDriveU38 {
+    type Terminal
+    connectivity enabled
+    tag "U38"
+    model "SVG-VENDOR-DRIVE"
+    port supplyL { direction in signal Power role switched terminal "L" }
+    port supplyN { direction in signal Power role neutral terminal "N" }
+    port motorU { direction out signal Power role switched terminal "U" }
+    port motorV { direction out signal Power role switched terminal "V" }
+    port controlIn { direction in signal Control role control terminal "DI1" }
+    port controlOut { direction out signal Control role control terminal "DO1" }
+    port pe { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  device TerminalX38 {
+    type Terminal
+    connectivity enabled
+    tag "X38"
+    port input { direction in signal Control role control terminal "1" }
+    port output { direction out signal Control role control terminal "2" }
+    port pe { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  device MotorM38 {
+    type Motor
+    connectivity enabled
+    tag "M38"
+    port u { direction in signal Power role switched terminal "U" }
+    port v { direction in signal Power role switched terminal "V" }
+    port pe { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  device PeBarM38 {
+    type ProtectiveEarth
+    connectivity enabled
+    tag "PE38"
+    port bond { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  power Supply24V38.lplus to BreakerQF38.line
+  power BreakerQF38.load to VendorDriveU38.supplyL
+  power Supply24V38.lminus to VendorDriveU38.supplyN
+  power VendorDriveU38.motorU to MotorM38.u
+  power VendorDriveU38.motorV to MotorM38.v
+  control VendorDriveU38.controlOut to TerminalX38.input
+  control TerminalX38.output to VendorDriveU38.controlIn
+  earth Supply24V38.pe to PeBarM38.bond
+  earth PeBarM38.bond to [VendorDriveU38.pe, TerminalX38.pe, MotorM38.pe]
+
+  evidence TerminalInputIec {
+    namespace iec
+    reference "IEC:60204-1:terminal-input"
+    subject port TerminalX38.input
+    provenance "IEC 60204-1 terminal evidence"
+  }
+
+  evidence ProtectiveEarthJunctionIec {
+    namespace iec
+    reference "IEC:60204-1:explicit-junction:protective_earth_junction"
+    subject relation-contract earth_Supply24V38_pe_to_PeBarM38_bond
+    provenance "IEC 60204-1 protective earth junction evidence"
+  }
+
+  evidence NoConnectCrossingIec {
+    namespace iec
+    reference "IEC:60204-1:explicit-no-connect-crossing:control_status-over-drive_power"
+    subject relation-contract control_VendorDriveU38_controlOut_to_TerminalX38_input
+    provenance "IEC 60204-1 no-connect crossing evidence"
+  }
+
+  projection ExactAttachmentDrawing {
+    target professional-connection-drawing
+    layout orthogonal-grid
+    drawingProfile ControlDrawingIEC
+    routeQuality ControlDrawingRouteQuality
+    proof exact-endpoints
+    proof source-trace
+  }
+
+  installation cabinet ExactAttachmentPanel {
+    enclosure Main size (800mm, 600mm, 220mm)
+  }
+
+  layout schematic {
+    place Supply24V38 at (2, 1) orientation horizontal
+    place BreakerQF38 at (4, 2) orientation vertical
+    place VendorDriveU38 at (7, 2) orientation horizontal
+    place TerminalX38 at (10, 3) orientation horizontal
+    place MotorM38 at (13, 3) orientation horizontal
+    place PeBarM38 at (10, 5) orientation horizontal
+  }
+}

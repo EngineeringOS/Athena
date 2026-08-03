@@ -5,12 +5,12 @@ This is the openable Athena workspace for the M22 milestone.
 Open this folder in the IDE to see the M22 governed layout optimization and round-trip scenarios as
 real `.athena` source files:
 
-- `src/01-baseline-sheet.athena` - accepted M21 graph workbench behavior baseline
-- `src/02-layout-optimization-acceptance.athena` - power, protection, controller, HMI, terminal, and
+- `src/com/engineeringood/m22/sample/01-baseline-sheet.athena` - accepted M21 graph workbench behavior baseline
+- `src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena` - power, protection, controller, HMI, terminal, and
   load readability subjects
-- `src/03-component-round-trip.athena` - component placement, alignment, and grouping round-trip
+- `src/com/engineeringood/m22/sample/03-component-round-trip.athena` - component placement, alignment, and grouping round-trip
   subjects
-- `src/04-boundary-scope.athena` - deferred-scope guardrail scenario
+- `src/com/engineeringood/m22/sample/04-boundary-scope.athena` - deferred-scope guardrail scenario
 - `M22-LAYOUT-ACCEPTANCE.md` - professional layout acceptance checklist for M22 review
 - `M22-BASELINE-PROOF.md` - IDE-visible baseline proof for accepted graph workbench behavior
 - `M22-LAYOUT-REPLAY-PROOF.md` - deterministic fact-level replay proof before visual acceptance

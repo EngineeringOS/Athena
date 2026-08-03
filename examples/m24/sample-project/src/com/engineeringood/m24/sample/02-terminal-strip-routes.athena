@@ -61,10 +61,10 @@ system TerminalStripRouteProof {
     signal Digital
   }
 
-  connect terminalrouteplc1_do1_to_terminalstripxt1_in1 TerminalRoutePLC1.do1 -> TerminalStripXT1.in1
-  connect terminalrouteplc1_do2_to_terminalstripxt1_in2 TerminalRoutePLC1.do2 -> TerminalStripXT1.in2
-  connect terminalstripxt1_out1_to_valvey1_command TerminalStripXT1.out1 -> ValveY1.command
-  connect terminalstripxt1_out2_to_sensorb1_feedback TerminalStripXT1.out2 -> SensorB1.feedback
+  connect terminalrouteplc1_do1_to_terminalstripxt1_in1 TerminalRoutePLC1.do1 to TerminalStripXT1.in1
+  connect terminalrouteplc1_do2_to_terminalstripxt1_in2 TerminalRoutePLC1.do2 to TerminalStripXT1.in2
+  connect terminalstripxt1_out1_to_valvey1_command TerminalStripXT1.out1 to ValveY1.command
+  connect terminalstripxt1_out2_to_sensorb1_feedback TerminalStripXT1.out2 to SensorB1.feedback
 
   layout schematic-sheet {
     place TerminalStripXT1 below TerminalRoutePLC1

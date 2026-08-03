@@ -219,16 +219,28 @@ export type AthenaGLSPPresentationDocumentSource = {
     occurrences: AthenaGLSPPresentationOccurrenceSource[];
     graphicOccurrences?: AthenaGLSPPresentationGraphicOccurrenceSource[];
     connectors: AthenaGLSPPresentationConnectorSource[];
+    connectionMarkers?: AthenaGLSPPresentationConnectionMarkerSource[];
+    paintPlan?: AthenaGLSPPresentationPaintPlanSource;
     representationFacts?: AthenaGLSPPresentationRepresentationFactSource[];
     referenceMarkers?: AthenaGLSPPresentationReferenceMarkerSource[];
     drawingComposition?: AthenaGLSPDrawingCompositionSource;
+};
+export type AthenaGLSPPresentationPaintPlanSource = {
+    items: AthenaGLSPPresentationPaintItemSource[];
+};
+export type AthenaGLSPPresentationPaintItemSource = {
+    itemId: string;
+    targetId: string;
+    kind: string;
+    visible: boolean;
+    order: number;
 };
 export type AthenaGLSPPresentationGraphicOccurrenceSource = {
     occurrenceId: string;
     semanticSubjectId: string;
     physicalComponentId: string;
     functionId?: string;
-    bounds: AthenaGLSPPresentationBoundsSource;
+    bounds?: AthenaGLSPPresentationBoundsSource;
     orientation: string;
     deviceLabel: string;
     modelLabel?: string;
@@ -251,6 +263,7 @@ export type AthenaGLSPPresentationGraphicTerminalBindingSource = {
     anchorId: string;
     terminalIdentity: string;
     point: AthenaGLSPPoint;
+    labelPoint: AthenaGLSPPoint;
     side: string;
 };
 export type AthenaGLSPPresentationGraphicLabelSource = {
@@ -269,7 +282,7 @@ export type AthenaGLSPGraphicPrimitiveDocumentSource = {
 export type AthenaGLSPGraphicPrimitiveSource = {
     primitiveId: string;
     kind: string;
-    bounds: AthenaGLSPPresentationBoundsSource;
+    bounds?: AthenaGLSPPresentationBoundsSource;
     styleTokenId?: string;
     start?: AthenaGLSPPoint;
     end?: AthenaGLSPPoint;
@@ -341,17 +354,17 @@ export type AthenaGLSPDrawingReferencePlacementSource = {
     subjectId: string;
     role: string;
     representationIdentity: string;
-    bounds: AthenaGLSPPresentationBoundsSource;
-    anchor: AthenaGLSPPoint;
+    bounds?: AthenaGLSPPresentationBoundsSource;
+    anchor?: AthenaGLSPPoint;
     compactNotation: string;
-    anatomy: AthenaGLSPPresentationAnatomySource;
+    anatomy?: AthenaGLSPPresentationAnatomySource;
 };
 export type AthenaGLSPDrawingAuthoritiesSource = {
     contentBounds: string;
     bounds: string;
     projection: string;
     representation: string;
-    structureIntent: string;
+    structure: string;
     policy: string;
 };
 export type AthenaGLSPPresentationSheetSurfaceSource = {
@@ -467,14 +480,83 @@ export type AthenaGLSPPresentationConnectorSource = {
     semanticId: string;
     primitiveId: string;
     routePoints: AthenaGLSPPoint[];
+    lineClassId: string;
+    line: AthenaGLSPPresentationConnectorLineSource;
+    routeId: string;
+    bundleId: string;
+    laneId: string;
+    laneRouteIds: string[];
+    selectedChannelIds: string[];
+    labels: AthenaGLSPPresentationConnectorLabelSource[];
+    quality: string;
+    sourceEndpoint: AthenaGLSPPresentationConnectorEndpointSource;
+    targetEndpoint: AthenaGLSPPresentationConnectorEndpointSource;
     layer: string;
-    sourceAnchorId?: string;
-    targetAnchorId?: string;
-    sourcePortSemanticId?: string;
-    targetPortSemanticId?: string;
-    markerKeys: string[];
+    markerIds: string[];
     tokenOverrides: Record<string, string>;
     sourceProjectionIds: string[];
+    trace?: AthenaGLSPPresentationTraceSource;
+    sourceSpan?: AthenaGLSPPresentationSourceSpanSource;
+};
+export type AthenaGLSPPresentationConnectorLineSource = {
+    classId: string;
+    lineKind: string;
+    lineStyleId: string;
+    weight: number;
+    style: string;
+    colorKey: string;
+    endpointBehavior: string;
+    labelPolicy: string;
+    crossingBehavior: string;
+    policyId: string;
+    compilerSnapshotId: string;
+};
+export type AthenaGLSPPresentationConnectorLabelSource = {
+    labelId: string;
+    text: string;
+    point: AthenaGLSPPoint;
+    bounds: AthenaGLSPPresentationBoundsSource;
+    labelClassId: string;
+    display: string;
+    sourceProvenance: string[];
+    compilerSnapshotId: string;
+};
+export type AthenaGLSPPresentationConnectorEndpointSource = {
+    portSemanticId: string;
+    bindingId: string;
+    occurrenceId: string;
+    anchorId: string;
+    point: AthenaGLSPPoint;
+    sourceProvenance: string[];
+    trace?: AthenaGLSPPresentationTraceSource;
+};
+export type AthenaGLSPPresentationTraceSource = {
+    sourceProvenance?: string[];
+    sourceProjectionIds?: string[];
+    compilerStage?: string;
+    compilerSnapshotId?: string;
+    sourceSpan?: AthenaGLSPPresentationSourceSpanSource;
+    packageTrace?: unknown;
+};
+export type AthenaGLSPPresentationSourceSpanSource = {
+    file: string;
+    startLine: number;
+    startColumn: number;
+    endLine: number;
+    endColumn: number;
+};
+export type AthenaGLSPPresentationConnectionMarkerSource = {
+    markerId: string;
+    kind: string;
+    point: AthenaGLSPPoint;
+    routeIds: string[];
+    connectorIds: string[];
+    semanticId?: string;
+    joined: boolean;
+    appearanceClassId: string;
+    sourceProjectionIds: string[];
+    sourceProvenance: string[];
+    compilerSnapshotId: string;
 };
 export type AthenaGLSPPresentationReferenceMarkerSource = {
     markerId: string;
@@ -525,9 +607,9 @@ export type AthenaGLSPPresentationRepresentationFactSource = {
     anatomy: AthenaGLSPPresentationAnatomySource;
     terminals: AthenaGLSPPresentationTerminalFactSource[];
     labels: AthenaGLSPLabelFactSource[];
-    packageEvidence?: AthenaGLSPPresentationPackageEvidenceSource;
+    packageTrace?: AthenaGLSPPresentationPackageTraceSource;
 };
-export type AthenaGLSPPresentationPackageEvidenceSource = {
+export type AthenaGLSPPresentationPackageTraceSource = {
     engineeringPackageId: string;
     engineeringPackageVersion: string;
     presentationProfileId: string;

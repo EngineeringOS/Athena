@@ -60,9 +60,9 @@ The M25 sample project is:
 
 The accepted source path includes:
 
-- `src/01-professional-symbol-sheet.athena`
-- `src/02-terminal-labels-and-routes.athena`
-- `src/03-six-family-acceptance.athena`
+- `src/com/engineeringood/m25/sample/01-professional-symbol-sheet.athena`
+- `src/com/engineeringood/m25/sample/02-terminal-labels-and-routes.athena`
+- `src/com/engineeringood/m25/sample/03-six-family-acceptance.athena`
 
 The accepted proof must show:
 

@@ -74,7 +74,6 @@ class RouteQualityDiagnosticPublisher {
             message = quality.message ?: "Route `${routeId.value}` is ${quality.state.name.lowercase()}.",
             severity = when (quality.state) {
                 RouteQualityState.DEGRADED -> RouteQualityDiagnosticSeverity.WARNING
-                RouteQualityState.FALLBACK -> RouteQualityDiagnosticSeverity.WARNING
                 RouteQualityState.SATISFIED -> error("Satisfied route facts do not publish diagnostics.")
             },
         )

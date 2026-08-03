@@ -1,6 +1,6 @@
 package com.engineeringood.athena.presentation
 
-import com.engineeringood.athena.representation.PresentationAnatomy
+import com.engineeringood.athena.representation.GraphicPrimitiveDocument
 
 /** Renderer-neutral professional drawing composition attached to one presentation document. */
 data class PresentationDrawingComposition(
@@ -85,7 +85,7 @@ data class PresentationDrawingReferencePlacement(
     val bounds: PresentationDrawingBounds,
     val anchor: PresentationDrawingPoint,
     val compactNotation: String,
-    val anatomy: PresentationAnatomy,
+    val graphicBody: GraphicPrimitiveDocument,
 )
 
 data class PresentationDrawingAuthorities(
@@ -93,6 +93,6 @@ data class PresentationDrawingAuthorities(
     val bounds: String,
     val projection: String,
     val representation: String,
-    val structureIntent: String,
+    val structure: String,
     val policy: String,
 )

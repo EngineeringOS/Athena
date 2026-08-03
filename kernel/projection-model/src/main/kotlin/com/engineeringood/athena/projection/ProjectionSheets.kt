@@ -1,5 +1,6 @@
 package com.engineeringood.athena.projection
 
+import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.StableSemanticIdentity
 
 /**
@@ -12,7 +13,6 @@ data class ProjectionSheetSubject(
     val semanticId: StableSemanticIdentity,
     val nodeIds: List<ProjectionNodeId> = emptyList(),
     val connectionIds: List<ProjectionConnectionId> = emptyList(),
-    val labelIds: List<ProjectionLabelId> = emptyList(),
 )
 
 /**
@@ -178,6 +178,53 @@ data class ProjectionSheetViewComposition(
 )
 
 /**
+ * Sheet grid reference system owned by Projection (M40).
+ *
+ * The grid names rows and columns so placements can be referenced as cells (e.g., A1/B3). It
+ * carries no coordinates; coordinate mapping is Spatial-owned.
+ */
+data class ProjectionSheetGrid(
+    val gridId: String,
+    val rows: Int,
+    val columns: Int,
+) {
+    /**
+     * Deterministic cell references: row letters (A, B, C, ...) times column numbers (1..N).
+     * Example: rows=3, columns=4 -> A1..D3.
+     */
+    fun cellReferences(): List<String> = buildList {
+        for (row in 0 until rows) {
+            val rowLetter = ('A'.code + row).toChar().toString()
+            for (column in 1..columns) {
+                add("$rowLetter$column")
+            }
+        }
+    }
+}
+
+/**
+ * Authored functional region on a projection sheet (M40).
+ *
+ * A region is a logical document section grouping occurrences by identity; it carries no
+ * placement, size, or style facts.
+ */
+data class ProjectionRegion(
+    val regionId: String,
+    val name: String,
+    val occurrenceNames: List<String>,
+    val originGeometryElementId: GeometryElementId = GeometryElementId("projection-region:$regionId"),
+)
+
+/** One authored projection construct attached to a sheet (M40). */
+data class ProjectionSheetConstruct(
+    val constructId: ProjectionConstructId,
+    val kind: String,
+    val name: String?,
+    val memberNames: List<String>,
+    val originGeometryElementId: GeometryElementId = GeometryElementId("projection-construct:${constructId.value}"),
+)
+
+/**
  * One governed sheet in a derived projection document.
  *
  * Sheet ordering and navigation remain projection-owned metadata. They never replace or redefine
@@ -190,6 +237,10 @@ data class ProjectionSheet(
     val previousSheetId: ProjectionSheetId? = null,
     val nextSheetId: ProjectionSheetId? = null,
     val subjects: List<ProjectionSheetSubject> = emptyList(),
+    val regions: List<ProjectionRegion> = emptyList(),
+    val constructs: List<ProjectionSheetConstruct> = emptyList(),
+    val grid: ProjectionSheetGrid? = null,
+    val originGeometryElementId: GeometryElementId = GeometryElementId("projection-sheet:${sheetId.value}"),
     val policyEvidence: ProjectionSheetPolicyEvidence? = null,
     val publication: ProjectionSheetPublication = ProjectionSheetPublication.fromProjectionState(
         sheetId = sheetId,
@@ -204,4 +255,11 @@ data class ProjectionSheet(
         subjects = subjects,
         publication = publication,
     ),
-)
+) {
+    /**
+     * The view this sheet belongs to, derived from the view-scoped sheet identity recipe
+     * (`"view/sheet/order"`). One sheet belongs to exactly one view.
+     */
+    val viewId: String
+        get() = sheetId.value.substringBefore("/sheet/").ifBlank { sheetId.value }
+}

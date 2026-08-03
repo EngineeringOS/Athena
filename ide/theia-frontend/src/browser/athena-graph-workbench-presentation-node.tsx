@@ -30,7 +30,7 @@ export function AthenaGraphWorkbenchPresentationNode(
                     nodeClassName,
                     selected,
                     tokenDefaults: part.tokenDefaults,
-                    tokenOverrides: part.tokenOverrides,
+                    tokenValues: part.tokenOverrides,
                 },
             ))}
             {part.textSlots.map(slot => slot.text
@@ -65,11 +65,11 @@ function renderPresentationCommand(
         nodeClassName: string;
         selected: boolean;
         tokenDefaults: Record<string, string>;
-        tokenOverrides: Record<string, string>;
+        tokenValues: Record<string, string>;
     },
 ): React.ReactNode {
-    const stroke = resolveToken(args.tokenDefaults, args.tokenOverrides, command.strokeTokenKey, 'var(--athena-graph-node-stroke)');
-    const strokeWidth = resolveToken(args.tokenDefaults, args.tokenOverrides, command.strokeWidthTokenKey, '1.6');
+    const stroke = resolveToken(args.tokenDefaults, args.tokenValues, command.strokeTokenKey, 'var(--athena-graph-node-stroke)');
+    const strokeWidth = resolveToken(args.tokenDefaults, args.tokenValues, command.strokeWidthTokenKey, '1.6');
     const fill = 'transparent';
     const className = `${args.nodeClassName} ${args.selected ? 'athena-graph-workbench__presentation-shape--selected' : ''}`;
 
@@ -148,7 +148,7 @@ function renderPresentationCommand(
                 y={command.origin.y}
                 textAnchor='middle'
                 dominantBaseline='central'
-                style={{ fill: resolveToken(args.tokenDefaults, args.tokenOverrides, 'label', stroke) }}
+                style={{ fill: resolveToken(args.tokenDefaults, args.tokenValues, 'label', stroke) }}
             >
                 {command.text}
             </text>;

@@ -44,7 +44,6 @@ data class RouteConstraint(
 enum class RouteQualityState {
     SATISFIED,
     DEGRADED,
-    FALLBACK,
 }
 
 /** Route-quality explanation carried with route facts and diagnostics. */
@@ -77,7 +76,7 @@ data class RouteQuality(
         fun fallback(
             failedConstraintIds: List<RouteConstraintId>,
             message: String,
-        ): RouteQuality = RouteQuality(RouteQualityState.FALLBACK, failedConstraintIds, message)
+        ): RouteQuality = degraded(failedConstraintIds, message)
     }
 }
 
@@ -116,6 +115,71 @@ data class RouteLabelFact(
     }
 }
 
+@JvmInline
+value class RouteLaneId(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Route lane id must not be blank." }
+    }
+}
+
+enum class RouteLaneOrientation {
+    HORIZONTAL,
+    VERTICAL,
+    MIXED,
+}
+
+data class RouteLaneCapacity(
+    val maxRoutes: Int,
+) {
+    init {
+        require(maxRoutes > 0) { "Route lane capacity must be positive." }
+    }
+}
+
+data class RouteLaneOccupancy(
+    val usedRoutes: Int,
+    val routeIds: List<SchematicRouteId>,
+) {
+    init {
+        require(usedRoutes >= 0) { "Route lane occupancy must not be negative." }
+        require(routeIds.distinct().size == routeIds.size) { "Route lane occupancy must not duplicate route ids." }
+        require(usedRoutes == routeIds.size) { "Route lane occupancy count must match route ids." }
+    }
+}
+
+data class RouteLaneConflict(
+    val code: String,
+    val message: String,
+) {
+    init {
+        require(code.isNotBlank()) { "Route lane conflict code must not be blank." }
+        require(message.isNotBlank()) { "Route lane conflict message must not be blank." }
+    }
+}
+
+data class RouteLaneAssignment(
+    val laneId: RouteLaneId,
+    val lane: SchematicRouteLane,
+    val orientation: RouteLaneOrientation,
+    val capacity: RouteLaneCapacity,
+    val occupancy: RouteLaneOccupancy,
+    val conflicts: List<RouteLaneConflict> = emptyList(),
+)
+
+data class RouteLaneDiagnostic(
+    val code: String,
+    val message: String,
+    val affectedRouteIds: List<SchematicRouteId> = emptyList(),
+) {
+    init {
+        require(code.isNotBlank()) { "Route lane diagnostic code must not be blank." }
+        require(message.isNotBlank()) { "Route lane diagnostic message must not be blank." }
+        require(affectedRouteIds.distinct().size == affectedRouteIds.size) {
+            "Route lane diagnostics must not duplicate affected route ids."
+        }
+    }
+}
+
 /** M24 governed route fact attached to terminal anchors and source connection identity. */
 data class RouteFact(
     val routeId: SchematicRouteId,
@@ -130,8 +194,16 @@ data class RouteFact(
     val qualityMetrics: RouteQualityMetrics,
     val source: TerminalAnchorFact,
     val target: TerminalAnchorFact,
+    val connectionRole: ElectricalConnectionRole? = null,
     val segments: List<SchematicRouteSegment>,
     val lane: SchematicRouteLane = SchematicRouteLane(0),
+    val laneAssignment: RouteLaneAssignment = RouteLaneAssignment(
+        laneId = RouteLaneId("lane:${lane.value}"),
+        lane = lane,
+        orientation = RouteLaneOrientation.MIXED,
+        capacity = RouteLaneCapacity(1),
+        occupancy = RouteLaneOccupancy(1, listOf(routeId)),
+    ),
     val constraints: List<RouteConstraint> = emptyList(),
     val labels: List<RouteLabelFact> = emptyList(),
     val quality: RouteQuality = RouteQuality.satisfied(),
@@ -220,6 +292,7 @@ data class RouteFactSnapshot(
     val routeFacts: List<RouteFact>,
     val junctionFacts: List<RouteJunctionFact> = emptyList(),
     val crossingFacts: List<RouteCrossingFact> = emptyList(),
+    val laneDiagnostics: List<RouteLaneDiagnostic> = emptyList(),
 ) {
     init {
         require(family.isNotBlank()) { "Route fact snapshot family must not be blank." }
@@ -235,6 +308,7 @@ data class RouteFactSnapshot(
             routeFacts: List<RouteFact>,
             junctionFacts: List<RouteJunctionFact> = emptyList(),
             crossingFacts: List<RouteCrossingFact> = emptyList(),
+            laneDiagnostics: List<RouteLaneDiagnostic> = emptyList(),
         ): RouteFactSnapshot = RouteFactSnapshot(
             snapshotId = snapshotId,
             family = family,
@@ -244,6 +318,9 @@ data class RouteFactSnapshot(
             ),
             crossingFacts = crossingFacts.sortedWith(
                 compareBy<RouteCrossingFact>({ it.point.y }, { it.point.x }, { it.crossingId }),
+            ),
+            laneDiagnostics = laneDiagnostics.sortedWith(
+                compareBy<RouteLaneDiagnostic>({ it.code }, { it.message }),
             ),
         )
     }

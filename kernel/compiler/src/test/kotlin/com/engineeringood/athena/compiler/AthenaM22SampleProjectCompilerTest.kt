@@ -37,10 +37,10 @@ class AthenaM22SampleProjectCompilerTest {
     private fun sampleProjectSources(): List<Path> {
         val repoRoot = resolveRepoRoot()
         return listOf(
-            repoRoot.resolve("examples/m22/sample-project/src/01-baseline-sheet.athena"),
-            repoRoot.resolve("examples/m22/sample-project/src/02-layout-optimization-acceptance.athena"),
-            repoRoot.resolve("examples/m22/sample-project/src/03-component-round-trip.athena"),
-            repoRoot.resolve("examples/m22/sample-project/src/04-boundary-scope.athena"),
+            repoRoot.resolve("examples/m22/sample-project/src/com/engineeringood/m22/sample/01-baseline-sheet.athena"),
+            repoRoot.resolve("examples/m22/sample-project/src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena"),
+            repoRoot.resolve("examples/m22/sample-project/src/com/engineeringood/m22/sample/03-component-round-trip.athena"),
+            repoRoot.resolve("examples/m22/sample-project/src/com/engineeringood/m22/sample/04-boundary-scope.athena"),
         )
     }
 

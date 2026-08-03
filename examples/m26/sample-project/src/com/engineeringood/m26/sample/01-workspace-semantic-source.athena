@@ -51,9 +51,9 @@ system SemanticDocumentProjectionAcceptance {
     signal Digital
   }
 
-  connect mainpowersupplyps1_lplus_to_mainbreakerqf1_line MainPowerSupplyPS1.lplus -> MainBreakerQF1.line
-  connect mainbreakerqf1_load_to_controllerplc1_power MainBreakerQF1.load -> ControllerPLC1.power
-  connect controllerplc1_hmistatus_to_operatorhmi1_status ControllerPLC1.hmiStatus -> OperatorHMI1.status
+  connect mainpowersupplyps1_lplus_to_mainbreakerqf1_line MainPowerSupplyPS1.lplus to MainBreakerQF1.line
+  connect mainbreakerqf1_load_to_controllerplc1_power MainBreakerQF1.load to ControllerPLC1.power
+  connect controllerplc1_hmistatus_to_operatorhmi1_status ControllerPLC1.hmiStatus to OperatorHMI1.status
 
   layout schematic-sheet {
     place MainBreakerQF1 near MainPowerSupplyPS1

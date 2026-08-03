@@ -39,9 +39,9 @@ class AthenaM25SampleProjectCompilerTest {
     private fun sampleProjectSources(): List<Path> {
         val repoRoot = resolveRepoRoot()
         return listOf(
-            repoRoot.resolve("examples/m25/sample-project/src/01-professional-symbol-sheet.athena"),
-            repoRoot.resolve("examples/m25/sample-project/src/02-terminal-labels-and-routes.athena"),
-            repoRoot.resolve("examples/m25/sample-project/src/03-six-family-acceptance.athena"),
+            repoRoot.resolve("examples/m25/sample-project/src/com/engineeringood/m25/sample/01-professional-symbol-sheet.athena"),
+            repoRoot.resolve("examples/m25/sample-project/src/com/engineeringood/m25/sample/02-terminal-labels-and-routes.athena"),
+            repoRoot.resolve("examples/m25/sample-project/src/com/engineeringood/m25/sample/03-six-family-acceptance.athena"),
         )
     }
 

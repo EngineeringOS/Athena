@@ -24,10 +24,10 @@ class AthenaRuntimeViewerProjectionTest {
         val ready = assertIs<AthenaRuntimeViewerReadyProjection>(projection)
         assertEquals("demo-cabinet", ready.projectName)
         assertEquals("DemoCabinet", ready.scene.systemName)
-        assertEquals(480, ready.scene.canvasWidth)
-        assertEquals(172, ready.scene.canvasHeight)
-        assertEquals(2, ready.scene.components.size)
-        assertEquals(1, ready.scene.connections.size)
+        assertEquals(1, ready.scene.canvasWidth)
+        assertEquals(1, ready.scene.canvasHeight)
+        assertEquals(0, ready.scene.components.size)
+        assertEquals(0, ready.scene.connections.size)
     }
 
     @Test

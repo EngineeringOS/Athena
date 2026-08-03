@@ -34,7 +34,7 @@ system DemoCabinet {
     signal Digital
   }
 
-  connect PLC1.out -> M1.in
+  connect plc_to_motor PLC1.out to M1.in
 }
 ```
 

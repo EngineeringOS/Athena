@@ -2,7 +2,11 @@ package com.engineeringood.athena.presentation
 
 import com.engineeringood.athena.layout.LayoutOrientation
 import com.engineeringood.athena.representation.GraphicPrimitiveDocument
+import com.engineeringood.athena.representation.GraphicPrimitiveId
+import com.engineeringood.athena.representation.RepresentationAnchorId
+import com.engineeringood.athena.representation.RepresentationAnchorRole
 import com.engineeringood.athena.representation.RepresentationOccurrenceId
+import com.engineeringood.athena.representation.RepresentationPortAnchorBindingId
 import com.engineeringood.athena.routing.SchematicRoutePoint
 import com.engineeringood.athena.routing.TerminalSide
 
@@ -20,6 +24,7 @@ data class PresentationGraphicOccurrence(
     val definitionId: String,
     val bindingRuleId: String,
     val graphic: GraphicPrimitiveDocument,
+    val placedAnchors: List<PresentationPlacedAnchor>,
     val terminalBindings: List<PresentationGraphicTerminalBinding>,
     val labels: List<PresentationGraphicLabel>,
     val sourceProvenance: List<String>,
@@ -33,14 +38,38 @@ data class PresentationGraphicOccurrence(
             "Graphic occurrence material provenance must be complete."
         }
         require(graphic.primitives.isNotEmpty()) { "Graphic occurrence requires canonical Graphic Primitive material." }
+        require(placedAnchors.map { anchor -> anchor.anchorId }.distinct().size == placedAnchors.size) {
+            "Graphic occurrence placed Anchor ids must be unique."
+        }
+        val placedAnchorIds = placedAnchors.map { anchor -> anchor.anchorId.value }.toSet()
+        require(terminalBindings.all { binding -> binding.anchorId in placedAnchorIds }) {
+            "Graphic terminal bindings must reuse placed Anchor points."
+        }
+    }
+}
+
+data class PresentationPlacedAnchor(
+    val anchorId: RepresentationAnchorId,
+    val geometryRef: String,
+    val primitiveId: GraphicPrimitiveId,
+    val point: SchematicRoutePoint,
+    val role: RepresentationAnchorRole,
+    val required: Boolean,
+    val sourceProvenance: List<String>,
+) {
+    init {
+        require(geometryRef.isNotBlank()) { "Placed Anchor geometry reference must not be blank." }
+        require(sourceProvenance.isNotEmpty()) { "Placed Anchor requires source provenance." }
     }
 }
 
 data class PresentationGraphicTerminalBinding(
     val portSemanticId: String,
+    val bindingId: RepresentationPortAnchorBindingId,
     val anchorId: String,
     val terminalIdentity: String,
     val point: SchematicRoutePoint,
+    val labelPoint: SchematicRoutePoint,
     val side: TerminalSide,
 ) {
     init {

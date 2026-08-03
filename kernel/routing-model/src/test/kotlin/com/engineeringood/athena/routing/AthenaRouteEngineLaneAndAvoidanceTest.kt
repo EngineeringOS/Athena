@@ -1,4 +1,4 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
@@ -47,7 +47,7 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
     }
 
     @Test
-    fun `route quality is degraded when no component avoiding lane is available`() {
+    fun `route uses lower escape lane when top lane is blocked by sheet edge`() {
         val obstacle = SchematicComponentBounds(
             subjectId = StableSemanticIdentity("component:BLOCKING_OBSTACLE"),
             occurrenceId = LayoutOccurrenceId("occurrence:component:BLOCKING_OBSTACLE"),
@@ -63,9 +63,9 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
         )
         val route = result.routeFacts.single()
 
-        assertTrue(route.segments.any { segment -> obstacle.intersects(segment) })
-        assertEquals(RouteQualityState.DEGRADED, route.quality.state)
-        assertEquals(listOf(RouteConstraintId("constraint:blocked:avoid")), route.quality.failedConstraintIds)
+        assertFalse(route.segments.any { segment -> obstacle.intersects(segment) })
+        assertEquals(RouteQualityState.SATISFIED, route.quality.state)
+        assertTrue(route.segments.any { segment -> segment.start.y == 160 && segment.end.y == 160 })
     }
 
     private fun input(
@@ -92,7 +92,7 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
         val target = anchor("anchor:$suffix:target", "component:T$suffix", "in", TerminalSide.LEFT, targetX, targetY)
         return AthenaRouteRequest(
             routeId = SchematicRouteId("route:$suffix"),
-            connectionIntent = ElectricalConnectionIntent(
+            connectionRoleFact = ElectricalConnectionRoleFact(
                 connectionId = connectionId,
                 sourceSubjectId = source.subjectId,
                 sourcePortId = source.portId,

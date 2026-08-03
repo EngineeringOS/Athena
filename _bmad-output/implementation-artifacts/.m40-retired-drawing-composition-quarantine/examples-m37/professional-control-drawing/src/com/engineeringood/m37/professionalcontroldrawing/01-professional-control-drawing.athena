@@ -1,0 +1,151 @@
+package com.engineeringood.m37.professionalcontroldrawing
+
+system RollingShutterControl {
+  device Supply24V37 {
+    type PowerSource
+    connectivity enabled
+    tag "PS37"
+    port lplus { direction out signal Power role line terminal "L+" }
+    port lminus { direction out signal Power role neutral terminal "L-" }
+    port controlPlus { direction out signal Control role control terminal "C+" }
+    port controlMinus { direction in signal Control role control terminal "C-" }
+  }
+
+  device ProtectiveEarthPE37 {
+    type ProtectiveEarth
+    connectivity enabled
+    tag "PE37"
+    port bond { direction out signal Ground role protective terminal "PE" }
+  }
+
+  device StopS37 {
+    type Breaker
+    connectivity enabled
+    tag "S37"
+    interface powerInput {
+      ports {
+        input { direction in signal Control role control terminal "11" }
+        output { direction out signal Control role control terminal "12" }
+      }
+    }
+  }
+
+  device UpContactS37 {
+    type Breaker
+    connectivity enabled
+    tag "S37U"
+    port input { direction in signal Control role control terminal "13" }
+    port output { direction out signal Control role control terminal "14" }
+  }
+
+  device DownContactS37 {
+    type Breaker
+    connectivity enabled
+    tag "S37D"
+    port input { direction in signal Control role control terminal "21" }
+    port output { direction out signal Control role control terminal "22" }
+  }
+
+  device RelayUpK37 {
+    type Contactor
+    connectivity enabled
+    tag "K37U"
+    port a1 { direction in signal Control role control terminal "A1" }
+    port a2 { direction out signal Control role control terminal "A2" }
+    port load { direction out signal Power role switched terminal "2T1" }
+  }
+
+  device RelayDownK37 {
+    type Contactor
+    connectivity enabled
+    tag "K37D"
+    port a1 { direction in signal Control role control terminal "A1" }
+    port a2 { direction out signal Control role control terminal "A2" }
+    port load { direction out signal Power role switched terminal "2T1" }
+  }
+
+  device IndicatorUpH37 {
+    type Terminal
+    connectivity enabled
+    tag "H37U"
+    port plus { direction in signal Control role control terminal "+" }
+    port minus { direction out signal Control role control terminal "-" }
+  }
+
+  device TerminalX37 {
+    type Terminal
+    connectivity enabled
+    tag "X37"
+    port controlOut { direction out signal Control role terminal terminal "1" }
+    port motorUpIn { direction in signal Power role switched terminal "2I" }
+    port motorUpOut { direction out signal Power role switched terminal "2O" }
+    port motorDownIn { direction in signal Power role switched terminal "3I" }
+    port motorDownOut { direction out signal Power role switched terminal "3O" }
+    port pe { direction out signal Ground role terminal terminal "PE" }
+  }
+
+  device MotorM37 {
+    type Motor
+    connectivity enabled
+    tag "M37"
+    interface powerInput {
+      ports {
+        up { direction in signal Power role switched terminal "U" }
+        down { direction in signal Power role switched terminal "D" }
+        pe { direction in signal Ground role protective terminal "PE" }
+      }
+    }
+  }
+
+  control Supply24V37.controlPlus to StopS37.input
+  control StopS37.output to UpContactS37.input
+  control UpContactS37.output to RelayUpK37.a1
+  control StopS37.output to DownContactS37.input
+  control DownContactS37.output to RelayDownK37.a1
+  control RelayUpK37.a2 to IndicatorUpH37.plus
+  control IndicatorUpH37.minus to Supply24V37.controlMinus
+  power RelayUpK37.load to TerminalX37.motorUpIn
+  power TerminalX37.motorUpOut to MotorM37.up
+  power TerminalX37.motorDownOut to MotorM37.down
+  earth ProtectiveEarthPE37.bond to MotorM37.pe
+
+  evidence RollingShutterIec {
+    namespace iec
+    reference "IEC:60204-1:rolling-shutter-control"
+    subject contract MotorM37
+    provenance "IEC 60204-1 control drawing evidence"
+  }
+
+  evidence DownMotorRelation {
+    namespace iec
+    reference "IEC:60204-1:motor-down"
+    subject relation-contract power_TerminalX37_motorDownOut_to_MotorM37_down
+    provenance "IEC 60204-1 motor-down relation"
+  }
+
+  projection ControlDrawing {
+    target professional-connection-drawing
+    layout orthogonal-grid
+    drawingProfile ControlDrawingIEC
+    routeQuality ControlDrawingRouteQuality
+    proof exact-endpoints
+    proof source-trace
+  }
+
+  installation cabinet RollingShutterPanel {
+    enclosure Main size (800mm, 600mm, 220mm)
+  }
+
+  layout schematic {
+    place Supply24V37 at (2, 1) orientation horizontal
+    place StopS37 at (4, 2) orientation vertical
+    place UpContactS37 at (6, 2) orientation vertical
+    place DownContactS37 at (6, 4) orientation vertical
+    place RelayUpK37 at (8, 2) orientation vertical
+    place RelayDownK37 at (8, 4) orientation vertical
+    place IndicatorUpH37 at (10, 2) orientation horizontal
+    place TerminalX37 at (11, 4) orientation horizontal
+    place MotorM37 at (14, 4) orientation horizontal
+    place ProtectiveEarthPE37 at (14, 6) orientation horizontal
+  }
+}

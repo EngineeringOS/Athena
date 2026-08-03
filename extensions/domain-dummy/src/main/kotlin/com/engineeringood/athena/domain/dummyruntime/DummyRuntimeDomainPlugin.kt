@@ -10,11 +10,18 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.ExternalEvidenceDeclaration
+import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.language.ProjectionConstructDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
+import com.engineeringood.athena.language.RegionDeclaration
+import com.engineeringood.athena.language.RelationDeclaration
 import com.engineeringood.athena.language.ScalarValue
+import com.engineeringood.athena.language.SheetDeclaration
+import com.engineeringood.athena.language.ViewDeclaration
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
 import com.engineeringood.athena.plugin.AthenaCompilerPassContribution
 import com.engineeringood.athena.plugin.AthenaDomainConnectionSchema
@@ -85,11 +92,19 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
             when (declaration) {
                 is DeviceDeclaration -> deviceDeclarations += declaration
                 is PortDeclaration -> portDeclarations += declaration
-                is ConnectionDeclaration -> connectionDeclarations += declaration
-                is ConnectionGroupDeclaration -> connectionDeclarations += declaration.connections
-                is LayoutDeclaration -> Unit
-                is InstallationDeclaration -> Unit
-            }
+	                is ConnectionDeclaration -> connectionDeclarations += declaration
+		                is ConnectionGroupDeclaration -> connectionDeclarations += declaration.connections
+		                is RelationDeclaration -> Unit
+		                is ExternalEvidenceDeclaration -> Unit
+	                is com.engineeringood.athena.language.ProjectionPolicyDeclaration -> Unit
+                    is LayoutDeclaration -> Unit
+                    is InstallationDeclaration -> Unit
+                    is ViewDeclaration -> Unit
+                    is SheetDeclaration -> Unit
+                    is GridDeclaration -> Unit
+                    is RegionDeclaration -> Unit
+                    is ProjectionConstructDeclaration -> Unit
+                }
         }
 
         val ownedDeviceNames = deviceDeclarations

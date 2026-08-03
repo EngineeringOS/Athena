@@ -42,3 +42,77 @@ system Demo {
     (declaration
       (device_declaration
         name: (name)))))
+
+==============================
+Device grouped connectivity interface
+==============================
+
+system Demo {
+  device Drive {
+    type MotorDrive
+    connectivity enabled
+
+    interface powerInput {
+      type power
+      direction in
+      signal PowerAC
+      role line
+      multiplicity single
+
+      ports {
+        L1
+        PE {
+          signal ProtectiveEarth
+          role protective_earth
+          direction passive
+        }
+      }
+    }
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (device_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (identifier))
+        (interface_declaration
+          name: (name)
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (interface_ports
+            (interface_port_member
+              name: (name))
+            (interface_port_member
+              name: (name)
+              (property_assignment
+                (property_name)
+                (identifier))
+              (property_assignment
+                (property_name)
+                (identifier))
+              (property_assignment
+                (property_name)
+                (identifier)))))))))

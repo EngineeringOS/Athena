@@ -4,9 +4,9 @@ This is the openable Athena workspace for the M25 symbol and presentation policy
 
 Open this folder in the IDE to verify real `.athena` presentation scenarios:
 
-- `src/01-professional-symbol-sheet.athena` - mandatory PLC, terminal block, power supply, and load path
-- `src/02-terminal-labels-and-routes.athena` - terminal marker and label-heavy route proof
-- `src/03-six-family-acceptance.athena` - six-family presentation acceptance slice
+- `src/com/engineeringood/m25/sample/01-professional-symbol-sheet.athena` - mandatory PLC, terminal block, power supply, and load path
+- `src/com/engineeringood/m25/sample/02-terminal-labels-and-routes.athena` - terminal marker and label-heavy route proof
+- `src/com/engineeringood/m25/sample/03-six-family-acceptance.athena` - six-family presentation acceptance slice
 
 Use:
 

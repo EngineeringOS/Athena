@@ -5,12 +5,12 @@
  * :kernel:compiler, :kernel:runtime, :ide:*, or any other downstream module.
  * Downstream code must use only com.engineeringood.athena.language contracts.
  *
- * Scope includes M17 syntax plus M18 file-level package and import declarations, M23
- * system-scoped layout block grammar admission, M28 nested device-owned ports, and
- * compact grouped connect authoring, M34 standalone typed Symbol/Element declarations, and
- * M35 typed installation cabinet declarations:
+ * Scope includes file-level package and import declarations, system-scoped layout block grammar
+ * admission, nested device-owned ports, compact grouped connect authoring, standalone typed
+ * Symbol/Element declarations, typed installation cabinet declarations, and grouped connectivity
+ * Interface declarations:
  * system, package, import, device, port, connect, grouped connect, qualified names,
- * string literals, property assignments, layout place/align/group statements, M34
+ * string literals, property assignments, layout place/align/group statements,
  * symbol/element/profile/binding/resource declarations, and installation cabinet source only.
  * No expression / macro-use forms.
  */
@@ -49,6 +49,10 @@ declaration
     | portDecl
     | connectGroupDecl
     | connectDecl
+    | relationDecl
+    | evidenceDecl
+    | projectionPolicyDecl
+    | viewDecl
     | layoutDecl
     | installationDecl
     ;
@@ -60,6 +64,7 @@ deviceDecl
 deviceMember
     : propertyAssignment
     | nestedPortDecl
+    | interfaceDecl
     | functionDecl
     ;
 
@@ -88,12 +93,29 @@ functionPortReference
     : ident (DOT ident)?
     ;
 
+interfaceDecl
+    : INTERFACE ident LBRACE interfaceMember* RBRACE
+    ;
+
+interfaceMember
+    : propertyAssignment
+    | interfacePortsDecl
+    ;
+
+interfacePortsDecl
+    : PORTS LBRACE interfacePortMember* RBRACE
+    ;
+
+interfacePortMember
+    : ident (LBRACE propertyAssignment* RBRACE)?
+    ;
+
 portDecl
     : PORT twoPartName LBRACE propertyAssignment* RBRACE
     ;
 
 connectDecl
-    : CONNECT ident twoPartName ARROW twoPartName
+    : CONNECT ident twoPartName connectionSeparator twoPartName
     ;
 
 connectGroupDecl
@@ -101,7 +123,158 @@ connectGroupDecl
     ;
 
 connectGroupEdge
-    : ident twoPartName ARROW twoPartName
+    : ident twoPartName connectionSeparator twoPartName
+    ;
+
+relationDecl
+    : relationWord twoPartName connectionSeparator relationTarget
+    ;
+
+connectionSeparator
+    : TO
+    | ARROW
+    ;
+
+relationWord
+    : IDENT
+    ;
+
+relationTarget
+    : twoPartName
+    | LBRACK twoPartName (COMMA twoPartName)* RBRACK
+    ;
+
+evidenceDecl
+    : EVIDENCE ident LBRACE evidenceMember* RBRACE
+    ;
+
+evidenceMember
+    : evidenceNamespaceDecl
+    | evidenceReferenceDecl
+    | evidenceSubjectDecl
+    | evidenceProvenanceDecl
+    ;
+
+evidenceNamespaceDecl
+    : NAMESPACE ident
+    ;
+
+evidenceReferenceDecl
+    : REFERENCE STRING
+    ;
+
+evidenceSubjectDecl
+    : SUBJECT evidenceSubjectKind qualifiedReference
+    ;
+
+evidenceSubjectKind
+    : CONTRACT
+    | INTERFACE
+    | PORT
+    | RELATION MINUS CONTRACT
+    | ROUTE MINUS POLICY
+    ;
+
+evidenceProvenanceDecl
+    : PROVENANCE STRING
+    ;
+
+projectionPolicyDecl
+    : PROJECTION ident LBRACE projectionPolicyMember* RBRACE
+    ;
+
+projectionPolicyMember
+    : projectionPolicyTargetDecl
+    | projectionPolicyLayoutDecl
+    | projectionPolicyDrawingProfileDecl
+    | projectionPolicyRouteQualityDecl
+    | projectionPolicyProofDecl
+    | projectionPolicyEngineeringTruthDecl
+    ;
+
+projectionPolicyTargetDecl
+    : TARGET profileValueName
+    ;
+
+projectionPolicyLayoutDecl
+    : LAYOUT profileValueName
+    ;
+
+projectionPolicyDrawingProfileDecl
+    : DRAWING_PROFILE ident
+    ;
+
+projectionPolicyRouteQualityDecl
+    : ROUTE_QUALITY ident
+    ;
+
+projectionPolicyProofDecl
+    : PROOF profileValueName
+    ;
+
+projectionPolicyEngineeringTruthDecl
+    : PORT qualifiedReference ident?
+    | CONNECT ident qualifiedReference TO qualifiedReference
+    | EVIDENCE ident?
+    | ANCHOR ident?
+    ;
+
+viewDecl
+    : VIEW ident LBRACE viewMember* RBRACE
+    ;
+
+viewMember
+    : sheetDecl
+    | gridDecl
+    | regionDecl
+    | readingOrderDecl
+    | constructDecl
+    ;
+
+sheetDecl
+    : SHEET ident
+    ;
+
+gridDecl
+    : GRID ident LBRACE gridSizeDecl RBRACE
+    ;
+
+gridSizeDecl
+    : ROWS positiveInteger COLUMNS positiveInteger
+    ;
+
+regionDecl
+    : REGION STRING LBRACE regionMember* RBRACE
+    ;
+
+regionMember
+    : OCCURRENCES LBRACK regionOccurrenceList RBRACK
+    ;
+
+regionOccurrenceList
+    : (ident (COMMA ident)*)?
+    ;
+
+readingOrderDecl
+    : READING_ORDER LBRACK ident (COMMA ident)* RBRACK
+    ;
+
+constructDecl
+    : constructKind (ident)? LBRACK constructMemberList RBRACK
+    ;
+
+constructKind
+    : POWER_RAIL
+    | RUNG
+    | BRANCH
+    | WIRE_BUNDLE
+    | TERMINAL_STRIP
+    | CONTACT_GROUP
+    | COIL_GROUP
+    ;
+
+constructMemberList
+    : (qualifiedReference (COMMA qualifiedReference)*)?
     ;
 
 layoutDecl
@@ -568,6 +741,10 @@ twoPartName
     : ident (DOT ident)*
     ;
 
+qualifiedReference
+    : ident (DOT ident)*
+    ;
+
 propertyAssignment
     : ident scalarValue
     ;
@@ -588,10 +765,39 @@ ident
     | PORT
     | FUNCTION
     | PORTS
+    | INTERFACE
+    | EVIDENCE
+    | NAMESPACE
+    | REFERENCE
+    | SUBJECT
+    | CONTRACT
+    | RELATION
+    | PROVENANCE
+    | TARGET
+    | DRAWING_PROFILE
+    | ROUTE_QUALITY
+    | PROOF
+    | DEFAULT
+    | POLICY
     | CONNECT
     | PACKAGE
     | IMPORT
     | LAYOUT
+    | VIEW
+    | SHEET
+    | GRID
+    | ROWS
+    | COLUMNS
+    | REGION
+    | OCCURRENCES
+    | READING_ORDER
+    | POWER_RAIL
+    | RUNG
+    | BRANCH
+    | WIRE_BUNDLE
+    | TERMINAL_STRIP
+    | CONTACT_GROUP
+    | COIL_GROUP
     | PLACE
     | AT
     | ORIENTATION
@@ -686,10 +892,39 @@ DEVICE : 'device' ;
 PORT : 'port' ;
 FUNCTION : 'function' ;
 PORTS : 'ports' ;
+INTERFACE : 'interface' ;
+EVIDENCE : 'evidence' ;
+NAMESPACE : 'namespace' ;
+REFERENCE : 'reference' ;
+SUBJECT : 'subject' ;
+CONTRACT : 'contract' ;
+RELATION : 'relation' ;
+PROVENANCE : 'provenance' ;
+TARGET : 'target' ;
+DRAWING_PROFILE : 'drawingProfile' ;
+ROUTE_QUALITY : 'routeQuality' ;
+PROOF : 'proof' ;
+DEFAULT : 'default' ;
+POLICY : 'policy' ;
 CONNECT : 'connect' ;
 PACKAGE : 'package' ;
 IMPORT : 'import' ;
 LAYOUT : 'layout' ;
+VIEW : 'view' ;
+SHEET : 'sheet' ;
+GRID : 'grid' ;
+ROWS : 'rows' ;
+COLUMNS : 'columns' ;
+REGION : 'region' ;
+OCCURRENCES : 'occurrences' ;
+READING_ORDER : 'reading-order' ;
+POWER_RAIL : 'power-rail' ;
+RUNG : 'rung' ;
+BRANCH : 'branch' ;
+WIRE_BUNDLE : 'wire-bundle' ;
+TERMINAL_STRIP : 'terminal-strip' ;
+CONTACT_GROUP : 'contact-group' ;
+COIL_GROUP : 'coil-group' ;
 PLACE : 'place' ;
 AT : 'at' ;
 ORIENTATION : 'orientation' ;
@@ -768,6 +1003,7 @@ SIZE : 'size' ;
 LABEL : 'label' ;
 FROM : 'from' ;
 TO : 'to' ;
+ARROW : '->' ;
 STYLE : 'style' ;
 ANCHOR : 'anchor' ;
 POINT : 'point' ;
@@ -787,7 +1023,6 @@ LPAREN : '(' ;
 RPAREN : ')' ;
 COMMA : ',' ;
 DOT : '.' ;
-ARROW : '->' ;
 MINUS : '-' ;
 MM : 'mm' ;
 

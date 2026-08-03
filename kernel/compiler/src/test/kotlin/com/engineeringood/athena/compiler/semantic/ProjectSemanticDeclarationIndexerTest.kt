@@ -73,6 +73,42 @@ class ProjectSemanticDeclarationIndexerTest {
     }
 
     @Test
+    fun `indexes grouped interface ports with flattened owner dot port name`() {
+        val rootId = PackageIdentifier("com.root", "1")
+        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
+        val rootDeclarations = declarations(
+            "grouped-interface-port.athena",
+            """
+            package com.root
+            system Root {
+              device MotorM37 {
+                interface powerInput {
+                  ports {
+                    down { direction in signal Power role switched terminal "D" }
+                  }
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+        val source = sourceUnit(rootKey, "grouped-interface-port.athena", "grouped interface port", rootDeclarations)
+        val namespace = namespace(rootKey, listOf("com", "root"), listOf(source.sourceUnitId))
+
+        val indexed = ProjectSemanticDeclarationIndexer().index(
+            snapshot(rootKey, listOf(ProjectSemanticPackage(rootId, rootKey, "src", emptyList())), listOf(source), listOf(namespace)),
+        )
+
+        assertEquals(
+            listOf(
+                "port:MotorM37.down",
+                "device:MotorM37",
+            ),
+            indexed.declarations.map { "${it.kind}:${it.qualifiedAuthoredName.joinToString(".")}" },
+        )
+        assertEquals(emptyList(), indexed.diagnostics)
+    }
+
+    @Test
     fun `reports duplicate identity when nested and top level ports declare the same owner dot port`() {
         val rootId = PackageIdentifier("com.root", "1")
         val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
@@ -219,7 +255,7 @@ class ProjectSemanticDeclarationIndexerTest {
             system Root {
               device PLC1 {}
               port PLC1.out {}
-              connect plc_self PLC1.out -> PLC1.out
+              connect plc_self PLC1.out to PLC1.out
             }
             """.trimIndent(),
         )

@@ -1,0 +1,83 @@
+package com.engineeringood.m39.realityproductproof
+
+system RealityProductProof {
+  device Supply {
+    type PowerSource
+    connectivity enabled
+    tag "PS39"
+    port L1 { direction out signal Power role line terminal "L1" }
+    port N { direction out signal Power role neutral terminal "N" }
+  }
+
+  device Breaker {
+    type Breaker
+    connectivity enabled
+    tag "QF39"
+    port line { direction in signal Power role line terminal "1" }
+    port load { direction out signal Power role switched terminal "2" }
+  }
+
+  device Drive {
+    type Terminal
+    connectivity enabled
+    tag "U39"
+    port L { direction in signal Power role switched terminal "L" }
+    port N { direction in signal Power role neutral terminal "N" }
+    port U { direction out signal Power role switched terminal "U" }
+    port enable { direction in signal Control role control terminal "DI1" }
+    port PE { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  device StartButton {
+    type Terminal
+    connectivity enabled
+    tag "S39"
+    port out { direction out signal Control role control terminal "13" }
+  }
+
+  device Motor {
+    type Motor
+    connectivity enabled
+    tag "M39"
+    port U { direction in signal Power role switched terminal "U" }
+    port PE { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  device EarthBar {
+    type ProtectiveEarth
+    connectivity enabled
+    tag "PE39"
+    port PE { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  device Cabinet {
+    type ProtectiveEarth
+    connectivity enabled
+    tag "CAB39"
+    port PE { direction passive signal Ground role protective terminal "PE" }
+  }
+
+  power Supply.L1 to Breaker.line
+  power Breaker.load to Drive.L
+  power Supply.N to Drive.N
+  power Drive.U to Motor.U
+  control StartButton.out to Drive.enable
+  earth EarthBar.PE to [Drive.PE, Motor.PE, Cabinet.PE]
+
+  projection RealityChainView {
+    target connection-drawing
+    layout orthogonal-grid
+    drawingProfile ControlDrawingIEC
+    routeQuality ControlDrawingRouteQuality
+  }
+
+  layout schematic {
+    place Supply at (1, 1) orientation horizontal
+    place Breaker at (3, 1) orientation horizontal
+    place Drive at (5, 2) orientation horizontal
+    place StartButton at (3, 4) orientation horizontal
+    place Motor at (7, 2) orientation horizontal
+    place EarthBar at (5, 5) orientation horizontal
+    place Cabinet at (7, 5) orientation horizontal
+  }
+}

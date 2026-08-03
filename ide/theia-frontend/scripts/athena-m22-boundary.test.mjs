@@ -21,10 +21,10 @@ test('M22 boundaries stay explicit across planning docs, stories, usage, and sam
     const usage = readRepoFile('docs/usages/m22-proof-usage.md');
     const sourceEditTest = readRepoFile('ide/theia-frontend/scripts/athena-m22-layout-source-edit.test.mjs');
     const sampleSources = [
-        'examples/m22/sample-project/src/01-baseline-sheet.athena',
-        'examples/m22/sample-project/src/02-layout-optimization-acceptance.athena',
-        'examples/m22/sample-project/src/03-component-round-trip.athena',
-        'examples/m22/sample-project/src/04-boundary-scope.athena'
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/01-baseline-sheet.athena',
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/02-layout-optimization-acceptance.athena',
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/03-component-round-trip.athena',
+        'examples/m22/sample-project/src/com/engineeringood/m22/sample/04-boundary-scope.athena'
     ].map(readRepoFile).join('\n');
 
     [

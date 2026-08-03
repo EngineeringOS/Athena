@@ -1,35 +1,20 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.layout.ProjectionOwnershipContract
-import com.engineeringood.athena.compiler.AthenaCabinetProjectionCompiler
-import com.engineeringood.athena.compiler.CompilerCompilationSuccess
-import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionCrossReference
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionCrossReferenceLink
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionDiagnostic
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalAnchor
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalConnectionEndpoint
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionElectricalRoutingCorridor
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionNotationPack
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionNotationSubject
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionPoint
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionReadySnapshot
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionRenderContribution
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSession
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionView
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheet
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetPolicyEvidence
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayout
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayoutFrame
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayoutLabelLayout
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayoutPlacement
-import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetLayoutRoutingGuidance
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSnapshot
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSurfaceMapping
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionUnavailableSnapshot
-import com.engineeringood.athena.runtime.AthenaRuntimeViewerComponentBox
-import com.engineeringood.athena.runtime.AthenaRuntimeViewerConnectionLine
-import com.engineeringood.athena.runtime.AthenaRuntimeViewerLabel
 import com.engineeringood.athena.runtime.AthenaRuntimeViewerScene
 import java.nio.file.Files
 import com.engineeringood.athena.presentation.PresentationDocument
@@ -63,8 +48,7 @@ internal fun AthenaLspSessionHostReady.currentProjectionSession(
     } ?: sourcePath?.let { path -> languageFeatures?.trackedDocumentByPath(path) }
         ?: primaryTrackedDocument(snapshot, languageFeatures)
     return trackedDocument?.let { tracked ->
-        val generic = context.previewProjectionSession(tracked.compilation)
-        tracked.cabinetProjectionSession(snapshot, generic) ?: generic
+        context.previewProjectionSession(tracked.compilation)
     } ?: context.projectProjectionSession()
 }
 
@@ -83,72 +67,6 @@ private fun primaryTrackedDocument(
         )
     }.getOrNull()
 }
-
-private fun AthenaTrackedDocument.cabinetProjectionSession(
-    snapshot: AthenaLspSessionSnapshot?,
-    generic: AthenaRuntimeProjectionSession,
-): AthenaRuntimeProjectionSession? {
-    val repositoryRoot = snapshot?.repositoryRoot ?: return null
-    val success = compilation as? CompilerCompilationSuccess ?: return null
-    if (success.source.ast.declarations.none { declaration -> declaration is InstallationDeclaration }) {
-        return null
-    }
-    val cabinetView = cabinetView()
-    val result = AthenaCabinetProjectionCompiler().compile(
-        repositoryRoot = repositoryRoot,
-        sourcePath = path,
-        success = success,
-    )
-    val presentation = result.presentation
-    if (presentation == null) {
-        return AthenaRuntimeProjectionSession(
-            projectName = snapshot.projectName,
-            supportedViews = listOf(cabinetView),
-            activeViewId = "cabinet",
-            activeProjection = AthenaRuntimeProjectionUnavailableSnapshot(
-                viewId = "cabinet",
-                reason = result.diagnostics.joinToString("\n") { diagnostic ->
-                    "${diagnostic.code}: ${diagnostic.subject}: ${diagnostic.message}"
-                }.ifBlank { "Cabinet projection compilation failed." },
-                diagnostics = result.diagnostics.map { diagnostic ->
-                    AthenaRuntimeProjectionDiagnostic(
-                        severity = "error",
-                        code = diagnostic.code,
-                        message = diagnostic.message,
-                        provenance = diagnostic.subject,
-                    )
-                },
-            ),
-        )
-    }
-    return generic.copy(
-        supportedViews = listOf(cabinetView),
-        activeViewId = "cabinet",
-        activeProjection = AthenaRuntimeProjectionReadySnapshot(
-            viewId = "cabinet",
-            familyId = "electrical/cabinet",
-            scene = AthenaRuntimeViewerScene(
-                systemName = success.document.system.name,
-                canvasWidth = presentation.canvasWidth,
-                canvasHeight = presentation.canvasHeight,
-                components = emptyList(),
-                connections = emptyList(),
-                labels = emptyList(),
-            ),
-            presentation = presentation,
-            activeSheetId = presentation.drawingComposition?.sheetId ?: "cabinet/sheet/installation",
-            sheets = emptyList(),
-        ),
-    )
-}
-
-private fun cabinetView(): AthenaRuntimeProjectionView =
-    AthenaRuntimeProjectionView(
-        viewId = "cabinet",
-        displayName = "Cabinet",
-        description = "Governed physical installation and connectivity projection.",
-        familyId = "electrical/cabinet",
-    )
 
 private fun java.nio.file.Path.isWithinSourceRoot(sourceRootPath: java.nio.file.Path): Boolean {
     return toAbsolutePath().normalize().startsWith(sourceRootPath.toAbsolutePath().normalize())
@@ -205,12 +123,8 @@ private fun AthenaRuntimeProjectionSnapshot.toReadyPayload(): AthenaProjectionRe
             presentation = presentation,
             activeSheetId = activeSheetId,
             sheets = sheets,
-            sheetLayout = sheetLayout,
             notationPack = notationPack,
             crossReferences = crossReferences,
-            electricalAnchors = electricalAnchors,
-            electricalConnectionEndpoints = electricalConnectionEndpoints,
-            electricalRoutingCorridors = electricalRoutingCorridors,
             activeRenderContributions = activeRenderContributions,
         )
 
@@ -247,33 +161,20 @@ private fun AthenaRuntimeViewerScene.toPayload(
     presentation: PresentationDocument?,
     activeSheetId: String?,
     sheets: List<AthenaRuntimeProjectionSheet>,
-    sheetLayout: AthenaRuntimeProjectionSheetLayout?,
     notationPack: AthenaRuntimeProjectionNotationPack?,
     crossReferences: List<AthenaRuntimeProjectionCrossReference>,
-    electricalAnchors: List<AthenaRuntimeProjectionElectricalAnchor>,
-    electricalConnectionEndpoints: List<AthenaRuntimeProjectionElectricalConnectionEndpoint>,
-    electricalRoutingCorridors: List<AthenaRuntimeProjectionElectricalRoutingCorridor>,
     activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution>,
 ): AthenaProjectionReadyPayload {
     return AthenaProjectionReadyPayload(
         viewId = viewId,
         familyId = familyId,
         systemName = systemName,
-        canvasWidth = canvasWidth,
-        canvasHeight = canvasHeight,
         presentation = presentation?.toPayload(),
         activeSheetId = activeSheetId,
         sheets = sheets.map(AthenaRuntimeProjectionSheet::toPayload),
-        sheetLayout = sheetLayout?.toPayload(),
         notationPack = notationPack?.toPayload(),
         crossReferences = crossReferences.map(AthenaRuntimeProjectionCrossReference::toPayload),
-        electricalAnchors = electricalAnchors.map(AthenaRuntimeProjectionElectricalAnchor::toPayload),
-        electricalConnectionEndpoints = electricalConnectionEndpoints.map(AthenaRuntimeProjectionElectricalConnectionEndpoint::toPayload),
-        electricalRoutingCorridors = electricalRoutingCorridors.map(AthenaRuntimeProjectionElectricalRoutingCorridor::toPayload),
         activeRenderContributions = activeRenderContributions.map(AthenaRuntimeProjectionRenderContribution::toPayload),
-        components = components.map(AthenaRuntimeViewerComponentBox::toPayload),
-        connections = connections.map(AthenaRuntimeViewerConnectionLine::toPayload),
-        labels = labels.map(AthenaRuntimeViewerLabel::toPayload),
     )
 }
 
@@ -345,63 +246,6 @@ private fun com.engineeringood.athena.runtime.AthenaRuntimeProjectionSheetCompos
     )
 }
 
-private fun AthenaRuntimeProjectionSheetLayout.toPayload(): AthenaProjectionSheetLayoutPayload {
-    return AthenaProjectionSheetLayoutPayload(
-        sheetId = sheetId,
-        displayName = displayName,
-        order = order,
-        subjectSemanticIds = subjectSemanticIds,
-        representationFamilyId = representationFamilyId,
-        frame = frame.toPayload(),
-        placements = placements.map(AthenaRuntimeProjectionSheetLayoutPlacement::toPayload),
-        routingGuidance = routingGuidance.map(AthenaRuntimeProjectionSheetLayoutRoutingGuidance::toPayload),
-        labelLayouts = labelLayouts.map(AthenaRuntimeProjectionSheetLayoutLabelLayout::toPayload),
-    )
-}
-
-private fun AthenaRuntimeProjectionSheetLayoutFrame.toPayload(): AthenaProjectionSheetLayoutFramePayload {
-    return AthenaProjectionSheetLayoutFramePayload(
-        canvasWidth = canvasWidth,
-        canvasHeight = canvasHeight,
-        gridMajorStep = gridMajorStep,
-        gridMinorStep = gridMinorStep,
-    )
-}
-
-private fun AthenaRuntimeProjectionSheetLayoutPlacement.toPayload(): AthenaProjectionSheetLayoutPlacementPayload {
-    return AthenaProjectionSheetLayoutPlacementPayload(
-        projectionId = projectionId,
-        semanticId = semanticId,
-        x = x,
-        y = y,
-        width = width,
-        height = height,
-    )
-}
-
-private fun AthenaRuntimeProjectionSheetLayoutRoutingGuidance.toPayload(): AthenaProjectionSheetLayoutRoutingGuidancePayload {
-    return AthenaProjectionSheetLayoutRoutingGuidancePayload(
-        projectionConnectionId = projectionConnectionId,
-        connectionSemanticId = connectionSemanticId,
-        sourcePoint = sourcePoint.toPayload(),
-        targetPoint = targetPoint.toPayload(),
-        routingStyle = routingStyle,
-        bendPoints = bendPoints.map(AthenaRuntimeProjectionPoint::toPayload),
-    )
-}
-
-private fun AthenaRuntimeProjectionSheetLayoutLabelLayout.toPayload(): AthenaProjectionSheetLayoutLabelLayoutPayload {
-    return AthenaProjectionSheetLayoutLabelLayoutPayload(
-        projectionId = projectionId,
-        semanticId = semanticId,
-        label = label,
-        x = x,
-        y = y,
-        width = width,
-        height = height,
-    )
-}
-
 private fun AthenaRuntimeProjectionNotationPack.toPayload(): AthenaProjectionNotationPackPayload {
     return AthenaProjectionNotationPackPayload(
         packId = packId,
@@ -441,42 +285,6 @@ private fun AthenaRuntimeProjectionCrossReferenceLink.toPayload(): AthenaProject
     )
 }
 
-private fun AthenaRuntimeProjectionElectricalAnchor.toPayload(): AthenaProjectionElectricalAnchorPayload {
-    return AthenaProjectionElectricalAnchorPayload(
-        anchorId = anchorId,
-        portSemanticId = portSemanticId,
-        ownerSemanticId = ownerSemanticId,
-        nodeId = nodeId,
-        labelId = labelId,
-        x = x,
-        y = y,
-        side = side,
-    )
-}
-
-private fun AthenaRuntimeProjectionElectricalConnectionEndpoint.toPayload(): AthenaProjectionElectricalConnectionEndpointPayload {
-    return AthenaProjectionElectricalConnectionEndpointPayload(
-        endpointId = endpointId,
-        projectionConnectionId = projectionConnectionId,
-        connectionSemanticId = connectionSemanticId,
-        endpointRole = endpointRole,
-        portSemanticId = portSemanticId,
-        anchorId = anchorId,
-    )
-}
-
-private fun AthenaRuntimeProjectionElectricalRoutingCorridor.toPayload(): AthenaProjectionElectricalRoutingCorridorPayload {
-    return AthenaProjectionElectricalRoutingCorridorPayload(
-        corridorId = corridorId,
-        projectionConnectionId = projectionConnectionId,
-        connectionSemanticId = connectionSemanticId,
-        sourceAnchorId = sourceAnchorId,
-        targetAnchorId = targetAnchorId,
-        routingStyle = routingStyle,
-        preferredBendPoints = preferredBendPoints.map(AthenaRuntimeProjectionPoint::toPayload),
-    )
-}
-
 private fun AthenaRuntimeProjectionRenderContribution.toPayload(): AthenaProjectionRenderContributionPayload {
     return AthenaProjectionRenderContributionPayload(
         pluginId = pluginId,
@@ -492,48 +300,6 @@ private fun AthenaRuntimeProjectionSurfaceMapping.toPayload(): AthenaProjectionS
     return AthenaProjectionSurfaceMappingPayload(
         surface = surface,
         tokens = tokens.toSortedMap(),
-    )
-}
-
-private fun AthenaRuntimeProjectionPoint.toPayload(): AthenaProjectionPointPayload {
-    return AthenaProjectionPointPayload(
-        x = x,
-        y = y,
-    )
-}
-
-private fun AthenaRuntimeViewerComponentBox.toPayload(): AthenaProjectionComponentPayload {
-    return AthenaProjectionComponentPayload(
-        projectionId = projectionId,
-        semanticId = semanticId,
-        label = label,
-        x = x,
-        y = y,
-        width = width,
-        height = height,
-    )
-}
-
-private fun AthenaRuntimeViewerConnectionLine.toPayload(): AthenaProjectionConnectionPayload {
-    return AthenaProjectionConnectionPayload(
-        projectionId = projectionId,
-        semanticId = semanticId,
-        x1 = x1,
-        y1 = y1,
-        x2 = x2,
-        y2 = y2,
-    )
-}
-
-private fun AthenaRuntimeViewerLabel.toPayload(): AthenaProjectionLabelPayload {
-    return AthenaProjectionLabelPayload(
-        projectionId = projectionId,
-        semanticId = semanticId,
-        label = label,
-        x = x,
-        y = y,
-        width = width,
-        height = height,
     )
 }
 

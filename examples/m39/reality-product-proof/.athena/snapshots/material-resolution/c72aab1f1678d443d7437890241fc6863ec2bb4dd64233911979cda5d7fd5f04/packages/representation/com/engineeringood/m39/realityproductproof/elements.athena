@@ -1,0 +1,171 @@
+package com.engineeringood.m39.realityproductproof
+
+symbol m39_power_source_symbol {
+  identity "m39.power-source.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 96, 72)
+    rectangle body at (18, 10) size (58, 52) style symbol
+    line L1 from (96, 20) to (76, 20) style conductor
+    line N from (96, 40) to (76, 40) style conductor
+    label deviceTag at (24, 28) size (42, 12) role device-tag style device-label
+  }
+
+  anchor L1 { ref "L1" point (96, 20) role terminal direction out signal Power.family }
+  anchor N { ref "N" point (96, 40) role terminal direction out signal Power.family }
+}
+
+element m39_power_source_element {
+  identity "m39.power-source.element"
+  version "1.0.0"
+  bounds (0, 0, 96, 72)
+
+  child glyph { symbol "m39.power-source.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor L1 from glyph.L1
+  export anchor N from glyph.N
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m39_breaker_symbol {
+  identity "m39.breaker.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 88)
+    line line from (40, 0) to (40, 30) style conductor
+    line load from (40, 58) to (40, 88) style conductor
+    circle fixedContact center (40, 30) radius 3 style terminal
+    circle movingPivot center (40, 58) radius 3 style terminal
+    line blade from (40, 54) to (56, 34) style symbol
+    label deviceTag at (8, 38) size (42, 12) role device-tag style device-label
+  }
+
+  anchor line { ref "line" point (40, 0) role terminal direction in signal Power.family }
+  anchor load { ref "load" point (40, 88) role terminal direction out signal Power.family }
+}
+
+element m39_breaker_element {
+  identity "m39.breaker.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 88)
+
+  child glyph { symbol "m39.breaker.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor line from glyph.line
+  export anchor load from glyph.load
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m39_drive_symbol {
+  identity "m39.drive.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 132, 112)
+    rectangle body at (8, 6) size (116, 96) style symbol
+    rectangle display at (18, 18) size (54, 18) style terminal
+    line L from (0, 24) to (8, 24) style conductor
+    line N from (0, 44) to (8, 44) style conductor
+    line U from (132, 70) to (124, 70) style conductor
+    line enable from (132, 28) to (124, 28) style conductor
+    line PE from (66, 112) to (66, 102) style conductor
+    label deviceTag at (44, 54) size (44, 12) role device-tag style device-label
+  }
+
+  anchor L { ref "L" point (0, 24) role terminal direction in signal Power.family }
+  anchor N { ref "N" point (0, 44) role terminal direction in signal Power.family }
+  anchor U { ref "U" point (132, 70) role terminal direction out signal Power.family }
+  anchor enable { ref "enable" point (132, 28) role terminal direction in signal Control.family }
+  anchor PE { ref "PE" point (66, 112) role terminal direction in signal Ground.family }
+}
+
+element m39_drive_element {
+  identity "m39.drive.element"
+  version "1.0.0"
+  bounds (0, 0, 132, 112)
+
+  child glyph { symbol "m39.drive.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor L from glyph.L
+  export anchor N from glyph.N
+  export anchor U from glyph.U
+  export anchor enable from glyph.enable
+  export anchor PE from glyph.PE
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m39_button_symbol {
+  identity "m39.button.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 48)
+    circle button center (32, 24) radius 14 style symbol
+    line out from (80, 24) to (46, 24) style conductor
+    label deviceTag at (14, 34) size (40, 12) role device-tag style device-label
+  }
+
+  anchor out { ref "out" point (80, 24) role terminal direction out signal Control.family }
+}
+
+element m39_button_element {
+  identity "m39.button.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 48)
+
+  child glyph { symbol "m39.button.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor out from glyph.out
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m39_motor_symbol {
+  identity "m39.motor.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 112, 96)
+    circle body center (56, 48) radius 30 style symbol
+    line U from (0, 30) to (28, 30) style conductor
+    line PE from (112, 48) to (86, 48) style conductor
+    label deviceTag at (44, 42) size (28, 12) role device-tag style device-label
+  }
+
+  anchor U { ref "U" point (0, 30) role terminal direction in signal Power.family }
+  anchor PE { ref "PE" point (112, 48) role terminal direction in signal Ground.family }
+}
+
+element m39_motor_element {
+  identity "m39.motor.element"
+  version "1.0.0"
+  bounds (0, 0, 112, 96)
+
+  child glyph { symbol "m39.motor.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor U from glyph.U
+  export anchor PE from glyph.PE
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol m39_earth_symbol {
+  identity "m39.earth.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 80, 64)
+    line PE from (40, 0) to (40, 24) style conductor
+    line earthA from (20, 24) to (60, 24) style symbol
+    line earthB from (28, 34) to (52, 34) style symbol
+    line earthC from (34, 44) to (46, 44) style symbol
+    label deviceTag at (18, 50) size (44, 12) role device-tag style device-label
+  }
+
+  anchor PE { ref "PE" point (40, 0) role terminal direction out signal Ground.family }
+}
+
+element m39_earth_element {
+  identity "m39.earth.element"
+  version "1.0.0"
+  bounds (0, 0, 80, 64)
+
+  child glyph { symbol "m39.earth.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor PE from glyph.PE
+  export label deviceTag from glyph.deviceTag
+}

@@ -361,7 +361,23 @@ data class DeviceDeclaration(
     override val span: SourceSpan,
     val nestedPorts: List<PortDeclaration> = emptyList(),
     val nestedFunctions: List<EngineeringFunctionDeclaration> = emptyList(),
+    val interfaces: List<ConnectivityInterfaceDeclaration> = emptyList(),
 ) : Declaration
+
+/** Syntax-only grouping of related engineering Ports on one governed connectivity owner. */
+data class ConnectivityInterfaceDeclaration(
+    val name: String,
+    val fields: List<PropertyAssignment>,
+    val ports: List<ConnectivityInterfacePortDeclaration>,
+    val span: SourceSpan,
+)
+
+/** Syntax-only member Port declared or referenced inside a grouped connectivity Interface. */
+data class ConnectivityInterfacePortDeclaration(
+    val name: String,
+    val fields: List<PropertyAssignment>,
+    val span: SourceSpan,
+)
 
 /** Syntax-only functional partition of one authored physical device. */
 data class EngineeringFunctionDeclaration(
@@ -407,6 +423,119 @@ data class ConnectionDeclaration(
 data class ConnectionGroupDeclaration(
     val name: String,
     val connections: List<ConnectionDeclaration>,
+    override val span: SourceSpan,
+) : Declaration
+
+/** Syntax node for a human-first domain relation such as `power A.out to B.in`. */
+data class RelationDeclaration(
+    val word: SymbolIdentifierField,
+    val from: QualifiedName,
+    val targets: List<QualifiedName>,
+    override val span: SourceSpan,
+) : Declaration {
+    init {
+        require(targets.isNotEmpty()) { "Relation declaration requires at least one target." }
+    }
+}
+
+/** Syntax-only external evidence attached to Athena-owned connectivity subjects. */
+data class ExternalEvidenceDeclaration(
+    val name: String,
+    val namespace: SymbolIdentifierField,
+    val reference: SymbolStringField,
+    val subject: ExternalEvidenceSubjectDeclaration,
+    val provenance: SymbolStringField,
+    override val span: SourceSpan,
+) : Declaration
+
+data class ExternalEvidenceSubjectDeclaration(
+    val kind: ExternalEvidenceSubjectKind,
+    val target: QualifiedName,
+    val span: SourceSpan,
+)
+
+enum class ExternalEvidenceSubjectKind {
+    CONTRACT,
+    INTERFACE,
+    PORT,
+    RELATION_CONTRACT,
+    ROUTE_POLICY,
+}
+
+/** Syntax-only Projection Policy authored as compiler projection selection, not engineering truth. */
+data class ProjectionPolicyDeclaration(
+    val name: String,
+    val target: SymbolIdentifierField?,
+    val layoutStrategy: SymbolIdentifierField?,
+    val drawingProfile: SymbolIdentifierField?,
+    val routeQualityPolicy: SymbolIdentifierField?,
+    val proofObligations: List<SymbolIdentifierField>,
+    val forbiddenEngineeringTruth: List<ProjectionForbiddenEngineeringTruthDeclaration>,
+    override val span: SourceSpan,
+) : Declaration
+
+data class ProjectionForbiddenEngineeringTruthDeclaration(
+    val kind: String,
+    val span: SourceSpan,
+)
+
+/**
+ * Syntax node for an authored `view <name> { ... }` declaration inside a system block.
+ *
+ * M40 makes view declarations the sole authoring surface for projection selection. Views own
+ * sheets and (optionally) a grid reference system; they carry no coordinates or style.
+ */
+data class ViewDeclaration(
+    val name: String,
+    val sheets: List<SheetDeclaration>,
+    val regions: List<RegionDeclaration>,
+    val constructs: List<ProjectionConstructDeclaration> = emptyList(),
+    val grid: GridDeclaration?,
+    val readingOrder: List<String> = emptyList(),
+    override val span: SourceSpan,
+) : Declaration
+
+/** Syntax node for an authored `sheet <name>` declaration inside a view block. */
+data class SheetDeclaration(
+    val name: String,
+    override val span: SourceSpan,
+) : Declaration
+
+/**
+ * Syntax node for an authored `grid <name> { rows <n> columns <m> }` declaration.
+ *
+ * The grid is Projection structure (row/column references such as A1/B3); it carries no
+ * coordinates.
+ */
+data class GridDeclaration(
+    val name: String,
+    val rows: Int,
+    val columns: Int,
+    override val span: SourceSpan,
+) : Declaration
+
+/**
+ * Syntax node for an authored `region "Name" { occurrences [A, B] }` declaration.
+ *
+ * A functional region is a logical document section grouping occurrences by identity; it carries
+ * no placement, size, or style facts.
+ */
+data class RegionDeclaration(
+    val name: String,
+    val occurrences: List<String>,
+    override val span: SourceSpan,
+) : Declaration
+
+/**
+ * Syntax node for an authored projection construct declaration inside a view block
+ * (e.g., `power-rail L1 [Supply.L1, Breaker.line]`).
+ *
+ * The kind is domain-provided; the kernel names no construct kind.
+ */
+data class ProjectionConstructDeclaration(
+    val kind: String,
+    val name: String?,
+    val occurrences: List<String>,
     override val span: SourceSpan,
 ) : Declaration
 

@@ -1,0 +1,148 @@
+package com.engineeringood.m37.professional.control.power
+
+symbol iec_source {
+  identity "iec.source.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 96, 88)
+    line phaseLead from (0, 42) to (20, 42) style conductor
+    line neutralLead from (76, 42) to (96, 42) style conductor
+    line earthLead from (48, 68) to (48, 88) style conductor
+    circle sourceBody center (48, 42) radius 26 style symbol
+    polyline acWave points ((30, 42), (36, 34), (42, 42), (48, 50), (54, 42), (60, 34), (66, 42)) style symbol
+    line earthBar from (38, 72) to (58, 72) style terminal
+    label deviceTag at (0, 0) size (96, 12) role device-tag style device-label
+  }
+
+  anchor phaseL { ref "phaseLead" point (0, 42) role terminal direction out signal Power.family }
+  anchor neutralN { ref "neutralLead" point (96, 42) role terminal direction out signal Power.family }
+  anchor protectivePE { ref "earthLead" point (48, 88) role terminal direction out signal Ground.family }
+}
+
+element iec_source_element {
+  identity "iec.source.element"
+  version "1.0.0"
+  bounds (0, 0, 96, 88)
+
+  child glyph { symbol "iec.source.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor phaseL from glyph.phaseL
+  export anchor neutralN from glyph.neutralN
+  export anchor protectivePE from glyph.protectivePE
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_breaker {
+  identity "iec.breaker.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 96, 96)
+    line lineLead from (28, 0) to (28, 26) style conductor
+    line loadLead from (28, 68) to (28, 96) style conductor
+    line neutralInLead from (68, 0) to (68, 26) style conductor
+    line neutralOutLead from (68, 68) to (68, 96) style conductor
+    circle lineContact center (28, 30) radius 3 style terminal
+    circle loadContact center (28, 64) radius 3 style terminal
+    line movingContact from (28, 60) to (42, 36) style symbol
+    line tripMark from (42, 36) to (52, 36) style reference
+    line neutralPole from (68, 30) to (68, 64) style symbol
+    line mechanicalLink from (48, 48) to (68, 48) style reference
+    label deviceTag at (0, 0) size (96, 12) role device-tag style device-label
+  }
+
+  anchor lineL { ref "lineLead" point (28, 0) role terminal direction in signal Power.family }
+  anchor loadT { ref "loadLead" point (28, 96) role terminal direction out signal Power.family }
+  anchor neutralInN { ref "neutralInLead" point (68, 0) role terminal direction in signal Power.family }
+  anchor neutralOutN { ref "neutralOutLead" point (68, 96) role terminal direction out signal Power.family }
+}
+
+element iec_breaker_element {
+  identity "iec.breaker.element"
+  version "1.0.0"
+  bounds (0, 0, 96, 96)
+
+  child glyph { symbol "iec.breaker.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor lineL from glyph.lineL
+  export anchor loadT from glyph.loadT
+  export anchor neutralInN from glyph.neutralInN
+  export anchor neutralOutN from glyph.neutralOutN
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_fuse_disconnector {
+  identity "iec.fuse-disconnector.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 96, 96)
+    line lineLead from (28, 0) to (28, 22) style conductor
+    line loadLead from (28, 74) to (28, 96) style conductor
+    line neutralInLead from (68, 0) to (68, 22) style conductor
+    line neutralOutLead from (68, 74) to (68, 96) style conductor
+    rectangle fuseBody at (20, 22) size (16, 32) style symbol
+    line knife from (28, 70) to (44, 52) style symbol
+    circle knifeContact center (28, 70) radius 3 style terminal
+    rectangle neutralFuse at (60, 22) size (16, 32) style symbol
+    line neutralKnife from (68, 70) to (84, 52) style symbol
+    circle neutralContact center (68, 70) radius 3 style terminal
+    line mechanicalLink from (44, 60) to (84, 60) style reference
+    label deviceTag at (0, 0) size (96, 12) role device-tag style device-label
+  }
+
+  anchor lineL { ref "lineLead" point (28, 0) role terminal direction in signal Power.family }
+  anchor loadT { ref "loadLead" point (28, 96) role terminal direction out signal Power.family }
+  anchor neutralInN { ref "neutralInLead" point (68, 0) role terminal direction in signal Power.family }
+  anchor neutralOutN { ref "neutralOutLead" point (68, 96) role terminal direction out signal Power.family }
+}
+
+element iec_fuse_disconnector_element {
+  identity "iec.fuse-disconnector.element"
+  version "1.0.0"
+  bounds (0, 0, 96, 96)
+
+  child glyph { symbol "iec.fuse-disconnector.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor lineL from glyph.lineL
+  export anchor loadT from glyph.loadT
+  export anchor neutralInN from glyph.neutralInN
+  export anchor neutralOutN from glyph.neutralOutN
+  export label deviceTag from glyph.deviceTag
+}
+
+symbol iec_transformer {
+  identity "iec.transformer.symbol"
+  version "1.0.0"
+
+  graphic {
+    bounds (0, 0, 112, 96)
+    line primaryLLead from (0, 30) to (24, 30) style conductor
+    line primaryNLead from (0, 70) to (24, 70) style conductor
+    line secondaryLLead from (88, 30) to (112, 30) style conductor
+    line secondaryNLead from (88, 70) to (112, 70) style conductor
+    arc primaryTop center (38, 36) radius 14 from 90 sweep 180 style symbol
+    arc primaryBottom center (38, 64) radius 14 from 90 sweep 180 style symbol
+    arc secondaryTop center (74, 36) radius 14 from 270 sweep 180 style symbol
+    arc secondaryBottom center (74, 64) radius 14 from 270 sweep 180 style symbol
+    line coreLeft from (52, 22) to (52, 78) style reference
+    line coreRight from (60, 22) to (60, 78) style reference
+    label deviceTag at (0, 0) size (112, 12) role device-tag style device-label
+  }
+
+  anchor primaryL { ref "primaryLLead" point (0, 30) role terminal direction in signal Power.family }
+  anchor primaryN { ref "primaryNLead" point (0, 70) role terminal direction in signal Power.family }
+  anchor secondaryL { ref "secondaryLLead" point (112, 30) role terminal direction out signal Control.family }
+  anchor secondaryN { ref "secondaryNLead" point (112, 70) role terminal direction in signal Control.family }
+}
+
+element iec_transformer_element {
+  identity "iec.transformer.element"
+  version "1.0.0"
+  bounds (0, 0, 112, 96)
+
+  child glyph { symbol "iec.transformer.symbol" translate (0, 0) rotate 0 scale (1, 1) zOrder 0 }
+  export anchor primaryL from glyph.primaryL
+  export anchor primaryN from glyph.primaryN
+  export anchor secondaryL from glyph.secondaryL
+  export anchor secondaryN from glyph.secondaryN
+  export label deviceTag from glyph.deviceTag
+}

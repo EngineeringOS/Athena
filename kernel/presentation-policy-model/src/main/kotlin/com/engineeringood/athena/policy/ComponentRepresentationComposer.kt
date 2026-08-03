@@ -1,30 +1,45 @@
 package com.engineeringood.athena.policy
 
+import com.engineeringood.athena.representation.GraphicBounds
+import com.engineeringood.athena.representation.GraphicFill
+import com.engineeringood.athena.representation.GraphicLineCap
+import com.engineeringood.athena.representation.GraphicLineJoin
+import com.engineeringood.athena.representation.GraphicPaintToken
+import com.engineeringood.athena.representation.GraphicPoint
+import com.engineeringood.athena.representation.GraphicPrimitive
+import com.engineeringood.athena.representation.GraphicPrimitiveDocument
+import com.engineeringood.athena.representation.GraphicPrimitiveDocumentId
+import com.engineeringood.athena.representation.GraphicPrimitiveId
+import com.engineeringood.athena.representation.GraphicStyleToken
+import com.engineeringood.athena.representation.GraphicStyleTokenId
 import com.engineeringood.athena.representation.GridUnit
 import com.engineeringood.athena.representation.LabelFact
 import com.engineeringood.athena.representation.LabelFactId
 import com.engineeringood.athena.representation.LabelPolicy
 import com.engineeringood.athena.representation.LabelValue
 import com.engineeringood.athena.representation.PhysicalTerminalId
-import com.engineeringood.athena.representation.PresentationAnatomy
-import com.engineeringood.athena.representation.PresentationBounds
-import com.engineeringood.athena.representation.PresentationHotspot
 import com.engineeringood.athena.representation.PresentationLabelRole
 import com.engineeringood.athena.representation.PresentationPoint
-import com.engineeringood.athena.representation.PresentationPrimitive
-import com.engineeringood.athena.representation.PresentationPrimitiveId
 import com.engineeringood.athena.representation.PresentationRouteAnchor
 import com.engineeringood.athena.representation.PresentationRouteAnchorId
 import com.engineeringood.athena.representation.PresentationSide
-import com.engineeringood.athena.representation.PresentationSize
 import com.engineeringood.athena.representation.PresentationTerminalFact
 import com.engineeringood.athena.representation.PresentationTerminalId
-import com.engineeringood.athena.representation.RepresentationContext
+import com.engineeringood.athena.representation.RepresentationAnchorContract
+import com.engineeringood.athena.representation.RepresentationAnchorId
+import com.engineeringood.athena.representation.RepresentationAnchorRole
+import com.engineeringood.athena.representation.RepresentationDefinition
+import com.engineeringood.athena.representation.RepresentationDefinitionKind
+import com.engineeringood.athena.representation.RepresentationLibraryId
+import com.engineeringood.athena.representation.RepresentationLifecycle
+import com.engineeringood.athena.representation.RepresentationLifecycleState
 import com.engineeringood.athena.representation.RepresentationOccurrenceId
+import com.engineeringood.athena.representation.RepresentationProvenance
 import com.engineeringood.athena.representation.RepresentationSubjectId
+import com.engineeringood.athena.representation.RepresentationSymbolId
+import com.engineeringood.athena.representation.RepresentationSymbolKind
+import com.engineeringood.athena.representation.RepresentationVersion
 import com.engineeringood.athena.representation.SemanticPortId
-import com.engineeringood.athena.representation.SymbolAnatomy
-import com.engineeringood.athena.representation.SymbolFamilyId
 import com.engineeringood.athena.representation.TerminalMarker
 import com.engineeringood.athena.representation.TerminalNotation
 import com.engineeringood.athena.representation.TerminalNumber
@@ -46,8 +61,7 @@ data class ComponentRepresentationFact(
     val subject: ComponentSubjectKey,
     val family: ComponentFamilyKey,
     val selection: RepresentationSelection.Supported,
-    val anatomy: PresentationAnatomy,
-    val symbol: SymbolAnatomy,
+    val definition: RepresentationDefinition,
     val terminals: List<PresentationTerminalFact>,
     val labels: List<LabelFact>,
 )
@@ -99,7 +113,7 @@ class ComponentRepresentationComposer(
         val occurrenceId = RepresentationOccurrenceId("${subject.value}@schematic-sheet")
         val subjectId = RepresentationSubjectId(subject.value)
         val terminal = terminalFor(subjectId, occurrenceId, family)
-        val anatomy = anatomyFor(selection, terminal)
+        val definition = definitionFor(selection, terminal)
         val tagAnchor = labelPolicy.anchorFor(
             role = PresentationLabelRole.DEVICE_TAG,
             subjectId = subjectId,
@@ -109,8 +123,7 @@ class ComponentRepresentationComposer(
             subject = subject,
             family = family,
             selection = selection,
-            anatomy = anatomy,
-            symbol = SymbolAnatomy(SymbolFamilyId(family.value), anatomy),
+            definition = definition,
             terminals = listOf(terminal),
             labels = listOf(
                 LabelFact(
@@ -125,41 +138,66 @@ class ComponentRepresentationComposer(
         )
     }
 
-    private fun anatomyFor(
+    private fun definitionFor(
         selection: RepresentationSelection.Supported,
         terminal: PresentationTerminalFact,
-    ): PresentationAnatomy {
-        return PresentationAnatomy(
-            representationId = selection.representationId,
-            context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-            bounds = PresentationBounds(GridUnit(80), GridUnit(48)),
-            hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-            primitives = listOf(
-                PresentationPrimitive.Rectangle(
-                    primitiveId = PresentationPrimitiveId("${selection.family.value}:body"),
-                    origin = PresentationPoint(GridUnit(0), GridUnit(0)),
-                    size = PresentationSize(GridUnit(80), GridUnit(48)),
-                ),
-                PresentationPrimitive.Line(
-                    primitiveId = PresentationPrimitiveId("${selection.family.value}:terminal-line"),
-                    start = PresentationPoint(GridUnit(60), GridUnit(24)),
-                    end = terminal.routeAnchor.point,
-                ),
+    ): RepresentationDefinition {
+        val styleTokenId = GraphicStyleTokenId("policy.stroke")
+        return RepresentationDefinition(
+            symbolId = RepresentationSymbolId(selection.representationId.value),
+            libraryId = RepresentationLibraryId("athena.presentation-policy"),
+            version = RepresentationVersion("1.0.0"),
+            lifecycle = RepresentationLifecycle(
+                state = RepresentationLifecycleState.ACTIVE,
+                provenance = RepresentationProvenance("presentation-policy:${selection.profileId.value}"),
             ),
-            terminals = listOf(
-                com.engineeringood.athena.representation.PresentationTerminalPoint(
-                    terminalId = terminal.presentationTerminalId,
-                    role = terminalRoleFor(selection.family),
-                    localPoint = terminal.routeAnchor.point,
-                    side = terminal.side,
-                    notation = terminal.notation,
+            kind = RepresentationSymbolKind.GENERIC,
+            labelSlots = emptyList(),
+            definitionKind = RepresentationDefinitionKind.SYMBOL,
+            graphicBody = GraphicPrimitiveDocument(
+                documentId = GraphicPrimitiveDocumentId(selection.representationId.value),
+                bounds = GraphicBounds(0.0, 0.0, 80.0, 48.0),
+                primitives = listOf(
+                    GraphicPrimitive.Rectangle(
+                        primitiveId = GraphicPrimitiveId("${selection.family.value}:body"),
+                        bounds = GraphicBounds(0.0, 0.0, 80.0, 48.0),
+                        cornerRadius = 0.0,
+                        styleTokenId = styleTokenId,
+                    ),
+                    GraphicPrimitive.Line(
+                        primitiveId = GraphicPrimitiveId("${selection.family.value}:terminal-line"),
+                        bounds = GraphicBounds(60.0, 24.0, 20.0, 0.001),
+                        start = GraphicPoint(60.0, 24.0),
+                        end = GraphicPoint(
+                            terminal.routeAnchor.point.x.value.toDouble(),
+                            terminal.routeAnchor.point.y.value.toDouble(),
+                        ),
+                        styleTokenId = styleTokenId,
+                    ),
                 ),
+                styleTokens = listOf(
+                    GraphicStyleToken(
+                        styleTokenId = styleTokenId,
+                        stroke = GraphicPaintToken("foreground"),
+                        strokeWidth = 1.0,
+                        fill = GraphicFill.TRANSPARENT,
+                        lineCap = GraphicLineCap.BUTT,
+                        lineJoin = GraphicLineJoin.MITER,
+                    ),
+                ),
+                provenanceSources = listOf("presentation-policy:${selection.profileId.value}"),
             ),
-            labelAnchors = listOf(
-                labelPolicy.anchorFor(
-                    role = PresentationLabelRole.DEVICE_TAG,
-                    subjectId = terminal.subjectId,
-                    occurrenceId = terminal.occurrenceId,
+            anchors = listOf(
+                RepresentationAnchorContract(
+                    anchorId = RepresentationAnchorId(terminal.presentationTerminalId.value),
+                    geometryRef = terminal.routeAnchor.anchorId.value,
+                    primitiveId = GraphicPrimitiveId("${selection.family.value}:terminal-line"),
+                    point = GraphicPoint(
+                        terminal.routeAnchor.point.x.value.toDouble(),
+                        terminal.routeAnchor.point.y.value.toDouble(),
+                    ),
+                    role = RepresentationAnchorRole.TERMINAL,
+                    required = true,
                 ),
             ),
         )

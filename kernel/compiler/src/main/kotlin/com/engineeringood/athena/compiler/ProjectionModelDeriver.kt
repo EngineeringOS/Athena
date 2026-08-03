@@ -5,13 +5,10 @@ import com.engineeringood.athena.document.BuiltInDocumentProjectionPolicies
 import com.engineeringood.athena.document.DocumentProjectionPolicy
 import com.engineeringood.athena.document.SheetViewRole
 import com.engineeringood.athena.geometry.GeometryDocument
-import com.engineeringood.athena.geometry.GeometryElement
 import com.engineeringood.athena.geometry.GeometryElementKind
-import com.engineeringood.athena.geometry.GeometryPoint
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.ViewDefinition
-import com.engineeringood.athena.projection.ProjectionBounds
 import com.engineeringood.athena.projection.ProjectionConnection
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionCrossReference
@@ -19,15 +16,12 @@ import com.engineeringood.athena.projection.ProjectionCrossReferenceId
 import com.engineeringood.athena.projection.ProjectionCrossReferenceKind
 import com.engineeringood.athena.projection.ProjectionCrossReferenceLink
 import com.engineeringood.athena.projection.ProjectionDocument
-import com.engineeringood.athena.projection.ProjectionLabel
-import com.engineeringood.athena.projection.ProjectionLabelId
 import com.engineeringood.athena.projection.ProjectionLabelPolicy
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
 import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationPackId
 import com.engineeringood.athena.projection.ProjectionNotationSubject
-import com.engineeringood.athena.projection.ProjectionPoint
 import com.engineeringood.athena.projection.ProjectionPhysicalSize
 import com.engineeringood.athena.projection.ProjectionResolvedSubject
 import com.engineeringood.athena.projection.ProjectionSheetPublication
@@ -62,12 +56,6 @@ class ProjectionModelDeriver {
                     projectionId = ProjectionNodeId(element.elementId.value.replace("/geometry/box/", "/projection/node/")),
                     semanticId = element.semanticId,
                     label = element.label.orEmpty(),
-                    bounds = ProjectionBounds(
-                        x = element.bounds.x,
-                        y = element.bounds.y,
-                        width = element.bounds.width,
-                        height = element.bounds.height,
-                    ),
                     originGeometryElementId = element.elementId,
                 )
             }
@@ -80,26 +68,6 @@ class ProjectionModelDeriver {
                         element.elementId.value.replace("/geometry/path/", "/projection/connection/"),
                     ),
                     semanticId = element.semanticId,
-                    start = element.connectionStart().toProjectionPoint(),
-                    end = element.connectionEnd().toProjectionPoint(),
-                    originGeometryElementId = element.elementId,
-                )
-            }
-        val labels = geometry.elements
-            .filter { element -> element.kind == GeometryElementKind.LABEL }
-            .map { element ->
-                ProjectionLabel(
-                    projectionId = ProjectionLabelId(
-                        element.elementId.value.replace("/geometry/label/", "/projection/label/"),
-                    ),
-                    semanticId = element.semanticId,
-                    label = element.label.orEmpty(),
-                    bounds = ProjectionBounds(
-                        x = element.bounds.x,
-                        y = element.bounds.y,
-                        width = element.bounds.width,
-                        height = element.bounds.height,
-                    ),
                     originGeometryElementId = element.elementId,
                 )
             }
@@ -107,53 +75,26 @@ class ProjectionModelDeriver {
             view = view,
             nodes = nodes,
             connections = connections,
-            labels = labels,
         )
         val resolvedSubjects = deriveResolvedSubjects(
             document = document,
             knowledgeContext = knowledgeContext,
         )
-        val electricalContracts = deriveProjectionElectricalContracts(
-            view = view,
-            document = document,
-            nodes = nodes,
-            connections = connections,
-            labels = labels,
-        )
         return ProjectionDocument(
             view = view,
-            canvasWidth = documentationCanvasWidth(
-                view = view,
-                baseCanvasWidth = geometry.canvasWidth,
-                nodes = nodes,
-                connections = connections,
-                labels = labels,
-            ),
-            canvasHeight = documentationCanvasHeight(
-                view = view,
-                baseCanvasHeight = geometry.canvasHeight,
-                nodes = nodes,
-                connections = connections,
-                labels = labels,
-            ),
             nodes = nodes,
             connections = connections,
-            labels = labels,
             resolvedSubjects = resolvedSubjects,
             sheets = sheets,
             notationPack = deriveNotationPack(
                 view = view,
                 nodes = nodes,
                 connections = connections,
-                labels = labels,
             ),
             crossReferences = deriveCrossReferences(
                 view = view,
                 sheets = sheets,
             ),
-            electricalAnchors = electricalContracts.anchors,
-            electricalConnectionEndpoints = electricalContracts.connectionEndpoints,
-            electricalRoutingCorridors = electricalContracts.routingCorridors,
         )
     }
 }
@@ -201,12 +142,10 @@ private fun deriveSheets(
     view: ViewDefinition,
     nodes: List<ProjectionNode>,
     connections: List<ProjectionConnection>,
-    labels: List<ProjectionLabel>,
 ): List<ProjectionSheet> {
     val allSubjects = subjectAnchors(
         nodes = nodes,
         connections = connections,
-        labels = labels,
     )
     return when ((view.familyContract as? ElectricalProjectionDescriptor)?.family) {
         ElectricalProjectionFamily.DOCUMENTATION -> documentationSheets(
@@ -214,7 +153,6 @@ private fun deriveSheets(
             allSubjects = allSubjects,
             nodes = nodes,
             connections = connections,
-            labels = labels,
         )
 
         else -> listOf(
@@ -239,7 +177,6 @@ private fun documentationSheets(
     allSubjects: List<ProjectionSheetSubject>,
     nodes: List<ProjectionNode>,
     connections: List<ProjectionConnection>,
-    labels: List<ProjectionLabel>,
 ): List<ProjectionSheet> {
     val policy = BuiltInDocumentProjectionPolicies.athenaCustomerDocumentProjection()
     val controlRole = policy.supportedSheetViewRoles.single { role ->
@@ -252,7 +189,6 @@ private fun documentationSheets(
     val fieldSheetId = ProjectionSheetId("${view.id}/sheet/02-field-device")
     val overviewNodeIds = nodes.map(ProjectionNode::projectionId).toSet()
     val overviewConnectionIds = connections.map(ProjectionConnection::projectionId).toSet()
-    val overviewLabelIds = labels.map(ProjectionLabel::projectionId).toSet()
     val powerSubjects = documentationSheetSubjects(
         allSubjects = allSubjects,
         selectedSubjects = allSubjects.filter { subject ->
@@ -260,14 +196,12 @@ private fun documentationSheets(
         },
         nodeIds = overviewNodeIds,
         connectionIds = overviewConnectionIds,
-        labelIds = overviewLabelIds,
     ).ifEmpty {
         documentationSheetSubjects(
             allSubjects = allSubjects,
             selectedSubjects = allSubjects,
             nodeIds = overviewNodeIds,
             connectionIds = overviewConnectionIds,
-            labelIds = overviewLabelIds,
         )
     }
     val controlSubjects = documentationSheetSubjects(
@@ -277,7 +211,6 @@ private fun documentationSheets(
         },
         nodeIds = overviewNodeIds,
         connectionIds = overviewConnectionIds,
-        labelIds = overviewLabelIds,
     ).ifEmpty { powerSubjects }
     val fieldSubjects = documentationSheetSubjects(
         allSubjects = allSubjects,
@@ -286,7 +219,6 @@ private fun documentationSheets(
         },
         nodeIds = overviewNodeIds,
         connectionIds = overviewConnectionIds,
-        labelIds = overviewLabelIds,
     )
     return listOf(
         ProjectionSheet(
@@ -344,7 +276,6 @@ private fun documentationSheetSubjects(
     selectedSubjects: List<ProjectionSheetSubject>,
     nodeIds: Set<ProjectionNodeId>,
     connectionIds: Set<ProjectionConnectionId>,
-    labelIds: Set<ProjectionLabelId>,
 ): List<ProjectionSheetSubject> {
     val subjectBySemanticId = allSubjects.associateBy(ProjectionSheetSubject::semanticId)
     val selectedSemanticIds = selectedSubjects.map(ProjectionSheetSubject::semanticId).toSet()
@@ -358,60 +289,19 @@ private fun documentationSheetSubjects(
             subject.filtered(
                 nodeIds = nodeIds,
                 connectionIds = connectionIds,
-                labelIds = labelIds,
             )
         }
         .sortedBy { subject -> subject.semanticId.value }
-}
-
-private fun documentationCanvasWidth(
-    view: ViewDefinition,
-    baseCanvasWidth: Int,
-    nodes: List<ProjectionNode>,
-    connections: List<ProjectionConnection>,
-    labels: List<ProjectionLabel>,
-): Int {
-    val family = (view.familyContract as? ElectricalProjectionDescriptor)?.family
-    if (family != ElectricalProjectionFamily.DOCUMENTATION) {
-        return baseCanvasWidth
-    }
-    val maxContentEdge = maxOf(
-        nodes.maxOfOrNull { node -> node.bounds.x + node.bounds.width } ?: 0,
-        labels.maxOfOrNull { label -> label.bounds.x + label.bounds.width } ?: 0,
-        connections.maxOfOrNull { connection -> maxOf(connection.start.x, connection.end.x) } ?: 0,
-    )
-    return maxOf(DOCUMENTATION_CANVAS_MARGIN, maxContentEdge + DOCUMENTATION_CANVAS_MARGIN)
-}
-
-private fun documentationCanvasHeight(
-    view: ViewDefinition,
-    baseCanvasHeight: Int,
-    nodes: List<ProjectionNode>,
-    connections: List<ProjectionConnection>,
-    labels: List<ProjectionLabel>,
-): Int {
-    val family = (view.familyContract as? ElectricalProjectionDescriptor)?.family
-    if (family != ElectricalProjectionFamily.DOCUMENTATION) {
-        return baseCanvasHeight
-    }
-    val maxContentEdge = maxOf(
-        nodes.maxOfOrNull { node -> node.bounds.y + node.bounds.height } ?: 0,
-        labels.maxOfOrNull { label -> label.bounds.y + label.bounds.height } ?: 0,
-        connections.maxOfOrNull { connection -> maxOf(connection.start.y, connection.end.y) } ?: 0,
-    )
-    return maxOf(DOCUMENTATION_CANVAS_MARGIN, maxContentEdge + DOCUMENTATION_CANVAS_MARGIN)
 }
 
 private fun deriveNotationPack(
     view: ViewDefinition,
     nodes: List<ProjectionNode>,
     connections: List<ProjectionConnection>,
-    labels: List<ProjectionLabel>,
 ): ProjectionNotationPack? {
     val family = (view.familyContract as? ElectricalProjectionDescriptor)?.family ?: return null
     val componentSemanticIds = nodes.map(ProjectionNode::semanticId)
     val connectionSemanticIds = connections.map(ProjectionConnection::semanticId)
-    val portSemanticIds = labels.map(ProjectionLabel::semanticId)
     val subjects = buildList {
         when (family) {
             ElectricalProjectionFamily.CABINET -> {
@@ -425,11 +315,6 @@ private fun deriveNotationPack(
                     semanticIds = connectionSemanticIds,
                     symbolKey = "connection.cabinet.default",
                     labelPolicy = ProjectionLabelPolicy.HIDDEN,
-                )
-                addNotationSubjects(
-                    semanticIds = portSemanticIds,
-                    symbolKey = "port.cabinet.default",
-                    labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
                 )
             }
 
@@ -446,11 +331,6 @@ private fun deriveNotationPack(
                     labelPolicy = ProjectionLabelPolicy.HIDDEN,
                     markerKeys = listOf("signal-flow"),
                 )
-                addNotationSubjects(
-                    semanticIds = portSemanticIds,
-                    symbolKey = "port.wiring.default",
-                    labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
-                )
             }
 
             ElectricalProjectionFamily.SCHEMATIC -> {
@@ -465,11 +345,6 @@ private fun deriveNotationPack(
                     symbolKey = "connection.schematic.default",
                     labelPolicy = ProjectionLabelPolicy.HIDDEN,
                 )
-                addNotationSubjects(
-                    semanticIds = portSemanticIds,
-                    symbolKey = "port.schematic.default",
-                    labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
-                )
             }
 
             ElectricalProjectionFamily.DOCUMENTATION -> {
@@ -483,11 +358,6 @@ private fun deriveNotationPack(
                     semanticIds = connectionSemanticIds,
                     symbolKey = "connection.documentation.default",
                     labelPolicy = ProjectionLabelPolicy.HIDDEN,
-                )
-                addNotationSubjects(
-                    semanticIds = portSemanticIds,
-                    symbolKey = "port.documentation.default",
-                    labelPolicy = ProjectionLabelPolicy.TERMINAL_LABEL,
                 )
             }
         }
@@ -569,7 +439,6 @@ private fun ProjectionSheetId.compactSheetNotation(): String {
 private fun subjectAnchors(
     nodes: List<ProjectionNode>,
     connections: List<ProjectionConnection>,
-    labels: List<ProjectionLabel>,
 ): List<ProjectionSheetSubject> {
     val nodeIdsBySemanticId = nodes.groupBy(ProjectionNode::semanticId)
         .mapValues { (_, groupedNodes) -> groupedNodes.map(ProjectionNode::projectionId).sortedBy(ProjectionNodeId::value) }
@@ -577,9 +446,7 @@ private fun subjectAnchors(
         .mapValues { (_, groupedConnections) ->
             groupedConnections.map(ProjectionConnection::projectionId).sortedBy(ProjectionConnectionId::value)
         }
-    val labelIdsBySemanticId = labels.groupBy(ProjectionLabel::semanticId)
-        .mapValues { (_, groupedLabels) -> groupedLabels.map(ProjectionLabel::projectionId).sortedBy(ProjectionLabelId::value) }
-    return (nodeIdsBySemanticId.keys + connectionIdsBySemanticId.keys + labelIdsBySemanticId.keys)
+    return (nodeIdsBySemanticId.keys + connectionIdsBySemanticId.keys)
         .distinct()
         .sortedBy(StableSemanticIdentity::value)
         .map { semanticId ->
@@ -587,32 +454,8 @@ private fun subjectAnchors(
                 semanticId = semanticId,
                 nodeIds = nodeIdsBySemanticId[semanticId].orEmpty(),
                 connectionIds = connectionIdsBySemanticId[semanticId].orEmpty(),
-                labelIds = labelIdsBySemanticId[semanticId].orEmpty(),
             )
         }
-}
-
-private fun GeometryElement.connectionStart(): GeometryPoint {
-    return points.firstOrNull()
-        ?: GeometryPoint(
-            x = bounds.x,
-            y = bounds.y + bounds.height / 2,
-        )
-}
-
-private fun GeometryElement.connectionEnd(): GeometryPoint {
-    return points.lastOrNull()
-        ?: GeometryPoint(
-            x = bounds.x + bounds.width,
-            y = bounds.y + bounds.height / 2,
-        )
-}
-
-private fun GeometryPoint.toProjectionPoint(): ProjectionPoint {
-    return ProjectionPoint(
-        x = x,
-        y = y,
-    )
 }
 
 private fun ProjectionSheetSubject.isPowerDistributionSubject(): Boolean {
@@ -650,18 +493,15 @@ private fun ProjectionSheetSubject.owningComponentSemanticIds(): List<StableSema
 private fun ProjectionSheetSubject.filtered(
     nodeIds: Set<ProjectionNodeId> = emptySet(),
     connectionIds: Set<ProjectionConnectionId> = emptySet(),
-    labelIds: Set<ProjectionLabelId> = emptySet(),
 ): ProjectionSheetSubject? {
     val filteredNodeIds = if (nodeIds.isEmpty()) emptyList() else this.nodeIds.filter(nodeIds::contains)
     val filteredConnectionIds = if (connectionIds.isEmpty()) emptyList() else this.connectionIds.filter(connectionIds::contains)
-    val filteredLabelIds = if (labelIds.isEmpty()) emptyList() else this.labelIds.filter(labelIds::contains)
-    if (filteredNodeIds.isEmpty() && filteredConnectionIds.isEmpty() && filteredLabelIds.isEmpty()) {
+    if (filteredNodeIds.isEmpty() && filteredConnectionIds.isEmpty()) {
         return null
     }
     return copy(
         nodeIds = filteredNodeIds,
         connectionIds = filteredConnectionIds,
-        labelIds = filteredLabelIds,
     )
 }
 
@@ -669,7 +509,6 @@ private fun ProjectionSheetSubject.occurrenceIds(): List<String> {
     return buildList {
         addAll(nodeIds.map(ProjectionNodeId::value))
         addAll(connectionIds.map(ProjectionConnectionId::value))
-        addAll(labelIds.map(ProjectionLabelId::value))
     }
 }
 
@@ -693,5 +532,3 @@ private fun MutableList<ProjectionNotationSubject>.addNotationSubjects(
             },
     )
 }
-
-private const val DOCUMENTATION_CANVAS_MARGIN = 40

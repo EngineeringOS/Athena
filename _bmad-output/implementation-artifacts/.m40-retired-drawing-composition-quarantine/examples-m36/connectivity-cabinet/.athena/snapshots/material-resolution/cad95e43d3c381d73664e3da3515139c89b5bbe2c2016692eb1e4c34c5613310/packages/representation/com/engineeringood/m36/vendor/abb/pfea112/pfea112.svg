@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 92">
+  <defs>
+    <g id="terminal-pair" data-athena-ref="anchor:terminal-pair">
+      <circle id="terminal-a" cx="0" cy="0" r="3"/>
+      <circle id="terminal-b" cx="14" cy="0" r="3"/>
+    </g>
+  </defs>
+  <rect id="body" x="4" y="4" width="124" height="84" data-athena-ref="anchor:body"/>
+  <rect id="display" x="16" y="16" width="56" height="18" data-athena-ref="anchor:display"/>
+  <text id="model" x="20" y="29" data-athena-ref="anchor:model">PFEA112</text>
+  <line id="status-line" x1="84" y1="18" x2="116" y2="18" data-athena-ref="anchor:status-line"/>
+  <use href="#terminal-pair" x="20" y="62"/>
+  <use href="#terminal-pair" x="72" y="62"/>
+</svg>

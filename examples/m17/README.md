@@ -24,7 +24,7 @@ Each valid `.expectation.txt` records `status=`, `components=`, `ports=`, `conne
 
 - `invalid-and-incomplete-proof/unterminated-string.athena` - a string literal missing its closing `"`.
 - `invalid-and-incomplete-proof/incomplete-brace.athena` - a `device` block missing its closing `}` at EOF.
-- `invalid-and-incomplete-proof/missing-arrow.athena` - a `connect` declaration missing `->`.
+- `invalid-and-incomplete-proof/missing-to.athena` - a `connect` declaration missing `to`.
 - `invalid-and-incomplete-proof/over-qualified-port.athena` - a `port` reference with more than two dotted segments.
 
 Each invalid `.expectation.txt` records `status=syntax-failure` plus `syntaxErrorLine=`, `syntaxErrorColumn=`, and `syntaxErrorMessageContains=` so the failure position and a stable message fragment are pinned. Each fixture isolates exactly one syntax failure mode.
@@ -48,7 +48,7 @@ Compiler-diagnostic verification and Tree-sitter-UX verification are two distinc
    - Valid corpus: `AthenaM17ParserParityProofTest` (`:kernel:compiler`) compiles each `parser-parity-proof` fixture and the repository fixture, asserting the exact `EngineeringDocument` shape and identity scheme.
    - Malformed corpus: `AthenaM17InvalidSourceProofTest` (`:kernel:language`) parses each `invalid-and-incomplete-proof` fixture and asserts a typed, positioned `SyntaxDiagnostic` (file, line, column, message) rather than an uncaught exception or a positionless error.
 2. **Tree-sitter syntax UX (Epic 3, documented now / automated once Epic 3 lands)**
-   - Once Epic 3 publishes the Tree-sitter grammar and Theia integration, the `incomplete-brace` and `missing-arrow` fixtures must additionally be opened in the editor (or exercised through the Tree-sitter grammar's own harness under `ide/tree-sitter-athena`) to confirm a usable syntax tree is still produced for the chosen syntax-UX capability (highlighting, folding, or outline).
+   - Once Epic 3 publishes the Tree-sitter grammar and Theia integration, the `incomplete-brace` and `missing-to` fixtures must additionally be opened in the editor (or exercised through the Tree-sitter grammar's own harness under `ide/tree-sitter-athena`) to confirm a usable syntax tree is still produced for the chosen syntax-UX capability (highlighting, folding, or outline).
    - This Tree-sitter-UX test stays in a separate file/module from the compiler-diagnostic tests so the two verdicts remain independently runnable and reportable.
 
 "The editor did not crash" is not an acceptable substitute for either check: a typed compiler diagnostic and a usable Tree-sitter syntax tree must each be demonstrated independently.

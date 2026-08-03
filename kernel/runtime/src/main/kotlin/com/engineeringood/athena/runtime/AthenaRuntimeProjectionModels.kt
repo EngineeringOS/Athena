@@ -166,68 +166,6 @@ data class AthenaRuntimeProjectionSheetPolicyEvidence(
 )
 
 /**
- * Runtime-owned governed layout facts for the active sheet.
- */
-data class AthenaRuntimeProjectionSheetLayout(
-    val sheetId: String,
-    val displayName: String,
-    val order: Int,
-    val subjectSemanticIds: List<String> = emptyList(),
-    val representationFamilyId: String = "schematic-sheet",
-    val frame: AthenaRuntimeProjectionSheetLayoutFrame,
-    val placements: List<AthenaRuntimeProjectionSheetLayoutPlacement> = emptyList(),
-    val routingGuidance: List<AthenaRuntimeProjectionSheetLayoutRoutingGuidance> = emptyList(),
-    val labelLayouts: List<AthenaRuntimeProjectionSheetLayoutLabelLayout> = emptyList(),
-)
-
-/**
- * Runtime-owned governed frame facts for the active sheet layout.
- */
-data class AthenaRuntimeProjectionSheetLayoutFrame(
-    val canvasWidth: Int,
-    val canvasHeight: Int,
-    val gridMajorStep: Int = 120,
-    val gridMinorStep: Int = 24,
-)
-
-/**
- * Runtime-owned governed placement facts for the active sheet layout.
- */
-data class AthenaRuntimeProjectionSheetLayoutPlacement(
-    val projectionId: String,
-    val semanticId: String,
-    val x: Int,
-    val y: Int,
-    val width: Int,
-    val height: Int,
-)
-
-/**
- * Runtime-owned governed routing guidance for the active sheet layout.
- */
-data class AthenaRuntimeProjectionSheetLayoutRoutingGuidance(
-    val projectionConnectionId: String,
-    val connectionSemanticId: String,
-    val sourcePoint: AthenaRuntimeProjectionPoint,
-    val targetPoint: AthenaRuntimeProjectionPoint,
-    val routingStyle: String,
-    val bendPoints: List<AthenaRuntimeProjectionPoint> = emptyList(),
-)
-
-/**
- * Runtime-owned governed label layout for the active sheet layout.
- */
-data class AthenaRuntimeProjectionSheetLayoutLabelLayout(
-    val projectionId: String,
-    val semanticId: String,
-    val label: String,
-    val x: Int,
-    val y: Int,
-    val width: Int,
-    val height: Int,
-)
-
-/**
  * Runtime-owned governed page size for one sheet in active projection.
  */
 data class AthenaRuntimeProjectionSheetPageSize(
@@ -345,56 +283,6 @@ data class AthenaRuntimeProjectionCrossReferenceLink(
 )
 
 /**
- * Runtime-owned projection point used by electrical anchor and corridor payloads.
- */
-data class AthenaRuntimeProjectionPoint(
-    val x: Int,
-    val y: Int,
-)
-
-/**
- * Runtime-owned typed electrical anchor occurrence for one canonical port in active projection.
- */
-data class AthenaRuntimeProjectionElectricalAnchor(
-    val anchorId: String,
-    val portSemanticId: String,
-    val ownerSemanticId: String,
-    val nodeId: String,
-    val labelId: String? = null,
-    val x: Int,
-    val y: Int,
-    val side: String,
-)
-
-/**
- * Runtime-owned typed electrical connection endpoint occurrence in active projection.
- */
-data class AthenaRuntimeProjectionElectricalConnectionEndpoint(
-    val endpointId: String,
-    val projectionConnectionId: String,
-    val connectionSemanticId: String,
-    val endpointRole: String,
-    val portSemanticId: String,
-    val anchorId: String,
-)
-
-/**
- * Runtime-owned preferred routing corridor guidance for one electrical connection occurrence.
- *
- * The corridor remains renderer guidance only. It does not replace canonical endpoint truth or
- * claim ownership over the final rendered path.
- */
-data class AthenaRuntimeProjectionElectricalRoutingCorridor(
-    val corridorId: String,
-    val projectionConnectionId: String,
-    val connectionSemanticId: String,
-    val sourceAnchorId: String,
-    val targetAnchorId: String,
-    val routingStyle: String,
-    val preferredBendPoints: List<AthenaRuntimeProjectionPoint> = emptyList(),
-)
-
-/**
  * Runtime-owned projection snapshot for one active view.
  */
 sealed interface AthenaRuntimeProjectionSnapshot {
@@ -416,11 +304,7 @@ data class AthenaRuntimeProjectionReadySnapshot(
     val sheets: List<AthenaRuntimeProjectionSheet> = emptyList(),
     val notationPack: AthenaRuntimeProjectionNotationPack? = null,
     val crossReferences: List<AthenaRuntimeProjectionCrossReference> = emptyList(),
-    val electricalAnchors: List<AthenaRuntimeProjectionElectricalAnchor> = emptyList(),
-    val electricalConnectionEndpoints: List<AthenaRuntimeProjectionElectricalConnectionEndpoint> = emptyList(),
-    val electricalRoutingCorridors: List<AthenaRuntimeProjectionElectricalRoutingCorridor> = emptyList(),
     val activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution> = emptyList(),
-    val sheetLayout: AthenaRuntimeProjectionSheetLayout? = null,
 ) : AthenaRuntimeProjectionSnapshot
 
 /**

@@ -17,5 +17,5 @@
     signal Digital
   }
 
-  connect plc1_out_to_l1_in PLC1.out -> L1.in
+  connect plc1_out_to_l1_in PLC1.out to L1.in
 }

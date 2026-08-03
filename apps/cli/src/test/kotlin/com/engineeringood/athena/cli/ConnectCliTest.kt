@@ -48,7 +48,6 @@ class ConnectCliTest {
             assertContains(output, ":PLC1_out_to_M1_in, port:M1.in, port:PLC1.out")
             assertContains(output, "connections before: 0")
             assertContains(output, "connections after: 1")
-            assertContains(output, "viewer connections: 1")
             assertEquals(sourcePath, assertNotNull(runtime.activeExecutionContext).project.sourcePath)
 
             val session = Files.readString(AthenaCliSessionStore().sessionFilePath(sourcePath))

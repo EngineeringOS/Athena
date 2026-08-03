@@ -1,0 +1,49 @@
+package com.engineeringood.m37.professional
+
+binding M37PowerSource {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type PowerSource }
+  use element "m37.power-source.element" version "1.0.0"
+  variant "m37-professional"
+}
+
+binding M37ControlContact {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type Breaker }
+  use element "m37.control-contact.element" version "1.0.0"
+  variant "m37-professional"
+}
+
+binding M37Relay {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type Contactor }
+  use element "m37.relay.element" version "1.0.0"
+  variant "m37-professional"
+}
+
+binding M37Motor {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type Motor }
+  use element "m37.motor.element" version "1.0.0"
+  variant "m37-professional"
+}
+
+binding M37Terminal {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type Terminal }
+  use element "m37.terminal.element" version "1.0.0"
+  variant "m37-professional"
+}
+
+binding M37ProtectiveEarth {
+  profile ControlDrawingIEC
+  priority 900
+  select device where { type ProtectiveEarth }
+  use element "m37.protective-earth.element" version "1.0.0"
+  variant "m37-professional"
+}

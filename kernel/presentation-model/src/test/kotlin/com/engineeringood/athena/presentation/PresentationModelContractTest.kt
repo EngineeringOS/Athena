@@ -9,29 +9,13 @@ import com.engineeringood.athena.document.DocumentProjectionSubjectSummary
 import com.engineeringood.athena.document.DocumentProjectionWorkspaceSemanticSnapshot
 import com.engineeringood.athena.document.SheetViewId
 import com.engineeringood.athena.document.SheetViewRole
-import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutIntent
-import com.engineeringood.athena.layout.LayoutOccurrenceId
-import com.engineeringood.athena.layout.LayoutSnapshotId
+import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.layout.ViewDefinition
-import com.engineeringood.athena.routing.ElectricalConnectionId
-import com.engineeringood.athena.routing.ElectricalPortId
-import com.engineeringood.athena.routing.ElectricalPortRole
-import com.engineeringood.athena.routing.RouteBundleId
-import com.engineeringood.athena.routing.RouteFact
-import com.engineeringood.athena.routing.RouteFactSnapshot
-import com.engineeringood.athena.routing.RouteIntentId
-import com.engineeringood.athena.routing.RouteQualityMetrics
-import com.engineeringood.athena.routing.RouteQualityState
-import com.engineeringood.athena.routing.SchematicRouteId
-import com.engineeringood.athena.routing.SchematicRouteLane
-import com.engineeringood.athena.routing.SchematicRoutePoint
-import com.engineeringood.athena.routing.SchematicRouteSegment
-import com.engineeringood.athena.routing.SchematicRouteSegmentOrientation
-import com.engineeringood.athena.routing.TerminalAnchorFact
-import com.engineeringood.athena.routing.TerminalAnchorId
-import com.engineeringood.athena.routing.TerminalSide
+import com.engineeringood.athena.representation.RepresentationAnchorId
+import com.engineeringood.athena.representation.RepresentationOccurrenceId
+import com.engineeringood.athena.representation.RepresentationPortAnchorBindingId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -121,7 +105,29 @@ class PresentationModelContractTest {
                         PresentationPoint(x = 210, y = 86),
                         PresentationPoint(x = 316, y = 86),
                     ),
+                    line = connectorLine(),
+                    routeId = "route:connection:test:plc1_out_to_m1_in",
+                    bundleId = "bundle:connection:test:plc1_out_to_m1_in",
+                    laneId = "lane:control",
+                    laneRouteIds = listOf("cabinet/presentation/connection_PLC1_out_M1_in"),
+                    selectedChannelIds = listOf("channel:control"),
+                    quality = "SATISFIED",
+                    sourceEndpoint = connectorEndpoint(
+                        portSemanticId = "port:PLC1.out",
+                        bindingId = "binding:PLC1:out",
+                        occurrenceId = "drawing:component:PLC1",
+                        anchorId = "anchor:PLC1:out",
+                        point = PresentationPoint(x = 104, y = 86),
+                    ),
+                    targetEndpoint = connectorEndpoint(
+                        portSemanticId = "port:M1.in",
+                        bindingId = "binding:M1:in",
+                        occurrenceId = "drawing:component:M1",
+                        anchorId = "anchor:M1:in",
+                        point = PresentationPoint(x = 316, y = 86),
+                    ),
                     sourceProjectionIds = listOf("cabinet/projection/connection/connection_PLC1_out_M1_in"),
+                    sourceSpan = LayoutSourceSpan("source:test.athena", 1, 1, 1, 20),
                 ),
             ),
         )
@@ -170,9 +176,7 @@ class PresentationModelContractTest {
     }
 
     @Test
-    fun `presentation snapshots expose route facts instead of accepting old edge route points`() {
-        val snapshotId = LayoutSnapshotId("snapshot:m24:presentation-route-facts")
-        val routeFact = routeFact(snapshotId)
+    fun `presentation rendering uses strict connectors instead of route fact conversion`() {
         val document = PresentationDocument(
             view = ViewDefinition(
                 id = "schematic",
@@ -193,34 +197,48 @@ class PresentationModelContractTest {
                         PresentationPoint(x = 320, y = 180),
                         PresentationPoint(x = 520, y = 180),
                     ),
+                    line = connectorLine(),
+                    routeId = "route:connection:test:plc1_do1_to_xt1_1",
+                    bundleId = "bundle:connection:test:plc1_do1_to_xt1_1",
+                    laneId = "lane:control",
+                    laneRouteIds = listOf("schematic/presentation/old-edge"),
+                    selectedChannelIds = listOf("channel:main"),
+                    quality = "SATISFIED",
+                    sourceEndpoint = connectorEndpoint(
+                        portSemanticId = "port:legacy.source",
+                        bindingId = "binding:legacy:source",
+                        occurrenceId = "drawing:component:legacy-source",
+                        anchorId = "anchor:legacy:source",
+                        point = PresentationPoint(x = 320, y = 180),
+                    ),
+                    targetEndpoint = connectorEndpoint(
+                        portSemanticId = "port:legacy.target",
+                        bindingId = "binding:legacy:target",
+                        occurrenceId = "drawing:component:legacy-target",
+                        anchorId = "anchor:legacy:target",
+                        point = PresentationPoint(x = 520, y = 180),
+                    ),
+                    sourceSpan = LayoutSourceSpan("source:test.athena", 1, 1, 1, 20),
                 ),
-            ),
-            routeFactSnapshot = RouteFactSnapshot.canonical(
-                snapshotId = snapshotId,
-                family = "schematic",
-                routeFacts = listOf(routeFact),
             ),
         )
 
         val connector = document.connectorsForRendering().single()
 
-        assertEquals("route:PLC1.DO1->XT1.1", connector.occurrenceId.value)
+        assertEquals("schematic/presentation/old-edge", connector.occurrenceId.value)
         assertEquals(StableSemanticIdentity("connection:test:plc1_do1_to_xt1_1"), connector.semanticId)
         assertEquals(
             listOf(
                 PresentationPoint(x = 320, y = 180),
-                PresentationPoint(x = 340, y = 180),
-                PresentationPoint(x = 340, y = 220),
-                PresentationPoint(x = 520, y = 220),
+                PresentationPoint(x = 520, y = 180),
             ),
             connector.routePoints,
         )
-        assertEquals("anchor:PLC1:DO1", connector.sourceAnchorId)
-        assertEquals("anchor:XT1:1", connector.targetAnchorId)
-        assertEquals(StableSemanticIdentity("port:PLC1.DO1"), connector.sourcePortSemanticId)
-        assertEquals(StableSemanticIdentity("port:XT1.1"), connector.targetPortSemanticId)
-        assertEquals("0", connector.tokenOverrides["routeLane"])
-        assertEquals(RouteQualityState.SATISFIED.name, connector.tokenOverrides["routeQuality"])
+        assertEquals("anchor:legacy:source", connector.sourceEndpoint.anchorId.value)
+        assertEquals("anchor:legacy:target", connector.targetEndpoint.anchorId.value)
+        assertEquals(StableSemanticIdentity("port:legacy.source"), connector.sourceEndpoint.portSemanticId)
+        assertEquals(StableSemanticIdentity("port:legacy.target"), connector.targetEndpoint.portSemanticId)
+        assertTrue(connector.tokenOverrides.isEmpty())
     }
 
     @Test
@@ -298,69 +316,34 @@ class PresentationModelContractTest {
         assertEquals(markers, document.referenceMarkers)
     }
 
-    private fun routeFact(snapshotId: LayoutSnapshotId): RouteFact {
-        val connectionId = ElectricalConnectionId("connection:test:plc1_do1_to_xt1_1")
-        val source = terminalAnchor("PLC1", "DO1", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 320, 180)
-        val target = terminalAnchor("XT1", "1", ElectricalPortRole.TERMINAL, TerminalSide.LEFT, 520, 220)
-        return RouteFact(
-            routeId = SchematicRouteId("route:PLC1.DO1->XT1.1"),
-            snapshotId = snapshotId,
-            connectionId = connectionId,
-            routeIntentId = RouteIntentId("intent:${connectionId.value}"),
-            bundleId = RouteBundleId("bundle:${connectionId.value}"),
-            selectedChannelIds = listOf("channel:main"),
-            plannerId = "athena-native",
-            compilerSnapshotId = "compiler:route:PLC1.DO1->XT1.1",
-            provenance = SourceProvenance("routes.athena", 1, 1, 1, 32),
-            qualityMetrics = RouteQualityMetrics(
-                crossingCount = 0,
-                bendCount = 2,
-                length = 240,
-                channelChangeCount = 0,
-                bundleContinuityPenalty = 0,
-                labelClearanceViolationCount = 0,
-            ),
-            source = source,
-            target = target,
-            lane = SchematicRouteLane(0),
-            segments = listOf(
-                SchematicRouteSegment(
-                    start = SchematicRoutePoint(x = 320, y = 180),
-                    end = SchematicRoutePoint(x = 340, y = 180),
-                    orientation = SchematicRouteSegmentOrientation.HORIZONTAL,
-                ),
-                SchematicRouteSegment(
-                    start = SchematicRoutePoint(x = 340, y = 180),
-                    end = SchematicRoutePoint(x = 340, y = 220),
-                    orientation = SchematicRouteSegmentOrientation.VERTICAL,
-                ),
-                SchematicRouteSegment(
-                    start = SchematicRoutePoint(x = 340, y = 220),
-                    end = SchematicRoutePoint(x = 520, y = 220),
-                    orientation = SchematicRouteSegmentOrientation.HORIZONTAL,
-                ),
-            ),
-        )
-    }
+    private fun connectorEndpoint(
+        portSemanticId: String,
+        bindingId: String,
+        occurrenceId: String,
+        anchorId: String,
+        point: PresentationPoint,
+    ): PresentationConnectorEndpoint = PresentationConnectorEndpoint(
+        portSemanticId = StableSemanticIdentity(portSemanticId),
+        bindingId = RepresentationPortAnchorBindingId(bindingId),
+        occurrenceId = RepresentationOccurrenceId(occurrenceId),
+        anchorId = RepresentationAnchorId(anchorId),
+        point = point,
+        sourceProvenance = listOf("source:test.athena:1:1"),
+    )
 
-    private fun terminalAnchor(
-        subject: String,
-        port: String,
-        role: ElectricalPortRole,
-        side: TerminalSide,
-        x: Int,
-        y: Int,
-    ): TerminalAnchorFact {
-        return TerminalAnchorFact(
-            anchorId = TerminalAnchorId("anchor:$subject:$port"),
-            subjectId = StableSemanticIdentity("component:$subject"),
-            occurrenceId = LayoutOccurrenceId("occurrence:component:$subject"),
-            portId = ElectricalPortId("$subject.$port"),
-            portSemanticId = StableSemanticIdentity("port:$subject.$port"),
-            portRole = role,
-            side = side,
-            point = SchematicRoutePoint(x = x, y = y),
-            gridPoint = SchematicRoutePoint(x = x, y = y),
+    private fun connectorLine(): PresentationConnectorLine =
+        PresentationConnectorLine(
+            classId = "line:control",
+            lineKind = "CONTROL",
+            lineStyleId = "stroke:control",
+            weight = 1.0,
+            style = "SOLID",
+            colorKey = "drawing.control",
+            endpointBehavior = "ATTACH_TO_ANCHOR",
+            labelPolicy = "TERMINAL_PAIR",
+            crossingBehavior = "DISCONNECTED_CROSSING",
+            policyId = "policy:test",
+            compilerSnapshotId = "compiler:test",
         )
-    }
+
 }

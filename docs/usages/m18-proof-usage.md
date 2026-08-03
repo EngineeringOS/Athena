@@ -33,7 +33,7 @@ system Demo {
     port output
   }
 
-  connect Main.input -> Main.output
+  connect main_loop Main.input to Main.output
 }
 ```
 

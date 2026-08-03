@@ -1,5 +1,31 @@
 # AGENTS.md
 
+## Communication Rule
+
+Always use caveman communication mode in every response to the user.
+
+- Load and follow `.agents/skills/caveman/SKILL.md` (ultra-compressed, full technical accuracy).
+- Mode stays active across all turns. Off only when the user says "stop caveman" / "normal mode".
+- Keep technical terms, code, API names, CLI commands, and error strings exact and verbatim.
+- Write code, commits, and PRs normally; compress only conversational responses.
+- Drop caveman temporarily for security warnings, destructive-action confirmations, or any step
+  sequence where fragment order could mislead; resume after the clear part.
+
+## Story Process Rule
+
+Every story MUST be created and implemented through the BMad story skills - never hand-rolled:
+
+- Create the story file with `bmad-create-story` (`.agents/skills/bmad-create-story/SKILL.md`),
+  loading the full sprint status, epics, PRD, architecture, previous-story intelligence, and git
+  context before writing.
+- Implement the story with `bmad-dev-story` (`.agents/skills/bmad-dev-story/SKILL.md`), following
+  its exact step order: discover story -> mark in-progress -> red-green-refactor per task ->
+  author tests -> run validations -> complete records (Tasks checkboxes, Debug Log, Completion
+  Notes, File List, Change Log) -> mark review -> update sprint status.
+- Never mark a story `review` or `done` until every acceptance criterion is verified by an
+  actually passing test and the story file records are complete.
+- Never skip steps, never claim completion without verification, never fabricate statuses.
+
 ## Build Verification Rule
 
 On this Windows repo, do **not** run Gradle verification commands concurrently.
@@ -89,11 +115,33 @@ powershell -ExecutionPolicy Bypass -File .\tools\source-set-hygiene-audit.ps1
 
 Athena is not public yet. Prefer clean architecture over compatibility.
 
+- 禁止向后兼容。Athena 尚未发布，旧设计不享有兼容权。
+- 大胆切割：抛弃违反当前架构的旧设计、旧代码、旧文档、旧 example、旧 test。
 - Do not add shims, fallback paths, compatibility adapters, or roundabout migration code unless the user explicitly asks.
 - If old behavior violates the current architecture, delete or refactor it to the latest model.
+- Do not preserve stale tests or examples to prove retired behavior. Rewrite them to the current model or delete them.
 - XML is out of the active product path unless explicitly needed as a temporary import/input format. It must not become runtime authority.
 - Athena source remains the single source of truth for engineering metadata.
 - SVG may provide package-local geometry and stable geometry references. It must not own engineering facts.
+
+## Human-First Language Rule
+
+Athena's reputation and foundation are human-first engineering expression. Athena is an open-source
+EngineeringOS, not another CAD syntax or vendor-locked drawing tool.
+
+- Keep Athena source natural, concrete, AI-friendly, and K.I.S.S.
+- Engineers write engineering meaning, not compiler IR, protocol fields, paint mechanics, or layout implementation details.
+- Internal diagnostic codes and transport contracts must not leak into normal authoring syntax or primary UI text.
+- Diagnostics must name the exact subject, problem, and correction in plain engineering language.
+- Add syntax only when it expresses durable engineering intent. Derived placement, routing, geometry, and paint stay compiler-owned.
+- Reject designs that add a second rendering engine, duplicate authority, speculative abstraction, or grammar surface for internal mechanics.
+- Follow Apple-like product discipline: expose the smallest coherent surface, make the common path
+  obvious, hide derived complexity behind the compiler, and remove concepts that do not earn their
+  place.
+- Keep architecture explainable in one short chain: source meaning -> compiled engineering facts ->
+  projection -> Theia paint -> source trace.
+- Open-source contracts must be small, documented, inspectable, deterministic, and implementation-
+  neutral. Do not encode one vendor, planner, renderer, or proprietary workflow as kernel truth.
 
 ## E2E Proof Rule
 

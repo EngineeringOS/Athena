@@ -9,7 +9,7 @@ system Demo {
   port PLC1.out {
     direction out
   }
-  connect plc_self PLC1.out -> PLC1.out
+  connect plc_self PLC1.out to PLC1.out
 }
 
 ---
@@ -47,8 +47,8 @@ Grouped connect forms
 
 system Demo {
   connect control_feed {
-    motor_command PLC1.out -> M1.in
-    motor_feedback M1.feedback -> PLC1.feedback
+    motor_command PLC1.out to M1.in
+    motor_feedback M1.feedback to PLC1.feedback
   }
 }
 
@@ -76,3 +76,205 @@ system Demo {
           to: (qualified_name
             (identifier)
             (identifier)))))))
+
+============================
+Domain relation forms
+============================
+
+system Demo {
+  power Supply.L1 to Breaker.input
+  power Supply.L1 -> Breaker.input
+  control Controller.DO1 to Terminal.input
+  earth EarthBar.PE to [Motor.PE, Cabinet.PE]
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (relation_declaration
+        word: (relation_word)
+        from: (qualified_name
+          (identifier)
+          (identifier))
+        targets: (relation_targets
+          (qualified_name
+            (identifier)
+            (identifier)))))
+    (declaration
+      (relation_declaration
+        word: (relation_word)
+        from: (qualified_name
+          (identifier)
+          (identifier))
+        targets: (relation_targets
+          (qualified_name
+            (identifier)
+            (identifier)))))
+    (declaration
+      (relation_declaration
+        word: (relation_word)
+        from: (qualified_name
+          (identifier)
+          (identifier))
+        targets: (relation_targets
+          (qualified_name
+            (identifier)
+            (identifier)))))
+    (declaration
+      (relation_declaration
+        word: (relation_word)
+        from: (qualified_name
+          (identifier)
+          (identifier))
+        targets: (relation_targets
+          (qualified_name
+            (identifier)
+            (identifier))
+          (qualified_name
+            (identifier)
+            (identifier)))))))
+
+============================
+Removed connection intent syntax
+============================
+
+system Demo {
+  connect supply Supply.L1 to Drive.L1 intent { class power }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (ERROR
+      (declaration
+        (connect_declaration
+          name: (name)
+          from: (qualified_name
+            (identifier)
+            (identifier))
+          to: (qualified_name
+            (identifier)
+            (identifier))))
+      (identifier))
+    (ERROR
+      (identifier)
+      (qualified_name
+        (identifier)))))
+
+============================
+Projection policy
+============================
+
+system Demo {
+  projection ControlDrawingProjection {
+    target professional-connection-drawing
+    layout orthogonal-grid
+    drawingProfile ControlDrawingIEC
+    routeQuality ControlDrawingRouteQuality
+    proof exact-endpoints
+    proof source-trace
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (projection_policy_declaration
+        name: (name)
+        (projection_policy_target
+          value: (profile_value_name))
+        (projection_policy_layout
+          value: (profile_value_name))
+        (projection_policy_drawing_profile
+          value: (identifier))
+        (projection_policy_route_quality
+          value: (identifier))
+        (projection_policy_proof
+          value: (profile_value_name))
+        (projection_policy_proof
+          value: (profile_value_name))))))
+
+============================
+External evidence mappings
+============================
+
+system Demo {
+  evidence DrivePortIec {
+    namespace iec
+    reference "IEC:60204-1:protective-conductor"
+    subject port Drive.PE
+    provenance "IEC citation"
+  }
+  evidence PowerRoutePolicyClass {
+    namespace classification
+    reference "neutral:route.power"
+    subject route-policy powerRoutes
+    provenance "Neutral class"
+  }
+  evidence PowerRelationIec {
+    namespace iec
+    reference "IEC:60204-1:routing"
+    subject relation-contract power_Supply_L1_to_Drive_L1
+    provenance "IEC relation contract citation"
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (evidence_declaration
+        name: (name)
+        (evidence_namespace
+          value: (identifier))
+        (evidence_reference
+          value: (string
+            (string_content)))
+        (evidence_subject
+          kind: (evidence_subject_kind)
+          target: (qualified_name
+            (identifier)
+            (identifier)))
+        (evidence_provenance
+          value: (string
+            (string_content)))))
+    (declaration
+      (evidence_declaration
+        name: (name)
+        (evidence_namespace
+          value: (identifier))
+        (evidence_reference
+          value: (string
+            (string_content)))
+        (evidence_subject
+          kind: (evidence_subject_kind)
+          target: (qualified_name
+            (identifier)))
+        (evidence_provenance
+          value: (string
+            (string_content)))))
+    (declaration
+      (evidence_declaration
+        name: (name)
+        (evidence_namespace
+          value: (identifier))
+        (evidence_reference
+          value: (string
+            (string_content)))
+        (evidence_subject
+          kind: (evidence_subject_kind)
+          target: (qualified_name
+            (identifier)))
+        (evidence_provenance
+          value: (string
+            (string_content)))))))

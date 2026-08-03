@@ -614,6 +614,10 @@
           "named": true
         },
         {
+          "type": "evidence_declaration",
+          "named": true
+        },
+        {
           "type": "installation_declaration",
           "named": true
         },
@@ -623,6 +627,14 @@
         },
         {
           "type": "port_declaration",
+          "named": true
+        },
+        {
+          "type": "projection_policy_declaration",
+          "named": true
+        },
+        {
+          "type": "relation_declaration",
           "named": true
         }
       ]
@@ -649,6 +661,10 @@
       "types": [
         {
           "type": "function_declaration",
+          "named": true
+        },
+        {
+          "type": "interface_declaration",
           "named": true
         },
         {
@@ -883,6 +899,123 @@
         ]
       }
     }
+  },
+  {
+    "type": "evidence_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "evidence_namespace",
+          "named": true
+        },
+        {
+          "type": "evidence_provenance",
+          "named": true
+        },
+        {
+          "type": "evidence_reference",
+          "named": true
+        },
+        {
+          "type": "evidence_subject",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "evidence_namespace",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "evidence_provenance",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "evidence_reference",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "string",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "evidence_subject",
+    "named": true,
+    "fields": {
+      "kind": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "evidence_subject_kind",
+            "named": true
+          }
+        ]
+      },
+      "target": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "qualified_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "evidence_subject_kind",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "fixed_place_statement",
@@ -1662,6 +1795,77 @@
     }
   },
   {
+    "type": "interface_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "interface_ports",
+          "named": true
+        },
+        {
+          "type": "property_assignment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "interface_port_member",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "property_assignment",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "interface_ports",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "interface_port_member",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "label_slot",
     "named": true,
     "fields": {
@@ -2213,6 +2417,151 @@
     "fields": {}
   },
   {
+    "type": "projection_policy_declaration",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "projection_policy_drawing_profile",
+          "named": true
+        },
+        {
+          "type": "projection_policy_forbidden_truth",
+          "named": true
+        },
+        {
+          "type": "projection_policy_layout",
+          "named": true
+        },
+        {
+          "type": "projection_policy_proof",
+          "named": true
+        },
+        {
+          "type": "projection_policy_route_quality",
+          "named": true
+        },
+        {
+          "type": "projection_policy_target",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "projection_policy_drawing_profile",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "projection_policy_forbidden_truth",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "qualified_name",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "projection_policy_layout",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "profile_value_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "projection_policy_proof",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "profile_value_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "projection_policy_route_quality",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "projection_policy_target",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "profile_value_name",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "property_assignment",
     "named": true,
     "fields": {},
@@ -2291,6 +2640,57 @@
       "types": [
         {
           "type": "style_reference",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "relation_declaration",
+    "named": true,
+    "fields": {
+      "from": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "qualified_name",
+            "named": true
+          }
+        ]
+      },
+      "targets": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "relation_targets",
+            "named": true
+          }
+        ]
+      },
+      "word": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "relation_word",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "relation_targets",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "qualified_name",
           "named": true
         }
       ]
@@ -2659,6 +3059,10 @@
     "named": false
   },
   {
+    "type": "contract",
+    "named": false
+  },
+  {
     "type": "deg0",
     "named": false
   },
@@ -2687,6 +3091,10 @@
     "named": true
   },
   {
+    "type": "drawingProfile",
+    "named": false
+  },
+  {
     "type": "duct",
     "named": false
   },
@@ -2696,6 +3104,10 @@
   },
   {
     "type": "enclosure",
+    "named": false
+  },
+  {
+    "type": "evidence",
     "named": false
   },
   {
@@ -2755,6 +3167,10 @@
     "named": false
   },
   {
+    "type": "interface",
+    "named": false
+  },
+  {
     "type": "kind",
     "named": false
   },
@@ -2797,6 +3213,10 @@
   {
     "type": "name",
     "named": true
+  },
+  {
+    "type": "namespace",
+    "named": false
   },
   {
     "type": "near",
@@ -2867,8 +3287,16 @@
     "named": false
   },
   {
+    "type": "proof",
+    "named": false
+  },
+  {
     "type": "property_name",
     "named": true
+  },
+  {
+    "type": "provenance",
+    "named": false
   },
   {
     "type": "radius",
@@ -2887,6 +3315,18 @@
     "named": false
   },
   {
+    "type": "reference",
+    "named": false
+  },
+  {
+    "type": "relation-contract",
+    "named": false
+  },
+  {
+    "type": "relation_word",
+    "named": true
+  },
+  {
     "type": "resource",
     "named": false
   },
@@ -2900,6 +3340,14 @@
   },
   {
     "type": "route",
+    "named": false
+  },
+  {
+    "type": "route-policy",
+    "named": false
+  },
+  {
+    "type": "routeQuality",
     "named": false
   },
   {
@@ -2931,6 +3379,10 @@
     "named": false
   },
   {
+    "type": "subject",
+    "named": false
+  },
+  {
     "type": "surface",
     "named": false
   },
@@ -2948,6 +3400,10 @@
   },
   {
     "type": "system",
+    "named": false
+  },
+  {
+    "type": "target",
     "named": false
   },
   {

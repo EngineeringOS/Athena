@@ -26,7 +26,7 @@ class AthenaRepeatedEditingStabilityTest {
 
         val invalidOpenText = """
             system FactoryLine {
-              connect plc1_out_to_plc1_out PLC1.out -> PLC1.out
+              connect plc1_out_to_plc1_out PLC1.out to PLC1.out
             }
         """.trimIndent()
         val validText = """
@@ -49,7 +49,7 @@ class AthenaRepeatedEditingStabilityTest {
                 signal Digital
               }
 
-              connect motor1_out_to_missing_in Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in Motor1.out to Missing.in
             }
         """.trimIndent()
         val invalidChangedText = """
@@ -67,7 +67,7 @@ class AthenaRepeatedEditingStabilityTest {
                 signal Digital
               }
 
-              connect motor1_out_to_missing_in_2 Motor1.out -> Missing.in
+              connect motor1_out_to_missing_in_2 Motor1.out to Missing.in
             }
         """.trimIndent()
 

@@ -67,7 +67,7 @@ class AthenaSemanticHistoryStateRequestTest {
                         signal Analog
                       }
 
-                      connect plc1_out_to_m1_in PLC1.out -> M1.in
+                      connect plc1_out_to_m1_in PLC1.out to M1.in
                     }
                 """.trimIndent(),
             )

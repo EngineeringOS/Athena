@@ -8,7 +8,7 @@ import com.engineeringood.athena.layout.AuthoredLayoutIntentStatement
 import com.engineeringood.athena.layout.LayoutOrientation
 
 /**
- * Serializes approved authored layout intent into admitted M23 `.athena` source text.
+ * Serializes approved authored layout intent into admitted `.athena` source text.
  *
  * The serializer is deliberately backend-owned so frontend code can request source edits without
  * hand-building final Athena syntax.

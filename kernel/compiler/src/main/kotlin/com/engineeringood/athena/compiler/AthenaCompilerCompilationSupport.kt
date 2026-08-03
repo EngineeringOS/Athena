@@ -2,6 +2,7 @@ package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContextBuilder
 import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContributionSource
+import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoader
 import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
 import com.engineeringood.athena.compiler.semantic.GraphPackageIdentity
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclarationIndexer
@@ -11,8 +12,8 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticNamespace
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticPackage
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceUnit
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
-import com.engineeringood.athena.connection.ConnectableEntityContractCompilation
-import com.engineeringood.athena.connection.ConnectableEntityContractCompiler
+import com.engineeringood.athena.connection.EngineeringConnectivityCompilation
+import com.engineeringood.athena.connection.EngineeringConnectivityContractCompiler
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.layout.LayoutDocument
@@ -56,7 +57,7 @@ internal class AthenaCompilerCompilationSupport(
     private val capabilityFactPromoter: EngineeringCapabilityFactPromoter,
     private val constraintEvaluator: EngineeringConstraintEvaluator,
     private val domainSemanticsCoordinator: AthenaDomainSemanticsCoordinator,
-    private val connectableEntityContractCompiler: ConnectableEntityContractCompiler,
+    private val engineeringConnectivityContractCompiler: EngineeringConnectivityContractCompiler,
     private val supportedViewDefinitionsCache: List<ViewDefinition>,
     private val supportedRenderContributionsCache: List<CompilerRenderContributionAttribution>,
     private val supportedPrimitivePresentationPacksCache: List<PresentationPrimitivePack>,
@@ -296,28 +297,39 @@ internal class AthenaCompilerCompilationSupport(
             geometries = backendPreparation.geometries,
             knowledgeContext = effectiveKnowledgeContext,
         )
+        val authoredProjectionOutcome = AuthoredProjectionViewCompiler.compile(document)
+        val authoredPresentations = when (authoredProjectionOutcome) {
+            is AuthoredProjectionCompilation.Success -> authoredProjectionOutcome.documents.flatMap { projection ->
+                deriveAuthoredPresentation(projection)
+            }
+
+            is AuthoredProjectionCompilation.Failure -> emptyList()
+        }
         val derivedPresentations = deriveSupportedPresentations(
             document = document,
-            projections = projections,
+            projections = projections + (authoredProjectionOutcome as? AuthoredProjectionCompilation.Success)
+                ?.documents
+                .orEmpty(),
         )
-        val professionalControlDrawing = deriveProfessionalControlDrawing(source, document)
-        val presentations = if (professionalControlDrawing == null) {
+        val realityPresentation = deriveRealityPresentation(document)
+        val authoredPresentation = realityPresentation
+        val presentations = if (authoredPresentation == null) {
             derivedPresentations
         } else {
             derivedPresentations
-                .filterNot { presentation -> presentation.view.id == professionalControlDrawing.view.id }
-                .plus(professionalControlDrawing)
+                .filterNot { presentation -> presentation.view.id == authoredPresentation.view.id }
+                .plus(authoredPresentation)
                 .sortedBy { presentation -> presentation.view.id }
         }
         val knowledgeAttributions = buildKnowledgeAttributions(effectiveKnowledgeContext)
-        val connectionContracts = connectableEntityContractCompiler.compile(document)
+        val engineeringConnectivity = validationResult.engineeringConnectivity
         val connectionIr = if (
-            connectionContracts is ConnectableEntityContractCompilation.Success &&
+            engineeringConnectivity is EngineeringConnectivityCompilation.Success &&
+            engineeringConnectivity.contracts.isNotEmpty() &&
             validationResult.validationBreakdown.connectivityDiagnostics.isEmpty()
         ) {
             lowerer.lowerConnectionIr(
-                document = document,
-                contracts = connectionContracts,
+                connectivity = engineeringConnectivity,
                 snapshot = ConnectionIrSnapshot(
                     semanticSnapshotId = stableDigest(document.toString()),
                     packageSnapshotId = stableDigest(effectiveKnowledgeContext.activeArtifacts.toString()),
@@ -339,7 +351,12 @@ internal class AthenaCompilerCompilationSupport(
             layouts = backendPreparation.layouts,
             geometries = backendPreparation.geometries,
             projections = projections,
-            presentations = presentations,
+            authoredProjectionViews = (authoredProjectionOutcome as? AuthoredProjectionCompilation.Success)?.documents ?: emptyList(),
+            authoredProjectionDiagnostics = (authoredProjectionOutcome as? AuthoredProjectionCompilation.Failure)
+                ?.diagnostics
+                ?.map { diagnostic -> diagnostic.message }
+                ?: emptyList(),
+            presentations = authoredPresentations + presentations,
             rendering = backendEmission.rendering,
             knowledgeContext = effectiveKnowledgeContext,
             boundaryValidation = boundaryValidation,
@@ -367,6 +384,42 @@ internal class AthenaCompilerCompilationSupport(
                 )
             },
         )
+    }
+
+    private fun deriveAuthoredPresentation(projection: ProjectionDocument): List<PresentationDocument> {
+        val spatial = ProjectionSpatialCompiler().transform(projection)
+        val spatialDocument = spatial as? RealityTransformationResult.Success ?: return emptyList()
+        val presentation = SpatialToPresentationTransformation().transform(spatialDocument.output)
+        val presentationDocument = presentation as? RealityTransformationResult.Success ?: return emptyList()
+        val authoredView = projection.view
+        return listOf(
+            presentationDocument.output.copy(
+                view = authoredView,
+            ),
+        )
+    }
+
+    private fun deriveRealityPresentation(document: EngineeringDocument): PresentationDocument? {
+        val selectedProjectionPolicy = (AthenaProjectionPolicyCompiler().compile(document) as? AthenaProjectionPolicyCompilation.Success)
+            ?.policies
+            ?.firstOrNull { policy -> policy.targetSurface == "connection-drawing" }
+            ?: return null
+        val view = ViewDefinition(
+            id = selectedProjectionPolicy.materialProjectionContext,
+            displayName = selectedProjectionPolicy.name,
+        )
+        val projection = when (val result = EngineeringToProjectionTransformation(view).transform(document)) {
+            is RealityTransformationResult.Success -> result.output
+            is RealityTransformationResult.Failure -> return null
+        }
+        val spatial = when (val result = ProjectionSpatialCompiler().transform(projection)) {
+            is RealityTransformationResult.Success -> result.output
+            is RealityTransformationResult.Failure -> return null
+        }
+        return when (val result = SpatialToPresentationTransformation(view = view).transform(spatial)) {
+            is RealityTransformationResult.Success -> result.output
+            is RealityTransformationResult.Failure -> null
+        }
     }
 
     private fun deriveLayouts(
@@ -446,73 +499,6 @@ internal class AthenaCompilerCompilationSupport(
         )
     }
 
-    private fun deriveProfessionalControlDrawing(
-        source: CompilerSourceDocument,
-        document: EngineeringDocument,
-    ): PresentationDocument? {
-        val sourcePath = runCatching { Path.of(source.file).toAbsolutePath().normalize() }.getOrNull() ?: return null
-        if (sourcePath.fileName.toString() != "01-control-drawing.athena") return null
-        val repositoryRoot = sourcePath.findRepositoryRoot() ?: return null
-        if (!repositoryRoot.isProfessionalControlDrawingRepository()) return null
-
-        val result = AthenaProfessionalDrawingCompiler().compile(
-            AthenaProfessionalDrawingRequest(
-                repositoryRoot = repositoryRoot,
-                document = document,
-                semanticSnapshot = professionalControlDrawingSemanticSnapshot(source, repositoryRoot),
-                policy = AthenaProfessionalDrawingPolicy.rollingShutterControlDrawing(),
-            ),
-        )
-        return result.presentation
-    }
-
-    private fun professionalControlDrawingSemanticSnapshot(
-        sourceDocument: CompilerSourceDocument,
-        repositoryRoot: Path,
-    ): ProjectSemanticGraphSnapshot {
-        val packageId = PackageIdentifier("com.engineeringood.m34.professional", "1.0.0")
-        val packageKey = CanonicalSemanticIdentityBuilder.packageKey(packageId)
-        val sourceRootRelativePath = runCatching {
-            repositoryRoot.resolve("src").toAbsolutePath().normalize()
-                .relativize(Path.of(sourceDocument.file).toAbsolutePath().normalize())
-                .joinToString(separator = "/") { segment -> segment.toString() }
-        }.getOrDefault("com/engineeringood/m34/professional/01-control-drawing.athena")
-        val sourceUnitId = CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, sourceRootRelativePath)
-        val source = ProjectSemanticSourceUnit(
-            sourceUnitId = sourceUnitId,
-            packageKey = packageKey,
-            sourceRootRelativePath = sourceRootRelativePath,
-            contentIdentity = CanonicalSemanticIdentityBuilder.sourceContentIdentity(sourceUnitId, sourceDocument.file),
-            authoredDeclarations = sourceDocument.ast.declarations,
-        )
-        val snapshot = ProjectSemanticGraphSnapshot.canonical(
-            graphId = CanonicalSemanticIdentityBuilder.graphId(
-                packageKey,
-                listOf(GraphPackageIdentity(packageKey, "src", emptyList())),
-                listOf(source.contentIdentity),
-            ),
-            rootPackageId = packageKey,
-            packages = listOf(ProjectSemanticPackage(packageId, packageKey, "src", emptyList())),
-            sourceUnits = listOf(source),
-            namespaces = listOf(
-                ProjectSemanticNamespace(
-                    namespaceId = CanonicalSemanticIdentityBuilder.namespaceId(
-                        packageKey,
-                        listOf("com", "engineeringood", "m34", "professional"),
-                    ),
-                    packageKey = packageKey,
-                    qualifiedName = listOf("com", "engineeringood", "m34", "professional"),
-                    sourceUnitIds = listOf(sourceUnitId),
-                    declarationIds = emptyList(),
-                ),
-            ),
-            declarations = emptyList(),
-            bindings = emptyList(),
-            diagnostics = emptyList(),
-        )
-        return ProjectSemanticLayoutHintBinder().bind(ProjectSemanticDeclarationIndexer().index(snapshot))
-    }
-
     private fun Path.findRepositoryRoot(): Path? {
         var current: Path? = parent
         while (current != null) {
@@ -520,14 +506,6 @@ internal class AthenaCompilerCompilationSupport(
             current = current.parent
         }
         return null
-    }
-
-    private fun Path.isProfessionalControlDrawingRepository(): Boolean {
-        val manifest = resolve("athena.yaml")
-        if (!Files.isRegularFile(manifest)) return false
-        return runCatching { Files.readString(manifest) }
-            .getOrDefault("")
-            .contains("name: com.engineeringood.m34.professional")
     }
 
     private fun systemIdentitySummary(source: CompilerSourceDocument): String {
@@ -622,6 +600,7 @@ internal class AthenaCompilerCompilationSupport(
             semanticResult = validation.semanticResult,
             validationBreakdown = validation.validationBreakdown,
             validationMode = validation.validationMode,
+            engineeringConnectivity = validation.engineeringConnectivity,
             passRecord = CompilerPassRecord(
                 pass = VALIDATE_PASS,
                 status = CompilerPassExecutionStatus.SUCCEEDED,
@@ -833,9 +812,10 @@ internal class AthenaCompilerCompilationSupport(
             addAll(domainSemanticsUnavailableDiagnostics(source, document))
             addAll(domainValidationContribution.diagnostics)
         }
-        val connectivityDiagnostics = when (val result = connectableEntityContractCompiler.compile(document)) {
-            is ConnectableEntityContractCompilation.Success -> emptyList()
-            is ConnectableEntityContractCompilation.Failure -> result.diagnostics.map { diagnostic ->
+        val engineeringConnectivity = engineeringConnectivityContractCompiler.compile(document)
+        val connectivityDiagnostics = when (engineeringConnectivity) {
+            is EngineeringConnectivityCompilation.Success -> emptyList()
+            is EngineeringConnectivityCompilation.Failure -> engineeringConnectivity.diagnostics.map { diagnostic ->
                 SemanticDiagnostic(
                     severity = SemanticDiagnosticSeverity.ERROR,
                     ruleId = SemanticRuleId(diagnostic.code),
@@ -846,10 +826,24 @@ internal class AthenaCompilerCompilationSupport(
                 )
             }
         }
+        val projectionPolicyDiagnostics = when (val projectionPolicies = AthenaProjectionPolicyCompiler().compile(document)) {
+            is AthenaProjectionPolicyCompilation.Success -> emptyList()
+            is AthenaProjectionPolicyCompilation.Failure -> projectionPolicies.diagnostics.map { diagnostic ->
+                SemanticDiagnostic(
+                    severity = SemanticDiagnosticSeverity.ERROR,
+                    ruleId = SemanticRuleId(diagnostic.code),
+                    category = SemanticDiagnosticCategory.PROJECTION,
+                    subjectIdentity = null,
+                    provenance = diagnostic.provenance,
+                    message = diagnostic.message,
+                )
+            }
+        }
         val validationBreakdown = CompilerValidationBreakdown(
             semanticEnrichmentDiagnostics = enrichmentDiagnostics,
             kernelDiagnostics = kernelResult.diagnostics,
             connectivityDiagnostics = connectivityDiagnostics,
+            projectionPolicyDiagnostics = projectionPolicyDiagnostics,
             domainDiagnostics = domainDiagnostics,
             engineeringSufficiencyDiagnostics = engineeringSufficiencyDiagnostics,
             domainValidationAttributions = domainValidationContribution.attributions,
@@ -857,6 +851,7 @@ internal class AthenaCompilerCompilationSupport(
         val diagnostics = validationBreakdown.semanticEnrichmentDiagnostics +
             validationBreakdown.kernelDiagnostics +
             validationBreakdown.connectivityDiagnostics +
+            validationBreakdown.projectionPolicyDiagnostics +
             validationBreakdown.domainDiagnostics
         val semanticResult = SemanticValidationResult(
             diagnostics = diagnostics,
@@ -870,6 +865,7 @@ internal class AthenaCompilerCompilationSupport(
             semanticResult = semanticResult,
             validationBreakdown = validationBreakdown,
             validationMode = validationMode,
+            engineeringConnectivity = engineeringConnectivity,
         )
     }
 
@@ -1008,6 +1004,7 @@ private data class ValidationPassResult(
     val semanticResult: SemanticValidationResult,
     val validationBreakdown: CompilerValidationBreakdown,
     val validationMode: CompilerIncrementalPassMode,
+    val engineeringConnectivity: EngineeringConnectivityCompilation,
     val passRecord: CompilerPassRecord,
 )
 
@@ -1015,6 +1012,7 @@ private data class ValidationComputationResult(
     val semanticResult: SemanticValidationResult,
     val validationBreakdown: CompilerValidationBreakdown,
     val validationMode: CompilerIncrementalPassMode,
+    val engineeringConnectivity: EngineeringConnectivityCompilation,
 )
 
 private data class SemanticEnrichmentPassResult(

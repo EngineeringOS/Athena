@@ -1,10 +1,10 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.connection.ConnectableConstraintOwner
-import com.engineeringood.athena.connection.ConnectableConstraintStrength
-import com.engineeringood.athena.connection.ConnectableInterfaceId
-import com.engineeringood.athena.connection.ConnectablePortDirection
-import com.engineeringood.athena.connection.ConnectablePortMultiplicity
+import com.engineeringood.athena.connection.EngineeringConnectivityConstraintOwner
+import com.engineeringood.athena.connection.EngineeringConnectivityConstraintStrength
+import com.engineeringood.athena.connection.EngineeringConnectivityInterfaceId
+import com.engineeringood.athena.connection.EngineeringConnectivityPortDirection
+import com.engineeringood.athena.connection.EngineeringConnectivityPortMultiplicity
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 
@@ -29,20 +29,23 @@ data class ConnectionIrEntity(
     val name: String,
     val kind: String,
     val provenance: SourceProvenance,
+    val physicalInstallationReferences: List<ConnectionIrReference> = emptyList(),
+    val representationBindings: List<ConnectionIrReference> = emptyList(),
+    val externalEvidenceReferences: List<ConnectionIrReference> = emptyList(),
 )
 
 data class ConnectionIrPort(
     val id: StableSemanticIdentity,
     val ownerId: StableSemanticIdentity,
     val name: String,
-    val interfaceIds: List<ConnectableInterfaceId> = emptyList(),
+    val interfaceIds: List<EngineeringConnectivityInterfaceId> = emptyList(),
     val compatibility: ConnectionIrPortCompatibility,
     val provenance: SourceProvenance,
 )
 
 data class ConnectionIrPortCompatibility(
-    val direction: ConnectablePortDirection,
-    val multiplicity: ConnectablePortMultiplicity = ConnectablePortMultiplicity.SINGLE,
+    val direction: EngineeringConnectivityPortDirection,
+    val multiplicity: EngineeringConnectivityPortMultiplicity = EngineeringConnectivityPortMultiplicity.SINGLE,
     val signalKind: String?,
     val role: String?,
     val parameters: Map<String, String> = emptyMap(),
@@ -100,11 +103,11 @@ enum class ConnectionIrConstraintOwner {
     LAYOUT_PREFERENCE,
 }
 
-internal fun ConnectableConstraintOwner.toConnectionIrOwner(): ConnectionIrConstraintOwner = when (this) {
-    ConnectableConstraintOwner.SEMANTIC -> ConnectionIrConstraintOwner.SEMANTIC
-    ConnectableConstraintOwner.REPRESENTATION -> ConnectionIrConstraintOwner.REPRESENTATION
-    ConnectableConstraintOwner.PHYSICAL -> ConnectionIrConstraintOwner.PHYSICAL
-    ConnectableConstraintOwner.LAYOUT_PREFERENCE -> ConnectionIrConstraintOwner.LAYOUT_PREFERENCE
+internal fun EngineeringConnectivityConstraintOwner.toConnectionIrOwner(): ConnectionIrConstraintOwner = when (this) {
+    EngineeringConnectivityConstraintOwner.SEMANTIC -> ConnectionIrConstraintOwner.SEMANTIC
+    EngineeringConnectivityConstraintOwner.REPRESENTATION -> ConnectionIrConstraintOwner.REPRESENTATION
+    EngineeringConnectivityConstraintOwner.PHYSICAL -> ConnectionIrConstraintOwner.PHYSICAL
+    EngineeringConnectivityConstraintOwner.LAYOUT_PREFERENCE -> ConnectionIrConstraintOwner.LAYOUT_PREFERENCE
 }
 
 enum class ConnectionIrConstraintStrength {
@@ -113,8 +116,8 @@ enum class ConnectionIrConstraintStrength {
     OPTIONAL,
 }
 
-internal fun ConnectableConstraintStrength.toConnectionIrStrength(): ConnectionIrConstraintStrength = when (this) {
-    ConnectableConstraintStrength.REQUIRED -> ConnectionIrConstraintStrength.REQUIRED
-    ConnectableConstraintStrength.PREFERRED -> ConnectionIrConstraintStrength.PREFERRED
-    ConnectableConstraintStrength.OPTIONAL -> ConnectionIrConstraintStrength.OPTIONAL
+internal fun EngineeringConnectivityConstraintStrength.toConnectionIrStrength(): ConnectionIrConstraintStrength = when (this) {
+    EngineeringConnectivityConstraintStrength.REQUIRED -> ConnectionIrConstraintStrength.REQUIRED
+    EngineeringConnectivityConstraintStrength.PREFERRED -> ConnectionIrConstraintStrength.PREFERRED
+    EngineeringConnectivityConstraintStrength.OPTIONAL -> ConnectionIrConstraintStrength.OPTIONAL
 }

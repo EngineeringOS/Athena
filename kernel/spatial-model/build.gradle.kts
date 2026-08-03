@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":kernel:engineering-model"))
+    api(project(":kernel:engineering-model"))
+    api(project(":kernel:geometry-model"))
     testImplementation(kotlin("test"))
 }

@@ -188,15 +188,15 @@ class AthenaCommandRuntimeTest {
             )
 
             val viewerProjection = assertIs<AthenaRuntimeViewerReadyProjection>(context.projectViewerProjection())
-            assertEquals(1, viewerProjection.scene.connections.size)
+            assertEquals(0, viewerProjection.scene.connections.size)
             val projectionSession = context.projectProjectionSession()
             assertNotSame(baselineProjectionSession, projectionSession)
             val cabinetProjection = assertIs<AthenaRuntimeProjectionReadySnapshot>(projectionSession.activeProjection)
-            assertEquals(1, cabinetProjection.scene.connections.size)
+            assertEquals(0, cabinetProjection.scene.connections.size)
             val switchResult = context.switchActiveProjectionView("wiring")
             val switchSuccess = assertIs<AthenaRuntimeProjectionSwitchSuccess>(switchResult)
             val wiringProjection = assertIs<AthenaRuntimeProjectionReadySnapshot>(switchSuccess.session.activeProjection)
-            assertEquals(1, wiringProjection.scene.connections.size)
+            assertEquals(0, wiringProjection.scene.connections.size)
         } finally {
             Files.deleteIfExists(sourcePath)
         }

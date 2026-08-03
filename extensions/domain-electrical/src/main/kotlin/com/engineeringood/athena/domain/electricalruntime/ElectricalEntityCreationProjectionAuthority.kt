@@ -3,11 +3,12 @@ package com.engineeringood.athena.domain.electricalruntime
 import com.engineeringood.athena.authoring.CreateSemanticEntityIntent
 import com.engineeringood.athena.component.EngineeringConceptTemplate
 import com.engineeringood.athena.representation.CompositionIntentMembershipId
+import com.engineeringood.athena.representation.GridUnit
 import com.engineeringood.athena.representation.LabelValue
 import com.engineeringood.athena.representation.NativeRepresentationLibraryLoader
+import com.engineeringood.athena.representation.PresentationBounds
 import com.engineeringood.athena.representation.RepresentationBindingCompiler
 import com.engineeringood.athena.representation.RepresentationBindingRequest
-import com.engineeringood.athena.representation.RepresentationFallbackBehavior
 import com.engineeringood.athena.representation.RepresentationLabelSlotId
 import com.engineeringood.athena.representation.RepresentationOccurrenceRole
 import com.engineeringood.athena.representation.RepresentationPolicy
@@ -68,7 +69,6 @@ class ElectricalEntityCreationProjectionAuthority(
             symbolFamilyId = SymbolFamilyId("iec.motor"),
             symbolId = symbolId,
             variant = RepresentationVariantId("compact"),
-            fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
             priority = RepresentationPolicyPriority(100),
         )
         val binding = bindingCompiler.bind(
@@ -81,7 +81,7 @@ class ElectricalEntityCreationProjectionAuthority(
                 policy = policy,
                 definition = definition,
                 labelValues = mapOf(RepresentationLabelSlotId("device-tag") to LabelValue(canonicalTag)),
-                terminalPorts = emptyMap(),
+                portAnchorBindings = emptyList(),
                 priority = policy.priority,
                 compositionIntentMembership = listOf(compositionMembership),
             ),
@@ -93,9 +93,13 @@ class ElectricalEntityCreationProjectionAuthority(
         val composition = compositionCompiler.plan(
             SchematicCompositionInput(
                 occurrences = listOf(occurrence),
-                boundsByOccurrence = mapOf(occurrence.occurrenceId to definition.anatomy.bounds),
+                boundsByOccurrence = mapOf(
+                    occurrence.occurrenceId to requireNotNull(definition.graphicBody.bounds).toPresentationBounds(),
+                ),
                 terminalAnchorCountByOccurrence = mapOf(
-                    occurrence.occurrenceId to definition.anatomy.terminals.size,
+                    occurrence.occurrenceId to definition.anchors.count { anchor ->
+                        anchor.role == com.engineeringood.athena.representation.RepresentationAnchorRole.TERMINAL
+                    },
                 ),
                 spatialIntentReferences = listOf(SchematicSpatialIntentReference("sheet:control")),
             ),
@@ -121,3 +125,6 @@ class ElectricalEntityCreationProjectionAuthority(
         fun supports(templateId: String): Boolean = templateId == MOTOR_TEMPLATE_ID
     }
 }
+
+private fun com.engineeringood.athena.representation.GraphicBounds.toPresentationBounds(): PresentationBounds =
+    PresentationBounds(GridUnit(width.toInt()), GridUnit(height.toInt()))

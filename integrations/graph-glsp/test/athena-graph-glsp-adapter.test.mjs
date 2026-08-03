@@ -89,6 +89,17 @@ const readyProjectionSession = {
             compositePacks: [],
             occurrences: [],
             connectors: [],
+            paintPlan: {
+                items: [
+                    {
+                        itemId: 'paint:item:connector:main',
+                        targetId: 'route:connection:main',
+                        kind: 'connector',
+                        visible: true,
+                        order: 20
+                    }
+                ]
+            },
             representationFacts: [
                 {
                     subjectId: 'component:PLC1',
@@ -317,6 +328,15 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.electricalConnectionEndpoints.length, 2);
     assert.equal(diagram.electricalRoutingCorridors.length, 1);
     assert.equal(diagram.presentation?.primitivePacks[0].primitives[1].commands[0].kind, 'svg_path');
+    assert.deepEqual(diagram.presentation?.paintPlan?.items, [
+        {
+            itemId: 'paint:item:connector:main',
+            targetId: 'route:connection:main',
+            kind: 'connector',
+            visible: true,
+            order: 20
+        }
+    ]);
     assert.equal(diagram.presentation?.representationFacts[0].subjectId, 'component:PLC1');
     assert.equal(diagram.presentation?.representationFacts[0].anatomy.primitives[1].kind, 'line');
     assert.deepEqual(diagram.presentation?.representationFacts[0].sourceProjectionIds, ['cabinet/projection/node/component_PLC1']);
@@ -614,4 +634,158 @@ test('normalizes partial or missing ownership contracts inside supported views',
         transientInteractionKinds: [],
         persistedProjectionMetadataKeys: []
     });
+});
+
+test('normalizes drawing reference placements without optional placement geometry', () => {
+    assert.equal(typeof adapter.translateProjectionSessionToGLSPDiagram, 'function');
+
+    const diagram = adapter.translateProjectionSessionToGLSPDiagram({
+        projectName: 'FactoryLine',
+        semanticPath: 'frontend -> LSP -> runtime/compiler',
+        activeViewId: 'schematic',
+        status: 'ready',
+        readyProjection: {
+            viewId: 'schematic',
+            systemName: 'FactoryLine',
+            canvasWidth: 1440,
+            canvasHeight: 900,
+            presentation: {
+                canvasWidth: 1440,
+                canvasHeight: 900,
+                drawingComposition: {
+                    sheetId: 'sheet/main',
+                    policyId: 'm38.professional-control-drawing',
+                    contentBounds: { x: 0, y: 0, width: 1440, height: 900 },
+                    frameBounds: { x: 24, y: 24, width: 1392, height: 852 },
+                    drawingAreaBounds: { x: 48, y: 48, width: 1100, height: 780 },
+                    titleBlockBounds: { x: 1160, y: 720, width: 220, height: 120 },
+                    sheetBounds: { x: 0, y: 0, width: 1440, height: 900 },
+                    frameId: 'frame/main',
+                    frameStyle: 'iec_control',
+                    title: { text: 'M38 Exact Connection Proof' },
+                    coordinateZones: [],
+                    structureSubjects: [],
+                    structureFacts: [],
+                    referencePlacements: [
+                        {
+                            placementId: 'placement/minimal',
+                            referenceId: 'component:K1',
+                            subjectId: 'component:K1',
+                            role: 'device',
+                            representationIdentity: 'svg:contactor',
+                            compactNotation: 'K1'
+                        }
+                    ],
+                    authorities: {
+                        contentBounds: 'compiler',
+                        bounds: 'compiler',
+                        projection: 'compiler',
+                        representation: 'athena-source',
+                        structureIntent: 'athena-source',
+                        policy: 'athena-source'
+                    }
+                },
+                primitivePacks: [],
+                compositePacks: [],
+                occurrences: [],
+                connectors: [],
+                representationFacts: []
+            }
+        }
+    });
+
+    assert.equal(diagram.presentation?.drawingComposition?.referencePlacements.length, 1);
+    assert.equal(diagram.presentation?.drawingComposition?.referencePlacements[0].placementId, 'placement/minimal');
+    assert.equal(diagram.presentation?.drawingComposition?.referencePlacements[0].bounds, undefined);
+    assert.equal(diagram.presentation?.drawingComposition?.referencePlacements[0].anatomy, undefined);
+});
+
+test('preserves presentation connector source span through GLSP normalization', () => {
+    const sourceSpan = {
+        file: 'src/01-professional-control-drawing.athena',
+        startLine: 12,
+        startColumn: 3,
+        endLine: 20,
+        endColumn: 4
+    };
+    const diagram = adapter.translateProjectionSessionToGLSPDiagram({
+        projectName: 'FactoryLine',
+        semanticPath: 'frontend -> LSP -> runtime/compiler',
+        activeViewId: 'schematic',
+        status: 'ready',
+        readyProjection: {
+            viewId: 'schematic',
+            systemName: 'FactoryLine',
+            canvasWidth: 400,
+            canvasHeight: 220,
+            presentation: {
+                canvasWidth: 400,
+                canvasHeight: 220,
+                primitivePacks: [],
+                compositePacks: [],
+                occurrences: [],
+                connectors: [
+                    {
+                        occurrenceId: 'route:main',
+                        semanticId: 'connection:main',
+                        primitiveId: 'electrical.conductor.orthogonal',
+                        routePoints: [{ x: 10, y: 20 }, { x: 90, y: 20 }],
+                        lineClassId: 'line:control',
+                        line: {
+                            classId: 'line:control',
+                            lineKind: 'CONTROL',
+                            lineStyleId: 'stroke:control',
+                            weight: 1,
+                            style: 'SOLID',
+                            colorKey: 'drawing.control',
+                            endpointBehavior: 'ATTACH_TO_ANCHOR',
+                            labelPolicy: 'TERMINAL_PAIR',
+                            crossingBehavior: 'DISCONNECTED_CROSSING',
+                            policyId: 'policy:test',
+                            compilerSnapshotId: 'snapshot:test'
+                        },
+                        routeId: 'route:main',
+                        bundleId: 'bundle:main',
+                        laneId: 'lane:main',
+                        laneRouteIds: ['route:main'],
+                        selectedChannelIds: [],
+                        labels: [],
+                        quality: 'SATISFIED',
+                        sourceEndpoint: {
+                            portSemanticId: 'port:A',
+                            bindingId: 'binding:A',
+                            occurrenceId: 'occurrence:A',
+                            anchorId: 'anchor:A',
+                            point: { x: 10, y: 20 },
+                            sourceProvenance: ['src/01-professional-control-drawing.athena:12:3'],
+                            trace: { sourceProjectionIds: ['port:A'] }
+                        },
+                        targetEndpoint: {
+                            portSemanticId: 'port:B',
+                            bindingId: 'binding:B',
+                            occurrenceId: 'occurrence:B',
+                            anchorId: 'anchor:B',
+                            point: { x: 90, y: 20 },
+                            sourceProvenance: ['src/01-professional-control-drawing.athena:12:3'],
+                            trace: { sourceProjectionIds: ['port:B'] }
+                        },
+                        layer: 'connection',
+                        markerIds: [],
+                        tokenOverrides: {},
+                        sourceProjectionIds: ['route:main'],
+                        trace: {
+                            sourceProjectionIds: ['route:main'],
+                            compilerStage: 'electrical.conductor.orthogonal',
+                            sourceSpan
+                        },
+                        sourceSpan
+                    }
+                ],
+                representationFacts: []
+            }
+        }
+    });
+
+    assert.deepEqual(diagram.presentation?.connectors[0].sourceSpan, sourceSpan);
+    assert.deepEqual(diagram.presentation?.connectors[0].trace.sourceSpan, sourceSpan);
 });

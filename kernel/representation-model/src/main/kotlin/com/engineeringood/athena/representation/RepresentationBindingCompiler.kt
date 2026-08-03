@@ -9,7 +9,7 @@ data class RepresentationBindingRequest(
     val policy: RepresentationPolicy,
     val definition: RepresentationDefinition,
     val labelValues: Map<RepresentationLabelSlotId, LabelValue>,
-    val terminalPorts: Map<PresentationTerminalId, SemanticPortId>,
+    val portAnchorBindings: List<RepresentationPortAnchorBinding>,
     val projectPorts: List<RepresentationProjectPortFact> = emptyList(),
     val priority: RepresentationPolicyPriority,
     val referenceBindings: List<RepresentationReferenceBinding> = emptyList(),
@@ -70,9 +70,13 @@ class RepresentationBindingCompiler {
             labelBindings = request.labelValues.map { (slotId, value) ->
                 RepresentationLabelBinding(slotId, value)
             },
-            terminalBindings = request.terminalPorts.map { (terminalId, semanticPortId) ->
-                RepresentationTerminalBinding(terminalId, semanticPortId)
-            },
+            portAnchorBindings = request.portAnchorBindings.sortedWith(
+                compareBy<RepresentationPortAnchorBinding>(
+                    { binding -> binding.semanticPortId.value },
+                    { binding -> binding.anchorId.value },
+                    { binding -> binding.bindingId.value },
+                ),
+            ),
             referenceBindings = request.referenceBindings,
             compositionIntentMembership = request.compositionIntentMembership,
         )
@@ -82,10 +86,10 @@ class RepresentationBindingCompiler {
                 policies = listOf(request.policy),
                 definitions = listOf(request.definition),
                 occurrences = listOf(occurrence),
-                compatibleTerminalBindings = request.terminalPorts.map { (terminalId, semanticPortId) ->
-                    RepresentationCompatibleTerminalBinding(terminalId, semanticPortId)
+                compatiblePortAnchorBindings = request.portAnchorBindings.map { binding ->
+                    RepresentationCompatiblePortAnchorBinding(binding.semanticPortId, binding.anchorId)
                 }.filter { compatibleBinding ->
-                    request.isCompatibleTerminalBinding(compatibleBinding)
+                    request.isCompatiblePortAnchorBinding(compatibleBinding)
                 }.toSet(),
                 compositionMemberships = request.compositionIntentMembership.toSet(),
             ),
@@ -134,28 +138,26 @@ class RepresentationBindingCompiler {
                     provenance = definition.lifecycle.provenance,
                 )
             }
+        val boundPortIds = portAnchorBindings.map { binding -> binding.semanticPortId }.toSet()
+        projectPorts
+            .filterNot { port -> port.semanticPortId in boundPortIds }
+            .forEach { port ->
+                diagnostics += RepresentationDiagnostic(
+                    code = RepresentationDiagnosticCode.TERMINAL_INCOMPATIBLE,
+                    message = "Semantic port `${port.semanticPortId.value}` requires one explicit Port-to-Anchor binding.",
+                    subjectId = canonicalSemanticId,
+                    provenance = port.provenance,
+                )
+            }
         return diagnostics
     }
 
-    private fun RepresentationBindingRequest.isCompatibleTerminalBinding(
-        binding: RepresentationCompatibleTerminalBinding,
+    private fun RepresentationBindingRequest.isCompatiblePortAnchorBinding(
+        binding: RepresentationCompatiblePortAnchorBinding,
     ): Boolean {
-        if (definition.bodyAuthority == RepresentationBodyAuthority.LEGACY_PRESENTATION_ANATOMY) {
-            val hasLegacyTerminal = definition.anatomy.terminals.any { terminal ->
-                terminal.terminalId == binding.terminalId
-            }
-            val hasAuthoredProjectPort = projectPorts.any { port -> port.semanticPortId == binding.semanticPortId }
-            return hasLegacyTerminal && hasAuthoredProjectPort
-        }
-        val anchor = definition.anchors.singleOrNull { anchor ->
-            anchor.role == RepresentationAnchorRole.TERMINAL &&
-                PresentationTerminalId(anchor.anchorId.value) == binding.terminalId
-        } ?: return false
+        val anchor = definition.anchors.singleOrNull { anchor -> anchor.anchorId == binding.anchorId } ?: return false
         val port = projectPorts.singleOrNull { port -> port.semanticPortId == binding.semanticPortId } ?: return false
-        return port.role == RepresentationAnchorRole.TERMINAL &&
-            port.direction in anchor.acceptedDirections &&
-            port.signal in anchor.acceptedSignals &&
-            (anchor.terminal == null || anchor.terminal == port.terminal)
+        return anchor.role == RepresentationAnchorRole.TERMINAL && port.role == RepresentationAnchorRole.TERMINAL
     }
 }
 

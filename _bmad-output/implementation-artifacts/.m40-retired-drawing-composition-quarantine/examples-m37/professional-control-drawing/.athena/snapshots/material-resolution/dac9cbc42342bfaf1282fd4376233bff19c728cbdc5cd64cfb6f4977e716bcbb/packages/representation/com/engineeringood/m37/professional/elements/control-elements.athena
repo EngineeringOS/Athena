@@ -1,0 +1,22 @@
+package com.engineeringood.m37.professional.elements
+
+symbol contact_symbol {
+  identity "m37.contact.symbol"
+  version "1.0.0"
+  body {
+    line from (0, 10) to (18, 10)
+    line from (18, 10) to (30, 2)
+    line from (34, 10) to (52, 10)
+  }
+}
+
+element contact_element {
+  identity "m37.contact.element"
+  version "1.0.0"
+  part contact {
+    symbol "m37.contact.symbol"
+    at (0, 0)
+  }
+  anchor input at (0, 10) role input signal Control
+  anchor output at (52, 10) role output signal Control
+}

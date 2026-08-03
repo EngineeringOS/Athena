@@ -96,7 +96,8 @@ class RouteIntentLowerer {
                 targetPortReference = connection.to.toEngineeringReference(),
                 constraints = (nonBundleConstraints + bundleConstraint)
                     .sortedBy(::routeConstraintSortKey),
-                compatibilityEvidence = compatibilityEvidence.sortedBy(::routeCompatibilityEvidenceSortKey),
+                compatibilityEvidence = compatibilityEvidence
+                    .sortedBy(::routeCompatibilityEvidenceSortKey),
                 provenance = connection.provenance,
             )
         }

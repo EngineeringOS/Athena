@@ -184,7 +184,6 @@ class BindingResolverSelectionTest {
         val result = BindingResolver().resolve(baseRequest(activeProfile = profile("iec")))
 
         assertTrue(result.isValid)
-        assertFalse(result.rendererFallbackAccepted)
         val resolution = assertNotNull(result.resolution)
         assertEquals("device:DriveA", resolution.semanticSubjectId)
         assertEquals("com.athena.example.engineering.drive.compact-vfd", resolution.engineeringPackageId.value)
@@ -300,7 +299,6 @@ class BindingResolverSelectionTest {
         )
 
         assertFalse(result.isValid)
-        assertFalse(result.rendererFallbackAccepted)
         assertEquals(null, result.resolution)
         assertEquals(
             listOf(

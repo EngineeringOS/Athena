@@ -26,9 +26,38 @@ class RepresentationDefinitionContractTest {
         assertEquals(listOf("line"), definition.anchors.map { it.anchorId.value })
         assertEquals(listOf("contact"), definition.intrinsicComposition?.children?.map { it.childId.value })
         assertEquals("packages/iec/switch.athena", definition.lifecycle.provenance.source)
-        assertEquals(RepresentationBodyAuthority.GRAPHIC_PRIMITIVE, definition.bodyAuthority)
         assertEquals(RepresentationVersion("1.0.0"), definition.version)
         assertEquals(listOf("device-tag"), definition.labelSlots.map { it.slotId.value })
+    }
+
+    @Test
+    fun `representation contract has no stale authority fork or semantic anchor fields`() {
+        val staleTopLevelTypes = listOf(
+            "Presentation" + "Anatomy",
+            "Presentation" + "Anatomy" + "Authority",
+            "Representation" + "Body" + "Authority",
+            "Representation" + "Fallback" + "Behavior",
+        )
+
+        staleTopLevelTypes.forEach { typeName ->
+            assertFailsWith<ClassNotFoundException>(typeName) {
+                Class.forName("com.engineeringood.athena.representation.$typeName")
+            }
+        }
+
+        val definitionParameterNames = RepresentationDefinition::class.java.declaredFields.map { it.name }.toSet()
+        val anchorParameterNames = RepresentationAnchorContract::class.java.declaredFields.map { it.name }.toSet()
+
+        val staleDefinitionFields = setOf("ana" + "tomy", "body" + "Authority")
+        val staleAnchorFields = setOf(
+            "accepted" + "Directions",
+            "accepted" + "Signals",
+            "terminal",
+            "port",
+        )
+
+        assertTrue(definitionParameterNames.intersect(staleDefinitionFields).isEmpty(), definitionParameterNames.toString())
+        assertTrue(anchorParameterNames.intersect(staleAnchorFields).isEmpty(), anchorParameterNames.toString())
     }
 
     @Test
@@ -54,7 +83,6 @@ class RepresentationDefinitionContractTest {
             listOf(RepresentationDefinitionKind.SYMBOL, RepresentationDefinitionKind.ELEMENT),
             listOf(symbol, element).map { it.definitionKind },
         )
-        assertTrue(listOf(symbol, element).all { it.anatomy.primitives.isEmpty() })
         assertTrue(listOf(symbol, element).all { it.graphicBody.primitives.isNotEmpty() })
     }
 
@@ -88,13 +116,6 @@ class RepresentationDefinitionContractTest {
         }
         assertFailsWith<IllegalArgumentException> {
             anchor("line").copy(point = GraphicPoint(8.0, Double.POSITIVE_INFINITY))
-        }
-    }
-
-    @Test
-    fun `canonical body authority rejects independently authored legacy primitives`() {
-        assertFailsWith<IllegalArgumentException> {
-            elementDefinition().copy(anatomy = legacyAnatomy())
         }
     }
 
@@ -200,7 +221,7 @@ class RepresentationDefinitionContractTest {
     fun `canonical terminal anchors are authoritative for occurrence validation`() {
         val definition = elementDefinition()
         val portId = SemanticPortId("SwitchS1.line")
-        val terminalId = PresentationTerminalId("line")
+        val anchorId = RepresentationAnchorId("line")
         val policy = RepresentationPolicy(
             policyId = RepresentationPolicyId("policy:switch"),
             projectionKind = RepresentationProjectionKind.ELECTRICAL_SCHEMATIC,
@@ -209,7 +230,6 @@ class RepresentationDefinitionContractTest {
             occurrenceRole = RepresentationOccurrenceRole.SWITCH_CONTACT,
             symbolFamilyId = SymbolFamilyId("iec.switch"),
             symbolId = definition.symbolId,
-            fallback = RepresentationFallbackBehavior.DIAGNOSTIC_ONLY,
             priority = RepresentationPolicyPriority(100),
         )
         val occurrence = RepresentationOccurrence(
@@ -218,7 +238,14 @@ class RepresentationDefinitionContractTest {
             projectionOccurrenceId = RepresentationProjectionOccurrenceId("cabinet:switch"),
             occurrenceRole = RepresentationOccurrenceRole.SWITCH_CONTACT,
             symbolId = definition.symbolId,
-            terminalBindings = listOf(RepresentationTerminalBinding(terminalId, portId)),
+            portAnchorBindings = listOf(
+                RepresentationPortAnchorBinding(
+                    bindingId = RepresentationPortAnchorBindingId("binding:SwitchS1.line:line"),
+                    semanticPortId = portId,
+                    anchorId = anchorId,
+                    provenance = RepresentationProvenance("source:switch.athena:4:5"),
+                ),
+            ),
         )
 
         val result = RepresentationContractValidator.validate(
@@ -227,7 +254,7 @@ class RepresentationDefinitionContractTest {
                 policies = listOf(policy),
                 definitions = listOf(definition),
                 occurrences = listOf(occurrence),
-                compatibleTerminalBindings = setOf(RepresentationCompatibleTerminalBinding(terminalId, portId)),
+                compatiblePortAnchorBindings = setOf(RepresentationCompatiblePortAnchorBinding(portId, anchorId)),
             ),
         )
 
@@ -271,14 +298,12 @@ class RepresentationDefinitionContractTest {
             provenance = RepresentationProvenance("packages/iec/switch.athena"),
         ),
         kind = RepresentationSymbolKind.SWITCH_CONTACT,
-        anatomy = compatibilityAnatomy(),
         labelSlots = listOf(
             RepresentationLabelSlot(
                 slotId = RepresentationLabelSlotId("device-tag"),
                 role = PresentationLabelRole.DEVICE_TAG,
             ),
         ),
-        bodyAuthority = RepresentationBodyAuthority.GRAPHIC_PRIMITIVE,
         definitionKind = RepresentationDefinitionKind.ELEMENT,
         graphicBody = graphicBody(),
         anchors = listOf(anchor("line")),
@@ -325,8 +350,6 @@ class RepresentationDefinitionContractTest {
         point = GraphicPoint(8.0, 24.0),
         role = RepresentationAnchorRole.TERMINAL,
         required = true,
-        acceptedDirections = setOf(RepresentationDirectionPredicate.IN),
-        acceptedSignals = setOf(RepresentationSignalPredicate("Power")),
     )
 
     private fun child(id: String): RepresentationCompositionChild = RepresentationCompositionChild(
@@ -336,24 +359,4 @@ class RepresentationDefinitionContractTest {
         transforms = emptyList(),
     )
 
-    private fun compatibilityAnatomy(): PresentationAnatomy = PresentationAnatomy(
-        representationId = RepresentationId("iec.switch.element"),
-        context = RepresentationContext.ELECTRICAL_SCHEMATIC,
-        bounds = PresentationBounds(GridUnit(80), GridUnit(48)),
-        hotspot = PresentationHotspot(PresentationPoint(GridUnit(0), GridUnit(0))),
-        primitives = emptyList(),
-        terminals = emptyList(),
-        labelAnchors = emptyList(),
-        authority = PresentationAnatomyAuthority.COMPATIBILITY_SHELL,
-    )
-
-    private fun legacyAnatomy(): PresentationAnatomy = compatibilityAnatomy().copy(
-        primitives = listOf(
-            PresentationPrimitive.Line(
-                primitiveId = PresentationPrimitiveId("legacy-body"),
-                start = PresentationPoint(GridUnit(8), GridUnit(24)),
-                end = PresentationPoint(GridUnit(72), GridUnit(24)),
-            ),
-        ),
-    )
 }

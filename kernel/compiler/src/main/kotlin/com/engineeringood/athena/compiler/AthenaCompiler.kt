@@ -32,8 +32,8 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticLinkedLowering
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticLayoutHintBinder
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticReferenceLinker
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
-import com.engineeringood.athena.connection.ConnectableEntityContractCompilation
-import com.engineeringood.athena.connection.ConnectableEntityContractCompiler
+import com.engineeringood.athena.connection.EngineeringConnectivityCompilation
+import com.engineeringood.athena.connection.EngineeringConnectivityContractCompiler
 import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.language.AthenaLanguageParser
 import com.engineeringood.athena.language.ParseFailure
@@ -101,7 +101,7 @@ class AthenaCompiler(
     private val projectSemanticReferenceLinker: ProjectSemanticReferenceLinker = ProjectSemanticReferenceLinker(),
     private val projectSemanticCapabilityProvenanceProjector: ProjectSemanticCapabilityProvenanceProjector =
         ProjectSemanticCapabilityProvenanceProjector(),
-    private val connectableEntityContractCompiler: ConnectableEntityContractCompiler = ConnectableEntityContractCompiler(),
+    private val engineeringConnectivityContractCompiler: EngineeringConnectivityContractCompiler = EngineeringConnectivityContractCompiler(),
 ) {
     /** Deterministic discovery report built before any compilation pass uses plugin inventory. */
     val pluginDiscoveryReport: AthenaPluginDiscoveryReport = hostedPluginDiscoveryReport ?: pluginDiscovery.discover()
@@ -188,7 +188,7 @@ class AthenaCompiler(
         capabilityFactPromoter = capabilityFactPromoter,
         constraintEvaluator = constraintEvaluator,
         domainSemanticsCoordinator = domainSemanticsCoordinator,
-        connectableEntityContractCompiler = connectableEntityContractCompiler,
+        engineeringConnectivityContractCompiler = engineeringConnectivityContractCompiler,
         supportedViewDefinitionsCache = supportedViewDefinitionsCache,
         supportedRenderContributionsCache = supportedRenderContributionsCache,
         supportedPrimitivePresentationPacksCache = supportedPrimitivePresentationPacksCache,
@@ -348,7 +348,7 @@ class AthenaCompiler(
         return projectSemanticDeclarationIndexer.index(snapshot)
     }
 
-    /** Binds M23 authored layout hint references against compiler-owned semantic declarations. */
+    /** Binds authored layout hint references against compiler-owned semantic declarations. */
     fun bindProjectSemanticLayoutHints(snapshot: ProjectSemanticGraphSnapshot): ProjectSemanticGraphSnapshot {
         return projectSemanticLayoutHintBinder.bind(snapshot)
     }
@@ -374,9 +374,9 @@ class AthenaCompiler(
         return ProjectSemanticLinkedLowerer(lowerer).lower(snapshot, documentsBySourceUnit)
     }
 
-    /** Derives M36's typed connectivity contract from canonical Engineering IR without adding a second semantic owner. */
-    fun compileConnectableEntities(document: EngineeringDocument): ConnectableEntityContractCompilation {
-        return connectableEntityContractCompiler.compile(document)
+    /** Derives the typed Engineering Connectivity Contract from canonical Engineering IR. */
+    fun compileEngineeringConnectivity(document: EngineeringDocument): EngineeringConnectivityCompilation {
+        return engineeringConnectivityContractCompiler.compile(document)
     }
 
     /** Derives all supported layouts from the supplied canonical [document]. */

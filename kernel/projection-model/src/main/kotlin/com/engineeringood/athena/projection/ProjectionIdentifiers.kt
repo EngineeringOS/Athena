@@ -23,17 +23,6 @@ value class ProjectionConnectionId(val value: String) {
 }
 
 /**
- * Projection-local identifier for one label in a derived projection document.
- *
- * The identifier is stable only within one projection view and remains secondary to canonical
- * semantic identity.
- */
-@JvmInline
-value class ProjectionLabelId(val value: String) {
-    override fun toString(): String = value
-}
-
-/**
  * Projection-local identifier for one governed sheet inside a derived projection document.
  *
  * Sheet identity is stable within one projection view and remains separate from canonical

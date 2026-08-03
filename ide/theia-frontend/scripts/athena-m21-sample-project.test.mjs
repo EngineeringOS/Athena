@@ -24,10 +24,10 @@ test('M21 sample project is an openable IDE proof with real Athena sources', () 
         `${sampleRoot}/README.md`,
         `${sampleRoot}/athena.yaml`,
         `${sampleRoot}/athena.lock`,
-        `${sampleRoot}/src/01-baseline-sheet.athena`,
-        `${sampleRoot}/src/02-layout-intelligence-acceptance.athena`,
-        `${sampleRoot}/src/03-routing-and-label-readability.athena`,
-        `${sampleRoot}/src/04-boundary-scope.athena`,
+        `${sampleRoot}/src/com/engineeringood/m21/sample/01-baseline-sheet.athena`,
+        `${sampleRoot}/src/com/engineeringood/m21/sample/02-layout-intelligence-acceptance.athena`,
+        `${sampleRoot}/src/com/engineeringood/m21/sample/03-routing-and-label-readability.athena`,
+        `${sampleRoot}/src/com/engineeringood/m21/sample/04-boundary-scope.athena`,
         'docs/usages/m21-proof-usage.md'
     ];
     expectedFiles.forEach(assertFile);
@@ -59,10 +59,10 @@ test('M21 sample project is an openable IDE proof with real Athena sources', () 
 
 test('M21 sample sources stay inside the accepted local Athena syntax', () => {
     const sources = [
-        'examples/m21/sample-project/src/01-baseline-sheet.athena',
-        'examples/m21/sample-project/src/02-layout-intelligence-acceptance.athena',
-        'examples/m21/sample-project/src/03-routing-and-label-readability.athena',
-        'examples/m21/sample-project/src/04-boundary-scope.athena'
+        'examples/m21/sample-project/src/com/engineeringood/m21/sample/01-baseline-sheet.athena',
+        'examples/m21/sample-project/src/com/engineeringood/m21/sample/02-layout-intelligence-acceptance.athena',
+        'examples/m21/sample-project/src/com/engineeringood/m21/sample/03-routing-and-label-readability.athena',
+        'examples/m21/sample-project/src/com/engineeringood/m21/sample/04-boundary-scope.athena'
     ];
 
     sources.forEach(sourcePath => {
@@ -71,14 +71,14 @@ test('M21 sample sources stay inside the accepted local Athena syntax', () => {
         assert.match(source, /\bsystem\s+\w+\s+\{/);
         assert.match(source, /\bdevice\s+\w+\s+\{/);
         assert.match(source, /\bport\s+\w+\.\w+\s+\{/);
-        assert.match(source, /\bconnect\s+\w+\s+\w+\.\w+\s+->\s+\w+\.\w+/);
+        assert.match(source, /\bconnect\s+\w+\s+\w+\.\w+\s+to\s+\w+\.\w+/);
         assert.doesNotMatch(source, /\bimport\b/);
         assert.doesNotMatch(source, /\bregistry\b|\bmarketplace\b|\bcabinet\b|\bharness\b|\bcable tray\b|\b3D installation\b/i);
     });
 });
 
 test('M21 routing sample preserves source endpoint identity vocabulary', () => {
-    const routingSource = readRepoFile('examples/m21/sample-project/src/03-routing-and-label-readability.athena');
+    const routingSource = readRepoFile('examples/m21/sample-project/src/com/engineeringood/m21/sample/03-routing-and-label-readability.athena');
     const expectedIdentities = [
         'RouteSensorS1',
         'RoutePLC1',
@@ -91,7 +91,7 @@ test('M21 routing sample preserves source endpoint identity vocabulary', () => {
     expectedIdentities.forEach(identity => {
         assert.match(routingSource, new RegExp(`\\b${identity}\\b`));
     });
-    assert.match(routingSource, /connect\s+\w+\s+RouteSensorS1\.out -> RoutePLC1\.input/);
-    assert.match(routingSource, /connect\s+\w+\s+RoutePLC1\.output -> RouteTerminalXT2\.in/);
-    assert.match(routingSource, /connect\s+\w+\s+RouteTerminalXT2\.out -> RouteActuatorY1\.in/);
+    assert.match(routingSource, /connect\s+\w+\s+RouteSensorS1\.out to RoutePLC1\.input/);
+    assert.match(routingSource, /connect\s+\w+\s+RoutePLC1\.output to RouteTerminalXT2\.in/);
+    assert.match(routingSource, /connect\s+\w+\s+RouteTerminalXT2\.out to RouteActuatorY1\.in/);
 });

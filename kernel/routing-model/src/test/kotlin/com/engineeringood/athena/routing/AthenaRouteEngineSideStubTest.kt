@@ -1,4 +1,4 @@
-package com.engineeringood.athena.routing
+﻿package com.engineeringood.athena.routing
 
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutOccurrenceId
@@ -88,7 +88,7 @@ class AthenaRouteEngineSideStubTest {
             requests = listOf(
                 AthenaRouteRequest(
                     routeId = SchematicRouteId("route:${sourceAnchor.portId.value}->${targetAnchor.portId.value}"),
-                    connectionIntent = ElectricalConnectionIntent(
+                    connectionRoleFact = ElectricalConnectionRoleFact(
                         connectionId = connectionId,
                         sourceSubjectId = sourceAnchor.subjectId,
                         sourcePortId = sourceAnchor.portId,
