@@ -177,30 +177,12 @@ data class ProjectionSheetViewComposition(
     val subjectSemanticIds: List<String> = emptyList(),
 )
 
-/**
- * Sheet grid reference system owned by Projection (M40).
- *
- * The grid names rows and columns so placements can be referenced as cells (e.g., A1/B3). It
- * carries no coordinates; coordinate mapping is Spatial-owned.
- */
+/** Coordinate-free row and column counts for one Projection Sheet grid. */
 data class ProjectionSheetGrid(
     val gridId: String,
     val rows: Int,
     val columns: Int,
-) {
-    /**
-     * Deterministic cell references: row letters (A, B, C, ...) times column numbers (1..N).
-     * Example: rows=3, columns=4 -> A1..D3.
-     */
-    fun cellReferences(): List<String> = buildList {
-        for (row in 0 until rows) {
-            val rowLetter = ('A'.code + row).toChar().toString()
-            for (column in 1..columns) {
-                add("$rowLetter$column")
-            }
-        }
-    }
-}
+)
 
 /**
  * Authored functional region on a projection sheet (M40).

@@ -35,6 +35,11 @@ function translateProjectionSessionToGLSPDiagram(projection) {
         presentation: readyProjection?.presentation
             ? normalizePresentationDocument(readyProjection.presentation)
             : undefined,
+        projectionRegionIds: [...normalizeArray(readyProjection?.projectionRegionIds)],
+        projectionConstructIds: [...normalizeArray(readyProjection?.projectionConstructIds)],
+        spatialFacts: readyProjection?.spatialFacts
+            ? normalizeSpatialFacts(readyProjection.spatialFacts)
+            : undefined,
         sheets: normalizeArray(readyProjection?.sheets).map(sheet => {
             const { policyEvidence: rawPolicyEvidence, ...sheetWithoutPolicyEvidence } = sheet;
             const policyEvidence = normalizeSheetPolicyEvidence(rawPolicyEvidence);
@@ -71,6 +76,25 @@ function translateProjectionSessionToGLSPDiagram(projection) {
             electricalConnectionEndpoints,
             electricalRoutingCorridors,
         }),
+    };
+}
+function normalizeSpatialFacts(facts) {
+    return {
+        viewId: facts.viewId,
+        ...(facts.activeSheetId ? { activeSheetId: facts.activeSheetId } : {}),
+        sheets: normalizeArray(facts.sheets).map(sheet => ({
+            ...sheet,
+            extent: { ...sheet.extent },
+            drawingArea: { ...sheet.drawingArea },
+            occurrences: normalizeArray(sheet.occurrences).map(item => ({ ...item, bounds: { ...item.bounds } })),
+            regions: normalizeArray(sheet.regions).map(item => ({ ...item, bounds: { ...item.bounds }, memberOccurrenceIds: [...normalizeArray(item.memberOccurrenceIds)] })),
+            constructs: normalizeArray(sheet.constructs).map(item => ({ ...item, bounds: { ...item.bounds }, memberOccurrenceIds: [...normalizeArray(item.memberOccurrenceIds)] })),
+            anchors: normalizeArray(sheet.anchors).map(item => ({ ...item, point: { ...item.point } })),
+            routes: normalizeArray(sheet.routes).map(item => ({ ...item, points: normalizeArray(item.points).map(point => ({ ...point })) })),
+            lanes: normalizeArray(sheet.lanes).map(item => ({ ...item, routeIds: [...normalizeArray(item.routeIds)] })),
+            gridReferences: normalizeArray(sheet.gridReferences).map(item => ({ ...item })),
+            quality: { ...sheet.quality },
+        })),
     };
 }
 function normalizeSheetPolicyEvidence(policyEvidence) {

@@ -19,6 +19,8 @@ const EXPECTED_PRODUCT_SURFACE_ID = process.env.ATHENA_ELECTRON_SMOKE_EXPECTED_P
 const EXPECTED_PRODUCT_SURFACE_LABEL = process.env.ATHENA_ELECTRON_SMOKE_EXPECTED_PRODUCT_SURFACE_LABEL || 'Cabinet';
 const EXPECTED_BACKING_VIEW_ID = process.env.ATHENA_ELECTRON_SMOKE_EXPECTED_BACKING_VIEW_ID || REQUESTED_ACTIVE_VIEW || 'cabinet';
 const GRAPH_VIEW_SCREENSHOT_PATH = process.env.ATHENA_ELECTRON_GRAPH_VIEW_SCREENSHOT || '';
+const PIXEL_PROOF_MODE = process.env.ATHENA_ELECTRON_PIXEL_PROOF_MODE || '';
+const BODY_ROUTE_PIXEL_CLASSIFICATION = 'isolated-rendered-component-bodies-and-routes';
 const SMOKE_WINDOW_WIDTH = positiveIntegerFromEnv('ATHENA_ELECTRON_SMOKE_WINDOW_WIDTH', 1920);
 const SMOKE_WINDOW_HEIGHT = positiveIntegerFromEnv('ATHENA_ELECTRON_SMOKE_WINDOW_HEIGHT', 1080);
 const CAPTURE_CREATE_ENTITY_PANEL = process.env.ATHENA_ELECTRON_SMOKE_CAPTURE_CREATE_ENTITY_PANEL === '1';
@@ -31,6 +33,10 @@ const SMOKE_OUTLINE_SOURCE_RELATIVE = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_
     || 'src/01-interaction-authoring-source.athena';
 const SMOKE_OUTLINE_EXPECTED_PATH = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_EXPECTED_PATH
     || 'InteractionAuthoringProof > OperatorHMI1 > status';
+
+if (app && PIXEL_PROOF_MODE === 'body-routes') {
+    app.commandLine.appendSwitch('force-device-scale-factor', '1');
+}
 
 const targetWorkspace = process.argv[2] ? path.resolve(process.cwd(), process.argv[2]) : undefined;
 if (app && process.env.ATHENA_ELECTRON_TEMP_USER_DATA === '1') {
@@ -48,7 +54,7 @@ function main() {
     app.on('browser-window-created', (_event, window) => {
         console.log(ATHENA_WINDOW_CREATED_SENTINEL);
         if (SHOULD_EXIT_ON_WORKSPACE_OPEN) {
-            window.setSize(SMOKE_WINDOW_WIDTH, SMOKE_WINDOW_HEIGHT, false);
+            window.setContentSize(SMOKE_WINDOW_WIDTH, SMOKE_WINDOW_HEIGHT, false);
             window.center();
         }
         window.webContents.once('did-finish-load', () => {
@@ -410,6 +416,7 @@ async function openWorkspace(window) {
                     drawingLayerProof: collectDrawingLayerProof(),
                     densityProof: collectDensityProof(referenceMarkerButtons),
                     routeProof: collectRouteProof(),
+                    widgetDiagramProof: lastCabinetRenderProofReadiness.widgetDiagramProof,
                     representationProof: collectRepresentationProof(),
                     visualProof: collectVisualProof(),
                     editorSyntaxColorProof: await collectWithSmokeStep('editor-syntax-color-proof', () => collectEditorSyntaxColorProof(target)),
@@ -1258,6 +1265,7 @@ async function openWorkspace(window) {
                 const viewportRect = roundedClientRect(document.querySelector('.athena-graph-workbench__viewport'));
                 const sheetRect = roundedClientRect(document.querySelector('.athena-graph-workbench__sheet'));
                 const canvasRect = roundedClientRect(canvas);
+                const drawingAreaRect = roundedClientRect(document.querySelector('.athena-graph-workbench__drawing-drawing-area'));
                 const bottomDockRect = roundedClientRect(document.querySelector('.athena-graph-workbench__bottom-dock'));
                 const usableViewportRect = {
                     ...viewportRect,
@@ -1297,6 +1305,7 @@ async function openWorkspace(window) {
                     sheetCenterDeltaY: Math.round(Math.abs(((sheetRect.top + sheetRect.bottom) / 2) - ((usableViewportRect.top + usableViewportRect.bottom) / 2))),
                     canvasWidth: canvasRect.width,
                     canvasHeight: canvasRect.height,
+                    drawingAreaScreenRect: drawingAreaRect,
                     svgViewBox,
                     viewBoxMinX: Number.isFinite(viewBoxParts[0]) ? viewBoxParts[0] : 0,
                     viewBoxMinY: Number.isFinite(viewBoxParts[1]) ? viewBoxParts[1] : 0,
@@ -1480,7 +1489,10 @@ async function openWorkspace(window) {
         })();
     `, true);
 
-    await captureGraphWorkbenchScreenshot(window);
+    const screenshotProof = await captureGraphWorkbenchScreenshot(window);
+    if (screenshotProof) {
+        proof.graphWorkbench.pixelProof = screenshotProof.pixelProof;
+    }
     console.log(`${ATHENA_GRAPH_WORKBENCH_PROOF_SENTINEL}${JSON.stringify(proof.graphWorkbench)}`);
     console.log(`${ATHENA_WORKSPACE_OPENED_SENTINEL}${proof.workspace}`);
     if (SHOULD_EXIT_ON_WORKSPACE_OPEN) {
@@ -1600,20 +1612,47 @@ async function captureGraphWorkbenchScreenshot(window) {
                 throw new Error(error.message + ': ' + JSON.stringify(lastReadinessState));
             });
             await new Promise(resolve => setTimeout(resolve, 50));
-            const rect = document.querySelector('.athena-graph-workbench').getBoundingClientRect();
+            const drawingAreaElement = document.querySelector('.athena-graph-workbench__drawing-drawing-area');
+            const drawingArea = drawingAreaElement?.getBoundingClientRect();
+            const canvasRect = document.querySelector('.athena-graph-workbench__canvas')?.getBoundingClientRect();
+            const sheetRect = document.querySelector('.athena-graph-workbench__sheet')?.getBoundingClientRect();
+            const renderedGeometry = (${renderedGeometrySnapshot.toString()})();
             return {
-                x: Math.max(0, Math.round(rect.left)),
-                y: Math.max(0, Math.round(rect.top)),
-                width: Math.max(1, Math.round(rect.width)),
-                height: Math.max(1, Math.round(rect.height))
+                x: 0,
+                y: 0,
+                width: Math.max(1, Math.round(window.innerWidth)),
+                height: Math.max(1, Math.round(window.innerHeight)),
+                drawingAreaRect: drawingArea ? {
+                    left: Math.round(drawingArea.left),
+                    top: Math.round(drawingArea.top),
+                    right: Math.round(drawingArea.right),
+                    bottom: Math.round(drawingArea.bottom)
+                } : null,
+                pixelGeometry: {
+                    devicePixelRatio: window.devicePixelRatio,
+                    viewportWidth: Math.round(window.innerWidth),
+                    viewportHeight: Math.round(window.innerHeight),
+                    drawingAreaAttributes: drawingAreaElement ? {
+                        x: drawingAreaElement.getAttribute('x'),
+                        y: drawingAreaElement.getAttribute('y'),
+                        width: drawingAreaElement.getAttribute('width'),
+                        height: drawingAreaElement.getAttribute('height')
+                    } : null,
+                    canvasRect: canvasRect ? { left: Math.round(canvasRect.left), top: Math.round(canvasRect.top), right: Math.round(canvasRect.right), bottom: Math.round(canvasRect.bottom) } : null,
+                    sheetRect: sheetRect ? { left: Math.round(sheetRect.left), top: Math.round(sheetRect.top), right: Math.round(sheetRect.right), bottom: Math.round(sheetRect.bottom) } : null,
+                    drawingAreaClipped: !drawingArea || drawingArea.left < 0 || drawingArea.top < 0 || drawingArea.right > window.innerWidth || drawingArea.bottom > window.innerHeight,
+                    ...renderedGeometry,
+                    renderStateBefore: renderedGeometry.renderState
+                }
             };
         })();
     `, true), 45000, 'Timed out resolving graph workbench screenshot capture bounds.');
     fs.mkdirSync(path.dirname(GRAPH_VIEW_SCREENSHOT_PATH), { recursive: true });
     console.log('ATHENA_SMOKE_STEP=graph-workbench-screenshot-capture');
-    const png = await captureGraphWorkbenchPng(window, captureRect);
-    fs.writeFileSync(GRAPH_VIEW_SCREENSHOT_PATH, png);
+    const capture = await captureGraphWorkbenchPng(window, captureRect);
+    fs.writeFileSync(GRAPH_VIEW_SCREENSHOT_PATH, capture.png);
     console.log(`${ATHENA_GRAPH_WORKBENCH_SCREENSHOT_SENTINEL}${GRAPH_VIEW_SCREENSHOT_PATH}`);
+    return capture;
 }
 
 async function captureGraphWorkbenchPng(window, captureRect) {
@@ -1623,8 +1662,26 @@ async function captureGraphWorkbenchPng(window, captureRect) {
             20000,
             'Timed out capturing graph workbench screenshot.',
         );
-        return image.toPNG();
-    } catch (_error) {
+        const bodyRouteImage = PIXEL_PROOF_MODE === 'body-routes'
+            ? await captureIsolatedBodyRouteImage(window, captureRect)
+            : image;
+        const renderStateAfter = await collectRenderedGeometryState(window);
+        const png = image.toPNG();
+        const pixelProof = collectPixelProof(bodyRouteImage, captureRect, {
+            classification: PIXEL_PROOF_MODE === 'body-routes'
+                ? BODY_ROUTE_PIXEL_CLASSIFICATION
+                : 'all-non-background-pixels',
+            maskApplied: PIXEL_PROOF_MODE === 'body-routes',
+        });
+        if (pixelProof.geometry) pixelProof.geometry.renderStateAfter = renderStateAfter;
+        return {
+            png,
+            pixelProof,
+        };
+    } catch (error) {
+        if (PIXEL_PROOF_MODE === 'body-routes') {
+            throw new Error(`Native component-body/Route pixel capture failed: ${error.stack || String(error)}`);
+        }
         const dataUrl = await withTimeout(window.webContents.executeJavaScript(`
             (async () => {
                 const canvasSvg = document.querySelector('.athena-graph-workbench__canvas');
@@ -1690,8 +1747,263 @@ async function captureGraphWorkbenchPng(window, captureRect) {
         if (!base64) {
             throw new Error('Graph workbench SVG screenshot export did not return a PNG data URL.');
         }
-        return Buffer.from(base64, 'base64');
+        return {
+            png: Buffer.from(base64, 'base64'),
+            pixelProof: {
+                available: false,
+                reason: 'Electron native bitmap capture unavailable; fallback SVG export cannot prove rendered pixels.',
+                classification: 'unavailable',
+                maskApplied: false,
+                drawingAreaBounds: captureRect.drawingAreaRect,
+                horizontalBuckets: [0, 0, 0],
+                verticalBuckets: [0, 0, 0],
+                occupiedWidthRatio: 0,
+                occupiedHeightRatio: 0,
+            },
+        };
     }
+}
+
+async function captureIsolatedBodyRouteImage(window, captureRect) {
+    const styleId = 'athena-body-route-pixel-proof-mask';
+    const isolationCss = `
+        body * {
+            visibility: hidden !important;
+        }
+        .athena-graph-workbench__stage,
+        .athena-graph-workbench__sheet {
+            background-image: none !important;
+        }
+        .athena-graph-workbench__canvas * {
+            visibility: hidden !important;
+        }
+        .athena-graph-workbench__canvas [data-athena-pixel-proof-visible="true"] {
+            visibility: visible !important;
+        }
+        .athena-graph-workbench__canvas [data-athena-semantic-id^="component:"] text,
+        .athena-graph-workbench__canvas [data-athena-semantic-id^="component:"] [class*="label"],
+        .athena-graph-workbench__canvas .athena-graph-workbench__edge-label {
+            visibility: hidden !important;
+        }
+    `;
+    await withTimeout(window.webContents.executeJavaScript(`
+        (async () => {
+            document.getElementById(${JSON.stringify(styleId)})?.remove();
+            const isNormallyRenderedTarget = ${isNormallyRenderedTargetSnapshot.toString()};
+            const candidates = Array.from(document.querySelectorAll(
+                '.athena-graph-workbench__canvas [data-athena-semantic-id^="component:"], ' +
+                '.athena-graph-workbench__canvas [data-athena-semantic-id^="component:"] *, ' +
+                '.athena-graph-workbench__canvas [data-athena-route-fact="true"]'
+            ));
+            for (const element of candidates) {
+                element.removeAttribute('data-athena-pixel-proof-visible');
+                const style = window.getComputedStyle(element);
+                const bounds = element.getBoundingClientRect();
+                if (isNormallyRenderedTarget({ display: style.display, visibility: style.visibility, opacity: style.opacity, width: bounds.width, height: bounds.height })) {
+                    element.setAttribute('data-athena-pixel-proof-visible', 'true');
+                }
+            }
+            const style = document.createElement('style');
+            style.id = ${JSON.stringify(styleId)};
+            style.textContent = ${JSON.stringify(isolationCss)};
+            document.head.appendChild(style);
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            return true;
+        })();
+    `, true), 10000, 'Timed out applying component-body/Route pixel isolation mask.');
+    try {
+        return await withTimeout(
+            window.webContents.capturePage(captureRect),
+            20000,
+            'Timed out capturing isolated component-body/Route pixels.',
+        );
+    } finally {
+        await withTimeout(window.webContents.executeJavaScript(`
+            (async () => {
+                document.getElementById(${JSON.stringify(styleId)})?.remove();
+                document.querySelectorAll('[data-athena-pixel-proof-visible]').forEach(element => {
+                    element.removeAttribute('data-athena-pixel-proof-visible');
+                });
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                return true;
+            })();
+        `, true), 10000, 'Timed out removing component-body/Route pixel isolation mask.');
+    }
+}
+
+function collectPixelProof(image, captureRect, classification) {
+    const bitmap = image.getBitmap();
+    const size = image.getSize();
+    const drawingArea = captureRect.drawingAreaRect;
+    if (!drawingArea || !size.width || !size.height) {
+        return { available: false, reason: 'Drawing Area screen bounds unavailable.' };
+    }
+    const area = scaleScreenRectToBitmap(drawingArea, captureRect, size);
+    if (area.right <= area.left || area.bottom <= area.top) {
+        return { available: false, reason: 'Drawing Area screen bounds are empty.', drawingAreaBounds: area };
+    }
+    const governedArea = { ...area };
+    const inset = Math.min(4, Math.floor(Math.min(area.right - area.left, area.bottom - area.top) / 10));
+    area.left += inset;
+    area.top += inset;
+    area.right -= inset;
+    area.bottom -= inset;
+    const background = dominantPixel(bitmap, size.width, area);
+    const horizontalBuckets = [0, 0, 0];
+    const verticalBuckets = [0, 0, 0];
+    let occupied = 0;
+    for (let y = area.top; y < area.bottom; y += 1) {
+        for (let x = area.left; x < area.right; x += 1) {
+            if (!isBodyPixel(pixelAt(bitmap, size.width, x, y), background)) continue;
+            occupied += 1;
+            horizontalBuckets[Math.min(2, Math.floor(((x - area.left) * 3) / Math.max(1, area.right - area.left)))] += 1;
+            verticalBuckets[Math.min(2, Math.floor(((y - area.top) * 3) / Math.max(1, area.bottom - area.top)))] += 1;
+        }
+    }
+    const widthRatio = occupiedSpanRatio(bitmap, size.width, area, background, true);
+    const heightRatio = occupiedSpanRatio(bitmap, size.width, area, background, false);
+    return {
+        available: true,
+        classification: classification.classification,
+        maskApplied: classification.maskApplied,
+        geometry: {
+            ...captureRect.pixelGeometry,
+            bitmapSize: { width: size.width, height: size.height },
+        },
+        drawingAreaBounds: governedArea,
+        sampleBounds: area,
+        horizontalBuckets,
+        verticalBuckets,
+        occupiedPixelCount: occupied,
+        renderedComponentSemanticIds: captureRect.pixelGeometry.renderedComponentSemanticIds,
+        renderedRouteIds: captureRect.pixelGeometry.renderedRouteIds,
+        renderedComponents: captureRect.pixelGeometry.renderedComponents,
+        renderedRoutes: captureRect.pixelGeometry.renderedRoutes,
+        occupiedWidthRatio: widthRatio,
+        occupiedHeightRatio: heightRatio,
+        background,
+    };
+}
+
+function isNormallyRenderedTargetSnapshot(snapshot) {
+    return snapshot?.display !== 'none'
+        && snapshot?.visibility !== 'hidden'
+        && snapshot?.visibility !== 'collapse'
+        && Number(snapshot?.opacity) > 0
+        && (Number(snapshot?.width) > 0 || Number(snapshot?.height) > 0);
+}
+
+function renderedGeometrySnapshot() {
+    const visible = element => {
+        const style = window.getComputedStyle(element);
+        const bounds = element.getBoundingClientRect();
+        return style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && style.visibility !== 'collapse'
+            && Number(style.opacity) > 0
+            && (bounds.width > 0 || bounds.height > 0);
+    };
+    const renderedComponents = Array.from(document.querySelectorAll('[data-athena-semantic-id^="component:"]'))
+        .filter(visible)
+        .map(element => {
+            const hitbox = element.querySelector('.athena-graph-workbench__node-hitbox');
+            return {
+                semanticId: element.getAttribute('data-athena-semantic-id') || '',
+                bounds: hitbox ? {
+                    x: Number(hitbox.getAttribute('x')),
+                    y: Number(hitbox.getAttribute('y')),
+                    width: Number(hitbox.getAttribute('width')),
+                    height: Number(hitbox.getAttribute('height'))
+                } : null
+            };
+        });
+    const renderedRoutes = Array.from(document.querySelectorAll('[data-athena-route-fact="true"]'))
+        .filter(visible)
+        .map(element => ({
+            routeId: element.getAttribute('data-athena-route-id') || '',
+            points: (element.getAttribute('data-athena-route-points') || '').split(';').filter(Boolean).map(value => {
+                const [x, y] = value.split(',').map(Number);
+                return { x, y };
+            })
+        }));
+    const renderedComponentSemanticIds = renderedComponents.map(component => component.semanticId);
+    const renderedRouteIds = renderedRoutes.map(route => route.routeId);
+    return {
+        renderedComponents,
+        renderedRoutes,
+        renderedComponentSemanticIds,
+        renderedRouteIds,
+        renderState: JSON.stringify({ renderedComponents, renderedRoutes })
+    };
+}
+
+async function collectRenderedGeometryState(window) {
+    return withTimeout(window.webContents.executeJavaScript(
+        `(${renderedGeometrySnapshot.toString()})().renderState`,
+        true,
+    ), 10000, 'Timed out collecting post-capture rendered geometry state.');
+}
+
+function scaleScreenRectToBitmap(screenRect, captureRect, bitmapSize) {
+    const scaleX = bitmapSize.width / Math.max(1, captureRect.width);
+    const scaleY = bitmapSize.height / Math.max(1, captureRect.height);
+    return {
+        left: Math.max(0, Math.round((screenRect.left - captureRect.x) * scaleX)),
+        top: Math.max(0, Math.round((screenRect.top - captureRect.y) * scaleY)),
+        right: Math.min(bitmapSize.width, Math.round((screenRect.right - captureRect.x) * scaleX)),
+        bottom: Math.min(bitmapSize.height, Math.round((screenRect.bottom - captureRect.y) * scaleY)),
+    };
+}
+
+function dominantPixel(bitmap, width, area) {
+    const buckets = new Map();
+    for (let y = area.top; y < area.bottom; y += 2) {
+        for (let x = area.left; x < area.right; x += 2) {
+            const pixel = pixelAt(bitmap, width, x, y);
+            const key = [pixel.r, pixel.g, pixel.b, pixel.a].map(value => Math.floor(value / 16)).join(':');
+            const existing = buckets.get(key);
+            if (existing) {
+                existing.count += 1;
+            } else {
+                buckets.set(key, { count: 1, pixel });
+            }
+        }
+    }
+    let dominant = { count: 0, pixel: { r: 255, g: 255, b: 255, a: 255 } };
+    for (const candidate of buckets.values()) {
+        if (candidate.count > dominant.count) dominant = candidate;
+    }
+    return dominant.pixel;
+}
+
+function pixelAt(bitmap, width, x, y) {
+    const offset = (y * width + x) * 4;
+    return { b: bitmap[offset], g: bitmap[offset + 1], r: bitmap[offset + 2], a: bitmap[offset + 3] };
+}
+
+function isBodyPixel(pixel, background) {
+    return pixel.a > 16 && Math.abs(pixel.r - background.r) + Math.abs(pixel.g - background.g) + Math.abs(pixel.b - background.b) > 30;
+}
+
+function occupiedSpanRatio(bitmap, width, area, background, horizontal) {
+    let first = horizontal ? area.right : area.bottom;
+    let last = horizontal ? area.left : area.top;
+    const outerStart = horizontal ? area.left : area.top;
+    const outerEnd = horizontal ? area.right : area.bottom;
+    const innerStart = horizontal ? area.top : area.left;
+    const innerEnd = horizontal ? area.bottom : area.right;
+    for (let outer = outerStart; outer < outerEnd; outer += 1) {
+        for (let inner = innerStart; inner < innerEnd; inner += 1) {
+            const x = horizontal ? outer : inner;
+            const y = horizontal ? inner : outer;
+            if (isBodyPixel(pixelAt(bitmap, width, x, y), background)) {
+                first = Math.min(first, outer);
+                last = Math.max(last, outer);
+                break;
+            }
+        }
+    }
+    return last >= first ? (last - first + 1) / Math.max(1, outerEnd - outerStart) : 0;
 }
 
 function withTimeout(promise, timeoutMs, message) {
@@ -1744,6 +2056,8 @@ function isBlockingScreenshotSpinner(spinnerState, captureRect) {
 
 module.exports = {
     isBlockingScreenshotSpinner,
+    isNormallyRenderedTargetSnapshot,
+    scaleScreenRectToBitmap,
 };
 
 function resolveRequestedActiveView() {

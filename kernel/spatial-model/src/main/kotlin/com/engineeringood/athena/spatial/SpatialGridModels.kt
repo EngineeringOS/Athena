@@ -76,14 +76,35 @@ data class SpatialGridReference(
             "Spatial Grid Reference subject must belong to its owning Sheet."
         }
         require(gridId.isNotBlank()) { "Spatial Grid Reference grid identity must not be blank." }
-        require(rowIndex >= 0) { "Spatial Grid Reference row index must not be negative." }
-        require(rowLabel.isNotBlank()) { "Spatial Grid Reference row label must not be blank." }
-        require(columnIndex >= 0) { "Spatial Grid Reference column index must not be negative." }
-        require(columnNumber == columnIndex + 1) {
+        require(rowIndex in 0 until SpatialGridDefinition.MAX_SUPPORTED_ROWS) {
+            "Spatial Grid Reference row index must be between 0 and " +
+                "${SpatialGridDefinition.MAX_SUPPORTED_ROWS - 1}."
+        }
+        require(rowLabel == spatialGridRowLabel(rowIndex)) {
+            "Spatial Grid Reference row label must match its zero-based row index."
+        }
+        require(columnIndex in 0 until Int.MAX_VALUE) {
+            "Spatial Grid Reference column index must be between 0 and ${Int.MAX_VALUE - 1}."
+        }
+        require(columnNumber > 0 && columnNumber.toLong() == columnIndex.toLong() + 1L) {
             "Spatial Grid Reference column number must be one-based."
         }
         require(cellReference == "$rowLabel$columnNumber") {
             "Spatial Grid Reference cell must use row label followed by column number."
         }
     }
+}
+
+fun spatialGridRowLabel(rowIndex: Int): String {
+    require(rowIndex in 0 until SpatialGridDefinition.MAX_SUPPORTED_ROWS) {
+        "Spatial grid row index must be between 0 and ${SpatialGridDefinition.MAX_SUPPORTED_ROWS - 1}."
+    }
+    var remaining = rowIndex.toLong() + 1L
+    return buildString {
+        while (remaining > 0L) {
+            val digit = ((remaining - 1L) % 26L).toInt()
+            append(('A'.code + digit).toChar())
+            remaining = (remaining - 1L) / 26L
+        }
+    }.reversed()
 }

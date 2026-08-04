@@ -27,6 +27,7 @@ class AuthoredProjectionTransformationTest {
             system Demo {
               device Supply { port L1 { direction out signal Power role line } }
               device Breaker { port line { direction in signal Power role line } }
+              connect feed Supply.L1 to Breaker.line
               view schematic {
                 sheet S1
                 region "Power" { occurrences [Supply, Breaker] }
@@ -43,8 +44,16 @@ class AuthoredProjectionTransformationTest {
         assertEquals(first.output, second.output)
         assertEquals("schematic", first.output.view.id)
         assertEquals(listOf("Supply", "Breaker"), first.output.nodes.map { node -> node.label })
-        assertTrue(first.output.sheets.single().subjects.all { subject -> subject.nodeIds.size == 1 })
-        assertEquals(listOf("component:Supply", "component:Breaker"), first.output.sheets.single().subjects.map { it.semanticId.value })
+        assertEquals(
+            listOf("port:Supply.L1", "port:Breaker.line"),
+            first.output.occurrencePorts.map { port -> port.occurrencePortId.portId.value },
+        )
+        val connection = first.output.connections.single()
+        assertEquals("port:Supply.L1", connection.source?.occurrencePortId?.portId?.value)
+        assertEquals("port:Breaker.line", connection.target?.occurrencePortId?.portId?.value)
+        val subjectIds = first.output.sheets.single().subjects.map { it.semanticId.value }
+        assertEquals(listOf("component:Supply", "component:Breaker"), subjectIds.take(2))
+        assertTrue(subjectIds.single { subjectId -> subjectId.startsWith("connection:") }.endsWith(":feed"))
         assertEquals(listOf("power-rail"), first.output.sheets.single().constructs.map { it.kind })
     }
 

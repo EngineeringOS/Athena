@@ -58,7 +58,41 @@ export type AthenaGLSPReadyProjectionSource = {
     components: AthenaGLSPComponentSource[];
     connections: AthenaGLSPConnectionSource[];
     labels: AthenaGLSPLabelSource[];
+    projectionRegionIds?: string[];
+    projectionConstructIds?: string[];
+    spatialFacts?: AthenaGLSPSpatialFactsSource;
 };
+
+export type AthenaGLSPSpatialFactsSource = {
+    viewId: string;
+    activeSheetId?: string;
+    sheets: AthenaGLSPSpatialSheetFactsSource[];
+};
+
+export type AthenaGLSPSpatialSheetFactsSource = {
+    sheetId: string;
+    extent: AthenaGLSPRectSource;
+    drawingArea: AthenaGLSPRectSource;
+    occurrences: AthenaGLSPSpatialOccurrenceFactsSource[];
+    regions: AthenaGLSPSpatialRegionFactsSource[];
+    constructs: AthenaGLSPSpatialConstructFactsSource[];
+    anchors: AthenaGLSPSpatialAnchorFactsSource[];
+    routes: AthenaGLSPSpatialRouteFactsSource[];
+    lanes: AthenaGLSPSpatialLaneFactsSource[];
+    gridReferences: AthenaGLSPSpatialGridReferenceFactsSource[];
+    quality: AthenaGLSPSpatialQualityFactsSource;
+};
+
+export type AthenaGLSPRectSource = { x: number; y: number; width: number; height: number };
+export type AthenaGLSPSpatialPointSource = { x: number; y: number };
+export type AthenaGLSPSpatialOccurrenceFactsSource = { occurrenceId: string; semanticId: string; regionId: string; bounds: AthenaGLSPRectSource };
+export type AthenaGLSPSpatialRegionFactsSource = { regionId: string; bounds: AthenaGLSPRectSource; memberOccurrenceIds: string[] };
+export type AthenaGLSPSpatialConstructFactsSource = { constructId: string; kind: string; name?: string; bounds: AthenaGLSPRectSource; memberOccurrenceIds: string[] };
+export type AthenaGLSPSpatialAnchorFactsSource = { anchorId: string; occurrenceId: string; portSemanticId: string; side: string; point: AthenaGLSPSpatialPointSource };
+export type AthenaGLSPSpatialRouteFactsSource = { routeId: string; projectionConnectionId: string; connectionId: string; sourceAnchorId: string; targetAnchorId: string; laneId: string; points: AthenaGLSPSpatialPointSource[] };
+export type AthenaGLSPSpatialLaneFactsSource = { laneId: string; orientation: string; coordinate: number; routeIds: string[] };
+export type AthenaGLSPSpatialGridReferenceFactsSource = { gridReferenceId: string; subjectId: string; cellReference: string; rowLabel: string; columnNumber: number };
+export type AthenaGLSPSpatialQualityFactsSource = { occurrenceOverlapCount: number; constructContainmentFailureCount: number; routeBodyIntersectionCount: number; routeCrossingCount: number; twistCount: number; usedLaneCount: number; peakRoutesPerLane: number; density: number; occupancy: number };
 
 export type AthenaGLSPSheetSource = {
     sheetId: string;

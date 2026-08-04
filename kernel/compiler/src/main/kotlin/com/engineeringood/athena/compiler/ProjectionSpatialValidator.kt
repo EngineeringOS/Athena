@@ -15,8 +15,7 @@ internal class ProjectionSpatialValidator(
         val preflightDiagnostics = (
             duplicateSheetIdentityDiagnostics(sheets) +
                 duplicateProjectionIdentityDiagnostics(projection) +
-                regionIdentityDiagnostics(sheets) +
-                ambiguousConnectionEndpointDiagnostics(projection, sheets)
+                regionIdentityDiagnostics(sheets)
             ).canonical()
         if (preflightDiagnostics.isNotEmpty()) {
             return preflightDiagnostics
@@ -95,33 +94,6 @@ internal class ProjectionSpatialValidator(
         blank + duplicate + reserved
     }
 
-    private fun ambiguousConnectionEndpointDiagnostics(
-        projection: ProjectionDocument,
-        sheets: List<ProjectionSheet>,
-    ): List<SpatialDiagnostic> = sheets.flatMap { sheet ->
-        val aliases = projection.nodes.filter { node -> planner.sheetOwns(sheet, node) }
-            .flatMap { node ->
-                listOf(node.projectionId.value, node.semanticId.value, node.label).map { alias -> alias to node }
-            }
-            .groupBy(keySelector = { (alias, _) -> alias }, valueTransform = { (_, node) -> node })
-        projection.connections.flatMap { connection ->
-            listOfNotNull(connection.sourceOccurrenceId, connection.targetOccurrenceId)
-        }.distinct().mapNotNull { endpointId ->
-            val matches = aliases[endpointId].orEmpty().distinctBy { node -> node.projectionId }
-            if (matches.size <= 1) return@mapNotNull null
-            SpatialDiagnostic(
-                subject = "Connection endpoint $endpointId",
-                problem = "matches ${matches.size} Occurrences on Sheet ${sheet.sheetId.value}",
-                correction = "Reference the endpoint by its unique Projection occurrence identity.",
-                sourceTrace = SpatialSourceTrace(
-                    projectionIds = listOf(sheet.sheetId.value, endpointId) +
-                        matches.map { node -> node.projectionId.value },
-                    geometryElementIds = matches.map { node -> node.originGeometryElementId },
-                ),
-            )
-        }
-    }
-
     private fun duplicateProjectionIdentityDiagnostics(
         projection: ProjectionDocument,
     ): List<SpatialDiagnostic> = projection.nodes
@@ -149,13 +121,13 @@ internal class ProjectionSpatialValidator(
         .sortedBy { node -> node.projectionId.value }
         .mapNotNull { node ->
             val owners = sheets.filter { sheet -> planner.sheetOwns(sheet, node) }
-            if (owners.size == 1) {
+            if (owners.isNotEmpty()) {
                 return@mapNotNull null
             }
             SpatialDiagnostic(
                 subject = "Occurrence ${node.label}",
                 problem = "resolves to ${owners.size} owning Sheets",
-                correction = "Reference ${node.label} from exactly one Sheet subject list.",
+                correction = "Reference ${node.label} from at least one Sheet subject list.",
                 sourceTrace = SpatialSourceTrace(
                     projectionIds = listOf(node.projectionId.value) + owners.map { sheet -> sheet.sheetId.value },
                     geometryElementIds = listOf(node.originGeometryElementId),

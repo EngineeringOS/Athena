@@ -16,6 +16,16 @@ import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSnapshot
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionSurfaceMapping
 import com.engineeringood.athena.runtime.AthenaRuntimeProjectionUnavailableSnapshot
 import com.engineeringood.athena.runtime.AthenaRuntimeViewerScene
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialSheetFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialOccurrenceFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialRegionFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialConstructFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialAnchorFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialRouteFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialLaneFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialGridReferenceFacts
+import com.engineeringood.athena.runtime.AthenaRuntimeSpatialQualityFacts
 import java.nio.file.Files
 import com.engineeringood.athena.presentation.PresentationDocument
 import java.nio.file.Path
@@ -126,6 +136,9 @@ private fun AthenaRuntimeProjectionSnapshot.toReadyPayload(): AthenaProjectionRe
             notationPack = notationPack,
             crossReferences = crossReferences,
             activeRenderContributions = activeRenderContributions,
+            projectionRegionIds = projectionRegionIds,
+            projectionConstructIds = projectionConstructIds,
+            spatialFacts = spatialFacts,
         )
 
         is AthenaRuntimeProjectionUnavailableSnapshot -> null
@@ -164,19 +177,129 @@ private fun AthenaRuntimeViewerScene.toPayload(
     notationPack: AthenaRuntimeProjectionNotationPack?,
     crossReferences: List<AthenaRuntimeProjectionCrossReference>,
     activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution>,
+    projectionRegionIds: List<String>,
+    projectionConstructIds: List<String>,
+    spatialFacts: AthenaRuntimeSpatialFacts?,
 ): AthenaProjectionReadyPayload {
     return AthenaProjectionReadyPayload(
         viewId = viewId,
         familyId = familyId,
         systemName = systemName,
+        canvasWidth = canvasWidth,
+        canvasHeight = canvasHeight,
         presentation = presentation?.toPayload(),
         activeSheetId = activeSheetId,
         sheets = sheets.map(AthenaRuntimeProjectionSheet::toPayload),
         notationPack = notationPack?.toPayload(),
         crossReferences = crossReferences.map(AthenaRuntimeProjectionCrossReference::toPayload),
         activeRenderContributions = activeRenderContributions.map(AthenaRuntimeProjectionRenderContribution::toPayload),
+        components = components.map { component ->
+            AthenaProjectionComponentPayload(
+                projectionId = component.projectionId,
+                semanticId = component.semanticId,
+                label = component.label,
+                x = component.x,
+                y = component.y,
+                width = component.width,
+                height = component.height,
+            )
+        },
+        connections = connections.map { connection ->
+            AthenaProjectionConnectionPayload(
+                projectionId = connection.projectionId,
+                semanticId = connection.semanticId,
+                x1 = connection.x1,
+                y1 = connection.y1,
+                x2 = connection.x2,
+                y2 = connection.y2,
+            )
+        },
+        labels = labels.map { label ->
+            AthenaProjectionLabelPayload(
+                projectionId = label.projectionId,
+                semanticId = label.semanticId,
+                label = label.label,
+                x = label.x,
+                y = label.y,
+                width = label.width,
+                height = label.height,
+            )
+        },
+        projectionRegionIds = projectionRegionIds.toList(),
+        projectionConstructIds = projectionConstructIds.toList(),
+        spatialFacts = spatialFacts?.toPayload(),
     )
 }
+
+private fun AthenaRuntimeSpatialFacts.toPayload(): AthenaSpatialFactsPayload =
+    AthenaSpatialFactsPayload(
+        viewId = viewId,
+        activeSheetId = activeSheetId,
+        sheets = sheets.map(AthenaRuntimeSpatialSheetFacts::toPayload),
+    )
+
+private fun AthenaRuntimeSpatialSheetFacts.toPayload(): AthenaSpatialSheetFactsPayload =
+    AthenaSpatialSheetFactsPayload(
+        sheetId = sheetId,
+        extent = AthenaRectPayload(extent.x, extent.y, extent.width, extent.height),
+        drawingArea = AthenaRectPayload(drawingArea.x, drawingArea.y, drawingArea.width, drawingArea.height),
+        occurrences = occurrences.map(AthenaRuntimeSpatialOccurrenceFacts::toPayload),
+        regions = regions.map(AthenaRuntimeSpatialRegionFacts::toPayload),
+        constructs = constructs.map(AthenaRuntimeSpatialConstructFacts::toPayload),
+        anchors = anchors.map(AthenaRuntimeSpatialAnchorFacts::toPayload),
+        routes = routes.map(AthenaRuntimeSpatialRouteFacts::toPayload),
+        lanes = lanes.map(AthenaRuntimeSpatialLaneFacts::toPayload),
+        gridReferences = gridReferences.map(AthenaRuntimeSpatialGridReferenceFacts::toPayload),
+        quality = quality.toPayload(),
+    )
+
+private fun AthenaRuntimeSpatialOccurrenceFacts.toPayload() =
+    AthenaSpatialOccurrenceFactsPayload(occurrenceId, semanticId, regionId, bounds.toPayload())
+
+private fun AthenaRuntimeSpatialRegionFacts.toPayload() =
+    AthenaSpatialRegionFactsPayload(regionId, bounds.toPayload(), memberOccurrenceIds)
+
+private fun AthenaRuntimeSpatialConstructFacts.toPayload() =
+    AthenaSpatialConstructFactsPayload(constructId, kind, name, bounds.toPayload(), memberOccurrenceIds)
+
+private fun AthenaRuntimeSpatialAnchorFacts.toPayload() =
+    AthenaSpatialAnchorFactsPayload(anchorId, occurrenceId, portSemanticId, side, point.toPayload())
+
+private fun AthenaRuntimeSpatialRouteFacts.toPayload() =
+    AthenaSpatialRouteFactsPayload(
+        routeId,
+        projectionConnectionId,
+        connectionId,
+        sourceAnchorId,
+        targetAnchorId,
+        laneId,
+        points.map { point -> point.toPayload() },
+    )
+
+private fun AthenaRuntimeSpatialLaneFacts.toPayload() =
+    AthenaSpatialLaneFactsPayload(laneId, orientation, coordinate, routeIds)
+
+private fun AthenaRuntimeSpatialGridReferenceFacts.toPayload() =
+    AthenaSpatialGridReferenceFactsPayload(gridReferenceId, subjectId, cellReference, rowLabel, columnNumber)
+
+private fun AthenaRuntimeSpatialQualityFacts.toPayload() =
+    AthenaSpatialQualityFactsPayload(
+        occurrenceOverlapCount,
+        constructContainmentFailureCount,
+        routeBodyIntersectionCount,
+        routeCrossingCount,
+        twistCount,
+        usedLaneCount,
+        peakRoutesPerLane,
+        density,
+        occupancy,
+    )
+
+private fun com.engineeringood.athena.runtime.AthenaRuntimeRect.toPayload() =
+    AthenaRectPayload(x, y, width, height)
+
+private fun com.engineeringood.athena.runtime.AthenaRuntimePoint.toPayload() =
+    AthenaSpatialPointPayload(x, y)
 
 private fun AthenaRuntimeProjectionSheet.toPayload(): AthenaProjectionSheetPayload {
     return AthenaProjectionSheetPayload(

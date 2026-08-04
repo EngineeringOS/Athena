@@ -39,10 +39,10 @@ class ConnectionPaintCompiler(
         connectorId: PresentationOccurrenceId,
     ): ConnectionPaint {
         require(routePoints.size >= 2) { "Connection paint requires at least two route points." }
-        val override = overrides[route.routeId]
+        val override = overrides[route.routeId.value]
         val style = override?.style ?: "solid"
         val lineStyleId = override?.style?.let { overrideStyle -> "line:$overrideStyle" } ?: "line:connection"
-        val labelText = override?.label ?: route.routeId
+        val labelText = override?.label ?: route.connectionId.value.substringAfterLast(':')
         val labelPoint = labelPoint(routePoints, override?.position)
         return ConnectionPaint(
             line = PresentationConnectorLine(
@@ -60,7 +60,7 @@ class ConnectionPaintCompiler(
             ),
             labels = listOf(
                 PresentationConnectorLabel(
-                    labelId = "label:${route.routeId}",
+                    labelId = "label:${route.routeId.value}",
                     targetId = connectorId.value,
                     text = labelText,
                     point = labelPoint,
@@ -72,7 +72,7 @@ class ConnectionPaintCompiler(
                     ),
                     labelClassId = "label:route",
                     display = PresentationConnectorLabelDisplay.ALWAYS,
-                    sourceProvenance = listOf(route.routeId),
+                    sourceProvenance = listOf(route.routeId.value),
                     compilerSnapshotId = "connection-paint",
                 ),
             ),

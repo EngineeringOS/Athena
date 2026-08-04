@@ -26,12 +26,30 @@ class EngineeringToProjectionTransformationTest {
 
         val success = assertIs<RealityTransformationResult.Success<ProjectionDocument>>(result)
         assertEquals("engineering-projection", success.output.view.id)
-        assertEquals(listOf("component:Supply", "component:Q1", "port:Supply.L1", "port:Q1.1"), success.output.nodes.map {
+        assertEquals(listOf("component:Supply", "component:Q1"), success.output.nodes.map {
             node -> node.semanticId.value
         })
+        assertEquals(
+            listOf(
+                "projection/node/component:Supply" to "port:Supply.L1",
+                "projection/node/component:Q1" to "port:Q1.1",
+            ),
+            success.output.occurrencePorts.map { port ->
+                port.occurrencePortId.occurrenceId.value to port.occurrencePortId.portId.value
+            },
+        )
         assertEquals(listOf("connection:Supply.L1-to-Q1.1"), success.output.connections.map { connection ->
             connection.semanticId.value
         })
+        val connection = success.output.connections.single()
+        assertEquals(
+            "projection/node/component:Supply" to "port:Supply.L1",
+            connection.source?.occurrencePortId?.let { endpoint -> endpoint.occurrenceId.value to endpoint.portId.value },
+        )
+        assertEquals(
+            "projection/node/component:Q1" to "port:Q1.1",
+            connection.target?.occurrencePortId?.let { endpoint -> endpoint.occurrenceId.value to endpoint.portId.value },
+        )
         assertEquals(1, success.output.sheets.size)
         assertEquals(0, success.output.sheets.single().order)
         assertEquals("engineering-projection/sheet/01-main", success.output.sheets.single().sheetId.value)
@@ -158,4 +176,3 @@ class EngineeringToProjectionTransformationTest {
             provenance = source,
         )
 }
-

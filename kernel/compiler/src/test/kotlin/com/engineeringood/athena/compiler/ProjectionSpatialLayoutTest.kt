@@ -4,15 +4,18 @@ import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionConstructId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionOccurrencePortId
 import com.engineeringood.athena.projection.ProjectionRegion
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetConstruct
 import com.engineeringood.athena.projection.ProjectionSheetId
+import com.engineeringood.athena.projection.ProjectionSheetGrid
 import com.engineeringood.athena.projection.ProjectionSheetPublication
 import com.engineeringood.athena.projection.ProjectionSheetSubject
 import com.engineeringood.athena.spatial.SpatialRect
@@ -173,8 +176,12 @@ class ProjectionSpatialLayoutTest {
             projectionId = ProjectionConnectionId("projection/connection/source-target"),
             semanticId = StableSemanticIdentity("connection:source-target"),
             originGeometryElementId = GeometryElementId("origin:connection:source-target"),
-            sourceOccurrenceId = source.projectionId.value,
-            targetOccurrenceId = target.projectionId.value,
+            source = ProjectionConnectionEndpoint(
+                ProjectionOccurrencePortId(source.projectionId, StableSemanticIdentity("port:Source.out")),
+            ),
+            target = ProjectionConnectionEndpoint(
+                ProjectionOccurrencePortId(target.projectionId, StableSemanticIdentity("port:Target.in")),
+            ),
         )
         val projection = projectionDocument(nodes = nodes, regions = listOf(region)).let { document ->
             val sheet = document.sheets.single().copy(
@@ -460,11 +467,11 @@ class ProjectionSpatialLayoutTest {
         val diagnostic = result.diagnostics.single()
         assertEquals("Occurrence Aux", diagnostic.subject)
         assertEquals("resolves to 0 owning Sheets", diagnostic.problem)
-        assertEquals("Reference Aux from exactly one Sheet subject list.", diagnostic.correction)
+        assertEquals("Reference Aux from at least one Sheet subject list.", diagnostic.correction)
     }
 
     @Test
-    fun `spatial placement rejects occurrence ownership by multiple sheets`() {
+    fun `spatial placement sheet qualifies one repeated Projection occurrence across Sheets`() {
         val projection = projectionDocument()
         val duplicateSheetId = ProjectionSheetId("engineering-projection/sheet/02-duplicate")
         val duplicateSheet = projection.sheets.single().copy(
@@ -485,12 +492,17 @@ class ProjectionSpatialLayoutTest {
             projection.copy(sheets = projection.sheets + duplicateSheet),
         )
 
-        assertTrue(result.occurrences.isEmpty())
-        val diagnostic = result.diagnostics.single()
-        assertEquals("Occurrence Supply", diagnostic.subject)
-        assertEquals("resolves to 2 owning Sheets", diagnostic.problem)
-        assertEquals("Reference Supply from exactly one Sheet subject list.", diagnostic.correction)
-        assertEquals(listOf(GeometryElementId("origin:Supply")), diagnostic.sourceTrace.geometryElementIds)
+        assertTrue(result.diagnostics.isEmpty())
+        assertEquals(
+            setOf(
+                SpatialOccurrenceId(projection.sheets.single().sheetId.value, supplyNode().projectionId.value),
+                SpatialOccurrenceId(duplicateSheetId.value, supplyNode().projectionId.value),
+            ),
+            result.occurrences
+                .filter { occurrence -> occurrence.occurrenceId.projectionId == supplyNode().projectionId.value }
+                .map { occurrence -> occurrence.occurrenceId }
+                .toSet(),
+        )
     }
 
     @Test
@@ -652,7 +664,7 @@ class ProjectionSpatialLayoutTest {
     }
 
     @Test
-    fun `spatial placement rejects ambiguous connection endpoint aliases`() {
+    fun `spatial placement uses exact typed occurrence identity when semantic identities repeat`() {
         val sharedSemanticId = StableSemanticIdentity("component:Shared")
         val first = namedNode("First").copy(semanticId = sharedSemanticId)
         val second = namedNode("Second").copy(semanticId = sharedSemanticId)
@@ -666,18 +678,20 @@ class ProjectionSpatialLayoutTest {
                     projectionId = ProjectionConnectionId("connection:ambiguous"),
                     semanticId = StableSemanticIdentity("connection:ambiguous"),
                     originGeometryElementId = GeometryElementId("origin:connection:ambiguous"),
-                    sourceOccurrenceId = sharedSemanticId.value,
-                    targetOccurrenceId = target.projectionId.value,
+                    source = ProjectionConnectionEndpoint(
+                        ProjectionOccurrencePortId(first.projectionId, StableSemanticIdentity("port:First.out")),
+                    ),
+                    target = ProjectionConnectionEndpoint(
+                        ProjectionOccurrencePortId(target.projectionId, StableSemanticIdentity("port:Target.in")),
+                    ),
                 ),
             ),
         )
 
         val result = ProjectionSpatialLayout().place(projection)
 
-        val diagnostic = result.diagnostics.single()
-        assertEquals("Connection endpoint ${sharedSemanticId.value}", diagnostic.subject)
-        assertEquals("matches 2 Occurrences on Sheet engineering-projection/sheet/01-main", diagnostic.problem)
-        assertEquals("Reference the endpoint by its unique Projection occurrence identity.", diagnostic.correction)
+        assertTrue(result.diagnostics.isEmpty())
+        assertEquals(3, result.occurrences.size)
     }
 
     @Test
@@ -764,13 +778,14 @@ class ProjectionSpatialLayoutTest {
     @Test
     fun `projection spatial compiler reports an empty projection plainly`() {
         val result = ProjectionSpatialCompiler().transform(
-            projectionDocument(nodes = emptyList(), regions = emptyList()),
+            projectionDocument(nodes = emptyList(), regions = emptyList(), connections = emptyList()),
         )
 
         val failure = kotlin.test.assertIs<RealityTransformationResult.Failure>(result)
-        assertTrue(failure.diagnostics.any { diagnostic ->
-            diagnostic.reality == "Spatial Reality" && diagnostic.message == "missing occurrence geometry facts"
-        }, failure.diagnostics.toString())
+        assertEquals(
+            listOf(RealityTransformationDiagnostic(reality = "Projection Reality", message = "empty sheet")),
+            failure.diagnostics,
+        )
     }
 
     @Test
@@ -863,20 +878,18 @@ class ProjectionSpatialLayoutTest {
     private fun projectionDocument(
         nodes: List<ProjectionNode> = listOf(supplyNode(), breakerNode(), loadNode()),
         regions: List<ProjectionRegion> = projectionRegions(),
+        connections: List<ProjectionConnection> = listOf(testConnection()),
     ): ProjectionDocument {
         val view = ViewDefinition(id = "engineering-projection", displayName = "Engineering Projection")
-        val connection = ProjectionConnection(
-            projectionId = ProjectionConnectionId("projection/connection/connection:Supply.L1-to-Q1.1"),
-            semanticId = StableSemanticIdentity("connection:Supply.L1-to-Q1.1"),
-            originGeometryElementId = GeometryElementId("origin:connection"),
-        )
         val subjects = nodes.map { node -> ProjectionSheetSubject(node.semanticId, nodeIds = listOf(node.projectionId)) } +
-            ProjectionSheetSubject(connection.semanticId, connectionIds = listOf(connection.projectionId))
+            connections.map { connection ->
+                ProjectionSheetSubject(connection.semanticId, connectionIds = listOf(connection.projectionId))
+            }
         val sheetId = ProjectionSheetId("engineering-projection/sheet/01-main")
         return ProjectionDocument(
             view = view,
             nodes = nodes,
-            connections = listOf(connection),
+            connections = connections,
             sheets = listOf(
                 ProjectionSheet(
                     sheetId = sheetId,
@@ -884,6 +897,7 @@ class ProjectionSpatialLayoutTest {
                     order = 0,
                     subjects = subjects,
                     regions = regions,
+                    grid = ProjectionSheetGrid("grid:main", rows = 8, columns = 12),
                     publication = ProjectionSheetPublication.fromProjectionState(
                         sheetId = sheetId,
                         displayName = "Engineering Projection Main",
@@ -894,6 +908,12 @@ class ProjectionSpatialLayoutTest {
             ),
         )
     }
+
+    private fun testConnection(): ProjectionConnection = ProjectionConnection(
+        projectionId = ProjectionConnectionId("projection/connection/connection:Supply.L1-to-Q1.1"),
+        semanticId = StableSemanticIdentity("connection:Supply.L1-to-Q1.1"),
+        originGeometryElementId = GeometryElementId("origin:connection"),
+    )
 
     private fun projectionRegions(): List<ProjectionRegion> = listOf(
         ProjectionRegion(

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "M41.verification-results",
+  "sourceSha256": "sha256:3af530db2f1390c5b873ed1f5134766293bf390301535adfcb94dfd3cb1a773e",
+  "generatedAt": "2026-08-04T17:08:24+08:00",
+  "commands": [
+    {
+      "id": "product-proof-contract",
+      "command": "node --test scripts/athena-m41-product-proof-contract.test.mjs",
+      "status": "PASS",
+      "summary": "67 tests, 67 pass, 0 fail"
+    },
+    {
+      "id": "closure-contract",
+      "command": "node --test scripts/athena-m41-closure-contract.test.mjs",
+      "status": "PASS",
+      "summary": "10 tests, 10 pass, 0 fail"
+    },
+    {
+      "id": "glsp-tests",
+      "command": "yarn test (integrations/graph-glsp)",
+      "status": "PASS",
+      "summary": "9 tests, 9 pass, 0 fail"
+    },
+    {
+      "id": "frontend-tests",
+      "command": "yarn test (ide/theia-frontend)",
+      "status": "PASS",
+      "summary": "219 tests, 219 pass, 0 fail"
+    },
+    {
+      "id": "repository-test",
+      "command": ".\\gradlew.bat --no-daemon --console=plain test",
+      "status": "PASS",
+      "summary": "BUILD SUCCESSFUL, 148 actionable tasks"
+    },
+    {
+      "id": "lsp-install",
+      "command": ".\\gradlew.bat --no-daemon --console=plain :ide:lsp:installDist",
+      "status": "PASS",
+      "summary": "BUILD SUCCESSFUL, 75 actionable tasks"
+    },
+    {
+      "id": "ide-build",
+      "command": "yarn --cwd ide build",
+      "status": "PASS",
+      "summary": "Theia browser/node/electron builds finished with 0 errors"
+    },
+    {
+      "id": "electron-smoke",
+      "command": "yarn --cwd ide start:smoke:m41",
+      "status": "PASS",
+      "summary": "desktop and narrow Electron smoke passed; proof regenerated"
+    },
+    {
+      "id": "source-set-hygiene",
+      "command": "powershell -ExecutionPolicy Bypass -File .\\tools\\source-set-hygiene-audit.ps1",
+      "status": "PASS",
+      "summary": "Source-set hygiene audit passed"
+    },
+    {
+      "id": "encoding-audit",
+      "command": "powershell -ExecutionPolicy Bypass -File .\\tools\\encoding-audit.ps1",
+      "status": "PASS",
+      "summary": "Encoding audit passed"
+    },
+    {
+      "id": "diff-check",
+      "command": "git diff --check",
+      "status": "PASS",
+      "summary": "No whitespace errors"
+    }
+  ],
+  "screenshots": [
+    {
+      "viewportName": "desktop-1920x1080",
+      "path": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m41\\screenshots\\m41-rolling-shutter-desktop-1920x1080.png",
+      "sha256": "sha256:eed8d50d225597d655e7bbf6dc2bd47a9340edb75753ca7f38ee187a670741d0",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "viewportName": "narrow",
+      "path": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m41\\screenshots\\m41-rolling-shutter-narrow.png",
+      "sha256": "sha256:bc33dd8d94a34895427d41adfd9fbe5b6da27c65d3e4f1543da3883ddf61e6d2",
+      "width": 720,
+      "height": 900
+    }
+  ]
+}

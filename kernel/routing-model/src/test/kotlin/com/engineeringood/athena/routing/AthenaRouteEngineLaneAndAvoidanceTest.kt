@@ -6,6 +6,7 @@ import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.layout.LayoutSourceSpan
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -42,7 +43,10 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
         val route = result.routeFacts.single()
 
         assertEquals(SchematicRouteLane(0), route.lane)
-        assertFalse(route.segments.any { segment -> obstacle.intersects(segment) })
+        assertFalse(
+            route.segments.any { segment -> obstacle.intersects(segment) },
+            "Route must clear obstacle: ${route.segments}",
+        )
         assertEquals(RouteQualityState.SATISFIED, route.quality.state)
     }
 
@@ -63,9 +67,36 @@ class AthenaRouteEngineLaneAndAvoidanceTest {
         )
         val route = result.routeFacts.single()
 
-        assertFalse(route.segments.any { segment -> obstacle.intersects(segment) })
+        assertFalse(
+            route.segments.any { segment -> obstacle.intersects(segment) },
+            "Route must clear obstacle: ${route.segments}",
+        )
         assertEquals(RouteQualityState.SATISFIED, route.quality.state)
         assertTrue(route.segments.any { segment -> segment.start.y == 160 && segment.end.y == 160 })
+    }
+
+    @Test
+    fun `route engine fails when declared outward side leaves drawing area`() {
+        val base = request("boundary", 0, 80, 200, 80)
+        val request = base.copy(
+            sourceAnchor = anchor(
+                "anchor:boundary:source",
+                "component:Sboundary",
+                "out",
+                TerminalSide.LEFT,
+                0,
+                80,
+            ),
+        )
+
+        val failure = assertFailsWith<IllegalArgumentException> {
+            AthenaRouteEngine().solve(input(requests = listOf(request)))
+        }
+
+        assertEquals(
+            "Route engine could not find an obstacle-safe orthogonal path inside the Drawing Area.",
+            failure.message,
+        )
     }
 
     private fun input(

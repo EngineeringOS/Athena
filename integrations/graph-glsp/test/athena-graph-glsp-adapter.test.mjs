@@ -136,6 +136,8 @@ const readyProjectionSession = {
             ]
         },
         activeSheetId: 'cabinet/sheet/01-main',
+        projectionRegionIds: ['main'],
+        projectionConstructIds: ['cabinet/main'],
         sheets: [
             {
                 sheetId: 'cabinet/sheet/01-main',
@@ -286,7 +288,24 @@ const readyProjectionSession = {
                 width: 60,
                 height: 20
             }
-        ]
+        ],
+        spatialFacts: {
+            viewId: 'cabinet',
+            activeSheetId: 'cabinet/sheet/01-main',
+            sheets: [{
+                sheetId: 'cabinet/sheet/01-main',
+                extent: { x: 0, y: 0, width: 1440, height: 900 },
+                drawingArea: { x: 40, y: 40, width: 1360, height: 700 },
+                occurrences: [{ occurrenceId: 'cabinet/projection/node/component_PLC1', semanticId: 'component:PLC1', regionId: 'main', bounds: { x: 120, y: 80, width: 260, height: 160 } }],
+                regions: [],
+                constructs: [],
+                anchors: [],
+                routes: [{ routeId: 'route:sheet=cabinet%2Fsheet%2F01-main:connection=cabinet%2Fprojection%2Fconnection%2Fconnection_PLC1_out_M1_in', projectionConnectionId: 'cabinet/projection/connection/connection_PLC1_out_M1_in', connectionId: 'connection:PLC1.out->M1.in', sourceAnchorId: 'anchor-a', targetAnchorId: 'anchor-b', laneId: 'lane-a', points: [{ x: 380, y: 160 }, { x: 720, y: 160 }] }],
+                lanes: [{ laneId: 'lane-a', orientation: 'horizontal', coordinate: 160, routeIds: ['route:sheet=cabinet%2Fsheet%2F01-main:connection=cabinet%2Fprojection%2Fconnection%2Fconnection_PLC1_out_M1_in'] }],
+                gridReferences: [],
+                quality: { occurrenceOverlapCount: 0, constructContainmentFailureCount: 0, routeBodyIntersectionCount: 0, routeCrossingCount: 0, twistCount: 0, usedLaneCount: 1, peakRoutesPerLane: 1, density: 0.1, occupancy: 0.1 }
+            }]
+        }
     },
     diagnostics: []
 };
@@ -320,10 +339,16 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.activeRenderContributions[0].contributionId, 'electrical-runtime.render.cabinet');
     assert.equal(diagram.supportedViews[0].familyId, 'electrical/cabinet');
     assert.equal(diagram.activeSheetId, 'cabinet/sheet/01-main');
+    assert.deepEqual(diagram.projectionRegionIds, ['main']);
+    assert.deepEqual(diagram.projectionConstructIds, ['cabinet/main']);
+    assert.notEqual(diagram.projectionRegionIds, readyProjectionSession.readyProjection.projectionRegionIds);
     assert.equal(diagram.sheets.length, 1);
     assert.equal(diagram.sheets[0].role, undefined);
     assert.equal(diagram.notationPack?.packId, 'electrical-notation/cabinet/default');
     assert.equal(diagram.crossReferences.length, 1);
+    assert.deepEqual(diagram.spatialFacts, readyProjectionSession.readyProjection.spatialFacts);
+    assert.notEqual(diagram.spatialFacts, readyProjectionSession.readyProjection.spatialFacts);
+    assert.notEqual(diagram.spatialFacts.sheets[0].routes[0].points, readyProjectionSession.readyProjection.spatialFacts.sheets[0].routes[0].points);
     assert.equal(diagram.electricalAnchors.length, 2);
     assert.equal(diagram.electricalConnectionEndpoints.length, 2);
     assert.equal(diagram.electricalRoutingCorridors.length, 1);

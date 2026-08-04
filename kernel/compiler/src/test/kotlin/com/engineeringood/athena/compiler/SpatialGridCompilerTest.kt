@@ -144,6 +144,27 @@ class SpatialGridCompilerTest {
             constructs = emptyList(),
         )
         assertEquals("B2", oddCenterResult.references.single().cellReference)
+
+        val maximumRowResult = SpatialGridCompiler().compile(
+            sheets = listOf(
+                sheetInput(
+                    sheetId = SHEET_A,
+                    order = 0,
+                    drawingArea = SpatialRect(0, 0, 1, SpatialGridDefinition.MAX_SUPPORTED_ROWS),
+                    rows = SpatialGridDefinition.MAX_SUPPORTED_ROWS,
+                    columns = 1,
+                ),
+            ),
+            occurrences = listOf(
+                occurrence(
+                    SHEET_A,
+                    "row-zzz",
+                    SpatialRect(0, SpatialGridDefinition.MAX_SUPPORTED_ROWS - 1, 1, 1),
+                ),
+            ),
+            constructs = emptyList(),
+        )
+        assertEquals("ZZZ1", maximumRowResult.references.single().cellReference)
     }
 
     @Test
@@ -195,6 +216,20 @@ class SpatialGridCompilerTest {
             expected.references.filter { reference -> reference.sheetId == SHEET_A },
             changedSheetB.references.filter { reference -> reference.sheetId == SHEET_A },
         )
+
+        val movedSheetB = SpatialGridCompiler().compile(
+            sheets = listOf(
+                sheetA,
+                sheetB.copy(drawingArea = SpatialRect(80, 80, 240, 120)),
+            ),
+            occurrences = occurrences,
+            constructs = constructs,
+        )
+        assertTrue(movedSheetB.diagnostics.isEmpty())
+        assertEquals(
+            expected.references.filter { reference -> reference.sheetId == SHEET_A },
+            movedSheetB.references.filter { reference -> reference.sheetId == SHEET_A },
+        )
     }
 
     @Test
@@ -227,23 +262,37 @@ class SpatialGridCompilerTest {
             rows = 0,
             columns = 2,
         )
+        val negativeRows = sheetInput(
+            sheetId = "sheet:negative-rows",
+            order = 4,
+            drawingArea = SpatialRect(0, 0, 100, 100),
+            rows = -1,
+            columns = 2,
+        )
+        val zeroColumns = sheetInput(
+            sheetId = "sheet:zero-columns",
+            order = 5,
+            drawingArea = SpatialRect(0, 0, 100, 100),
+            rows = 2,
+            columns = 0,
+        )
         val noColumns = sheetInput(
             sheetId = "sheet:no-columns",
-            order = 4,
+            order = 6,
             drawingArea = SpatialRect(0, 0, 100, 100),
             rows = 2,
             columns = -1,
         )
         val tooManyRows = sheetInput(
             sheetId = "sheet:too-many-rows",
-            order = 5,
+            order = 7,
             drawingArea = SpatialRect(0, 0, 100, 100),
             rows = SpatialGridDefinition.MAX_SUPPORTED_ROWS + 1,
             columns = 2,
         )
 
         val result = SpatialGridCompiler().compile(
-            sheets = listOf(noColumns, valid, tooManyRows, blank, missing, noRows),
+            sheets = listOf(noColumns, valid, zeroColumns, tooManyRows, blank, negativeRows, missing, noRows),
             occurrences = listOf(occurrence("sheet:valid", "valid", SpatialRect(10, 10, 20, 20))),
             constructs = emptyList(),
         )
@@ -264,6 +313,12 @@ class SpatialGridCompilerTest {
                     projectionIds = missing.sourceTrace.projectionIds,
                 ),
                 GridDiagnosticContract(
+                    subject = "Sheet sheet:negative-rows grid",
+                    problem = "has -1 rows",
+                    correction = "Set grid rows on Sheet sheet:negative-rows to a count from 1 through 18278.",
+                    projectionIds = negativeRows.sourceTrace.projectionIds,
+                ),
+                GridDiagnosticContract(
                     subject = "Sheet sheet:no-columns grid",
                     problem = "has -1 columns",
                     correction = "Set grid columns on Sheet sheet:no-columns to a positive count.",
@@ -281,6 +336,12 @@ class SpatialGridCompilerTest {
                     correction = "Set grid rows on Sheet sheet:too-many-rows to a count from 1 through 18278.",
                     projectionIds = tooManyRows.sourceTrace.projectionIds,
                 ),
+                GridDiagnosticContract(
+                    subject = "Sheet sheet:zero-columns grid",
+                    problem = "has 0 columns",
+                    correction = "Set grid columns on Sheet sheet:zero-columns to a positive count.",
+                    projectionIds = zeroColumns.sourceTrace.projectionIds,
+                ),
             ),
             result.diagnostics.map { diagnostic -> diagnostic.gridContract() },
         )
@@ -297,6 +358,12 @@ class SpatialGridCompilerTest {
         )
         val duplicateSheetA = sheetA.copy(order = 1)
         val duplicateOccurrence = occurrence(SHEET_A, "duplicate-occurrence", SpatialRect(10, 10, 20, 20))
+        val alternateDuplicateOccurrence = duplicateOccurrence.copy(
+            sourceTrace = SpatialSourceTrace(
+                projectionIds = duplicateOccurrence.sourceTrace.projectionIds + "alternate-source",
+                geometryElementIds = listOf(GeometryElementId("geometry:duplicate-occurrence:alternate")),
+            ),
+        )
         val duplicateConstruct = construct(
             SHEET_A,
             "duplicate-construct",
@@ -304,18 +371,27 @@ class SpatialGridCompilerTest {
             SpatialRect(10, 10, 20, 20),
         )
         val unknownOccurrence = occurrence("sheet:unknown", "unknown", SpatialRect(10, 10, 20, 20))
+        val unknownConstruct = construct(
+            "sheet:unknown",
+            "unknown-construct",
+            unknownOccurrence,
+            SpatialRect(10, 10, 20, 20),
+        )
 
         val result = SpatialGridCompiler().compile(
             sheets = listOf(duplicateSheetA, sheetA),
-            occurrences = listOf(unknownOccurrence, duplicateOccurrence, duplicateOccurrence),
-            constructs = listOf(duplicateConstruct, duplicateConstruct),
+            occurrences = listOf(unknownOccurrence, alternateDuplicateOccurrence, duplicateOccurrence),
+            constructs = listOf(unknownConstruct, duplicateConstruct, duplicateConstruct),
         )
 
         assertNoGridFacts(result)
         assertEquals(
             listOf(
                 "Construct duplicate-construct on Sheet sheet:a" to "has 2 geometry facts",
+                "Construct duplicate-construct on Sheet sheet:a" to "has 2 owning Spatial grid definitions",
+                "Construct unknown-construct on Sheet sheet:unknown" to "has no owning Spatial grid definition",
                 "Occurrence duplicate-occurrence on Sheet sheet:a" to "has 2 geometry facts",
+                "Occurrence duplicate-occurrence on Sheet sheet:a" to "has 2 owning Spatial grid definitions",
                 "Occurrence unknown on Sheet sheet:unknown" to "has no owning Spatial grid definition",
                 "Sheet sheet:a" to "has 2 Spatial grid definitions",
             ),
@@ -324,7 +400,92 @@ class SpatialGridCompilerTest {
         assertTrue(result.diagnostics.all { diagnostic -> diagnostic.correction.isNotBlank() })
         assertEquals(
             listOf("sheet:a", "duplicate-construct", "duplicate-occurrence"),
-            result.diagnostics.first().sourceTrace.projectionIds,
+            result.diagnostics.first { diagnostic -> diagnostic.problem == "has 2 geometry facts" }
+                .sourceTrace.projectionIds,
+        )
+        val occurrenceDiagnostic = result.diagnostics.single { diagnostic ->
+            diagnostic.subject == "Occurrence duplicate-occurrence on Sheet sheet:a" &&
+                diagnostic.problem == "has 2 geometry facts"
+        }
+        assertEquals(
+            listOf("sheet:a", "duplicate-occurrence", "alternate-source"),
+            occurrenceDiagnostic.sourceTrace.projectionIds,
+        )
+        assertEquals(
+            listOf("geometry:duplicate-occurrence", "geometry:duplicate-occurrence:alternate"),
+            occurrenceDiagnostic.sourceTrace.geometryElementIds.map(GeometryElementId::value),
+        )
+    }
+
+    @Test
+    fun `duplicate facts retain secondary defects and canonical source traces`() {
+        val firstSheet = sheetInput(
+            sheetId = SHEET_A,
+            order = 0,
+            drawingArea = SpatialRect(0, 0, 100, 100),
+            rows = 2,
+            columns = 2,
+        ).copy(grid = null)
+        val secondSheet = firstSheet.copy(
+            order = 1,
+            sourceTrace = SpatialSourceTrace(
+                projectionIds = listOf(SHEET_A, "alternate-sheet-source"),
+                geometryElementIds = listOf(GeometryElementId("geometry:alternate-sheet")),
+            ),
+        )
+        val repeated = occurrence(SHEET_A, SHEET_A, SpatialRect(100, 40, 2, 20))
+
+        val forward = SpatialGridCompiler().compile(
+            sheets = listOf(firstSheet, secondSheet),
+            occurrences = listOf(repeated, repeated),
+            constructs = emptyList(),
+        )
+        val reversed = SpatialGridCompiler().compile(
+            sheets = listOf(secondSheet, firstSheet),
+            occurrences = listOf(repeated, repeated),
+            constructs = emptyList(),
+        )
+
+        assertNoGridFacts(forward)
+        assertEquals(forward, reversed)
+        assertEquals(
+            listOf(
+                "Occurrence sheet:a on Sheet sheet:a" to "has 2 geometry facts",
+                "Occurrence sheet:a on Sheet sheet:a" to "has 2 owning Spatial grid definitions",
+                "Sheet sheet:a" to "has 2 Spatial grid definitions",
+                "Sheet sheet:a grid" to "is missing",
+            ),
+            forward.diagnostics.map { diagnostic -> diagnostic.subject to diagnostic.problem },
+        )
+        assertEquals(
+            listOf(SHEET_A),
+            forward.diagnostics.first().sourceTrace.projectionIds,
+        )
+        assertEquals(
+            listOf(SHEET_A, "alternate-sheet-source", "grid:$SHEET_A"),
+            forward.diagnostics.last().sourceTrace.projectionIds,
+        )
+    }
+
+    @Test
+    fun `blank sheet identity fails closed before grid model construction`() {
+        val blankSheet = SpatialGridSheetInput(
+            sheetId = "",
+            order = 0,
+            drawingArea = SpatialRect(0, 0, 100, 100),
+            grid = ProjectionSheetGrid("grid:blank-sheet", 2, 2),
+            sourceTrace = SpatialSourceTrace(
+                projectionIds = listOf("projection:blank-sheet-input"),
+                geometryElementIds = listOf(GeometryElementId("geometry:blank-sheet-input")),
+            ),
+        )
+
+        val result = SpatialGridCompiler().compile(listOf(blankSheet), emptyList(), emptyList())
+
+        assertNoGridFacts(result)
+        assertEquals(
+            listOf("Sheet identity" to "is blank"),
+            result.diagnostics.map { diagnostic -> diagnostic.subject to diagnostic.problem },
         )
     }
 

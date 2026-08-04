@@ -621,7 +621,32 @@ export type AthenaProjectionReadyPayload = {
     components: AthenaProjectionComponentPayload[];
     connections: AthenaProjectionConnectionPayload[];
     labels: AthenaProjectionLabelPayload[];
+    projectionRegionIds: string[];
+    projectionConstructIds: string[];
+    spatialFacts?: AthenaProjectionSpatialFactsPayload;
 };
+
+export type AthenaProjectionSpatialFactsPayload = {
+    viewId: string;
+    activeSheetId?: string;
+    sheets: AthenaProjectionSpatialSheetPayload[];
+};
+
+export type AthenaProjectionSpatialSheetPayload = {
+    sheetId: string;
+    extent: AthenaProjectionRectPayload;
+    drawingArea: AthenaProjectionRectPayload;
+    occurrences: Array<{ occurrenceId: string; semanticId: string; regionId: string; bounds: AthenaProjectionRectPayload }>;
+    regions: Array<{ regionId: string; bounds: AthenaProjectionRectPayload; memberOccurrenceIds: string[] }>;
+    constructs: Array<{ constructId: string; kind: string; name?: string; bounds: AthenaProjectionRectPayload; memberOccurrenceIds: string[] }>;
+    anchors: Array<{ anchorId: string; occurrenceId: string; portSemanticId: string; side: string; point: AthenaProjectionPointPayload }>;
+    routes: Array<{ routeId: string; projectionConnectionId: string; connectionId: string; sourceAnchorId: string; targetAnchorId: string; laneId: string; points: AthenaProjectionPointPayload[] }>;
+    lanes: Array<{ laneId: string; orientation: string; coordinate: number; routeIds: string[] }>;
+    gridReferences: Array<{ gridReferenceId: string; subjectId: string; cellReference: string; rowLabel: string; columnNumber: number }>;
+    quality: { occurrenceOverlapCount: number; constructContainmentFailureCount: number; routeBodyIntersectionCount: number; routeCrossingCount: number; twistCount: number; usedLaneCount: number; peakRoutesPerLane: number; density: number; occupancy: number };
+};
+
+export type AthenaProjectionRectPayload = { x: number; y: number; width: number; height: number };
 
 export type AthenaProjectionRenderContributionPayload = {
     pluginId: string;

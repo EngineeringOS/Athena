@@ -27,7 +27,7 @@ class ConnectionPaintCompilerTest {
         assertEquals(1.5, paint.line.weight)
         assertEquals("solid", paint.line.style)
         assertEquals("connection", paint.line.colorKey)
-        assertEquals("route:main-feed", paint.labels.single().text)
+        assertEquals("Supply.L1-to-Q1.1", paint.labels.single().text)
         assertEquals(PresentationPoint(160, 20), paint.labels.single().point)
         assertEquals(emptyList(), paint.markers)
         assertEquals(emptyList(), paint.markerIds)
@@ -39,7 +39,7 @@ class ConnectionPaintCompilerTest {
         val sourceRoute = route.copy()
         val paint = ConnectionPaintCompiler(
             overrides = mapOf(
-                route.routeId to ConnectionPaintOverride(
+                route.routeId.value to ConnectionPaintOverride(
                     style = "dot",
                     label = "main feed",
                     position = "right top",
@@ -64,7 +64,7 @@ class ConnectionPaintCompilerTest {
 
         assertFailsWith<IllegalArgumentException> {
             ConnectionPaintCompiler(
-                overrides = mapOf(route.routeId to ConnectionPaintOverride(style = " ")),
+                overrides = mapOf(route.routeId.value to ConnectionPaintOverride(style = " ")),
             ).compile(
                 route = route,
                 routePoints = listOf(PresentationPoint(80, 20), PresentationPoint(160, 20)),
@@ -92,14 +92,11 @@ class ConnectionPaintCompilerTest {
     }
 
     private fun route(): SpatialRoute =
-        SpatialRoute(
+        testSpatialRoute(
             routeId = "route:main-feed",
-            connectionId = StableSemanticIdentity("connection:Supply.L1-to-Q1.1"),
-            sourceOccurrenceId = "supply",
-            targetOccurrenceId = "breaker",
-            sourceAnchorId = "anchor:supply:right",
-            targetAnchorId = "anchor:breaker:left",
-            laneId = "lane:main",
-            points = listOf(SpatialPoint(80.0, 20.0), SpatialPoint(160.0, 20.0)),
+            connectionId = "connection:Supply.L1-to-Q1.1",
+            sourceAnchorId = testSpatialAnchorId("supply", "port:Supply.L1"),
+            targetAnchorId = testSpatialAnchorId("breaker", "port:Q1.1"),
+            points = listOf(SpatialPoint(80, 20), SpatialPoint(160, 20)),
         )
 }

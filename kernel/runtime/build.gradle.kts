@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":kernel:plugins:plugin-host"))
     implementation(project(":kernel:repository-model"))
     implementation(project(":kernel:semantic-scm"))
+    implementation(project(":kernel:spatial-model"))
     implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:geometry-model"))
     implementation(project(":kernel:interaction-model"))

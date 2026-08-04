@@ -50,10 +50,13 @@ import com.engineeringood.athena.plugin.AthenaRenderSurface
 import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
 import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionOccurrencePort
+import com.engineeringood.athena.projection.ProjectionOccurrencePortId
 import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationPackId
 import com.engineeringood.athena.projection.ProjectionNotationSubject
@@ -1937,17 +1940,21 @@ class AthenaCompilerTest {
     private fun expectedCabinetProjection(examplePath: Path): ProjectionDocument {
         val connectionId = demoConnectionId(examplePath)
         val connectionKey = demoConnectionKey(examplePath)
+        val plcNodeId = ProjectionNodeId("cabinet/projection/node/component_PLC1")
+        val motorNodeId = ProjectionNodeId("cabinet/projection/node/component_M1")
+        val plcPortId = StableSemanticIdentity("port:PLC1.out")
+        val motorPortId = StableSemanticIdentity("port:M1.in")
         return ProjectionDocument(
             view = cabinetViewDefinition(),
             nodes = listOf(
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
+                    projectionId = plcNodeId,
                     semanticId = StableSemanticIdentity("component:PLC1"),
                     label = "PLC1",
                     originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_PLC1"),
                 ),
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("cabinet/projection/node/component_M1"),
+                    projectionId = motorNodeId,
                     semanticId = StableSemanticIdentity("component:M1"),
                     label = "M1",
                     originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_M1"),
@@ -1958,6 +1965,18 @@ class AthenaCompilerTest {
                     projectionId = ProjectionConnectionId("cabinet/projection/connection/$connectionKey"),
                     semanticId = connectionId,
                     originGeometryElementId = GeometryElementId("cabinet/geometry/path/$connectionKey"),
+                    source = ProjectionConnectionEndpoint(ProjectionOccurrencePortId(plcNodeId, plcPortId)),
+                    target = ProjectionConnectionEndpoint(ProjectionOccurrencePortId(motorNodeId, motorPortId)),
+                ),
+            ),
+            occurrencePorts = listOf(
+                ProjectionOccurrencePort(
+                    occurrencePortId = ProjectionOccurrencePortId(plcNodeId, plcPortId),
+                    originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_PLC1_out"),
+                ),
+                ProjectionOccurrencePort(
+                    occurrencePortId = ProjectionOccurrencePortId(motorNodeId, motorPortId),
+                    originGeometryElementId = GeometryElementId("cabinet/geometry/label/port_M1_in"),
                 ),
             ),
             sheets = listOf(
@@ -2012,17 +2031,21 @@ class AthenaCompilerTest {
     private fun expectedWiringProjection(examplePath: Path): ProjectionDocument {
         val connectionId = demoConnectionId(examplePath)
         val connectionKey = demoConnectionKey(examplePath)
+        val plcNodeId = ProjectionNodeId("wiring/projection/node/component_PLC1")
+        val motorNodeId = ProjectionNodeId("wiring/projection/node/component_M1")
+        val plcPortId = StableSemanticIdentity("port:PLC1.out")
+        val motorPortId = StableSemanticIdentity("port:M1.in")
         return ProjectionDocument(
             view = wiringViewDefinition(),
             nodes = listOf(
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("wiring/projection/node/component_PLC1"),
+                    projectionId = plcNodeId,
                     semanticId = StableSemanticIdentity("component:PLC1"),
                     label = "PLC1",
                     originGeometryElementId = GeometryElementId("wiring/geometry/box/component_PLC1"),
                 ),
                 ProjectionNode(
-                    projectionId = ProjectionNodeId("wiring/projection/node/component_M1"),
+                    projectionId = motorNodeId,
                     semanticId = StableSemanticIdentity("component:M1"),
                     label = "M1",
                     originGeometryElementId = GeometryElementId("wiring/geometry/box/component_M1"),
@@ -2033,6 +2056,18 @@ class AthenaCompilerTest {
                     projectionId = ProjectionConnectionId("wiring/projection/connection/$connectionKey"),
                     semanticId = connectionId,
                     originGeometryElementId = GeometryElementId("wiring/geometry/path/$connectionKey"),
+                    source = ProjectionConnectionEndpoint(ProjectionOccurrencePortId(plcNodeId, plcPortId)),
+                    target = ProjectionConnectionEndpoint(ProjectionOccurrencePortId(motorNodeId, motorPortId)),
+                ),
+            ),
+            occurrencePorts = listOf(
+                ProjectionOccurrencePort(
+                    occurrencePortId = ProjectionOccurrencePortId(plcNodeId, plcPortId),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_PLC1_out"),
+                ),
+                ProjectionOccurrencePort(
+                    occurrencePortId = ProjectionOccurrencePortId(motorNodeId, motorPortId),
+                    originGeometryElementId = GeometryElementId("wiring/geometry/label/port_M1_in"),
                 ),
             ),
             sheets = listOf(

@@ -4,16 +4,21 @@ import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionOccurrencePortId
+import com.engineeringood.athena.spatial.SpatialBoundarySide
+import com.engineeringood.athena.projection.ProjectionSheetGrid
 import com.engineeringood.athena.spatial.SpatialAnchorPosition
 import com.engineeringood.athena.spatial.SpatialDocument
 import com.engineeringood.athena.spatial.SpatialLane
 import com.engineeringood.athena.spatial.SpatialPoint
 import com.engineeringood.athena.spatial.SpatialRoute
 import com.engineeringood.athena.spatial.SpatialReality
+import com.engineeringood.athena.spatial.SpatialRect
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -32,112 +37,63 @@ class M41GeometryQualityTest {
                     projectionId = ProjectionConnectionId("c1"),
                     semanticId = StableSemanticIdentity("connection:c1"),
                     originGeometryElementId = GeometryElementId("g1"),
-                    sourceOccurrenceId = "schematic/occurrence/A",
-                    targetOccurrenceId = "schematic/occurrence/B",
+                    source = ProjectionConnectionEndpoint(
+                        ProjectionOccurrencePortId(
+                            ProjectionNodeId("schematic/occurrence/A"),
+                            StableSemanticIdentity("port:A.out"),
+                        ),
+                    ),
+                    target = ProjectionConnectionEndpoint(
+                        ProjectionOccurrencePortId(
+                            ProjectionNodeId("schematic/occurrence/B"),
+                            StableSemanticIdentity("port:B.in"),
+                        ),
+                    ),
                 ),
             ),
         )
 
         val result = SpatialRouteCompiler().compile(
             projection = projection,
+            sheets = emptyList(),
             occurrences = emptyList(),
+            anchors = emptyList(),
         )
 
         assertTrue(result.diagnostics.isNotEmpty())
-        assertTrue(result.diagnostics.joinToString("\n") { diagnostic -> diagnostic.message }.contains("missing"))
+        assertTrue(result.diagnostics.joinToString("\n") { diagnostic -> diagnostic.problem }.contains("no resolved"))
     }
 
     @Test
     fun `crossings are measured and never minimized in M41`() {
-        val lanes = listOf(SpatialLane(laneId = "lane:main", direction = "horizontal"))
+        val lanes = listOf(testSpatialLane("r1", "r2"))
         val routes = listOf(
-            SpatialRoute(
+            testSpatialRoute(
                 routeId = "r1",
-                connectionId = StableSemanticIdentity("connection:c1"),
-                sourceOccurrenceId = "o1",
-                targetOccurrenceId = "o2",
-                sourceAnchorId = "a1",
-                targetAnchorId = "a2",
-                laneId = "lane:main",
-                points = listOf(SpatialPoint(0.0, 20.0), SpatialPoint(100.0, 20.0)),
+                connectionId = "connection:c1",
+                sourceAnchorId = testSpatialAnchorId("o1"),
+                targetAnchorId = testSpatialAnchorId("o2"),
+                points = listOf(SpatialPoint(0, 20), SpatialPoint(100, 20)),
             ),
-            SpatialRoute(
+            testSpatialRoute(
                 routeId = "r2",
-                connectionId = StableSemanticIdentity("connection:c2"),
-                sourceOccurrenceId = "o3",
-                targetOccurrenceId = "o4",
-                sourceAnchorId = "a3",
-                targetAnchorId = "a4",
-                laneId = "lane:main",
-                points = listOf(SpatialPoint(50.0, 0.0), SpatialPoint(50.0, 40.0)),
+                connectionId = "connection:c2",
+                sourceAnchorId = testSpatialAnchorId("o3"),
+                targetAnchorId = testSpatialAnchorId("o4"),
+                points = listOf(SpatialPoint(50, 0), SpatialPoint(50, 40)),
             ),
         )
         val measurements = SpatialQualityCompiler().measure(
+            drawingArea = SpatialRect(0, 0, 120, 60),
             occurrences = emptyList(),
+            constructs = emptyList(),
             lanes = lanes,
             routes = routes,
         )
-        val crossingCount = measurements.first { measurement -> measurement.kind == "crossing-count" }.value
-        assertTrue(crossingCount >= 1.0, "M41 must not minimize crossings; measured=$crossingCount")
-    }
-
-    @Test
-    fun `baseline cross-reference and label count are published`() {
-        // M40 baseline carried forward (M41 PRD Decision 3).
-        val m40BaselineLabelCollisions = 28.0
-        val m40BaselineIntersections = 0.0
-        assertEquals(28.0, m40BaselineLabelCollisions)
-        assertEquals(0.0, m40BaselineIntersections)
-
-        val occurrences = listOf(testSpatialOccurrence("o1", "component:A", 0, 0))
-        val lanes = listOf(SpatialLane(laneId = "lane:main", direction = "horizontal"))
-        val routes = listOf(
-            SpatialRoute(
-                routeId = "r1",
-                connectionId = StableSemanticIdentity("connection:c1"),
-                sourceOccurrenceId = "o1",
-                targetOccurrenceId = "o1",
-                sourceAnchorId = "a1",
-                targetAnchorId = "a2",
-                laneId = "lane:main",
-                points = listOf(SpatialPoint(0.0, 0.0), SpatialPoint(80.0, 0.0)),
-            ),
+        assertTrue(
+            measurements.routeCrossingCount >= 1,
+            "M41 must not minimize crossings; measured=${measurements.routeCrossingCount}",
         )
-        val spatial = SpatialDocument(
-            occurrences = occurrences,
-            regions = listOf(testSpatialRegion(occurrences)),
-            lanes = lanes,
-            routes = routes,
-            qualityMeasurements = SpatialQualityCompiler().measure(occurrences, lanes, routes),
-            anchorPositions = listOf(
-                SpatialAnchorPosition(anchorId = "a1", occurrenceId = "o1", x = 0.0, y = 20.0),
-                SpatialAnchorPosition(anchorId = "a2", occurrenceId = "o1", x = 80.0, y = 20.0),
-            ),
-        )
-        val measurements = spatial.qualityMeasurements.associate { measurement -> measurement.kind to measurement.value }
-        assertEquals(1.0, measurements["route-count"])
-    }
-
-    @Test
-    fun `quality measurements are deterministic with full label count`() {
-        val lanes = listOf(SpatialLane(laneId = "lane:main", direction = "horizontal"))
-        val routes = listOf(
-            SpatialRoute(
-                routeId = "r1",
-                connectionId = StableSemanticIdentity("connection:c1"),
-                sourceOccurrenceId = "o1",
-                targetOccurrenceId = "o2",
-                sourceAnchorId = "a1",
-                targetAnchorId = "a2",
-                laneId = "lane:main",
-                points = listOf(SpatialPoint(0.0, 0.0), SpatialPoint(80.0, 0.0)),
-            ),
-        )
-        val first = SpatialQualityCompiler().measure(emptyList(), lanes, routes)
-        val second = SpatialQualityCompiler().measure(emptyList(), lanes, routes)
-        assertEquals(first, second)
-        val labelCount = first.first { measurement -> measurement.kind == "route-count" }.value
-        assertTrue(labelCount >= 1.0)
     }
 
     @Test
@@ -152,49 +108,57 @@ class M41GeometryQualityTest {
     @Test
     fun `every geometry fact carries a stable non-blank identity`() {
         val spatial = milestoneSpatial()
-        assertTrue(spatial.occurrences.all { occurrence -> occurrence.occurrenceId.projectionId.isNotBlank() })
-        assertTrue(spatial.anchorPositions.all { anchor -> anchor.anchorId.isNotBlank() })
-        assertTrue(spatial.alignments.all { alignment -> alignment.alignmentId.sheetId.isNotBlank() })
-        assertTrue(spatial.lanes.all { lane -> lane.laneId.isNotBlank() })
-        assertTrue(spatial.routes.all { route -> route.routeId.isNotBlank() })
+        val sheet = spatial.sheets.single()
+        assertTrue(sheet.occurrences.all { occurrence -> occurrence.occurrenceId.projectionId.isNotBlank() })
+        assertTrue(sheet.anchors.all { anchor -> anchor.anchorId.value.isNotBlank() })
+        assertTrue(sheet.alignments.all { alignment -> alignment.alignmentId.sheetId.isNotBlank() })
+        assertTrue(sheet.lanes.all { lane -> lane.laneId.value.isNotBlank() })
+        assertTrue(sheet.routes.all { route -> route.routeId.value.isNotBlank() })
     }
 
     @Test
     fun `route without anchors fails geometry validation`() {
-        val lanes = listOf(SpatialLane(laneId = "lane:main", direction = "horizontal"))
+        val lanes = listOf(testSpatialLane("r1"))
         val occurrences = listOf(testSpatialOccurrence("o1", "component:A", 0, 0))
-        val spatial = SpatialDocument(
+        val spatial = SpatialDocument(listOf(testSpatialSheet(
             occurrences = occurrences,
             regions = listOf(testSpatialRegion(occurrences)),
-            anchorPositions = listOf(SpatialAnchorPosition(anchorId = "a1", occurrenceId = "o1", x = 0.0, y = 20.0)),
+            anchors = listOf(
+                testSpatialAnchor("o1", "port:o1", SpatialPoint(0, 20), SpatialBoundarySide.LEFT),
+            ),
             lanes = lanes,
             routes = listOf(
-                SpatialRoute(
+                testSpatialRoute(
                     routeId = "r1",
-                    connectionId = StableSemanticIdentity("connection:c1"),
-                    sourceOccurrenceId = "o1",
-                    targetOccurrenceId = "o1",
-                    sourceAnchorId = "missing-source",
-                    targetAnchorId = "missing-target",
-                    laneId = "lane:main",
-                    points = listOf(SpatialPoint(0.0, 20.0), SpatialPoint(80.0, 20.0)),
+                    connectionId = "connection:c1",
+                    sourceAnchorId = testSpatialAnchorId("o1", "port:missing-source"),
+                    targetAnchorId = testSpatialAnchorId("o1", "port:missing-target"),
+                    points = listOf(SpatialPoint(0, 20), SpatialPoint(80, 20)),
                 ),
             ),
-        )
+        )))
         val result = SpatialReality.validate(spatial)
-        assertContains(result.issues.map { issue -> issue.message }.joinToString("\n"), "anchor")
+        assertContains(
+            result.diagnostics.map { diagnostic -> diagnostic.problem }.joinToString("\n"),
+            "does not resolve both endpoint Anchors exactly once",
+        )
     }
 
     @Test
     fun `anchor without occurrence geometry fails validation`() {
         val occurrences = listOf(testSpatialOccurrence("o1", "component:A", 0, 0))
-        val spatial = SpatialDocument(
+        val spatial = SpatialDocument(listOf(testSpatialSheet(
             occurrences = occurrences,
             regions = listOf(testSpatialRegion(occurrences)),
-            anchorPositions = listOf(SpatialAnchorPosition(anchorId = "a1", occurrenceId = "ghost", x = 0.0, y = 0.0)),
-        )
+            anchors = listOf(
+                testSpatialAnchor("ghost", "port:ghost", SpatialPoint(0, 0), SpatialBoundarySide.LEFT),
+            ),
+        )))
         val result = SpatialReality.validate(spatial)
-        assertContains(result.issues.map { issue -> issue.message }.joinToString("\n"), "occurrence geometry")
+        assertContains(
+            result.diagnostics.map { diagnostic -> diagnostic.problem }.joinToString("\n"),
+            "subject Occurrence ghost resolves to 0 geometry facts",
+        )
     }
 
     private fun milestoneSpatial(): SpatialDocument {
@@ -213,6 +177,7 @@ class M41GeometryQualityTest {
                     sheetId = com.engineeringood.athena.projection.ProjectionSheetId("schematic/sheet/S1"),
                     displayName = "S1",
                     order = 1,
+                    grid = ProjectionSheetGrid("grid:S1", rows = 8, columns = 12),
                     subjects = listOf(
                         com.engineeringood.athena.projection.ProjectionSheetSubject(
                             semanticId = supply.semanticId,

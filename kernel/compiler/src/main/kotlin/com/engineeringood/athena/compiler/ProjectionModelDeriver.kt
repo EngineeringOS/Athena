@@ -5,11 +5,13 @@ import com.engineeringood.athena.document.BuiltInDocumentProjectionPolicies
 import com.engineeringood.athena.document.DocumentProjectionPolicy
 import com.engineeringood.athena.document.SheetViewRole
 import com.engineeringood.athena.geometry.GeometryDocument
+import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.geometry.GeometryElementKind
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionCrossReference
 import com.engineeringood.athena.projection.ProjectionCrossReferenceId
@@ -19,6 +21,8 @@ import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionLabelPolicy
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionOccurrencePort
+import com.engineeringood.athena.projection.ProjectionOccurrencePortId
 import com.engineeringood.athena.projection.ProjectionNotationPack
 import com.engineeringood.athena.projection.ProjectionNotationPackId
 import com.engineeringood.athena.projection.ProjectionNotationSubject
@@ -60,15 +64,42 @@ class ProjectionModelDeriver {
                 )
             }
         val nodes = baseNodes
+        val nodesBySemanticId = nodes.groupBy(ProjectionNode::semanticId)
+        val engineeringPortsById = document.ports.associateBy { port -> port.id }
+        val occurrencePorts = document.ports.flatMap { port ->
+            val ownerId = port.ownerReference.resolvedIdentity ?: return@flatMap emptyList()
+            nodesBySemanticId[ownerId].orEmpty().map { owner ->
+                ProjectionOccurrencePort(
+                    occurrencePortId = ProjectionOccurrencePortId(owner.projectionId, port.id),
+                    originGeometryElementId = geometry.elements
+                        .firstOrNull { element -> element.semanticId == port.id }
+                        ?.elementId
+                        ?: GeometryElementId("${view.id}/projection/origin/${port.id.value}"),
+                )
+            }
+        }
         val connections = geometry.elements
             .filter { element -> element.kind == GeometryElementKind.PATH }
             .map { element ->
+                val engineeringConnection = document.connections.singleOrNull { connection ->
+                    connection.id == element.semanticId
+                }
                 ProjectionConnection(
                     projectionId = ProjectionConnectionId(
                         element.elementId.value.replace("/geometry/path/", "/projection/connection/"),
                     ),
                     semanticId = element.semanticId,
                     originGeometryElementId = element.elementId,
+                    source = engineeringConnection?.from?.resolvedIdentity?.let { portId ->
+                        val ownerId = engineeringPortsById[portId]?.ownerReference?.resolvedIdentity
+                        val owner = ownerId?.let(nodesBySemanticId::get)?.singleOrNull()
+                        owner?.let { ProjectionConnectionEndpoint(ProjectionOccurrencePortId(it.projectionId, portId)) }
+                    },
+                    target = engineeringConnection?.to?.resolvedIdentity?.let { portId ->
+                        val ownerId = engineeringPortsById[portId]?.ownerReference?.resolvedIdentity
+                        val owner = ownerId?.let(nodesBySemanticId::get)?.singleOrNull()
+                        owner?.let { ProjectionConnectionEndpoint(ProjectionOccurrencePortId(it.projectionId, portId)) }
+                    },
                 )
             }
         val sheets = deriveSheets(
@@ -84,6 +115,7 @@ class ProjectionModelDeriver {
             view = view,
             nodes = nodes,
             connections = connections,
+            occurrencePorts = occurrencePorts,
             resolvedSubjects = resolvedSubjects,
             sheets = sheets,
             notationPack = deriveNotationPack(

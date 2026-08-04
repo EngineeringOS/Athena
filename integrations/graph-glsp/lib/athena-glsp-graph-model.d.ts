@@ -1,4 +1,4 @@
-import { AthenaGLSPCrossReferenceSource, AthenaGLSPDiagnosticSource, AthenaGLSPElectricalAnchorSource, AthenaGLSPElectricalConnectionEndpointSource, AthenaGLSPElectricalRoutingCorridorSource, AthenaGLSPGovernedCommandSource, AthenaGLSPNotationPackSource, AthenaGLSPPoint, AthenaGLSPPresentationDocumentSource, AthenaGLSPProjectionViewSource, AthenaGLSPRenderContributionSource, AthenaGLSPSheetSource } from './athena-glsp-projection-source';
+import { AthenaGLSPCrossReferenceSource, AthenaGLSPDiagnosticSource, AthenaGLSPElectricalAnchorSource, AthenaGLSPElectricalConnectionEndpointSource, AthenaGLSPElectricalRoutingCorridorSource, AthenaGLSPGovernedCommandSource, AthenaGLSPNotationPackSource, AthenaGLSPPoint, AthenaGLSPPresentationDocumentSource, AthenaGLSPProjectionViewSource, AthenaGLSPRenderContributionSource, AthenaGLSPSpatialFactsSource, AthenaGLSPSheetSource } from './athena-glsp-projection-source';
 /** Disposable GLSP-shaped output rebuilt from Athena-owned projection state whenever needed. */
 export type AthenaGLSPDiagram = {
     kind: 'athena-glsp-diagram';
@@ -11,6 +11,9 @@ export type AthenaGLSPDiagram = {
     governedCommands: AthenaGLSPGovernedCommandSource[];
     activeSheetId?: string;
     presentation?: AthenaGLSPPresentationDocumentSource;
+    projectionRegionIds: string[];
+    projectionConstructIds: string[];
+    spatialFacts?: AthenaGLSPSpatialFactsSource;
     sheets: AthenaGLSPSheetSource[];
     notationPack?: AthenaGLSPNotationPackSource;
     crossReferences: AthenaGLSPCrossReferenceSource[];

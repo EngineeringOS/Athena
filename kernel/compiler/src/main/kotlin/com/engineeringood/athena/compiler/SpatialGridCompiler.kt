@@ -10,7 +10,7 @@ import com.engineeringood.athena.spatial.SpatialGridReferenceSubject
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialRect
 import com.engineeringood.athena.spatial.SpatialSourceTrace
-import java.math.BigInteger
+import com.engineeringood.athena.spatial.spatialGridCell
 import java.util.Collections
 
 internal data class SpatialGridSheetInput(
@@ -99,57 +99,21 @@ internal class SpatialGridCompiler {
         rectangle: SpatialRect,
         sourceTrace: SpatialSourceTrace,
     ): SpatialGridReference {
-        val columnIndex = cellIndex(
-            center2 = doubledCenter(rectangle.x, rectangle.width),
-            start2 = doubledCoordinate(grid.drawingArea.x),
-            end2 = doubledCoordinate(grid.drawingArea.right),
-            cells = grid.columns,
-        )
-        val rowIndex = cellIndex(
-            center2 = doubledCenter(rectangle.y, rectangle.height),
-            start2 = doubledCoordinate(grid.drawingArea.y),
-            end2 = doubledCoordinate(grid.drawingArea.bottom),
-            cells = grid.rows,
-        )
-        val rowLabel = spatialGridRowLabel(rowIndex)
-        val columnNumber = columnIndex + 1
+        val cell = spatialGridCell(rectangle, grid)
         return SpatialGridReference(
             gridReferenceId = SpatialGridReferenceId(grid.sheetId, subject),
             sheetId = grid.sheetId,
             gridId = grid.gridId,
             subject = subject,
-            rowIndex = rowIndex,
-            rowLabel = rowLabel,
-            columnIndex = columnIndex,
-            columnNumber = columnNumber,
-            cellReference = "$rowLabel$columnNumber",
+            rowIndex = cell.rowIndex,
+            rowLabel = cell.rowLabel,
+            columnIndex = cell.columnIndex,
+            columnNumber = cell.columnNumber,
+            cellReference = cell.cellReference,
             sourceTrace = sourceTrace,
         )
     }
 
-    private fun cellIndex(
-        center2: Long,
-        start2: Long,
-        end2: Long,
-        cells: Int,
-    ): Int {
-        if (center2 == end2) return cells - 1
-        val relative = BigInteger.valueOf(center2 - start2)
-        val scaled = relative.multiply(BigInteger.valueOf(cells.toLong()))
-        return scaled.divide(BigInteger.valueOf(end2 - start2)).intValueExact()
-    }
-}
-
-internal fun spatialGridRowLabel(rowIndex: Int): String {
-    require(rowIndex >= 0) { "Spatial grid row index must not be negative." }
-    var remaining = rowIndex.toLong() + 1L
-    return buildString {
-        while (remaining > 0L) {
-            val digit = ((remaining - 1L) % 26L).toInt()
-            append(('A'.code + digit).toChar())
-            remaining = (remaining - 1L) / 26L
-        }
-    }.reversed()
 }
 
 internal fun doubledCoordinate(value: Int): Long = value.toLong() * 2L

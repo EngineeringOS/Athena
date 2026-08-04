@@ -7,6 +7,7 @@ import com.engineeringood.athena.compiler.CompilerRenderingBlocked
 import com.engineeringood.athena.presentation.scopedToProjectionMembership
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
+import com.engineeringood.athena.spatial.SpatialDocument
 
 /**
  * Builds the runtime-owned projection session for the active project.
@@ -128,35 +129,82 @@ private fun AthenaExecutionContext.buildProjectionSnapshot(
         }
 
         is CompilerCompilationSuccess -> {
-            val projection = compilation.projections.firstOrNull { document -> document.view.id == viewId }
-            val presentation = compilation.presentations.firstOrNull { document -> document.view.id == viewId }
+            val projection = compilation.authoredProjectionViews.firstOrNull { document -> document.view.id == viewId }
+                ?: compilation.projections.firstOrNull { document -> document.view.id == viewId }
+            val activeSheetId = projection?.let { candidate -> activeProjectionSheetId(candidate) }
+            val presentationCandidates = compilation.presentations.filter { document -> document.view.id == viewId }
+            val requiresSpatial = viewId == "schematic" ||
+                presentationCandidates.any { document -> document.drawingComposition != null }
+            val presentation = selectPresentationAuthority(
+                candidates = presentationCandidates,
+                activeSheetId = activeSheetId,
+                authoritySheetId = { document -> document.drawingComposition?.sheetId },
+                requireSheetAuthority = requiresSpatial,
+            )
+            val spatial = selectSpatialAuthority(
+                candidates = compilation.spatialDocuments,
+                activeSheetId = activeSheetId,
+                authoritySheetIds = { document -> document.sheets.map { sheet -> sheet.sheetId } },
+            )
             val rendering = compilation.rendering
             when {
                 projection != null -> {
-                    val activeSheetId = activeProjectionSheetId(projection)
                     val activeProjection = projection.scopedToActiveSheet(activeSheetId)
                     val activePresentation = presentation?.scopedToProjection(activeProjection)
-                    val scene = activeProjection.toViewerScene(
-                        systemName = compilation.document.system.name,
-                        document = compilation.document,
-                        placementOverrides = projectionPlacementOverrides(viewId),
-                    )
-                    AthenaRuntimeProjectionReadySnapshot(
-                        viewId = viewId,
-                        familyId = projection.view.familyContract.toRuntimeProjectionFamilyId(),
-                        scene = scene,
-                        presentation = activePresentation,
-                        activeSheetId = activeSheetId,
-                        sheets = projection.sheets.map { sheet -> sheet.toRuntimeProjectionSheet() },
-                        notationPack = projection.notationPack?.toRuntimeProjectionNotationPack(),
-                        crossReferences = projection.crossReferences.map { crossReference ->
-                            crossReference.toRuntimeProjectionCrossReference()
-                        },
-                        activeRenderContributions = activeProjectionRenderContributions(
-                            viewId = viewId,
-                            rendererTarget = GRAPH_WORKBENCH_RENDERER_TARGET,
-                        ),
-                    )
+                    when {
+                        requiresSpatial && spatial == null -> unavailableSpatialProjection(viewId, activeSheetId)
+                        requiresSpatial && activePresentation == null -> unavailablePresentationProjection(viewId)
+                        else -> {
+                            val activeProjectionSheet = selectActiveProjectionSheet(
+                                candidates = activeProjection.sheets,
+                                activeSheetId = activeSheetId,
+                                sheetId = { sheet -> sheet.sheetId.value },
+                            )
+                            val scene = if (spatial != null) {
+                                activeProjection.toViewerScene(
+                                    systemName = compilation.document.system.name,
+                                    document = compilation.document,
+                                    spatialDocument = spatial,
+                                    activeSheetId = activeSheetId,
+                                    placementOverrides = projectionPlacementOverrides(viewId),
+                                )
+                            } else {
+                                AthenaRuntimeViewerScene(
+                                    systemName = compilation.document.system.name,
+                                    canvasWidth = 1,
+                                    canvasHeight = 1,
+                                    components = emptyList(),
+                                    connections = emptyList(),
+                                    labels = emptyList(),
+                                )
+                            }
+                            AthenaRuntimeProjectionReadySnapshot(
+                                viewId = viewId,
+                                familyId = projection.view.familyContract.toRuntimeProjectionFamilyId(),
+                                scene = scene,
+                                presentation = activePresentation,
+                                activeSheetId = activeSheetId,
+                                sheets = projection.sheets.map { sheet -> sheet.toRuntimeProjectionSheet() },
+                                notationPack = projection.notationPack?.toRuntimeProjectionNotationPack(),
+                                crossReferences = projection.crossReferences.map { crossReference ->
+                                    crossReference.toRuntimeProjectionCrossReference()
+                                },
+                                activeRenderContributions = activeProjectionRenderContributions(
+                                    viewId = viewId,
+                                    rendererTarget = GRAPH_WORKBENCH_RENDERER_TARGET,
+                                ),
+                                projectionRegionIds = activeProjectionSheet
+                                    ?.regions
+                                    ?.map { region -> region.regionId }
+                                    .orEmpty(),
+                                projectionConstructIds = activeProjectionSheet
+                                    ?.constructs
+                                    ?.map { construct -> construct.constructId.value }
+                                    .orEmpty(),
+                                spatialFacts = spatial?.toRuntimeSpatialFacts(viewId, activeSheetId),
+                            )
+                        }
+                    }
                 }
 
                 rendering is CompilerRenderingBlocked -> {
@@ -194,6 +242,68 @@ private fun AthenaExecutionContext.buildProjectionSnapshot(
             }
         }
     }
+}
+
+internal fun <T> selectSpatialAuthority(
+    candidates: List<T>,
+    activeSheetId: String?,
+    authoritySheetIds: (T) -> List<String>,
+): T? {
+    if (activeSheetId == null) return null
+    return candidates.singleOrNull { candidate -> activeSheetId in authoritySheetIds(candidate) }
+}
+
+internal fun <T> selectPresentationAuthority(
+    candidates: List<T>,
+    activeSheetId: String?,
+    authoritySheetId: (T) -> String?,
+    requireSheetAuthority: Boolean = false,
+): T? {
+    val sheetBackedCandidates = candidates.filter { candidate -> authoritySheetId(candidate) != null }
+    return if (sheetBackedCandidates.isEmpty() && !requireSheetAuthority) {
+        candidates.singleOrNull()
+    } else {
+        sheetBackedCandidates.singleOrNull { candidate -> authoritySheetId(candidate) == activeSheetId }
+    }
+}
+
+internal fun <T> selectActiveProjectionSheet(
+    candidates: List<T>,
+    activeSheetId: String?,
+    sheetId: (T) -> String,
+): T? {
+    if (activeSheetId == null) return null
+    return candidates.singleOrNull { candidate -> sheetId(candidate) == activeSheetId }
+}
+
+private fun unavailableSpatialProjection(viewId: String, activeSheetId: String?): AthenaRuntimeProjectionUnavailableSnapshot {
+    val reason = "Spatial Reality is unavailable for active Projection view `$viewId` and Sheet `${activeSheetId ?: "<missing>"}`."
+    return AthenaRuntimeProjectionUnavailableSnapshot(
+        viewId = viewId,
+        reason = reason,
+        diagnostics = listOf(
+            AthenaRuntimeProjectionDiagnostic(
+                severity = "error",
+                code = "spatial.missing",
+                message = "$reason Compile one canonical Spatial document before Presentation publication.",
+            ),
+        ),
+    )
+}
+
+private fun unavailablePresentationProjection(viewId: String): AthenaRuntimeProjectionUnavailableSnapshot {
+    val reason = "Presentation Reality is unavailable for active Projection view `$viewId`."
+    return AthenaRuntimeProjectionUnavailableSnapshot(
+        viewId = viewId,
+        reason = reason,
+        diagnostics = listOf(
+            AthenaRuntimeProjectionDiagnostic(
+                severity = "error",
+                code = "presentation.missing",
+                message = "$reason Preserve the compiler-owned Spatial-to-Presentation result.",
+            ),
+        ),
+    )
 }
 
 private data class ProjectionSheetSwitchTarget(

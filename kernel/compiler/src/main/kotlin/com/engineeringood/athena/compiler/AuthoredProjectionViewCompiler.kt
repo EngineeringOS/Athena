@@ -4,11 +4,14 @@ import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionConstructId
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionOccurrencePort
+import com.engineeringood.athena.projection.ProjectionOccurrencePortId
 import com.engineeringood.athena.projection.ProjectionRegion
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetConstruct
@@ -242,36 +245,81 @@ object AuthoredProjectionViewCompiler {
                 }
             }
             if (diagnostics.isEmpty()) {
-                val nodesByLabel = projectionNodes.groupBy { node -> node.label }
-                val occurrenceNames = nodesByLabel.keys
-                val connections = document.connections.mapNotNull { connection ->
-                    val fromDevice = connection.from.resolvedIdentity?.value?.substringAfter("port:")?.substringBefore(".")
-                    val toDevice = connection.to.resolvedIdentity?.value?.substringAfter("port:")?.substringBefore(".")
-                    if (fromDevice != null && toDevice != null && fromDevice in occurrenceNames && toDevice in occurrenceNames) {
-                        val source = nodesByLabel.getValue(fromDevice).singleOrNull() ?: return@mapNotNull null
-                        val target = nodesByLabel.getValue(toDevice).singleOrNull() ?: return@mapNotNull null
-                        ProjectionConnection(
-                            projectionId = ProjectionConnectionId("${view.name}/connection/${connection.id.value}"),
-                            semanticId = connection.id,
-                            originGeometryElementId = GeometryElementId("projection:${view.name}:${connection.id.value}"),
-                            sourceOccurrenceId = source.projectionId.value,
-                            targetOccurrenceId = target.projectionId.value,
-                            sourcePortId = connection.from.resolvedIdentity?.value,
-                            targetPortId = connection.to.resolvedIdentity?.value,
+                val nodesBySemanticId = projectionNodes.groupBy(ProjectionNode::semanticId)
+                val engineeringPortsById = document.ports.associateBy { port -> port.id }
+                val occurrencePorts = projectionNodes.flatMap { node ->
+                    document.ports
+                        .filter { port -> port.ownerReference.resolvedIdentity == node.semanticId }
+                        .map { port ->
+                            ProjectionOccurrencePort(
+                                occurrencePortId = ProjectionOccurrencePortId(node.projectionId, port.id),
+                                originGeometryElementId = GeometryElementId(
+                                    "projection:${view.name}:${node.projectionId.value}:port:${port.id.value}",
+                                ),
+                            )
+                        }
+                }
+                val connections = buildList {
+                    document.connections.forEach { connection ->
+                        val sourcePortId = connection.from.resolvedIdentity ?: return@forEach
+                        val targetPortId = connection.to.resolvedIdentity ?: return@forEach
+                        val sourceOwnerId = engineeringPortsById[sourcePortId]?.ownerReference?.resolvedIdentity
+                        val targetOwnerId = engineeringPortsById[targetPortId]?.ownerReference?.resolvedIdentity
+                        val sourceCandidates = sourceOwnerId?.let(nodesBySemanticId::get).orEmpty()
+                        val targetCandidates = targetOwnerId?.let(nodesBySemanticId::get).orEmpty()
+                        if (sourceCandidates.isEmpty() || targetCandidates.isEmpty()) return@forEach
+                        if (sourceCandidates.size != 1 || targetCandidates.size != 1) {
+                            diagnostics += ProjectionViewDiagnostic(
+                                view = view.name,
+                                message = "View '${view.name}' Connection '${connection.id.value}' does not resolve each endpoint " +
+                                    "to exactly one projected Occurrence. Place each endpoint owner once in this view.",
+                            )
+                            return@forEach
+                        }
+                        val source = sourceCandidates.single()
+                        val target = targetCandidates.single()
+                        add(
+                            ProjectionConnection(
+                                projectionId = ProjectionConnectionId("${view.name}/connection/${connection.id.value}"),
+                                semanticId = connection.id,
+                                originGeometryElementId = GeometryElementId("projection:${view.name}:${connection.id.value}"),
+                                source = ProjectionConnectionEndpoint(
+                                    ProjectionOccurrencePortId(source.projectionId, sourcePortId),
+                                ),
+                                target = ProjectionConnectionEndpoint(
+                                    ProjectionOccurrencePortId(target.projectionId, targetPortId),
+                                ),
+                            ),
                         )
-                    } else {
-                        null
                     }
                 }
-                documents += ProjectionDocument(
-                    view = ViewDefinition(
-                        id = view.name,
-                        displayName = view.name,
-                    ),
-                    nodes = projectionNodes,
-                    connections = connections,
-                    sheets = sheets,
-                )
+                if (diagnostics.isEmpty()) {
+                    val sheetsWithConnections = sheets.map { sheet ->
+                        val ownedOccurrences = sheet.subjects.flatMap { subject -> subject.nodeIds }.toSet()
+                        val ownedConnections = connections.filter { connection ->
+                            connection.source?.occurrencePortId?.occurrenceId?.let(ownedOccurrences::contains) == true &&
+                                connection.target?.occurrencePortId?.occurrenceId?.let(ownedOccurrences::contains) == true
+                        }
+                        sheet.copy(
+                            subjects = sheet.subjects + ownedConnections.map { connection ->
+                                ProjectionSheetSubject(
+                                    semanticId = connection.semanticId,
+                                    connectionIds = listOf(connection.projectionId),
+                                )
+                            },
+                        )
+                    }
+                    documents += ProjectionDocument(
+                        view = ViewDefinition(
+                            id = view.name,
+                            displayName = view.name,
+                        ),
+                        nodes = projectionNodes,
+                        connections = connections,
+                        occurrencePorts = occurrencePorts,
+                        sheets = sheetsWithConnections,
+                    )
+                }
             }
         }
         if (diagnostics.isEmpty()) {

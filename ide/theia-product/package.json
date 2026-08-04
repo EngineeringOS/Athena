@@ -58,7 +58,8 @@
     "@theia/userstorage": "1.73.1",
     "@theia/workspace": "1.73.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@theia/cli": "1.73.1",
@@ -99,7 +100,7 @@
     "start:smoke:m32": "node scripts/verify-athena-m32-sample-project.js",
     "start:smoke:m39": "node scripts/verify-athena-m39-product-proof.js",
     "start:smoke:m40": "node scripts/verify-athena-m40-product-proof.js",
-    "start:smoke:m41": "node scripts/verify-athena-m41-product-proof.js",
+    "start:smoke:m41": "yarn --cwd .. build && node scripts/verify-athena-m41-product-proof.js",
     "start:smoke:syntax-colors": "node scripts/verify-athena-editor-syntax-colors.js",
     "start:smoke:tree-sitter": "node scripts/verify-athena-tree-sitter-highlighting.js",
     "start:smoke:reuse-catalog": "node scripts/verify-athena-reuse-catalog.js",

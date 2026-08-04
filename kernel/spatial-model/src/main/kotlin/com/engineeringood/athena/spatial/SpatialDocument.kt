@@ -2,9 +2,7 @@ package com.engineeringood.athena.spatial
 
 import com.engineeringood.athena.ir.RealityDeclaration
 import com.engineeringood.athena.ir.RealityIdentityRule
-import com.engineeringood.athena.ir.RealityValidationIssue
-import com.engineeringood.athena.ir.RealityValidationResult
-import com.engineeringood.athena.ir.StableSemanticIdentity
+import java.util.Collections
 
 /**
  * Concrete root for Spatial Reality.
@@ -12,17 +10,122 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
  * Spatial Reality turns projected engineering content into geometry. Routing is a subsystem of this
  * reality, so lanes and routes live here with placement, bounds, anchors, and alignment.
  */
-data class SpatialDocument(
-    val occurrences: List<SpatialOccurrenceGeometry> = emptyList(),
-    val regions: List<SpatialRegionGeometry> = emptyList(),
-    val constructs: List<SpatialConstructGeometry> = emptyList(),
-    val anchorPositions: List<SpatialAnchorPosition> = emptyList(),
-    val alignments: List<SpatialAlignment> = emptyList(),
-    val lanes: List<SpatialLane> = emptyList(),
-    val routes: List<SpatialRoute> = emptyList(),
-    val qualityMeasurements: List<SpatialQualityMeasurement> = emptyList(),
-    val gridReferences: Map<String, String> = emptyMap(),
-)
+class SpatialDocument(sheets: List<SpatialSheet>) {
+    val sheets: List<SpatialSheet> = sheets.immutableDocumentCopy()
+
+    init {
+        require(this.sheets.isNotEmpty()) { "Spatial document must contain at least one Sheet." }
+    }
+
+    override fun equals(other: Any?): Boolean =
+        this === other || other is SpatialDocument && sheets == other.sheets
+
+    override fun hashCode(): Int = sheets.hashCode()
+
+    override fun toString(): String = "SpatialDocument(sheets=$sheets)"
+}
+
+class SpatialSheet(
+    val sheetId: String,
+    val extent: SpatialRect,
+    val drawingArea: SpatialRect,
+    val grid: SpatialGridDefinition,
+    occurrences: List<SpatialOccurrenceGeometry>,
+    regions: List<SpatialRegionGeometry>,
+    constructs: List<SpatialConstructGeometry>,
+    alignments: List<SpatialAlignment>,
+    anchors: List<SpatialAnchorPosition>,
+    lanes: List<SpatialLane>,
+    routes: List<SpatialRoute>,
+    gridReferences: List<SpatialGridReference>,
+    val quality: SpatialQualitySnapshot,
+    val sourceTrace: SpatialSourceTrace,
+) {
+    val occurrences: List<SpatialOccurrenceGeometry> = occurrences.immutableDocumentCopy()
+    val regions: List<SpatialRegionGeometry> = regions.immutableDocumentCopy()
+    val constructs: List<SpatialConstructGeometry> = constructs.immutableDocumentCopy()
+    val alignments: List<SpatialAlignment> = alignments.immutableDocumentCopy()
+    val anchors: List<SpatialAnchorPosition> = anchors.immutableDocumentCopy()
+    val lanes: List<SpatialLane> = lanes.immutableDocumentCopy()
+    val routes: List<SpatialRoute> = routes.immutableDocumentCopy()
+    val gridReferences: List<SpatialGridReference> = gridReferences.immutableDocumentCopy()
+
+    init {
+        require(sheetId.isNotBlank()) { "Spatial Sheet identity must not be blank." }
+    }
+
+    fun copy(
+        sheetId: String = this.sheetId,
+        extent: SpatialRect = this.extent,
+        drawingArea: SpatialRect = this.drawingArea,
+        grid: SpatialGridDefinition = this.grid,
+        occurrences: List<SpatialOccurrenceGeometry> = this.occurrences,
+        regions: List<SpatialRegionGeometry> = this.regions,
+        constructs: List<SpatialConstructGeometry> = this.constructs,
+        alignments: List<SpatialAlignment> = this.alignments,
+        anchors: List<SpatialAnchorPosition> = this.anchors,
+        lanes: List<SpatialLane> = this.lanes,
+        routes: List<SpatialRoute> = this.routes,
+        gridReferences: List<SpatialGridReference> = this.gridReferences,
+        quality: SpatialQualitySnapshot = this.quality,
+        sourceTrace: SpatialSourceTrace = this.sourceTrace,
+    ): SpatialSheet = SpatialSheet(
+        sheetId,
+        extent,
+        drawingArea,
+        grid,
+        occurrences,
+        regions,
+        constructs,
+        alignments,
+        anchors,
+        lanes,
+        routes,
+        gridReferences,
+        quality,
+        sourceTrace,
+    )
+
+    override fun equals(other: Any?): Boolean =
+        this === other || other is SpatialSheet &&
+            sheetId == other.sheetId &&
+            extent == other.extent &&
+            drawingArea == other.drawingArea &&
+            grid == other.grid &&
+            occurrences == other.occurrences &&
+            regions == other.regions &&
+            constructs == other.constructs &&
+            alignments == other.alignments &&
+            anchors == other.anchors &&
+            lanes == other.lanes &&
+            routes == other.routes &&
+            gridReferences == other.gridReferences &&
+            quality == other.quality &&
+            sourceTrace == other.sourceTrace
+
+    override fun hashCode(): Int = listOf(
+        sheetId,
+        extent,
+        drawingArea,
+        grid,
+        occurrences,
+        regions,
+        constructs,
+        alignments,
+        anchors,
+        lanes,
+        routes,
+        gridReferences,
+        quality,
+        sourceTrace,
+    ).hashCode()
+
+    override fun toString(): String =
+        "SpatialSheet(sheetId=$sheetId, extent=$extent, drawingArea=$drawingArea, grid=$grid, " +
+            "occurrences=$occurrences, regions=$regions, constructs=$constructs, alignments=$alignments, " +
+            "anchors=$anchors, lanes=$lanes, routes=$routes, gridReferences=$gridReferences, " +
+            "quality=$quality, sourceTrace=$sourceTrace)"
+}
 
 object SpatialReality {
     const val name: String = "Spatial Reality"
@@ -38,17 +141,21 @@ object SpatialReality {
         "alignment",
         "lane",
         "route",
-        "quality measurement",
+        "grid definition",
+        "Grid Reference",
+        "quality snapshot",
     )
 
     val identityRules: List<RealityIdentityRule> = listOf(
         RealityIdentityRule("occurrence geometry", "Occurrence identity names its owning Sheet and Projection occurrence."),
         RealityIdentityRule("Region geometry", "Region identity names its owning Sheet and Projection Region."),
         RealityIdentityRule("Construct geometry", "Construct identity names its owning Sheet and Projection Construct."),
-        RealityIdentityRule("anchor position", "Anchor position identity traces to projection occurrence plus anchor id."),
+        RealityIdentityRule("anchor position", "Anchor identity names its owning Sheet, typed Occurrence, and semantic port."),
         RealityIdentityRule("lane", "Lane identity is spatial-local and owned by the spatial compiler."),
         RealityIdentityRule("route", "Route identity traces to the projection connection identity plus route id."),
-        RealityIdentityRule("quality measurement", "Quality measurement identity traces to the spatial document and measured fact kind."),
+        RealityIdentityRule("grid definition", "Grid identity names its owning Sheet and Projection grid."),
+        RealityIdentityRule("Grid Reference", "Grid Reference identity names its owning Sheet and typed subject."),
+        RealityIdentityRule("quality snapshot", "Quality snapshot identity names its owning Sheet and contributing Spatial facts."),
     )
 
     val requiredFacts: List<String> = listOf(
@@ -69,112 +176,7 @@ object SpatialReality {
         requiredFacts = requiredFacts,
     )
 
-    fun validate(document: SpatialDocument): RealityValidationResult {
-        val laneIds = document.lanes.map { lane -> lane.laneId }.toSet()
-        val anchorIds = document.anchorPositions.map { anchor -> anchor.anchorId }.toSet()
-        val occurrenceIds = document.occurrences.map { occurrence -> occurrence.occurrenceId }.toSet()
-        val projectionOccurrenceIds = occurrenceIds.map { occurrenceId -> occurrenceId.projectionId }.toSet()
-        val issues = buildList {
-            if (document.occurrences.isEmpty()) {
-                add(RealityValidationIssue(name, "missing occurrence geometry facts"))
-            }
-            if (document.regions.isEmpty()) {
-                add(RealityValidationIssue(name, "missing Region geometry facts"))
-            }
-            if (document.anchorPositions.isEmpty()) {
-                add(RealityValidationIssue(name, "missing anchor position facts"))
-            }
-            if (document.occurrences.any { occurrence -> occurrence.subjectId.value.isBlank() }) {
-                add(RealityValidationIssue(name, "missing occurrence geometry identity"))
-            }
-            if (document.routes.any { route -> route.connectionId.value.isBlank() }) {
-                add(RealityValidationIssue(name, "missing route identity"))
-            }
-            if (document.routes.any { route -> route.laneId !in laneIds }) {
-                add(RealityValidationIssue(name, "missing lane identity"))
-            }
-            if (document.routes.any { route ->
-                    route.sourceAnchorId !in anchorIds || route.targetAnchorId !in anchorIds
-                }
-            ) {
-                add(RealityValidationIssue(name, "route without anchor position facts"))
-            }
-            if (document.anchorPositions.any { anchor -> anchor.occurrenceId !in projectionOccurrenceIds }) {
-                add(RealityValidationIssue(name, "anchor position without occurrence geometry"))
-            }
-            if (document.regions.any { region -> region.memberOccurrenceIds.any { member -> member !in occurrenceIds } }) {
-                add(RealityValidationIssue(name, "Region without occurrence geometry"))
-            }
-            if (document.constructs.any { construct ->
-                    construct.memberOccurrenceIds.any { member -> member !in occurrenceIds }
-                }
-            ) {
-                add(RealityValidationIssue(name, "Construct without occurrence geometry"))
-            }
-            if (document.alignments.any { alignment -> alignment.occurrenceIds.any { member -> member !in occurrenceIds } }) {
-                add(RealityValidationIssue(name, "alignment without occurrence geometry"))
-            }
-        }
-        return RealityValidationResult(issues)
-    }
+    fun validate(document: SpatialDocument): SpatialValidationResult = SpatialValidation.validate(document)
 }
 
-data class SpatialAnchorPosition(
-    val anchorId: String,
-    val occurrenceId: String,
-    val x: Double,
-    val y: Double,
-) {
-    init {
-        require(anchorId.isNotBlank()) { "Spatial anchor id must not be blank." }
-        require(occurrenceId.isNotBlank()) { "Spatial anchor occurrence id must not be blank." }
-    }
-}
-
-data class SpatialLane(
-    val laneId: String,
-    val direction: String,
-) {
-    init {
-        require(laneId.isNotBlank()) { "Spatial lane id must not be blank." }
-        require(direction.isNotBlank()) { "Spatial lane direction must not be blank." }
-    }
-}
-
-data class SpatialPoint(
-    val x: Double,
-    val y: Double,
-)
-
-data class SpatialRoute(
-    val routeId: String,
-    val connectionId: StableSemanticIdentity,
-    val sourceOccurrenceId: String,
-    val targetOccurrenceId: String,
-    val sourceAnchorId: String,
-    val targetAnchorId: String,
-    val sourcePortId: String? = null,
-    val targetPortId: String? = null,
-    val laneId: String,
-    val points: List<SpatialPoint>,
-) {
-    init {
-        require(routeId.isNotBlank()) { "Spatial route id must not be blank." }
-        require(sourceOccurrenceId.isNotBlank()) { "Spatial route source occurrence id must not be blank." }
-        require(targetOccurrenceId.isNotBlank()) { "Spatial route target occurrence id must not be blank." }
-        require(sourceAnchorId.isNotBlank()) { "Spatial route source anchor id must not be blank." }
-        require(targetAnchorId.isNotBlank()) { "Spatial route target anchor id must not be blank." }
-        require(laneId.isNotBlank()) { "Spatial route lane id must not be blank." }
-        require(points.size >= 2) { "Spatial route must contain at least two points." }
-    }
-}
-
-data class SpatialQualityMeasurement(
-    val kind: String,
-    val value: Double,
-) {
-    init {
-        require(kind.isNotBlank()) { "Spatial quality measurement kind must not be blank." }
-        require(value >= 0.0) { "Spatial quality measurement value must not be negative." }
-    }
-}
+private fun <T> List<T>.immutableDocumentCopy(): List<T> = Collections.unmodifiableList(toList())

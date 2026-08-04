@@ -55,7 +55,7 @@ export function AthenaGraphWorkbenchEdgeLayer(
                         className={`athena-graph-workbench__edge athena-graph-workbench__edge--${edge.conductorStyle} ${edgeSelected ? 'athena-graph-workbench__edge--selected' : ''}`}
                         d={edge.path}
                         data-athena-route-fact='true'
-                        data-athena-route-id={edge.id}
+                        data-athena-route-id={edge.presentationConnector?.routeId ?? edge.id}
                         data-athena-route-semantic-id={edge.semanticId}
                         data-athena-route-points={edge.routePoints.map(point => `${point.x},${point.y}`).join(';')}
                         data-athena-route-point-count={edge.routePoints.length}

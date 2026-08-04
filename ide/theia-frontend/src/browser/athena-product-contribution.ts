@@ -51,6 +51,7 @@ export interface AthenaGraphWorkbenchSnapshot {
     readonly available: boolean;
     readonly hasDiagram: boolean;
     readonly activeViewId: string;
+    readonly activeSheetId: string;
     readonly presentationGraphicOccurrenceCount: number;
     readonly presentationConnectorCount: number;
     readonly presentationOccurrenceCount: number;
@@ -59,6 +60,16 @@ export interface AthenaGraphWorkbenchSnapshot {
     readonly firstGraphicOccurrenceBounds?: unknown;
     readonly canvasWidth: number;
     readonly canvasHeight: number;
+    readonly spatialProof?: unknown;
+    readonly projectionComponentIds: string[];
+    readonly projectionConnectionIds: string[];
+    readonly projectionRegionIds: string[];
+    readonly projectionConstructIds: string[];
+    readonly presentationOccurrences: unknown[];
+    readonly presentationConnectors: unknown[];
+    readonly presentationSheetId: string;
+    readonly drawingAreaBounds?: unknown;
+    readonly sheetBounds?: unknown;
 }
 
 @injectable()
@@ -276,14 +287,28 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
                 graphicOccurrences?: Array<{ occurrenceId?: string; bounds?: unknown }>;
                 connectors?: unknown[];
                 occurrences?: unknown[];
-                drawingComposition?: { primitives?: unknown[] };
+                drawingComposition?: {
+                    sheetId?: string;
+                    primitives?: unknown[];
+                    drawingAreaBounds?: unknown;
+                    sheetBounds?: unknown;
+                };
             };
+            graph?: {
+                nodes?: Array<{ id?: string; kind?: string }>;
+                edges?: Array<{ id?: string }>;
+            };
+            activeSheetId?: string;
+            projectionRegionIds?: string[];
+            projectionConstructIds?: string[];
+                spatialFacts?: unknown;
         } }).diagram;
         const presentation = diagram?.presentation;
         return {
             available: !!widget,
             hasDiagram: !!diagram,
             activeViewId: diagram?.activeViewId ?? '',
+            activeSheetId: diagram?.activeSheetId ?? '',
             presentationGraphicOccurrenceCount: Array.isArray(presentation?.graphicOccurrences)
                 ? presentation.graphicOccurrences.length
                 : -1,
@@ -299,7 +324,28 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
             firstGraphicOccurrenceId: presentation?.graphicOccurrences?.[0]?.occurrenceId ?? '',
             firstGraphicOccurrenceBounds: presentation?.graphicOccurrences?.[0]?.bounds,
             canvasWidth: presentation?.canvasWidth ?? 0,
-            canvasHeight: presentation?.canvasHeight ?? 0
+            canvasHeight: presentation?.canvasHeight ?? 0,
+            spatialProof: diagram?.spatialFacts,
+            projectionComponentIds: Array.isArray(diagram?.graph?.nodes)
+                ? diagram.graph.nodes
+                    .filter(node => node.kind === 'component')
+                    .map(node => node.id ?? '')
+                    .filter(Boolean)
+                : [],
+            projectionConnectionIds: Array.isArray(diagram?.graph?.edges)
+                ? diagram.graph.edges.map(edge => edge.id ?? '').filter(Boolean)
+                : [],
+            projectionRegionIds: Array.isArray(diagram?.projectionRegionIds)
+                ? [...diagram.projectionRegionIds]
+                : [],
+            projectionConstructIds: Array.isArray(diagram?.projectionConstructIds)
+                ? [...diagram.projectionConstructIds]
+                : [],
+            presentationOccurrences: Array.isArray(presentation?.occurrences) ? presentation.occurrences : [],
+            presentationConnectors: Array.isArray(presentation?.connectors) ? presentation.connectors : [],
+            presentationSheetId: presentation?.drawingComposition?.sheetId ?? '',
+            drawingAreaBounds: diagram?.presentation?.drawingComposition?.drawingAreaBounds,
+            sheetBounds: diagram?.presentation?.drawingComposition?.sheetBounds,
         };
     }
 

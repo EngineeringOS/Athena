@@ -63,12 +63,49 @@ data class AthenaProjectionReadyPayload(
     val viewId: String,
     val familyId: String? = null,
     val systemName: String,
+    val canvasWidth: Int,
+    val canvasHeight: Int,
     val presentation: AthenaPresentationDocumentPayload? = null,
     val activeSheetId: String? = null,
     val sheets: List<AthenaProjectionSheetPayload> = emptyList(),
     val notationPack: AthenaProjectionNotationPackPayload? = null,
     val crossReferences: List<AthenaProjectionCrossReferencePayload> = emptyList(),
     val activeRenderContributions: List<AthenaProjectionRenderContributionPayload>,
+    val components: List<AthenaProjectionComponentPayload> = emptyList(),
+    val connections: List<AthenaProjectionConnectionPayload> = emptyList(),
+    val labels: List<AthenaProjectionLabelPayload> = emptyList(),
+    val projectionRegionIds: List<String> = emptyList(),
+    val projectionConstructIds: List<String> = emptyList(),
+    val spatialFacts: AthenaSpatialFactsPayload? = null,
+)
+
+data class AthenaProjectionComponentPayload(
+    val projectionId: String,
+    val semanticId: String,
+    val label: String,
+    val x: Int,
+    val y: Int,
+    val width: Int,
+    val height: Int,
+)
+
+data class AthenaProjectionConnectionPayload(
+    val projectionId: String,
+    val semanticId: String,
+    val x1: Int,
+    val y1: Int,
+    val x2: Int,
+    val y2: Int,
+)
+
+data class AthenaProjectionLabelPayload(
+    val projectionId: String,
+    val semanticId: String,
+    val label: String,
+    val x: Int,
+    val y: Int,
+    val width: Int,
+    val height: Int,
 )
 
 /**

@@ -1,27 +1,36 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.spatial.SpatialLane
+import com.engineeringood.athena.spatial.SpatialConstructGeometry
+import com.engineeringood.athena.spatial.SpatialDiagnostic
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
-import com.engineeringood.athena.spatial.SpatialPoint
-import com.engineeringood.athena.spatial.SpatialQualityMeasurement
+import com.engineeringood.athena.spatial.SpatialQualityMetrics
+import com.engineeringood.athena.spatial.SpatialRect
 import com.engineeringood.athena.spatial.SpatialRoute
+import com.engineeringood.athena.spatial.SpatialSheet
 
 class SpatialQualityCompiler {
     fun measure(
+        drawingArea: SpatialRect,
         occurrences: List<SpatialOccurrenceGeometry>,
+        constructs: List<SpatialConstructGeometry>,
         lanes: List<SpatialLane>,
         routes: List<SpatialRoute>,
-    ): List<SpatialQualityMeasurement> =
-        listOf(
-            SpatialQualityMeasurement("overlap-count", overlapCount(occurrences).toDouble()),
-            SpatialQualityMeasurement("body-intersection-count", bodyIntersectionCount(occurrences, routes).toDouble()),
-            SpatialQualityMeasurement("crossing-count", crossingCount(routes).toDouble()),
-            SpatialQualityMeasurement("twist-count", twistCount(routes).toDouble()),
-            SpatialQualityMeasurement("lane-use-count", routes.map { route -> route.laneId }.distinct().size.toDouble()),
-            SpatialQualityMeasurement("label-pressure", routes.size.toDouble()),
-            SpatialQualityMeasurement("route-count", routes.size.toDouble()),
-            SpatialQualityMeasurement("lane-count", lanes.size.toDouble()),
+    ): SpatialQualityMetrics {
+        val laneUse = laneUse(routes, lanes)
+        val drawingAreaArea = drawingArea.width.toLong() * drawingArea.height.toLong()
+        return SpatialQualityMetrics(
+            occurrenceOverlapCount = overlapCount(occurrences),
+            constructContainmentFailureCount = containmentFailureCount(occurrences, constructs),
+            routeBodyIntersectionCount = bodyIntersectionCount(occurrences, routes),
+            routeCrossingCount = spatialRouteCrossingCount(routes),
+            twistCount = twistCount(routes),
+            usedLaneCount = laneUse.first,
+            peakRoutesPerLane = laneUse.second,
+            density = occurrences.size.toDouble() / drawingAreaArea.toDouble(),
+            occupancy = spatialOccurrenceUnionArea(occurrences).toDouble() / drawingAreaArea.toDouble(),
         )
+    }
 
     private fun overlapCount(occurrences: List<SpatialOccurrenceGeometry>): Int {
         val boxes = boxesFor(occurrences)
@@ -30,68 +39,106 @@ class SpatialQualityCompiler {
         }
     }
 
+    private fun containmentFailureCount(
+        occurrences: List<SpatialOccurrenceGeometry>,
+        constructs: List<SpatialConstructGeometry>,
+    ): Int {
+        val occurrencesById = occurrences.groupBy(SpatialOccurrenceGeometry::occurrenceId)
+        return constructs.sumOf { construct ->
+            construct.memberOccurrenceIds.count { occurrenceId ->
+                occurrencesById[occurrenceId]
+                    ?.singleOrNull()
+                    ?.rectangle
+                    ?.isInside(construct.envelope) == false
+            }
+        }
+    }
+
     private fun bodyIntersectionCount(
         occurrences: List<SpatialOccurrenceGeometry>,
         routes: List<SpatialRoute>,
-    ): Int {
-        val boxes = boxesFor(occurrences)
-        return routes.sumOf { route ->
-            route.points.count { point -> boxes.any { box -> box.contains(point) } }
+    ): Int = routes.sumOf { route ->
+        val endpointOwners = setOf(route.sourceAnchorId.occurrenceId, route.targetAnchorId.occurrenceId)
+        val bodies = occurrences.filterNot { occurrence -> occurrence.occurrenceId in endpointOwners }
+        route.segments.count { segment ->
+            bodies.any { occurrence -> segment.intersectsOpenInterior(occurrence.rectangle) }
         }
     }
 
-    private fun crossingCount(routes: List<SpatialRoute>): Int {
-        val segments = routes.flatMap { route -> route.points.zipWithNext() }
-        return segments.indices.sumOf { index ->
-            ((index + 1) until segments.size).count { other -> segments[index].crosses(segments[other]) }
+    private fun twistCount(routes: List<SpatialRoute>): Int = routes.sumOf { route ->
+        route.segments.count { segment ->
+            segment.start.x != segment.end.x && segment.start.y != segment.end.y
         }
     }
 
-    private fun twistCount(routes: List<SpatialRoute>): Int =
-        routes.sumOf { route ->
-            route.points.zipWithNext().count { (start, end) -> start.x != end.x && start.y != end.y }
-        }
+    private fun laneUse(routes: List<SpatialRoute>, lanes: List<SpatialLane>): Pair<Int, Int> {
+        val existingLaneIds = lanes.map(SpatialLane::laneId).toSet()
+        val routeCounts = routes
+            .filter { route -> route.laneId in existingLaneIds }
+            .groupingBy(SpatialRoute::laneId)
+            .eachCount()
+        return routeCounts.size to (routeCounts.values.maxOrNull() ?: 0)
+    }
 
     private fun boxesFor(occurrences: List<SpatialOccurrenceGeometry>): List<SpatialBox> =
         occurrences.map { occurrence ->
             val rectangle = occurrence.rectangle
             SpatialBox(
-                left = rectangle.x.toDouble(),
-                top = rectangle.y.toDouble(),
-                right = rectangle.right.toDouble(),
-                bottom = rectangle.bottom.toDouble(),
+                left = rectangle.x,
+                top = rectangle.y,
+                right = rectangle.right,
+                bottom = rectangle.bottom,
             )
         }
 }
 
+internal fun exactSpatialQualityDiagnostics(sheet: SpatialSheet): List<SpatialDiagnostic> {
+    val published = sheet.quality.metrics
+    if (!published.density.isFinite() || published.density < 0.0 ||
+        !published.occupancy.isFinite() || published.occupancy < 0.0
+    ) {
+        return emptyList()
+    }
+    val expected = try {
+        SpatialQualityCompiler().measure(
+            drawingArea = sheet.drawingArea,
+            occurrences = sheet.occurrences,
+            constructs = sheet.constructs,
+            lanes = sheet.lanes,
+            routes = sheet.routes,
+        )
+    } catch (_: ArithmeticException) {
+        return listOf(
+            SpatialDiagnostic(
+                subject = "Quality snapshot on Sheet ${sheet.sheetId}",
+                problem = "metrics cannot be recomputed because final Spatial geometry exceeds the supported area range",
+                correction = "Keep every Occurrence rectangle inside its Sheet Drawing Area before measuring quality.",
+                sourceTrace = sheet.quality.sourceTrace,
+            ),
+        )
+    }
+    return if (published == expected) {
+        emptyList()
+    } else {
+        listOf(
+            SpatialDiagnostic(
+                subject = "Quality snapshot on Sheet ${sheet.sheetId}",
+                problem = "metrics do not equal exact values recomputed from final Spatial facts",
+                correction = "Recompute all quality metrics from this Sheet's Drawing Area, Occurrences, " +
+                    "Constructs, Lanes, and Routes.",
+                sourceTrace = sheet.quality.sourceTrace,
+            ),
+        )
+    }
+}
+
 private data class SpatialBox(
-    val left: Double,
-    val top: Double,
-    val right: Double,
-    val bottom: Double,
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
 ) {
     fun overlaps(other: SpatialBox): Boolean =
         left < other.right && right > other.left && top < other.bottom && bottom > other.top
 
-    fun contains(point: SpatialPoint): Boolean =
-        point.x in left..right && point.y in top..bottom
 }
-
-private fun Pair<SpatialPoint, SpatialPoint>.crosses(other: Pair<SpatialPoint, SpatialPoint>): Boolean {
-    val (a, b) = this
-    val (c, d) = other
-    val horizontal = a.y == b.y
-    val vertical = a.x == b.x
-    val otherHorizontal = c.y == d.y
-    val otherVertical = c.x == d.x
-    if (horizontal && otherVertical) {
-        return c.x.between(a.x, b.x) && a.y.between(c.y, d.y)
-    }
-    if (vertical && otherHorizontal) {
-        return a.x.between(c.x, d.x) && c.y.between(a.y, b.y)
-    }
-    return false
-}
-
-private fun Double.between(a: Double, b: Double): Boolean =
-    this >= minOf(a, b) && this <= maxOf(a, b)

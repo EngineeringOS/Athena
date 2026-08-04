@@ -90,12 +90,10 @@ internal class ProjectionPlacementPlanner {
                 }
             }
         }
-        val nodesByEndpoint = nodes.flatMap { node ->
-            listOf(node.projectionId.value, node.semanticId.value, node.label).map { endpoint -> endpoint to node }
-        }.toMap()
+        val nodesByEndpoint = nodes.associateBy(ProjectionNode::projectionId)
         val topologyEdges = projection.connections.mapNotNull { connection ->
-            val source = connection.sourceOccurrenceId?.let(nodesByEndpoint::get)
-            val target = connection.targetOccurrenceId?.let(nodesByEndpoint::get)
+            val source = connection.source?.occurrencePortId?.occurrenceId?.let(nodesByEndpoint::get)
+            val target = connection.target?.occurrencePortId?.occurrenceId?.let(nodesByEndpoint::get)
             if (source == null || target == null || source == target) null else source to target
         }.distinct()
         val topologyOrder = topologyOrder(topologyEdges, authoredIndex, constructMembership)

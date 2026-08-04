@@ -4,7 +4,7 @@ baseline_commit: 8fd6e34cfa2e182f1f0ae2bbe755c1bf9d2e739c
 
 # Story 1.3: Derive Grid Reference Facts
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -41,60 +41,72 @@ so that later export can use stable positions without recomputing layout.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Prove exact typed grid behavior with RED tests (AC: 1, 2, 4)
-  - [ ] Add `SpatialGridCompilerTest.kt` with hand-computable Occurrence and Construct rectangles,
+- [x] Task 1: Prove exact typed grid behavior with RED tests (AC: 1, 2, 4)
+  - [x] Add `SpatialGridCompilerTest.kt` with hand-computable Occurrence and Construct rectangles,
         two independently configurable Sheet inputs, and literal expected typed Grid References.
         Prove `A1`, `B3`, `Z1`, `AA1`, and `AB1`; assert vertical letters and horizontal numbers.
-  - [ ] Cover odd-size rectangles and every boundary rule with exact doubled-center arithmetic.
+  - [x] Cover odd-size rectangles and every boundary rule with exact doubled-center arithmetic.
         Assert internal row/column boundary ownership and inclusive Drawing Area outer edges.
-  - [ ] Compile repeatedly and permute Sheets, Occurrences, and Constructs. Compare complete typed
+  - [x] Compile repeatedly and permute Sheets, Occurrences, and Constructs. Compare complete typed
         output and prove changing only Sheet B cannot alter Sheet A facts. Record first failing RED
         assertion or compilation before production edits.
-- [ ] Task 2: Add small typed Grid contracts (AC: 1, 2, 4)
-  - [ ] Create `SpatialGridModels.kt` for closely related grid facts. Model Occurrence and Construct
+- [x] Task 2: Add small typed Grid contracts (AC: 1, 2, 4)
+  - [x] Create `SpatialGridModels.kt` for closely related grid facts. Model Occurrence and Construct
         subjects as typed alternatives carrying `SpatialOccurrenceId` or `SpatialConstructId`;
         never overload an Occurrence ID or use delimiter-concatenated display strings as identity.
-  - [ ] Add typed owning-Sheet grid definition and Grid Reference identity/fact. Preserve immutable,
+  - [x] Add typed owning-Sheet grid definition and Grid Reference identity/fact. Preserve immutable,
         inspectable values for `sheetId`, `gridId`, Drawing Area, row/column counts, row/column
         indices, row label, one-based column number, cell reference, subject, and Source Trace.
-  - [ ] Implement one canonical row-label function using bijective base-26. Support `A` through
+  - [x] Implement one canonical row-label function using bijective base-26. Support `A` through
         `ZZZ` (`1..18_278` rows); reject larger row counts as unsupported with a diagnostic before
         attempting mapping. Keep this compiler/presentation vocabulary only; add no Athena syntax.
-- [ ] Task 3: Compile owning-Sheet Grid References (AC: 1, 2, 4)
-  - [ ] Add `SpatialGridCompiler` as a cohesive stage. Consume typed per-Sheet grid definitions plus
+- [x] Task 3: Compile owning-Sheet Grid References (AC: 1, 2, 4)
+  - [x] Add `SpatialGridCompiler` as a cohesive stage. Consume typed per-Sheet grid definitions plus
         Story 1.1 Occurrence rectangles and Story 1.2 Construct envelopes unchanged. Do not derive
         from Region bounds and do not recompute placement/envelopes.
-  - [ ] Map rectangle centers with overflow-safe doubled-coordinate `Long` arithmetic. Use half-open
+  - [x] Map rectangle centers with overflow-safe doubled-coordinate `Long` arithmetic. Use half-open
         internal cells and explicitly clamp only an exact bottom/right Drawing Area boundary to the
         final row/column; never clamp an actually out-of-area center.
-  - [ ] Preserve subject Source Trace exactly. Use stable typed identity independent of current cell,
+  - [x] Preserve subject Source Trace exactly. Use stable typed identity independent of current cell,
         so movement changes the cell fact rather than subject identity. Canonically order Sheet,
         Occurrence, then Construct facts by authored Sheet order and stable typed Projection ID.
-  - [ ] Produce a result with immutable grid/reference/diagnostic lists. If any validation or
+  - [x] Produce a result with immutable grid/reference/diagnostic lists. If any validation or
         mapping issue exists, publish empty grid/reference lists and the complete canonical
         diagnostic set.
-- [ ] Task 4: Fail closed on all grid defects (AC: 3)
-  - [ ] Add separate RED/GREEN cases for missing grid, blank grid identity, zero/negative rows,
+- [x] Task 4: Fail closed on all grid defects (AC: 3)
+  - [x] Add separate RED/GREEN cases for missing grid, blank grid identity, zero/negative rows,
         zero/negative columns, row count above `18_278`, duplicate/unknown Sheet definitions,
         duplicate subject geometry, subject/Sheet mismatch, and centers outside every Drawing Area
         edge. Include integer-overflow edge fixtures.
-  - [ ] Add one multi-defect fixture proving exact aggregation order, exact human-first correction,
+  - [x] Add one multi-defect fixture proving exact aggregation order, exact human-first correction,
         exact Source Trace, and no partial facts. Diagnostics must name the Sheet or typed subject;
         internal codes must not become primary language.
-  - [ ] Keep invalid Projection grid values representable until the Spatial boundary can return
+  - [x] Keep invalid Projection grid values representable until the Spatial boundary can return
         `SpatialDiagnostic`; do not replace actionable compilation failure with constructor throws.
-- [ ] Task 5: Integrate through the sole Spatial orchestrator and verify (AC: 1-4)
-  - [ ] Invoke the grid stage from `ProjectionSpatialCompiler` after placement/grouping geometry and
+- [x] Task 5: Integrate through the sole Spatial orchestrator and verify (AC: 1-4)
+  - [x] Invoke the grid stage from `ProjectionSpatialCompiler` after placement/grouping geometry and
         before complete `SpatialDocument` validation. Use compiler-owned per-Sheet Drawing Area
         facts; do not select the first grid or use a document-wide denominator.
-  - [ ] Replace `SpatialDocument.gridReferences: Map<String, String>` with the typed canonical list.
+  - [x] Replace `SpatialDocument.gridReferences: Map<String, String>` with the typed canonical list.
         Migrate active compiler, Spatial-model, route/quality, Presentation, and tests only as needed;
         do not implement Story 3.1 Sheet assembly or Story 3.2 full validation early.
-  - [ ] Remove or refactor `ProjectionSheetGrid.cellReferences()` so it cannot reverse axes, emit
+  - [x] Remove or refactor `ProjectionSheetGrid.cellReferences()` so it cannot reverse axes, emit
         punctuation after `Z`, or become a second coordinate mapper. Keep Projection coordinate-free.
-  - [ ] Run focused grid tests, full compiler tests, Projection-model tests, Spatial-model tests,
+  - [x] Run focused grid tests, full compiler tests, Projection-model tests, Spatial-model tests,
         repository tests, source-set hygiene audit, encoding audit, and `git diff --check`
         sequentially. Complete Debug Log, Completion Notes, File List, and Change Log before review.
+
+### Review Findings
+
+- [x] [Review][Patch] Duplicate geometry suppresses its additional ownership and center defects [kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/SpatialGridValidator.kt:24]
+- [x] [Review][Patch] Geometry owned by duplicate Sheet definitions is falsely reported as having no definition [kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/SpatialGridValidator.kt:29]
+- [x] [Review][Patch] Repeated equal Sheet defects retain input-order-dependent diagnostics and traces [kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/SpatialGridValidator.kt:70]
+- [x] [Review][Patch] Grid Reference model accepts row labels inconsistent with row index or beyond `ZZZ` [kernel/spatial-model/src/main/kotlin/com/engineeringood/athena/spatial/SpatialGridModels.kt:79]
+- [x] [Review][Patch] `Int.MAX_VALUE` column index overflow can satisfy the one-based column invariant [kernel/spatial-model/src/main/kotlin/com/engineeringood/athena/spatial/SpatialGridModels.kt:81]
+- [x] [Review][Patch] Combined Source Trace can retain duplicate required Projection identities [kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/SpatialGridValidator.kt:197]
+- [x] [Review][Patch] Blank direct-stage Sheet identity reaches model construction and throws [kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/SpatialGridValidator.kt:73]
+- [x] [Review][Patch] Sheet independence proof changes Sheet B grid but not its Drawing Area [kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/SpatialGridCompilerTest.kt:170]
+- [x] [Review][Patch] Invalid-dimension and unknown-Construct acceptance matrix is incomplete [kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/SpatialGridCompilerTest.kt:221]
 
 ## Dev Notes
 
@@ -250,16 +262,79 @@ Codex GPT-5
 - Story context created from milestone-local M41 sprint, epics, PRD, addendum, architecture,
   approved design, failed-delivery audit, previous-story records, deferred work, current code,
   and git state.
+- RED 1: focused compiler test compilation failed on unresolved `SpatialGridDefinition`,
+  `SpatialGridReference`, typed subject/identity, and `SpatialGridCompiler` symbols.
+- GREEN 1: typed Grid models plus exact doubled-center, bijective base-26 mapper passed three
+  positive ownership/boundary/permutation tests.
+- RED 2: four focused defect tests exposed constructor throws, partial publication, absent
+  out-of-area diagnostics, and unchecked duplicate ownership/geometry.
+- GREEN 2: separate `SpatialGridValidator` returned complete canonical human-first diagnostics and
+  empty facts; all seven focused compiler tests passed.
+- RED 3: active orchestrator test failed because `SpatialDocument` still exposed raw map/no typed
+  grids. Integration then exposed public/internal visibility, literal cell expectation, and four
+  older fixtures missing required grids; each was fixed without fallback.
+- Review-before-review RED: blank active grid identity threw while creating Source Trace, and
+  duplicate geometry diagnostics lost alternate source locations. Both now fail closed and retain
+  canonical complete trace.
+- Review RED: compiler suite produced three expected failures for incomplete defect aggregation,
+  noncanonical repeated diagnostics, and blank Sheet constructor failure; Spatial-model suite
+  produced one expected failure for permissive row/column invariants.
+- Review GREEN: grouped validation now retains duplicate-fact secondary defects, distinguishes
+  ambiguous ownership, merges repeated Sheet defects canonically, fails closed on blank Sheet
+  identity, and emits distinct required Source Trace identities. Shared row-label authority and
+  overflow-safe column invariants reject contradictory Grid References.
+- Review triage: blind and edge layers completed; Acceptance Auditor timed out and root acceptance
+  audit covered every AC/task constraint. Nine reachable findings were fixed. One reported
+  cross-Sheet geometry identity case was dismissed because Spatial geometry constructors already
+  make that state unrepresentable.
+- Verification: focused grid/orchestrator/Golden Fixture tests, 433-test compiler suite,
+  Projection-model suite, Spatial-model suite, repository `test`, source-set hygiene audit,
+  encoding audit, and `git diff --check` passed sequentially on 2026-08-03.
 
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created.
+- Added typed per-Sheet grid definitions and typed Occurrence/Construct Grid References with stable
+  identity independent of current cell, exact Source Trace, and canonical immutable output lists.
+- Implemented exact Drawing Area-relative center mapping with `A..ZZZ` vertical rows, numbered
+  horizontal columns, deterministic boundary ownership, and overflow-safe arithmetic.
+- Added fail-closed validation for missing/blank/invalid grids, unsupported rows, duplicate or
+  unknown ownership, duplicate subject geometry, and out-of-area centers with no partial facts.
+- Replaced raw `SpatialDocument.gridReferences` map, integrated the sole Spatial orchestrator,
+  removed Projection-side cell enumeration, and migrated active fixtures without compatibility.
+- Golden Fixture now proves exactly 8 Occurrences, 7 Constructs, and 15 typed Grid References.
+- Review hardened canonical diagnostics across duplicate geometry and Sheet definitions, completed
+  zero/negative dimension and unknown-Construct coverage, and proved Sheet independence across
+  both grid and Drawing Area changes.
+- Grid model now owns one canonical `A..ZZZ` row-label function and rejects inconsistent labels,
+  unsupported row indices, and overflowed one-based columns.
 
 ### File List
 
 - `_bmad-output/implementation-artifacts/m41/1-3-derive-grid-reference-facts.md`
+- `_bmad-output/implementation-artifacts/m41/deferred-work.md`
 - `_bmad-output/implementation-artifacts/m41/sprint-status.yaml`
+- `kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/ProjectionSpatialCompiler.kt`
+- `kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/SpatialGridCompiler.kt`
+- `kernel/compiler/src/main/kotlin/com/engineeringood/athena/compiler/SpatialGridValidator.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/DedicatedM41ExampleTest.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/M41GeometryQualityTest.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/ProjectionSpatialCompilerTest.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/ProjectionSpatialLayoutTest.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/SpatialGeometryCompilerTest.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/SpatialGridCompilerTest.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/SpatialQualityCompilerTest.kt`
+- `kernel/compiler/src/test/kotlin/com/engineeringood/athena/compiler/ViewAndSheetAuthorityCompilationTest.kt`
+- `kernel/projection-model/src/main/kotlin/com/engineeringood/athena/projection/ProjectionSheets.kt`
+- `kernel/spatial-model/src/main/kotlin/com/engineeringood/athena/spatial/SpatialDocument.kt`
+- `kernel/spatial-model/src/main/kotlin/com/engineeringood/athena/spatial/SpatialGridModels.kt`
+- `kernel/spatial-model/src/test/kotlin/com/engineeringood/athena/spatial/SpatialDocumentTest.kt`
+- `kernel/spatial-model/src/test/kotlin/com/engineeringood/athena/spatial/SpatialGridModelsTest.kt`
 
 ### Change Log
 
 - 2026-08-03: Created through BMad create-story from milestone-local M41 artifacts.
+- 2026-08-03: Implemented exact typed owning-Sheet Grid References, fail-closed validation, active
+  orchestration, Golden Fixture coverage, and full sequential verification; moved to review.
+- 2026-08-03: Applied all nine reachable adversarial-review patches, reran full sequential
+  verification, marked Story 1.3 done, and closed Epic 1.

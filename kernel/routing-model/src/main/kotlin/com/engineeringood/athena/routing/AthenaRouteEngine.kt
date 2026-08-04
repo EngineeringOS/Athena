@@ -78,10 +78,13 @@ data class AthenaRouteEngineInput(
     val layoutContext: SchematicRoutingLayoutContext,
     val componentBounds: List<SchematicComponentBounds> = emptyList(),
     val requests: List<AthenaRouteRequest>,
+    val drawingArea: OrthogonalRouteRect = OrthogonalRouteRect(0, 0, Int.MAX_VALUE, Int.MAX_VALUE),
 )
 
 /** First deterministic, Athena-owned schematic route engine. */
-class AthenaRouteEngine {
+class AthenaRouteEngine(
+    private val orthogonalRouteSolver: OrthogonalRouteSolver = OrthogonalRouteSolver(),
+) {
     fun solve(input: AthenaRouteEngineInput): RouteFactSnapshot {
         val lanePlan = allocateLanes(input)
         val facts = lanePlan.orderedRequests.map { request ->
@@ -196,100 +199,38 @@ class AthenaRouteEngine {
         targetAnchor: TerminalAnchorFact,
         input: AthenaRouteEngineInput,
     ): List<SchematicRouteSegment> {
-        val source = sourceAnchor.gridPoint
-        val target = targetAnchor.gridPoint
-        require(source != target) { "Route engine endpoints must not share the same terminal anchor point." }
         val obstacles = input.componentBounds.excludingEndpointOwners(sourceAnchor, targetAnchor)
-        val sourceStub = sideStubPoint(sourceAnchor, input.layoutContext) ?: source
-        val targetStub = sideStubPoint(targetAnchor, input.layoutContext) ?: target
-        val segments = mutableListOf<SchematicRouteSegment>()
-        segments.addSegment(source, sourceStub)
-        segments += middleSegments(sourceStub, targetStub, obstacles, input.layoutContext)
-        segments.addSegment(targetStub, target)
-        return segments
-
-    }
-
-    private fun middleSegments(
-        source: SchematicRoutePoint,
-        target: SchematicRoutePoint,
-        componentBounds: List<SchematicComponentBounds>,
-        layoutContext: SchematicRoutingLayoutContext,
-    ): List<SchematicRouteSegment> {
-        if (source == target) {
-            return emptyList()
-        }
-        if (source.y == target.y || source.x == target.x) {
-            val direct = buildList { addSegment(source, target) }
-            return if (direct.any { segment -> componentBounds.any { bounds -> bounds.intersects(segment) } }) {
-                laneAround(source, target, componentBounds, layoutContext) ?: direct
-            } else {
-                direct
-            }
-        }
-        val middleX = midpoint(source.x, target.x)
-        val routedMiddleX = if (componentBounds.any { bounds -> bounds.center.x == middleX }) {
-            middleX + 20
-        } else {
-            middleX
-        }
-        val firstTurn = SchematicRoutePoint(x = routedMiddleX, y = source.y)
-        val secondTurn = SchematicRoutePoint(x = routedMiddleX, y = target.y)
-        val default = listOf(
-            SchematicRouteSegment(source, firstTurn, SchematicRouteSegmentOrientation.HORIZONTAL),
-            SchematicRouteSegment(firstTurn, secondTurn, SchematicRouteSegmentOrientation.VERTICAL),
-            SchematicRouteSegment(secondTurn, target, SchematicRouteSegmentOrientation.HORIZONTAL),
+        val request = OrthogonalRouteRequest(
+            requestId = "schematic:${sourceAnchor.anchorId.value}:${targetAnchor.anchorId.value}",
+            source = sourceAnchor.gridPoint.toOrthogonalPoint(),
+            target = targetAnchor.gridPoint.toOrthogonalPoint(),
+            sourceSide = sourceAnchor.side.toOrthogonalSide(),
+            targetSide = targetAnchor.side.toOrthogonalSide(),
+            drawingArea = input.drawingArea,
+            obstacles = obstacles.map { bounds ->
+                OrthogonalRouteObstacle(
+                    obstacleId = "${bounds.subjectId.value}:${bounds.occurrenceId.value}",
+                    bounds = OrthogonalRouteRect(
+                        bounds.topLeft.x,
+                        bounds.topLeft.y,
+                        bounds.width,
+                        bounds.height,
+                    ),
+                )
+            },
+            stubLength = input.layoutContext.gridSize,
+            obstacleClearance = input.layoutContext.gridSize,
         )
-        return if (default.any { segment -> componentBounds.any { bounds -> bounds.intersects(segment) } }) {
-            laneAround(source, target, componentBounds, layoutContext) ?: default
-        } else {
-            default
+        val result = orthogonalRouteSolver.solve(request)
+        require(result is OrthogonalRouteSolveResult.Success) {
+            "Route engine could not find an obstacle-safe orthogonal path inside the Drawing Area."
         }
-    }
-
-    private fun laneAround(
-        source: SchematicRoutePoint,
-        target: SchematicRoutePoint,
-        componentBounds: List<SchematicComponentBounds>,
-        layoutContext: SchematicRoutingLayoutContext,
-    ): List<SchematicRouteSegment>? {
-        if (componentBounds.isEmpty()) return null
-        val grid = layoutContext.gridSize
-        val horizontalLaneCandidates = listOf(
-            componentBounds.minOf { bounds -> bounds.topLeft.y } - grid,
-            componentBounds.maxOf { bounds -> bounds.topLeft.y + bounds.height } + grid,
-        ).filter { laneY -> laneY >= 0 }.distinct()
-        val verticalLaneCandidates = listOf(
-            componentBounds.minOf { bounds -> bounds.topLeft.x } - grid,
-            componentBounds.maxOf { bounds -> bounds.topLeft.x + bounds.width } + grid,
-        ).filter { laneX -> laneX >= 0 }.distinct()
-
-        val candidates = buildList {
-            horizontalLaneCandidates.forEach { laneY ->
-                add(
-                    buildList {
-                        addSegment(source, SchematicRoutePoint(x = source.x, y = laneY))
-                        addSegment(SchematicRoutePoint(x = source.x, y = laneY), SchematicRoutePoint(x = target.x, y = laneY))
-                        addSegment(SchematicRoutePoint(x = target.x, y = laneY), target)
-                    },
-                )
-            }
-            verticalLaneCandidates.forEach { laneX ->
-                add(
-                    buildList {
-                        addSegment(source, SchematicRoutePoint(x = laneX, y = source.y))
-                        addSegment(SchematicRoutePoint(x = laneX, y = source.y), SchematicRoutePoint(x = laneX, y = target.y))
-                        addSegment(SchematicRoutePoint(x = laneX, y = target.y), target)
-                    },
-                )
+        return buildList {
+            result.points.zipWithNext().forEach { (start, end) ->
+                addSegment(start.toSchematicPoint(), end.toSchematicPoint())
             }
         }
-        return candidates
-            .filter { segments -> segments.none { segment -> componentBounds.any { bounds -> bounds.intersects(segment) } } }
-            .minWithOrNull(compareBy<List<SchematicRouteSegment>>(
-                { segments -> segments.sumOf { segment -> segment.manhattanLength() } },
-                { segments -> segments.size },
-            ))
+
     }
 
     private fun sideStubPoint(
@@ -465,6 +406,17 @@ class AthenaRouteEngine {
         layoutContext: SchematicRoutingLayoutContext,
     ): SchematicRouteLane = SchematicRouteLane((index / layoutContext.routeLaneCapacity).coerceAtMost(layoutContext.routeLaneCount - 1))
 
+}
+
+private fun SchematicRoutePoint.toOrthogonalPoint(): OrthogonalRoutePoint = OrthogonalRoutePoint(x, y)
+
+private fun OrthogonalRoutePoint.toSchematicPoint(): SchematicRoutePoint = SchematicRoutePoint(x, y)
+
+private fun TerminalSide.toOrthogonalSide(): OrthogonalRouteSide = when (this) {
+    TerminalSide.LEFT -> OrthogonalRouteSide.LEFT
+    TerminalSide.RIGHT -> OrthogonalRouteSide.RIGHT
+    TerminalSide.TOP -> OrthogonalRouteSide.TOP
+    TerminalSide.BOTTOM -> OrthogonalRouteSide.BOTTOM
 }
 
 private data class RouteLanePlan(

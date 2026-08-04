@@ -6,6 +6,7 @@ import com.engineeringood.athena.layout.LayoutSnapshotId
 import com.engineeringood.athena.layout.LayoutSourceSpan
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class AthenaRouteEngineSideStubTest {
     @Test
@@ -63,16 +64,20 @@ class AthenaRouteEngineSideStubTest {
     }
 
     @Test
-    fun `stub fallback is explicit when preferred side would leave sheet bounds`() {
-        val route = AthenaRouteEngine().solve(
-            input(
-                sourceAnchor = anchor("anchor:left-edge", "component:LEFT", "in", ElectricalPortRole.INPUT, TerminalSide.LEFT, 0, 100),
-                targetAnchor = anchor("anchor:target", "component:T", "out", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 200, 100),
-            ),
-        ).routeFacts.single()
+    fun `required side fails closed when outward stub would leave sheet bounds`() {
+        val failure = assertFailsWith<IllegalArgumentException> {
+            AthenaRouteEngine().solve(
+                input(
+                    sourceAnchor = anchor("anchor:left-edge", "component:LEFT", "in", ElectricalPortRole.INPUT, TerminalSide.LEFT, 0, 100),
+                    targetAnchor = anchor("anchor:target", "component:T", "out", ElectricalPortRole.OUTPUT, TerminalSide.RIGHT, 200, 100),
+                ),
+            )
+        }
 
-        assertEquals(RouteQualityState.DEGRADED, route.quality.state)
-        assertEquals(SchematicRoutePoint(x = 0, y = 100), route.segments.first().start)
+        assertEquals(
+            "Route engine could not find an obstacle-safe orthogonal path inside the Drawing Area.",
+            failure.message,
+        )
     }
 
     private fun input(

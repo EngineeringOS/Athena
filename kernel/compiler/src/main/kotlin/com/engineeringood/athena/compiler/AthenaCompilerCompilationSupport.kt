@@ -38,6 +38,9 @@ import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticRuleId
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
 import com.engineeringood.athena.repository.PackageIdentifier
+import com.engineeringood.athena.spatial.SpatialDocument
+import com.engineeringood.athena.spatial.SpatialReality
+import com.engineeringood.athena.spatial.SpatialSourceTrace
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -298,28 +301,55 @@ internal class AthenaCompilerCompilationSupport(
             knowledgeContext = effectiveKnowledgeContext,
         )
         val authoredProjectionOutcome = AuthoredProjectionViewCompiler.compile(document)
-        val authoredPresentations = when (authoredProjectionOutcome) {
-            is AuthoredProjectionCompilation.Success -> authoredProjectionOutcome.documents.flatMap { projection ->
-                deriveAuthoredPresentation(projection)
-            }
-
+        val authoredPresentationOutcomes = when (authoredProjectionOutcome) {
+            is AuthoredProjectionCompilation.Success ->
+                authoredProjectionOutcome.documents.map { projection -> deriveAuthoredPresentation(projection) }
             is AuthoredProjectionCompilation.Failure -> emptyList()
         }
+        val realityPresentationOutcome = deriveRealityPresentations(document)
+        val spatialOutcomes = authoredPresentationOutcomes + realityPresentationOutcome
+        val spatialPresentations = spatialOutcomes.flatMap(PresentationCompilationOutcome::documents)
+        val spatialOwnedViewIds = document.projectionViews.map { view -> view.name }.toSet() +
+            spatialOutcomes.mapNotNull(PresentationCompilationOutcome::viewId)
         val derivedPresentations = deriveSupportedPresentations(
             document = document,
-            projections = projections + (authoredProjectionOutcome as? AuthoredProjectionCompilation.Success)
-                ?.documents
-                .orEmpty(),
+            projections = projections,
+        ).filterNot { presentation -> presentation.view.id in spatialOwnedViewIds }
+        val presentationResolution = resolveCanonicalPresentations(
+            derivedPresentations + spatialPresentations,
         )
-        val realityPresentation = deriveRealityPresentation(document)
-        val authoredPresentation = realityPresentation
-        val presentations = if (authoredPresentation == null) {
-            derivedPresentations
+        val spatialResolution = resolveCanonicalSpatialDocuments(
+            spatialOutcomes.flatMap(PresentationCompilationOutcome::spatialDocuments),
+        )
+        val authoredProjectionDiagnostics = (authoredProjectionOutcome as? AuthoredProjectionCompilation.Failure)
+            ?.diagnostics
+            ?.map { diagnostic -> diagnostic.message }
+            .orEmpty()
+        val transformationDiagnostics = spatialOutcomes.flatMap(PresentationCompilationOutcome::diagnostics)
+        val realityTransformationDiagnostics = (
+            transformationDiagnostics + presentationResolution.diagnostics + spatialResolution.diagnostics
+            ).distinct().sortedWith(
+            compareBy(
+                RealityTransformationDiagnostic::reality,
+                { diagnostic -> diagnostic.subject.orEmpty() },
+                { diagnostic -> diagnostic.problem.orEmpty() },
+                RealityTransformationDiagnostic::message,
+            ),
+        )
+        val spatialPublicationFailed =
+            authoredProjectionDiagnostics.isNotEmpty() ||
+                transformationDiagnostics.isNotEmpty() ||
+                presentationResolution.diagnostics.isNotEmpty() ||
+                spatialResolution.diagnostics.isNotEmpty()
+        val presentations = if (spatialPublicationFailed) {
+            presentationResolution.documents.filterNot { presentation -> presentation.view.id in spatialOwnedViewIds }
         } else {
-            derivedPresentations
-                .filterNot { presentation -> presentation.view.id == authoredPresentation.view.id }
-                .plus(authoredPresentation)
-                .sortedBy { presentation -> presentation.view.id }
+            presentationResolution.documents
+        }
+        val spatialDocuments = if (!spatialPublicationFailed) {
+            CompilerSpatialDocuments.of(spatialResolution.documents)
+        } else {
+            CompilerSpatialDocuments.empty()
         }
         val knowledgeAttributions = buildKnowledgeAttributions(effectiveKnowledgeContext)
         val engineeringConnectivity = validationResult.engineeringConnectivity
@@ -352,11 +382,10 @@ internal class AthenaCompilerCompilationSupport(
             geometries = backendPreparation.geometries,
             projections = projections,
             authoredProjectionViews = (authoredProjectionOutcome as? AuthoredProjectionCompilation.Success)?.documents ?: emptyList(),
-            authoredProjectionDiagnostics = (authoredProjectionOutcome as? AuthoredProjectionCompilation.Failure)
-                ?.diagnostics
-                ?.map { diagnostic -> diagnostic.message }
-                ?: emptyList(),
-            presentations = authoredPresentations + presentations,
+            authoredProjectionDiagnostics = authoredProjectionDiagnostics,
+            spatialDocuments = spatialDocuments,
+            realityTransformationDiagnostics = realityTransformationDiagnostics,
+            presentations = presentations,
             rendering = backendEmission.rendering,
             knowledgeContext = effectiveKnowledgeContext,
             boundaryValidation = boundaryValidation,
@@ -386,40 +415,42 @@ internal class AthenaCompilerCompilationSupport(
         )
     }
 
-    private fun deriveAuthoredPresentation(projection: ProjectionDocument): List<PresentationDocument> {
-        val spatial = ProjectionSpatialCompiler().transform(projection)
-        val spatialDocument = spatial as? RealityTransformationResult.Success ?: return emptyList()
-        val presentation = SpatialToPresentationTransformation().transform(spatialDocument.output)
-        val presentationDocument = presentation as? RealityTransformationResult.Success ?: return emptyList()
-        val authoredView = projection.view
-        return listOf(
-            presentationDocument.output.copy(
-                view = authoredView,
-            ),
-        )
+    private fun deriveAuthoredPresentation(projection: ProjectionDocument): PresentationCompilationOutcome {
+        val spatial = when (val result = ProjectionSpatialCompiler().transform(projection)) {
+            is RealityTransformationResult.Success -> result.output
+            is RealityTransformationResult.Failure -> return PresentationCompilationOutcome(
+                viewId = projection.view.id,
+                diagnostics = result.diagnostics,
+            )
+        }
+        return transformSpatialSheetsToPresentation(spatial, projection.view)
+            .toPresentationCompilationOutcome(projection.view.id, spatial)
     }
 
-    private fun deriveRealityPresentation(document: EngineeringDocument): PresentationDocument? {
+    private fun deriveRealityPresentations(document: EngineeringDocument): PresentationCompilationOutcome {
         val selectedProjectionPolicy = (AthenaProjectionPolicyCompiler().compile(document) as? AthenaProjectionPolicyCompilation.Success)
             ?.policies
             ?.firstOrNull { policy -> policy.targetSurface == "connection-drawing" }
-            ?: return null
+            ?: return PresentationCompilationOutcome()
         val view = ViewDefinition(
             id = selectedProjectionPolicy.materialProjectionContext,
             displayName = selectedProjectionPolicy.name,
         )
         val projection = when (val result = EngineeringToProjectionTransformation(view).transform(document)) {
             is RealityTransformationResult.Success -> result.output
-            is RealityTransformationResult.Failure -> return null
+            is RealityTransformationResult.Failure -> return PresentationCompilationOutcome(
+                viewId = view.id,
+                diagnostics = result.diagnostics,
+            )
         }
         val spatial = when (val result = ProjectionSpatialCompiler().transform(projection)) {
             is RealityTransformationResult.Success -> result.output
-            is RealityTransformationResult.Failure -> return null
+            is RealityTransformationResult.Failure -> return PresentationCompilationOutcome(
+                viewId = view.id,
+                diagnostics = result.diagnostics,
+            )
         }
-        return when (val result = SpatialToPresentationTransformation(view = view).transform(spatial)) {
-            is RealityTransformationResult.Success -> result.output
-            is RealityTransformationResult.Failure -> null
-        }
+        return transformSpatialSheetsToPresentation(spatial, view).toPresentationCompilationOutcome(view.id, spatial)
     }
 
     private fun deriveLayouts(
@@ -975,6 +1006,169 @@ internal class AthenaCompilerCompilationSupport(
             ),
         )
     }
+}
+
+private data class PresentationCompilationOutcome(
+    val viewId: String? = null,
+    val documents: List<PresentationDocument> = emptyList(),
+    val spatialDocuments: List<SpatialDocument> = emptyList(),
+    val diagnostics: List<RealityTransformationDiagnostic> = emptyList(),
+)
+
+private fun RealityTransformationResult<List<PresentationDocument>>.toPresentationCompilationOutcome(
+    viewId: String,
+    spatial: SpatialDocument,
+): PresentationCompilationOutcome = when (this) {
+    is RealityTransformationResult.Success -> PresentationCompilationOutcome(
+        viewId = viewId,
+        documents = output,
+        spatialDocuments = listOf(spatial),
+    )
+    is RealityTransformationResult.Failure -> PresentationCompilationOutcome(
+        viewId = viewId,
+        diagnostics = diagnostics,
+    )
+}
+
+internal fun canonicalPresentations(
+    candidates: List<PresentationDocument>,
+): RealityTransformationResult<List<PresentationDocument>> {
+    val resolution = resolveCanonicalPresentations(candidates)
+    if (resolution.diagnostics.isNotEmpty()) {
+        return RealityTransformationResult.Failure(resolution.diagnostics)
+    }
+    return RealityTransformationResult.Success(resolution.documents)
+}
+
+internal data class CanonicalPresentationResolution(
+    val documents: List<PresentationDocument>,
+    val diagnostics: List<RealityTransformationDiagnostic>,
+)
+
+internal fun resolveCanonicalPresentations(candidates: List<PresentationDocument>): CanonicalPresentationResolution {
+    val byIdentity = candidates.groupBy { presentation ->
+        presentation.view.id to presentation.drawingComposition?.sheetId
+    }
+    val conflictingEntries = byIdentity.filterValues { matches -> matches.distinct().size > 1 }
+        .entries.sortedWith(compareBy({ (identity, _) -> identity.first }, { (identity, _) -> identity.second.orEmpty() }))
+    val conflictIdentities = conflictingEntries.map { (identity, _) -> identity }.toSet()
+    val conflicts = conflictingEntries
+        .map { (identity, matches) ->
+            val sheet = identity.second?.let { sheetId -> " on Sheet $sheetId" }.orEmpty()
+            val subject = "Presentation ${identity.first}$sheet"
+            val problem = "has ${matches.distinct().size} unequal candidates"
+            val correction = "Publish one canonical Presentation document for each view and Sheet identity."
+            RealityTransformationDiagnostic(
+                reality = com.engineeringood.athena.presentation.PresentationReality.name,
+                message = "$subject $problem. $correction",
+                subject = subject,
+                problem = problem,
+                correction = correction,
+            )
+        }
+    val documents = byIdentity.entries
+        .filter { (identity, _) -> identity !in conflictIdentities }
+            .sortedWith(compareBy({ (identity, _) -> identity.first }, { (identity, _) -> identity.second.orEmpty() }))
+        .map { (_, matches) -> matches.first() }
+    return CanonicalPresentationResolution(
+        documents = documents,
+        diagnostics = conflicts,
+    )
+}
+
+internal data class CanonicalSpatialResolution(
+    val documents: List<SpatialDocument>,
+    val diagnostics: List<RealityTransformationDiagnostic>,
+)
+
+internal fun resolveCanonicalSpatialDocuments(candidates: List<SpatialDocument>): CanonicalSpatialResolution {
+    val distinctCandidates = candidates.distinct()
+    val bySheetIdentity = distinctCandidates.groupBy { document ->
+        document.sheets.map { sheet -> sheet.sheetId }
+    }
+    val conflictingDocuments = mutableSetOf<SpatialDocument>()
+    val diagnostics = mutableListOf<RealityTransformationDiagnostic>()
+
+    bySheetIdentity.entries
+        .filter { (_, documents) -> documents.size > 1 }
+        .sortedWith { left, right -> compareSpatialSheetIds(left.key, right.key) }
+        .forEach { (sheetIds, documents) ->
+            conflictingDocuments += documents
+            val subject = if (sheetIds.size == 1) {
+                "Spatial document on Sheet ${sheetIds.single()}"
+            } else {
+                "Spatial document for ordered Sheets ${sheetIds.joinToString(", ")}"
+            }
+            val problem = "has ${documents.size} unequal candidates"
+            val correction = "Publish one canonical Spatial document for each ordered Sheet identity set."
+            diagnostics += spatialResolutionDiagnostic(subject, problem, correction, documents)
+        }
+
+    val identities = bySheetIdentity.keys.sortedWith(::compareSpatialSheetIds)
+    for (leftIndex in identities.indices) {
+        for (rightIndex in leftIndex + 1 until identities.size) {
+            val left = identities[leftIndex]
+            val right = identities[rightIndex]
+            val sharedSheetIds = left.toSet().intersect(right.toSet()).sorted()
+            if (sharedSheetIds.isEmpty()) continue
+
+            val documents = bySheetIdentity.getValue(left) + bySheetIdentity.getValue(right)
+            conflictingDocuments += documents
+            val subject = if (sharedSheetIds.size == 1) {
+                "Spatial documents sharing Sheet ${sharedSheetIds.single()}"
+            } else {
+                "Spatial documents sharing Sheets ${sharedSheetIds.joinToString(", ")}"
+            }
+            val problem = "declare overlapping but unequal ordered Sheet identity sets " +
+                "[${left.joinToString(", ")}] and [${right.joinToString(", ")}]"
+            val correction = "Publish disjoint Spatial documents, or one canonical document for the complete ordered Sheet identity set."
+            diagnostics += spatialResolutionDiagnostic(subject, problem, correction, documents)
+        }
+    }
+    val documents = distinctCandidates.filterNot(conflictingDocuments::contains).sortedWith { left, right ->
+        compareSpatialSheetIds(
+            left.sheets.map { sheet -> sheet.sheetId },
+            right.sheets.map { sheet -> sheet.sheetId },
+        )
+    }
+    return CanonicalSpatialResolution(
+        documents = documents,
+        diagnostics = diagnostics.sortedWith(
+            compareBy(
+                { diagnostic -> diagnostic.subject.orEmpty() },
+                { diagnostic -> diagnostic.problem.orEmpty() },
+            ),
+        ),
+    )
+}
+
+private fun spatialResolutionDiagnostic(
+    subject: String,
+    problem: String,
+    correction: String,
+    documents: List<SpatialDocument>,
+): RealityTransformationDiagnostic {
+    val traces = documents.flatMap { document -> document.sheets.map { sheet -> sheet.sourceTrace } }
+    return RealityTransformationDiagnostic(
+        reality = SpatialReality.name,
+        message = "$subject $problem. $correction",
+        subject = subject,
+        problem = problem,
+        correction = correction,
+        sourceTrace = SpatialSourceTrace(
+            projectionIds = traces.flatMap(SpatialSourceTrace::projectionIds).distinct().sorted(),
+            geometryElementIds = traces.flatMap(SpatialSourceTrace::geometryElementIds)
+                .distinct().sortedBy { geometryId -> geometryId.value },
+        ),
+    )
+}
+
+private fun compareSpatialSheetIds(left: List<String>, right: List<String>): Int {
+    for (index in 0 until minOf(left.size, right.size)) {
+        val comparison = left[index].compareTo(right[index])
+        if (comparison != 0) return comparison
+    }
+    return left.size.compareTo(right.size)
 }
 
 private fun stableDigest(value: String): String = MessageDigest.getInstance("SHA-256")

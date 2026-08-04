@@ -50,22 +50,26 @@ class ProjectionModelContractTest {
     fun `projection root publishes view sheets occurrences projection groups and reading order only`() {
         val documentProperties = ProjectionDocument::class.java.declaredFields.map { field -> field.name }.toSet()
         val nodeProperties = ProjectionNode::class.java.declaredFields.map { field -> field.name }.toSet()
+        val portProperties = ProjectionOccurrencePort::class.java.declaredFields.map { field -> field.name }.toSet()
+        val portIdentityProperties = ProjectionOccurrencePortId::class.java.declaredFields.map { field -> field.name }.toSet()
+        val endpointProperties = ProjectionConnectionEndpoint::class.java.declaredFields.map { field -> field.name }.toSet()
         val connectionProperties = ProjectionConnection::class.java.declaredFields.map { field -> field.name }.toSet()
 
         assertEquals(
-            setOf("view", "nodes", "connections", "resolvedSubjects", "sheets", "notationPack", "crossReferences"),
+            setOf("view", "nodes", "connections", "occurrencePorts", "resolvedSubjects", "sheets", "notationPack", "crossReferences"),
             documentProperties,
         )
         assertEquals(setOf("projectionId", "semanticId", "label", "originGeometryElementId"), nodeProperties)
+        assertEquals(setOf("occurrencePortId", "originGeometryElementId"), portProperties)
+        assertEquals(setOf("occurrenceId", "portId"), portIdentityProperties)
+        assertEquals(setOf("occurrencePortId"), endpointProperties)
         assertEquals(
             setOf(
                 "projectionId",
                 "semanticId",
                 "originGeometryElementId",
-                "sourceOccurrenceId",
-                "targetOccurrenceId",
-                "sourcePortId",
-                "targetPortId",
+                "source",
+                "target",
             ),
             connectionProperties,
         )
@@ -76,8 +80,24 @@ class ProjectionModelContractTest {
         assertFalse("electricalConnectionEndpoints" in documentProperties)
         assertFalse("electricalRoutingCorridors" in documentProperties)
         assertFalse("bounds" in nodeProperties)
+        assertFalse(portProperties.any { property -> property in setOf("x", "y", "side", "point", "anchorId") })
         assertFalse("start" in connectionProperties)
         assertFalse("end" in connectionProperties)
+    }
+
+    @Test
+    fun `projection occurrence ports and connection endpoints retain typed engineering identity`() {
+        val occurrenceId = ProjectionNodeId("schematic/occurrence/Q1")
+        val portId = StableSemanticIdentity("port:Q1.1")
+        val occurrencePortId = ProjectionOccurrencePortId(occurrenceId, portId)
+        val port = ProjectionOccurrencePort(
+            occurrencePortId = occurrencePortId,
+            originGeometryElementId = GeometryElementId("projection:port:Q1.1"),
+        )
+        val endpoint = ProjectionConnectionEndpoint(occurrencePortId)
+
+        assertEquals(occurrenceId, port.occurrencePortId.occurrenceId)
+        assertEquals(portId, endpoint.occurrencePortId.portId)
     }
 
     @Test

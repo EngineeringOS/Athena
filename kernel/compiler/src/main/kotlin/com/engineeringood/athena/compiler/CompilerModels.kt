@@ -16,6 +16,8 @@ import com.engineeringood.athena.presentation.PresentationDocument
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
+import com.engineeringood.athena.spatial.SpatialDocument
+import java.util.Collections
 
 /** Syntax-owned source document handed back through the compiler facade for downstream passes. */
 data class CompilerSourceDocument(
@@ -143,6 +145,27 @@ data class CompilerValidationBreakdown(
     val domainValidationAttributions: List<AthenaDomainValidationAttribution> = emptyList(),
 )
 
+/** Immutable compiler-owned collection of validated Spatial pipeline results. */
+class CompilerSpatialDocuments private constructor(
+    private val documents: List<SpatialDocument>,
+) : List<SpatialDocument> by documents {
+    override fun equals(other: Any?): Boolean =
+        this === other || other is List<*> && documents == other
+
+    override fun hashCode(): Int = documents.hashCode()
+
+    override fun toString(): String = documents.toString()
+
+    companion object {
+        private val EMPTY = CompilerSpatialDocuments(emptyList())
+
+        fun of(documents: List<SpatialDocument>): CompilerSpatialDocuments =
+            if (documents.isEmpty()) EMPTY else CompilerSpatialDocuments(Collections.unmodifiableList(documents.toList()))
+
+        fun empty(): CompilerSpatialDocuments = EMPTY
+    }
+}
+
 /** Unified compiler success carrying syntax authority, canonical IR, and semantic validation outcome. */
 data class CompilerCompilationSuccess(
     val source: CompilerSourceDocument,
@@ -158,6 +181,8 @@ data class CompilerCompilationSuccess(
     val projections: List<ProjectionDocument> = emptyList(),
     val authoredProjectionViews: List<ProjectionDocument> = emptyList(),
     val authoredProjectionDiagnostics: List<String> = emptyList(),
+    val spatialDocuments: CompilerSpatialDocuments = CompilerSpatialDocuments.empty(),
+    val realityTransformationDiagnostics: List<RealityTransformationDiagnostic> = emptyList(),
     val presentations: List<PresentationDocument> = emptyList(),
     val rendering: CompilerRenderingResult,
     val knowledgeContext: AthenaCompilationKnowledgeContext,
@@ -173,9 +198,11 @@ data class CompilerCompilationSuccess(
 fun CompilerCompilationResult.diagnosticMessages(): List<String> {
     return when (this) {
         is CompilerCompilationParseFailure -> diagnostics.map { diagnostic -> diagnostic.message }
-        is CompilerCompilationSuccess -> (
+        is CompilerCompilationSuccess -> ((
             semanticResult.diagnostics +
                 validationBreakdown.engineeringSufficiencyDiagnostics
-            ).map { diagnostic -> diagnostic.message }
+            ).map { diagnostic -> diagnostic.message } +
+            authoredProjectionDiagnostics +
+            realityTransformationDiagnostics.map(RealityTransformationDiagnostic::message)).distinct()
     }
 }

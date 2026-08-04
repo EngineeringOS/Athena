@@ -12,6 +12,7 @@ data class ProjectionDocument(
     val view: ViewDefinition,
     val nodes: List<ProjectionNode>,
     val connections: List<ProjectionConnection>,
+    val occurrencePorts: List<ProjectionOccurrencePort> = emptyList(),
     val resolvedSubjects: List<ProjectionResolvedSubject> = emptyList(),
     val sheets: List<ProjectionSheet> = emptyList(),
     val notationPack: ProjectionNotationPack? = null,

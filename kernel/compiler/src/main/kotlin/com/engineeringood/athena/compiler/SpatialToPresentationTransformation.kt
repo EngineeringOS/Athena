@@ -1,6 +1,5 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.LayoutSourceSpan
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.presentation.PresentationAnchorAlias
@@ -28,21 +27,32 @@ import com.engineeringood.athena.representation.RepresentationAnchorId
 import com.engineeringood.athena.representation.RepresentationOccurrenceId
 import com.engineeringood.athena.representation.RepresentationPortAnchorBindingId
 import com.engineeringood.athena.spatial.SpatialDocument
+import com.engineeringood.athena.spatial.SpatialDiagnostic
+import com.engineeringood.athena.spatial.SpatialAnchorId
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialPoint
 import com.engineeringood.athena.spatial.SpatialReality
 import com.engineeringood.athena.spatial.SpatialRoute
-import kotlin.math.roundToInt
+import com.engineeringood.athena.spatial.SpatialSheet
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 class SpatialToPresentationTransformation(
     private val view: ViewDefinition = ViewDefinition(id = "spatial-presentation", displayName = "Spatial Presentation"),
     private val connectionPaintCompiler: ConnectionPaintCompiler = ConnectionPaintCompiler(),
     private val presentationPaintCompiler: PresentationPaintCompiler = PresentationPaintCompiler(),
-) : RealityTransformation<SpatialDocument, PresentationDocument> {
-    override fun transform(input: SpatialDocument): RealityTransformationResult<PresentationDocument> {
-        val spatialValidation = SpatialReality.validate(input)
-        if (!spatialValidation.isValid) {
-            return spatialValidation.issues.toTransformationFailure()
+) : RealityTransformation<SpatialSheet, PresentationDocument> {
+    override fun transform(input: SpatialSheet): RealityTransformationResult<PresentationDocument> {
+        val spatialValidation = SpatialReality.validate(SpatialDocument(listOf(input)))
+        val spatialDiagnostics = (spatialValidation.diagnostics + exactSpatialQualityDiagnostics(input))
+            .distinct()
+            .sortedWith(compareBy(SpatialDiagnostic::subject, SpatialDiagnostic::problem, SpatialDiagnostic::correction))
+        if (spatialDiagnostics.isNotEmpty()) {
+            return spatialDiagnostics.toSpatialTransformationFailure()
+        }
+        val compositionDiagnostics = presentationCompositionDiagnostics(input)
+        if (compositionDiagnostics.isNotEmpty()) {
+            return compositionDiagnostics.toSpatialTransformationFailure()
         }
 
         val occurrences = input.occurrences.map { occurrence -> occurrence.toPresentationOccurrence() }
@@ -51,21 +61,27 @@ class SpatialToPresentationTransformation(
             route to connectionPaintCompiler.compile(
                 route = route,
                 routePoints = routePoints,
-                connectorId = PresentationOccurrenceId("paint:${route.routeId}"),
+                connectorId = PresentationOccurrenceId("paint:${route.routeId.value}"),
             )
         }
-        val connectors = connectorPaints.map { (route, paint) -> route.toPresentationConnector(paint) }
+        val laneById = input.lanes.associateBy { lane -> lane.laneId }
+        val connectors = connectorPaints.map { (route, paint) ->
+            route.toPresentationConnector(
+                paint = paint,
+                laneRouteIds = laneById.getValue(route.laneId).routeIds.map { routeId -> routeId.value },
+            )
+        }
         val documentWithoutPaintPlan = PresentationDocument(
             view = view,
-            canvasWidth = drawingWidth(input.occurrences),
-            canvasHeight = drawingHeight(input.occurrences),
+            canvasWidth = input.extent.width,
+            canvasHeight = input.extent.height,
             primitivePacks = listOf(deviceShapePack()),
             compositePacks = emptyList(),
             occurrences = occurrences,
             connectors = connectors,
             connectionMarkers = connectorPaints.flatMap { (_, paint) -> paint.markers },
             drawingComposition = drawingComposition(
-                occurrences = occurrences,
+                sheet = input,
             ),
         )
         val document = documentWithoutPaintPlan.copy(
@@ -80,7 +96,10 @@ class SpatialToPresentationTransformation(
 
     private fun SpatialOccurrenceGeometry.toPresentationOccurrence(): PresentationOccurrence =
         PresentationOccurrence(
-            occurrenceId = PresentationOccurrenceId("paint:occurrence:${occurrenceId.projectionId}"),
+            occurrenceId = PresentationOccurrenceId(
+                "paint:occurrence:sheet=${occurrenceId.sheetId.encodedIdentityPart()}:" +
+                    "projection=${occurrenceId.projectionId.encodedIdentityPart()}",
+            ),
             semanticId = subjectId,
             reference = PresentationPrimitiveOccurrenceReference(DEVICE_BOX_ID),
             bounds = PresentationBounds(
@@ -94,77 +113,85 @@ class SpatialToPresentationTransformation(
             sourceProjectionIds = sourceTrace.projectionIds,
         )
 
-    private fun SpatialRoute.toPresentationConnector(paint: ConnectionPaint): PresentationConnector {
+    private fun SpatialRoute.toPresentationConnector(
+        paint: ConnectionPaint,
+        laneRouteIds: List<String>,
+    ): PresentationConnector {
         val routePoints = points.map { point -> point.toPresentationPoint() }
         return PresentationConnector(
-            occurrenceId = PresentationOccurrenceId("paint:$routeId"),
+            occurrenceId = PresentationOccurrenceId("paint:${routeId.value}"),
             semanticId = connectionId,
             primitiveId = CONDUCTOR_ID,
             routePoints = routePoints,
             line = paint.line,
-            routeId = routeId,
-            bundleId = laneId,
-            laneId = laneId,
-            laneRouteIds = listOf(routeId),
+            routeId = routeId.value,
+            bundleId = laneId.value,
+            laneId = laneId.value,
+            laneRouteIds = laneRouteIds,
             selectedChannelIds = emptyList(),
             labels = paint.labels,
             quality = "spatial-owned",
             sourceEndpoint = routeEndpoint(
-                routeId = routeId,
-                connectionId = connectionId,
-                suffix = "source",
+                anchorId = sourceAnchorId,
                 point = routePoints.first(),
             ),
             targetEndpoint = routeEndpoint(
-                routeId = routeId,
-                connectionId = connectionId,
-                suffix = "target",
+                anchorId = targetAnchorId,
                 point = routePoints.last(),
             ),
             markerIds = paint.markerIds,
-            sourceProjectionIds = listOf(routeId, connectionId.value),
+            sourceProjectionIds = sourceTrace.projectionIds,
             sourceSpan = GENERATED_SPAN,
         )
     }
 
     private fun routeEndpoint(
-        routeId: String,
-        connectionId: StableSemanticIdentity,
-        suffix: String,
+        anchorId: SpatialAnchorId,
         point: PresentationPoint,
     ): PresentationConnectorEndpoint =
         PresentationConnectorEndpoint(
-            portSemanticId = StableSemanticIdentity("${connectionId.value}:$suffix"),
-            bindingId = RepresentationPortAnchorBindingId("binding:$routeId:$suffix"),
-            occurrenceId = RepresentationOccurrenceId("occurrence:$routeId:$suffix"),
-            anchorId = RepresentationAnchorId("anchor:$routeId:$suffix"),
+            portSemanticId = anchorId.portId,
+            bindingId = RepresentationPortAnchorBindingId("binding:${anchorId.value}"),
+            occurrenceId = RepresentationOccurrenceId(anchorId.occurrenceId.projectionId),
+            anchorId = RepresentationAnchorId(anchorId.value),
             point = point,
-            sourceProvenance = listOf(routeId),
+            sourceProvenance = listOf(
+                anchorId.sheetId,
+                anchorId.occurrenceId.projectionId,
+                anchorId.portId.value,
+            ),
         )
 
     private fun drawingComposition(
-        occurrences: List<PresentationOccurrence>,
+        sheet: SpatialSheet,
     ): PresentationDrawingComposition {
-        val sheet = PresentationDrawingBounds(0, 0, 1200, 800)
+        val sheetBounds = sheet.extent.toPresentationDrawingBounds()
+        val drawingAreaBounds = sheet.drawingArea.toPresentationDrawingBounds()
+        val titleBlockY = ProjectionSpatialLayout.TITLE_BLOCK_START_Y
         return PresentationDrawingComposition(
-            sheetId = "spatial-presentation/sheet/01",
+            sheetId = sheet.sheetId,
             policyId = "presentation:default",
-            contentBounds = sheet,
-            frameBounds = sheet,
-            drawingAreaBounds = sheet,
-            titleBlockBounds = PresentationDrawingBounds(0, 740, 1200, 60),
-            sheetBounds = sheet,
-            frameId = "frame:${view.id}",
+            contentBounds = drawingAreaBounds,
+            frameBounds = sheetBounds,
+            drawingAreaBounds = drawingAreaBounds,
+            titleBlockBounds = PresentationDrawingBounds(
+                sheet.extent.x,
+                titleBlockY,
+                sheet.extent.width,
+                sheet.extent.bottom - titleBlockY,
+            ),
+            sheetBounds = sheetBounds,
+            frameId = "frame:${view.id}:${sheet.sheetId.encodedIdentityPart()}",
             frameStyle = "plain",
             title = PresentationDrawingTitle(
                 sheetTitle = view.displayName,
-                sheetFamily = "M39",
-                sheetNumber = "01",
+                sheetFamily = "Spatial",
+                sheetNumber = sheet.sheetId.substringAfter("/sheet/", "01").substringBefore('-'),
                 revisionCode = "A",
-            revisionNote = "Generated",
-            pageFormat = "A3",
-            orientation = "landscape",
-        ),
+                revisionNote = "Generated",
+                pageFormat = "A3",
+                orientation = "landscape",
+            ),
             coordinateZones = emptyList(),
             structureSubjects = emptyList(),
             structureFacts = emptyList(),
@@ -181,7 +208,10 @@ class SpatialToPresentationTransformation(
     }
 
     private fun SpatialPoint.toPresentationPoint(): PresentationPoint =
-        PresentationPoint(x = x.roundToInt(), y = y.roundToInt())
+        PresentationPoint(x = x, y = y)
+
+    private fun com.engineeringood.athena.spatial.SpatialRect.toPresentationDrawingBounds(): PresentationDrawingBounds =
+        PresentationDrawingBounds(x = x, y = y, width = width, height = height)
 
     private fun deviceShapePack(): PresentationPrimitivePack =
         PresentationPrimitivePack(
@@ -212,12 +242,6 @@ class SpatialToPresentationTransformation(
             ),
         )
 
-    private fun drawingWidth(occurrences: List<SpatialOccurrenceGeometry>): Int =
-        occurrences.maxOfOrNull { occurrence -> occurrence.rectangle.right }?.plus(80) ?: 1200
-
-    private fun drawingHeight(occurrences: List<SpatialOccurrenceGeometry>): Int =
-        occurrences.maxOfOrNull { occurrence -> occurrence.rectangle.bottom }?.plus(80) ?: 800
-
     companion object {
         private val DEVICE_BOX_ID = PresentationPrimitiveId("spatial-shape:device-box")
         private val CONDUCTOR_ID = PresentationPrimitiveId("spatial-shape:connector")
@@ -230,3 +254,81 @@ class SpatialToPresentationTransformation(
         )
     }
 }
+
+private fun presentationCompositionDiagnostics(sheet: SpatialSheet): List<SpatialDiagnostic> = buildList {
+    if (sheet.extent != ProjectionSpatialLayout.SHEET_EXTENT) {
+        add(
+            SpatialDiagnostic(
+                subject = "Sheet ${sheet.sheetId}",
+                problem = "extent ${sheet.extent.compositionText()} does not equal fixed Sheet extent " +
+                    ProjectionSpatialLayout.SHEET_EXTENT.compositionText(),
+                correction = "Compile the M41 fixed Sheet extent before creating Presentation canvas facts.",
+                sourceTrace = sheet.sourceTrace,
+            ),
+        )
+    }
+    if (sheet.drawingArea != ProjectionSpatialLayout.DRAWING_AREA) {
+        add(
+            SpatialDiagnostic(
+                subject = "Sheet ${sheet.sheetId}",
+                problem = "Drawing Area ${sheet.drawingArea.compositionText()} does not equal fixed Drawing Area " +
+                    ProjectionSpatialLayout.DRAWING_AREA.compositionText(),
+                correction = "Compile the M41 fixed Drawing Area before creating Presentation content bounds.",
+                sourceTrace = sheet.sourceTrace,
+            ),
+        )
+    }
+    val titleBlockY = ProjectionSpatialLayout.TITLE_BLOCK_START_Y
+    if (titleBlockY !in sheet.extent.y until sheet.extent.bottom) {
+        add(
+            SpatialDiagnostic(
+                subject = "Sheet ${sheet.sheetId}",
+                problem = "fixed title block start y=$titleBlockY is outside Sheet extent ${sheet.extent.compositionText()}",
+                correction = "Keep the complete fixed title block inside the Presentation canvas.",
+                sourceTrace = sheet.sourceTrace,
+            ),
+        )
+    }
+    if (sheet.drawingArea.bottom > titleBlockY) {
+        add(
+            SpatialDiagnostic(
+                subject = "Sheet ${sheet.sheetId}",
+                problem = "Drawing Area bottom ${sheet.drawingArea.bottom} crosses fixed title block start y=$titleBlockY",
+                correction = "End the Drawing Area at or above the fixed title block boundary.",
+                sourceTrace = sheet.sourceTrace,
+            ),
+        )
+    }
+}.sortedWith(compareBy(SpatialDiagnostic::subject, SpatialDiagnostic::problem, SpatialDiagnostic::correction))
+
+private fun com.engineeringood.athena.spatial.SpatialRect.compositionText(): String = "($x,$y,$width,$height)"
+
+internal fun transformSpatialSheetsToPresentation(
+    document: SpatialDocument,
+    view: ViewDefinition,
+): RealityTransformationResult<List<PresentationDocument>> {
+    val spatialValidation = SpatialReality.validate(document)
+    if (!spatialValidation.isValid) {
+        return spatialValidation.diagnostics.toSpatialTransformationFailure()
+    }
+    val compositionDiagnostics = document.sheets.flatMap(::presentationCompositionDiagnostics)
+        .distinct()
+        .sortedWith(compareBy(SpatialDiagnostic::subject, SpatialDiagnostic::problem, SpatialDiagnostic::correction))
+    if (compositionDiagnostics.isNotEmpty()) {
+        return compositionDiagnostics.toSpatialTransformationFailure()
+    }
+    val results = document.sheets.map { sheet ->
+        SpatialToPresentationTransformation(view = view).transform(sheet)
+    }
+    val diagnostics = results.filterIsInstance<RealityTransformationResult.Failure>()
+        .flatMap(RealityTransformationResult.Failure::diagnostics)
+    if (diagnostics.isNotEmpty()) {
+        return RealityTransformationResult.Failure(diagnostics)
+    }
+    return RealityTransformationResult.Success(
+        results.filterIsInstance<RealityTransformationResult.Success<PresentationDocument>>()
+            .map(RealityTransformationResult.Success<PresentationDocument>::output),
+    )
+}
+
+private fun String.encodedIdentityPart(): String = URLEncoder.encode(this, StandardCharsets.UTF_8)

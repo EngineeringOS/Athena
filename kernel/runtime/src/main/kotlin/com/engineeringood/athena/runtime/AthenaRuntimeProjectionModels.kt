@@ -305,6 +305,9 @@ data class AthenaRuntimeProjectionReadySnapshot(
     val notationPack: AthenaRuntimeProjectionNotationPack? = null,
     val crossReferences: List<AthenaRuntimeProjectionCrossReference> = emptyList(),
     val activeRenderContributions: List<AthenaRuntimeProjectionRenderContribution> = emptyList(),
+    val projectionRegionIds: List<String> = emptyList(),
+    val projectionConstructIds: List<String> = emptyList(),
+    val spatialFacts: AthenaRuntimeSpatialFacts? = null,
 ) : AthenaRuntimeProjectionSnapshot
 
 /**

@@ -67,14 +67,15 @@ class DedicatedM40ExampleTest {
                         diagnostic -> "${diagnostic.reality}: ${diagnostic.message}"
                     },
                 )
-                assertTrue(spatial.output.occurrences.isNotEmpty())
+                val spatialSheet = spatial.output.sheets.single()
+                assertTrue(spatialSheet.occurrences.isNotEmpty())
 
                 val presentation = assertIs<RealityTransformationResult.Success<PresentationDocument>>(
-                    SpatialToPresentationTransformation().transform(spatial.output),
+                    SpatialToPresentationTransformation().transform(spatialSheet),
                 )
                 assertTrue(presentation.output.connectors.isNotEmpty() || presentation.output.occurrences.isNotEmpty())
 
-                assertTrue(spatial.output.qualityMeasurements.isNotEmpty())
+                assertTrue(spatialSheet.quality.metrics.density >= 0.0)
             }
 
             is CompilerCompilationParseFailure -> fail(

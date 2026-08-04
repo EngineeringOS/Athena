@@ -32,3 +32,18 @@ dependencies {
     testImplementation(project(":extensions:domain-electrical"))
 }
 
+tasks.register<JavaExec>("generateM41SpatialQualityBaseline") {
+    group = "verification"
+    description = "Generates the canonical M41 Spatial quality baseline from the dedicated fixture."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.engineeringood.athena.compiler.M41SpatialQualityBaselineGenerator")
+    doFirst {
+        val timestamp = providers.gradleProperty("m41BaselineTimestamp").orNull
+            ?: throw GradleException(
+                "Missing -Pm41BaselineTimestamp=<UTC ISO-8601 instant>; ambient time is not reproducible.",
+            )
+        setArgs(listOf(rootProject.projectDir.absolutePath, timestamp))
+    }
+}
+

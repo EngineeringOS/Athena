@@ -10,6 +10,7 @@ import {
     AthenaGLSPPresentationDocumentSource,
     AthenaGLSPProjectionViewSource,
     AthenaGLSPRenderContributionSource,
+    AthenaGLSPSpatialFactsSource,
     AthenaGLSPSheetSource,
 } from './athena-glsp-projection-source';
 
@@ -25,6 +26,9 @@ export type AthenaGLSPDiagram = {
     governedCommands: AthenaGLSPGovernedCommandSource[];
     activeSheetId?: string;
     presentation?: AthenaGLSPPresentationDocumentSource;
+    projectionRegionIds: string[];
+    projectionConstructIds: string[];
+    spatialFacts?: AthenaGLSPSpatialFactsSource;
     sheets: AthenaGLSPSheetSource[];
     notationPack?: AthenaGLSPNotationPackSource;
     crossReferences: AthenaGLSPCrossReferenceSource[];

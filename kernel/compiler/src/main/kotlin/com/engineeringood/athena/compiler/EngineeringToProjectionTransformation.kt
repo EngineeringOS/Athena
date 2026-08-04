@@ -5,10 +5,13 @@ import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringReality
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
 import com.engineeringood.athena.projection.ProjectionConnectionId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
+import com.engineeringood.athena.projection.ProjectionOccurrencePort
+import com.engineeringood.athena.projection.ProjectionOccurrencePortId
 import com.engineeringood.athena.projection.ProjectionReality
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetId
@@ -27,13 +30,33 @@ class EngineeringToProjectionTransformation(
             return engineeringValidation.issues.toTransformationFailure()
         }
 
-        val nodes = componentNodes(input) + portNodes(input)
+        val nodes = componentNodes(input)
+        val nodesBySemanticId = nodes.associateBy(ProjectionNode::semanticId)
+        val portsBySemanticId = input.ports.associateBy { port -> port.id }
+        val occurrencePorts = input.ports.mapNotNull { port ->
+            val ownerId = port.ownerReference.resolvedIdentity ?: return@mapNotNull null
+            val owner = nodesBySemanticId[ownerId] ?: return@mapNotNull null
+            ProjectionOccurrencePort(
+                occurrencePortId = ProjectionOccurrencePortId(owner.projectionId, port.id),
+                originGeometryElementId = GeometryElementId("projection-origin/port/${port.id.value}"),
+            )
+        }
         val connections = input.connections
             .map { connection ->
                 ProjectionConnection(
                     projectionId = ProjectionConnectionId("projection/connection/${connection.id.value}"),
                     semanticId = connection.id,
                     originGeometryElementId = GeometryElementId("projection-origin/connection/${connection.id.value}"),
+                    source = connection.from.resolvedIdentity?.let { portId ->
+                        portsBySemanticId[portId]?.ownerReference?.resolvedIdentity
+                            ?.let(nodesBySemanticId::get)
+                            ?.let { owner -> ProjectionConnectionEndpoint(ProjectionOccurrencePortId(owner.projectionId, portId)) }
+                    },
+                    target = connection.to.resolvedIdentity?.let { portId ->
+                        portsBySemanticId[portId]?.ownerReference?.resolvedIdentity
+                            ?.let(nodesBySemanticId::get)
+                            ?.let { owner -> ProjectionConnectionEndpoint(ProjectionOccurrencePortId(owner.projectionId, portId)) }
+                    },
                 )
             }
         val subjects = sheetSubjects(
@@ -57,6 +80,7 @@ class EngineeringToProjectionTransformation(
             view = view,
             nodes = nodes,
             connections = connections,
+            occurrencePorts = occurrencePorts,
             sheets = listOf(sheet),
         )
         val projectionValidation = ProjectionReality.validate(output)
@@ -74,17 +98,6 @@ class EngineeringToProjectionTransformation(
                     semanticId = component.id,
                     label = component.name,
                     originGeometryElementId = GeometryElementId("projection-origin/component/${component.id.value}"),
-                )
-            }
-
-    private fun portNodes(input: EngineeringDocument): List<ProjectionNode> =
-        input.ports
-            .map { port ->
-                ProjectionNode(
-                    projectionId = ProjectionNodeId("projection/node/${port.id.value}"),
-                    semanticId = port.id,
-                    label = port.name,
-                    originGeometryElementId = GeometryElementId("projection-origin/port/${port.id.value}"),
                 )
             }
 

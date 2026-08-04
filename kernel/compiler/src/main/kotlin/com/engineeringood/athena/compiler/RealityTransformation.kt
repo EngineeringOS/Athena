@@ -1,5 +1,7 @@
 package com.engineeringood.athena.compiler
 
+import com.engineeringood.athena.spatial.SpatialDiagnostic
+import com.engineeringood.athena.spatial.SpatialReality
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 
 interface RealityTransformation<InputReality, OutputReality> {
@@ -31,9 +33,12 @@ data class RealityTransformationDiagnostic(
     init {
         require(reality.isNotBlank()) { "Transformation diagnostic reality must not be blank." }
         require(message.isNotBlank()) { "Transformation diagnostic message must not be blank." }
-        val structuredFields = listOf(subject, problem, correction, sourceTrace)
+        val structuredFields = listOf(subject, problem, correction)
         require(structuredFields.all { field -> field == null } || structuredFields.all { field -> field != null }) {
-            "Transformation diagnostic geometry details must be either complete or absent."
+            "Transformation diagnostic details must be either complete or absent."
+        }
+        require(sourceTrace == null || subject != null) {
+            "Transformation diagnostic source trace requires structured details."
         }
         require(subject == null || subject.isNotBlank()) { "Transformation diagnostic subject must not be blank." }
         require(problem == null || problem.isNotBlank()) { "Transformation diagnostic problem must not be blank." }
@@ -48,6 +53,20 @@ internal fun List<com.engineeringood.athena.ir.RealityValidationIssue>.toTransfo
             RealityTransformationDiagnostic(
                 reality = issue.reality,
                 message = issue.message,
+            )
+        },
+    )
+
+internal fun List<SpatialDiagnostic>.toSpatialTransformationFailure(): RealityTransformationResult.Failure =
+    RealityTransformationResult.Failure(
+        diagnostics = map { diagnostic ->
+            RealityTransformationDiagnostic(
+                reality = SpatialReality.name,
+                message = "${diagnostic.subject}: ${diagnostic.problem} ${diagnostic.correction}",
+                subject = diagnostic.subject,
+                problem = diagnostic.problem,
+                correction = diagnostic.correction,
+                sourceTrace = diagnostic.sourceTrace,
             )
         },
     )

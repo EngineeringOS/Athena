@@ -15,6 +15,8 @@ object ProjectionReality {
         "view",
         "sheet",
         "occurrence",
+        "occurrence port",
+        "connection endpoint",
         "projection group",
         "reading order",
     )
@@ -23,7 +25,9 @@ object ProjectionReality {
         RealityIdentityRule("view", "View identity comes from the selected projection view."),
         RealityIdentityRule("sheet", "Sheet identity is view-local and ordered by the projection compiler."),
         RealityIdentityRule("occurrence", "Occurrence identity traces to the engineering subject plus view-local occurrence id."),
+        RealityIdentityRule("occurrence port", "Occurrence-port identity combines one projected Occurrence with one semantic engineering port."),
         RealityIdentityRule("connection", "Connection occurrence identity traces to the engineering connection plus view-local connection id."),
+        RealityIdentityRule("connection endpoint", "Connection endpoints reference typed occurrence-port identity."),
     )
 
     val requiredFacts: List<String> = listOf(
@@ -58,6 +62,9 @@ object ProjectionReality {
             if (
                 document.nodes.any { node -> node.semanticId.value.isBlank() } ||
                 document.connections.any { connection -> connection.semanticId.value.isBlank() } ||
+                document.occurrencePorts.any { port ->
+                    port.occurrencePortId.occurrenceId.value.isBlank() || port.occurrencePortId.portId.value.isBlank()
+                } ||
                 document.sheets.any { sheet -> sheet.subjects.any { subject -> subject.semanticId.value.isBlank() } }
             ) {
                 add(RealityValidationIssue(name, "missing occurrence source identity"))

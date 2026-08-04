@@ -4,6 +4,7 @@ import com.engineeringood.athena.spatial.SpatialDocument
 import com.engineeringood.athena.spatial.SpatialLane
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialPoint
+import com.engineeringood.athena.spatial.SpatialRect
 import com.engineeringood.athena.spatial.SpatialRoute
 import java.nio.file.Files
 import kotlin.test.Test
@@ -34,42 +35,44 @@ class AuthoredProjectionSpatialQualityTest {
         val second = assertIs<RealityTransformationResult.Success<SpatialDocument>>(transformation.transform(projection))
 
         assertEquals(first.output, second.output)
-        assertEquals(2, first.output.occurrences.size)
+        assertEquals(2, first.output.sheets.single().occurrences.size)
         assertTrue(projection.sheets.all { sheet -> sheet.publication.coordinateZones.none { zone -> zone.zoneId.startsWith("layout-") } })
     }
 
     @Test
-    fun `quality metrics are deterministic compiler facts with full label count`() {
+    fun `quality metrics are deterministic typed compiler facts`() {
         val occurrences = listOf(
             testSpatialOccurrence("o1", "component:A", 0, 0),
             testSpatialOccurrence("o2", "component:B", 140, 0),
         )
-        val lanes = listOf(SpatialLane(laneId = "lane:main", direction = "horizontal"))
+        val lanes = listOf(testSpatialLane("r1"))
         val routes = listOf(
-            SpatialRoute(
+            testSpatialRoute(
                 routeId = "r1",
-                connectionId = com.engineeringood.athena.ir.StableSemanticIdentity("connection:c1"),
-                sourceOccurrenceId = "o1",
-                targetOccurrenceId = "o2",
-                sourceAnchorId = "anchor:o1",
-                targetAnchorId = "anchor:o2",
-                laneId = "lane:main",
-                points = listOf(SpatialPoint(90.0, 20.0), SpatialPoint(100.0, 20.0)),
+                connectionId = "connection:c1",
+                sourceAnchorId = testSpatialAnchorId("o1"),
+                targetAnchorId = testSpatialAnchorId("o2"),
+                points = listOf(SpatialPoint(90, 20), SpatialPoint(100, 20)),
             ),
         )
-        val measurements = SpatialQualityCompiler().measure(occurrences, lanes, routes)
-        val spatial = SpatialDocument(
+        val metrics = SpatialQualityCompiler().measure(
+            drawingArea = SpatialRect(0, 0, 400, 200),
+            occurrences = occurrences,
+            constructs = emptyList(),
+            lanes = lanes,
+            routes = routes,
+        )
+        val spatial = SpatialDocument(listOf(testSpatialSheet(
             occurrences = occurrences,
             regions = listOf(testSpatialRegion(occurrences)),
             lanes = lanes,
             routes = routes,
-            qualityMeasurements = measurements,
-        )
+            qualityMetrics = metrics,
+        )))
 
-        assertEquals(measurements, spatial.qualityMeasurements)
-        val values = spatial.qualityMeasurements.associate { measurement -> measurement.kind to measurement.value }
-        assertEquals(1.0, values["route-count"])
-        assertEquals(0.0, values["body-intersection-count"])
+        assertEquals(metrics, spatial.sheets.single().quality.metrics)
+        assertEquals(1, metrics.usedLaneCount)
+        assertEquals(0, metrics.routeBodyIntersectionCount)
     }
 
     private fun compile(source: String): CompilerCompilationSuccess {

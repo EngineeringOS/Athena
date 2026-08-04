@@ -11,6 +11,7 @@ import com.engineeringood.athena.projection.ProjectionRegion
 import com.engineeringood.athena.projection.ProjectionSheet
 import com.engineeringood.athena.projection.ProjectionSheetConstruct
 import com.engineeringood.athena.projection.ProjectionSheetId
+import com.engineeringood.athena.projection.ProjectionSheetGrid
 import com.engineeringood.athena.projection.ProjectionSheetPublication
 import com.engineeringood.athena.projection.ProjectionSheetSubject
 import com.engineeringood.athena.spatial.SpatialAlignmentId
@@ -627,17 +628,35 @@ class SpatialGeometryCompilerTest {
     }
 
     @Test
+    fun `authored Region and alignment preserve their distinct member orders`() {
+        val fixture = groupingFixture()
+
+        val result = SpatialGeometryCompiler().compile(fixture.projection, fixture.occurrences)
+
+        assertTrue(result.diagnostics.isEmpty())
+        val region = result.regions.single { candidate -> candidate.regionId.projectionId == REGION_ID }
+        val alignment = result.alignments.single { candidate ->
+            candidate.constraintSource == SpatialAlignmentSource.Region(region.regionId)
+        }
+        assertEquals(listOf(ALPHA_ID, BETA_ID), region.memberOccurrenceIds)
+        assertEquals(listOf(BETA_ID, ALPHA_ID), alignment.occurrenceIds)
+        assertEquals(region.memberOccurrenceIds.toSet(), alignment.occurrenceIds.toSet())
+    }
+
+    @Test
     fun `projection spatial compiler is sole active path and publishes typed grouping geometry`() {
         val fixture = groupingFixture()
 
         val result = ProjectionSpatialCompiler().transform(fixture.projection)
 
         val output = assertIs<RealityTransformationResult.Success<SpatialDocument>>(result).output
-        assertEquals(2, output.occurrences.size)
-        assertEquals(listOf(REGION_ID), output.regions.map { region -> region.regionId.projectionId })
-        assertEquals(listOf(CONSTRUCT_ID), output.constructs.map { construct -> construct.constructId.projectionId })
-        assertEquals(2, output.alignments.size)
+        val spatialSheet = output.sheets.single()
+        assertEquals(2, spatialSheet.occurrences.size)
+        assertEquals(listOf(REGION_ID), spatialSheet.regions.map { region -> region.regionId.projectionId })
+        assertEquals(listOf(CONSTRUCT_ID), spatialSheet.constructs.map { construct -> construct.constructId.projectionId })
+        assertEquals(2, spatialSheet.alignments.size)
         val documentFields = SpatialDocument::class.java.declaredFields.map { field -> field.name }
+        assertEquals(listOf("sheets"), documentFields)
         assertFalse("placements" in documentFields)
         assertFalse("bounds" in documentFields)
         assertFalse(ProjectionSpatialCompiler::class.java.declaredFields.any { field ->
@@ -705,6 +724,7 @@ class SpatialGeometryCompilerTest {
             subjects = subjects,
             regions = listOf(region),
             constructs = listOf(construct),
+            grid = ProjectionSheetGrid("grid:main", rows = 8, columns = 12),
             originGeometryElementId = SHEET_SOURCE,
             publication = ProjectionSheetPublication.fromProjectionState(sheetId, "Main", 0, subjects),
         )
