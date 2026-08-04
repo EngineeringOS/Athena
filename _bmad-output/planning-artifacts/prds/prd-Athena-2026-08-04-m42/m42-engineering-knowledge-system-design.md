@@ -1,4 +1,4 @@
-# M42 Engineering Knowledge Reality - Discussion Design
+# M42 Engineering Knowledge System - Discussion Design
 
 Date: 2026-08-04
 Status: Draft for written review
@@ -18,26 +18,61 @@ plan, or implementation plan.
 
 ## Strategic Decision
 
-M42 changes direction from Presentation Reality to **Engineering Knowledge Reality**.
+M42 changes direction from Presentation Reality to the **Engineering Knowledge System**.
 
 Athena will not spend M42 polishing drawing output. M42 will prove that Athena understands why
 engineering objects exist, which abilities they provide or require, how their relationships satisfy
 system intent, and why a design is valid, incomplete, or invalid.
 
-M42 extends the established chain without making rendering or AI authoritative:
+The Engineering Knowledge System is a cross-cutting authority, not another Reality domain, graph,
+database, or source of project subjects. It supplies governed definitions during Engineering Reality
+construction, then evaluates the canonical Engineering Reality without taking ownership from it.
 
 ```text
-Athena project source + governed Athena knowledge packages
--> Semantic Graph
--> Engineering Reality
--> Engineering Knowledge Reality
--> Projection Reality
--> Spatial Reality
--> existing renderer
+governed Athena knowledge packages
+            |
+            v
+Engineering Knowledge System
+  definitions + evaluation
+            |
+            +---- resolves knowledge-backed meaning ----+
+            |                                            |
+Athena source -> Semantic Graph -> Engineering Reality <-+
+                                      |
+                                      +---- knowledge evaluation
+                                      |
+                                      v
+                           Validated Engineering Reality
+                                      |
+                                      v
+                              Projection Reality
+                                      |
+                                      v
+                               Spatial Reality
+                                      |
+                                      v
+                              existing renderer
 ```
 
-Engineering Knowledge Reality is immutable compiled judgement over canonical engineering subjects.
-It never becomes a second source-mutation path.
+Knowledge-backed Concept, Part, capability, and relationship definitions participate in resolving
+Engineering Reality. Project Entities, Functions, Ports, Relationships, and authored facts remain
+owned only by Engineering Reality. Evaluation adds satisfaction, constraint, correction, and
+explanation evidence; it does not mutate or duplicate those subjects.
+
+`Validated Engineering Reality` names the canonical Engineering Reality paired with its immutable
+validation evidence. It is not a second entity graph, database, or authority.
+
+Knowledge definition and project validation remain separate contracts:
+
+```text
+EngineeringKnowledgeDocument
+    compiled governed definitions from the resolved package set
+
+EngineeringValidationDocument
+    project-specific evaluation over canonical Engineering Reality
+```
+
+Neither contract becomes a source-mutation path.
 
 ## Approaches Considered
 
@@ -45,7 +80,7 @@ It never becomes a second source-mutation path.
 |---|---|---|
 | Continue original M42 Presentation styling, labels, visibility, and grid chrome | Rejected | Improves downstream appearance before Athena has a coherent engineering knowledge model. |
 | Build a universal ontology, graph database, reasoning engine, and AI agent | Rejected | Too broad, speculative, and unable to earn its abstractions through one falsifiable product slice. |
-| Build one cross-domain Engineering Knowledge Reality vertical slice | Adopted | Replaces fragmented prototypes with a coherent model while keeping scope grounded in executable engineering decisions. |
+| Build one cross-domain Engineering Knowledge System vertical slice | Adopted | Replaces fragmented prototypes with a coherent model while keeping scope grounded in executable engineering decisions. |
 
 ## Existing Reality To Replace Or Deepen
 
@@ -75,9 +110,12 @@ contract. Current defects include:
 
 ## M42 Product Thesis
 
-> Athena compiles authored engineering entities, functions, relationships, and governed domain
-> knowledge into explicit capability requirements, provisions, satisfaction, constraints,
-> implementation facts, corrections, and provenance.
+> M42 establishes Athena as an engineering knowledge system capable of validating Engineering
+> Reality, not merely representing engineering objects.
+
+Athena compiles authored engineering entities, functions, relationships, and governed domain
+knowledge into explicit capability requirements, provisions, satisfaction, constraints,
+implementation facts, corrections, and provenance.
 
 M42 succeeds through one dedicated mechatronic fixture:
 
@@ -152,6 +190,12 @@ Entity, such as a coil, main contact, auxiliary contact, or overload sensing Fun
 is the reusable semantic contract behind an Entity or Function; it is not a replacement for
 Function.
 
+Function ownership establishes identity and containment only. It does not force relationships into
+an Entity-to-Entity hierarchy. Project-level Relationships may bind Function-to-Function across
+different Entities as first-class participants. For example, KM1's switching Function supplies
+power to M1's electrical-input Function. Relationships may bind an Entity or exact Port only when
+their governed definition admits that participant level.
+
 Electrical UI may say Device and Connection Point. Other domains may use their own display terms.
 Kernel contracts remain `EngineeringEntity`, `EngineeringFunction`, and `EngineeringPort`.
 
@@ -166,7 +210,8 @@ identity. M42 does not add automatic numbering, an IEC 81346 platform, or locati
 
 ## Capability Contract
 
-Capability means only an engineering ability an Entity or Function provides or requires.
+Capability means only an engineering ability an Entity or Function provides or requires: what the
+subject can participate in, provide, or consume. Capability never states what the subject is.
 
 ```text
 CapabilityDefinition
@@ -178,6 +223,10 @@ CapabilitySatisfaction
 Capability is a typed contract, not a classification tag or inheritance node. It may carry typed
 parameters, conditions admitted by the M42 formula boundary, subject provenance, knowledge
 provenance, and exact satisfaction status.
+
+For example, `rotating machine` is classification and does not qualify as a Capability. Providing
+mechanical torque and requiring electrical energy are Capabilities. Concept identity and explicit
+classification keys carry kind information.
 
 Concepts use composition, not inheritance. A Concept declares:
 
@@ -419,9 +468,13 @@ Engineers author entities, Functions, properties, semantic relationships, option
 and real project constraints. They do not author `CapabilitySatisfaction`, evaluator operators as
 protocol fields, knowledge entry IDs, transport payloads, or compiler trace objects.
 
-## Knowledge State And Failure Policy
+## Knowledge Compilation, Validation State, And Failure Policy
 
-Compiled knowledge has three document states:
+Knowledge compilation and project validation are separate. A resolved knowledge package set either
+compiles into an `EngineeringKnowledgeDocument` or fails with package diagnostics. It does not carry
+project satisfaction state.
+
+Project evaluation publishes an `EngineeringValidationDocument` with one of three states:
 
 ```text
 READY
@@ -436,32 +489,39 @@ INVALID
 - `INVALID`: definitions conflict, concepts are ambiguous, units are invalid, relationships are
   malformed, or a knowledge package is corrupt.
 
-`INCOMPLETE` preserves authored Engineering Reality and publishes exact knowledge diagnostics.
-`INVALID` publishes compiler diagnostics but no `EngineeringKnowledgeDocument`. Projection may
-continue showing valid authored subjects during incomplete design, but must never present incomplete
-knowledge as satisfied. No fallback selects or guesses knowledge.
+`INCOMPLETE` preserves authored Engineering Reality and publishes exact validation diagnostics.
+`INVALID` still publishes a deterministic validation document containing failure diagnostics and
+provenance, but publishes no Validated Engineering Reality and makes no satisfaction claim.
+Projection may continue showing valid authored subjects during incomplete design, but must never
+present incomplete knowledge as satisfied. No fallback selects or guesses knowledge.
 
 The compiler verifies authored provider choices. It does not choose, create, or connect providers.
 It may list deterministic eligible Entities already present in the project as correction evidence.
 Future Pattern and AI systems own provider selection and solution generation.
 
-## Open Contract And Product Surface
+## Open Contracts And Product Surface
 
-M42 publishes a deterministic, implementation-neutral `EngineeringKnowledgeDocument` with canonical
-JSON and JSON Schema. The contract contains package-qualified identities, typed values, provenance,
-states, judgements, and corrections. It contains no Kotlin class names, filesystem objects, Theia
-fields, or renderer contracts.
+M42 publishes two deterministic, implementation-neutral contracts with canonical JSON and JSON
+Schema:
+
+- `EngineeringKnowledgeDocument` contains compiled package-qualified definitions, typed property
+  schemas, formulas, constraint definitions, and knowledge provenance;
+- `EngineeringValidationDocument` contains project state, canonical Engineering Reality subject
+  references, requirements, satisfactions, judgements, corrections, and evaluation provenance.
+
+Neither document copies or owns the Engineering Reality entity graph. Neither contains Kotlin class
+names, filesystem objects, Theia fields, or renderer contracts.
 
 A schema version detects mismatch. It does not create a compatibility obligation while Athena is
 pre-1.0.
 
-Existing product surfaces expose M42 knowledge:
+Existing product surfaces expose M42 knowledge definitions and validation evidence:
 
 - Inspector: Concept, provided/required capabilities, implementation, satisfaction;
 - relationship inspection: semantic definition and participant roles;
 - Problems: plain engineering failures and corrections;
 - source navigation: reveal project or knowledge source for every fact;
-- CLI/structured output: canonical Knowledge Reality for tools.
+- CLI/structured output: canonical Knowledge and Validation documents for tools.
 
 Runtime and LSP transport typed facts. Theia displays them without inference. M42 adds no dashboard,
 ontology browser, graph-database UI, or new rendering engine.
@@ -502,7 +562,8 @@ kernel/engineering-model
   Entities, Functions, Ports, Relationships, Values, authored/resolved project facts
 
 kernel/knowledge-model
-  Concepts, Parts, Capabilities, Constraints, Satisfaction, Knowledge Document
+  definition contracts: Concepts, Parts, Capabilities, Constraints, Knowledge Document
+  evaluation contracts: Requirements, Satisfaction, Judgements, Corrections, Validation Document
 
 kernel/compiler
   package compilation, resolution, derivation, evaluation
@@ -516,8 +577,9 @@ package contracts when their responsibilities migrate.
 
 The Semantic Macro and template pipeline is retired where tied to old architecture, including
 `.properties` definitions, Component/Connection templates, runtime/LSP/frontend macro protocols,
-and stale tests or documentation. Generic governed mutation preview, acceptance, and review
-mechanisms survive only when independently useful.
+and stale tests or documentation. Provenance, governed mutation preview, explicit acceptance, and
+review mechanisms survive as independently named OS-level primitives only where they have consumers
+outside the retired macro semantics.
 
 Each replacement story deletes its superseded code, tests, active docs, and examples immediately.
 Final cleanup is an audit, not a delayed migration phase.
@@ -573,18 +635,18 @@ The controlled-conveyor baseline must prove:
 - every Relationship resolves exactly one definition and valid participant roles;
 - every capability requirement has `SATISFIED`, `UNSATISFIED`, or `UNRESOLVED` evidence;
 - every derived judgement carries project and knowledge provenance;
-- baseline has zero blocking knowledge diagnostics;
+- baseline has zero blocking validation diagnostics;
 - missing protector yields `INCOMPLETE` with structured correction;
 - undersized Part yields exact typed constraint failure;
 - invalid relationship or incompatible dimension yields `INVALID`;
 - Part swap preserves Entity identity and semantic relationships;
 - motor rated-current change deterministically updates requirements, constraint results, impact,
   explanation, and correction options;
-- runtime, LSP, Inspector, Problems, canonical JSON, and kernel facts agree;
+- runtime, LSP, Inspector, Problems, both canonical JSON documents, and kernel facts agree;
 - existing M41 projection and spatial regression remains green;
 - kernel contains no electrical capability, relationship, flow, unit, or rule constants;
-- retired knowledge, Component/Connection, Semantic Macro, loaders, tests, active docs, and examples
-  are absent;
+- retired legacy knowledge, Component/Connection, Semantic Macro, loaders, tests, active docs, and
+  examples are absent;
 - source-set hygiene, encoding, repository tests, frontend tests, product E2E, and milestone-local
   evidence gates pass.
 
@@ -594,18 +656,35 @@ correction generation without human recalculation.
 
 ## Delivery Order
 
-M42 is intentionally larger than a normal milestone. Expected dependency order:
+M42 is intentionally larger than a normal milestone. Delivery is divided into four dependency
+phases so knowledge grammar and evaluation cannot distort the core engineering model.
 
-1. Typed values, quantities, and package-qualified knowledge identities.
-2. EngineeringEntity, Function, Port, and Structure model.
-3. Knowledge source grammar and compiled package contract.
-4. Concept and Part implementation model.
-5. Capability definitions, provisions, and requirements.
-6. Typed Relationships, participant roles, and Flows.
-7. Satisfaction, formulas, constraints, ranges, corrections, and document states.
-8. Direct Projection and Spatial migration.
-9. Canonical JSON, runtime, LSP, Inspector, and Problems integration.
-10. Dedicated controlled-conveyor product proof, legacy audit, and closure.
+### Phase 1 - Kernel Authority
+
+- `EngineeringValue`, exact quantities, units, and dimensions;
+- `EngineeringEntity`, `EngineeringFunction`, `EngineeringPort`, Structure, typed
+  `EngineeringRelationship`, participant roles, and Flow references;
+- direct replacement of generic Component/Connection authority and direct Projection/Spatial
+  migration;
+- no knowledge package grammar or evaluator yet.
+
+### Phase 2 - Knowledge Contract
+
+- package-qualified knowledge identities and package-local Athena source grammar;
+- Concept, Part, Capability, Relationship, Flow, formula, and Constraint definitions;
+- immutable `EngineeringKnowledgeDocument` with canonical JSON and JSON Schema.
+
+### Phase 3 - Evaluation
+
+- provisions, requirements, satisfaction, formula and constraint evaluation;
+- corrections, provenance, validation states, and `EngineeringValidationDocument`;
+- runtime, LSP, Inspector, Problems, and CLI integration.
+
+### Phase 4 - Product Proof And Closure
+
+- dedicated controlled-conveyor cross-domain product proof;
+- electrical depth plus real automation and mechanical participation;
+- legacy deletion audit, active-document migration, product E2E, and closure evidence.
 
 Exact epics and stories are created later through BMad after PRD, architecture, and implementation
 readiness review. Every story is created through BMad create-story, implemented through BMad
