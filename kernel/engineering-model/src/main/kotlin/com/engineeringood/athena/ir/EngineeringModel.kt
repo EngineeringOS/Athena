@@ -48,33 +48,6 @@ data class EngineeringComponent(
     val provenance: SourceProvenance,
 )
 
-/** Canonical semantic representation of a port owned by another engineering object. */
-data class EngineeringPort(
-    val id: StableSemanticIdentity,
-    val ownerReference: EngineeringReference,
-    val name: String,
-    val properties: List<EngineeringProperty>,
-    val provenance: SourceProvenance,
-)
-
-/** Device-owned functional partition referencing canonical project ports. */
-data class EngineeringFunction(
-    val id: StableSemanticIdentity,
-    val ownerReference: EngineeringReference,
-    val name: String,
-    val role: EngineeringFunctionRole,
-    val portReferences: List<EngineeringReference>,
-    val provenance: SourceProvenance,
-)
-
-/** Extensible authored function role; domain plugins interpret known values. */
-@JvmInline
-value class EngineeringFunctionRole(val value: String) {
-    init {
-        require(value.isNotBlank()) { "Engineering function role must not be blank" }
-    }
-}
-
 /** Canonical semantic relationship between two authored engineering references. */
 data class EngineeringConnection(
     val id: StableSemanticIdentity,
