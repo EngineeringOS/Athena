@@ -1,9 +1,9 @@
 system MachineNo000 {
-  device QF1 {
-    type Breaker
+  entity QF1 {
+    concept Breaker
   }
-  device M1 {
-    type Motor
+  entity M1 {
+    concept Motor
   }
   port QF1.line {
     direction out
@@ -11,7 +11,7 @@ system MachineNo000 {
   port M1.line {
     direction in
   }
-  connect feeder QF1.line to M1.line
+  power QF1.line to M1.line
 
   installation cabinet MainCabinet {
     enclosure ENC1 size (800mm, 600mm, 250mm)

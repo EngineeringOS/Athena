@@ -11,67 +11,19 @@ import kotlin.test.assertTrue
 
 class AthenaEngineeringGraphProjectionTest {
     @Test
-    fun `runtime projects the demo cabinet into a queryable engineering graph`() {
-        val sourcePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
-        val runtime = AthenaRuntime()
-        val context = runtime.openWorkspace(resolveRepoRoot()).activateProject(
-            projectName = "demo-cabinet",
-            sourcePath = sourcePath,
-        )
-
-        val projection = context.projectEngineeringGraphProjection()
-
-        val ready = assertIs<AthenaEngineeringGraphReadyProjection>(projection)
-        assertEquals("demo-cabinet", ready.projectName)
-        assertEquals("system:DemoCabinet", ready.graph.systemSemanticId)
-        assertEquals(6, ready.graph.nodes.size)
-        assertEquals(6, ready.graph.relationships.size)
-
-        val connectionId = "connection:examples/m0/demo-cabinet.athena:plc_to_motor"
-        val connection = ready.graph.node(connectionId)
-        assertEquals(AthenaEngineeringGraphNodeKind.CONNECTION, connection?.kind)
-        assertEquals(
-            listOf("port:PLC1.out", "port:M1.in"),
-            ready.graph.referencedNodes(connectionId).map { it.semanticId },
-        )
-        assertEquals(
-            listOf("component:M1", "component:PLC1"),
-            ready.graph.dependenciesOf("system:DemoCabinet").map { it.semanticId }.sorted(),
-        )
-        assertEquals(
-            listOf("component:PLC1", connectionId),
-            ready.graph.neighbors("port:PLC1.out").map { it.semanticId }.sorted(),
-        )
-        assertEquals(
-            listOf("component:PLC1", connectionId),
-            ready.graph.affectedRelationships("port:PLC1.out").map { it.sourceSemanticId }.sorted(),
-        )
-        assertEquals(
-            listOf("component:M1", "component:PLC1"),
-            ready.graph.nodesOfKind(AthenaEngineeringGraphNodeKind.COMPONENT).map { it.semanticId }.sorted(),
-        )
-        assertEquals(
-            listOf("$connectionId -> port:M1.in", "$connectionId -> port:PLC1.out"),
-            ready.graph.relationshipsOfKind(AthenaEngineeringGraphRelationshipKind.CONNECTION_REFERENCE)
-                .map { "${it.sourceSemanticId} -> ${it.targetSemanticId}" }
-                .sorted(),
-        )
-    }
-
-    @Test
     fun `runtime graph remains available when semantic validation blocks rendering`() {
         val brokenPath = Files.createTempFile("athena-runtime-graph-semantic-", ".athena")
         Files.writeString(
             brokenPath,
             """
                 system Broken {
-                  device PLC1 {
-                    type Switch
+                  entity PLC1 {
+                    concept Switch
                   }
 
                   port Missing.out {
                     direction out
-                    signal Digital
+                    flow Digital
                   }
                 }
             """.trimIndent(),
@@ -87,11 +39,8 @@ class AthenaEngineeringGraphProjectionTest {
             val projection = context.projectEngineeringGraphProjection()
 
             val ready = assertIs<AthenaEngineeringGraphReadyProjection>(projection)
-            val portNode = ready.graph.node("port:Missing.out")
-            assertEquals(AthenaEngineeringGraphNodeKind.PORT, portNode?.kind)
-            assertEquals(1, portNode?.references?.size)
-            assertEquals(listOf("Missing"), portNode?.references?.single()?.authoredPath)
-            assertNull(portNode?.references?.single()?.resolvedSemanticId)
+            assertNull(ready.graph.node("port:Missing.out"))
+            assertTrue(ready.graph.nodesOfKind(AthenaEngineeringGraphNodeKind.PORT).isEmpty())
             assertTrue(ready.graph.referencedNodes("port:Missing.out").isEmpty())
         } finally {
             Files.deleteIfExists(brokenPath)

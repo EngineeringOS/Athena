@@ -24,7 +24,6 @@ import kotlin.test.assertTrue
 class AthenaM17InvalidSourceProofTest {
     private val expectedInventory = listOf(
         "incomplete-brace",
-        "missing-to",
         "over-qualified-port",
         "unterminated-string",
     )

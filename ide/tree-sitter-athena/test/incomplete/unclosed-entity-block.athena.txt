@@ -1,0 +1,3 @@
+system DemoCabinet {
+  entity PLC1 {
+    concept Switch

@@ -25,9 +25,9 @@ class AuthoredProjectionTransformationTest {
         val source =
             """
             system Demo {
-              device Supply { port L1 { direction out signal Power role line } }
-              device Breaker { port line { direction in signal Power role line } }
-              connect feed Supply.L1 to Breaker.line
+              entity Supply { concept Generic port L1 { direction out signal Power role line } }
+              entity Breaker { concept Generic port line { direction in signal Power role line } }
+              power Supply.L1 to Breaker.line
               view schematic {
                 sheet S1
                 region "Power" { occurrences [Supply, Breaker] }
@@ -52,8 +52,8 @@ class AuthoredProjectionTransformationTest {
         assertEquals("port:Supply.L1", connection.source?.occurrencePortId?.portId?.value)
         assertEquals("port:Breaker.line", connection.target?.occurrencePortId?.portId?.value)
         val subjectIds = first.output.sheets.single().subjects.map { it.semanticId.value }
-        assertEquals(listOf("component:Supply", "component:Breaker"), subjectIds.take(2))
-        assertTrue(subjectIds.single { subjectId -> subjectId.startsWith("connection:") }.endsWith(":feed"))
+        assertEquals(listOf("entity:Supply", "entity:Breaker"), subjectIds.take(2))
+        assertTrue(subjectIds.single { subjectId -> subjectId.startsWith("relationship:") }.contains(":power:"))
         assertEquals(listOf("power-rail"), first.output.sheets.single().constructs.map { it.kind })
     }
 

@@ -16,7 +16,7 @@ function baseProof() {
 function validViewport(viewportName, width, height) {
     const occurrences = Array.from({ length: 8 }, (_, index) => ({
         occurrenceId: `occurrence-${index}`,
-        semanticId: `component:${index}`,
+        semanticId: `entity:${index}`,
         regionId: `region-${index % 3}`,
         bounds: { x: 80 + index * 100, y: 100 + (index % 3) * 160, width: 80, height: 40 }
     }));
@@ -544,7 +544,7 @@ test('rejects viewport name with wrong requested dimensions', () => {
 
 test('rejects rendered component identity drift', () => {
     const proof = validProof();
-    proof.viewports[0].pixelReality.renderedComponentSemanticIds[0] = 'component:wrong';
+    proof.viewports[0].pixelReality.renderedComponentSemanticIds[0] = 'entity:wrong';
     expectAuthority(proof, 'pixels', 'rendered Component identities');
 });
 
@@ -648,7 +648,7 @@ test('rejects screenshot path outside M41 artifact directory', () => {
 test('rejects rendered Component and Route geometry drift', () => {
     const proof = validProof();
     proof.viewports[0].pixelReality.renderedComponents = [{
-        semanticId: 'component:0',
+        semanticId: 'entity:0',
         bounds: { x: 999, y: 999, width: 1, height: 1 }
     }];
     proof.viewports[0].pixelReality.renderedRoutes = [{

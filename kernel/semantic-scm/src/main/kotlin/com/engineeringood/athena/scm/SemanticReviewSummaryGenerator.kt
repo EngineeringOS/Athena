@@ -1,6 +1,5 @@
 package com.engineeringood.athena.scm
 
-import com.engineeringood.athena.ir.EngineeringImpactConsequence
 import com.engineeringood.athena.repository.PackageIdentifier
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
@@ -30,12 +29,10 @@ class SemanticReviewSummaryGenerator {
                 ),
             )
             addAll(authoredEntries(authoredChanges))
-            addAll(engineeringImpactEntries(diff.engineeringImpactConsequences.consequences))
             addAll(derivedEntries(derivedConsequences))
             addAll(
                 validationImpactEntries(
-                    diff.snapshot.validationResult?.diagnostics.orEmpty() +
-                        diff.snapshot.knowledgeDiagnostics,
+                    diff.snapshot.validationResult?.diagnostics.orEmpty(),
                 ),
             )
             addAll(
@@ -51,7 +48,6 @@ class SemanticReviewSummaryGenerator {
             affectedPackages = diff.affectedPackages,
             authoredChanges = authoredChanges,
             derivedConsequences = derivedConsequences,
-            engineeringImpactConsequences = diff.engineeringImpactConsequences,
             diagnostics = diagnostics,
             entries = entries,
         )
@@ -60,7 +56,6 @@ class SemanticReviewSummaryGenerator {
     private fun collectDiagnostics(diff: SemanticDiff): List<SemanticDiagnostic> {
         return (
             diff.snapshot.validationResult?.diagnostics.orEmpty() +
-                diff.snapshot.knowledgeDiagnostics +
                 diff.snapshot.diagnostics +
                 diff.derivedConsequences.mapNotNull { consequence -> consequence.diagnostic }
             ).distinct()
@@ -141,19 +136,6 @@ class SemanticReviewSummaryGenerator {
             }
     }
 
-    private fun engineeringImpactEntries(
-        engineeringImpactConsequences: List<EngineeringImpactConsequence>,
-    ): List<SemanticReviewEntry> {
-        return engineeringImpactConsequences.map { consequence ->
-            SemanticReviewEntry(
-                kind = SemanticReviewEntryKind.ENGINEERING_IMPACT,
-                message = engineeringImpactMessage(consequence),
-                subjectIdentity = consequence.affectedSubjectIdentity,
-                factReferences = listOf(consequence.reviewFactReference()),
-            )
-        }
-    }
-
     private fun validationImpactEntries(
         diagnostics: List<SemanticDiagnostic>,
     ): List<SemanticReviewEntry> {
@@ -198,7 +180,7 @@ private fun SemanticChangeRecord.reviewEntryKind(): SemanticReviewEntryKind {
         SemanticChangeCategory.PACKAGE_DEPENDENCY_CHANGED -> SemanticReviewEntryKind.PACKAGE_DEPENDENCY
         SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
         SemanticChangeCategory.ENGINEERING_PROPERTY_CHANGED,
-        SemanticChangeCategory.CONNECTION_TOPOLOGY_CHANGED,
+        SemanticChangeCategory.RELATIONSHIP_CHANGED,
         SemanticChangeCategory.EXTENSION_SEMANTICS_CHANGED,
         SemanticChangeCategory.VALIDATION_STATE_CHANGED,
         -> SemanticReviewEntryKind.ENGINEERING_CHANGE
@@ -239,26 +221,6 @@ private fun SemanticDerivedConsequence.reviewFactReference(): SemanticReviewFact
     )
 }
 
-private fun EngineeringImpactConsequence.reviewFactReference(): SemanticReviewFactReference {
-    return SemanticReviewFactReference(
-        factKind = SemanticReviewFactKind.ENGINEERING_IMPACT,
-        identifier = traceIdentifier(
-            head = "ENGINEERING_IMPACT",
-            subjectIdentity = affectedSubjectIdentity,
-            message = engineeringImpactMessage(this),
-            metadata = mapOf(
-                "triggers" to triggerSubjectIdentities.joinToString(",") { identity -> identity.value },
-                "reasons" to reasonKinds.joinToString(",") { reason -> reason.name },
-                "inputs" to affectedInputKinds.joinToString(",") { kind -> kind.name },
-                "derived" to affectedDerivedValueKinds.joinToString(",") { kind -> kind.name },
-                "facts" to affectedCapabilityFactKinds.joinToString(",") { kind -> kind.name },
-                "rules" to affectedConstraintRuleKinds.joinToString(",") { kind -> kind.name },
-            ).filterValues { value -> value.isNotBlank() },
-        ),
-        subjectIdentity = affectedSubjectIdentity,
-    )
-}
-
 private fun SemanticDiagnostic.reviewFactReference(
     affectedPackage: PackageIdentifier? = null,
 ): SemanticReviewFactReference {
@@ -275,17 +237,6 @@ private fun SemanticDiagnostic.reviewFactReference(
         affectedPackage = affectedPackage,
         subjectIdentity = subjectIdentity,
     )
-}
-
-private fun engineeringImpactMessage(consequence: EngineeringImpactConsequence): String {
-    val triggerSummary = consequence.triggerSubjectIdentities
-        .joinToString(separator = ", ") { identity -> "`${identity.value}`" }
-    val ruleSummary = consequence.affectedConstraintRuleKinds
-        .takeIf { ruleKinds -> ruleKinds.isNotEmpty() }
-        ?.joinToString(separator = ", ") { ruleKind -> ruleKind.name.lowercase() }
-        ?.let { value -> " (rules: $value)" }
-        .orEmpty()
-    return "Engineering impact: `${consequence.affectedSubjectIdentity.value}` affected by changes to $triggerSummary.$ruleSummary"
 }
 
 private fun packageDisplayName(packageId: PackageIdentifier): String {

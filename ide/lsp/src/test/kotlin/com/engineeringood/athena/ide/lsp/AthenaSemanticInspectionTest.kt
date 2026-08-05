@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.ide.lsp
+package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
@@ -25,30 +25,30 @@ class AthenaSemanticInspectionTest {
 
         val invalidText = """
             system FactoryLine {
-              connect motor1_out_to_missing_in Motor1.out to Missing.in
+              control Motor1.out to Missing.in
             }
         """.trimIndent()
         val validText = """
             system FactoryLine {
-              device Motor1 {
-                type Motor
+              entity Motor1 {
+                concept Motor
               }
 
-              device Missing {
-                type Motor
+              entity Missing {
+                concept Motor
               }
 
               port Motor1.out {
                 direction out
-                signal Digital
+                flow Digital
               }
 
               port Missing.in {
                 direction in
-                signal Digital
+                flow Digital
               }
 
-              connect motor1_out_to_missing_in_2 Motor1.out to Missing.in
+              control Motor1.out to Missing.in
             }
         """.trimIndent()
 
@@ -80,8 +80,8 @@ class AthenaSemanticInspectionTest {
             assertEquals("diagnostics", invalidInspection?.status)
             assertEquals(1, invalidInspection?.version)
             assertEquals(2, invalidInspection?.diagnosticsCount)
-            assertEquals(0, invalidInspection?.componentCount)
-            assertEquals(1, invalidInspection?.connectionCount)
+            assertEquals(0, invalidInspection?.entityCount)
+            assertEquals(1, invalidInspection?.relationshipCount)
 
             server.textDocumentService.didChange(
                 DidChangeTextDocumentParams(
@@ -100,19 +100,24 @@ class AthenaSemanticInspectionTest {
             assertEquals(2, validInspection.version)
             assertEquals("FactoryLine", validInspection.systemName)
             assertEquals(0, validInspection.diagnosticsCount)
-            assertEquals(2, validInspection.componentCount)
+            assertEquals(2, validInspection.entityCount)
             assertEquals(2, validInspection.portCount)
-            assertEquals(1, validInspection.connectionCount)
-            assertEquals(listOf("Missing", "Motor1"), validInspection.components.map { component -> component.name })
+            assertEquals(1, validInspection.relationshipCount)
+            assertEquals(listOf("Missing", "Motor1"), validInspection.entities.map { entity -> entity.name })
             assertTrue(validInspection.ports.any { port -> port.path == "Motor1.out" })
-            assertEquals("Motor1.out", validInspection.connections.single().fromPath)
-            assertEquals("Missing.in", validInspection.connections.single().toPath)
+            assertEquals("control", validInspection.relationships.single().definition)
+            assertEquals(
+                listOf("source" to "Motor1.out", "target" to "Missing.in"),
+                validInspection.relationships.single().participants.map { participant ->
+                    participant.role to participant.subjectPath
+                },
+            )
             assertEquals(
                 Range(
                     org.eclipse.lsp4j.Position(5, 2),
                     org.eclipse.lsp4j.Position(7, 3),
                 ),
-                validInspection.components.first { component -> component.name == "Missing" }.sourceRange,
+                validInspection.entities.first { entity -> entity.name == "Missing" }.sourceRange,
             )
             assertEquals(
                 Range(
@@ -124,79 +129,10 @@ class AthenaSemanticInspectionTest {
             assertEquals(
                 Range(
                     org.eclipse.lsp4j.Position(19, 2),
-                    org.eclipse.lsp4j.Position(19, 61),
+                    org.eclipse.lsp4j.Position(19, 34),
                 ),
-                validInspection.connections.single().sourceRange,
+                validInspection.relationships.single().sourceRange,
             )
-        } finally {
-            server.shutdown().get()
-            repositoryRoot.toFile().deleteRecursively()
-        }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
-    fun `semantic inspection resolves source ranges for grouped connect child edges`() {
-        val repository = createGovernedTestRepository("athena-lsp-grouped-connect-inspection-")
-        val repositoryRoot = repository.repositoryRoot
-        val sourcePath = repository.seedSourcePath
-        val sourceText = """
-            system GroupedConnectInspection {
-              device PLC1 {
-                type Switch
-              }
-              device M1 {
-                type Motor
-              }
-              port PLC1.out {
-                direction out
-                signal Digital
-              }
-              port M1.in {
-                direction in
-                signal Digital
-              }
-
-              connect control_group {
-                plc1_out_to_m1_in PLC1.out to M1.in
-              }
-            }
-        """.trimIndent()
-
-        val server = AthenaLanguageServer()
-        try {
-            server.initialize(
-                InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
-
-            val documentUri = sourcePath.toUri().toString()
-            server.textDocumentService.didOpen(
-                DidOpenTextDocumentParams(
-                    TextDocumentItem(
-                        documentUri,
-                        "athena",
-                        1,
-                        sourceText,
-                    ),
-                ),
-            )
-
-            val inspection = server.semanticInspection(
-                AthenaSemanticInspectionParams(
-                    AthenaSemanticInspectionTextDocument(documentUri),
-                ),
-            ).get()
-
-            assertNotNull(inspection)
-            assertEquals("ready", inspection.status)
-            assertEquals(1, inspection.connectionCount)
-            val connectionRange = inspection.connections.single().sourceRange
-            assertEquals(17, connectionRange.start.line)
-            assertEquals(17, connectionRange.end.line)
-            assertTrue(connectionRange.start.character > 0)
-            assertTrue(connectionRange.end.character > connectionRange.start.character)
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
@@ -211,16 +147,16 @@ class AthenaSemanticInspectionTest {
         val sourcePath = repository.seedSourcePath
         val sourceText = """
             system InterfacePortInspection {
-              device TerminalX37 {
-                type Terminal
-                port motorDownOut { direction out signal Power role switched terminal "3O" }
+              entity TerminalX37 {
+                concept Terminal
+                port motorDownOut { direction out flow Power role switched terminal "3O" }
               }
 
-              device MotorM37 {
-                type Motor
+              entity MotorM37 {
+                concept Motor
                 interface powerInput {
                   ports {
-                    down { direction in signal Power role switched terminal "D" }
+                    down { direction in flow Power role switched terminal "D" }
                   }
                 }
               }
@@ -262,7 +198,7 @@ class AthenaSemanticInspectionTest {
             assertEquals(
                 Range(
                     org.eclipse.lsp4j.Position(10, 8),
-                    org.eclipse.lsp4j.Position(10, 69),
+                    org.eclipse.lsp4j.Position(10, 67),
                 ),
                 interfacePort.sourceRange,
             )
@@ -272,78 +208,4 @@ class AthenaSemanticInspectionTest {
         }
     }
 
-    @Test
-    @Suppress("DEPRECATION")
-    fun `semantic inspection includes current knowledge diagnostics and m9 knowledge counts`() {
-        val repository = createGovernedTestRepository(
-            prefix = "athena-lsp-knowledge-inspection-",
-            sourceFileName = "motor-evidence.athena",
-            sourceText = m9SemanticInspectionKnowledgeSource,
-        )
-        val repositoryRoot = repository.repositoryRoot
-        val sourcePath = repository.seedSourcePath
-
-        val server = AthenaLanguageServer()
-        try {
-            server.initialize(
-                InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
-
-            val documentUri = sourcePath.toUri().toString()
-            server.textDocumentService.didOpen(
-                DidOpenTextDocumentParams(
-                    TextDocumentItem(
-                        documentUri,
-                        "athena",
-                        1,
-                        m9SemanticInspectionKnowledgeSource,
-                    ),
-                ),
-            )
-
-            val inspection = server.semanticInspection(
-                AthenaSemanticInspectionParams(
-                    AthenaSemanticInspectionTextDocument(documentUri),
-                ),
-            ).get()
-
-            assertNotNull(inspection)
-            assertEquals("diagnostics", inspection.status)
-            assertEquals(3, inspection.diagnosticsCount)
-            assertTrue(inspection.diagnosticSummaries.any { summary -> summary.contains("knowledge.protection_sufficiency") })
-            val knowledge = assertNotNull(inspection.knowledgeInspection)
-            assertEquals(1, knowledge.derivedSubjectCount)
-            assertEquals(3, knowledge.capabilityFactCount)
-            assertEquals(3, knowledge.constraintEvaluationCount)
-            assertEquals(3, knowledge.knowledgeDiagnosticsCount)
-            assertEquals(
-                listOf(
-                    "knowledge.cable_sufficiency",
-                    "knowledge.protection_sufficiency",
-                    "knowledge.relay_sufficiency",
-                ),
-                knowledge.knowledgeDiagnostics.map { diagnostic -> diagnostic.ruleId }.sorted(),
-            )
-        } finally {
-            server.shutdown().get()
-            repositoryRoot.toFile().deleteRecursively()
-        }
-    }
 }
-
-private val m9SemanticInspectionKnowledgeSource = """
-    system MotorDerivedContext {
-      device M1 {
-        type Motor
-        power "7.5kw"
-        voltage "400V"
-        powerFactor "0.86"
-        efficiency "0.92"
-        breakerRatedCurrent "10A"
-        cableAllowedCurrent "12A"
-        relayRatedCurrent "13A"
-      }
-    }
-""".trimIndent()

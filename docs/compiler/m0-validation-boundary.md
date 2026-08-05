@@ -64,7 +64,7 @@ After Story `2.3`, the first Electrical/Runtime plugin owns the current M0 domai
 
 Current Electrical/Runtime vocabulary remains intentionally small:
 
-- valid device types: `PLC`, `Motor`
+- valid entity types: `PLC`, `Motor`
 - valid port directions: `in`, `out`
 - valid connection direction: `out -> in`
 - signal compatibility: both resolved endpoints declare the same symbolic `signal`

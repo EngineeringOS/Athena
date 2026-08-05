@@ -1,19 +1,17 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
-import com.engineeringood.athena.ir.EngineeringConnectionNetwork
-import com.engineeringood.athena.ir.EngineeringConnectionNetworkMember
-import com.engineeringood.athena.ir.EngineeringComponent
-import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringEntity
+import com.engineeringood.athena.ir.EngineeringEntityReference
 import com.engineeringood.athena.ir.EngineeringExternalEvidenceMapping
 import com.engineeringood.athena.ir.EngineeringExternalEvidenceSubject
 import com.engineeringood.athena.ir.EngineeringExternalEvidenceSubjectKind
 import com.engineeringood.athena.ir.EngineeringFunction
-import com.engineeringood.athena.ir.EngineeringFunctionRole
-import com.engineeringood.athena.ir.EngineeringNetworkCompatibilityEvidence
-import com.engineeringood.athena.ir.EngineeringNetworkJunction
+import com.engineeringood.athena.ir.EngineeringFunctionReference
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringPortDirection
+import com.engineeringood.athena.ir.EngineeringPortOwner
 import com.engineeringood.athena.ir.EngineeringProjectionForbiddenTruth
 import com.engineeringood.athena.ir.EngineeringProjectionConstruct
 import com.engineeringood.athena.ir.EngineeringProjectionGrid
@@ -22,22 +20,21 @@ import com.engineeringood.athena.ir.EngineeringProjectionRegion
 import com.engineeringood.athena.ir.EngineeringProjectionSheet
 import com.engineeringood.athena.ir.EngineeringProjectionView
 import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringDefinitionReference
+import com.engineeringood.athena.ir.EngineeringFlow
+import com.engineeringood.athena.ir.EngineeringParticipant
+import com.engineeringood.athena.ir.EngineeringRelationship
+import com.engineeringood.athena.ir.EngineeringSubjectReference
 import com.engineeringood.athena.ir.EngineeringSystem
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
+import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
-import com.engineeringood.athena.connection.EngineeringConnectivityCompilation
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
-import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.ProjectionPolicyDeclaration
-import com.engineeringood.athena.language.QualifiedName
 import com.engineeringood.athena.language.RelationDeclaration
-import com.engineeringood.athena.language.ScalarValue
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.language.ViewDeclaration
-import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
 
 /** Lowers the syntax-only AST into the first canonical Engineering IR document.
@@ -59,224 +56,150 @@ class EngineeringIrLowerer(
      * [AthenaDomainSemanticsCoordinator], as `SourceFileAst.declarations`). This function must never be
      * changed to accept or read an ANTLR4 parse-tree/visitor result (Epic 2) or a Tree-sitter CST node
      * (Epic 3) directly. Parser migration must preserve the same canonical `EngineeringDocument` shape
-     * (identity scheme `system:`/`component:`/`port:`/`connection:` and `SourceProvenance` mapping) for
+     * (identity scheme `system:`/`entity:`/`function:`/`port:`/`connection:` and `SourceProvenance` mapping) for
      * the current supported syntax subset, as pinned by the parser parity regression tests.
      */
     fun lower(source: CompilerSourceDocument, sourceUnitId: String = source.file): EngineeringDocument {
         val contribution = domainSemantics.lower(source)
         val portableSourceUnitId = sourceUnitId.toPortableSourceUnitId()
 
-        val components = contribution.components.withDuplicateOrdinals { it.name }.map { (blueprint, duplicateOrdinal) ->
-            EngineeringComponent(
-                id = componentIdentity(blueprint.name, duplicateOrdinal),
+        val entities = contribution.entities.withDuplicateOrdinals { it.name }.map { (blueprint, duplicateOrdinal) ->
+            EngineeringEntity(
+                id = entityIdentity(blueprint.name, duplicateOrdinal),
                 name = blueprint.name,
-                kind = blueprint.kind,
+                conceptReference = blueprint.conceptReference,
                 properties = blueprint.properties,
+                structureAssignments = blueprint.structureAssignments,
                 provenance = blueprint.provenance,
             )
         }
-        val componentIdsByAuthoredPath = components.uniqueResolutionMap(keySelector = { it.name }, idSelector = { it.id })
-
-        val ports = contribution.ports.withDuplicateOrdinals { pathKey(it.ownerPath + it.name) }.map { (blueprint, duplicateOrdinal) ->
-            EngineeringPort(
-                id = portIdentity(blueprint.ownerPath + blueprint.name, duplicateOrdinal),
-                ownerReference = EngineeringReference(
-                    authoredPath = blueprint.ownerPath,
-                    resolvedIdentity = componentIdsByAuthoredPath[pathKey(blueprint.ownerPath)],
-                    provenance = blueprint.ownerProvenance,
-                ),
-                name = blueprint.name,
-                properties = blueprint.properties,
-                provenance = blueprint.provenance,
-            )
-        }
-        val portIdsByAuthoredPath = ports.uniqueResolutionMap(
-            keySelector = { pathKey(it.ownerReference.authoredPath + it.name) },
-            idSelector = { it.id },
-        )
-        val portsById = ports.associateBy { it.id }
-
-        val connections = contribution.connections.map { blueprint ->
-            EngineeringConnection(
-                id = connectionIdentity(portableSourceUnitId, blueprint.alias),
-                from = EngineeringReference(
-                    authoredPath = blueprint.fromPath,
-                    resolvedIdentity = portIdsByAuthoredPath[pathKey(blueprint.fromPath)],
-                    provenance = blueprint.fromProvenance,
-                ),
-                to = EngineeringReference(
-                    authoredPath = blueprint.toPath,
-                    resolvedIdentity = portIdsByAuthoredPath[pathKey(blueprint.toPath)],
-                    provenance = blueprint.toProvenance,
-                ),
-                provenance = blueprint.provenance,
-                properties = blueprint.properties,
-            )
-        }
-        val connectionsByAlias = contribution.connections.zip(connections).associate { (blueprint, connection) ->
-            blueprint.alias to connection
-        }
-        val connectionGroupNetworks = source.ast.declarations
-            .filterIsInstance<ConnectionGroupDeclaration>()
-            .withDuplicateOrdinals { it.name }
-            .map { (group, duplicateOrdinal) ->
-                val members = group.connections.mapNotNull { connectionDeclaration ->
-                    val connection = connectionsByAlias[connectionDeclaration.alias] ?: return@mapNotNull null
-                    EngineeringConnectionNetworkMember(
-                        connectionReference = EngineeringReference(
-                            authoredPath = listOf(group.name, connectionDeclaration.alias),
-                            resolvedIdentity = connection.id,
-                            provenance = connectionDeclaration.span.toProvenance(source.file),
-                        ),
-                        fromPortReference = connection.from,
-                        toPortReference = connection.to,
-                    )
-                }
-                val sharedPortKeys = members
-                    .flatMap { member -> listOf(member.fromPortReference.identityKey(), member.toPortReference.identityKey()) }
-                    .groupingBy { it }
-                    .eachCount()
-                    .filterValues { count -> count >= 2 }
-                    .keys
-                    .sorted()
-                val sharedPortReferences = sharedPortKeys.mapNotNull { key ->
-                    members.asSequence()
-                        .flatMap { member -> sequenceOf(member.fromPortReference, member.toPortReference) }
-                        .firstOrNull { reference -> reference.identityKey() == key }
-                }
-                val junctions = if (members.size < 2) {
-                    emptyList()
-                } else {
-                    sharedPortReferences.map { sharedPortReference ->
-                        val memberConnectionReferences = members
-                            .filter { member ->
-                                member.fromPortReference.identityKey() == sharedPortReference.identityKey() ||
-                                    member.toPortReference.identityKey() == sharedPortReference.identityKey()
-                            }
-                            .map { member -> member.connectionReference }
-                        EngineeringNetworkJunction(
-                            id = StableSemanticIdentity(
-                                "junction:$portableSourceUnitId:${group.name}#${duplicateOrdinal}:${sharedPortReference.identityKey()}",
-                            ),
-                            sharedPortReference = sharedPortReference,
-                            memberConnectionReferences = memberConnectionReferences,
-                            provenance = group.span.toProvenance(source.file),
-                        )
-                    }
-                }
-                val compatibilityEvidence = buildList {
-                    add(
-                        EngineeringNetworkCompatibilityEvidence(
-                            kind = "member-count",
-                            value = members.size.toString(),
-                            provenance = group.span.toProvenance(source.file),
-                        ),
-                    )
-                    sharedPortReferences.firstOrNull()?.let { sharedPortReference ->
-                        val sharedPort = sharedPortReference.resolvedIdentity?.let(portsById::get)
-                        sharedPort?.let { port ->
-                            val compatibility = port.compatibility()
-                            add(
-                                EngineeringNetworkCompatibilityEvidence(
-                                    kind = "shared-direction",
-                                    value = compatibility.direction,
-                                    provenance = port.provenance,
-                                ),
-                            )
-                            compatibility.signalKind?.let { signal ->
-                                add(
-                                    EngineeringNetworkCompatibilityEvidence(
-                                        kind = "shared-signal",
-                                        value = signal,
-                                        provenance = port.provenance,
-                                    ),
-                                )
-                            }
-                            compatibility.role?.let { role ->
-                                add(
-                                    EngineeringNetworkCompatibilityEvidence(
-                                        kind = "shared-role",
-                                        value = role,
-                                        provenance = port.provenance,
-                                    ),
-                                )
-                            }
-                        }
-                    }
-                }
-                EngineeringConnectionNetwork(
-                    id = StableSemanticIdentity("network:$portableSourceUnitId:${group.name}#${duplicateOrdinal}"),
-                    name = group.name,
-                    members = members,
-                    junctions = junctions,
-                    compatibilityEvidence = compatibilityEvidence,
-                    provenance = group.span.toProvenance(source.file),
-                )
-            }
-        val relationNetworks = source.ast.declarations
-            .filterIsInstance<RelationDeclaration>()
-            .filter { relation -> relation.targets.size > 1 }
-            .withDuplicateOrdinals { relation -> relationNetworkName(relation.word.value, relation.from) }
-            .mapNotNull { (relation, duplicateOrdinal) ->
-                val members = relation.targets.map { target ->
-                    val connection = connectionsByAlias[relationMemberAlias(relation.word.value, relation.from, target)]
-                        ?: return@mapNotNull null
-                    EngineeringConnectionNetworkMember(
-                        connectionReference = EngineeringReference(
-                            authoredPath = listOf(relationNetworkName(relation.word.value, relation.from), connection.id.value.substringAfterLast(':')),
-                            resolvedIdentity = connection.id,
-                            provenance = relation.span.toProvenance(source.file),
-                        ),
-                        fromPortReference = connection.from,
-                        toPortReference = connection.to,
-                    )
-                }
-                EngineeringConnectionNetwork(
-                    id = StableSemanticIdentity(
-                        "network:$portableSourceUnitId:${relationNetworkName(relation.word.value, relation.from)}#$duplicateOrdinal",
-                    ),
-                    name = relationNetworkName(relation.word.value, relation.from),
-                    members = members,
-                    junctions = emptyList(),
-                    compatibilityEvidence = listOf(
-                        EngineeringNetworkCompatibilityEvidence(
-                            kind = "member-count",
-                            value = members.size.toString(),
-                            provenance = relation.span.toProvenance(source.file),
-                        ),
-                    ),
-                    provenance = relation.span.toProvenance(source.file),
-                    properties = listOf(
-                        EngineeringProperty(
-                            name = "relation.kind",
-                            value = EngineeringPropertyValue.Symbol(relation.word.value),
-                        ),
-                    ),
-                )
-            }
+        val entityIdsByAuthoredPath = entities.uniqueResolutionMap(keySelector = { it.name }, idSelector = { it.id })
 
         val functions = contribution.functions.withDuplicateOrdinals {
             pathKey(it.ownerPath + it.name)
         }.map { (blueprint, duplicateOrdinal) ->
             EngineeringFunction(
                 id = functionIdentity(blueprint.ownerPath, blueprint.name, duplicateOrdinal),
-                ownerReference = EngineeringReference(
-                    authoredPath = blueprint.ownerPath,
-                    resolvedIdentity = componentIdsByAuthoredPath[pathKey(blueprint.ownerPath)],
-                    provenance = blueprint.ownerProvenance,
+                owner = EngineeringEntityReference(
+                    EngineeringReference(
+                        authoredPath = blueprint.ownerPath,
+                        resolvedIdentity = entityIdsByAuthoredPath[pathKey(blueprint.ownerPath)],
+                        provenance = blueprint.ownerProvenance,
+                    ),
                 ),
                 name = blueprint.name,
-                role = EngineeringFunctionRole(blueprint.role),
-                portReferences = blueprint.portReferences.map { reference ->
-                    EngineeringReference(
-                        authoredPath = reference.path,
-                        resolvedIdentity = portIdsByAuthoredPath[pathKey(reference.path)],
-                        provenance = reference.provenance,
-                    )
-                },
+                roleReference = blueprint.roleReference,
+                properties = blueprint.properties,
                 provenance = blueprint.provenance,
             )
         }
+        val functionIdsByAuthoredPath = functions.uniqueResolutionMap(
+            keySelector = { pathKey(it.owner.reference.authoredPath + it.name) },
+            idSelector = { it.id },
+        )
+
+        val ports = contribution.ports.withDuplicateOrdinals { pathKey(it.ownerPath + it.name) }.map { (blueprint, duplicateOrdinal) ->
+            val ownerReference = EngineeringReference(
+                authoredPath = blueprint.ownerPath,
+                resolvedIdentity = when (blueprint.ownerPath.size) {
+                    1 -> entityIdsByAuthoredPath[pathKey(blueprint.ownerPath)]
+                    2 -> functionIdsByAuthoredPath[pathKey(blueprint.ownerPath)]
+                    else -> error("Port owner must be an Entity or Function path: ${blueprint.ownerPath.joinToString(".")}")
+                },
+                provenance = blueprint.ownerProvenance,
+            )
+            EngineeringPort(
+                id = portIdentity(blueprint.ownerPath + blueprint.name, duplicateOrdinal),
+                owner = when (blueprint.ownerPath.size) {
+                    1 -> EngineeringPortOwner.Entity(EngineeringEntityReference(ownerReference))
+                    2 -> EngineeringPortOwner.Function(EngineeringFunctionReference(ownerReference))
+                    else -> error("Port owner must be an Entity or Function path: ${blueprint.ownerPath.joinToString(".")}")
+                },
+                name = blueprint.name,
+                direction = blueprint.direction,
+                admittedFlowReferences = blueprint.admittedFlowReferences,
+                cardinality = blueprint.cardinality,
+                interfaceDesignation = blueprint.interfaceDesignation,
+                properties = blueprint.properties,
+                provenance = blueprint.provenance,
+            )
+        }
+        val portIdsByAuthoredPath = ports.uniqueResolutionMap(
+            keySelector = { pathKey(it.owner.reference().authoredPath + it.name) },
+            idSelector = { it.id },
+        )
+        val portsById = ports.associateBy { it.id }
+
+        val subjectReferencesByPath = buildMap {
+            entities.forEach { entity ->
+                put(listOf(entity.name), EngineeringSubjectReference.Entity(
+                    EngineeringEntityReference(EngineeringReference(listOf(entity.name), entity.id, entity.provenance)),
+                ))
+            }
+            functions.forEach { function ->
+                put(function.owner.reference.authoredPath + function.name, EngineeringSubjectReference.Function(
+                    EngineeringFunctionReference(EngineeringReference(
+                        function.owner.reference.authoredPath + function.name,
+                        function.id,
+                        function.provenance,
+                    )),
+                ))
+            }
+            ports.forEach { port ->
+                put(port.owner.reference().authoredPath + port.name, EngineeringSubjectReference.Port(
+                    EngineeringReference(port.owner.reference().authoredPath + port.name, port.id, port.provenance),
+                ))
+            }
+        }
+        val relationships = source.ast.declarations
+            .filterIsInstance<RelationDeclaration>()
+            .map { relation ->
+                val participantPaths = listOf(relation.source to "source") + relation.targets.mapIndexed { index, target ->
+                    target to if (index == 0) "target" else "target-${index + 1}"
+                }
+                val participants = participantPaths.map { (path, role) ->
+                    val provenance = path.span.toProvenance(source.file)
+                    val subject = subjectReferencesByPath[path.parts]
+                        ?: EngineeringSubjectReference.Port(EngineeringReference(path.parts, null, provenance))
+                    EngineeringParticipant(role, subject, provenance)
+                }
+                val identityParticipants = participants
+                    .map { participant -> "${participant.role}:${participant.subject.reference.authoredPath.joinToString(".")}" }
+                    .sorted()
+                    .joinToString("|")
+                EngineeringRelationship(
+                    id = StableSemanticIdentity("relationship:$portableSourceUnitId:${relation.word.value}:$identityParticipants"),
+                    definitionReference = EngineeringDefinitionReference(
+                        authoredName = listOf(relation.word.value),
+                        resolvedId = null,
+                        provenance = relation.word.span.toProvenance(source.file),
+                    ),
+                    participants = participants,
+                    properties = emptyList(),
+                    provenance = relation.span.toProvenance(source.file),
+                )
+            }
+        val flows = relationships.flatMap { relationship ->
+            relationship.participants
+                .filter { participant -> participant.role != "source" }
+                .map { sink ->
+                    EngineeringFlow(
+                        id = StableSemanticIdentity("flow:${relationship.id.value}:${sink.role}"),
+                        relationship = EngineeringReference(
+                            authoredPath = listOf(relationship.id.value),
+                            resolvedIdentity = relationship.id,
+                            provenance = relationship.provenance,
+                        ),
+                        definitionReference = relationship.definitionReference,
+                        sourceRole = "source",
+                        sinkRole = sink.role,
+                        medium = null,
+                        properties = emptyList(),
+                        provenance = relationship.provenance,
+                    )
+                }
+        }
+
 
         return EngineeringDocument(
             system = EngineeringSystem(
@@ -284,11 +207,11 @@ class EngineeringIrLowerer(
                 name = source.ast.system.name,
                 provenance = source.ast.system.span.toProvenance(source.file),
             ),
-            components = components,
+            entities = entities,
             ports = ports,
-            connections = connections,
+            relationships = relationships,
+            flows = flows,
             functions = functions,
-            connectionNetworks = connectionGroupNetworks + relationNetworks,
             externalEvidence = source.ast.declarations
                 .filterIsInstance<ExternalEvidenceDeclaration>()
                 .map { evidence -> evidence.toExternalEvidence(source.file) },
@@ -301,26 +224,15 @@ class EngineeringIrLowerer(
         )
     }
 
-    /** Lowers validated canonical connectivity into compiler-owned transient Connection IR. */
-    fun lowerConnectionIr(
-        connectivity: EngineeringConnectivityCompilation.Success,
-        snapshot: ConnectionIrSnapshot,
-    ): ConnectionIr {
-        return ConnectionIrLowerer().lower(connectivity, snapshot)
-    }
-
     private fun systemIdentity(name: String): StableSemanticIdentity = StableSemanticIdentity("system:$name")
 
-    private fun componentIdentity(name: String, duplicateOrdinal: Int): StableSemanticIdentity {
-        return StableSemanticIdentity(withDuplicateSuffix("component:$name", duplicateOrdinal))
+    private fun entityIdentity(name: String, duplicateOrdinal: Int): StableSemanticIdentity {
+        return StableSemanticIdentity(withDuplicateSuffix("entity:$name", duplicateOrdinal))
     }
 
     private fun portIdentity(path: List<String>, duplicateOrdinal: Int): StableSemanticIdentity {
         return StableSemanticIdentity(withDuplicateSuffix("port:${pathKey(path)}", duplicateOrdinal))
     }
-
-    private fun connectionIdentity(sourceUnitId: String, alias: String): StableSemanticIdentity =
-        StableSemanticIdentity("connection:$sourceUnitId:$alias")
 
     private fun functionIdentity(owner: List<String>, name: String, duplicateOrdinal: Int): StableSemanticIdentity =
         StableSemanticIdentity(withDuplicateSuffix("function:${pathKey(owner + name)}", duplicateOrdinal))
@@ -348,12 +260,6 @@ private fun String.toPortableSourceUnitId(): String {
     }
     return normalized
 }
-
-private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
-    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"
-
-private fun relationNetworkName(relationWord: String, from: QualifiedName): String =
-    "${relationWord}_${from.parts.joinToString("_")}"
 
 /** Converts a syntax-layer span into stable provenance carried by canonical semantic objects. */
 private fun SourceSpan.toProvenance(file: String): SourceProvenance {
@@ -446,18 +352,6 @@ private fun ViewDeclaration.toProjectionView(file: String): EngineeringProjectio
         provenance = span.toProvenance(file),
     )
 
-private fun List<PropertyAssignment>.toEngineeringProperties(): List<EngineeringProperty> {
-    return map { assignment ->
-        EngineeringProperty(
-            name = assignment.name,
-            value = when (val value = assignment.value) {
-                is ScalarValue.Identifier -> EngineeringPropertyValue.Symbol(value.text)
-                is ScalarValue.StringLiteral -> EngineeringPropertyValue.Text(value.text)
-            },
-        )
-    }
-}
-
 /** Tags authored declarations deterministically when duplicate semantic keys occur in one source. */
 private fun <T> List<T>.withDuplicateOrdinals(keySelector: (T) -> String): List<Pair<T, Int>> {
     val countsByKey = mutableMapOf<String, Int>()
@@ -490,13 +384,22 @@ private data class LoweredPortCompatibility(
 private fun EngineeringPort.compatibility(): LoweredPortCompatibility {
     val values = properties.symbolValuesByName()
     return LoweredPortCompatibility(
-        direction = values["direction"]?.singleOrNull().orEmpty(),
-        signalKind = values["signal"]?.singleOrNull(),
+        direction = when (direction) {
+            EngineeringPortDirection.INPUT -> "in"
+            EngineeringPortDirection.OUTPUT -> "out"
+            EngineeringPortDirection.BIDIRECTIONAL -> "bidirectional"
+        },
+        signalKind = admittedFlowReferences.singleOrNull()?.authoredName?.joinToString("."),
         role = values["role"]?.singleOrNull(),
     )
 }
 
 private fun List<EngineeringProperty>.symbolValuesByName(): Map<String, List<String>> =
     groupBy { it.name }.mapValues { (_, properties) ->
-        properties.mapNotNull { (it.value as? EngineeringPropertyValue.Symbol)?.text }
+        properties.mapNotNull { (it.value as? EngineeringValue.Symbol)?.text }
     }
+
+private fun EngineeringPortOwner.reference(): EngineeringReference = when (this) {
+    is EngineeringPortOwner.Entity -> entity.reference
+    is EngineeringPortOwner.Function -> function.reference
+}

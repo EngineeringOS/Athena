@@ -4,13 +4,13 @@ English | [Chinese (Simplified)](README.zh-CN.md)
 
 The `:kernel:language` module owns Athena's syntax layer for the current M0 Electrical/Runtime DSL. It parses authored source text into a syntax-only AST with source spans and syntax diagnostics, but it does not assign semantic truth.
 
-## M17 Frozen Public Syntax Contract
+## Current Public Syntax Contract
 
-`AthenaLanguageModel.kt` is Athena's **frozen public authored syntax contract** for M17.
+`AthenaLanguageModel.kt` is Athena's public authored syntax contract.
 
 That contract includes:
 
-- `SourceFileAst` and declaration nodes (`SystemDeclaration`, `Declaration`, `DeviceDeclaration`, `PortDeclaration`, `ConnectionDeclaration`, `QualifiedName`, `PropertyAssignment`, `ScalarValue`)
+- `SourceFileAst` and declaration nodes (`SystemDeclaration`, `Declaration`, `EntityDeclaration`, `PortDeclaration`, `FunctionDeclaration`, `ConnectionDeclaration`, `QualifiedName`, `PropertyAssignment`, `ScalarValue`)
 - `ParseResult` / `ParseSuccess` / `ParseFailure`
 - `SourcePosition`, `SourceSpan`, and `SyntaxDiagnostic`
 
@@ -30,7 +30,7 @@ trees, Tree-sitter CST nodes, or tokenizer/token types).
 
 ## Future Syntax Landing Zone
 
-M17 prepares the authored AST for growth; it does **not** finalize future syntax such as `import`.
+The authored AST remains extensible through Athena-owned sealed contracts.
 
 - New top-level authored constructs land as new `Declaration` sealed variants (field-level literal kinds land on `ScalarValue`).
 - Parser adaptation for a new construct stays isolated inside
@@ -50,7 +50,8 @@ M17 prepares the authored AST for growth; it does **not** finalize future syntax
 
 - `SourceFileAst`
 - `SystemDeclaration`
-- `DeviceDeclaration`
+- `EntityDeclaration`
+- `FunctionDeclaration`
 - `PortDeclaration`
 - `ConnectionDeclaration`
 - `QualifiedName`

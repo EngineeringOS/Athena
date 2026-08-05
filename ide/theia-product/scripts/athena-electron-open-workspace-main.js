@@ -35,7 +35,7 @@ const SMOKE_OUTLINE_EXPECTED_PATH = process.env.ATHENA_ELECTRON_SMOKE_OUTLINE_EX
     || 'InteractionAuthoringProof > OperatorHMI1 > status';
 
 if (app && PIXEL_PROOF_MODE === 'body-routes') {
-    app.commandLine.appendSwitch('force-device-scale-factor', '1');
+    app.commandLine.appendSwitch('force-entity-scale-factor', '1');
 }
 
 const targetWorkspace = process.argv[2] ? path.resolve(process.cwd(), process.argv[2]) : undefined;
@@ -495,7 +495,7 @@ async function openWorkspace(window) {
                 const conceptSelect = panel.querySelector('select');
                 const tagInput = panel.querySelector('input[placeholder="ShutterMotorM31"]');
                 const modelInput = panel.querySelector('input[placeholder="SPARE-XT"]');
-                const previewButton = panel.querySelector('button[aria-label="Preview device creation"]');
+                const previewButton = panel.querySelector('button[aria-label="Preview entity creation"]');
                 const closeButton = panel.querySelector('button[aria-label="Close create entity controls"]');
                 const panelCenterX = panelRect.left + panelRect.width / 2;
                 const panelCenterY = panelRect.top + panelRect.height / 2;
@@ -546,7 +546,7 @@ async function openWorkspace(window) {
                     hasModelInput: !!modelInput,
                     previewButtonPresent: !!previewButton,
                     previewButtonDisabled: !!previewButton?.disabled,
-                    textIncludesCreateEntity: panelText.includes('Create Device'),
+                    textIncludesCreateEntity: panelText.includes('Create Entity'),
                     textIncludesSourceEditorGuidance: panelText.includes('Open an Athena source editor before previewing a source-backed create action.'),
                 };
                 const createEntityTag = ${JSON.stringify(SMOKE_CREATE_ENTITY_TAG)};
@@ -583,7 +583,7 @@ async function openWorkspace(window) {
             async function createEntityFromGraphPanel(createEntityTag, controls) {
                 const { conceptSelect, tagInput, modelInput, previewButton } = controls;
                 if (!conceptSelect || !tagInput || !modelInput || !previewButton) {
-                    throw new Error('Graph-first create proof requires all Create Device controls.');
+                    throw new Error('Graph-first create proof requires all Create Entity controls.');
                 }
                 const motorOption = Array.from(conceptSelect.options).find(option =>
                     /motor/i.test(option.value) || /motor/i.test(option.textContent || '')
@@ -603,13 +603,13 @@ async function openWorkspace(window) {
                 currentTagInput.dispatchEvent(new Event('change', { bubbles: true }));
 
                 const activePreviewButton = await waitFor(() => {
-                    const button = document.querySelector('button[aria-label="Preview device creation"]');
+                    const button = document.querySelector('button[aria-label="Preview entity creation"]');
                     return button && !button.disabled ? button : undefined;
                 }, 'enabled graph-first create preview button');
                 activePreviewButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
                 const acceptButton = await waitFor(() => {
-                    const button = document.querySelector('button[aria-label="Accept device creation"]');
+                    const button = document.querySelector('button[aria-label="Accept entity creation"]');
                     return button && !button.disabled ? button : undefined;
                 }, 'acceptance-eligible graph-first create preview', 60000);
                 const previewPanelText = (document.querySelector('[data-athena-create-entity-panel="true"]')?.textContent || '')
@@ -619,7 +619,7 @@ async function openWorkspace(window) {
                 acceptButton.click();
                 smokeStep('graph-create-accept-requested');
 
-                const semanticId = 'component:' + createEntityTag;
+                const semanticId = 'entity:' + createEntityTag;
                 await waitFor(() => {
                     const occurrence = document.querySelector('[data-athena-semantic-id="' + semanticId + '"]');
                     return occurrence && !document.querySelector('[data-athena-create-entity-panel="true"]')
@@ -900,7 +900,7 @@ async function openWorkspace(window) {
 	                return {
                     electricalLineWidth: rootStyles.getPropertyValue('--athena-graph-electrical-line-width').trim(),
                     terminalTextSize: rootStyles.getPropertyValue('--athena-graph-terminal-text-size').trim(),
-                    deviceTextSize: rootStyles.getPropertyValue('--athena-graph-device-text-size').trim(),
+                    deviceTextSize: rootStyles.getPropertyValue('--athena-graph-entity-text-size').trim(),
                     routeLabelSize: rootStyles.getPropertyValue('--athena-graph-route-label-size').trim(),
                     referenceMarkerSize: rootStyles.getPropertyValue('--athena-graph-reference-marker-size').trim(),
                     visibleRouteLabelCount: visibleRouteLabels.length,
@@ -1213,7 +1213,7 @@ async function openWorkspace(window) {
                 const selected = {};
                 [
                     'system',
-                    'device',
+                    'entity',
                     'direction',
                     'out',
                     'connect',
@@ -1405,7 +1405,7 @@ async function openWorkspace(window) {
 	            }
 
 	            function isComponentBodyBox(nodeBox) {
-	                return nodeBox.semanticId.startsWith('component:') && !!nodeBox.representationId;
+	                return nodeBox.semanticId.startsWith('entity:') && !!nodeBox.representationId;
 	            }
 
             function parseRoutePoints(value) {
@@ -1433,7 +1433,7 @@ async function openWorkspace(window) {
             }
 
             function stripSemanticPrefix(semanticId) {
-                return semanticId.replace(/^component:/, '');
+                return semanticId.replace(/^entity:/, '');
             }
 
             function countNonOrthogonalSegments(routePoints) {
@@ -1780,8 +1780,8 @@ async function captureIsolatedBodyRouteImage(window, captureRect) {
         .athena-graph-workbench__canvas [data-athena-pixel-proof-visible="true"] {
             visibility: visible !important;
         }
-        .athena-graph-workbench__canvas [data-athena-semantic-id^="component:"] text,
-        .athena-graph-workbench__canvas [data-athena-semantic-id^="component:"] [class*="label"],
+        .athena-graph-workbench__canvas [data-athena-semantic-id^="entity:"] text,
+        .athena-graph-workbench__canvas [data-athena-semantic-id^="entity:"] [class*="label"],
         .athena-graph-workbench__canvas .athena-graph-workbench__edge-label {
             visibility: hidden !important;
         }
@@ -1791,8 +1791,8 @@ async function captureIsolatedBodyRouteImage(window, captureRect) {
             document.getElementById(${JSON.stringify(styleId)})?.remove();
             const isNormallyRenderedTarget = ${isNormallyRenderedTargetSnapshot.toString()};
             const candidates = Array.from(document.querySelectorAll(
-                '.athena-graph-workbench__canvas [data-athena-semantic-id^="component:"], ' +
-                '.athena-graph-workbench__canvas [data-athena-semantic-id^="component:"] *, ' +
+                '.athena-graph-workbench__canvas [data-athena-semantic-id^="entity:"], ' +
+                '.athena-graph-workbench__canvas [data-athena-semantic-id^="entity:"] *, ' +
                 '.athena-graph-workbench__canvas [data-athena-route-fact="true"]'
             ));
             for (const element of candidates) {
@@ -1903,7 +1903,7 @@ function renderedGeometrySnapshot() {
             && Number(style.opacity) > 0
             && (bounds.width > 0 || bounds.height > 0);
     };
-    const renderedComponents = Array.from(document.querySelectorAll('[data-athena-semantic-id^="component:"]'))
+    const renderedComponents = Array.from(document.querySelectorAll('[data-athena-semantic-id^="entity:"]'))
         .filter(visible)
         .map(element => {
             const hitbox = element.querySelector('.athena-graph-workbench__node-hitbox');

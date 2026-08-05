@@ -1,8 +1,8 @@
 package com.engineeringood.m32.sample
 
 system M32PackagePlatformDemo {
-  device MainPowerSupplyPS32 {
-    type Switch
+  entity MainPowerSupplyPS32 {
+    concept Switch
     model "ATHENA-PS24-SYNTH"
 
     port lplus {
@@ -11,8 +11,8 @@ system M32PackagePlatformDemo {
     }
   }
 
-  device ControlRelayK32 {
-    type Switch
+  entity ControlRelayK32 {
+    concept Switch
     model "ATHENA-ROLLER-RELAY-SYNTH"
 
     port supply {
@@ -26,8 +26,8 @@ system M32PackagePlatformDemo {
     }
   }
 
-  device ShutterMotorM32 {
-    type Motor
+  entity ShutterMotorM32 {
+    concept Motor
     model "ATHENA-SHUTTER-MOTOR-SYNTH"
 
     port up {

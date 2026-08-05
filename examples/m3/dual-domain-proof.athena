@@ -1,38 +1,40 @@
-﻿system DualDomainProof {
-  device PLC1 {
-    type Switch
+system DualDomainProof {
+  entity PLC1 {
+    concept Switch
   }
 
-  device L1 {
-    type Lamp
+  entity L1 {
+    concept Lamp
   }
 
-  device G1 {
+  entity G1 {
     domain "dummy-runtime"
-    type Glyph
+    concept Glyph
   }
 
-  device P1 {
+  entity P1 {
     domain "dummy-runtime"
-    type Pulse
+    concept Pulse
   }
 
   port PLC1.out {
     direction out
-    signal Digital
+    flow Digital
   }
 
   port L1.in {
     direction in
-    signal Digital
+    flow Digital
   }
 
   port G1.emit {
+    direction out
     flow emit
     tint Amber
   }
 
   port P1.absorb {
+    direction in
     flow absorb
     tint Amber
   }

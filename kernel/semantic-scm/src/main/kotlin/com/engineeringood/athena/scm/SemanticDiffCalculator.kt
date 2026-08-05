@@ -1,10 +1,12 @@
 package com.engineeringood.athena.scm
 
-import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringPortOwner
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
+import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringRelationship
+import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.repository.PackageDependency
 import com.engineeringood.athena.repository.PackageIdentifier
@@ -142,57 +144,60 @@ class SemanticDiffCalculator {
         }
 
         val changes = mutableListOf<SemanticChangeRecord>()
-        val baselineComponents = baseline.components.associateBy { component -> component.id.value }
-        val currentComponents = current.components.associateBy { component -> component.id.value }
+        val baselineEntities = baseline.entities.associateBy { entity -> entity.id.value }
+        val currentEntities = current.entities.associateBy { entity -> entity.id.value }
         val baselinePorts = baseline.ports.associateBy { port -> port.id.value }
         val currentPorts = current.ports.associateBy { port -> port.id.value }
-        val baselineConnections = baseline.connections.associateBy { connection -> connection.id.value }
-        val currentConnections = current.connections.associateBy { connection -> connection.id.value }
+        val baselineRelationships = baseline.relationships.associateBy { relationship -> relationship.id.value }
+        val currentRelationships = current.relationships.associateBy { relationship -> relationship.id.value }
 
-        (baselineComponents.keys + currentComponents.keys)
+        (baselineEntities.keys + currentEntities.keys)
             .toSortedSet()
-            .forEach { componentId ->
-                val baselineComponent = baselineComponents[componentId]
-                val currentComponent = currentComponents[componentId]
+            .forEach { entityId ->
+                val baselineEntity = baselineEntities[entityId]
+                val currentEntity = currentEntities[entityId]
 
                 when {
-                    baselineComponent == null && currentComponent != null -> changes += SemanticChangeRecord(
+                    baselineEntity == null && currentEntity != null -> changes += SemanticChangeRecord(
                         category = SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
                         layer = SemanticChangeLayer.ENGINEERING,
-                        message = "Component added: ${currentComponent.name}.",
+                        message = "Entity added: ${currentEntity.name}.",
                         affectedPackage = currentPrimaryPackage,
-                        subjectIdentity = currentComponent.id,
-                        provenance = currentComponent.provenance,
+                        subjectIdentity = currentEntity.id,
+                        provenance = currentEntity.provenance,
                     )
 
-                    baselineComponent != null && currentComponent == null -> changes += SemanticChangeRecord(
+                    baselineEntity != null && currentEntity == null -> changes += SemanticChangeRecord(
                         category = SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
                         layer = SemanticChangeLayer.ENGINEERING,
-                        message = "Component removed: ${baselineComponent.name}.",
+                        message = "Entity removed: ${baselineEntity.name}.",
                         affectedPackage = currentPrimaryPackage,
-                        subjectIdentity = baselineComponent.id,
-                        provenance = baselineComponent.provenance,
+                        subjectIdentity = baselineEntity.id,
+                        provenance = baselineEntity.provenance,
                     )
 
-                    baselineComponent != null && currentComponent != null -> {
-                        if (baselineComponent.name != currentComponent.name || baselineComponent.kind != currentComponent.kind) {
+                    baselineEntity != null && currentEntity != null -> {
+                        if (baselineEntity.name != currentEntity.name ||
+                            baselineEntity.conceptReference != currentEntity.conceptReference ||
+                            baselineEntity.structureAssignments != currentEntity.structureAssignments
+                        ) {
                             changes += SemanticChangeRecord(
                                 category = SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
                                 layer = SemanticChangeLayer.ENGINEERING,
-                                message = "Component structure changed: ${currentComponent.name}.",
+                                message = "Entity structure changed: ${currentEntity.name}.",
                                 affectedPackage = currentPrimaryPackage,
-                                subjectIdentity = currentComponent.id,
-                                provenance = currentComponent.provenance,
+                                subjectIdentity = currentEntity.id,
+                                provenance = currentEntity.provenance,
                             )
                         }
-                        if (normalizeProperties(baselineComponent.properties) != normalizeProperties(currentComponent.properties)) {
+                        if (normalizeProperties(baselineEntity.properties) != normalizeProperties(currentEntity.properties)) {
                             changes += SemanticChangeRecord(
                                 category = SemanticChangeCategory.ENGINEERING_PROPERTY_CHANGED,
                                 layer = SemanticChangeLayer.ENGINEERING,
-                                message = "Component properties changed: ${currentComponent.name}.",
+                                message = "Entity properties changed: ${currentEntity.name}.",
                                 affectedPackage = currentPrimaryPackage,
-                                subjectIdentity = currentComponent.id,
-                                provenance = currentComponent.provenance,
+                                subjectIdentity = currentEntity.id,
+                                provenance = currentEntity.provenance,
                             )
                         }
                     }
@@ -209,7 +214,7 @@ class SemanticDiffCalculator {
                     baselinePort == null && currentPort != null -> changes += SemanticChangeRecord(
                         category = SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
                         layer = SemanticChangeLayer.ENGINEERING,
-                        message = "Port added: ${currentPort.ownerReference.authoredPath.joinToString(".")}.${currentPort.name}.",
+                        message = "Port added: ${currentPort.owner.reference().authoredPath.joinToString(".")}.${currentPort.name}.",
                         affectedPackage = currentPrimaryPackage,
                         subjectIdentity = currentPort.id,
                         provenance = currentPort.provenance,
@@ -218,7 +223,7 @@ class SemanticDiffCalculator {
                     baselinePort != null && currentPort == null -> changes += SemanticChangeRecord(
                         category = SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
                         layer = SemanticChangeLayer.ENGINEERING,
-                        message = "Port removed: ${baselinePort.ownerReference.authoredPath.joinToString(".")}.${baselinePort.name}.",
+                        message = "Port removed: ${baselinePort.owner.reference().authoredPath.joinToString(".")}.${baselinePort.name}.",
                         affectedPackage = currentPrimaryPackage,
                         subjectIdentity = baselinePort.id,
                         provenance = baselinePort.provenance,
@@ -228,7 +233,7 @@ class SemanticDiffCalculator {
                         normalizePort(baselinePort) != normalizePort(currentPort) -> changes += SemanticChangeRecord(
                         category = SemanticChangeCategory.ENGINEERING_PROPERTY_CHANGED,
                         layer = SemanticChangeLayer.ENGINEERING,
-                        message = "Port properties changed: ${currentPort.ownerReference.authoredPath.joinToString(".")}.${currentPort.name}.",
+                        message = "Port properties changed: ${currentPort.owner.reference().authoredPath.joinToString(".")}.${currentPort.name}.",
                         affectedPackage = currentPrimaryPackage,
                         subjectIdentity = currentPort.id,
                         provenance = currentPort.provenance,
@@ -236,31 +241,31 @@ class SemanticDiffCalculator {
                 }
             }
 
-        (baselineConnections.keys + currentConnections.keys)
+        (baselineRelationships.keys + currentRelationships.keys)
             .toSortedSet()
-            .forEach { connectionId ->
-                val baselineConnection = baselineConnections[connectionId]
-                val currentConnection = currentConnections[connectionId]
+            .forEach { relationshipId ->
+                val baselineRelationship = baselineRelationships[relationshipId]
+                val currentRelationship = currentRelationships[relationshipId]
 
                 when {
-                    baselineConnection == null && currentConnection != null -> changes += connectionChangeRecord(
-                        message = "Connection added: ${connectionSummary(currentConnection)}.",
+                    baselineRelationship == null && currentRelationship != null -> changes += relationshipChangeRecord(
+                        message = "Relationship added: ${relationshipSummary(currentRelationship)}.",
                         currentPrimaryPackage = currentPrimaryPackage,
-                        connection = currentConnection,
+                        relationship = currentRelationship,
                     )
 
-                    baselineConnection != null && currentConnection == null -> changes += connectionChangeRecord(
-                        message = "Connection removed: ${connectionSummary(baselineConnection)}.",
+                    baselineRelationship != null && currentRelationship == null -> changes += relationshipChangeRecord(
+                        message = "Relationship removed: ${relationshipSummary(baselineRelationship)}.",
                         currentPrimaryPackage = currentPrimaryPackage,
-                        connection = baselineConnection,
+                        relationship = baselineRelationship,
                     )
 
-                    baselineConnection != null &&
-                        currentConnection != null &&
-                        normalizeConnection(baselineConnection) != normalizeConnection(currentConnection) -> changes += connectionChangeRecord(
-                        message = "Connection topology changed: ${connectionSummary(currentConnection)}.",
+                    baselineRelationship != null &&
+                        currentRelationship != null &&
+                        normalizeRelationship(baselineRelationship) != normalizeRelationship(currentRelationship) -> changes += relationshipChangeRecord(
+                        message = "Relationship semantics changed: ${relationshipSummary(currentRelationship)}.",
                         currentPrimaryPackage = currentPrimaryPackage,
-                        connection = currentConnection,
+                        relationship = currentRelationship,
                     )
                 }
             }
@@ -412,18 +417,18 @@ class SemanticDiffCalculator {
         )
     }
 
-    private fun connectionChangeRecord(
+    private fun relationshipChangeRecord(
         message: String,
         currentPrimaryPackage: PackageIdentifier,
-        connection: EngineeringConnection,
+        relationship: EngineeringRelationship,
     ): SemanticChangeRecord {
         return SemanticChangeRecord(
-            category = SemanticChangeCategory.CONNECTION_TOPOLOGY_CHANGED,
+            category = SemanticChangeCategory.RELATIONSHIP_CHANGED,
             layer = SemanticChangeLayer.ENGINEERING,
             message = message,
             affectedPackage = currentPrimaryPackage,
-            subjectIdentity = connection.id,
-            provenance = connection.provenance,
+            subjectIdentity = relationship.id,
+            provenance = relationship.provenance,
         )
     }
 }
@@ -457,27 +462,57 @@ private fun normalizeProperties(properties: List<EngineeringProperty>): List<Str
 
 private fun normalizePort(port: EngineeringPort): String {
     return buildString {
-        append(port.ownerReference.authoredPath.joinToString("."))
+        append(port.owner.reference().authoredPath.joinToString("."))
         append(".")
         append(port.name)
+        append("|")
+        append(port.direction)
+        append("|")
+        append(port.admittedFlowReferences.joinToString(",") { it.authoredName.joinToString(".") })
+        append("|")
+        append("${port.cardinality.minimum}:${port.cardinality.maximum ?: "*"}")
+        append("|")
+        append(port.interfaceDesignation)
         append("|")
         append(normalizeProperties(port.properties).joinToString(","))
     }
 }
 
-private fun normalizeConnection(connection: EngineeringConnection): String {
-    return "${connection.from.authoredPath.joinToString(".")}->${connection.to.authoredPath.joinToString(".")}"
+private fun normalizeRelationship(relationship: EngineeringRelationship): String {
+    val definition = relationship.definitionReference.authoredName.joinToString(".")
+    val participants = relationship.participants
+        .map { participant ->
+            "${participant.role}:${participant.subject.reference.authoredPath.joinToString(".")}"
+        }
+        .sorted()
+        .joinToString(",")
+    return "$definition|$participants|${normalizeProperties(relationship.properties).joinToString(",")}"
 }
 
-private fun connectionSummary(connection: EngineeringConnection): String {
-    return "${connection.from.authoredPath.joinToString(".")} -> ${connection.to.authoredPath.joinToString(".")}"
+private fun relationshipSummary(relationship: EngineeringRelationship): String {
+    val definition = relationship.definitionReference.authoredName.joinToString(".")
+    val participants = relationship.participants
+        .sortedBy { participant -> participant.role }
+        .joinToString(", ") { participant ->
+            "${participant.role}=${participant.subject.reference.authoredPath.joinToString(".")}"
+        }
+    return "$definition ($participants)"
 }
 
-private fun EngineeringPropertyValue.summaryText(): String {
+private fun EngineeringValue.summaryText(): String {
     return when (this) {
-        is EngineeringPropertyValue.Symbol -> text
-        is EngineeringPropertyValue.Text -> text
+        is EngineeringValue.Boolean -> value.toString()
+        is EngineeringValue.Integer -> value.toString()
+        is EngineeringValue.Quantity -> "${value}[${unit.authoredName.joinToString(".")}]"
+        is EngineeringValue.Reference -> "@${reference.authoredPath.joinToString(".")}"
+        is EngineeringValue.Symbol -> text
+        is EngineeringValue.Text -> text
     }
+}
+
+private fun EngineeringPortOwner.reference(): EngineeringReference = when (this) {
+    is EngineeringPortOwner.Entity -> entity.reference
+    is EngineeringPortOwner.Function -> function.reference
 }
 
 private fun changeRecordComparator(): Comparator<SemanticChangeRecord> {

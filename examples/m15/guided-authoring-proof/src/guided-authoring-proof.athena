@@ -1,8 +1,8 @@
 system GuidedAuthoringProof {
 
 
-  device ContactorPower {
-    type Switch
+  entity ContactorPower {
+    concept Switch
     componentRef "electrical.contactor.power"
     vendorPartNumber "proof.contactor.3pole"
     label "ContactorPower"
@@ -11,8 +11,8 @@ system GuidedAuthoringProof {
 
 
 
-  device ContactorPower2 {
-    type Switch
+  entity ContactorPower2 {
+    concept Switch
     componentRef "electrical.contactor.power"
     vendorPartNumber "proof.contactor.3pole"
     label "ContactorPower2"

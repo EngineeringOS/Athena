@@ -7,7 +7,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class PhysicalInstallationContractResolverTest {
-    private val subject = StableSemanticIdentity("component:QF35")
+    private val subject = StableSemanticIdentity("entity:QF35")
 
     @Test
     fun `resolves project scalar fields over trait fields independently with provenance`() {
@@ -234,7 +234,7 @@ class PhysicalInstallationContractResolverTest {
         val contract = assertIs<PhysicalInstallationContractResolution.Success>(result).contract
         assertEquals(45, contract.size.width.value)
         assertEquals(PhysicalContractSourceKind.Trait, contract.provenance.width.source.kind)
-        assertEquals("trait:component:QF35:size.width", contract.provenance.width.source.id)
+        assertEquals("trait:entity:QF35:size.width", contract.provenance.width.source.id)
     }
 
     private fun completeTraitFacts(width: Int = 45): List<PhysicalInstallationContractFact> = listOf(

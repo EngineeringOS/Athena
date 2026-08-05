@@ -15,13 +15,14 @@ class EngineeringRealityTest {
         assertEquals("EngineeringDocument", EngineeringReality.rootName)
         assertEquals("engineering compiler", EngineeringReality.authority)
         assertContains(EngineeringReality.ownedFacts, "system")
-        assertContains(EngineeringReality.ownedFacts, "device")
+        assertContains(EngineeringReality.ownedFacts, "entity")
+        assertContains(EngineeringReality.ownedFacts, "function")
         assertContains(EngineeringReality.ownedFacts, "port")
-        assertContains(EngineeringReality.ownedFacts, "connection")
+        assertContains(EngineeringReality.ownedFacts, "relationship")
         assertContains(EngineeringReality.ownedFacts, "constraint")
         assertContains(EngineeringReality.requiredFacts, "system identity")
         assertContains(EngineeringReality.requiredFacts, "engineering source identity")
-        assertTrue(EngineeringReality.identityRules.any { rule -> rule.fact == "connection" })
+        assertTrue(EngineeringReality.identityRules.any { rule -> rule.fact == "relationship" })
         assertFalse(EngineeringReality.ownedFacts.any { fact -> fact.contains("coordinate", ignoreCase = true) })
         assertFalse(EngineeringReality.ownedFacts.any { fact -> fact.contains("stroke", ignoreCase = true) })
     }
@@ -35,9 +36,9 @@ class EngineeringRealityTest {
                     name = "",
                     provenance = SourceProvenance("", 1, 1, 1, 1),
                 ),
-                components = emptyList(),
+                entities = emptyList(),
                 ports = emptyList(),
-                connections = emptyList(),
+                relationships = emptyList(),
             ),
         )
 
@@ -57,7 +58,6 @@ class EngineeringRealityTest {
             repo.resolve("kernel/engineering-model/src/main/kotlin/com/engineeringood/athena/ir/EngineeringReality.kt"),
             repo.resolve("kernel/projection-model/src/main/kotlin/com/engineeringood/athena/projection/ProjectionReality.kt"),
             repo.resolve("kernel/spatial-model/src/main/kotlin/com/engineeringood/athena/spatial/SpatialDocument.kt"),
-            repo.resolve("kernel/presentation-model/src/main/kotlin/com/engineeringood/athena/presentation/PresentationReality.kt"),
         )
         val banned = listOf("M39", "M38", "V0", "V1", "Evidence", "ProfessionalControlDrawing", "compatibility")
 

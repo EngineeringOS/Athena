@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:f81959a0c0e81703e0ffc832becdfae0f5b978ae04343f243f0d198e8a9fb1fc
+validatedLockStateDigest: lock-state:814fa04313d59a5b7f7da4a9b05950f5368bd8d7e15c2d2c9b01385b2a4b1ca2
 primaryPackage:
   name: com.engineeringood.m17.parity
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m17.parity
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:97252d2dfee57ec17ad4f76dec9ac4234424ca13091933ffc688f3f90d024618
+    snapshotDigest: package-snapshot:a2b9167481ccdd510e9beb38f6bcbb0da2b39f4bc106a1e664f11350f3b7238e
     sourceHashes:
       - path: com/engineeringood/m17/parity/parity-repo.athena
-        hash: sha256:c1db4c2a93d7f054f8be3ae2448f425933ff80a96e50c2a1b35ab57cf7b29a7a
+        hash: sha256:c22c5aca8fe9839ca6a3636c797daa8ed15cef8b645994bb0a3f890ce13c04a5
     resourceHashes: []
     dependencies: []

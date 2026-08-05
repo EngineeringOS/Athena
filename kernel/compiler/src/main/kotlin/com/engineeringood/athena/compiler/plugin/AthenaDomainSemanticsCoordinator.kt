@@ -69,9 +69,8 @@ class AthenaDomainSemanticsCoordinator(
         return stageParticipants.getValue(AthenaCompilerContributionStage.LOWER).fold(AthenaDomainLoweringContribution.EMPTY) { aggregate, plugin ->
             val contribution = plugin.lower(context)
             AthenaDomainLoweringContribution(
-                components = aggregate.components + contribution.components,
+                entities = aggregate.entities + contribution.entities,
                 ports = aggregate.ports + contribution.ports,
-                connections = aggregate.connections + contribution.connections,
                 functions = aggregate.functions + contribution.functions,
             )
         }

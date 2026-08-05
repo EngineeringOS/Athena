@@ -1,35 +1,12 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContextBuilder
-import com.engineeringood.athena.compiler.knowledge.AthenaComponentKnowledgeContributionSource
-import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoader
-import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
-import com.engineeringood.athena.compiler.semantic.GraphPackageIdentity
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclarationIndexer
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticGraphSnapshot
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticLayoutHintBinder
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticNamespace
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticPackage
-import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceUnit
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
-import com.engineeringood.athena.connection.EngineeringConnectivityCompilation
-import com.engineeringood.athena.connection.EngineeringConnectivityContractCompiler
-import com.engineeringood.athena.geometry.GeometryDocument
 import com.engineeringood.athena.ir.EngineeringDocument
-import com.engineeringood.athena.layout.LayoutDocument
-import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.language.RepresentationSourceUnit
-import com.engineeringood.athena.presentation.PresentationCompositePack
-import com.engineeringood.athena.presentation.PresentationDocument
-import com.engineeringood.athena.presentation.PresentationPrimitivePack
-import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.plugin.AthenaSemanticEnrichmentContext
 import com.engineeringood.athena.plugin.AthenaSourceDocument
-import com.engineeringood.athena.renderer.svg.SvgRenderModel
-import com.engineeringood.athena.renderer.svg.SvgRenderer
-import com.engineeringood.athena.semantics.core.EngineeringIrValidationScope
 import com.engineeringood.athena.semantics.core.EngineeringIrValidator
 import com.engineeringood.athena.semantics.core.SemanticContinuationDecision
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -37,99 +14,143 @@ import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticRuleId
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
-import com.engineeringood.athena.repository.PackageIdentifier
 import com.engineeringood.athena.spatial.SpatialDocument
 import com.engineeringood.athena.spatial.SpatialReality
 import com.engineeringood.athena.spatial.SpatialSourceTrace
-import java.nio.file.Files
-import java.nio.file.Path
-import java.security.MessageDigest
 
 internal class AthenaCompilerCompilationSupport(
     private val lowerer: EngineeringIrLowerer,
     private val validator: EngineeringIrValidator,
-    private val layoutIrDeriver: LayoutIrDeriver,
-    private val geometryIrDeriver: GeometryIrDeriver,
-    private val projectionModelDeriver: ProjectionModelDeriver,
-    private val presentationModelDeriver: PresentationModelDeriver,
-    private val renderModelDeriver: SvgRenderModelDeriver,
-    private val svgRenderer: SvgRenderer,
-    private val componentKnowledgeContextBuilder: AthenaComponentKnowledgeContextBuilder,
-    private val componentKnowledgeContributionsCache: List<AthenaComponentKnowledgeContributionSource>,
-    private val derivedEngineeringContextDeriver: DerivedEngineeringContextDeriver,
-    private val capabilityFactPromoter: EngineeringCapabilityFactPromoter,
-    private val constraintEvaluator: EngineeringConstraintEvaluator,
     private val domainSemanticsCoordinator: AthenaDomainSemanticsCoordinator,
-    private val engineeringConnectivityContractCompiler: EngineeringConnectivityContractCompiler,
-    private val supportedViewDefinitionsCache: List<ViewDefinition>,
-    private val supportedRenderContributionsCache: List<CompilerRenderContributionAttribution>,
-    private val supportedPrimitivePresentationPacksCache: List<PresentationPrimitivePack>,
-    private val supportedCompositePresentationPacksCache: List<PresentationCompositePack>,
 ) {
-    fun deriveSupportedLayouts(document: EngineeringDocument): List<LayoutDocument> {
-        return supportedViewDefinitionsCache.map { viewDefinition ->
-            layoutIrDeriver.derive(document, viewDefinition)
-        }
-    }
-
-    fun deriveSupportedGeometries(layouts: List<LayoutDocument>): List<GeometryDocument> {
-        return layouts.map { layoutDocument ->
-            geometryIrDeriver.derive(layoutDocument)
-        }
-    }
-
-    fun deriveSupportedProjections(
-        document: EngineeringDocument,
-        geometries: List<GeometryDocument>,
+    fun compileParsedSource(
+        parseResult: CompilerParseResult,
         knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-    ): List<ProjectionDocument> {
-        return geometries.map { geometryDocument ->
-            val viewDefinition = supportedViewDefinitionsCache.firstOrNull { definition -> definition.id == geometryDocument.viewId }
-                ?: error("Unsupported view definition `${geometryDocument.viewId}` for projection derivation.")
-            projectionModelDeriver.derive(
-                view = viewDefinition,
-                document = document,
-                geometry = geometryDocument,
-                knowledgeContext = knowledgeContext,
-            )
+        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
+    ): CompilerCompilationResult {
+        return when (parseResult) {
+            is CompilerParseFailure -> parseFailure(parseResult, knowledgeContext, boundaryValidation)
+            is CompilerParseSuccess -> compileParsedSource(parseResult.source, knowledgeContext, boundaryValidation)
         }
     }
 
-    fun deriveSupportedPresentations(
+    fun domainSemanticsUnavailableDiagnostics(
+        source: CompilerSourceDocument,
         document: EngineeringDocument,
-        projections: List<ProjectionDocument>,
-    ): List<PresentationDocument> {
-        return projections.map { projection ->
-            presentationModelDeriver.derive(
-                document = document,
-                projection = projection,
-                primitivePacks = supportedPrimitivePresentationPacksCache,
-                compositePacks = supportedCompositePresentationPacksCache,
-            )
+    ): List<SemanticDiagnostic> {
+        if (source.ast.declarations.isEmpty()) return emptyList()
+        if (!domainSemanticsCoordinator.hasParticipants(AthenaCompilerContributionStage.LOWER)) {
+            return listOf(domainSemanticsUnavailableDiagnostic(document))
         }
+        if (document.entities.isEmpty() && document.ports.isEmpty() && document.relationships.isEmpty()) {
+            return listOf(domainSemanticsUnavailableDiagnostic(document))
+        }
+        return emptyList()
     }
 
-    fun deriveLayout(
-        document: EngineeringDocument,
-        viewId: String,
-    ): LayoutDocument {
-        val viewDefinition = supportedViewDefinitionsCache.firstOrNull { definition -> definition.id == viewId }
-            ?: error("Unsupported view definition `$viewId` for layout derivation.")
-        return layoutIrDeriver.derive(document, viewDefinition)
+    private fun compileParsedSource(
+        source: CompilerSourceDocument,
+        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
+        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
+    ): CompilerCompilationResult {
+        if (source.ast.unit is RepresentationSourceUnit) {
+            return representationSourceFailure(source, knowledgeContext, boundaryValidation)
+        }
+
+        val document = lowerer.lower(source)
+        val enrichment = semanticEnrichment(source, document)
+        val validation = validate(
+            source = source,
+            document = document,
+            enrichmentDiagnostics = enrichment.diagnostics,
+        )
+        val projection = if (validation.semanticResult.continuationDecision == SemanticContinuationDecision.CONTINUE) {
+            AuthoredProjectionViewCompiler.compile(document)
+        } else {
+            null
+        }
+        val projections = (projection as? AuthoredProjectionCompilation.Success)?.documents.orEmpty()
+        val projectionDiagnostics = (projection as? AuthoredProjectionCompilation.Failure)
+            ?.diagnostics
+            ?.map { diagnostic -> diagnostic.message }
+            .orEmpty()
+        val spatialCandidates = mutableListOf<SpatialDocument>()
+        val spatialDiagnostics = mutableListOf<RealityTransformationDiagnostic>()
+        if (projectionDiagnostics.isEmpty()) {
+            projections.forEach { projectedDocument ->
+                when (val result = ProjectionSpatialCompiler().transform(projectedDocument)) {
+                    is RealityTransformationResult.Success -> spatialCandidates += result.output
+                    is RealityTransformationResult.Failure -> spatialDiagnostics += result.diagnostics
+                }
+            }
+        }
+        val spatialResolution = resolveCanonicalSpatialDocuments(spatialCandidates)
+        spatialDiagnostics += spatialResolution.diagnostics
+        val spatialPublicationFailed = projectionDiagnostics.isNotEmpty() || spatialDiagnostics.isNotEmpty()
+
+        return CompilerCompilationSuccess(
+            source = source,
+            document = document,
+            semanticResult = validation.semanticResult,
+            validationBreakdown = validation.validationBreakdown,
+            projections = projections,
+            projectionDiagnostics = projectionDiagnostics,
+            spatialDocuments = if (spatialPublicationFailed) {
+                CompilerSpatialDocuments.empty()
+            } else {
+                CompilerSpatialDocuments.of(spatialResolution.documents)
+            },
+            realityTransformationDiagnostics = spatialDiagnostics.distinct().sortedWith(
+                compareBy(
+                    RealityTransformationDiagnostic::reality,
+                    { diagnostic -> diagnostic.subject.orEmpty() },
+                    { diagnostic -> diagnostic.problem.orEmpty() },
+                    RealityTransformationDiagnostic::message,
+                ),
+            ),
+            knowledgeContext = knowledgeContext,
+            boundaryValidation = boundaryValidation,
+            knowledgeAttributions = buildKnowledgeAttributions(knowledgeContext),
+            pipeline = CompilerPipelineReport(
+                listOf(
+                    CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.SUCCEEDED, systemIdentitySummary(source)),
+                    CompilerPassRecord(
+                        LOWER_PASS,
+                        CompilerPassExecutionStatus.SUCCEEDED,
+                        "${document.entities.size} entities, ${document.functions.size} functions, ${document.ports.size} ports",
+                    ),
+                    CompilerPassRecord(
+                        VALIDATE_PASS,
+                        CompilerPassExecutionStatus.SUCCEEDED,
+                        if (validation.semanticResult.isSemanticallyValid) "engineering-valid" else "engineering-invalid",
+                    ),
+                    projectionPass(validation.semanticResult, projection, projections.size),
+                    spatialPass(validation.semanticResult, projectionDiagnostics, spatialResolution.documents.size, spatialDiagnostics),
+                ),
+            ),
+        )
     }
 
-    fun deriveGeometry(layoutDocument: LayoutDocument): GeometryDocument {
-        return geometryIrDeriver.derive(layoutDocument)
-    }
+    private fun parseFailure(
+        result: CompilerParseFailure,
+        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
+        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
+    ): CompilerCompilationParseFailure = CompilerCompilationParseFailure(
+        diagnostics = result.diagnostics,
+        knowledgeContext = knowledgeContext,
+        boundaryValidation = boundaryValidation,
+        pipeline = CompilerPipelineReport(
+            listOf(
+                CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.FAILED, "${result.diagnostics.size} syntax diagnostics"),
+                skippedPassRecord(LOWER_PASS, "parse failed"),
+                skippedPassRecord(VALIDATE_PASS, "parse failed"),
+                skippedPassRecord(PROJECT_PASS, "parse failed"),
+                skippedPassRecord(SPATIAL_PASS, "parse failed"),
+            ),
+        ),
+    )
 
-    fun activeRenderContributions(
-        viewId: String,
-        rendererTarget: String,
-    ): List<CompilerRenderContributionAttribution> {
-        return activeRenderContributionsFor(viewId, rendererTarget)
-    }
-
-    private fun representationSourceCompilerBoundaryFailure(
+    private fun representationSourceFailure(
         source: CompilerSourceDocument,
         knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
         boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
@@ -143,843 +164,96 @@ internal class AthenaCompilerCompilationSupport(
                     column = span.start.column,
                     endLine = span.end.line,
                     endColumn = span.end.column,
-                    message = "Standalone representation source must be compiled by AthenaRepresentationSourceCompiler.",
+                    message = "Representation source is outside the M42 engineering source contract.",
                 ),
             ),
             knowledgeContext = knowledgeContext,
             boundaryValidation = boundaryValidation,
             pipeline = CompilerPipelineReport(
-                passes = listOf(
-                    CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.SUCCEEDED, "representation source unit"),
-                    skippedPassRecord(LOWER_PASS, "representation source uses the Symbol compiler boundary"),
-                    skippedPassRecord(SEMANTIC_ENRICHMENT_PASS, "representation source uses the Symbol compiler boundary"),
-                    skippedPassRecord(VALIDATE_PASS, "representation source uses the Symbol compiler boundary"),
-                    skippedPassRecord(BACKEND_PREPARATION_PASS, "representation source uses the Symbol compiler boundary"),
-                    skippedPassRecord(BACKEND_EMISSION_PASS, "representation source uses the Symbol compiler boundary"),
+                listOf(
+                    CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.SUCCEEDED, "representation source"),
+                    skippedPassRecord(LOWER_PASS, "not engineering source"),
+                    skippedPassRecord(VALIDATE_PASS, "not engineering source"),
+                    skippedPassRecord(PROJECT_PASS, "not engineering source"),
+                    skippedPassRecord(SPATIAL_PASS, "not engineering source"),
                 ),
             ),
         )
     }
 
-    fun compileParsedSource(
-        parseResult: CompilerParseResult,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
-    ): CompilerCompilationResult {
-        return when (parseResult) {
-            is CompilerParseSuccess -> {
-                if (parseResult.source.ast.unit is RepresentationSourceUnit) {
-                    return representationSourceCompilerBoundaryFailure(
-                        parseResult.source,
-                        knowledgeContext,
-                        boundaryValidation,
-                    )
-                }
-                val parseRecord = CompilerPassRecord(
-                    pass = PARSE_PASS,
-                    status = CompilerPassExecutionStatus.SUCCEEDED,
-                    outputSummary = systemIdentitySummary(parseResult.source),
-                )
-                val document = lowerer.lower(parseResult.source)
-                buildCompilationSuccess(
-                    source = parseResult.source,
-                    document = document,
-                    knowledgeContext = knowledgeContext,
-                    boundaryValidation = boundaryValidation,
-                    parseRecord = parseRecord,
-                    lowerRecord = CompilerPassRecord(
-                        pass = LOWER_PASS,
-                        status = CompilerPassExecutionStatus.SUCCEEDED,
-                        outputSummary = document.system.id.value,
-                    ),
-                )
-            }
-
-            is CompilerParseFailure -> CompilerCompilationParseFailure(
-                diagnostics = parseResult.diagnostics,
-                knowledgeContext = knowledgeContext,
-                boundaryValidation = boundaryValidation,
-                pipeline = CompilerPipelineReport(
-                    passes = listOf(
-                        CompilerPassRecord(
-                            pass = PARSE_PASS,
-                            status = CompilerPassExecutionStatus.FAILED,
-                            outputSummary = "${parseResult.diagnostics.size} syntax diagnostics",
-                        ),
-                        skippedPassRecord(LOWER_PASS, "parse failed"),
-                        skippedPassRecord(SEMANTIC_ENRICHMENT_PASS, "parse failed"),
-                        skippedPassRecord(VALIDATE_PASS, "parse failed"),
-                        skippedPassRecord(BACKEND_PREPARATION_PASS, "parse failed"),
-                        skippedPassRecord(BACKEND_EMISSION_PASS, "parse failed"),
-                    ),
-                ),
-            )
-        }
-    }
-
-    fun recompute(
+    private fun semanticEnrichment(
         source: CompilerSourceDocument,
         document: EngineeringDocument,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
-        affectedScope: CompilerAffectedScope,
-        previousLayouts: List<LayoutDocument>,
-        previousGeometries: List<GeometryDocument>,
-        previousRendering: CompilerRenderingResult,
-    ): CompilerCompilationSuccess {
-        return buildCompilationSuccess(
-            source = source,
-            document = document,
-            knowledgeContext = knowledgeContext,
-            boundaryValidation = boundaryValidation,
-            parseRecord = skippedPassRecord(PARSE_PASS, "runtime-state reused"),
-            lowerRecord = skippedPassRecord(LOWER_PASS, "runtime document reused: ${document.system.id.value}"),
-            affectedScope = affectedScope,
-            previousLayouts = previousLayouts,
-            previousGeometries = previousGeometries,
-            previousRendering = previousRendering,
-        )
-    }
-
-    private fun buildCompilationSuccess(
-        source: CompilerSourceDocument,
-        document: EngineeringDocument,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
-        parseRecord: CompilerPassRecord,
-        lowerRecord: CompilerPassRecord,
-        affectedScope: CompilerAffectedScope? = null,
-        previousLayouts: List<LayoutDocument>? = null,
-        previousGeometries: List<GeometryDocument>? = null,
-        previousRendering: CompilerRenderingResult? = null,
-    ): CompilerCompilationSuccess {
-        val semanticEnrichmentResult = semanticEnrichmentPass(
-            source = source,
-            document = document,
-        )
-        val effectiveKnowledgeContext = knowledgeContext.withResolvedComponentKnowledge(
-            componentKnowledgeContextBuilder.build(document, componentKnowledgeContributionsCache),
-        )
-        val derivedContext = derivedEngineeringContextDeriver.derive(document)
-        val capabilityFacts = capabilityFactPromoter.promote(
-            derivedContext = derivedContext,
-            knowledgeContext = effectiveKnowledgeContext,
-        )
-        val constraintEvaluationOutcome = constraintEvaluator.evaluate(
-            derivedContext = derivedContext,
-            capabilityFacts = capabilityFacts,
-            knowledgeContext = effectiveKnowledgeContext,
-        )
-        val validationResult = validatePass(
-            source = source,
-            document = document,
-            affectedScope = affectedScope,
-            semanticEnrichment = semanticEnrichmentResult,
-            engineeringSufficiencyDiagnostics = constraintEvaluationOutcome.diagnostics,
-        )
-        val backendPreparation = prepareBackend(
-            result = validationResult.semanticResult,
-            document = document,
-            affectedScope = affectedScope,
-            previousLayouts = previousLayouts,
-            previousGeometries = previousGeometries,
-        )
-        val backendEmission = emitBackend(
-            result = validationResult.semanticResult,
-            document = document,
-            preparedGeometry = backendPreparation.preparedGeometry,
-            affectedScope = affectedScope,
-            layoutMode = backendPreparation.layoutMode,
-            geometryMode = backendPreparation.geometryMode,
-            previousRendering = previousRendering,
-            blockedReason = backendPreparation.blockedReason,
-            blockedByPass = backendPreparation.blockedByPass,
-        )
-        val projections = deriveSupportedProjections(
-            document = document,
-            geometries = backendPreparation.geometries,
-            knowledgeContext = effectiveKnowledgeContext,
-        )
-        val authoredProjectionOutcome = AuthoredProjectionViewCompiler.compile(document)
-        val authoredPresentationOutcomes = when (authoredProjectionOutcome) {
-            is AuthoredProjectionCompilation.Success ->
-                authoredProjectionOutcome.documents.map { projection -> deriveAuthoredPresentation(projection) }
-            is AuthoredProjectionCompilation.Failure -> emptyList()
+    ): com.engineeringood.athena.plugin.AthenaDomainSemanticEnrichmentContribution {
+        if (!domainSemanticsCoordinator.hasParticipants(AthenaCompilerContributionStage.SEMANTIC_ENRICHMENT)) {
+            return com.engineeringood.athena.plugin.AthenaDomainSemanticEnrichmentContribution.EMPTY
         }
-        val realityPresentationOutcome = deriveRealityPresentations(document)
-        val spatialOutcomes = authoredPresentationOutcomes + realityPresentationOutcome
-        val spatialPresentations = spatialOutcomes.flatMap(PresentationCompilationOutcome::documents)
-        val spatialOwnedViewIds = document.projectionViews.map { view -> view.name }.toSet() +
-            spatialOutcomes.mapNotNull(PresentationCompilationOutcome::viewId)
-        val derivedPresentations = deriveSupportedPresentations(
-            document = document,
-            projections = projections,
-        ).filterNot { presentation -> presentation.view.id in spatialOwnedViewIds }
-        val presentationResolution = resolveCanonicalPresentations(
-            derivedPresentations + spatialPresentations,
-        )
-        val spatialResolution = resolveCanonicalSpatialDocuments(
-            spatialOutcomes.flatMap(PresentationCompilationOutcome::spatialDocuments),
-        )
-        val authoredProjectionDiagnostics = (authoredProjectionOutcome as? AuthoredProjectionCompilation.Failure)
-            ?.diagnostics
-            ?.map { diagnostic -> diagnostic.message }
-            .orEmpty()
-        val transformationDiagnostics = spatialOutcomes.flatMap(PresentationCompilationOutcome::diagnostics)
-        val realityTransformationDiagnostics = (
-            transformationDiagnostics + presentationResolution.diagnostics + spatialResolution.diagnostics
-            ).distinct().sortedWith(
-            compareBy(
-                RealityTransformationDiagnostic::reality,
-                { diagnostic -> diagnostic.subject.orEmpty() },
-                { diagnostic -> diagnostic.problem.orEmpty() },
-                RealityTransformationDiagnostic::message,
-            ),
-        )
-        val spatialPublicationFailed =
-            authoredProjectionDiagnostics.isNotEmpty() ||
-                transformationDiagnostics.isNotEmpty() ||
-                presentationResolution.diagnostics.isNotEmpty() ||
-                spatialResolution.diagnostics.isNotEmpty()
-        val presentations = if (spatialPublicationFailed) {
-            presentationResolution.documents.filterNot { presentation -> presentation.view.id in spatialOwnedViewIds }
-        } else {
-            presentationResolution.documents
-        }
-        val spatialDocuments = if (!spatialPublicationFailed) {
-            CompilerSpatialDocuments.of(spatialResolution.documents)
-        } else {
-            CompilerSpatialDocuments.empty()
-        }
-        val knowledgeAttributions = buildKnowledgeAttributions(effectiveKnowledgeContext)
-        val engineeringConnectivity = validationResult.engineeringConnectivity
-        val connectionIr = if (
-            engineeringConnectivity is EngineeringConnectivityCompilation.Success &&
-            engineeringConnectivity.contracts.isNotEmpty() &&
-            validationResult.validationBreakdown.connectivityDiagnostics.isEmpty()
-        ) {
-            lowerer.lowerConnectionIr(
-                connectivity = engineeringConnectivity,
-                snapshot = ConnectionIrSnapshot(
-                    semanticSnapshotId = stableDigest(document.toString()),
-                    packageSnapshotId = stableDigest(effectiveKnowledgeContext.activeArtifacts.toString()),
-                    compilerIdentity = "athena.compiler.connection-ir",
-                ),
-            )
-        } else {
-            null
-        }
-        return CompilerCompilationSuccess(
-            source = source,
-            document = document,
-            derivedContext = derivedContext,
-            capabilityFacts = capabilityFacts,
-            constraintEvaluations = constraintEvaluationOutcome.evaluations,
-            semanticResult = validationResult.semanticResult,
-            validationBreakdown = validationResult.validationBreakdown,
-            connectionIr = connectionIr,
-            layouts = backendPreparation.layouts,
-            geometries = backendPreparation.geometries,
-            projections = projections,
-            authoredProjectionViews = (authoredProjectionOutcome as? AuthoredProjectionCompilation.Success)?.documents ?: emptyList(),
-            authoredProjectionDiagnostics = authoredProjectionDiagnostics,
-            spatialDocuments = spatialDocuments,
-            realityTransformationDiagnostics = realityTransformationDiagnostics,
-            presentations = presentations,
-            rendering = backendEmission.rendering,
-            knowledgeContext = effectiveKnowledgeContext,
-            boundaryValidation = boundaryValidation,
-            knowledgeAttributions = knowledgeAttributions,
-            pipeline = CompilerPipelineReport(
-                passes = listOf(
-                    parseRecord,
-                    lowerRecord,
-                    semanticEnrichmentResult.passRecord,
-                    validationResult.passRecord,
-                    backendPreparation.passRecord,
-                    backendEmission.passRecord,
-                ),
-            ),
-            incrementalUpdateReport = affectedScope?.let { scope ->
-                CompilerIncrementalUpdateReport(
-                    affectedScope = scope,
-                    validationMode = validationResult.validationMode,
-                    layoutMode = backendPreparation.layoutMode,
-                    layoutScopedViewIds = backendPreparation.layoutScopedViewIds,
-                    geometryMode = backendPreparation.geometryMode,
-                    geometryScopedViewIds = backendPreparation.geometryScopedViewIds,
-                    renderingMode = backendEmission.mode,
-                    renderingViewIds = backendEmission.viewIds,
-                )
-            },
-        )
-    }
-
-    private fun deriveAuthoredPresentation(projection: ProjectionDocument): PresentationCompilationOutcome {
-        val spatial = when (val result = ProjectionSpatialCompiler().transform(projection)) {
-            is RealityTransformationResult.Success -> result.output
-            is RealityTransformationResult.Failure -> return PresentationCompilationOutcome(
-                viewId = projection.view.id,
-                diagnostics = result.diagnostics,
-            )
-        }
-        return transformSpatialSheetsToPresentation(spatial, projection.view)
-            .toPresentationCompilationOutcome(projection.view.id, spatial)
-    }
-
-    private fun deriveRealityPresentations(document: EngineeringDocument): PresentationCompilationOutcome {
-        val selectedProjectionPolicy = (AthenaProjectionPolicyCompiler().compile(document) as? AthenaProjectionPolicyCompilation.Success)
-            ?.policies
-            ?.firstOrNull { policy -> policy.targetSurface == "connection-drawing" }
-            ?: return PresentationCompilationOutcome()
-        val view = ViewDefinition(
-            id = selectedProjectionPolicy.materialProjectionContext,
-            displayName = selectedProjectionPolicy.name,
-        )
-        val projection = when (val result = EngineeringToProjectionTransformation(view).transform(document)) {
-            is RealityTransformationResult.Success -> result.output
-            is RealityTransformationResult.Failure -> return PresentationCompilationOutcome(
-                viewId = view.id,
-                diagnostics = result.diagnostics,
-            )
-        }
-        val spatial = when (val result = ProjectionSpatialCompiler().transform(projection)) {
-            is RealityTransformationResult.Success -> result.output
-            is RealityTransformationResult.Failure -> return PresentationCompilationOutcome(
-                viewId = view.id,
-                diagnostics = result.diagnostics,
-            )
-        }
-        return transformSpatialSheetsToPresentation(spatial, view).toPresentationCompilationOutcome(view.id, spatial)
-    }
-
-    private fun deriveLayouts(
-        document: EngineeringDocument,
-        affectedScope: CompilerAffectedScope?,
-        previousLayouts: List<LayoutDocument>?,
-    ): LayoutDerivationResult {
-        if (affectedScope == null || previousLayouts == null) {
-            return LayoutDerivationResult(
-                layouts = deriveSupportedLayouts(document),
-                mode = CompilerIncrementalPassMode.FULL_FALLBACK,
-                scopedViewIds = emptyList(),
-            )
-        }
-
-        val previousLayoutsByViewId = previousLayouts.associateBy { layout -> layout.view.id }
-        val scopedLayouts = supportedViewDefinitionsCache.map { viewDefinition ->
-            val previousLayout = previousLayoutsByViewId[viewDefinition.id] ?: return fallbackLayoutDerivation(document)
-            layoutIrDeriver.deriveIncremental(
-                document = document,
-                view = viewDefinition,
-                previousLayout = previousLayout,
-                affectedScope = affectedScope,
-            ) ?: return fallbackLayoutDerivation(document)
-        }
-
-        return LayoutDerivationResult(
-            layouts = scopedLayouts,
-            mode = CompilerIncrementalPassMode.SCOPED,
-            scopedViewIds = scopedLayouts.map { layout -> layout.view.id },
-        )
-    }
-
-    private fun fallbackLayoutDerivation(document: EngineeringDocument): LayoutDerivationResult {
-        return LayoutDerivationResult(
-            layouts = deriveSupportedLayouts(document),
-            mode = CompilerIncrementalPassMode.FULL_FALLBACK,
-            scopedViewIds = emptyList(),
-        )
-    }
-
-    private fun deriveGeometries(
-        layouts: List<LayoutDocument>,
-        affectedScope: CompilerAffectedScope?,
-        previousGeometries: List<GeometryDocument>?,
-    ): GeometryDerivationResult {
-        if (affectedScope == null || previousGeometries == null) {
-            return GeometryDerivationResult(
-                geometries = deriveSupportedGeometries(layouts),
-                mode = CompilerIncrementalPassMode.FULL_FALLBACK,
-                scopedViewIds = emptyList(),
-            )
-        }
-
-        val previousGeometriesByViewId = previousGeometries.associateBy { geometry -> geometry.viewId }
-        val scopedGeometries = layouts.map { layout ->
-            val previousGeometry = previousGeometriesByViewId[layout.view.id] ?: return fallbackGeometryDerivation(layouts)
-            geometryIrDeriver.deriveIncremental(
-                layoutDocument = layout,
-                previousGeometry = previousGeometry,
-                affectedScope = affectedScope,
-            ) ?: return fallbackGeometryDerivation(layouts)
-        }
-
-        return GeometryDerivationResult(
-            geometries = scopedGeometries,
-            mode = CompilerIncrementalPassMode.SCOPED,
-            scopedViewIds = scopedGeometries.map { geometry -> geometry.viewId },
-        )
-    }
-
-    private fun fallbackGeometryDerivation(layouts: List<LayoutDocument>): GeometryDerivationResult {
-        return GeometryDerivationResult(
-            geometries = deriveSupportedGeometries(layouts),
-            mode = CompilerIncrementalPassMode.FULL_FALLBACK,
-            scopedViewIds = emptyList(),
-        )
-    }
-
-    private fun Path.findRepositoryRoot(): Path? {
-        var current: Path? = parent
-        while (current != null) {
-            if (Files.isRegularFile(current.resolve("athena.yaml"))) return current
-            current = current.parent
-        }
-        return null
-    }
-
-    private fun systemIdentitySummary(source: CompilerSourceDocument): String {
-        return "system:${source.ast.system.name}"
-    }
-
-    private fun semanticSummary(
-        result: SemanticValidationResult,
-        validationBreakdown: CompilerValidationBreakdown,
-        affectedScope: CompilerAffectedScope?,
-        mode: CompilerIncrementalPassMode,
-    ): String {
-        val baseSummary = if (result.isSemanticallyValid) "semantic-valid" else "semantic-invalid"
-        val boundarySummary =
-            "kernel=${validationBreakdown.kernelDiagnostics.size}, " +
-                "domain=${validationBreakdown.domainDiagnostics.size}, " +
-                "enrichment=${validationBreakdown.semanticEnrichmentDiagnostics.size}"
-        return if (affectedScope == null) {
-            "$baseSummary ($boundarySummary)"
-        } else {
-            "$baseSummary ($boundarySummary, ${mode.name.lowercase()} ${affectedScope.validationSemanticIds.size} ids)"
-        }
-    }
-
-    private fun semanticEnrichmentPass(
-        source: CompilerSourceDocument,
-        document: EngineeringDocument,
-    ): SemanticEnrichmentPassResult {
-        val declaredSemanticEnrichers = domainSemanticsCoordinator.declaredContributionIds(
-            AthenaCompilerContributionStage.SEMANTIC_ENRICHMENT,
-        )
-        if (declaredSemanticEnrichers.isEmpty()) {
-            return SemanticEnrichmentPassResult(
-                contribution = com.engineeringood.athena.plugin.AthenaDomainSemanticEnrichmentContribution.EMPTY,
-                passRecord = CompilerPassRecord(
-                    pass = SEMANTIC_ENRICHMENT_PASS,
-                    status = CompilerPassExecutionStatus.SUCCEEDED,
-                    outputSummary = "no semantic enrichers",
-                ),
-            )
-        }
-
-        val contribution = domainSemanticsCoordinator.enrichSemantics(
-            document = document,
-            context = AthenaSemanticEnrichmentContext(
+        return domainSemanticsCoordinator.enrichSemantics(
+            document,
+            AthenaSemanticEnrichmentContext(
                 document = document,
                 source = source.toAthenaSourceDocument(),
                 approvedPluginIds = domainSemanticsCoordinator.activePluginIds,
             ),
         )
-        val detailParts = buildList {
-            if (contribution.notes.isNotEmpty()) {
-                add("notes=${contribution.notes.joinToString(";") { note -> note.message }}")
-            }
-            if (contribution.diagnostics.isNotEmpty()) {
-                add("diagnostics=${contribution.diagnostics.size}")
-            }
-        }
-        val summary = buildString {
-            append("semantic-enriched by: ${declaredSemanticEnrichers.joinToString(",")}")
-            if (detailParts.isNotEmpty()) {
-                append(" (")
-                append(detailParts.joinToString(", "))
-                append(")")
-            }
-        }
-        return SemanticEnrichmentPassResult(
-            contribution = contribution,
-            passRecord = CompilerPassRecord(
-                pass = SEMANTIC_ENRICHMENT_PASS,
-                status = CompilerPassExecutionStatus.SUCCEEDED,
-                outputSummary = summary,
-            ),
-        )
     }
 
-    private fun validatePass(
+    private fun validate(
         source: CompilerSourceDocument,
         document: EngineeringDocument,
-        affectedScope: CompilerAffectedScope?,
-        semanticEnrichment: SemanticEnrichmentPassResult,
-        engineeringSufficiencyDiagnostics: List<SemanticDiagnostic>,
-    ): ValidationPassResult {
-        val validation = validateSemantics(
-            source = source,
-            document = document,
-            affectedScope = affectedScope,
-            enrichmentDiagnostics = semanticEnrichment.contribution.diagnostics,
-            engineeringSufficiencyDiagnostics = engineeringSufficiencyDiagnostics,
-        )
-        return ValidationPassResult(
-            semanticResult = validation.semanticResult,
-            validationBreakdown = validation.validationBreakdown,
-            validationMode = validation.validationMode,
-            engineeringConnectivity = validation.engineeringConnectivity,
-            passRecord = CompilerPassRecord(
-                pass = VALIDATE_PASS,
-                status = CompilerPassExecutionStatus.SUCCEEDED,
-                outputSummary = semanticSummary(
-                    result = validation.semanticResult,
-                    validationBreakdown = validation.validationBreakdown,
-                    affectedScope = affectedScope,
-                    mode = validation.validationMode,
-                ),
-            ),
-        )
-    }
-
-    private fun prepareBackend(
-        result: SemanticValidationResult,
-        document: EngineeringDocument,
-        affectedScope: CompilerAffectedScope?,
-        previousLayouts: List<LayoutDocument>?,
-        previousGeometries: List<GeometryDocument>?,
-    ): BackendPreparationPassResult {
-        if (result.continuationDecision != SemanticContinuationDecision.CONTINUE) {
-            return BackendPreparationPassResult(
-                layouts = emptyList(),
-                geometries = emptyList(),
-                preparedGeometry = null,
-                layoutMode = CompilerIncrementalPassMode.FULL_FALLBACK,
-                layoutScopedViewIds = emptyList(),
-                geometryMode = CompilerIncrementalPassMode.FULL_FALLBACK,
-                geometryScopedViewIds = emptyList(),
-                blockedReason = "semantic validation requested ${result.continuationDecision}",
-                blockedByPass = CompilerPassId.VALIDATE,
-                passRecord = CompilerPassRecord(
-                    pass = BACKEND_PREPARATION_PASS,
-                    status = CompilerPassExecutionStatus.SKIPPED,
-                    outputSummary = "backend-preparation-skipped (validation stopped downstream)",
-                ),
-            )
-        }
-
-        val layoutResult = deriveLayouts(
-            document = document,
-            affectedScope = affectedScope,
-            previousLayouts = previousLayouts,
-        )
-        val geometryResult = if (layoutResult.layouts.isNotEmpty()) {
-            deriveGeometries(
-                layouts = layoutResult.layouts,
-                affectedScope = affectedScope,
-                previousGeometries = previousGeometries,
-            )
-        } else {
-            GeometryDerivationResult(
-                geometries = emptyList(),
-                mode = CompilerIncrementalPassMode.FULL_FALLBACK,
-                scopedViewIds = emptyList(),
-            )
-        }
-        val renderingGeometry = selectRenderingGeometry(geometryResult.geometries)
-        if (renderingGeometry == null) {
-            return BackendPreparationPassResult(
-                layouts = layoutResult.layouts,
-                geometries = geometryResult.geometries,
-                preparedGeometry = null,
-                layoutMode = layoutResult.mode,
-                layoutScopedViewIds = layoutResult.scopedViewIds,
-                geometryMode = geometryResult.mode,
-                geometryScopedViewIds = geometryResult.scopedViewIds,
-                blockedReason = "no supported geometry-backed backend input was derived",
-                blockedByPass = CompilerPassId.BACKEND_PREPARATION,
-                passRecord = CompilerPassRecord(
-                    pass = BACKEND_PREPARATION_PASS,
-                    status = CompilerPassExecutionStatus.FAILED,
-                    outputSummary = "backend-input-missing (no geometry)",
-                ),
-            )
-        }
-
-        return BackendPreparationPassResult(
-            layouts = layoutResult.layouts,
-            geometries = geometryResult.geometries,
-            preparedGeometry = renderingGeometry,
-            layoutMode = layoutResult.mode,
-            layoutScopedViewIds = layoutResult.scopedViewIds,
-            geometryMode = geometryResult.mode,
-            geometryScopedViewIds = geometryResult.scopedViewIds,
-            blockedReason = null,
-            blockedByPass = null,
-            passRecord = CompilerPassRecord(
-                pass = BACKEND_PREPARATION_PASS,
-                status = CompilerPassExecutionStatus.SUCCEEDED,
-                outputSummary = if (affectedScope == null) {
-                    "geometry-prepared"
-                } else {
-                    "geometry-prepared (layout=${layoutResult.mode.name.lowercase()} geometry=${geometryResult.mode.name.lowercase()})"
-                },
-            ),
-        )
-    }
-
-    private fun emitBackend(
-        result: SemanticValidationResult,
-        document: EngineeringDocument,
-        preparedGeometry: GeometryDocument?,
-        affectedScope: CompilerAffectedScope?,
-        layoutMode: CompilerIncrementalPassMode,
-        geometryMode: CompilerIncrementalPassMode,
-        previousRendering: CompilerRenderingResult?,
-        blockedReason: String?,
-        blockedByPass: CompilerPassId?,
-    ): BackendEmissionPassResult {
-        if (preparedGeometry == null || blockedReason != null || blockedByPass != null) {
-            return BackendEmissionPassResult(
-                rendering = CompilerRenderingBlocked(
-                    reason = blockedReason ?: "backend emission was blocked before execution",
-                    blockedByPass = blockedByPass ?: CompilerPassId.BACKEND_PREPARATION,
-                ),
-                mode = CompilerIncrementalPassMode.FULL_FALLBACK,
-                viewIds = emptyList(),
-                passRecord = CompilerPassRecord(
-                    pass = BACKEND_EMISSION_PASS,
-                    status = CompilerPassExecutionStatus.SKIPPED,
-                    outputSummary = if (result.continuationDecision == SemanticContinuationDecision.CONTINUE) {
-                        "backend-emission-skipped (backend preparation failed)"
-                    } else {
-                        "backend-emission-skipped (validation stopped downstream)"
-                    },
-                ),
-            )
-        }
-
-        val incrementalRenderModel = incrementalRenderModel(
-            systemName = document.system.name,
-            geometry = preparedGeometry,
-            affectedScope = affectedScope,
-            previousRendering = previousRendering,
-        )
-        val activeRenderContributions = activeRenderContributions(
-            viewId = preparedGeometry.viewId,
-            rendererTarget = SVG_RENDERER_TARGET,
-        )
-        val renderingMode = if (incrementalRenderModel != null) {
-            CompilerIncrementalPassMode.SCOPED
-        } else {
-            CompilerIncrementalPassMode.FULL_FALLBACK
-        }
-        val renderModel = incrementalRenderModel ?: renderModelDeriver.derive(
-            systemName = document.system.name,
-            geometry = preparedGeometry,
-        )
-        val svg = svgRenderer.render(
-            systemName = document.system.name,
-            geometry = preparedGeometry,
-        )
-        return BackendEmissionPassResult(
-            rendering = CompilerRenderingSuccess(
-                model = renderModel,
-                svg = svg,
-                viewId = preparedGeometry.viewId,
-                rendererTarget = SVG_RENDERER_TARGET,
-                activeRenderContributions = activeRenderContributions,
-            ),
-            mode = renderingMode,
-            viewIds = if (renderingMode == CompilerIncrementalPassMode.SCOPED) {
-                listOf(preparedGeometry.viewId)
-            } else {
-                emptyList()
-            },
-            passRecord = CompilerPassRecord(
-                pass = BACKEND_EMISSION_PASS,
-                status = CompilerPassExecutionStatus.SUCCEEDED,
-                outputSummary = if (affectedScope == null) {
-                    "svg-emitted"
-                } else {
-                    "svg-emitted (layout=${layoutMode.name.lowercase()} geometry=${geometryMode.name.lowercase()} rendering=${renderingMode.name.lowercase()})"
-                },
-            ),
-        )
-    }
-
-    private fun validateSemantics(
-        source: CompilerSourceDocument,
-        document: EngineeringDocument,
-        affectedScope: CompilerAffectedScope?,
         enrichmentDiagnostics: List<SemanticDiagnostic>,
-        engineeringSufficiencyDiagnostics: List<SemanticDiagnostic>,
-    ): ValidationComputationResult {
-        val validationMode = if (affectedScope == null) {
-            CompilerIncrementalPassMode.FULL_FALLBACK
-        } else {
-            CompilerIncrementalPassMode.SCOPED
-        }
-        val kernelResult = if (affectedScope == null) {
-            validator.validate(document)
-        } else {
-            validator.validate(
-                document = document,
-                scope = EngineeringIrValidationScope(affectedScope.validationSemanticIds.toSet()),
-            )
-        }
-        val domainValidationContribution = domainSemanticsCoordinator.validate(
-            document = document,
-            context = AthenaPluginValidationContext(
+    ): ValidationComputation {
+        val kernelResult = validator.validate(document)
+        val anatomyDiagnostics = EngineeringAnatomySourceValidator.validate(source)
+        val domainContribution = domainSemanticsCoordinator.validate(
+            document,
+            AthenaPluginValidationContext(
                 document = document,
                 source = source.toAthenaSourceDocument(),
                 approvedPluginIds = domainSemanticsCoordinator.activePluginIds,
             ),
         )
         val domainDiagnostics = buildList {
-            addAll(domainSemanticsUnavailableDiagnostics(source, document))
-            addAll(domainValidationContribution.diagnostics)
-        }
-        val engineeringConnectivity = engineeringConnectivityContractCompiler.compile(document)
-        val connectivityDiagnostics = when (engineeringConnectivity) {
-            is EngineeringConnectivityCompilation.Success -> emptyList()
-            is EngineeringConnectivityCompilation.Failure -> engineeringConnectivity.diagnostics.map { diagnostic ->
-                SemanticDiagnostic(
-                    severity = SemanticDiagnosticSeverity.ERROR,
-                    ruleId = SemanticRuleId(diagnostic.code),
-                    category = SemanticDiagnosticCategory.CONNECTION,
-                    subjectIdentity = null,
-                    provenance = diagnostic.provenance,
-                    message = diagnostic.message,
-                )
+            if (anatomyDiagnostics.isEmpty()) {
+                addAll(domainSemanticsUnavailableDiagnostics(source, document))
             }
+            addAll(domainContribution.diagnostics)
         }
-        val projectionPolicyDiagnostics = when (val projectionPolicies = AthenaProjectionPolicyCompiler().compile(document)) {
-            is AthenaProjectionPolicyCompilation.Success -> emptyList()
-            is AthenaProjectionPolicyCompilation.Failure -> projectionPolicies.diagnostics.map { diagnostic ->
-                SemanticDiagnostic(
-                    severity = SemanticDiagnosticSeverity.ERROR,
-                    ruleId = SemanticRuleId(diagnostic.code),
-                    category = SemanticDiagnosticCategory.PROJECTION,
-                    subjectIdentity = null,
-                    provenance = diagnostic.provenance,
-                    message = diagnostic.message,
-                )
-            }
-        }
-        val validationBreakdown = CompilerValidationBreakdown(
+        val breakdown = CompilerValidationBreakdown(
             semanticEnrichmentDiagnostics = enrichmentDiagnostics,
-            kernelDiagnostics = kernelResult.diagnostics,
-            connectivityDiagnostics = connectivityDiagnostics,
-            projectionPolicyDiagnostics = projectionPolicyDiagnostics,
+            kernelDiagnostics = anatomyDiagnostics + kernelResult.diagnostics,
             domainDiagnostics = domainDiagnostics,
-            engineeringSufficiencyDiagnostics = engineeringSufficiencyDiagnostics,
-            domainValidationAttributions = domainValidationContribution.attributions,
+            domainValidationAttributions = domainContribution.attributions,
         )
-        val diagnostics = validationBreakdown.semanticEnrichmentDiagnostics +
-            validationBreakdown.kernelDiagnostics +
-            validationBreakdown.connectivityDiagnostics +
-            validationBreakdown.projectionPolicyDiagnostics +
-            validationBreakdown.domainDiagnostics
-        val semanticResult = SemanticValidationResult(
-            diagnostics = diagnostics,
-            continuationDecision = if (diagnostics.any { it.severity == SemanticDiagnosticSeverity.ERROR }) {
-                SemanticContinuationDecision.STOP_DOWNSTREAM
-            } else {
-                SemanticContinuationDecision.CONTINUE
-            },
-        )
-        return ValidationComputationResult(
-            semanticResult = semanticResult,
-            validationBreakdown = validationBreakdown,
-            validationMode = validationMode,
-            engineeringConnectivity = engineeringConnectivity,
+        val diagnostics = breakdown.semanticEnrichmentDiagnostics +
+            breakdown.kernelDiagnostics +
+            breakdown.domainDiagnostics
+        return ValidationComputation(
+            semanticResult = SemanticValidationResult(
+                diagnostics = diagnostics,
+                continuationDecision = if (diagnostics.any { diagnostic -> diagnostic.severity == SemanticDiagnosticSeverity.ERROR }) {
+                    SemanticContinuationDecision.STOP_DOWNSTREAM
+                } else {
+                    SemanticContinuationDecision.CONTINUE
+                },
+            ),
+            validationBreakdown = breakdown,
         )
     }
 
-    fun domainSemanticsUnavailableDiagnostics(
-        source: CompilerSourceDocument,
-        document: EngineeringDocument,
-    ): List<SemanticDiagnostic> {
-        if (source.ast.declarations.isEmpty()) {
-            return emptyList()
-        }
-
-        if (!domainSemanticsCoordinator.hasParticipants(AthenaCompilerContributionStage.LOWER)) {
-            return listOf(domainSemanticsUnavailableDiagnostic(document))
-        }
-
-        if (document.components.isEmpty() && document.ports.isEmpty() && document.connections.isEmpty()) {
-            return listOf(domainSemanticsUnavailableDiagnostic(document))
-        }
-
-        return emptyList()
-    }
-
-    private fun domainSemanticsUnavailableDiagnostic(document: EngineeringDocument): SemanticDiagnostic {
-        return SemanticDiagnostic(
-            severity = SemanticDiagnosticSeverity.ERROR,
-            ruleId = SemanticRuleId("domain.semantics.unavailable"),
-            category = SemanticDiagnosticCategory.DOMAIN,
-            subjectIdentity = document.system.id,
-            provenance = document.system.provenance,
-            message = "No approved domain plugin claimed the authored domain semantics in `${document.system.name}`.",
-        )
-    }
-
-    private fun incrementalRenderModel(
-        systemName: String,
-        geometry: GeometryDocument,
-        affectedScope: CompilerAffectedScope?,
-        previousRendering: CompilerRenderingResult?,
-    ): SvgRenderModel? {
-        if (affectedScope == null) {
-            return null
-        }
-        val previousModel = (previousRendering as? CompilerRenderingSuccess)?.model ?: return null
-        return renderModelDeriver.deriveIncremental(
-            systemName = systemName,
-            geometry = geometry,
-            previousModel = previousModel,
-            affectedScope = affectedScope,
-        )
-    }
-
-    private fun selectRenderingGeometry(geometries: List<GeometryDocument>): GeometryDocument? {
-        return geometries.firstOrNull { geometry ->
-            activeRenderContributionsFor(
-                viewId = geometry.viewId,
-                rendererTarget = SVG_RENDERER_TARGET,
-            ).isNotEmpty()
-        } ?: geometries.firstOrNull()
-    }
-
-    private fun activeRenderContributionsFor(
-        viewId: String,
-        rendererTarget: String,
-    ): List<CompilerRenderContributionAttribution> {
-        return supportedRenderContributionsCache.filter { contribution ->
-            val supportsView = contribution.viewIds.isEmpty() || viewId in contribution.viewIds
-            val supportsTarget = contribution.rendererTargets.isEmpty() || rendererTarget in contribution.rendererTargets
-            supportsView && supportsTarget
-        }
-    }
-
-    private fun skippedPassRecord(pass: CompilerPassDescriptor, reason: String): CompilerPassRecord {
-        return CompilerPassRecord(
-            pass = pass,
-            status = CompilerPassExecutionStatus.SKIPPED,
-            outputSummary = reason,
-        )
-    }
+    private fun domainSemanticsUnavailableDiagnostic(document: EngineeringDocument): SemanticDiagnostic = SemanticDiagnostic(
+        severity = SemanticDiagnosticSeverity.ERROR,
+        ruleId = SemanticRuleId("domain.semantics.unavailable"),
+        category = SemanticDiagnosticCategory.DOMAIN,
+        subjectIdentity = document.system.id,
+        provenance = document.system.provenance,
+        message = "No approved domain plugin claimed the authored domain semantics in `${document.system.name}`.",
+    )
 
     private fun buildKnowledgeAttributions(
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
+        context: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
     ): List<CompilerKnowledgeAttribution> {
-        val activeArtifactReferences = knowledgeContext.activeArtifacts.map { artifact ->
+        val artifacts = context.activeArtifacts.map { artifact ->
             CompilerKnowledgeArtifactReference(
                 artifactId = artifact.artifactId,
                 artifactKind = artifact.artifactKind,
@@ -987,93 +261,45 @@ internal class AthenaCompilerCompilationSupport(
                 provenance = artifact.provenance,
             )
         }
-
         return listOf(
             CompilerKnowledgeAttribution(
                 target = CompilerKnowledgeAttributionTarget.KNOWLEDGE_CONTEXT,
-                responsibleArtifacts = activeArtifactReferences,
-                rationale = "These reviewed governed knowledge artifacts define the active compilation context for this compiler run.",
+                responsibleArtifacts = artifacts,
+                rationale = "Reviewed package facts admitted for this compilation.",
             ),
             CompilerKnowledgeAttribution(
                 target = CompilerKnowledgeAttributionTarget.SEMANTIC_RESULT,
                 responsibleArtifacts = emptyList(),
-                rationale = "Story 2.5 does not yet allow governed knowledge artifacts to directly influence semantic diagnostics or continuation decisions.",
-            ),
-            CompilerKnowledgeAttribution(
-                target = CompilerKnowledgeAttributionTarget.RENDERING,
-                responsibleArtifacts = emptyList(),
-                rationale = "Story 2.5 does not yet allow governed knowledge artifacts to directly influence downstream derivation or SVG rendering.",
+                rationale = "M42 knowledge evaluation is not installed by Story 1.1.",
             ),
         )
     }
-}
 
-private data class PresentationCompilationOutcome(
-    val viewId: String? = null,
-    val documents: List<PresentationDocument> = emptyList(),
-    val spatialDocuments: List<SpatialDocument> = emptyList(),
-    val diagnostics: List<RealityTransformationDiagnostic> = emptyList(),
-)
-
-private fun RealityTransformationResult<List<PresentationDocument>>.toPresentationCompilationOutcome(
-    viewId: String,
-    spatial: SpatialDocument,
-): PresentationCompilationOutcome = when (this) {
-    is RealityTransformationResult.Success -> PresentationCompilationOutcome(
-        viewId = viewId,
-        documents = output,
-        spatialDocuments = listOf(spatial),
-    )
-    is RealityTransformationResult.Failure -> PresentationCompilationOutcome(
-        viewId = viewId,
-        diagnostics = diagnostics,
-    )
-}
-
-internal fun canonicalPresentations(
-    candidates: List<PresentationDocument>,
-): RealityTransformationResult<List<PresentationDocument>> {
-    val resolution = resolveCanonicalPresentations(candidates)
-    if (resolution.diagnostics.isNotEmpty()) {
-        return RealityTransformationResult.Failure(resolution.diagnostics)
+    private fun projectionPass(
+        semanticResult: SemanticValidationResult,
+        projection: AuthoredProjectionCompilation?,
+        count: Int,
+    ): CompilerPassRecord = when {
+        semanticResult.continuationDecision != SemanticContinuationDecision.CONTINUE ->
+            skippedPassRecord(PROJECT_PASS, "engineering validation stopped projection")
+        projection is AuthoredProjectionCompilation.Failure ->
+            CompilerPassRecord(PROJECT_PASS, CompilerPassExecutionStatus.FAILED, "${projection.diagnostics.size} projection diagnostics")
+        else -> CompilerPassRecord(PROJECT_PASS, CompilerPassExecutionStatus.SUCCEEDED, "$count projection documents")
     }
-    return RealityTransformationResult.Success(resolution.documents)
-}
 
-internal data class CanonicalPresentationResolution(
-    val documents: List<PresentationDocument>,
-    val diagnostics: List<RealityTransformationDiagnostic>,
-)
-
-internal fun resolveCanonicalPresentations(candidates: List<PresentationDocument>): CanonicalPresentationResolution {
-    val byIdentity = candidates.groupBy { presentation ->
-        presentation.view.id to presentation.drawingComposition?.sheetId
+    private fun spatialPass(
+        semanticResult: SemanticValidationResult,
+        projectionDiagnostics: List<String>,
+        count: Int,
+        diagnostics: List<RealityTransformationDiagnostic>,
+    ): CompilerPassRecord = when {
+        semanticResult.continuationDecision != SemanticContinuationDecision.CONTINUE ->
+            skippedPassRecord(SPATIAL_PASS, "engineering validation stopped spatial derivation")
+        projectionDiagnostics.isNotEmpty() -> skippedPassRecord(SPATIAL_PASS, "projection failed")
+        diagnostics.isNotEmpty() ->
+            CompilerPassRecord(SPATIAL_PASS, CompilerPassExecutionStatus.FAILED, "${diagnostics.size} spatial diagnostics")
+        else -> CompilerPassRecord(SPATIAL_PASS, CompilerPassExecutionStatus.SUCCEEDED, "$count spatial documents")
     }
-    val conflictingEntries = byIdentity.filterValues { matches -> matches.distinct().size > 1 }
-        .entries.sortedWith(compareBy({ (identity, _) -> identity.first }, { (identity, _) -> identity.second.orEmpty() }))
-    val conflictIdentities = conflictingEntries.map { (identity, _) -> identity }.toSet()
-    val conflicts = conflictingEntries
-        .map { (identity, matches) ->
-            val sheet = identity.second?.let { sheetId -> " on Sheet $sheetId" }.orEmpty()
-            val subject = "Presentation ${identity.first}$sheet"
-            val problem = "has ${matches.distinct().size} unequal candidates"
-            val correction = "Publish one canonical Presentation document for each view and Sheet identity."
-            RealityTransformationDiagnostic(
-                reality = com.engineeringood.athena.presentation.PresentationReality.name,
-                message = "$subject $problem. $correction",
-                subject = subject,
-                problem = problem,
-                correction = correction,
-            )
-        }
-    val documents = byIdentity.entries
-        .filter { (identity, _) -> identity !in conflictIdentities }
-            .sortedWith(compareBy({ (identity, _) -> identity.first }, { (identity, _) -> identity.second.orEmpty() }))
-        .map { (_, matches) -> matches.first() }
-    return CanonicalPresentationResolution(
-        documents = documents,
-        diagnostics = conflicts,
-    )
 }
 
 internal data class CanonicalSpatialResolution(
@@ -1083,9 +309,7 @@ internal data class CanonicalSpatialResolution(
 
 internal fun resolveCanonicalSpatialDocuments(candidates: List<SpatialDocument>): CanonicalSpatialResolution {
     val distinctCandidates = candidates.distinct()
-    val bySheetIdentity = distinctCandidates.groupBy { document ->
-        document.sheets.map { sheet -> sheet.sheetId }
-    }
+    val bySheetIdentity = distinctCandidates.groupBy { document -> document.sheets.map { sheet -> sheet.sheetId } }
     val conflictingDocuments = mutableSetOf<SpatialDocument>()
     val diagnostics = mutableListOf<RealityTransformationDiagnostic>()
 
@@ -1099,9 +323,12 @@ internal fun resolveCanonicalSpatialDocuments(candidates: List<SpatialDocument>)
             } else {
                 "Spatial document for ordered Sheets ${sheetIds.joinToString(", ")}"
             }
-            val problem = "has ${documents.size} unequal candidates"
-            val correction = "Publish one canonical Spatial document for each ordered Sheet identity set."
-            diagnostics += spatialResolutionDiagnostic(subject, problem, correction, documents)
+            diagnostics += spatialResolutionDiagnostic(
+                subject,
+                "has ${documents.size} unequal candidates",
+                "Publish one canonical Spatial document for each ordered Sheet identity set.",
+                documents,
+            )
         }
 
     val identities = bySheetIdentity.keys.sortedWith(::compareSpatialSheetIds)
@@ -1111,7 +338,6 @@ internal fun resolveCanonicalSpatialDocuments(candidates: List<SpatialDocument>)
             val right = identities[rightIndex]
             val sharedSheetIds = left.toSet().intersect(right.toSet()).sorted()
             if (sharedSheetIds.isEmpty()) continue
-
             val documents = bySheetIdentity.getValue(left) + bySheetIdentity.getValue(right)
             conflictingDocuments += documents
             val subject = if (sharedSheetIds.size == 1) {
@@ -1119,26 +345,19 @@ internal fun resolveCanonicalSpatialDocuments(candidates: List<SpatialDocument>)
             } else {
                 "Spatial documents sharing Sheets ${sharedSheetIds.joinToString(", ")}"
             }
-            val problem = "declare overlapping but unequal ordered Sheet identity sets " +
-                "[${left.joinToString(", ")}] and [${right.joinToString(", ")}]"
-            val correction = "Publish disjoint Spatial documents, or one canonical document for the complete ordered Sheet identity set."
-            diagnostics += spatialResolutionDiagnostic(subject, problem, correction, documents)
+            diagnostics += spatialResolutionDiagnostic(
+                subject,
+                "declare overlapping but unequal ordered Sheet identity sets [${left.joinToString(", ")}] and [${right.joinToString(", ")}]",
+                "Publish disjoint Spatial documents, or one canonical document for the complete ordered Sheet identity set.",
+                documents,
+            )
         }
     }
-    val documents = distinctCandidates.filterNot(conflictingDocuments::contains).sortedWith { left, right ->
-        compareSpatialSheetIds(
-            left.sheets.map { sheet -> sheet.sheetId },
-            right.sheets.map { sheet -> sheet.sheetId },
-        )
-    }
     return CanonicalSpatialResolution(
-        documents = documents,
-        diagnostics = diagnostics.sortedWith(
-            compareBy(
-                { diagnostic -> diagnostic.subject.orEmpty() },
-                { diagnostic -> diagnostic.problem.orEmpty() },
-            ),
-        ),
+        documents = distinctCandidates.filterNot(conflictingDocuments::contains).sortedWith { left, right ->
+            compareSpatialSheetIds(left.sheets.map { it.sheetId }, right.sheets.map { it.sheetId })
+        },
+        diagnostics = diagnostics.sortedWith(compareBy({ it.subject.orEmpty() }, { it.problem.orEmpty() })),
     )
 }
 
@@ -1158,7 +377,8 @@ private fun spatialResolutionDiagnostic(
         sourceTrace = SpatialSourceTrace(
             projectionIds = traces.flatMap(SpatialSourceTrace::projectionIds).distinct().sorted(),
             geometryElementIds = traces.flatMap(SpatialSourceTrace::geometryElementIds)
-                .distinct().sortedBy { geometryId -> geometryId.value },
+                .distinct()
+                .sortedBy { geometryId -> geometryId.value },
         ),
     )
 }
@@ -1171,109 +391,49 @@ private fun compareSpatialSheetIds(left: List<String>, right: List<String>): Int
     return left.size.compareTo(right.size)
 }
 
-private fun stableDigest(value: String): String = MessageDigest.getInstance("SHA-256")
-    .digest(value.toByteArray(Charsets.UTF_8))
-    .joinToString("") { byte -> "%02x".format(byte) }
+private fun CompilerSourceDocument.toAthenaSourceDocument(): AthenaSourceDocument = AthenaSourceDocument(file, ast)
 
-private fun CompilerSourceDocument.toAthenaSourceDocument(): AthenaSourceDocument {
-    return AthenaSourceDocument(
-        file = file,
-        ast = ast,
-    )
-}
+private fun systemIdentitySummary(source: CompilerSourceDocument): String = "system:${source.ast.system.name}"
 
-private data class LayoutDerivationResult(
-    val layouts: List<LayoutDocument>,
-    val mode: CompilerIncrementalPassMode,
-    val scopedViewIds: List<String>,
-)
+private fun skippedPassRecord(pass: CompilerPassDescriptor, reason: String): CompilerPassRecord =
+    CompilerPassRecord(pass, CompilerPassExecutionStatus.SKIPPED, reason)
 
-private data class GeometryDerivationResult(
-    val geometries: List<GeometryDocument>,
-    val mode: CompilerIncrementalPassMode,
-    val scopedViewIds: List<String>,
-)
-
-private data class ValidationPassResult(
+private data class ValidationComputation(
     val semanticResult: SemanticValidationResult,
     val validationBreakdown: CompilerValidationBreakdown,
-    val validationMode: CompilerIncrementalPassMode,
-    val engineeringConnectivity: EngineeringConnectivityCompilation,
-    val passRecord: CompilerPassRecord,
-)
-
-private data class ValidationComputationResult(
-    val semanticResult: SemanticValidationResult,
-    val validationBreakdown: CompilerValidationBreakdown,
-    val validationMode: CompilerIncrementalPassMode,
-    val engineeringConnectivity: EngineeringConnectivityCompilation,
-)
-
-private data class SemanticEnrichmentPassResult(
-    val contribution: com.engineeringood.athena.plugin.AthenaDomainSemanticEnrichmentContribution,
-    val passRecord: CompilerPassRecord,
-)
-
-private data class BackendPreparationPassResult(
-    val layouts: List<LayoutDocument>,
-    val geometries: List<GeometryDocument>,
-    val preparedGeometry: GeometryDocument?,
-    val layoutMode: CompilerIncrementalPassMode,
-    val layoutScopedViewIds: List<String>,
-    val geometryMode: CompilerIncrementalPassMode,
-    val geometryScopedViewIds: List<String>,
-    val blockedReason: String?,
-    val blockedByPass: CompilerPassId?,
-    val passRecord: CompilerPassRecord,
-)
-
-private data class BackendEmissionPassResult(
-    val rendering: CompilerRenderingResult,
-    val mode: CompilerIncrementalPassMode,
-    val viewIds: List<String>,
-    val passRecord: CompilerPassRecord,
 )
 
 private val PARSE_PASS = CompilerPassDescriptor(
     id = CompilerPassId.PARSE,
-    responsibility = "Parse authored source into syntax-owned AST",
-    inputState = "authored source file",
-    outputState = "syntax-owned source document",
+    responsibility = "Parse Athena source with exact spans.",
+    inputState = "Athena source text",
+    outputState = "Athena AST",
 )
 
 private val LOWER_PASS = CompilerPassDescriptor(
-    id = CompilerPassId.LOWER,
-    responsibility = "Lower syntax-owned source into canonical Engineering IR",
-    inputState = "syntax-owned source document",
-    outputState = "canonical Engineering IR",
-)
-
-private val SEMANTIC_ENRICHMENT_PASS = CompilerPassDescriptor(
-    id = CompilerPassId.SEMANTIC_ENRICHMENT,
-    responsibility = "Coordinate governed semantic enrichment participation over canonical Engineering IR",
-    inputState = "canonical Engineering IR",
-    outputState = "semantic enrichment coordination result",
+    id = CompilerPassId.LOWER_ENGINEERING_REALITY,
+    responsibility = "Lower authored meaning into Engineering Reality.",
+    inputState = "Athena AST",
+    outputState = "EngineeringDocument",
 )
 
 private val VALIDATE_PASS = CompilerPassDescriptor(
-    id = CompilerPassId.VALIDATE,
-    responsibility = "Validate canonical Engineering IR and compute continuation policy",
-    inputState = "canonical Engineering IR plus semantic enrichment context",
-    outputState = "semantic validation result",
+    id = CompilerPassId.VALIDATE_ENGINEERING_REALITY,
+    responsibility = "Validate exact engineering anatomy and domain contributions.",
+    inputState = "EngineeringDocument",
+    outputState = "SemanticValidationResult",
 )
 
-private val BACKEND_PREPARATION_PASS = CompilerPassDescriptor(
-    id = CompilerPassId.BACKEND_PREPARATION,
-    responsibility = "Prepare downstream backend input from validated canonical semantics and supported projections",
-    inputState = "semantic validation result plus canonical Engineering IR",
-    outputState = "geometry-backed backend input or block reason",
+private val PROJECT_PASS = CompilerPassDescriptor(
+    id = CompilerPassId.PROJECT,
+    responsibility = "Project validated engineering facts without presentation ownership.",
+    inputState = "Validated EngineeringDocument",
+    outputState = "ProjectionDocument",
 )
 
-private val BACKEND_EMISSION_PASS = CompilerPassDescriptor(
-    id = CompilerPassId.BACKEND_EMISSION,
-    responsibility = "Emit downstream backend output from prepared backend input",
-    inputState = "prepared backend input",
-    outputState = "backend emission result",
+private val SPATIAL_PASS = CompilerPassDescriptor(
+    id = CompilerPassId.DERIVE_SPATIAL,
+    responsibility = "Derive deterministic Spatial Reality from Projection Reality.",
+    inputState = "ProjectionDocument",
+    outputState = "SpatialDocument",
 )
-
-private const val SVG_RENDERER_TARGET = "svg"

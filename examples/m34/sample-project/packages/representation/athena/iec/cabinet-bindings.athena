@@ -11,8 +11,8 @@ binding M34PowerSupplyCabinet {
   profile CabinetIEC
   priority 160
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-POWER-SUPPLY"
   }
 
@@ -24,8 +24,8 @@ binding M34ProtectiveDeviceCabinet {
   profile CabinetIEC
   priority 150
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-BREAKER"
   }
 
@@ -37,8 +37,8 @@ binding M34SwitchControlCabinet {
   profile CabinetIEC
   priority 140
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-WALL-SWITCH"
   }
 
@@ -50,8 +50,8 @@ binding M34RelayContactorCabinet {
   profile CabinetIEC
   priority 130
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-CONTROL-RELAY"
   }
 
@@ -63,8 +63,8 @@ binding M34TerminalBlockCabinet {
   profile CabinetIEC
   priority 120
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-FIELD-TERMINAL"
   }
 
@@ -76,8 +76,8 @@ binding M34SpareTerminalCabinet {
   profile CabinetIEC
   priority 118
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-SPARE-TERMINAL"
   }
 
@@ -89,8 +89,8 @@ binding M34ActuatorLoadCabinet {
   profile CabinetIEC
   priority 110
 
-  select device where {
-    type Motor
+  select entity where {
+    concept Motor
     model "ATHENA-M34-SHUTTER-MOTOR"
   }
 
@@ -102,8 +102,8 @@ binding M34PilotLampCabinet {
   profile CabinetIEC
   priority 100
 
-  select device where {
-    type Lamp
+  select entity where {
+    concept Lamp
     model "ATHENA-M34-PILOT-LAMP"
   }
 
@@ -115,8 +115,8 @@ binding M34CabinetTitleLabel {
   profile CabinetIEC
   priority 95
 
-  select device where {
-    type Lamp
+  select entity where {
+    concept Lamp
     model "ATHENA-M34-CABINET-TITLE"
   }
 
@@ -128,8 +128,8 @@ binding M34CabinetEnclosure {
   profile CabinetIEC
   priority 90
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-CABINET-ENCLOSURE"
   }
 
@@ -141,8 +141,8 @@ binding M34CabinetDinRail {
   profile CabinetIEC
   priority 80
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-DIN-RAIL"
   }
 
@@ -154,8 +154,8 @@ binding M34CabinetRouteChannel {
   profile CabinetIEC
   priority 70
 
-  select device where {
-    type Switch
+  select entity where {
+    concept Switch
     model "ATHENA-M34-ROUTE-CHANNEL"
   }
 

@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.ide.lsp
+package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import org.eclipse.lsp4j.DefinitionParams
@@ -20,9 +20,9 @@ class AthenaPackageAwareNavigationTest {
             package com.root
 
             system Consumer {
-              device Local {}
+              entity Local { concept Generic}
               port Local.in {}
-              connect shared_out_to_local_in Shared.out to Local.in
+              power Shared.out to Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -38,7 +38,7 @@ class AthenaPackageAwareNavigationTest {
             package com.root
 
             system Provider {
-              device Shared {}
+              entity Shared { concept Generic}
               port Shared.out {}
             }
         """.trimIndent()
@@ -106,9 +106,9 @@ class AthenaPackageAwareNavigationTest {
             package com.root
 
             system Consumer {
-              device Local {}
+              entity Local { concept Generic}
               port Local.in {}
-              connect shared_out_to_local_in_2 Shared.out to Local.in
+              power Shared.out to Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -125,7 +125,7 @@ class AthenaPackageAwareNavigationTest {
                 package com.root
 
                 system Provider {
-                  device Shared {}
+                  entity Shared { concept Generic}
                 }
             """.trimIndent(),
         )
@@ -133,7 +133,7 @@ class AthenaPackageAwareNavigationTest {
             package com.root
 
             system Provider {
-              device Shared {}
+              entity Shared { concept Generic}
               port Shared.out {}
             }
         """.trimIndent()

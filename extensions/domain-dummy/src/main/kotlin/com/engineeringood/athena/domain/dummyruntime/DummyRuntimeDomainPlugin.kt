@@ -1,15 +1,14 @@
 package com.engineeringood.athena.domain.dummyruntime
 
-import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringEntity
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringPortDirection
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.ir.StableSemanticIdentity
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
@@ -24,7 +23,7 @@ import com.engineeringood.athena.language.SheetDeclaration
 import com.engineeringood.athena.language.ViewDeclaration
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
 import com.engineeringood.athena.plugin.AthenaCompilerPassContribution
-import com.engineeringood.athena.plugin.AthenaDomainConnectionSchema
+import com.engineeringood.athena.plugin.AthenaDomainRelationshipSchema
 import com.engineeringood.athena.plugin.AthenaDomainEntitySchema
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
@@ -85,16 +84,17 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
     /** Lowers only explicitly dummy-owned authored declarations into canonical plugin blueprints. */
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
         // Exhaustive partition over Declaration so future sealed variants fail at compile time.
-        val deviceDeclarations = mutableListOf<DeviceDeclaration>()
+        val entityDeclarations = mutableListOf<EntityDeclaration>()
         val portDeclarations = mutableListOf<PortDeclaration>()
-        val connectionDeclarations = mutableListOf<ConnectionDeclaration>()
         for (declaration in context.source.ast.declarations) {
             when (declaration) {
-                is DeviceDeclaration -> deviceDeclarations += declaration
+                is EntityDeclaration -> {
+                    entityDeclarations += declaration
+                    portDeclarations += declaration.nestedPorts
+                    portDeclarations += declaration.nestedFunctions.flatMap { function -> function.nestedPorts }
+                }
                 is PortDeclaration -> portDeclarations += declaration
-	                is ConnectionDeclaration -> connectionDeclarations += declaration
-		                is ConnectionGroupDeclaration -> connectionDeclarations += declaration.connections
-		                is RelationDeclaration -> Unit
+                is RelationDeclaration -> Unit
 		                is ExternalEvidenceDeclaration -> Unit
 	                is com.engineeringood.athena.language.ProjectionPolicyDeclaration -> Unit
                     is LayoutDeclaration -> Unit
@@ -107,91 +107,52 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                 }
         }
 
-        val ownedDeviceNames = deviceDeclarations
+        val ownedEntityNames = entityDeclarations
             .filter { declaration -> declaration.domainMarker() == DUMMY_DOMAIN_ID }
             .map { declaration -> declaration.name }
             .toSet()
 
-        val components = deviceDeclarations
-            .filter { declaration -> declaration.name in ownedDeviceNames }
-            .map { declaration ->
-                context.component(
-                    name = declaration.name,
-                    kind = "device",
-                    properties = context.lowerProperties(declaration.fields),
-                    provenance = context.provenance(declaration.span),
-                )
-            }
+        val entities = entityDeclarations
+            .filter { declaration -> declaration.name in ownedEntityNames }
+            .mapNotNull(context::entityOrNull)
+        val lowerableEntityNames = entities.map { entity -> entity.name }.toSet()
         val ports = portDeclarations
-            .filter { declaration -> declaration.qualifiedName.parts.firstOrNull() in ownedDeviceNames }
-            .map { declaration ->
-                context.port(
-                    ownerPath = declaration.qualifiedName.parts.dropLast(1),
-                    ownerProvenance = context.provenance(declaration.qualifiedName.span),
-                    name = declaration.qualifiedName.parts.last(),
-                    properties = context.lowerProperties(declaration.fields),
-                    provenance = context.provenance(declaration.span),
-                )
-            }
-        val connections = connectionDeclarations
-            .filter { declaration ->
-                declaration.from.parts.firstOrNull() in ownedDeviceNames &&
-                    declaration.to.parts.firstOrNull() in ownedDeviceNames
-            }
-            .map { declaration ->
-                context.connection(
-                    alias = declaration.alias,
-                    fromPath = declaration.from.parts,
-                    fromProvenance = context.provenance(declaration.from.span),
-                    toPath = declaration.to.parts,
-                    toProvenance = context.provenance(declaration.to.span),
-                    provenance = context.provenance(declaration.span),
-                )
-            }
-        val functions = deviceDeclarations
-            .filter { declaration -> declaration.name in ownedDeviceNames }
-            .flatMap { device ->
-                device.nestedFunctions.map { function ->
-                    context.function(
-                        ownerPath = listOf(device.name),
-                        ownerProvenance = context.provenance(device.span),
-                        name = function.name,
-                        role = function.role.value,
-                        portReferences = function.portReferences.map { reference ->
-                            context.functionPort(
-                                path = if (reference.parts.size == 1) listOf(device.name) + reference.parts else reference.parts,
-                                provenance = context.provenance(reference.span),
-                            )
-                        },
-                        provenance = context.provenance(function.span),
-                    )
+            .filter { declaration -> declaration.qualifiedName.parts.firstOrNull() in lowerableEntityNames }
+            .mapNotNull(context::portOrNull)
+        val functions = entityDeclarations
+            .filter { declaration -> declaration.name in ownedEntityNames }
+            .flatMap { entity ->
+                entity.nestedFunctions.map { function ->
+                    context.function(entity, function)
                 }
             }
 
         return AthenaDomainLoweringContribution(
-            components = components,
+            entities = entities,
             ports = ports,
-            connections = connections,
             functions = functions,
         )
     }
 
     /** Validates only dummy-owned canonical semantics without claiming foreign domains. */
     override fun validate(context: AthenaPluginValidationContext): AthenaPluginValidationResult {
-        val ownedComponents = context.document.components.filter { component -> component.isDummyOwned() }
-        val ownedComponentIds = ownedComponents.map { component -> component.id }.toSet()
-        val ownedPorts = context.document.ports.filter { port -> port.ownerReference.resolvedIdentity in ownedComponentIds }
+        val ownedEntities = context.document.entities.filter { entity -> entity.isDummyOwned() }
+        val ownedEntityIds = ownedEntities.map { entity -> entity.id }.toSet()
+        val ownedPorts = context.document.ports.filter { port -> port.owner.reference.resolvedIdentity in ownedEntityIds }
         val ownedPortsById = ownedPorts.associateBy { port -> port.id }
-        val ownedConnections = context.document.connections.filter { connection ->
-            connection.from.resolvedIdentity in ownedPortsById &&
-                connection.to.resolvedIdentity in ownedPortsById
+        val ownedRelationships = context.document.relationships.filter { relationship ->
+            relationship.participants.size == 2 && relationship.participants.all { participant ->
+                val subject = participant.subject
+                subject is com.engineeringood.athena.ir.EngineeringSubjectReference.Port &&
+                    subject.port.resolvedIdentity in ownedPortsById
+            }
         }
 
         val diagnostics = buildList {
-            addAll(componentTypeDiagnostics(ownedComponents, context))
+            addAll(entityConceptDiagnostics(ownedEntities, context))
             addAll(portFlowDiagnostics(ownedPorts, context))
             addAll(portTintDiagnostics(ownedPorts, context))
-            addAll(connectionCompatibilityDiagnostics(ownedConnections, ownedPortsById, context))
+            addAll(relationshipCompatibilityDiagnostics(ownedRelationships, ownedPortsById, context))
         }
 
         return AthenaPluginValidationResult(
@@ -207,7 +168,7 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
     /** Contributes runtime-owned dummy inspection only when the active graph contains dummy-owned semantics. */
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
         val summary = context.dummyRuntimeSummary()
-        if (summary.componentCount == 0 && summary.portCount == 0) {
+        if (summary.entityCount == 0 && summary.portCount == 0) {
             return emptyList()
         }
 
@@ -218,7 +179,7 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                         title = "Dummy runtime",
                         fields = listOf(
                             AthenaRuntimePluginInspectorField("Domain", DUMMY_DOMAIN_ID),
-                            AthenaRuntimePluginInspectorField("Components", summary.componentCount.toString()),
+                            AthenaRuntimePluginInspectorField("Entities", summary.entityCount.toString()),
                             AthenaRuntimePluginInspectorField("Ports", summary.portCount.toString()),
                             AthenaRuntimePluginInspectorField("Tints", summary.tintCount.toString()),
                             AthenaRuntimePluginInspectorField("Compatible pairs", summary.compatiblePairCount.toString()),
@@ -232,47 +193,22 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
         )
     }
 
-    private fun componentTypeDiagnostics(
-        components: List<com.engineeringood.athena.ir.EngineeringComponent>,
+    private fun entityConceptDiagnostics(
+        entities: List<EngineeringEntity>,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
-        return components.mapNotNull { component ->
-            when (val type = component.properties.requiredSymbolValue("type")) {
-                PropertySymbolValue.Missing -> context.domainDiagnostic(
-                    ruleId = "property.component.type.missing",
+        return entities.mapNotNull { entity ->
+            val concept = entity.conceptReference.authoredName.last()
+            if (concept in VALID_DUMMY_TYPES) {
+                null
+            } else {
+                context.domainDiagnostic(
+                    ruleId = "entity.concept.unsupported",
                     category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = component.id,
-                    provenance = component.provenance,
-                    message = "Dummy component `${component.name}` is missing required `type`.",
+                    subjectIdentity = entity.id,
+                    provenance = entity.provenance,
+                    message = "Dummy Entity `${entity.name}` declares unsupported synthetic Concept `$concept`.",
                 )
-
-                is PropertySymbolValue.Invalid -> context.domainDiagnostic(
-                    ruleId = "property.component.type.invalid",
-                    category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = component.id,
-                    provenance = component.provenance,
-                    message = "Dummy component `${component.name}` declares `type` with an invalid non-symbol value `${type.value}`.",
-                )
-
-                is PropertySymbolValue.Duplicate -> context.domainDiagnostic(
-                    ruleId = "property.component.type.duplicate",
-                    category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = component.id,
-                    provenance = component.provenance,
-                    message = "Dummy component `${component.name}` declares duplicate `type` properties `${type.values}`.",
-                )
-
-                is PropertySymbolValue.SymbolText -> if (type.value !in VALID_DUMMY_TYPES) {
-                    context.domainDiagnostic(
-                        ruleId = "property.component.type.invalid",
-                        category = SemanticDiagnosticCategory.PROPERTY,
-                        subjectIdentity = component.id,
-                        provenance = component.provenance,
-                        message = "Dummy component `${component.name}` declares unsupported synthetic type `${type.value}`.",
-                    )
-                } else {
-                    null
-                }
             }
         }
     }
@@ -282,8 +218,9 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
         return ports.mapNotNull { port ->
-            when (val flow = port.properties.requiredSymbolValue("flow")) {
-                PropertySymbolValue.Missing -> context.domainDiagnostic(
+            val flows = port.admittedFlowReferences.map { reference -> reference.authoredName.last() }
+            when {
+                flows.isEmpty() -> context.domainDiagnostic(
                     ruleId = "property.port.flow.missing",
                     category = SemanticDiagnosticCategory.PROPERTY,
                     subjectIdentity = port.id,
@@ -291,33 +228,24 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                     message = "Dummy port `${authoredPortPath(port)}` is missing required `flow`.",
                 )
 
-                is PropertySymbolValue.Invalid -> context.domainDiagnostic(
-                    ruleId = "property.port.flow.invalid",
-                    category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = port.id,
-                    provenance = port.provenance,
-                    message = "Dummy port `${authoredPortPath(port)}` declares `flow` with an invalid non-symbol value `${flow.value}`.",
-                )
-
-                is PropertySymbolValue.Duplicate -> context.domainDiagnostic(
+                flows.size > 1 -> context.domainDiagnostic(
                     ruleId = "property.port.flow.duplicate",
                     category = SemanticDiagnosticCategory.PROPERTY,
                     subjectIdentity = port.id,
                     provenance = port.provenance,
-                    message = "Dummy port `${authoredPortPath(port)}` declares duplicate `flow` properties `${flow.values}`.",
+                    message = "Dummy Port `${authoredPortPath(port)}` admits multiple Flows `${flows.joinToString()}`.",
                 )
 
-                is PropertySymbolValue.SymbolText -> if (flow.value !in VALID_FLOWS) {
+                flows.single() !in VALID_FLOWS -> {
                     context.domainDiagnostic(
                         ruleId = "property.port.flow.invalid",
                         category = SemanticDiagnosticCategory.PROPERTY,
                         subjectIdentity = port.id,
                         provenance = port.provenance,
-                        message = "Dummy port `${authoredPortPath(port)}` declares unsupported flow `${flow.value}`.",
+                        message = "Dummy Port `${authoredPortPath(port)}` admits unsupported Flow `${flows.single()}`.",
                     )
-                } else {
-                    null
                 }
+                else -> null
             }
         }
     }
@@ -355,26 +283,29 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
         }
     }
 
-    private fun connectionCompatibilityDiagnostics(
-        connections: List<EngineeringConnection>,
+    private fun relationshipCompatibilityDiagnostics(
+        relationships: List<com.engineeringood.athena.ir.EngineeringRelationship>,
         portsById: Map<StableSemanticIdentity, EngineeringPort>,
         context: AthenaPluginValidationContext,
     ): List<SemanticDiagnostic> {
         return buildList {
-            connections.forEach { connection ->
-                val fromPort = connection.from.resolvedIdentity?.let(portsById::get) ?: return@forEach
-                val toPort = connection.to.resolvedIdentity?.let(portsById::get) ?: return@forEach
+            relationships.forEach { relationship ->
+                val participants = relationship.participants.mapNotNull { participant ->
+                    (participant.subject as? com.engineeringood.athena.ir.EngineeringSubjectReference.Port)
+                        ?.port?.resolvedIdentity?.let(portsById::get)
+                }
+                if (participants.size != 2) return@forEach
+                val fromPort = participants[0]
+                val toPort = participants[1]
 
-                val fromFlow = fromPort.flow()
-                val toFlow = toPort.flow()
-                if (fromFlow != null && toFlow != null && (fromFlow != DummyFlow.EMIT || toFlow != DummyFlow.ABSORB)) {
+                if (fromPort.direction != EngineeringPortDirection.OUTPUT || toPort.direction != EngineeringPortDirection.INPUT) {
                     add(
                         context.domainDiagnostic(
-                            ruleId = "connection.flow.illegal",
-                            category = SemanticDiagnosticCategory.CONNECTION,
-                            subjectIdentity = connection.id,
-                            provenance = connection.provenance,
-                            message = "Dummy connection `${authoredPath(connection.from)} -> ${authoredPath(connection.to)}` must flow from `emit` to `absorb`.",
+                            ruleId = "relationship.flow.illegal",
+                            category = SemanticDiagnosticCategory.RELATIONSHIP,
+                            subjectIdentity = relationship.id,
+                            provenance = relationship.provenance,
+                            message = "Dummy relationship `${relationship.participants.joinToString(" -> ") { participant -> authoredPath(participant.subject.reference) }}` must flow from `emit` to `absorb`.",
                         ),
                     )
                 }
@@ -387,11 +318,11 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                 ) {
                     add(
                         context.domainDiagnostic(
-                            ruleId = "connection.tint.incompatible",
-                            category = SemanticDiagnosticCategory.CONNECTION,
-                            subjectIdentity = connection.id,
-                            provenance = connection.provenance,
-                            message = "Dummy connection `${authoredPath(connection.from)} -> ${authoredPath(connection.to)}` mixes incompatible tints `${fromTint.value}` and `${toTint.value}`.",
+                            ruleId = "relationship.tint.incompatible",
+                            category = SemanticDiagnosticCategory.RELATIONSHIP,
+                            subjectIdentity = relationship.id,
+                            provenance = relationship.provenance,
+                            message = "Dummy relationship `${relationship.participants.joinToString(" -> ") { participant -> authoredPath(participant.subject.reference) }}` mixes incompatible tints `${fromTint.value}` and `${toTint.value}`.",
                         ),
                     )
                 }
@@ -399,17 +330,7 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
         }
     }
 
-    private fun EngineeringPort.flow(): DummyFlow? {
-        return when (val flow = properties.optionalSymbolValue("flow")) {
-            PropertySymbolValue.Missing -> null
-            is PropertySymbolValue.SymbolText -> VALID_FLOWS[flow.value]
-            is PropertySymbolValue.Invalid,
-            is PropertySymbolValue.Duplicate,
-                -> null
-        }
-    }
-
-    private fun com.engineeringood.athena.ir.EngineeringComponent.isDummyOwned(): Boolean {
+    private fun EngineeringEntity.isDummyOwned(): Boolean {
         return properties.domainMarkerValue() == DUMMY_DOMAIN_ID
     }
 
@@ -423,8 +344,9 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
             return null
         }
         return when (val value = matchingProperties.single().value) {
-            is EngineeringPropertyValue.Symbol -> value.text
-            is EngineeringPropertyValue.Text -> value.text
+            is EngineeringValue.Symbol -> value.text
+            is EngineeringValue.Text -> value.text
+            else -> null
         }
     }
 
@@ -438,12 +360,12 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
         }
 
         return when (val value = matchingProperties.single().value) {
-            is EngineeringPropertyValue.Symbol -> PropertySymbolValue.SymbolText(value.text)
-            is EngineeringPropertyValue.Text -> PropertySymbolValue.Invalid(value.text)
+            is EngineeringValue.Symbol -> PropertySymbolValue.SymbolText(value.text)
+            else -> PropertySymbolValue.Invalid(value.renderedValue())
         }
     }
 
-    private fun authoredPortPath(port: EngineeringPort): String = authoredPath(port.ownerReference.authoredPath + port.name)
+    private fun authoredPortPath(port: EngineeringPort): String = authoredPath(port.owner.reference.authoredPath + port.name)
 
     private fun authoredPath(reference: EngineeringReference): String = authoredPath(reference.authoredPath)
 
@@ -468,7 +390,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
         AthenaDomainEntitySchema(
             typeId = "Glyph",
             displayName = "Glyph",
-            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+            subjectKind = AthenaDomainSchemaSubjectKind.ENTITY,
             description = "Synthetic evidence component with no engineering meaning.",
             propertyNames = setOf("domain", "type"),
             portTypeIds = setOf("dummy-port"),
@@ -476,7 +398,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
         AthenaDomainEntitySchema(
             typeId = "Pulse",
             displayName = "Pulse",
-            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+            subjectKind = AthenaDomainSchemaSubjectKind.ENTITY,
             description = "Synthetic evidence component with no engineering meaning.",
             propertyNames = setOf("domain", "type"),
             portTypeIds = setOf("dummy-port"),
@@ -484,7 +406,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
         AthenaDomainEntitySchema(
             typeId = "Totem",
             displayName = "Totem",
-            subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+            subjectKind = AthenaDomainSchemaSubjectKind.ENTITY,
             description = "Synthetic evidence component with no engineering meaning.",
             propertyNames = setOf("domain", "type"),
             portTypeIds = setOf("dummy-port"),
@@ -495,7 +417,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             name = "domain",
             displayName = "Domain marker",
             valueKind = AthenaDomainPropertyValueKind.SYMBOL,
-            appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
+            appliesTo = setOf(AthenaDomainSchemaSubjectKind.ENTITY),
             required = true,
             allowedSymbolValues = setOf(DUMMY_DOMAIN_ID),
             description = "Explicit synthetic ownership marker used to keep dummy semantics scoped away from other evidence domains.",
@@ -504,7 +426,7 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             name = "type",
             displayName = "Synthetic type",
             valueKind = AthenaDomainPropertyValueKind.SYMBOL,
-            appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
+            appliesTo = setOf(AthenaDomainSchemaSubjectKind.ENTITY),
             required = true,
             allowedSymbolValues = VALID_DUMMY_TYPES,
             description = "Synthetic component type selector interpreted only by the dummy evidence plugin.",
@@ -536,11 +458,11 @@ private val DUMMY_DOMAIN_SCHEMA = AthenaDomainSchema(
             allowedDirections = setOf("emit", "absorb"),
         ),
     ),
-    connections = listOf(
-        AthenaDomainConnectionSchema(
+    relationships = listOf(
+        AthenaDomainRelationshipSchema(
             typeId = "DummyLink",
             displayName = "Dummy link",
-            description = "Synthetic hosted connection with no engineering meaning.",
+            description = "Synthetic hosted relationship with no engineering meaning.",
             sourcePortTypeIds = setOf("dummy-port"),
             targetPortTypeIds = setOf("dummy-port"),
         ),
@@ -599,25 +521,33 @@ private sealed interface PropertySymbolValue {
 
 private fun PropertyAssignment.scalarIdentifierText(): String? {
     return when (val value = value) {
-        is ScalarValue.Identifier -> value.text
-        is ScalarValue.StringLiteral -> value.text
+        is ScalarValue.Symbol -> value.text
+        is ScalarValue.Text -> value.text
+        is ScalarValue.Boolean,
+        is ScalarValue.Integer,
+        is ScalarValue.Quantity,
+        is ScalarValue.Reference -> null
     }
 }
 
-private fun DeviceDeclaration.domainMarker(): String? {
+private fun EntityDeclaration.domainMarker(): String? {
     return fields.firstOrNull { field -> field.name == "domain" }?.scalarIdentifierText()
 }
 
-private fun EngineeringPropertyValue.renderedValue(): String {
+private fun EngineeringValue.renderedValue(): String {
     return when (this) {
-        is EngineeringPropertyValue.Symbol -> text
-        is EngineeringPropertyValue.Text -> "\"$text\""
+        is EngineeringValue.Quantity -> "$value ${unit.authoredName.joinToString(".")}"
+        is EngineeringValue.Integer -> value.toString()
+        is EngineeringValue.Boolean -> value.toString()
+        is EngineeringValue.Text -> "\"$text\""
+        is EngineeringValue.Symbol -> text
+        is EngineeringValue.Reference -> "@${reference.authoredPath.joinToString(".")}"
     }
 }
 
 /** Runtime-owned summary derived from the active dummy graph projection. */
 private data class DummyRuntimeSummary(
-    val componentCount: Int,
+    val entityCount: Int,
     val portCount: Int,
     val tintCount: Int,
     val compatiblePairCount: Int,
@@ -627,15 +557,15 @@ private data class DummyRuntimeSummary(
 private fun AthenaExecutionContext.dummyRuntimeSummary(): DummyRuntimeSummary {
     val graphProjection = projectEngineeringGraphProjection() as? AthenaEngineeringGraphReadyProjection
         ?: return DummyRuntimeSummary(
-            componentCount = 0,
+            entityCount = 0,
             portCount = 0,
             tintCount = 0,
             compatiblePairCount = 0,
         )
-    val componentIds = graphProjection.dummyComponentSemanticIds()
-    val portCandidates = graphProjection.dummyPortCandidates(componentIds)
+    val entityIds = graphProjection.dummyEntitySemanticIds()
+    val portCandidates = graphProjection.dummyPortCandidates(entityIds)
     return DummyRuntimeSummary(
-        componentCount = componentIds.size,
+        entityCount = entityIds.size,
         portCount = portCandidates.size,
         tintCount = portCandidates.mapNotNull { candidate -> candidate.tint }.distinct().size,
         compatiblePairCount = compatibleDummyPairs(portCandidates).size,
@@ -643,8 +573,8 @@ private fun AthenaExecutionContext.dummyRuntimeSummary(): DummyRuntimeSummary {
 }
 
 /** Collects dummy-owned component ids from the runtime-owned graph projection. */
-private fun AthenaEngineeringGraphReadyProjection.dummyComponentSemanticIds(): Set<String> {
-    return graph.nodesOfKind(AthenaEngineeringGraphNodeKind.COMPONENT)
+private fun AthenaEngineeringGraphReadyProjection.dummyEntitySemanticIds(): Set<String> {
+    return graph.nodesOfKind(AthenaEngineeringGraphNodeKind.ENTITY)
         .filter { node ->
             node.properties.firstOrNull { property -> property.name == "domain" }?.value == DUMMY_DOMAIN_ID
         }
@@ -654,7 +584,7 @@ private fun AthenaEngineeringGraphReadyProjection.dummyComponentSemanticIds(): S
 
 /** Collects dummy-owned port candidates from the runtime-owned graph projection. */
 private fun AthenaEngineeringGraphReadyProjection.dummyPortCandidates(
-    ownedComponentIds: Set<String>,
+    ownedEntityIds: Set<String>,
 ): List<DummyPortCandidate> {
     val graph = graph
     return graph.nodesOfKind(AthenaEngineeringGraphNodeKind.PORT).mapNotNull { portNode ->
@@ -662,7 +592,7 @@ private fun AthenaEngineeringGraphReadyProjection.dummyPortCandidates(
             .firstOrNull { reference -> reference.kind == AthenaEngineeringGraphReferenceKind.OWNER }
             ?.resolvedSemanticId
             ?: return@mapNotNull null
-        if (ownerSemanticId !in ownedComponentIds) {
+        if (ownerSemanticId !in ownedEntityIds) {
             return@mapNotNull null
         }
 

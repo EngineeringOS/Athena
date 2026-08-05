@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:9217eb83d0497c73df34022403cb88e0eff7cfc9b21e6930d307b45438bd216a
+validatedLockStateDigest: lock-state:2f0c4dbc6648270215e3ace4b8b60b162f01a30e37e6d89dc28fe27c0c54afab
 primaryPackage:
   name: com.engineeringood.m10.proof
   version: 0.1.1
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m10.proof
     version: 0.1.1
     sourceRoot: src
-    snapshotDigest: package-snapshot:7df6f7b07b1121a42605279ecf972634047d9bef6de90b5a596cef325fe1cfcc
+    snapshotDigest: package-snapshot:271cd8b644d745d90829953795a2eb89c3c07e7ed85f30b93b6c3fd5288e2417
     sourceHashes:
       - path: com/engineeringood/m10/proof/factoryline.athena
-        hash: sha256:f66a5a0b891178004cc01c889a94deb1b69cd40e897ea1070a23162dddbf054e
+        hash: sha256:d446858f5dd4315bdb79638f95d64f3f8411a921b5994f6e26b100b8c4bb7a3f
     resourceHashes: []
     dependencies: []

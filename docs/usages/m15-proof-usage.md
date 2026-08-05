@@ -23,7 +23,7 @@ The proof demonstrates that an engineer can create and change governed engineeri
 
 ## What To Expect
 
-- Guided placement produces canonical source-backed device and port declarations.
+- Guided placement produces canonical source-backed entity and port declarations.
 - Inspector rename keeps dependent authored port and connection references coherent.
 - Guided connect creates a canonical `connect relationship_name Source.port to Target.port` statement only after preview acceptance.
 - Semantic inspection reports a ready state when the proof completes successfully.

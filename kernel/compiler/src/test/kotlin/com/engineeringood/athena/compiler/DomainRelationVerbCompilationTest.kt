@@ -1,6 +1,5 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.ir.EngineeringPropertyValue
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.writeText
 import kotlin.test.Test
@@ -11,26 +10,26 @@ import kotlin.test.assertTrue
 
 class DomainRelationVerbCompilationTest {
     @Test
-    fun `electrical relation verbs lower to existing engineering connections with relation contract`() {
+    fun `electrical relation verbs lower to typed relationships and independent flows`() {
         val path = java.nio.file.Files.createTempFile("athena-domain-relations-", ".athena")
         path.writeText(
             """
             system DomainRelations {
-              device Supply { type PowerSource connectivity enabled }
-              device Breaker { type Breaker connectivity enabled }
-              device Controller { type Switch connectivity enabled }
-              device Terminal { type Terminal connectivity enabled }
-              device EarthBar { type ProtectiveEarth connectivity enabled }
-              device Motor { type Motor connectivity enabled }
-              device Cabinet { type Terminal connectivity enabled }
+              entity Supply { concept PowerSource connectivity enabled }
+              entity Breaker { concept Breaker connectivity enabled }
+              entity Controller { concept Switch connectivity enabled }
+              entity Terminal { concept Terminal connectivity enabled }
+              entity EarthBar { concept ProtectiveEarth connectivity enabled }
+              entity Motor { concept Motor connectivity enabled }
+              entity Cabinet { concept Terminal connectivity enabled }
 
-              port Supply.L1 { direction out signal power role line }
-              port Breaker.input { direction in signal power role line }
-              port Controller.DO1 { direction out signal control role signal }
-              port Terminal.input { direction in signal control role signal }
-              port EarthBar.PE { direction passive signal pe role protective_earth }
-              port Motor.PE { direction passive signal pe role protective_earth }
-              port Cabinet.PE { direction passive signal pe role protective_earth }
+              port Supply.L1 { direction out flow power role line }
+              port Breaker.input { direction in flow power role line }
+              port Controller.DO1 { direction out flow control role flow }
+              port Terminal.input { direction in flow control role flow }
+              port EarthBar.PE { direction bidirectional flow pe role protective_earth }
+              port Motor.PE { direction bidirectional flow pe role protective_earth }
+              port Cabinet.PE { direction bidirectional flow pe role protective_earth }
 
               power Supply.L1 to Breaker.input
               control Controller.DO1 to Terminal.input
@@ -43,18 +42,20 @@ class DomainRelationVerbCompilationTest {
             val result = assertIs<CompilerCompilationSuccess>(AthenaCompiler().compile(path))
 
             assertTrue(result.semanticResult.isSemanticallyValid)
-            assertEquals(4, result.document.connections.size)
+            assertEquals(3, result.document.relationships.size)
+            assertEquals(
+                listOf("source", "target"),
+                result.document.relationships.first().participants.map { participant -> participant.role },
+            )
+            assertEquals(4, result.document.flows.size)
             assertEquals(
                 listOf("power", "control", "earth", "earth"),
-                result.document.connections.map { connection ->
-                    assertIs<EngineeringPropertyValue.Symbol>(
-                        connection.properties.single { property -> property.name == "relation.kind" }.value,
-                    ).text
-                },
+                result.document.flows.map { flow -> flow.definitionReference.authoredName.single() },
             )
-            val earthNetwork = result.document.connectionNetworks.single { network -> network.name == "earth_EarthBar_PE" }
-            assertEquals(2, earthNetwork.members.size)
-            assertTrue(earthNetwork.members.all { member -> member.connectionReference.provenance == earthNetwork.provenance })
+            val earthRelationship = result.document.relationships.single { relationship ->
+                relationship.definitionReference.authoredName.single() == "earth"
+            }
+            assertEquals(listOf("source", "target", "target-2"), earthRelationship.participants.map { it.role })
         } finally {
             path.deleteIfExists()
         }
@@ -66,12 +67,12 @@ class DomainRelationVerbCompilationTest {
         path.writeText(
             """
             system UnknownDomainRelation {
-              device A { type Switch connectivity enabled }
-              device B { type Switch connectivity enabled }
-              device C { type Switch connectivity enabled }
-              port A.out { direction out signal control role signal }
-              port B.in { direction in signal control role signal }
-              port C.in { direction in signal control role signal }
+              entity A { concept Switch connectivity enabled }
+              entity B { concept Switch connectivity enabled }
+              entity C { concept Switch connectivity enabled }
+              port A.out { direction out flow control role flow }
+              port B.in { direction in flow control role flow }
+              port C.in { direction in flow control role flow }
 
               pneumatic A.out to [B.in, C.in]
             }
@@ -87,8 +88,7 @@ class DomainRelationVerbCompilationTest {
                     "com.engineeringood.athena.domain.electrical-runtime" in message &&
                     "power, control, earth" in message
             }, "Actual diagnostics: $messages")
-            assertEquals(emptyList(), result.document.connections)
-            assertEquals(emptyList(), result.document.connectionNetworks)
+            assertEquals("pneumatic", result.document.relationships.single().definitionReference.authoredName.single())
         } finally {
             path.deleteIfExists()
         }

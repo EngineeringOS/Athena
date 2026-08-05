@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.runtime
+package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.integrations.scm.git.GitSemanticBaselineAdapter
@@ -26,13 +26,13 @@ class AthenaSemanticCommitServiceTest {
                 sourceFileName = "demo.athena",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
-                        type Switch
+                      entity PLC1 {
+                        concept Switch
                       }
 
                       port PLC1.out {
                         direction out
-                        signal Digital
+                        flow Digital
                       }
                     }
                 """.trimIndent(),
@@ -44,26 +44,26 @@ class AthenaSemanticCommitServiceTest {
                 dependencyLocator = "vendor/alpha",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
+                      entity PLC1 { concept Controller
                         model "S7-1200"
                       }
 
-                      device M1 {
-                        type Motor
+                      entity M1 {
+                        concept Motor
                       }
 
                       port PLC1.out {
                         direction out
-                        signal Digital
+                        flow Digital
                       }
 
                       port M1.in {
                         direction in
-                        signal Analog
+                        flow Analog
                       }
 
-                      connect plc1_out_to_m1_in PLC1.out to M1.in
-                      connect plc1_out_to_missing_in PLC1.out to Missing.in
+                      control PLC1.out to M1.in
+                      control PLC1.out to Missing.in
                     }
                 """.trimIndent(),
             )

@@ -1,68 +1,68 @@
 package com.engineeringood.m28.sample
 
 system RelationshipAuthoringProof {
-  device MainPowerSupplyPS1 {
-    type Switch
+  entity MainPowerSupplyPS1 {
+    concept Switch
     model "24VDC-PSU"
 
     port lplus {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device MainBreakerQF1 {
-    type Switch
+  entity MainBreakerQF1 {
+    concept Switch
     model "QF"
 
     port line {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port load {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device ControllerPLC1 {
-    type Switch
+  entity ControllerPLC1 {
+    concept Switch
     model "PLC"
 
     port power {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port do1 {
       direction out
-      signal Digital
+      flow Digital
     }
 
     port spareDo {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device OperatorHMI1 {
-    type Lamp
+  entity OperatorHMI1 {
+    concept Lamp
     model "HMI"
 
     port status {
       direction in
-      signal Digital
+      flow Digital
     }
   }
 
-  device SpareTerminalXT99 {
-    type Switch
+  entity SpareTerminalXT99 {
+    concept Switch
     model "SPARE-XT"
 
     port in1 {
       direction in
-      signal Digital
+      flow Digital
     }
   }
 

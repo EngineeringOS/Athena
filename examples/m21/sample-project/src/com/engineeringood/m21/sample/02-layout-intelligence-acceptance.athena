@@ -1,33 +1,33 @@
 package com.engineeringood.m21.sample
 
 system LayoutIntelligenceAcceptance {
-  device PowerSupply24V {
-    type Switch
+  entity PowerSupply24V {
+    concept Switch
     model "24VDC"
   }
 
-  device ProtectionQF1 {
-    type Switch
+  entity ProtectionQF1 {
+    concept Switch
     model "QF1"
   }
 
-  device ControllerPLC1 {
-    type Switch
+  entity ControllerPLC1 {
+    concept Switch
     model "CPU"
   }
 
-  device OperatorHMI1 {
-    type Lamp
+  entity OperatorHMI1 {
+    concept Lamp
     model "Panel"
   }
 
-  device TerminalBlockXT1 {
-    type Switch
+  entity TerminalBlockXT1 {
+    concept Switch
     model "XT1"
   }
 
-  device PrimaryLoadM1 {
-    type Motor
+  entity PrimaryLoadM1 {
+    concept Motor
     model "M1"
   }
 

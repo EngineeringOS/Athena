@@ -17,49 +17,12 @@ import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
 import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
 import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
 import { MonacoThemeRegistry } from '@theia/monaco/lib/browser/textmate/monaco-theme-registry';
-import type { AthenaComponentKnowledgeSessionPayload } from './athena-component-knowledge-protocol';
-import {
-    type AthenaAuthoringDecisionParams,
-    type AthenaAuthoringPreviewDecisionPayload,
-    type AthenaAuthoringPreviewParams,
-    type AthenaAuthoringPreviewSubmissionPayload,
-    type AthenaAuthoringRevisionGuardPayload,
-    type AthenaAuthoringSourceEditPayload,
-    ATHENA_GOVERNED_GRAPHIC_EDIT_PREVIEW_METHOD,
-    type AthenaGovernedGraphicEditIntentRequest,
-    type AthenaGovernedGraphicEditPreviewPayload
-} from './athena-authoring-protocol';
-import { assertAuthoringRevisionGuard } from './athena-authoring-revision-guard';
 import {
     ATHENA_LANGUAGE_ID,
     athenaLanguageConfiguration,
     athenaMonarchLanguage
 } from './athena-language-definition';
 import { AthenaTreeSitterHighlightingService } from './athena-tree-sitter-highlighting-service';
-import {
-    buildAthenaSourceMutationRequest,
-    type AthenaSourceMutationPayload
-} from './athena-source-mutation-protocol';
-import {
-    buildAthenaSemanticMacroAcceptanceRequest,
-    buildAthenaSemanticMacroCatalogRequest,
-    buildAthenaSemanticMacroOriginInspectionRequest,
-    buildAthenaSemanticMacroPreviewRequest,
-    buildAthenaSemanticMacroValidationRequest,
-    type AthenaSemanticMacroAcceptanceParams,
-    type AthenaSemanticMacroAcceptancePayload,
-    type AthenaSemanticMacroCatalogPayload,
-    type AthenaSemanticMacroOriginInspectionParams,
-    type AthenaSemanticMacroOriginInspectionPayload,
-    type AthenaSemanticMacroPreviewParams,
-    type AthenaSemanticMacroPreviewPayload,
-    type AthenaSemanticMacroValidationParams,
-    type AthenaSemanticMacroValidationPayload
-} from './athena-semantic-macro-protocol';
-import type {
-    AthenaGraphCommandIntentParams,
-    AthenaGraphCommandIntentPayload
-} from './athena-graph-command-intent-protocol';
 import { toAthenaBackendUrl } from './athena-backend-endpoint';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 
@@ -120,10 +83,10 @@ type AthenaDocumentSnapshot = {
     languageId: string;
 };
 
-export type AthenaSemanticInspectionComponent = {
+export type AthenaSemanticInspectionEntity = {
     semanticId: string;
     name: string;
-    kind: string;
+    concept: string;
     properties: string;
     authoredProperties: AthenaSemanticInspectionProperty[];
     sourceRange: Range;
@@ -143,10 +106,15 @@ export type AthenaSemanticInspectionPort = {
     sourceRange: Range;
 };
 
-export type AthenaSemanticInspectionConnection = {
+export type AthenaSemanticInspectionParticipant = {
+    role: string;
+    subjectPath: string;
+};
+
+export type AthenaSemanticInspectionRelationship = {
     semanticId: string;
-    fromPath: string;
-    toPath: string;
+    definition: string;
+    participants: AthenaSemanticInspectionParticipant[];
     sourceRange: Range;
 };
 
@@ -157,12 +125,12 @@ export type AthenaSemanticInspectionPayload = {
     systemName?: string;
     diagnosticsCount: number;
     diagnosticSummaries: string[];
-    componentCount: number;
+    entityCount: number;
     portCount: number;
-    connectionCount: number;
-    components: AthenaSemanticInspectionComponent[];
+    relationshipCount: number;
+    entities: AthenaSemanticInspectionEntity[];
     ports: AthenaSemanticInspectionPort[];
-    connections: AthenaSemanticInspectionConnection[];
+    relationships: AthenaSemanticInspectionRelationship[];
 };
 
 export type AthenaRepositoryManifestDependencyPayload = {
@@ -352,55 +320,6 @@ export type AthenaSemanticHistoryStatePayload = {
     baselines: AthenaSemanticHistoryBaselinePayload[];
     diagnostics: AthenaSemanticScmDiagnosticPayload[];
     history?: AthenaSemanticHistoryPayload;
-};
-
-export type AthenaAiReasoningRequestParams = {
-    requestCategory: 'diagnostic-explanation' | 'impact-summary' | 'next-check';
-    subjectSemanticIds?: string[];
-    baseline?: AthenaSemanticScmStateParams;
-};
-
-export type AthenaAiReasoningEvidencePayload = {
-    kind: string;
-    referenceId: string;
-    summary: string;
-};
-
-export type AthenaAiReasoningProposalPayload = {
-    proposalId: string;
-    proposalCategory: string;
-    providerStatus: string;
-    decisionState: string;
-    summary: string;
-    response: string;
-    providerId?: string;
-    subjectSemanticIds: string[];
-    evidence: AthenaAiReasoningEvidencePayload[];
-};
-
-export type AthenaAiReasoningSessionPayload = {
-    sessionId: string;
-    requestCategory: string;
-    providerStatus: string;
-    providerId?: string;
-    subjectSemanticIds: string[];
-    proposalId: string;
-    semanticPath: string;
-};
-
-export type AthenaAiReasoningSubmissionPayload = {
-    session: AthenaAiReasoningSessionPayload;
-    proposal: AthenaAiReasoningProposalPayload;
-};
-
-export type AthenaAiReasoningStatePayload = {
-    sessions: AthenaAiReasoningSessionPayload[];
-    proposals: AthenaAiReasoningProposalPayload[];
-};
-
-export type AthenaAiReasoningDecisionParams = {
-    proposalId: string;
-    decision: 'accepted' | 'dismissed';
 };
 
 export type AthenaRepositoryGraphSessionPayload = {
@@ -692,21 +611,6 @@ export type AthenaProjectionCommandPayload = {
     reason?: string;
     session?: AthenaProjectionSessionPayload;
 };
-
-export type {
-    AthenaMutationValidationFeedbackPayload,
-    AthenaProjectionRefreshConsequencePayload,
-    AthenaSemanticDiffEntryPayload,
-    AthenaSemanticDiffInspectionPayload,
-    AthenaSemanticHistoryConsequencePayload,
-    AthenaSourceMutationParams,
-    AthenaSourceMutationTextDocument
-} from './athena-source-mutation-protocol';
-
-export type {
-    AthenaGraphCommandIntentParams,
-    AthenaGraphCommandIntentPayload
-} from './athena-graph-command-intent-protocol';
 
 @injectable()
 export class AthenaLspEditorBridgeService implements FrontendApplicationContribution {
@@ -1140,262 +1044,10 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         });
     }
 
-    async requestSourceMutationEvaluation(widget: EditorWidget | undefined): Promise<AthenaSourceMutationPayload | undefined> {
-        if (!this.isAthenaEditor(widget)) {
-            return undefined;
-        }
-
-        await this.synchronizeDocumentSnapshot(this.toWidgetSnapshot(widget));
-        const request = buildAthenaSourceMutationRequest(
-            widget.editor.uri.toString(),
-            this.currentAthenaEditorModel(),
-        );
-        return this.sendLanguageRequest<AthenaSourceMutationPayload>(
-            request.method,
-            request.params,
-            request.model,
-        );
-    }
-
     async requestRepositoryGraphSession(): Promise<AthenaRepositoryGraphSessionPayload | undefined> {
         return this.sendLanguageRequest<AthenaRepositoryGraphSessionPayload>(
             'athena/repositoryGraphSession',
             {}
-        );
-    }
-
-    async requestComponentKnowledgeSession(): Promise<AthenaComponentKnowledgeSessionPayload | undefined> {
-        const model = this.currentAthenaEditorModel();
-        return this.sendLanguageRequest<AthenaComponentKnowledgeSessionPayload>(
-            'athena/componentKnowledgeSession',
-            { marker: 'component-knowledge' },
-            model,
-        );
-    }
-
-    async requestSemanticMacroCatalog(): Promise<AthenaSemanticMacroCatalogPayload | undefined> {
-        const request = buildAthenaSemanticMacroCatalogRequest();
-        return this.sendLanguageRequest<AthenaSemanticMacroCatalogPayload>(
-            request.method,
-            request.params,
-        );
-    }
-
-    async requestSemanticMacroValidation(
-        params: AthenaSemanticMacroValidationParams
-    ): Promise<AthenaSemanticMacroValidationPayload | undefined> {
-        const request = buildAthenaSemanticMacroValidationRequest(params);
-        return this.sendLanguageRequest<AthenaSemanticMacroValidationPayload>(
-            request.method,
-            request.params,
-        );
-    }
-
-    async requestSemanticMacroPreview(
-        params: AthenaSemanticMacroPreviewParams
-    ): Promise<AthenaSemanticMacroPreviewPayload | undefined> {
-        const request = buildAthenaSemanticMacroPreviewRequest(params);
-        return this.sendLanguageRequest<AthenaSemanticMacroPreviewPayload>(
-            request.method,
-            request.params,
-        );
-    }
-
-    async requestSemanticMacroAcceptance(
-        params: AthenaSemanticMacroAcceptanceParams
-    ): Promise<AthenaSemanticMacroAcceptancePayload | undefined> {
-        const request = buildAthenaSemanticMacroAcceptanceRequest(params);
-        return this.sendLanguageRequest<AthenaSemanticMacroAcceptancePayload>(
-            request.method,
-            request.params,
-        );
-    }
-
-    async requestSemanticMacroOriginInspection(
-        params: AthenaSemanticMacroOriginInspectionParams
-    ): Promise<AthenaSemanticMacroOriginInspectionPayload | undefined> {
-        const request = buildAthenaSemanticMacroOriginInspectionRequest(params);
-        return this.sendLanguageRequest<AthenaSemanticMacroOriginInspectionPayload>(
-            request.method,
-            request.params,
-        );
-    }
-
-    async requestAuthoringPreview(
-        params: AthenaAuthoringPreviewParams
-    ): Promise<AthenaAuthoringPreviewSubmissionPayload | undefined> {
-        const model = this.currentAthenaEditorModel();
-        return this.sendLanguageRequest<AthenaAuthoringPreviewSubmissionPayload>(
-            'athena/authoringPreview',
-            params,
-            model,
-        );
-    }
-
-    async requestAuthoringDecision(
-        params: AthenaAuthoringDecisionParams
-    ): Promise<AthenaAuthoringPreviewDecisionPayload | undefined> {
-        const model = this.currentAthenaEditorModel();
-        return this.sendLanguageRequest<AthenaAuthoringPreviewDecisionPayload>(
-            'athena/authoringDecision',
-            params,
-            model,
-        );
-    }
-
-    async requestGovernedGraphicEditPreview(
-        params: AthenaGovernedGraphicEditIntentRequest
-    ): Promise<AthenaGovernedGraphicEditPreviewPayload | undefined> {
-        const model = this.currentAthenaEditorModel();
-        return this.sendLanguageRequest<AthenaGovernedGraphicEditPreviewPayload>(
-            ATHENA_GOVERNED_GRAPHIC_EDIT_PREVIEW_METHOD,
-            params,
-            model,
-        );
-    }
-
-    async applyAuthoringSourceEdit(edit: AthenaAuthoringSourceEditPayload): Promise<void> {
-        if (edit.appliedByAuthority) {
-            return;
-        }
-        const model = monaco.editor.getModel(monaco.Uri.parse(edit.uri)) ?? this.currentAthenaEditorModel();
-        if (!model || model.uri.toString() !== edit.uri) {
-            throw new Error(`Athena authoring source edit target is not open: ${edit.uri}`);
-        }
-        const currentEditor = this.editorManager.currentEditor;
-        const documentVersion = this.isAthenaEditor(currentEditor) && currentEditor.editor.uri.toString() === edit.uri
-            ? currentEditor.editor.document.version
-            : model.getVersionId();
-        await assertAuthoringRevisionGuard(edit, {
-            uri: model.uri.toString(),
-            version: documentVersion,
-            text: model.getValue(),
-        });
-        model.pushEditOperations(
-            [],
-            [{
-                range: new monaco.Range(
-                    edit.range.start.line + 1,
-                    edit.range.start.character + 1,
-                    edit.range.end.line + 1,
-                    edit.range.end.character + 1,
-                ),
-                text: edit.newText,
-                forceMoveMarkers: true,
-            }],
-            () => null,
-        );
-        if (!this.isAthenaEditor(currentEditor) || currentEditor.editor.uri.toString() !== edit.uri || !edit.selectionRange) {
-            return;
-        }
-        currentEditor.editor.selection = {
-            ...edit.selectionRange,
-            direction: 'ltr',
-        };
-        currentEditor.editor.revealRange(edit.selectionRange, { at: 'center' });
-    }
-
-    async sourceEditMatchesActiveDocument(revisionGuard: AthenaAuthoringRevisionGuardPayload | undefined): Promise<boolean> {
-        if (!revisionGuard) {
-            return false;
-        }
-        const model = monaco.editor.getModel(monaco.Uri.parse(revisionGuard.sourceUri)) ?? this.currentAthenaEditorModel();
-        if (!model || model.uri.toString() !== revisionGuard.sourceUri) {
-            return false;
-        }
-        const currentEditor = this.editorManager.currentEditor;
-        const documentVersion = this.isAthenaEditor(currentEditor) && currentEditor.editor.uri.toString() === revisionGuard.sourceUri
-            ? currentEditor.editor.document.version
-            : model.getVersionId();
-        try {
-            await assertAuthoringRevisionGuard(
-                {
-                    uri: revisionGuard.sourceUri,
-                    revisionGuard,
-                },
-                {
-                    uri: model.uri.toString(),
-                    version: documentVersion,
-                    text: model.getValue(),
-                },
-            );
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    async requestProjectionSession(): Promise<AthenaProjectionSessionPayload | undefined> {
-        const model = this.currentAthenaEditorModel();
-        return this.sendLanguageRequest<AthenaProjectionSessionPayload>(
-            'athena/projectionSession',
-            {},
-            model,
-        );
-    }
-
-    async requestProjectionCommand(
-        params: AthenaProjectionCommandParams
-    ): Promise<AthenaProjectionCommandPayload | undefined> {
-        const model = this.currentAthenaEditorModel();
-        return this.sendLanguageRequest<AthenaProjectionCommandPayload>(
-            'athena/projectionCommand',
-            params,
-            model,
-        );
-    }
-
-    async requestGraphCommandIntent(
-        params: AthenaGraphCommandIntentParams
-    ): Promise<AthenaGraphCommandIntentPayload | undefined> {
-        const model = this.currentAthenaEditorModel();
-        return this.sendLanguageRequest<AthenaGraphCommandIntentPayload>(
-            'athena/graphCommandIntent',
-            params,
-            model,
-        );
-    }
-
-    async requestSemanticScmState(
-        params: AthenaSemanticScmStateParams
-    ): Promise<AthenaSemanticScmStatePayload | undefined> {
-        return this.sendLanguageRequest<AthenaSemanticScmStatePayload>(
-            'athena/semanticScmState',
-            params
-        );
-    }
-
-    async requestSemanticHistoryState(
-        params: AthenaSemanticHistoryStateParams
-    ): Promise<AthenaSemanticHistoryStatePayload | undefined> {
-        return this.sendLanguageRequest<AthenaSemanticHistoryStatePayload>(
-            'athena/semanticHistoryState',
-            params
-        );
-    }
-
-    async requestAiReasoning(
-        params: AthenaAiReasoningRequestParams
-    ): Promise<AthenaAiReasoningSubmissionPayload | undefined> {
-        return this.sendLanguageRequest<AthenaAiReasoningSubmissionPayload>(
-            'athena/aiReasoning',
-            params
-        );
-    }
-
-    async requestAiReasoningState(): Promise<AthenaAiReasoningStatePayload | undefined> {
-        return this.sendLanguageRequest<AthenaAiReasoningStatePayload>(
-            'athena/aiReasoningState',
-            {}
-        );
-    }
-
-    async requestAiReasoningDecision(
-        params: AthenaAiReasoningDecisionParams
-    ): Promise<AthenaAiReasoningProposalPayload | undefined> {
-        return this.sendLanguageRequest<AthenaAiReasoningProposalPayload>(
-            'athena/aiReasoningDecision',
-            params
         );
     }
 

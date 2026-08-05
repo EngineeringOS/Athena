@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.ide.lsp
+package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DefinitionParams
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -26,17 +26,17 @@ class AthenaRepeatedEditingStabilityTest {
 
         val invalidOpenText = """
             system FactoryLine {
-              connect plc1_out_to_plc1_out PLC1.out to PLC1.out
+              control PLC1.out to PLC1.out
             }
         """.trimIndent()
         val validText = """
             system FactoryLine {
-              device Motor1 {
-                type Motor
+              entity Motor1 {
+                concept Motor
               }
 
-              device Missing {
-                type Motor
+              entity Missing {
+                concept Motor
               }
 
               port Motor1.out {
@@ -49,17 +49,17 @@ class AthenaRepeatedEditingStabilityTest {
                 signal Digital
               }
 
-              connect motor1_out_to_missing_in Motor1.out to Missing.in
+              control Motor1.out to Missing.in
             }
         """.trimIndent()
         val invalidChangedText = """
             system FactoryLine {
-              device Motor1 {
-                type Motor
+              entity Motor1 {
+                concept Motor
               }
 
-              device Missing {
-                type Motor
+              entity Missing {
+                concept Motor
               }
 
               port Missing.in {
@@ -67,7 +67,7 @@ class AthenaRepeatedEditingStabilityTest {
                 signal Digital
               }
 
-              connect motor1_out_to_missing_in_2 Motor1.out to Missing.in
+              control Motor1.out to Missing.in
             }
         """.trimIndent()
 

@@ -1,0 +1,118 @@
+==============================
+Entity declaration with fields
+==============================
+
+system Demo {
+  entity PLC1 {
+    concept Switch
+    model "S7-1200"
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (entity_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (string
+            (string_content)))))))
+
+==============================
+Entity declaration with no fields
+==============================
+
+system Demo {
+  entity PLC1 {
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (entity_declaration
+        name: (name)))))
+
+==============================
+Entity grouped connectivity interface
+==============================
+
+system Demo {
+  entity Drive {
+    concept MotorDrive
+    connectivity enabled
+
+    interface powerInput {
+      concept power
+      direction in
+      flow PowerAC
+      role line
+      multiplicity single
+
+      ports {
+        L1
+        PE {
+          flow ProtectiveEarth
+          role protective_earth
+          direction bidirectional
+        }
+      }
+    }
+  }
+}
+
+---
+
+(source_file
+  (system_declaration
+    name: (name)
+    (declaration
+      (entity_declaration
+        name: (name)
+        (property_assignment
+          (property_name)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (identifier))
+        (interface_declaration
+          name: (name)
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (property_assignment
+            (property_name)
+            (identifier))
+          (interface_ports
+            (interface_port_member
+              name: (name))
+            (interface_port_member
+              name: (name)
+              (property_assignment
+                (property_name)
+                (identifier))
+              (property_assignment
+                (property_name)
+                (identifier))
+              (property_assignment
+                (property_name)
+                (identifier)))))))))

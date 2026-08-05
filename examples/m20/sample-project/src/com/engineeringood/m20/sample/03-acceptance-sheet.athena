@@ -1,13 +1,13 @@
-﻿package com.engineeringood.m20.sample
+package com.engineeringood.m20.sample
 
 system AcceptanceSheetShowcase {
-  device AcceptanceSW1 {
-    type Switch
+  entity AcceptanceSW1 {
+    concept Switch
     model "Main"
   }
 
-  device AcceptanceM1 {
-    type Motor
+  entity AcceptanceM1 {
+    concept Motor
   }
 
   port AcceptanceSW1.out {
@@ -20,5 +20,5 @@ system AcceptanceSheetShowcase {
     signal Control24V
   }
 
-  connect acceptancesw1_out_to_acceptancem1_in AcceptanceSW1.out to AcceptanceM1.in
+  power AcceptanceSW1.out to AcceptanceM1.in
 }

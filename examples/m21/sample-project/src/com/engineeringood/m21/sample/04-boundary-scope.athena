@@ -1,13 +1,13 @@
 package com.engineeringood.m21.sample
 
 system BoundaryScopeShowcase {
-  device BoundaryPowerSupply {
-    type Switch
+  entity BoundaryPowerSupply {
+    concept Switch
     model "LocalOnly"
   }
 
-  device BoundaryLoad {
-    type Lamp
+  entity BoundaryLoad {
+    concept Lamp
     model "NoRegistryNoCabinet"
   }
 

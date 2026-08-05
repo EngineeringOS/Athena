@@ -1,13 +1,13 @@
-﻿package com.engineeringood.m20.sample
+package com.engineeringood.m20.sample
 
 system BoundaryScopeShowcase {
-  device BoundarySwitch {
-    type Switch
+  entity BoundarySwitch {
+    concept Switch
     model "Boundary"
   }
 
-  device BoundaryLamp {
-    type Lamp
+  entity BoundaryLamp {
+    concept Lamp
   }
 
   port BoundarySwitch.out {
@@ -20,5 +20,5 @@ system BoundaryScopeShowcase {
     signal Control24V
   }
 
-  connect boundaryswitch_out_to_boundarylamp_in BoundarySwitch.out to BoundaryLamp.in
+  power BoundarySwitch.out to BoundaryLamp.in
 }

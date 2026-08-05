@@ -186,3 +186,8 @@ class SpatialAnchorCompiler internal constructor(
         TARGET,
     }
 }
+
+internal fun ProjectionDocument.connectionSheetIds(connection: ProjectionConnection): List<String> =
+    sheets.filter { sheet ->
+        sheet.subjects.any { subject -> connection.projectionId in subject.connectionIds }
+    }.map { sheet -> sheet.sheetId.value }.sorted()

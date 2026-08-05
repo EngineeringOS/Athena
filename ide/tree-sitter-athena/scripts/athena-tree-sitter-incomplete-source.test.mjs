@@ -10,14 +10,14 @@ import { Parser, Language } from 'web-tree-sitter';
 // independently owns semantic/syntax failure reporting for the exact same fixture text.
 //
 // Fixture-to-expectation index (kept in sync with the Kotlin-side test by fixture name):
-//   unclosed-system.athena.txt        -> Tree-sitter: usable tree, well-formed device prefix intact.
+//   unclosed-system.athena.txt        -> Tree-sitter: usable tree, well-formed Entity prefix intact.
 //                                         Compiler: fails, "Expected '}' after system body".
-//   unclosed-device-block.athena.txt  -> Tree-sitter: usable tree, well-formed system/device prefix intact.
-//                                         Compiler: fails, "Expected '}' after device body" (or EOF variant).
+//   unclosed-entity-block.athena.txt  -> Tree-sitter: usable tree, well-formed system/Entity prefix intact.
+//                                         Compiler: fails, "Expected '}' after Entity body" (or EOF variant).
 //   dangling-connect.athena.txt       -> Tree-sitter: usable tree, connect_declaration node present
 //                                         (missing `to target`) without collapsing the sibling declarations.
 //                                         Compiler: fails, "Expected 'to' between connection endpoints".
-//   unterminated-string.athena.txt    -> Tree-sitter: usable tree, well-formed device/property prefix intact.
+//   unterminated-string.athena.txt    -> Tree-sitter: usable tree, well-formed Entity/property prefix intact.
 //                                         Compiler: fails, "Unterminated string literal".
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,7 +26,7 @@ const incompleteDir = path.join(packageRoot, 'test', 'incomplete');
 
 const INCOMPLETE_FIXTURES = [
     'unclosed-system.athena.txt',
-    'unclosed-device-block.athena.txt',
+    'unclosed-entity-block.athena.txt',
     'dangling-connect.athena.txt',
     'unterminated-string.athena.txt',
     'incomplete-package.athena.txt',
@@ -62,7 +62,7 @@ for (const fixtureName of INCOMPLETE_FIXTURES) {
             `expected rootNode to cover the full source length for ${fixtureName}`
         );
 
-        // The well-formed prefix (the already-typed system/device header) must survive as a
+        // The well-formed prefix (the already-typed system/Entity header) must survive as a
         // real named node rather than the whole document collapsing into one opaque ERROR node.
         const systemDeclaration = tree.rootNode.namedChildren.find(node => node && node.type === 'system_declaration');
         assert.ok(systemDeclaration, `expected a real system_declaration node for ${fixtureName}, got:\n${tree.rootNode.toString()}`);

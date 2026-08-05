@@ -1,10 +1,5 @@
 package com.engineeringood.athena.scm
 
-import com.engineeringood.athena.ir.DerivedEngineeringInputKind
-import com.engineeringood.athena.ir.EngineeringConstraintRuleKind
-import com.engineeringood.athena.ir.EngineeringImpactConsequence
-import com.engineeringood.athena.ir.EngineeringImpactConsequences
-import com.engineeringood.athena.ir.EngineeringImpactReasonKind
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.repository.EngineeringRepository
@@ -55,12 +50,7 @@ class SemanticCommitIntentGeneratorTest {
         })
         assertTrue(first.entries.any { entry ->
             entry.kind == SemanticCommitEntryKind.ENGINEERING_CHANGE &&
-                entry.message == "Commit engineering change: Component properties changed: PLC1."
-        })
-        assertTrue(first.entries.any { entry ->
-            entry.kind == SemanticCommitEntryKind.ENGINEERING_IMPACT &&
-                entry.message.contains("`component:QF1`") &&
-                entry.message.contains("`component:M1`")
+                entry.message == "Commit engineering change: Entity properties changed: PLC1."
         })
         assertTrue(first.entries.any { entry ->
             entry.kind == SemanticCommitEntryKind.DERIVED_CONSEQUENCE &&
@@ -96,7 +86,6 @@ class SemanticCommitIntentGeneratorTest {
             ),
             inputWarning.factReferences.map { reference -> reference.factKind },
         )
-        assertEquals(1, first.engineeringImpactConsequences.consequences.size)
     }
 }
 
@@ -122,20 +111,11 @@ private fun commitIntentDiff(): SemanticDiff {
         file = "src/demo.athena",
         line = 1,
     )
-    val knowledgeDiagnostic = commitSemanticDiagnostic(
-        ruleId = "knowledge.protection_sufficiency",
-        message = "Breaker current 10A is below required 18A for `component:M1`.",
-        severity = SemanticDiagnosticSeverity.ERROR,
-        file = "src/demo.athena",
-        line = 5,
-        subjectIdentity = StableSemanticIdentity("component:M1"),
-    )
     return SemanticDiff(
         baseline = baseline,
         snapshot = SemanticBaselineSnapshot(
             descriptor = baseline,
             repositoryReport = commitRepositoryGraphReport(primaryPackage),
-            knowledgeDiagnostics = listOf(knowledgeDiagnostic),
             validationResult = SemanticValidationResult(
                 diagnostics = listOf(validationDiagnostic),
                 continuationDecision = SemanticContinuationDecision.STOP_DOWNSTREAM,
@@ -146,9 +126,9 @@ private fun commitIntentDiff(): SemanticDiff {
             SemanticChangeRecord(
                 category = SemanticChangeCategory.ENGINEERING_PROPERTY_CHANGED,
                 layer = SemanticChangeLayer.ENGINEERING,
-                message = "Component properties changed: PLC1.",
+                message = "Entity properties changed: PLC1.",
                 affectedPackage = primaryPackage,
-                subjectIdentity = StableSemanticIdentity("component:PLC1"),
+                subjectIdentity = StableSemanticIdentity("entity:PLC1"),
                 provenance = commitProvenance("src/demo.athena", 3),
             ),
             SemanticChangeRecord(
@@ -183,20 +163,6 @@ private fun commitIntentDiff(): SemanticDiff {
                 affectedPackage = primaryPackage,
                 ),
             ),
-        engineeringImpactConsequences = EngineeringImpactConsequences.canonical(
-            listOf(
-                EngineeringImpactConsequence(
-                    affectedSubjectIdentity = StableSemanticIdentity("component:QF1"),
-                    triggerSubjectIdentities = listOf(StableSemanticIdentity("component:M1")),
-                    reasonKinds = listOf(
-                        EngineeringImpactReasonKind.GOVERNED_INPUT_CHANGED,
-                        EngineeringImpactReasonKind.CONSTRAINT_EVALUATION_CHANGED,
-                    ),
-                    affectedInputKinds = listOf(DerivedEngineeringInputKind.MOTOR_POWER),
-                    affectedConstraintRuleKinds = listOf(EngineeringConstraintRuleKind.PROTECTION_SUFFICIENCY),
-                ),
-            ),
-        ),
     )
 }
 

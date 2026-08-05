@@ -143,7 +143,7 @@ object BuiltInDocumentProjectionPolicies {
             ),
             DocumentProjectionSheetViewRole(
                 role = SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION,
-                displayTitle = "Field Device",
+                displayTitle = "Field Entity",
                 order = 1,
             ),
         ),

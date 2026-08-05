@@ -1,6 +1,6 @@
 plugin_set=electrical-only
 approved_plugins=com.engineeringood.athena.domain.electrical-runtime
-components=2
+entities=2
 ports=2
 connections=1
 views=cabinet,wiring,schematic,documentation

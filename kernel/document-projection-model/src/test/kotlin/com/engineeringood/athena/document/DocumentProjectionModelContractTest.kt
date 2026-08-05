@@ -16,7 +16,7 @@ class DocumentProjectionModelContractTest {
             sourceUnits = listOf(DocumentProjectionSourceUnitSummary("source:system", "src/system.athena")),
             subjects = listOf(
                 DocumentProjectionSubjectSummary(
-                    canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+                    canonicalSubjectId = StableSemanticIdentity("entity:PLC1"),
                     occurrenceRole = DocumentOccurrenceRole.COMPONENT,
                     detailRole = DocumentOccurrenceDetailRole.REPRESENTATION,
                     sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC, SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION),
@@ -35,7 +35,7 @@ class DocumentProjectionModelContractTest {
                     sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
                 ),
                 DocumentProjectionSubjectSummary(
-                    canonicalSubjectId = StableSemanticIdentity("label:PLC1.device-tag"),
+                    canonicalSubjectId = StableSemanticIdentity("label:PLC1.entity-tag"),
                     occurrenceRole = DocumentOccurrenceRole.LABEL,
                     detailRole = DocumentOccurrenceDetailRole.LABEL,
                     sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
@@ -47,19 +47,19 @@ class DocumentProjectionModelContractTest {
         val controlEntries = snapshot.occurrenceIndex.forSheetView(SheetViewId("sheet-view:control-and-plc-logic"))
 
         assertEquals(
-            listOf(DocumentOccurrenceRole.COMPONENT, DocumentOccurrenceRole.ROUTE, DocumentOccurrenceRole.LABEL, DocumentOccurrenceRole.TERMINAL),
+            listOf(DocumentOccurrenceRole.ROUTE, DocumentOccurrenceRole.COMPONENT, DocumentOccurrenceRole.LABEL, DocumentOccurrenceRole.TERMINAL),
             controlEntries.map { entry -> entry.occurrence.occurrenceRole },
         )
         assertEquals(
             listOf("sheet-view:control-and-plc-logic", "sheet-view:field-wiring-and-terminal-transition"),
             snapshot.occurrenceIndex
-                .forSubject(StableSemanticIdentity("component:PLC1"))
+                .forSubject(StableSemanticIdentity("entity:PLC1"))
                 .map { entry -> entry.location.sheetViewId.value },
         )
         assertEquals(
             sourceRange,
             snapshot.occurrenceIndex
-                .forSubject(StableSemanticIdentity("component:PLC1"))
+                .forSubject(StableSemanticIdentity("entity:PLC1"))
                 .first()
                 .occurrence
                 .source
@@ -71,14 +71,14 @@ class DocumentProjectionModelContractTest {
     fun `occurrence ids remain stable when source files are renamed or reordered`() {
         val subjects = listOf(
             DocumentProjectionSubjectSummary(
-                canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+                canonicalSubjectId = StableSemanticIdentity("entity:PLC1"),
                 occurrenceRole = DocumentOccurrenceRole.COMPONENT,
                 detailRole = DocumentOccurrenceDetailRole.REPRESENTATION,
                 sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
                 source = DocumentProjectionProvenance("source:plc"),
             ),
             DocumentProjectionSubjectSummary(
-                canonicalSubjectId = StableSemanticIdentity("label:PLC1.device-tag"),
+                canonicalSubjectId = StableSemanticIdentity("label:PLC1.entity-tag"),
                 occurrenceRole = DocumentOccurrenceRole.LABEL,
                 detailRole = DocumentOccurrenceDetailRole.LABEL,
                 sheetViewRoles = listOf(SheetViewRole.CONTROL_AND_PLC_LOGIC),
@@ -122,7 +122,7 @@ class DocumentProjectionModelContractTest {
             ),
             subjects = listOf(
                 DocumentProjectionSubjectSummary(
-                    canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+                    canonicalSubjectId = StableSemanticIdentity("entity:PLC1"),
                     occurrenceRole = DocumentOccurrenceRole.COMPONENT,
                     detailRole = DocumentOccurrenceDetailRole.REPRESENTATION,
                     sheetViewRoles = listOf(SheetViewRole.POWER_DISTRIBUTION, SheetViewRole.CONTROL_AND_PLC_LOGIC),
@@ -153,14 +153,14 @@ class DocumentProjectionModelContractTest {
         assertEquals(
             mapOf(
                 "sheet-view:control-and-plc-logic" to listOf(
-                    "component:PLC1",
                     "connection:test:plc1_q0_0_to_xt1_1",
+                    "entity:PLC1",
                 ),
                 "sheet-view:field-wiring-and-terminal-transition" to listOf(
                     "connection:test:plc1_q0_0_to_xt1_1",
                     "terminal:XT1.1",
                 ),
-                "sheet-view:power-distribution" to listOf("component:PLC1"),
+                "sheet-view:power-distribution" to listOf("entity:PLC1"),
             ),
             first.occurrenceIdsBySheetView.mapValues { (_, occurrenceIds) ->
                 occurrenceIds.map { occurrenceId ->
@@ -283,7 +283,7 @@ class DocumentProjectionModelContractTest {
 
     @Test
     fun `repeated subjects produce compact typed cross reference facts`() {
-        val subjectIdentity = StableSemanticIdentity("component:PLC1")
+        val subjectIdentity = StableSemanticIdentity("entity:PLC1")
         val workspace = DocumentProjectionWorkspaceSemanticSnapshot(
             semanticGraphId = "graph:repeated-reference",
             sourceUnits = listOf(DocumentProjectionSourceUnitSummary("source:system", "src/system.athena")),
@@ -307,7 +307,7 @@ class DocumentProjectionModelContractTest {
         assertEquals(subjectIdentity, reference.sourceIdentity)
         assertEquals(subjectIdentity, reference.targetIdentity)
         assertEquals("sheet-view:control-and-plc-logic A1", reference.displayNotation)
-        assertFalse(reference.displayNotation.contains("component:PLC1"))
+        assertFalse(reference.displayNotation.contains("entity:PLC1"))
         assertEquals(
             snapshot.occurrenceIndex
                 .forSubject(subjectIdentity)
@@ -521,7 +521,7 @@ class DocumentProjectionModelContractTest {
     }
 
     @Test
-    fun `m31 customer projection policy exposes exactly control and field device sheet roles`() {
+    fun `customer projection policy exposes exactly control and field entity sheet roles`() {
         val first = BuiltInDocumentProjectionPolicies.athenaCustomerDocumentProjection()
         val second = BuiltInDocumentProjectionPolicies.athenaCustomerDocumentProjection()
 
@@ -531,7 +531,7 @@ class DocumentProjectionModelContractTest {
         assertEquals(
             listOf(
                 SheetViewRole.CONTROL_AND_PLC_LOGIC to "Control",
-                SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION to "Field Device",
+                SheetViewRole.FIELD_WIRING_AND_TERMINAL_TRANSITION to "Field Entity",
             ),
             first.supportedSheetViewRoles.map { role -> role.role to role.displayTitle },
         )
@@ -618,7 +618,7 @@ class DocumentProjectionModelContractTest {
         val component = DocumentOccurrence.identityOf(
             documentProjectionId = projectionId,
             sheetViewId = viewId,
-            canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+            canonicalSubjectId = StableSemanticIdentity("entity:PLC1"),
             occurrenceRole = DocumentOccurrenceRole.COMPONENT,
             detailRole = DocumentOccurrenceDetailRole.REPRESENTATION,
         )
@@ -648,7 +648,7 @@ class DocumentProjectionModelContractTest {
             stableKey(
                 projectionId.value,
                 viewId.value,
-                "component:PLC1",
+                "entity:PLC1",
                 DocumentOccurrenceRole.COMPONENT.name,
                 DocumentOccurrenceDetailRole.REPRESENTATION.name,
             ),
@@ -695,8 +695,8 @@ class DocumentProjectionModelContractTest {
         )
         val powerView = SheetViewId("sheet-view:power-distribution")
         val controlView = SheetViewId("sheet-view:control-and-plc-logic")
-        val plcSubject = StableSemanticIdentity("component:PLC1")
-        val hmiSubject = StableSemanticIdentity("component:HMI1")
+        val plcSubject = StableSemanticIdentity("entity:PLC1")
+        val hmiSubject = StableSemanticIdentity("entity:HMI1")
         val entries = listOf(
             occurrenceEntry(projectionId, controlView, hmiSubject, "B2"),
             occurrenceEntry(projectionId, powerView, plcSubject, "A1"),
@@ -707,9 +707,9 @@ class DocumentProjectionModelContractTest {
 
         assertEquals(
             listOf(
-                "sheet-view:control-and-plc-logic|component:HMI1|B2",
-                "sheet-view:control-and-plc-logic|component:PLC1|C3",
-                "sheet-view:power-distribution|component:PLC1|A1",
+                "sheet-view:control-and-plc-logic|entity:HMI1|B2",
+                "sheet-view:control-and-plc-logic|entity:PLC1|C3",
+                "sheet-view:power-distribution|entity:PLC1|A1",
             ),
             index.entries.map { entry ->
                 "${entry.occurrence.sheetViewId.value}|${entry.occurrence.canonicalSubjectId.value}|${entry.location.displayNotation}"
@@ -734,7 +734,7 @@ class DocumentProjectionModelContractTest {
                 occurrenceId = DocumentOccurrenceId("wrong-occurrence"),
                 documentProjectionId = projectionId,
                 sheetViewId = SheetViewId("sheet-view:control-and-plc-logic"),
-                canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+                canonicalSubjectId = StableSemanticIdentity("entity:PLC1"),
                 occurrenceRole = DocumentOccurrenceRole.COMPONENT,
                 detailRole = DocumentOccurrenceDetailRole.REPRESENTATION,
             )
@@ -779,7 +779,7 @@ class DocumentProjectionModelContractTest {
         val occurrenceId = DocumentOccurrence.identityOf(
             documentProjectionId = projectionId,
             sheetViewId = SheetViewId("sheet-view:control-and-plc-logic"),
-            canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+            canonicalSubjectId = StableSemanticIdentity("entity:PLC1"),
             occurrenceRole = DocumentOccurrenceRole.COMPONENT,
             detailRole = DocumentOccurrenceDetailRole.TERMINAL,
         )
@@ -789,7 +789,7 @@ class DocumentProjectionModelContractTest {
                 occurrenceId = occurrenceId,
                 documentProjectionId = projectionId,
                 sheetViewId = SheetViewId("sheet-view:control-and-plc-logic"),
-                canonicalSubjectId = StableSemanticIdentity("component:PLC1"),
+                canonicalSubjectId = StableSemanticIdentity("entity:PLC1"),
                 occurrenceRole = DocumentOccurrenceRole.COMPONENT,
                 detailRole = DocumentOccurrenceDetailRole.TERMINAL,
             )
@@ -804,7 +804,7 @@ class DocumentProjectionModelContractTest {
             semanticGraphId = "workspace:sample",
         )
         val viewId = SheetViewId("sheet-view:control-and-plc-logic")
-        val subjectId = StableSemanticIdentity("component:PLC1")
+        val subjectId = StableSemanticIdentity("entity:PLC1")
         val entry = occurrenceEntry(projectionId, viewId, subjectId, "A1")
 
         assertFailsWith<IllegalArgumentException> {
@@ -831,13 +831,13 @@ class DocumentProjectionModelContractTest {
                     occurrenceEntry(
                         firstProjectionId,
                         SheetViewId("sheet-view:control-and-plc-logic"),
-                        StableSemanticIdentity("component:PLC1"),
+                        StableSemanticIdentity("entity:PLC1"),
                         "A1",
                     ),
                     occurrenceEntry(
                         secondProjectionId,
                         SheetViewId("sheet-view:control-and-plc-logic"),
-                        StableSemanticIdentity("component:HMI1"),
+                        StableSemanticIdentity("entity:HMI1"),
                         "A2",
                     ),
                 ),

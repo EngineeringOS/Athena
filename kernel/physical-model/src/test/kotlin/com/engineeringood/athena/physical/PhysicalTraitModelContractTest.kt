@@ -36,7 +36,7 @@ class PhysicalTraitModelContractTest {
     @Test
     fun `resolved physical traits stay anchored to canonical semantic identity`() {
         val resolved = ResolvedPhysicalTraitDefinition(
-            semanticSubjectId = StableSemanticIdentity("component:PLC1"),
+            semanticSubjectId = StableSemanticIdentity("entity:PLC1"),
             definition = PhysicalTraitDefinition(
                 displayName = "DIN rail mounted PLC CPU",
                 size = PhysicalSize(80, 125, 130),
@@ -45,7 +45,7 @@ class PhysicalTraitModelContractTest {
             ),
         )
 
-        assertEquals("component:PLC1", resolved.semanticSubjectId.value)
+        assertEquals("entity:PLC1", resolved.semanticSubjectId.value)
         assertTrue(resolved.definition.size.depthMillimeters > 0)
     }
 }

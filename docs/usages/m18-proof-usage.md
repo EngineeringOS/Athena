@@ -28,7 +28,7 @@ package com.engineeringood.m18.root
 import com.engineeringood.m18.vendor.controls
 
 system Demo {
-  device Main {
+  entity Main { concept Generic
     port input
     port output
   }
@@ -43,7 +43,7 @@ Supported:
 - package import
 - symbol-target import
 - dotted, digit-bearing, and internally hyphenated name segments
-- existing system/device/port/connect authored declarations
+- existing system/entity/port/connect authored declarations
 
 Not supported in M18:
 

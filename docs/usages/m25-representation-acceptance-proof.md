@@ -33,7 +33,7 @@ M25 adds:
 - `athena-industrial-control` as the first small presentation policy profile
 - terminal markers as facts, not renderer-invented dots
 - terminal numbers as facts, not loose canvas text
-- label anchors for device tags, type labels, terminal labels, and route labels
+- label anchors for entity tags, type labels, terminal labels, and route labels
 - zero-fallback acceptance for the M25 proof path
 
 The expected visible change is:
@@ -67,10 +67,10 @@ The accepted source path includes:
 The accepted proof must show:
 
 - PLC/controller, terminal block, power supply, and load/actuator in the mandatory path
-- HMI/operator device and protection device in the six-family slice
+- HMI/operator entity and protection entity in the six-family slice
 - terminal markers on visible connection points
 - terminal numbers available as presentation terminal facts
-- label anchors for device tags and type labels
+- label anchors for entity tags and type labels
 - route labels still coming from governed route facts
 - no generic fallback symbols in the accepted M25 proof
 - canonical subject and occurrence identity preserved for symbol, terminal, label, and route

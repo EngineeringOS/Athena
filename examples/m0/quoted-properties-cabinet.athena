@@ -1,10 +1,10 @@
 system QuotedPropertiesCabinet {
-  device PLC1 {
+  entity PLC1 { concept Controller
     type "Switch"
   }
 
   port PLC1.out {
     direction "out"
-    signal Digital
+    flow Digital
   }
 }

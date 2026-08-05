@@ -1,33 +1,33 @@
 package com.engineeringood.m25.sample
 
 system SixFamilyPresentationAcceptance {
-  device PowerSupplyPS3 {
-    type Switch
+  entity PowerSupplyPS3 {
+    concept Switch
     model "24VDC-PSU"
   }
 
-  device BreakerQF3 {
-    type Switch
+  entity BreakerQF3 {
+    concept Switch
     model "QF"
   }
 
-  device ControllerPLC3 {
-    type Switch
+  entity ControllerPLC3 {
+    concept Switch
     model "PLC"
   }
 
-  device OperatorHMI3 {
-    type Lamp
+  entity OperatorHMI3 {
+    concept Lamp
     model "HMI"
   }
 
-  device TerminalBlockXT3 {
-    type Switch
+  entity TerminalBlockXT3 {
+    concept Switch
     model "XT"
   }
 
-  device MotorM3 {
-    type Motor
+  entity MotorM3 {
+    concept Motor
     model "MOTOR"
   }
 

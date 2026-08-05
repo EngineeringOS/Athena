@@ -1,37 +1,37 @@
-﻿package com.engineeringood.factoryline
+package com.engineeringood.factoryline
 
 system MachineNo000OpCpu {
-  device Rail302 {
-    type Switch
+  entity Rail302 {
+    concept Switch
     label "302"
     sheetRef "12-A17"
     role "24V DC supply"
   }
 
-  device Rail301 {
-    type Switch
+  entity Rail301 {
+    concept Switch
     label "301"
     sheetRef "14-H17"
     role "0V common"
   }
 
-  device RailPE {
-    type Switch
+  entity RailPE {
+    concept Switch
     label "PE"
     sheetRef "6-B17"
     role "protective earth"
   }
 
-  device CPU313C {
-    type Switch
+  entity CPU313C {
+    concept Switch
     label "CPU 313C"
     model "6ES7 313-5BF03-0AB0"
     part "part 1 of 8"
     note "Machine no 000 - OP, CPU."
   }
 
-  device OP77B {
-    type Switch
+  entity OP77B {
+    concept Switch
     label "OP77B"
     model "6AV6641-0CA01-0AX0"
     note "Operator panel"

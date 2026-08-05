@@ -1,33 +1,33 @@
-﻿package com.engineeringood.examples.m14.siemens.proof.corpus
+package com.engineeringood.examples.m14.siemens.proof.corpus
 
 system SiemensProofCorpus {
-  device PS1 {
-    type Switch
+  entity PS1 {
+    concept Switch
     label "24V DC power supply"
     model "evidence.power-supply.24vdc"
   }
 
-  device PLC1 {
-    type Switch
+  entity PLC1 {
+    concept Switch
     label "PLC CPU 313C"
     model "evidence.cpu.313c"
     note "Narrow Siemens-first proof controller"
   }
 
-  device KM1 {
-    type Switch
+  entity KM1 {
+    concept Switch
     label "Power contactor"
     model "evidence.contactor.3pole"
   }
 
-  device FR1 {
-    type Switch
+  entity FR1 {
+    concept Switch
     label "Overload relay"
     model "evidence.relay.overload"
   }
 
-  device M1 {
-    type Motor
+  entity M1 {
+    concept Motor
     label "AC motor"
     model "evidence.motor.ac"
   }

@@ -2,8 +2,8 @@ package com.engineeringood.examples.m16.semantic.reuse.proof
 
 system SemanticReuseProof {
 
-  device PlcCpu {
-    type Switch
+  entity PlcCpu {
+    concept Switch
     componentRef "electrical.plc.cpu"
     vendorPartNumber "evidence.cpu.313c"
     label "PlcCpu"

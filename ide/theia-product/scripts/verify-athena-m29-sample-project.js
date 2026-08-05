@@ -138,7 +138,7 @@ function buildStructuredInteractionProofPayloads(repositoryRoot) {
     return [
         proofEnvelope('subject-registry', authoringSourceUri, {
             activeSourceContext: 'M29 sample subject registry',
-            subjectIds: 'component:InteractionControllerPLC29,port:InteractionControllerPLC29.spareDo,system:InteractionAuthoringProof',
+            subjectIds: 'entity:InteractionControllerPLC29,port:InteractionControllerPLC29.spareDo,system:InteractionAuthoringProof',
             semanticAuthority: '.athena',
         }),
         proofEnvelope('action-discovery', authoringSourceUri, {
@@ -149,7 +149,7 @@ function buildStructuredInteractionProofPayloads(repositoryRoot) {
         proofEnvelope('reveal-source-graph-inspector-problems', authoringSourceUri, {
             activeSourceContext: 'M29 reveal proof',
             preferredTargets: 'source,graph,inspector,problems',
-            subjectId: 'component:InteractionControllerPLC29',
+            subjectId: 'entity:InteractionControllerPLC29',
         }),
         proofEnvelope('relationship-preview', candidateSourceUri, {
             activeSourceContext: 'M29 relationship preview',

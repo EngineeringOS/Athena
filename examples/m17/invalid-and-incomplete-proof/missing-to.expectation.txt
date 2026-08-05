@@ -1,4 +1,0 @@
-status=syntax-failure
-syntaxErrorLine=10
-syntaxErrorColumn=15
-syntaxErrorMessageContains=no viable alternative

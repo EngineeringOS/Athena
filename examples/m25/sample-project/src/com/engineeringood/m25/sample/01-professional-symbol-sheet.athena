@@ -1,23 +1,23 @@
 package com.engineeringood.m25.sample
 
 system ProfessionalSymbolSheet {
-  device PowerSupplyPS1 {
-    type Switch
+  entity PowerSupplyPS1 {
+    concept Switch
     model "24VDC-PSU"
   }
 
-  device ControllerPLC1 {
-    type Switch
+  entity ControllerPLC1 {
+    concept Switch
     model "PLC"
   }
 
-  device TerminalBlockXT1 {
-    type Switch
+  entity TerminalBlockXT1 {
+    concept Switch
     model "XT1"
   }
 
-  device ActuatorY1 {
-    type Lamp
+  entity ActuatorY1 {
+    concept Lamp
     model "VALVE"
   }
 

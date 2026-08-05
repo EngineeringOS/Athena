@@ -3,7 +3,7 @@ package com.engineeringood.m39.realityproductproof
 binding M39PowerSource {
   profile ControlDrawingIEC
   priority 900
-  select device where { type PowerSource }
+  select entity where { concept PowerSource }
   use element "m39.power-source.element" version "1.0.0"
   variant "standard"
 }
@@ -11,7 +11,7 @@ binding M39PowerSource {
 binding M39Breaker {
   profile ControlDrawingIEC
   priority 900
-  select device where { type Breaker }
+  select entity where { concept Breaker }
   use element "m39.breaker.element" version "1.0.0"
   variant "standard"
 }
@@ -19,7 +19,7 @@ binding M39Breaker {
 binding M39Drive {
   profile ControlDrawingIEC
   priority 950
-  select device where { type Terminal tag "U39" }
+  select entity where { concept Terminal tag "U39" }
   use element "m39.drive.element" version "1.0.0"
   variant "standard"
 }
@@ -27,7 +27,7 @@ binding M39Drive {
 binding M39Button {
   profile ControlDrawingIEC
   priority 900
-  select device where { type Terminal tag "S39" }
+  select entity where { concept Terminal tag "S39" }
   use element "m39.button.element" version "1.0.0"
   variant "standard"
 }
@@ -35,7 +35,7 @@ binding M39Button {
 binding M39Motor {
   profile ControlDrawingIEC
   priority 900
-  select device where { type Motor }
+  select entity where { concept Motor }
   use element "m39.motor.element" version "1.0.0"
   variant "standard"
 }
@@ -43,7 +43,7 @@ binding M39Motor {
 binding M39Earth {
   profile ControlDrawingIEC
   priority 900
-  select device where { type ProtectiveEarth }
+  select entity where { concept ProtectiveEarth }
   use element "m39.earth.element" version "1.0.0"
   variant "standard"
 }

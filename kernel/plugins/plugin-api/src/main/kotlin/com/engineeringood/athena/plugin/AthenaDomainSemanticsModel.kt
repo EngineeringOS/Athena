@@ -1,11 +1,22 @@
 package com.engineeringood.athena.plugin
 
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringDefinitionReference
+import com.engineeringood.athena.ir.EngineeringInterfaceDesignation
+import com.engineeringood.athena.ir.EngineeringPortCardinality
+import com.engineeringood.athena.ir.EngineeringPortDirection
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
+import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringStructureAssignment
+import com.engineeringood.athena.ir.EngineeringValue
+import com.engineeringood.athena.ir.ExactNumber
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.PropertyAssignment
+import com.engineeringood.athena.language.EntityDeclaration
+import com.engineeringood.athena.language.EngineeringFunctionDeclaration
+import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.language.QualifiedName
 import com.engineeringood.athena.language.ScalarValue
 import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.language.SourceSpan
@@ -20,11 +31,12 @@ data class AthenaSourceDocument(
     val ast: SourceFileAst,
 )
 
-/** Compiler-owned blueprint for one domain-contributed component before core identity assignment and resolution. */
-data class AthenaDomainComponentBlueprint(
+/** Compiler-owned blueprint for one domain-contributed Entity before core identity assignment and resolution. */
+data class AthenaDomainEntityBlueprint(
     val name: String,
-    val kind: String,
+    val conceptReference: EngineeringDefinitionReference,
     val properties: List<EngineeringProperty>,
+    val structureAssignments: List<EngineeringStructureAssignment>,
     val provenance: SourceProvenance,
 )
 
@@ -33,12 +45,11 @@ data class AthenaDomainPortBlueprint(
     val ownerPath: List<String>,
     val ownerProvenance: SourceProvenance,
     val name: String,
+    val direction: EngineeringPortDirection,
+    val admittedFlowReferences: List<EngineeringDefinitionReference>,
+    val cardinality: EngineeringPortCardinality,
+    val interfaceDesignation: EngineeringInterfaceDesignation?,
     val properties: List<EngineeringProperty>,
-    val provenance: SourceProvenance,
-)
-
-data class AthenaDomainFunctionPortBlueprint(
-    val path: List<String>,
     val provenance: SourceProvenance,
 )
 
@@ -46,27 +57,15 @@ data class AthenaDomainFunctionBlueprint(
     val ownerPath: List<String>,
     val ownerProvenance: SourceProvenance,
     val name: String,
-    val role: String,
-    val portReferences: List<AthenaDomainFunctionPortBlueprint>,
-    val provenance: SourceProvenance,
-)
-
-/** Compiler-owned blueprint for one domain-contributed connection before core identity assignment and resolution. */
-data class AthenaDomainConnectionBlueprint(
-    val alias: String,
-    val fromPath: List<String>,
-    val fromProvenance: SourceProvenance,
-    val toPath: List<String>,
-    val toProvenance: SourceProvenance,
-    val provenance: SourceProvenance,
+    val roleReference: EngineeringDefinitionReference,
     val properties: List<EngineeringProperty> = emptyList(),
+    val provenance: SourceProvenance,
 )
 
 /** Domain-owned lowering contribution aggregated by the compiler inside the declared lowering stage. */
 data class AthenaDomainLoweringContribution(
-    val components: List<AthenaDomainComponentBlueprint> = emptyList(),
+    val entities: List<AthenaDomainEntityBlueprint> = emptyList(),
     val ports: List<AthenaDomainPortBlueprint> = emptyList(),
-    val connections: List<AthenaDomainConnectionBlueprint> = emptyList(),
     val functions: List<AthenaDomainFunctionBlueprint> = emptyList(),
 ) {
     companion object {
@@ -100,13 +99,30 @@ data class AthenaDomainLoweringContext(
         return assignments.map { assignment ->
             EngineeringProperty(
                 name = assignment.name,
-                value = when (val value = assignment.value) {
-                    is ScalarValue.Identifier -> EngineeringPropertyValue.Symbol(value.text)
-                    is ScalarValue.StringLiteral -> EngineeringPropertyValue.Text(value.text)
-                },
+                value = lowerValue(assignment.value),
+                provenance = provenance(assignment.span),
             )
         }
     }
+
+    /** Converts all six syntax value variants without binary floating-point or stringly evaluator boundaries. */
+    fun lowerValue(value: ScalarValue): EngineeringValue = when (value) {
+        is ScalarValue.Quantity -> EngineeringValue.Quantity(
+            value = exactNumber(value.exactText),
+            unit = definitionReference(value.unit),
+            provenance = provenance(value.span),
+        )
+        is ScalarValue.Integer -> EngineeringValue.Integer(java.math.BigInteger(value.exactText))
+        is ScalarValue.Boolean -> EngineeringValue.Boolean(value.value)
+        is ScalarValue.Text -> EngineeringValue.Text(value.text)
+        is ScalarValue.Symbol -> EngineeringValue.Symbol(value.text)
+        is ScalarValue.Reference -> EngineeringValue.Reference(
+            EngineeringReference(value.target.parts, null, provenance(value.target.span)),
+        )
+    }
+
+    fun definitionReference(name: QualifiedName): EngineeringDefinitionReference =
+        EngineeringDefinitionReference(name.parts, null, provenance(name.span))
 
     /** Converts a syntax-layer span into canonical authored provenance. */
     fun provenance(span: SourceSpan): SourceProvenance {
@@ -119,77 +135,127 @@ data class AthenaDomainLoweringContext(
         )
     }
 
-    /** Creates a domain component blueprint using the provided authored semantics. */
-    fun component(
-        name: String,
-        kind: String,
-        properties: List<EngineeringProperty>,
-        provenance: SourceProvenance = provenance(source.ast.system.span),
-    ): AthenaDomainComponentBlueprint {
-        return AthenaDomainComponentBlueprint(
-            name = name,
-            kind = kind,
-            properties = properties,
-            provenance = provenance,
+    /** Creates one exact Entity blueprint, or declines invalid anatomy for source validation to diagnose. */
+    fun entityOrNull(declaration: EntityDeclaration): AthenaDomainEntityBlueprint? {
+        val concept = declaration.fields.singleOrNull { field -> field.name == "concept" }
+            ?: return null
+        val conceptValue = concept.value as? ScalarValue.Symbol
+            ?: return null
+        return AthenaDomainEntityBlueprint(
+            name = declaration.name,
+            conceptReference = EngineeringDefinitionReference(
+                authoredName = listOf(conceptValue.text),
+                resolvedId = null,
+                provenance = provenance(conceptValue.span),
+            ),
+            properties = lowerProperties(declaration.fields.filterNot { field -> field.name == "concept" }),
+            structureAssignments = declaration.structureAssignments.map { assignment ->
+                EngineeringStructureAssignment(
+                    aspectReference = definitionReference(assignment.aspect),
+                    value = lowerValue(assignment.value),
+                    displayDesignation = assignment.displayDesignation,
+                    provenance = provenance(assignment.span),
+                )
+            },
+            provenance = provenance(declaration.span),
         )
     }
 
-    /** Creates a domain port blueprint using the provided authored semantics. */
-    fun port(
-        ownerPath: List<String>,
-        ownerProvenance: SourceProvenance = provenance(source.ast.system.span),
-        name: String,
-        properties: List<EngineeringProperty>,
-        provenance: SourceProvenance = provenance(source.ast.system.span),
-    ): AthenaDomainPortBlueprint {
+    /** Creates one exact Port blueprint, or declines invalid anatomy for source validation to diagnose. */
+    fun portOrNull(declaration: PortDeclaration): AthenaDomainPortBlueprint? {
+        val fieldsByName = declaration.fields.groupBy { field -> field.name }
+        val directionField = fieldsByName["direction"]?.singleOrNull() ?: return null
+        val direction = when ((directionField.value as? ScalarValue.Symbol)?.text) {
+            "in" -> EngineeringPortDirection.INPUT
+            "out" -> EngineeringPortDirection.OUTPUT
+            "bidirectional" -> EngineeringPortDirection.BIDIRECTIONAL
+            else -> return null
+        }
+        val minimum = fieldsByName["minimum"].exactCardinalityOrNull(default = 0) ?: return null
+        val maximum = when (val fields = fieldsByName["maximum"].orEmpty()) {
+            emptyList<PropertyAssignment>() -> null
+            else -> {
+                val value = fields.singleOrNull()?.value ?: return null
+                if (value is ScalarValue.Symbol && value.text == "unbounded") {
+                    null
+                } else {
+                    value.cardinalityIntegerOrNull() ?: return null
+                }
+            }
+        }
+        if (minimum < 0 || maximum != null && maximum < minimum) return null
+        val flowFields = fieldsByName["flow"].orEmpty()
+        if (flowFields.any { field -> field.value !is ScalarValue.Symbol }) return null
+        val fields = declaration.fields.associateBy { field -> field.name }
+        val designationType = fields["designationType"]
+        val designation = fields["designation"]
+        if ((designationType == null) != (designation == null)) return null
+        if (designationType != null && designationType.value !is ScalarValue.Symbol) return null
         return AthenaDomainPortBlueprint(
-            ownerPath = ownerPath,
-            ownerProvenance = ownerProvenance,
-            name = name,
-            properties = properties,
-            provenance = provenance,
+            ownerPath = declaration.qualifiedName.parts.dropLast(1),
+            ownerProvenance = provenance(declaration.qualifiedName.span),
+            name = declaration.qualifiedName.parts.last(),
+            direction = direction,
+            admittedFlowReferences = flowFields.map { field ->
+                val symbol = field.value as ScalarValue.Symbol
+                EngineeringDefinitionReference(listOf(symbol.text), null, provenance(symbol.span))
+            },
+            cardinality = EngineeringPortCardinality(
+                minimum = minimum,
+                maximum = maximum,
+            ),
+            interfaceDesignation = if (designationType == null && designation == null) {
+                null
+            } else {
+                val designationTypeSymbol = designationType!!.value as ScalarValue.Symbol
+                EngineeringInterfaceDesignation(
+                    definitionReference = EngineeringDefinitionReference(
+                        listOf(designationTypeSymbol.text),
+                        null,
+                        provenance(designationTypeSymbol.span),
+                    ),
+                    value = lowerValue(designation!!.value),
+                    provenance = provenance(designation.span),
+                )
+            },
+            properties = lowerProperties(declaration.fields.filterNot { field -> field.name in PORT_ANATOMY_FIELDS }),
+            provenance = provenance(declaration.span),
         )
     }
 
-    /** Creates a domain connection blueprint using the provided authored semantics. */
-    fun connection(
-        alias: String,
-        fromPath: List<String>,
-        fromProvenance: SourceProvenance = provenance(source.ast.system.span),
-        toPath: List<String>,
-        toProvenance: SourceProvenance = provenance(source.ast.system.span),
-        provenance: SourceProvenance = provenance(source.ast.system.span),
-        properties: List<EngineeringProperty> = emptyList(),
-    ): AthenaDomainConnectionBlueprint {
-        return AthenaDomainConnectionBlueprint(
-            alias = alias,
-            fromPath = fromPath,
-            fromProvenance = fromProvenance,
-            toPath = toPath,
-            toProvenance = toProvenance,
-            provenance = provenance,
-            properties = properties,
+    fun function(entity: EntityDeclaration, function: EngineeringFunctionDeclaration): AthenaDomainFunctionBlueprint =
+        AthenaDomainFunctionBlueprint(
+            ownerPath = listOf(entity.name),
+            ownerProvenance = provenance(entity.span),
+            name = function.name,
+            roleReference = definitionReference(function.role),
+            provenance = provenance(function.span),
         )
+
+    private fun exactNumber(text: String): ExactNumber {
+        val decimal = java.math.BigDecimal(text)
+        return ExactNumber.of(decimal.unscaledValue(), java.math.BigInteger.TEN.pow(decimal.scale()))
     }
 
-    fun function(
-        ownerPath: List<String>,
-        ownerProvenance: SourceProvenance = provenance(source.ast.system.span),
-        name: String,
-        role: String,
-        portReferences: List<AthenaDomainFunctionPortBlueprint>,
-        provenance: SourceProvenance = provenance(source.ast.system.span),
-    ): AthenaDomainFunctionBlueprint = AthenaDomainFunctionBlueprint(
-        ownerPath = ownerPath,
-        ownerProvenance = ownerProvenance,
-        name = name,
-        role = role,
-        portReferences = portReferences,
-        provenance = provenance,
-    )
+    private fun List<PropertyAssignment>?.exactCardinalityOrNull(default: Int): Int? {
+        val fields = orEmpty()
+        if (fields.isEmpty()) return default
+        return fields.singleOrNull()?.value?.cardinalityIntegerOrNull()
+    }
 
-    fun functionPort(path: List<String>, provenance: SourceProvenance): AthenaDomainFunctionPortBlueprint =
-        AthenaDomainFunctionPortBlueprint(path, provenance)
+    private fun ScalarValue.cardinalityIntegerOrNull(): Int? =
+        (this as? ScalarValue.Integer)?.exactText?.toIntOrNull()
+
+    private companion object {
+        val PORT_ANATOMY_FIELDS = setOf(
+            "direction",
+            "flow",
+            "minimum",
+            "maximum",
+            "designationType",
+            "designation",
+        )
+    }
 }
 
 /** Plugin-facing context passed to active domain plugins during the semantic-enrichment stage. */

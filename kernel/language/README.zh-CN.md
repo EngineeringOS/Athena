@@ -10,7 +10,7 @@
 
 该契约包括：
 
-- `SourceFileAst` 以及声明节点（`SystemDeclaration`、`Declaration`、`DeviceDeclaration`、`PortDeclaration`、`ConnectionDeclaration`、`QualifiedName`、`PropertyAssignment`、`ScalarValue`）
+- `SourceFileAst` 以及声明节点（`SystemDeclaration`、`Declaration`、`EntityDeclaration`、`FunctionDeclaration`、`PortDeclaration`、`ConnectionDeclaration`、`QualifiedName`、`PropertyAssignment`、`ScalarValue`）
 - `ParseResult` / `ParseSuccess` / `ParseFailure`
 - `SourcePosition`、`SourceSpan` 与 `SyntaxDiagnostic`
 
@@ -49,7 +49,8 @@ M17 为 authored AST 的扩展做好准备；它**并不**最终确定诸如 `im
 
 - `SourceFileAst`
 - `SystemDeclaration`
-- `DeviceDeclaration`
+- `EntityDeclaration`
+- `FunctionDeclaration`
 - `PortDeclaration`
 - `ConnectionDeclaration`
 - `QualifiedName`

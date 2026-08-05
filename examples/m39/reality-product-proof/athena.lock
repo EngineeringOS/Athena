@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:c4878112527da3611732cb3166f01dd26ae13289403fc829cf39f74410992f27
+validatedLockStateDigest: lock-state:b733048cd7aaf2c21ef85d0b0ec43159381481c658cf94a658107194404a970d
 primaryPackage:
   name: com.engineeringood.m39.realityproductproof
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m39.realityproductproof
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:542151811118cda5fe1764dc4ac26b26d69c5013b183859949dd038847d89e5d
+    snapshotDigest: package-snapshot:3ec92565fc2ac04ebb120af1a0d862cef8ccfd1405921770d342c9b906a99412
     sourceHashes:
       - path: com/engineeringood/m39/realityproductproof/01-reality-product-proof.athena
-        hash: sha256:ebda28784eb928b797e1605214faf6303795217e149a65cc508c5f552c5eeacb
+        hash: sha256:be445cd5a403eda6e7eb165d6a5c16a1613890e48061deb16535436b29317c1e
     resourceHashes: []
     dependencies: []

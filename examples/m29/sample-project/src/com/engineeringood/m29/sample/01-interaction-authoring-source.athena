@@ -1,8 +1,8 @@
 package com.engineeringood.m29.sample
 
 system InteractionAuthoringProof {
-  device MainPowerSupplyPS1 {
-    type Switch
+  entity MainPowerSupplyPS1 {
+    concept Switch
     model "24VDC-PSU"
 
     port lplus {
@@ -11,8 +11,8 @@ system InteractionAuthoringProof {
     }
   }
 
-  device MainBreakerQF1 {
-    type Switch
+  entity MainBreakerQF1 {
+    concept Switch
     model "QF"
 
     port line {
@@ -26,8 +26,8 @@ system InteractionAuthoringProof {
     }
   }
 
-  device ControllerPLC1 {
-    type Switch
+  entity ControllerPLC1 {
+    concept Switch
     model "PLC"
 
     port power {
@@ -46,8 +46,8 @@ system InteractionAuthoringProof {
     }
   }
 
-  device OperatorHMI1 {
-    type Lamp
+  entity OperatorHMI1 {
+    concept Lamp
     model "HMI"
 
     port status {
@@ -56,8 +56,8 @@ system InteractionAuthoringProof {
     }
   }
 
-  device SpareTerminalXT99 {
-    type Switch
+  entity SpareTerminalXT99 {
+    concept Switch
     model "SPARE-XT"
 
     port in1 {

@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.language
+package com.engineeringood.athena.language
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -20,7 +20,7 @@ class AthenaLanguageParserTest {
             import $packageImport
             import $symbolImport
             system Demo {
-              device PLC1 {
+              entity PLC1 {
                 type Switch
               }
             }
@@ -64,7 +64,7 @@ class AthenaLanguageParserTest {
             ),
             success.ast.imports[1],
         )
-        assertEquals("PLC1", assertIs<DeviceDeclaration>(success.ast.declarations.single()).name)
+        assertEquals("PLC1", assertIs<EntityDeclaration>(success.ast.declarations.single()).name)
     }
 
     @Test
@@ -108,13 +108,12 @@ class AthenaLanguageParserTest {
             """
             package $packageName
             system Demo {
-              device PLC1 {
+              entity PLC1 {
                 type Switch
               }
               port PLC1.out {
                 direction out
               }
-              connect plc_self PLC1.out to PLC1.out
             }
             """.trimIndent()
 
@@ -147,61 +146,23 @@ class AthenaLanguageParserTest {
             ),
             success.ast.span,
         )
-        assertEquals(3, success.ast.declarations.size)
-        assertEquals("PLC1", assertIs<DeviceDeclaration>(success.ast.declarations[0]).name)
+        assertEquals(2, success.ast.declarations.size)
+        assertEquals("PLC1", assertIs<EntityDeclaration>(success.ast.declarations[0]).name)
         assertEquals(listOf("PLC1", "out"), assertIs<PortDeclaration>(success.ast.declarations[1]).qualifiedName.parts)
-        val connection = assertIs<ConnectionDeclaration>(success.ast.declarations[2])
-        assertEquals("plc_self", connection.alias)
-        assertEquals(listOf("PLC1", "out"), connection.from.parts)
-        assertEquals(listOf("PLC1", "out"), connection.to.parts)
     }
 
     @Test
-    fun `requires authored aliases for all connection declarations`() {
+    fun `parses nested Entity owned Ports as first class anatomy`() {
         val source =
             """
             system Demo {
-              connect PLC1.out to M1.in
-            }
-            """.trimIndent()
-
-        val result = AthenaLanguageParser().parse("missing-connection-alias.athena", source)
-
-        val failure = assertIs<ParseFailure>(result)
-        assertEquals(1, failure.diagnostics.size)
-        assertTrue(failure.diagnostics.single().message.isNotBlank())
-    }
-
-    @Test
-    fun `parses arrow as connect separator alias`() {
-        val source =
-            """
-            system Demo {
-              connect legacy PLC1.out -> M1.in
-            }
-            """.trimIndent()
-
-        val result = AthenaLanguageParser().parse("arrow-connect.athena", source)
-
-        val success = assertIs<ParseSuccess>(result)
-        val connection = assertIs<ConnectionDeclaration>(success.ast.declarations.single())
-        assertEquals("legacy", connection.alias)
-        assertEquals(listOf("PLC1", "out"), connection.from.parts)
-        assertEquals(listOf("M1", "in"), connection.to.parts)
-    }
-
-    @Test
-    fun `parses nested device owned ports as first class component anatomy`() {
-        val source =
-            """
-            system Demo {
-              device SpareTerminalXT99 {
-                type Switch
+              entity SpareTerminalXT99 {
+                concept Switch
                 model "SPARE-XT"
 
                 port in1 {
                   direction in
-                  signal Digital
+                  flow Digital
                 }
               }
             }
@@ -210,16 +171,16 @@ class AthenaLanguageParserTest {
         val result = AthenaLanguageParser().parse("nested-port.athena", source)
 
         val success = assertIs<ParseSuccess>(result)
-        val device = assertIs<DeviceDeclaration>(success.ast.declarations.single())
-        assertEquals("SpareTerminalXT99", device.name)
-        assertEquals(2, device.fields.size)
-        val nestedPort = device.nestedPorts.single()
+        val entity = assertIs<EntityDeclaration>(success.ast.declarations.single())
+        assertEquals("SpareTerminalXT99", entity.name)
+        assertEquals(2, entity.fields.size)
+        val nestedPort = entity.nestedPorts.single()
         assertEquals(listOf("SpareTerminalXT99", "in1"), nestedPort.qualifiedName.parts)
         assertEquals(2, nestedPort.fields.size)
         assertEquals("direction", nestedPort.fields[0].name)
-        assertEquals("signal", nestedPort.fields[1].name)
-        assertTrue(nestedPort.span.start.offset > device.span.start.offset)
-        assertTrue(nestedPort.span.end.offset < device.span.end.offset)
+        assertEquals("flow", nestedPort.fields[1].name)
+        assertTrue(nestedPort.span.start.offset > entity.span.start.offset)
+        assertTrue(nestedPort.span.end.offset < entity.span.end.offset)
     }
 
     @Test
@@ -227,14 +188,14 @@ class AthenaLanguageParserTest {
         val source =
             """
             system Demo {
-              device Drive {
-                type MotorDrive
+              entity Drive {
+                concept MotorDrive
                 connectivity enabled
 
                 interface powerInput {
                   type power
                   direction in
-                  signal PowerAC
+                  flow PowerAC
                   role line
                   multiplicity single
 
@@ -242,9 +203,9 @@ class AthenaLanguageParserTest {
                     L1
                     L2
                     PE {
-                      signal ProtectiveEarth
+                      flow ProtectiveEarth
                       role protective_earth
-                      direction passive
+                      direction bidirectional
                     }
                   }
                 }
@@ -255,56 +216,15 @@ class AthenaLanguageParserTest {
         val result = AthenaLanguageParser().parse("grouped-interface.athena", source)
 
         val success = assertIs<ParseSuccess>(result)
-        val device = assertIs<DeviceDeclaration>(success.ast.declarations.single())
-        val groupedInterface = device.interfaces.single()
+        val entity = assertIs<EntityDeclaration>(success.ast.declarations.single())
+        val groupedInterface = entity.interfaces.single()
         assertEquals("powerInput", groupedInterface.name)
-        assertEquals(listOf("type", "direction", "signal", "role", "multiplicity"), groupedInterface.fields.map { it.name })
+        assertEquals(listOf("type", "direction", "flow", "role", "multiplicity"), groupedInterface.fields.map { it.name })
         assertEquals(listOf("L1", "L2", "PE"), groupedInterface.ports.map { it.name })
         assertTrue(groupedInterface.ports[0].fields.isEmpty())
-        assertEquals(listOf("signal", "role", "direction"), groupedInterface.ports[2].fields.map { it.name })
-        assertTrue(groupedInterface.span.start.offset > device.span.start.offset)
-        assertTrue(groupedInterface.span.end.offset < device.span.end.offset)
-    }
-
-    @Test
-    fun `parses grouped connect syntax as authoring structure with child edge spans`() {
-        val source =
-            """
-            system Demo {
-              device MainPowerSupplyPS30 {
-                type Switch
-              }
-              device MainBreakerQF30 {
-                type Switch
-              }
-              device ControlRelayK30 {
-                type Switch
-              }
-
-              connect con_01 {
-                feed_in MainPowerSupplyPS30.lplus to MainBreakerQF30.line
-                relay_supply MainBreakerQF30.load to ControlRelayK30.supply
-              }
-
-              connect relay_status ControlRelayK30.status to MainBreakerQF30.line
-            }
-            """.trimIndent()
-
-        val result = AthenaLanguageParser().parse("grouped-connect.athena", source)
-
-        val success = assertIs<ParseSuccess>(result)
-        val group = assertIs<ConnectionGroupDeclaration>(success.ast.declarations[3])
-        assertEquals("con_01", group.name)
-        assertEquals(2, group.connections.size)
-        assertEquals("feed_in", group.connections[0].alias)
-        assertEquals(listOf("MainPowerSupplyPS30", "lplus"), group.connections[0].from.parts)
-        assertEquals(listOf("MainBreakerQF30", "line"), group.connections[0].to.parts)
-        assertEquals("relay_supply", group.connections[1].alias)
-        assertEquals(listOf("MainBreakerQF30", "load"), group.connections[1].from.parts)
-        assertEquals(listOf("ControlRelayK30", "supply"), group.connections[1].to.parts)
-        assertTrue(group.connections.all { connection -> connection.span.start.offset > group.span.start.offset })
-        assertTrue(group.connections.all { connection -> connection.span.end.offset < group.span.end.offset })
-        assertIs<ConnectionDeclaration>(success.ast.declarations[4])
+        assertEquals(listOf("flow", "role", "direction"), groupedInterface.ports[2].fields.map { it.name })
+        assertTrue(groupedInterface.span.start.offset > entity.span.start.offset)
+        assertTrue(groupedInterface.span.end.offset < entity.span.end.offset)
     }
 
     @Test
@@ -312,10 +232,10 @@ class AthenaLanguageParserTest {
         val source =
             """
             system Demo {
-              device Supply { type PowerSource }
-              device Breaker { type Breaker }
-              port Supply.L1 { direction out signal power role line }
-              port Breaker.input { direction in signal power role line }
+              entity Supply { type PowerSource }
+              entity Breaker { type Breaker }
+              port Supply.L1 { direction out flow power role line }
+              port Breaker.input { direction in flow power role line }
 
               power Supply.L1 to Breaker.input
             }
@@ -326,10 +246,10 @@ class AthenaLanguageParserTest {
         val success = assertIs<ParseSuccess>(result)
         val relation = assertIs<RelationDeclaration>(success.ast.declarations.last())
         assertEquals("power", relation.word.value)
-        assertEquals(listOf("Supply", "L1"), relation.from.parts)
+        assertEquals(listOf("Supply", "L1"), relation.source.parts)
         assertEquals(listOf(listOf("Breaker", "input")), relation.targets.map { target -> target.parts })
-        assertTrue(relation.word.span.start.offset < relation.from.span.start.offset)
-        assertTrue(relation.targets.single().span.start.offset > relation.from.span.end.offset)
+        assertTrue(relation.word.span.start.offset < relation.source.span.start.offset)
+        assertTrue(relation.targets.single().span.start.offset > relation.source.span.end.offset)
     }
 
     @Test
@@ -337,10 +257,10 @@ class AthenaLanguageParserTest {
         val source =
             """
             system Demo {
-              device Supply { type PowerSource }
-              device Breaker { type Breaker }
-              port Supply.L1 { direction out signal power role line }
-              port Breaker.input { direction in signal power role line }
+              entity Supply { type PowerSource }
+              entity Breaker { type Breaker }
+              port Supply.L1 { direction out flow power role line }
+              port Breaker.input { direction in flow power role line }
 
               power Supply.L1 -> Breaker.input
             }
@@ -351,7 +271,7 @@ class AthenaLanguageParserTest {
         val success = assertIs<ParseSuccess>(result)
         val relation = assertIs<RelationDeclaration>(success.ast.declarations.last())
         assertEquals("power", relation.word.value)
-        assertEquals(listOf("Supply", "L1"), relation.from.parts)
+        assertEquals(listOf("Supply", "L1"), relation.source.parts)
         assertEquals(listOf("Breaker", "input"), relation.targets.single().parts)
     }
 
@@ -361,12 +281,12 @@ class AthenaLanguageParserTest {
         val source =
             """
             system Demo {
-              device EarthBar { type ProtectiveEarth }
-              device Motor { type Motor }
-              device Cabinet { type Terminal }
-              port EarthBar.PE { direction passive signal pe role protective_earth }
-              port Motor.PE { direction passive signal pe role protective_earth }
-              port Cabinet.PE { direction passive signal pe role protective_earth }
+              entity EarthBar { type ProtectiveEarth }
+              entity Motor { type Motor }
+              entity Cabinet { type Terminal }
+              port EarthBar.PE { direction bidirectional flow pe role protective_earth }
+              port Motor.PE { direction bidirectional flow pe role protective_earth }
+              port Cabinet.PE { direction bidirectional flow pe role protective_earth }
 
               earth EarthBar.PE to [Motor.PE, Cabinet.PE]
             }
@@ -377,31 +297,13 @@ class AthenaLanguageParserTest {
         val success = assertIs<ParseSuccess>(result)
         val relation = assertIs<RelationDeclaration>(success.ast.declarations.last())
         assertEquals("earth", relation.word.value)
-        assertEquals(listOf("EarthBar", "PE"), relation.from.parts)
+        assertEquals(listOf("EarthBar", "PE"), relation.source.parts)
         assertEquals(
             listOf(listOf("Motor", "PE"), listOf("Cabinet", "PE")),
             relation.targets.map { target -> target.parts },
         )
         assertTrue(relation.targets[0].span.start.offset < relation.targets[1].span.start.offset)
         assertTrue(relation.span.start.offset < relation.targets[1].span.end.offset)
-    }
-
-    @Test
-    fun `parses empty grouped connect syntax as zero authoring edges`() {
-        val source =
-            """
-            system Demo {
-              connect spare_connections {
-              }
-            }
-            """.trimIndent()
-
-        val result = AthenaLanguageParser().parse("empty-grouped-connect.athena", source)
-
-        val success = assertIs<ParseSuccess>(result)
-        val group = assertIs<ConnectionGroupDeclaration>(success.ast.declarations.single())
-        assertEquals("spare_connections", group.name)
-        assertTrue(group.connections.isEmpty())
     }
 
     @Test
@@ -434,7 +336,7 @@ class AthenaLanguageParserTest {
             "interface-intent.athena" to
                 """
                 system Demo {
-                  device Drive {
+                  entity Drive {
                     interface powerInput {
                       intent default { class power }
                       ports { L1 }
@@ -555,7 +457,6 @@ class AthenaLanguageParserTest {
                 drawingProfile ControlDrawingIEC
                 routeQuality ControlDrawingRouteQuality
                 port Drive.L1 input
-                connect bad Drive.L1 to Motor.U
               }
             }
             """.trimIndent()
@@ -564,7 +465,7 @@ class AthenaLanguageParserTest {
 
         val success = assertIs<ParseSuccess>(result)
         val policy = assertIs<ProjectionPolicyDeclaration>(success.ast.declarations.single())
-        assertEquals(listOf("port", "connect"), policy.forbiddenEngineeringTruth.map { it.kind })
+        assertEquals(listOf("port"), policy.forbiddenEngineeringTruth.map { it.kind })
         assertTrue(policy.forbiddenEngineeringTruth.all { truth -> truth.span.start.offset > policy.span.start.offset })
     }
 
@@ -591,52 +492,51 @@ class AthenaLanguageParserTest {
 
         val success = assertIs<ParseSuccess>(result)
         assertEquals(null, success.ast.packageDeclaration)
-        val deviceOne = success.ast.declarations[0] as DeviceDeclaration
-        val deviceTwo = success.ast.declarations[1] as DeviceDeclaration
+        val deviceOne = success.ast.declarations[0] as EntityDeclaration
+        val deviceTwo = success.ast.declarations[1] as EntityDeclaration
         val portOne = success.ast.declarations[2] as PortDeclaration
         val portTwo = success.ast.declarations[3] as PortDeclaration
-        val connection = success.ast.declarations[4] as ConnectionDeclaration
+        val relation = success.ast.declarations[4] as RelationDeclaration
         assertEquals(
             SourceFileAst(
                 system = SystemDeclaration("DemoCabinet", success.ast.system.span),
                 declarations = listOf(
-                    DeviceDeclaration(
+                    EntityDeclaration(
                         name = "PLC1",
                         fields = listOf(
-                            PropertyAssignment("type", ScalarValue.Identifier("Switch", deviceOne.fields[0].value.span), deviceOne.fields[0].span),
-                            PropertyAssignment("model", ScalarValue.StringLiteral("S7-1200", deviceOne.fields[1].value.span), deviceOne.fields[1].span),
+                            PropertyAssignment("concept", ScalarValue.Symbol("Switch", deviceOne.fields[0].value.span), deviceOne.fields[0].span),
+                            PropertyAssignment("model", ScalarValue.Text("S7-1200", deviceOne.fields[1].value.span), deviceOne.fields[1].span),
                         ),
                         span = deviceOne.span,
                     ),
-                    DeviceDeclaration(
+                    EntityDeclaration(
                         name = "M1",
                         fields = listOf(
-                            PropertyAssignment("type", ScalarValue.Identifier("Motor", deviceTwo.fields[0].value.span), deviceTwo.fields[0].span),
+                            PropertyAssignment("concept", ScalarValue.Symbol("Motor", deviceTwo.fields[0].value.span), deviceTwo.fields[0].span),
                         ),
                         span = deviceTwo.span,
                     ),
                     PortDeclaration(
                         qualifiedName = QualifiedName(listOf("PLC1", "out"), portOne.qualifiedName.span),
                         fields = listOf(
-                            PropertyAssignment("direction", ScalarValue.Identifier("out", portOne.fields[0].value.span), portOne.fields[0].span),
-                            PropertyAssignment("signal", ScalarValue.Identifier("Digital", portOne.fields[1].value.span), portOne.fields[1].span),
+                            PropertyAssignment("direction", ScalarValue.Symbol("out", portOne.fields[0].value.span), portOne.fields[0].span),
+                            PropertyAssignment("flow", ScalarValue.Symbol("Digital", portOne.fields[1].value.span), portOne.fields[1].span),
                         ),
                         span = portOne.span,
                     ),
                     PortDeclaration(
                         qualifiedName = QualifiedName(listOf("M1", "in"), portTwo.qualifiedName.span),
                         fields = listOf(
-                            PropertyAssignment("direction", ScalarValue.Identifier("in", portTwo.fields[0].value.span), portTwo.fields[0].span),
-                            PropertyAssignment("signal", ScalarValue.Identifier("Digital", portTwo.fields[1].value.span), portTwo.fields[1].span),
+                            PropertyAssignment("direction", ScalarValue.Symbol("in", portTwo.fields[0].value.span), portTwo.fields[0].span),
+                            PropertyAssignment("flow", ScalarValue.Symbol("Digital", portTwo.fields[1].value.span), portTwo.fields[1].span),
                         ),
                         span = portTwo.span,
                     ),
-                    ConnectionDeclaration(
-                        alias = "plc_to_motor",
-                        aliasSpan = connection.aliasSpan,
-                        from = QualifiedName(listOf("PLC1", "out"), connection.from.span),
-                        to = QualifiedName(listOf("M1", "in"), connection.to.span),
-                        span = connection.span,
+                    RelationDeclaration(
+                        word = SymbolIdentifierField("power", relation.word.span),
+                        source = QualifiedName(listOf("PLC1", "out"), relation.source.span),
+                        targets = listOf(QualifiedName(listOf("M1", "in"), relation.targets.single().span)),
+                        span = relation.span,
                     ),
                 ),
                 span = success.ast.span,
@@ -673,10 +573,10 @@ class AthenaLanguageParserTest {
         val source =
             """
             system Demo {
-              device QF1 {
+              entity QF1 {
                 type Breaker
               }
-              device M1 {
+              entity M1 {
                 type Motor
               }
               port QF1.line {
@@ -685,7 +585,7 @@ class AthenaLanguageParserTest {
               port M1.line {
                 direction in
               }
-              connect feeder QF1.line to M1.line
+              power QF1.line to M1.line
 
               installation cabinet MainCabinet {
                 enclosure ENC1 size (800mm, 600mm, 250mm)
@@ -751,7 +651,7 @@ class AthenaLanguageParserTest {
         assertEquals(5.0, installation.mounts[0].clearance.left.value)
         assertEquals(listOf("cabinet"), installation.mounts[0].compatibleContainerKinds)
         assertEquals("M1Mount", installation.mounts[1].id)
-        assertEquals("feeder", installation.routes.single().connectionAlias)
+        assertEquals("feeder", installation.routes.single().relationshipId)
         assertEquals(listOf("C1"), installation.routes.single().channelIds)
         assertTrue(installation.span.start.line < installation.span.end.line)
         assertTrue(installation.enclosures.single().span.start.offset > installation.span.start.offset)
@@ -868,14 +768,14 @@ class AthenaLanguageParserTest {
     fun `parses deterministically for identical source input`() {
         val source = """
             system DemoCabinet {
-              device PLC1 {
+              entity PLC1 {
                 type PLC
                 model "S7-1200"
               }
             
               port PLC1.out {
                 direction out
-                signal Digital
+                flow Digital
               }
             
               connect plc_self PLC1.out to PLC1.out
@@ -894,7 +794,7 @@ class AthenaLanguageParserTest {
     fun `reports syntax diagnostics with file line and column provenance`() {
         val source = """
             system DemoCabinet {
-              device PLC1 {
+              entity PLC1 {
                 type PLC
               }
             
@@ -916,7 +816,7 @@ class AthenaLanguageParserTest {
     fun `reports a typed diagnostic for an unterminated string literal without crashing`() {
         val source = """
             system DemoCabinet {
-              device PLC1 {
+              entity PLC1 {
                 model "S7-1200
               }
             }
@@ -937,7 +837,7 @@ class AthenaLanguageParserTest {
     fun `reports a typed diagnostic for a missing closing brace without crashing`() {
         val source = """
             system DemoCabinet {
-              device PLC1 {
+              entity PLC1 {
                 type Switch
         """.trimIndent()
 

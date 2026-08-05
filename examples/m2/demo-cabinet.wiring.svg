@@ -2,8 +2,8 @@
   <title>DemoCabinet</title>
   <text x="40" y="28" class="system-label">DemoCabinet</text>
   <polyline points="300,81 345,81 345,81 390,81" class="connection" data-connection-id="connection:examples/m2/demo-cabinet.athena:plc1_out_to_m1_in" />
-  <rect x="40" y="40" width="110" height="44" rx="8" ry="8" class="component" data-subject="component:PLC1" />
+  <rect x="40" y="40" width="110" height="44" rx="8" ry="8" class="component" data-subject="entity:PLC1" />
   <text x="52" y="68" class="label">PLC1</text>
-  <rect x="40" y="160" width="110" height="44" rx="8" ry="8" class="component" data-subject="component:M1" />
+  <rect x="40" y="160" width="110" height="44" rx="8" ry="8" class="component" data-subject="entity:M1" />
   <text x="52" y="188" class="label">M1</text>
 </svg>

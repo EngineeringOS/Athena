@@ -73,7 +73,7 @@ test('M34 function and fixed placement keywords receive syntax-only highlight ca
 
     const query = new Query(language, readFileSync(path.join(packageRoot, 'queries', 'highlights.scm'), 'utf8'));
     const captures = query.captures(tree.rootNode).map(capture => `${capture.name}:${capture.node.text}`);
-    for (const keyword of ['function', 'role', 'ports', 'at', 'orientation', 'horizontal', 'vertical']) {
+    for (const keyword of ['function', 'role', 'port', 'at', 'orientation', 'horizontal', 'vertical']) {
         assert.ok(captures.some(capture => capture.endsWith(`:${keyword}`)), `missing capture for ${keyword}`);
     }
 });
@@ -125,7 +125,7 @@ test('M37 grouped Interface syntax receives syntax-only highlight captures', () 
     const query = new Query(language, readFileSync(path.join(packageRoot, 'queries', 'highlights.scm'), 'utf8'));
     const captures = query.captures(tree.rootNode).map(capture => `${capture.name}:${capture.node.text}`);
 
-    for (const keyword of ['interface', 'ports', 'direction', 'signal', 'in', 'passive']) {
+    for (const keyword of ['interface', 'ports', 'direction', 'flow', 'in', 'passive']) {
         assert.ok(captures.includes(`athenaPortKeyword:${keyword}`), `missing grouped Interface capture for ${keyword}:\n${captures.join('\n')}`);
     }
 });

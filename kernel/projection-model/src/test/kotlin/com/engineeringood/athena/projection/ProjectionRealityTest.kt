@@ -72,7 +72,7 @@ class ProjectionRealityTest {
             sheetId = ProjectionSheetId("schematic/sheet/01-main"),
             displayName = "Main",
             order = 0,
-            subjects = listOf(ProjectionSheetSubject(StableSemanticIdentity("component:supply"))),
+            subjects = listOf(ProjectionSheetSubject(StableSemanticIdentity("entity:supply"))),
         )
         val result = ProjectionReality.validate(
             ProjectionDocument(
@@ -127,7 +127,7 @@ class ProjectionRealityTest {
                         sheetId = ProjectionSheetId("other-view/sheet/01-main"),
                         displayName = "Main",
                         order = 0,
-                        subjects = listOf(ProjectionSheetSubject(StableSemanticIdentity("component:supply"))),
+                        subjects = listOf(ProjectionSheetSubject(StableSemanticIdentity("entity:supply"))),
                     ),
                 ),
             ),
@@ -152,7 +152,7 @@ class ProjectionRealityTest {
                         sheetId = ProjectionSheetId("schematic/sheet/01-main"),
                         displayName = "Main",
                         order = 0,
-                        subjects = listOf(ProjectionSheetSubject(StableSemanticIdentity("component:supply"))),
+                        subjects = listOf(ProjectionSheetSubject(StableSemanticIdentity("entity:supply"))),
                     ),
                 ),
             )

@@ -23,7 +23,7 @@ class SpatialDocumentTest {
         val sheetId = "sheet:main"
         val occurrence = SpatialOccurrenceGeometry(
             occurrenceId = SpatialOccurrenceId(sheetId, "occurrence:Q1"),
-            subjectId = StableSemanticIdentity("component:Q1"),
+            subjectId = StableSemanticIdentity("entity:Q1"),
             sheetId = sheetId,
             regionId = "region:rail-a",
             rectangle = SpatialRect(10, 20, 80, 40),
@@ -181,7 +181,7 @@ class SpatialDocumentTest {
             occurrences = listOf(
                 SpatialOccurrenceGeometry(
                     occurrenceId = SpatialOccurrenceId("sheet:main", "occurrence:Q1"),
-                    subjectId = StableSemanticIdentity("component:Q1"),
+                    subjectId = StableSemanticIdentity("entity:Q1"),
                     sheetId = "sheet:main",
                     regionId = "region:rail-a",
                     rectangle = SpatialRect(10, 20, 80, 40),

@@ -1,13 +1,9 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.layout.ViewDefinition
-import com.engineeringood.athena.plugin.AthenaComponentKnowledgeContribution
-import com.engineeringood.athena.plugin.AthenaComponentKnowledgeContributor
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPlugin
-import com.engineeringood.athena.plugin.AthenaRenderContribution
-import com.engineeringood.athena.plugin.AthenaRenderContributor
 import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributor
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.PluginValidationDiagnostic
@@ -72,24 +68,9 @@ interface AthenaPluginRuntimeServices {
     fun domainSemanticsContributions(): List<AthenaRuntimePluginDomainSemanticsContribution>
 
     /**
-     * Returns all runtime command contributions exposed by the hosted plugin set.
-     */
-    fun commandContributions(): List<AthenaRuntimePluginCommandContribution>
-
-    /**
-     * Returns declared render contributions exposed by the hosted plugin set.
-     */
-    fun renderContributions(): List<AthenaRuntimePluginRenderContribution>
-
-    /**
      * Returns supported view-definition contributions exposed by the hosted plugin set.
      */
     fun viewDefinitionContributions(): List<AthenaRuntimePluginViewDefinitionContribution>
-
-    /**
-     * Returns component-knowledge contributions exposed by the hosted plugin set.
-     */
-    fun componentKnowledgeContributions(): List<AthenaRuntimePluginComponentKnowledgeContribution>
 
     /**
      * Returns hosted semantic review enrichers in deterministic approved-plugin order.
@@ -100,14 +81,6 @@ interface AthenaPluginRuntimeServices {
      * Publishes additive semantic review enrichments over one already-generated core review summary.
      */
     fun enrichReview(summary: SemanticReviewSummary): List<SemanticReviewEnrichment>
-
-    /**
-     * Executes one hosted runtime command contribution through the existing command runtime.
-     */
-    fun executeCommandContribution(
-        context: AthenaExecutionContext,
-        contributionId: String,
-    ): AthenaRuntimePluginCommandExecution
 
     /**
      * Returns runtime view contributions derived from the active execution context.
@@ -131,7 +104,6 @@ data class AthenaHostedRuntimePlugin(
     val attachedExtensionPoints: Set<AthenaExtensionPoint>,
     val contributionCategories: Set<AthenaHostedPluginContributionCategory>,
     val domainCapabilities: Set<String>,
-    val commandContributionIds: List<String>,
     val viewDefinitionIds: List<String>,
     val semanticReviewEnrichmentCount: Int,
     val viewContributionCount: Int,
@@ -143,23 +115,6 @@ data class AthenaHostedRuntimePlugin(
 data class AthenaRuntimePluginViewDefinitionContribution(
     val pluginId: String,
     val viewDefinitions: List<ViewDefinition>,
-)
-
-/**
- * Runtime-owned inspection record for one hosted plugin component-knowledge contribution.
- */
-data class AthenaRuntimePluginComponentKnowledgeContribution(
-    val pluginId: String,
-    val pluginVersion: String,
-    val componentKnowledge: AthenaComponentKnowledgeContribution,
-)
-
-/**
- * Runtime-owned inspection record for one hosted plugin render contribution set.
- */
-data class AthenaRuntimePluginRenderContribution(
-    val pluginId: String,
-    val renderContributions: List<AthenaRenderContribution>,
 )
 
 /**
@@ -178,117 +133,6 @@ data class AthenaRuntimePluginSemanticReviewEnrichmentContribution(
     val pluginId: String,
     val enricher: AthenaSemanticReviewEnrichmentContributor,
 )
-
-/**
- * Optional plugin-side contract for runtime command contributions.
- */
-interface AthenaRuntimePluginCommandContributor : AthenaPlugin {
-    /**
-     * Returns runtime command contribution descriptors exposed by this plugin.
-     */
-    fun commandContributions(): List<AthenaRuntimePluginCommandContribution> = emptyList()
-}
-
-/**
- * Runtime-owned descriptor for one plugin command contribution.
- */
-data class AthenaRuntimePluginCommandContribution(
-    val contributionId: String,
-    val displayName: String,
-    val description: String,
-    val pluginId: String = "",
-    val factory: AthenaRuntimePluginCommandFactory,
-)
-
-/**
- * Factory that derives one runtime command request from the active execution context.
- */
-fun interface AthenaRuntimePluginCommandFactory {
-    /**
-     * Creates one runtime command request for the supplied execution context.
-     */
-    fun create(context: AthenaExecutionContext): AthenaRuntimePluginCommandRequest
-}
-
-/**
- * Plugin-side request returned before runtime decides whether to execute a contributed command.
- */
-sealed interface AthenaRuntimePluginCommandRequest
-
-/**
- * Request that is ready to execute through the runtime-owned command service.
- */
-data class AthenaRuntimePluginCommandReady(
-    val command: AthenaCommand,
-) : AthenaRuntimePluginCommandRequest
-
-/**
- * Request that could not produce a safe command for the current runtime context.
- */
-data class AthenaRuntimePluginCommandRejected(
-    val reason: String,
-) : AthenaRuntimePluginCommandRequest
-
-/**
- * Runtime-owned outcome of one contributed plugin command execution attempt.
- */
-sealed interface AthenaRuntimePluginCommandExecution : AthenaMutationResult {
-    /**
-     * Contributed command identifier associated with the execution attempt.
-     */
-    val contributionId: String
-
-    /**
-     * Hosted plugin identifier associated with the execution attempt.
-     */
-    val pluginId: String
-}
-
-/**
- * Successful contributed plugin command execution routed through the standard command runtime.
- */
-data class AthenaRuntimePluginCommandExecutionSuccess(
-    override val contributionId: String,
-    override val pluginId: String,
-    val result: AthenaCommandExecutionSuccess,
-) : AthenaRuntimePluginCommandExecution, AthenaMutationResult by result
-
-/**
- * Rejected contributed plugin command because the contribution could not safely produce or apply a command.
- */
-data class AthenaRuntimePluginCommandExecutionRejected(
-    override val contributionId: String,
-    override val pluginId: String,
-    val reason: String,
-    override val projectName: String = "",
-    override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION,
-) : AthenaRuntimePluginCommandExecution {
-    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.REJECTED
-    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
-}
-
-/**
- * Contributed plugin command produced runtime-owned validation feedback before canonical mutation could proceed.
- */
-data class AthenaRuntimePluginCommandExecutionValidationFeedback(
-    override val contributionId: String,
-    override val pluginId: String,
-    val result: AthenaCommandExecutionValidationFeedback,
-) : AthenaRuntimePluginCommandExecution, AthenaMutationResult by result
-
-/**
- * Unavailable contributed plugin command because the contribution id was not hosted or the runtime path was blocked.
- */
-data class AthenaRuntimePluginCommandExecutionUnavailable(
-    override val contributionId: String,
-    override val pluginId: String,
-    val reason: String,
-    override val projectName: String = "",
-    override val mutationCategory: AthenaMutationCategory = AthenaMutationCategory.SEMANTIC_MUTATION,
-) : AthenaRuntimePluginCommandExecution {
-    override val outcome: AthenaMutationOutcome = AthenaMutationOutcome.UNAVAILABLE
-    override val validationFeedback: List<AthenaMutationValidationFeedback> = emptyList()
-}
 
 /**
  * Optional plugin-side contract for runtime view contributions.
@@ -373,31 +217,10 @@ class AthenaHostedPluginRuntimeServices(
                 attachedExtensionPoints = hostedPlugin.attachedExtensionPoints,
                 contributionCategories = hostedPlugin.contributionCategories,
                 domainCapabilities = domainSemanticsContributionFor(plugin)?.domainCapabilities.orEmpty(),
-                commandContributionIds = commandContributionsFor(plugin).map { contribution -> contribution.contributionId },
                 viewDefinitionIds = hostedPlugin.viewDefinitionIds,
                 semanticReviewEnrichmentCount = if (plugin is AthenaSemanticReviewEnrichmentContributor) 1 else 0,
                 viewContributionCount = if (plugin is AthenaRuntimePluginViewContributor) 1 else 0,
             )
-        }
-    }
-
-    override fun commandContributions(): List<AthenaRuntimePluginCommandContribution> {
-        return activeApprovedPlugins().flatMap { approvedPlugin ->
-            commandContributionsFor(approvedPlugin.candidate.plugin)
-        }
-    }
-
-    override fun renderContributions(): List<AthenaRuntimePluginRenderContribution> {
-        return activeApprovedPlugins().mapNotNull { approvedPlugin ->
-            val renderContributions = renderContributionsFor(approvedPlugin.candidate.plugin)
-            if (renderContributions.isEmpty()) {
-                null
-            } else {
-                AthenaRuntimePluginRenderContribution(
-                    pluginId = approvedPlugin.candidate.manifest.pluginId,
-                    renderContributions = renderContributions,
-                )
-            }
         }
     }
 
@@ -410,27 +233,6 @@ class AthenaHostedPluginRuntimeServices(
                 AthenaRuntimePluginViewDefinitionContribution(
                     pluginId = approvedPlugin.candidate.manifest.pluginId,
                     viewDefinitions = viewDefinitions,
-                )
-            }
-        }
-    }
-
-    override fun componentKnowledgeContributions(): List<AthenaRuntimePluginComponentKnowledgeContribution> {
-        return activeApprovedPlugins().mapNotNull { approvedPlugin ->
-            val contributor = approvedPlugin.candidate.plugin as? AthenaComponentKnowledgeContributor ?: return@mapNotNull null
-            val componentKnowledge = contributor.componentKnowledge()
-            if (
-                componentKnowledge.engineeringConcepts.isEmpty() &&
-                componentKnowledge.partImplementations.isEmpty() &&
-                componentKnowledge.semanticPorts.isEmpty() &&
-                componentKnowledge.physicalTraits.isEmpty()
-            ) {
-                null
-            } else {
-                AthenaRuntimePluginComponentKnowledgeContribution(
-                    pluginId = approvedPlugin.candidate.manifest.pluginId,
-                    pluginVersion = approvedPlugin.candidate.manifest.pluginVersion,
-                    componentKnowledge = componentKnowledge,
                 )
             }
         }
@@ -462,71 +264,12 @@ class AthenaHostedPluginRuntimeServices(
         }
     }
 
-    override fun executeCommandContribution(
-        context: AthenaExecutionContext,
-        contributionId: String,
-    ): AthenaRuntimePluginCommandExecution {
-        val contribution = commandContributions().firstOrNull { candidate -> candidate.contributionId == contributionId }
-            ?: return AthenaRuntimePluginCommandExecutionUnavailable(
-                contributionId = contributionId,
-                pluginId = "",
-                reason = "Hosted runtime command contribution `$contributionId` is not available.",
-                projectName = context.project.name,
-            )
-
-        return when (val request = contribution.factory.create(context)) {
-            is AthenaRuntimePluginCommandRejected -> AthenaRuntimePluginCommandExecutionRejected(
-                contributionId = contribution.contributionId,
-                pluginId = contribution.pluginId,
-                reason = request.reason,
-                projectName = context.project.name,
-            )
-
-            is AthenaRuntimePluginCommandReady -> when (val execution = context.commandRuntime().execute(context, request.command)) {
-                is AthenaCommandExecutionSuccess -> AthenaRuntimePluginCommandExecutionSuccess(
-                    contributionId = contribution.contributionId,
-                    pluginId = contribution.pluginId,
-                    result = execution,
-                )
-
-                is AthenaCommandExecutionRejected -> AthenaRuntimePluginCommandExecutionRejected(
-                    contributionId = contribution.contributionId,
-                    pluginId = contribution.pluginId,
-                    reason = execution.reason,
-                    projectName = execution.projectName,
-                    mutationCategory = execution.mutationCategory,
-                )
-
-                is AthenaCommandExecutionValidationFeedback -> AthenaRuntimePluginCommandExecutionValidationFeedback(
-                    contributionId = contribution.contributionId,
-                    pluginId = contribution.pluginId,
-                    result = execution,
-                )
-
-                is AthenaCommandExecutionUnavailable -> AthenaRuntimePluginCommandExecutionUnavailable(
-                    contributionId = contribution.contributionId,
-                    pluginId = contribution.pluginId,
-                    reason = execution.reason,
-                    projectName = execution.projectName,
-                    mutationCategory = execution.mutationCategory,
-                )
-            }
-        }
-    }
-
     override fun viewContributions(context: AthenaExecutionContext): List<AthenaRuntimePluginViewContribution> {
         return activeApprovedPlugins().flatMap { approvedPlugin ->
             val plugin = approvedPlugin.candidate.plugin as? AthenaRuntimePluginViewContributor ?: return@flatMap emptyList()
             plugin.viewContributions(context).map { contribution ->
                 contribution.copy(pluginId = approvedPlugin.candidate.manifest.pluginId)
             }
-        }
-    }
-
-    private fun commandContributionsFor(plugin: AthenaPlugin): List<AthenaRuntimePluginCommandContribution> {
-        val contributor = plugin as? AthenaRuntimePluginCommandContributor ?: return emptyList()
-        return contributor.commandContributions().map { contribution ->
-            contribution.copy(pluginId = plugin.manifest.pluginId)
         }
     }
 
@@ -537,11 +280,6 @@ class AthenaHostedPluginRuntimeServices(
             domainCapabilities = domainPlugin.domainCapabilities,
             domainPlugin = domainPlugin,
         )
-    }
-
-    private fun renderContributionsFor(plugin: AthenaPlugin): List<AthenaRenderContribution> {
-        val contributor = plugin as? AthenaRenderContributor ?: return emptyList()
-        return contributor.renderContributions
     }
 
     private fun viewDefinitionsFor(plugin: AthenaPlugin): List<ViewDefinition> {
@@ -587,14 +325,6 @@ class AthenaHostedPluginRuntimeServices(
         val plugin = approvedPlugin.candidate.plugin
         val diagnostics = mutableListOf<PluginValidationDiagnostic>()
 
-        diagnostics += missingRuntimeContractDiagnostic(
-            approvedPlugin = approvedPlugin,
-            extensionPoint = AthenaExtensionPoint.RUNTIME_COMMANDS,
-            implementsContract = plugin is AthenaRuntimePluginCommandContributor,
-            undeclaredRuleId = "plugin.runtime.contract.command.undeclared",
-            unimplementedRuleId = "plugin.runtime.contract.command.unimplemented",
-            contractName = "runtime command contributions",
-        )
         diagnostics += missingRuntimeContractDiagnostic(
             approvedPlugin = approvedPlugin,
             extensionPoint = AthenaExtensionPoint.RUNTIME_VIEWS,
@@ -655,7 +385,6 @@ class AthenaHostedPluginRuntimeServices(
 private val ATHENA_PLUGIN_CORE_OWNED_INVARIANTS = listOf(
     "`Athena Runtime` owns workspace and project lifecycle orchestration.",
     "`Engineering IR` remains the only canonical semantic authority.",
-    "All semantic mutation must flow through the `Command Runtime`.",
     "Plugin contributions remain extensions over runtime-owned contracts rather than top-level owners.",
 )
 

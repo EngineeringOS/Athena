@@ -1,20 +1,22 @@
-﻿system DummyProof {
-  device G1 {
+system DummyProof {
+  entity G1 {
     domain "dummy-runtime"
-    type Glyph
+    concept Glyph
   }
 
-  device P1 {
+  entity P1 {
     domain "dummy-runtime"
-    type Pulse
+    concept Pulse
   }
 
   port G1.emit {
+    direction out
     flow emit
     tint Amber
   }
 
   port P1.absorb {
+    direction in
     flow absorb
     tint Amber
   }

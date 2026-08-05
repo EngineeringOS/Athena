@@ -1,151 +1,151 @@
 package com.engineeringood.m31.sample
 
 system RollingShutterGovernedAuthoringProof {
-  device MainPowerSupplyPS31 {
-    type Switch
+  entity MainPowerSupplyPS31 {
+    concept Switch
     connectivity enabled
     model "24VDC-PSU"
 
     port lplus {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device MainBreakerQF31 {
-    type Switch
+  entity MainBreakerQF31 {
+    concept Switch
     connectivity enabled
     model "QF"
 
     port line {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port load {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device WallSwitchS31 {
-    type Switch
+  entity WallSwitchS31 {
+    concept Switch
     connectivity enabled
     model "UP-DOWN"
 
     port up {
       direction out
-      signal Digital
+      flow Digital
     }
 
     port down {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device ControlRelayK31 {
-    type Switch
+  entity ControlRelayK31 {
+    concept Switch
     connectivity enabled
     model "K31"
 
     port supply {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port upCommand {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port downCommand {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port upOut {
       direction out
-      signal Digital
+      flow Digital
     }
 
     port downOut {
       direction out
-      signal Digital
+      flow Digital
     }
 
     port status {
       direction out
-      signal Digital
+      flow Digital
     }
 
     port spareOut {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device FieldTerminalXT31 {
-    type Switch
+  entity FieldTerminalXT31 {
+    concept Switch
     connectivity enabled
     model "XT31"
 
     port controlUp {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port controlDown {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port motorUp {
       direction out
-      signal Digital
+      flow Digital
     }
 
     port motorDown {
       direction out
-      signal Digital
+      flow Digital
     }
   }
 
-  device ShutterMotorM31 {
-    type Motor
+  entity ShutterMotorM31 {
+    concept Motor
     connectivity enabled
     model "ROLLING-SHUTTER"
 
     port up {
       direction in
-      signal Digital
+      flow Digital
     }
 
     port down {
       direction in
-      signal Digital
+      flow Digital
     }
   }
 
-  device PilotLampHL31 {
-    type Lamp
+  entity PilotLampHL31 {
+    concept Lamp
     connectivity enabled
     model "STATUS"
 
     port status {
       direction in
-      signal Digital
+      flow Digital
     }
   }
 
-  device SpareTerminalXT31 {
-    type Switch
+  entity SpareTerminalXT31 {
+    concept Switch
     connectivity enabled
     model "SPARE-XT"
 
     port in1 {
       direction in
-      signal Digital
+      flow Digital
     }
   }
 

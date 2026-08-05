@@ -3,8 +3,8 @@ Port connect forms
 ============================
 
 system Demo {
-  device PLC1 {
-    type Switch
+  entity PLC1 {
+    concept Switch
   }
   port PLC1.out {
     direction out
@@ -18,7 +18,7 @@ system Demo {
   (system_declaration
     name: (name)
     (declaration
-      (device_declaration
+      (entity_declaration
         name: (name)
         (property_assignment
           (property_name)

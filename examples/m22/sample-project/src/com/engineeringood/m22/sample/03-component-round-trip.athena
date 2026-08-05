@@ -1,23 +1,23 @@
 package com.engineeringood.m22.sample
 
 system ComponentRoundTripScenario {
-  device RoundTripControllerPLC1 {
-    type Switch
+  entity RoundTripControllerPLC1 {
+    concept Switch
     model "CPU"
   }
 
-  device RoundTripHMI1 {
-    type Lamp
+  entity RoundTripHMI1 {
+    concept Lamp
     model "HMI"
   }
 
-  device RoundTripTerminalXT2 {
-    type Switch
+  entity RoundTripTerminalXT2 {
+    concept Switch
     model "XT2"
   }
 
-  device RoundTripLoadM2 {
-    type Motor
+  entity RoundTripLoadM2 {
+    concept Motor
     model "M2"
   }
 

@@ -21,7 +21,7 @@ class ProjectionModelContractTest {
             nodes = listOf(
                 ProjectionNode(
                     projectionId = ProjectionNodeId("cabinet/projection/node/component_PLC1"),
-                    semanticId = StableSemanticIdentity("component:PLC1"),
+                    semanticId = StableSemanticIdentity("entity:PLC1"),
                     label = "PLC1",
                     originGeometryElementId = GeometryElementId("cabinet/geometry/box/component_PLC1"),
                 ),
@@ -102,7 +102,7 @@ class ProjectionModelContractTest {
 
     @Test
     fun `projection documents preserve one canonical subject identity across multiple electrical families`() {
-        val componentSemanticId = StableSemanticIdentity("component:PLC1")
+        val componentSemanticId = StableSemanticIdentity("entity:PLC1")
         val cabinetDocument = ProjectionDocument(
             view = cabinetView(),
             nodes = listOf(
@@ -149,7 +149,7 @@ class ProjectionModelContractTest {
 
     @Test
     fun `projection sheets keep projection owned identity and preserve canonical subject anchors`() {
-        val componentSemanticId = StableSemanticIdentity("component:PLC1")
+        val componentSemanticId = StableSemanticIdentity("entity:PLC1")
         val overviewSheetId = ProjectionSheetId("documentation/sheet/01-overview")
         val referenceSheetId = ProjectionSheetId("documentation/sheet/02-reference")
         val overviewNodeId = ProjectionNodeId("documentation/projection/node/component_PLC1_overview")
@@ -220,7 +220,7 @@ class ProjectionModelContractTest {
 
     @Test
     fun `projection notation packs keep symbol choices downstream of canonical semantics`() {
-        val componentSemanticId = StableSemanticIdentity("component:PLC1")
+        val componentSemanticId = StableSemanticIdentity("entity:PLC1")
         val document = ProjectionDocument(
             view = ViewDefinition(
                 id = "schematic",

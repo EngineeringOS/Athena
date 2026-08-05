@@ -102,7 +102,7 @@ const readyProjectionSession = {
             },
             representationFacts: [
                 {
-                    subjectId: 'component:PLC1',
+                    subjectId: 'entity:PLC1',
                     occurrenceId: 'representation:PLC1@schematic-sheet',
                     sourceProjectionIds: ['cabinet/projection/node/component_PLC1'],
                     symbol: {
@@ -143,7 +143,7 @@ const readyProjectionSession = {
                 sheetId: 'cabinet/sheet/01-main',
                 displayName: 'Cabinet Main',
                 order: 0,
-                subjectSemanticIds: ['component:PLC1', 'connection:PLC1.out->M1.in', 'port:PLC1.out']
+                subjectSemanticIds: ['entity:PLC1', 'connection:PLC1.out->M1.in', 'port:PLC1.out']
             }
         ],
         notationPack: {
@@ -151,7 +151,7 @@ const readyProjectionSession = {
             displayName: 'Electrical Cabinet Default',
             subjects: [
                 {
-                    semanticId: 'component:PLC1',
+                    semanticId: 'entity:PLC1',
                     symbolKey: 'device.cabinet.default',
                     labelPolicy: 'subject_label',
                     markerKeys: ['owned-device']
@@ -160,9 +160,9 @@ const readyProjectionSession = {
         },
         crossReferences: [
             {
-                semanticId: 'component:PLC1',
+                semanticId: 'entity:PLC1',
                 kind: 'repeated_reference',
-                crossReferenceId: 'cross-reference:component:PLC1',
+                crossReferenceId: 'cross-reference:entity:PLC1',
                 sheetIds: ['cabinet/sheet/01-main', 'cabinet/sheet/02-reference'],
                 occurrenceIds: [
                     'cabinet/projection/node/component_PLC1',
@@ -170,7 +170,7 @@ const readyProjectionSession = {
                 ],
                 links: [
                     {
-                        semanticId: 'component:PLC1',
+                        semanticId: 'entity:PLC1',
                         sourceSheetId: 'cabinet/sheet/01-main',
                         targetSheetId: 'cabinet/sheet/02-reference',
                         sourceOccurrenceId: 'cabinet/projection/node/component_PLC1',
@@ -184,7 +184,7 @@ const readyProjectionSession = {
             {
                 anchorId: 'cabinet/projection/label/port_PLC1_out/anchor',
                 portSemanticId: 'port:PLC1.out',
-                ownerSemanticId: 'component:PLC1',
+                ownerSemanticId: 'entity:PLC1',
                 nodeId: 'cabinet/projection/node/component_PLC1',
                 labelId: 'cabinet/projection/label/port_PLC1_out',
                 x: 380,
@@ -194,7 +194,7 @@ const readyProjectionSession = {
             {
                 anchorId: 'cabinet/projection/label/port_M1_in/anchor',
                 portSemanticId: 'port:M1.in',
-                ownerSemanticId: 'component:M1',
+                ownerSemanticId: 'entity:M1',
                 nodeId: 'cabinet/projection/node/component_M1',
                 labelId: 'cabinet/projection/label/port_M1_in',
                 x: 720,
@@ -260,7 +260,7 @@ const readyProjectionSession = {
         components: [
             {
                 projectionId: 'cabinet/projection/node/component_PLC1',
-                semanticId: 'component:PLC1',
+                semanticId: 'entity:PLC1',
                 label: 'PLC1',
                 x: 120,
                 y: 80,
@@ -296,7 +296,7 @@ const readyProjectionSession = {
                 sheetId: 'cabinet/sheet/01-main',
                 extent: { x: 0, y: 0, width: 1440, height: 900 },
                 drawingArea: { x: 40, y: 40, width: 1360, height: 700 },
-                occurrences: [{ occurrenceId: 'cabinet/projection/node/component_PLC1', semanticId: 'component:PLC1', regionId: 'main', bounds: { x: 120, y: 80, width: 260, height: 160 } }],
+                occurrences: [{ occurrenceId: 'cabinet/projection/node/component_PLC1', semanticId: 'entity:PLC1', regionId: 'main', bounds: { x: 120, y: 80, width: 260, height: 160 } }],
                 regions: [],
                 constructs: [],
                 anchors: [],
@@ -362,7 +362,7 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
             order: 20
         }
     ]);
-    assert.equal(diagram.presentation?.representationFacts[0].subjectId, 'component:PLC1');
+    assert.equal(diagram.presentation?.representationFacts[0].subjectId, 'entity:PLC1');
     assert.equal(diagram.presentation?.representationFacts[0].anatomy.primitives[1].kind, 'line');
     assert.deepEqual(diagram.presentation?.representationFacts[0].sourceProjectionIds, ['cabinet/projection/node/component_PLC1']);
     assert.equal(
@@ -376,7 +376,7 @@ test('translates a ready Athena projection session into a GLSP-shaped diagram mo
     assert.equal(diagram.graph.edges.length, 1);
     assert.deepEqual(diagram.graph.nodes[0], {
         id: 'cabinet/projection/node/component_PLC1',
-        semanticId: 'component:PLC1',
+        semanticId: 'entity:PLC1',
         type: 'node',
         kind: 'component',
         label: 'PLC1',
@@ -449,7 +449,7 @@ test('assigns stable M31 document sheet roles from typed policy evidence', () =>
                     sheetId: 'documentation/sheet/01-control',
                     displayName: 'Control',
                     order: 0,
-                    subjectSemanticIds: ['component:ControllerPLC1'],
+                    subjectSemanticIds: ['entity:ControllerPLC1'],
                     policyEvidence: {
                         policyId: 'athena-customer-projection',
                         policyVersion: '0',
@@ -462,7 +462,7 @@ test('assigns stable M31 document sheet roles from typed policy evidence', () =>
                     sheetId: 'documentation/sheet/02-field-device',
                     displayName: 'Field Device',
                     order: 1,
-                    subjectSemanticIds: ['component:TerminalBlock1'],
+                    subjectSemanticIds: ['entity:TerminalBlock1'],
                     policyEvidence: {
                         policyId: 'athena-customer-projection',
                         policyVersion: '0',
@@ -523,7 +523,7 @@ test('does not derive sheet role from displayName when typed policy evidence is 
                     sheetId: 'documentation/sheet/01-control',
                     displayName: 'Control And PLC Logic',
                     order: 0,
-                    subjectSemanticIds: ['component:ControllerPLC1'],
+                    subjectSemanticIds: ['entity:ControllerPLC1'],
                 },
             ],
         },
@@ -548,7 +548,7 @@ test('drops malformed sheet policy evidence instead of treating it as governed a
                     sheetId: 'documentation/sheet/02-field-device',
                     displayName: 'Field Device',
                     order: 1,
-                    subjectSemanticIds: ['component:TerminalBlock1'],
+                    subjectSemanticIds: ['entity:TerminalBlock1'],
                     policyEvidence: {
                         sheetViewRole: 'field-wiring-and-terminal-transition',
                     },
@@ -694,8 +694,8 @@ test('normalizes drawing reference placements without optional placement geometr
                     referencePlacements: [
                         {
                             placementId: 'placement/minimal',
-                            referenceId: 'component:K1',
-                            subjectId: 'component:K1',
+                            referenceId: 'entity:K1',
+                            subjectId: 'entity:K1',
                             role: 'device',
                             representationIdentity: 'svg:contactor',
                             compactNotation: 'K1'

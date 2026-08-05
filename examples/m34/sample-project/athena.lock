@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:26ff3aab7248b7d264b2a6ad75efc95e060bed0bfbce416e2f6a7b384deef9e1
+validatedLockStateDigest: lock-state:46c59306c2e7705c05f3147bf83c5722020ed12a6862366eec204cc71f67f79c
 primaryPackage:
   name: com.engineeringood.m34.sample
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m34.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:2d785bc340fc58e1f01c071ac167cd845e928f9c084ff2235f7326143cb048f7
+    snapshotDigest: package-snapshot:e54f215f20860862ec1c59f8653caf04d3989df6a3773bd9865d543a849cb520
     sourceHashes:
       - path: com/engineeringood/m34/sample/01-native-cabinet-proof.athena
-        hash: sha256:965958e311e024daffca0c20b229d8659ee7454e88681d7ed4ddea4f1beba431
+        hash: sha256:dd5983e4faf0103ca2f3ccdf21fdfc10403775b2b2619dad7852f58ced52a008
     resourceHashes: []
     dependencies: []

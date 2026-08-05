@@ -1,5 +1,5 @@
 import com.controls.
 system Demo {
-  device PLC1 {
+  entity PLC1 {
   }
 }

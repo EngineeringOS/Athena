@@ -1,13 +1,20 @@
 package com.engineeringood.athena.scm
 
-import com.engineeringood.athena.ir.EngineeringComponent
-import com.engineeringood.athena.ir.EngineeringConnection
+import com.engineeringood.athena.ir.EngineeringDefinitionReference
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringEntity
+import com.engineeringood.athena.ir.EngineeringEntityReference
+import com.engineeringood.athena.ir.EngineeringParticipant
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringPortCardinality
+import com.engineeringood.athena.ir.EngineeringPortDirection
+import com.engineeringood.athena.ir.EngineeringPortOwner
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringRelationship
+import com.engineeringood.athena.ir.EngineeringSubjectReference
 import com.engineeringood.athena.ir.EngineeringSystem
+import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.repository.EngineeringRepository
@@ -44,7 +51,7 @@ class SemanticDiffCalculatorTest {
             graphPackages = emptyList(),
             engineeringDocument = engineeringDocument(
                 includeMotor = false,
-                includeConnection = false,
+                includeRelationship = false,
                 includeModelProperty = false,
             ),
             rootPackage = rootPackage,
@@ -69,7 +76,7 @@ class SemanticDiffCalculatorTest {
             ),
             engineeringDocument = engineeringDocument(
                 includeMotor = true,
-                includeConnection = true,
+                includeRelationship = true,
                 includeModelProperty = true,
             ),
             rootPackage = rootPackage,
@@ -92,7 +99,7 @@ class SemanticDiffCalculatorTest {
                 SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
                 SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
                 SemanticChangeCategory.ENGINEERING_PROPERTY_CHANGED,
-                SemanticChangeCategory.CONNECTION_TOPOLOGY_CHANGED,
+                SemanticChangeCategory.RELATIONSHIP_CHANGED,
             ),
             first.authoredChanges.map { change -> change.category },
         )
@@ -119,7 +126,7 @@ class SemanticDiffCalculatorTest {
             graphPackages = emptyList(),
             engineeringDocument = engineeringDocument(
                 includeMotor = false,
-                includeConnection = false,
+                includeRelationship = false,
                 includeModelProperty = false,
             ),
             rootPackage = rootPackage,
@@ -133,7 +140,7 @@ class SemanticDiffCalculatorTest {
             graphPackages = emptyList(),
             engineeringDocument = engineeringDocument(
                 includeMotor = false,
-                includeConnection = false,
+                includeRelationship = false,
                 includeModelProperty = false,
             ),
             rootPackage = rootPackage,
@@ -165,7 +172,7 @@ class SemanticDiffCalculatorTest {
             graphPackages = emptyList(),
             engineeringDocument = engineeringDocument(
                 includeMotor = false,
-                includeConnection = false,
+                includeRelationship = false,
                 includeModelProperty = false,
             ),
             rootPackage = baselinePackage,
@@ -182,7 +189,7 @@ class SemanticDiffCalculatorTest {
             graphPackages = emptyList(),
             engineeringDocument = engineeringDocument(
                 includeMotor = false,
-                includeConnection = false,
+                includeRelationship = false,
                 includeModelProperty = true,
             ),
             rootPackage = currentPackage,
@@ -233,7 +240,7 @@ class SemanticDiffCalculatorTest {
                 graphPackages = emptyList(),
                 engineeringDocument = engineeringDocument(
                     includeMotor = false,
-                    includeConnection = false,
+                    includeRelationship = false,
                     includeModelProperty = false,
                 ),
                 rootPackage = rootPackage,
@@ -253,7 +260,7 @@ class SemanticDiffCalculatorTest {
                 graphPackages = emptyList(),
                 engineeringDocument = engineeringDocument(
                     includeMotor = false,
-                    includeConnection = false,
+                includeRelationship = false,
                     includeModelProperty = false,
                 ),
                 rootPackage = rootPackage,
@@ -326,40 +333,43 @@ private fun semanticSnapshot(
 
 private fun engineeringDocument(
     includeMotor: Boolean,
-    includeConnection: Boolean,
+    includeRelationship: Boolean,
     includeModelProperty: Boolean,
 ): EngineeringDocument {
-    val plcId = StableSemanticIdentity("component:PLC1")
+    val plcId = StableSemanticIdentity("entity:PLC1")
     val plcPortId = StableSemanticIdentity("port:PLC1.out")
-    val motorId = StableSemanticIdentity("component:M1")
+    val motorId = StableSemanticIdentity("entity:M1")
     val motorPortId = StableSemanticIdentity("port:M1.in")
 
-    val components = buildList {
+    val entities = buildList {
         add(
-            EngineeringComponent(
+            EngineeringEntity(
                 id = plcId,
                 name = "PLC1",
-                kind = "Switch",
+                conceptReference = definitionReference("Switch"),
                 properties = buildList {
                     if (includeModelProperty) {
                         add(
                             EngineeringProperty(
                                 name = "model",
-                                value = EngineeringPropertyValue.Text("S7-1200"),
+                                value = EngineeringValue.Text("S7-1200"),
+                                provenance = provenance("components.athena"),
                             ),
                         )
                     }
                 },
+                structureAssignments = emptyList(),
                 provenance = provenance("components.athena"),
             ),
         )
         if (includeMotor) {
             add(
-                EngineeringComponent(
+                EngineeringEntity(
                     id = motorId,
                     name = "M1",
-                    kind = "Motor",
+                    conceptReference = definitionReference("Motor"),
                     properties = emptyList(),
+                    structureAssignments = emptyList(),
                     provenance = provenance("components.athena"),
                 ),
             )
@@ -370,14 +380,13 @@ private fun engineeringDocument(
         add(
             EngineeringPort(
                 id = plcPortId,
-                ownerReference = ownerReference("PLC1", plcId),
+                owner = EngineeringPortOwner.Entity(EngineeringEntityReference(ownerReference("PLC1", plcId))),
                 name = "out",
-                properties = listOf(
-                    EngineeringProperty(
-                        name = "direction",
-                        value = EngineeringPropertyValue.Symbol("out"),
-                    ),
-                ),
+                direction = EngineeringPortDirection.OUTPUT,
+                admittedFlowReferences = emptyList(),
+                cardinality = EngineeringPortCardinality(0, null),
+                interfaceDesignation = null,
+                properties = emptyList(),
                 provenance = provenance("ports.athena"),
             ),
         )
@@ -385,27 +394,38 @@ private fun engineeringDocument(
             add(
                 EngineeringPort(
                     id = motorPortId,
-                    ownerReference = ownerReference("M1", motorId),
+                    owner = EngineeringPortOwner.Entity(EngineeringEntityReference(ownerReference("M1", motorId))),
                     name = "in",
-                    properties = listOf(
-                        EngineeringProperty(
-                            name = "direction",
-                            value = EngineeringPropertyValue.Symbol("in"),
-                        ),
-                    ),
+                    direction = EngineeringPortDirection.INPUT,
+                    admittedFlowReferences = emptyList(),
+                    cardinality = EngineeringPortCardinality(0, null),
+                    interfaceDesignation = null,
+                    properties = emptyList(),
                     provenance = provenance("ports.athena"),
                 ),
             )
         }
     }
 
-    val connections = if (includeConnection) {
+    val relationships = if (includeRelationship) {
         listOf(
-            EngineeringConnection(
-                id = StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
-                from = reference("PLC1", "out", plcPortId),
-                to = reference("M1", "in", motorPortId),
-                provenance = provenance("connections.athena"),
+            EngineeringRelationship(
+                id = StableSemanticIdentity("relationship:test:plc1_out_to_m1_in"),
+                definitionReference = definitionReference("Controls"),
+                participants = listOf(
+                    EngineeringParticipant(
+                        role = "controller",
+                        subject = EngineeringSubjectReference.Port(reference("PLC1", "out", plcPortId)),
+                        provenance = provenance("relationships.athena"),
+                    ),
+                    EngineeringParticipant(
+                        role = "controlled",
+                        subject = EngineeringSubjectReference.Port(reference("M1", "in", motorPortId)),
+                        provenance = provenance("relationships.athena"),
+                    ),
+                ),
+                properties = emptyList(),
+                provenance = provenance("relationships.athena"),
             ),
         )
     } else {
@@ -418,11 +438,17 @@ private fun engineeringDocument(
             name = "Demo",
             provenance = provenance("system.athena"),
         ),
-        components = components,
+        entities = entities,
         ports = ports,
-        connections = connections,
+        relationships = relationships,
     )
 }
+
+private fun definitionReference(name: String): EngineeringDefinitionReference = EngineeringDefinitionReference(
+    authoredName = listOf(name),
+    resolvedId = null,
+    provenance = provenance("components.athena"),
+)
 
 private fun ownerReference(
     ownerName: String,

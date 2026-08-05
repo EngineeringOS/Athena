@@ -1,8 +1,8 @@
 package com.engineeringood.m29.sample
 
 system InteractionCandidateProof {
-  device CandidateOutputModuleIOM29 {
-    type Switch
+  entity CandidateOutputModuleIOM29 {
+    concept Switch
     model "FIELD-IO"
 
     port do1 {
@@ -16,8 +16,8 @@ system InteractionCandidateProof {
     }
   }
 
-  device CandidateTerminalXT29 {
-    type Switch
+  entity CandidateTerminalXT29 {
+    concept Switch
     model "XT"
 
     port in1 {
@@ -36,8 +36,8 @@ system InteractionCandidateProof {
     }
   }
 
-  device CandidateMotorM29 {
-    type Motor
+  entity CandidateMotorM29 {
+    concept Motor
     model "MOTOR"
 
     port u1 {

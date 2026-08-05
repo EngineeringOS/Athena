@@ -37,7 +37,7 @@ class DummyRuntimeDomainPluginTest {
         )
         assertEquals(
             listOf("DummyLink"),
-            plugin.domainSchema.connections.map { connection -> connection.typeId },
+            plugin.domainSchema.relationships.map { relationship -> relationship.typeId },
         )
         assertEquals(
             setOf("Glyph", "Pulse", "Totem"),

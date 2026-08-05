@@ -1,21 +1,21 @@
-﻿package com.engineeringood.m20.sample
+package com.engineeringood.m20.sample
 
 system DenseSheetShowcase {
-  device DenseSW1 {
-    type Switch
+  entity DenseSW1 {
+    concept Switch
     model "Main"
   }
 
-  device DenseM1 {
-    type Motor
+  entity DenseM1 {
+    concept Motor
   }
 
-  device DenseM2 {
-    type Motor
+  entity DenseM2 {
+    concept Motor
   }
 
-  device DenseL1 {
-    type Lamp
+  entity DenseL1 {
+    concept Lamp
   }
 
   port DenseSW1.out {
@@ -38,7 +38,7 @@ system DenseSheetShowcase {
     signal Control24V
   }
 
-  connect densesw1_out_to_densem1_in DenseSW1.out to DenseM1.in
-  connect densesw1_out_to_densem2_in DenseSW1.out to DenseM2.in
-  connect densesw1_out_to_densel1_in DenseSW1.out to DenseL1.in
+  power DenseSW1.out to DenseM1.in
+  power DenseSW1.out to DenseM2.in
+  power DenseSW1.out to DenseL1.in
 }

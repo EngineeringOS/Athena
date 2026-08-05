@@ -12,9 +12,9 @@ const readyDiagram = {
     sheets: readySheet.sheets.map(currentSheet => ({
         ...currentSheet,
         subjectSemanticIds: [
-            'component:PSU1',
-            'component:PLC2',
-            'component:M1',
+            'entity:PSU1',
+            'entity:PLC2',
+            'entity:M1',
             'connection:PSU1.plus->PLC1.power',
             'connection:PSU1.plus->PLC2.power',
             'connection:PLC2.power->M1.in',
@@ -28,9 +28,9 @@ const readyDiagram = {
             displayName: currentSheet.displayName,
             order: currentSheet.order,
             subjectSemanticIds: [
-                'component:PSU1',
-                'component:PLC2',
-                'component:M1',
+                'entity:PSU1',
+                'entity:PLC2',
+                'entity:M1',
                 'connection:PSU1.plus->PLC1.power',
                 'connection:PSU1.plus->PLC2.power',
                 'connection:PLC2.power->M1.in',
@@ -79,9 +79,9 @@ const readyDiagram = {
                     primaryViewId: 'schematic-sheet',
                     primarySheetOrder: currentSheet.order,
                     subjectSemanticIds: [
-                        'component:PSU1',
-                        'component:PLC2',
-                        'component:M1',
+                        'entity:PSU1',
+                        'entity:PLC2',
+                        'entity:M1',
                         'connection:PSU1.plus->PLC1.power',
                         'connection:PSU1.plus->PLC2.power',
                         'connection:PLC2.power->M1.in',
@@ -105,7 +105,7 @@ const readyDiagram = {
             ...readySheet.graph.nodes,
             {
                 id: 'schematic/projection/node/component_PLC2',
-                semanticId: 'component:PLC2',
+                semanticId: 'entity:PLC2',
                 type: 'node',
                 kind: 'component',
                 label: 'PLC2',
@@ -123,7 +123,7 @@ const readyDiagram = {
             },
             {
                 id: 'schematic/projection/node/component_M1',
-                semanticId: 'component:M1',
+                semanticId: 'entity:M1',
                 type: 'node',
                 kind: 'component',
                 label: 'M1',

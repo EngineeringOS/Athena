@@ -1,10 +1,17 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.ir.EngineeringComponent
-import com.engineeringood.athena.ir.EngineeringConnection
+import com.engineeringood.athena.ir.EngineeringDefinitionReference
+import com.engineeringood.athena.ir.EngineeringEntity
+import com.engineeringood.athena.ir.EngineeringEntityReference
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringParticipant
+import com.engineeringood.athena.ir.EngineeringPortCardinality
+import com.engineeringood.athena.ir.EngineeringPortDirection
+import com.engineeringood.athena.ir.EngineeringPortOwner
 import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringRelationship
+import com.engineeringood.athena.ir.EngineeringSubjectReference
 import com.engineeringood.athena.ir.EngineeringSystem
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
@@ -26,28 +33,28 @@ class EngineeringToProjectionTransformationTest {
 
         val success = assertIs<RealityTransformationResult.Success<ProjectionDocument>>(result)
         assertEquals("engineering-projection", success.output.view.id)
-        assertEquals(listOf("component:Supply", "component:Q1"), success.output.nodes.map {
+        assertEquals(listOf("entity:Supply", "entity:Q1"), success.output.nodes.map {
             node -> node.semanticId.value
         })
         assertEquals(
             listOf(
-                "projection/node/component:Supply" to "port:Supply.L1",
-                "projection/node/component:Q1" to "port:Q1.1",
+                "projection/node/entity:Supply" to "port:Supply.L1",
+                "projection/node/entity:Q1" to "port:Q1.1",
             ),
             success.output.occurrencePorts.map { port ->
                 port.occurrencePortId.occurrenceId.value to port.occurrencePortId.portId.value
             },
         )
-        assertEquals(listOf("connection:Supply.L1-to-Q1.1"), success.output.connections.map { connection ->
+        assertEquals(listOf("relationship:Supply.L1-to-Q1.1"), success.output.connections.map { connection ->
             connection.semanticId.value
         })
         val connection = success.output.connections.single()
         assertEquals(
-            "projection/node/component:Supply" to "port:Supply.L1",
+            "projection/node/entity:Supply" to "port:Supply.L1",
             connection.source?.occurrencePortId?.let { endpoint -> endpoint.occurrenceId.value to endpoint.portId.value },
         )
         assertEquals(
-            "projection/node/component:Q1" to "port:Q1.1",
+            "projection/node/entity:Q1" to "port:Q1.1",
             connection.target?.occurrencePortId?.let { endpoint -> endpoint.occurrenceId.value to endpoint.portId.value },
         )
         assertEquals(1, success.output.sheets.size)
@@ -61,16 +68,16 @@ class EngineeringToProjectionTransformationTest {
         val output = assertIs<RealityTransformationResult.Success<ProjectionDocument>>(result).output
         val subjects = output.sheets.single().subjects
 
-        assertContains(subjects.map { subject -> subject.semanticId.value }, "component:Supply")
-        assertContains(subjects.map { subject -> subject.semanticId.value }, "connection:Supply.L1-to-Q1.1")
+        assertContains(subjects.map { subject -> subject.semanticId.value }, "entity:Supply")
+        assertContains(subjects.map { subject -> subject.semanticId.value }, "relationship:Supply.L1-to-Q1.1")
         assertTrue(subjects.any { subject ->
-            subject.semanticId.value == "component:Supply" &&
-                subject.nodeIds.any { nodeId -> nodeId.value == "projection/node/component:Supply" }
+            subject.semanticId.value == "entity:Supply" &&
+                subject.nodeIds.any { nodeId -> nodeId.value == "projection/node/entity:Supply" }
         })
         assertTrue(subjects.any { subject ->
-            subject.semanticId.value == "connection:Supply.L1-to-Q1.1" &&
+            subject.semanticId.value == "relationship:Supply.L1-to-Q1.1" &&
                 subject.connectionIds.any { connectionId ->
-                    connectionId.value == "projection/connection/connection:Supply.L1-to-Q1.1"
+                    connectionId.value == "projection/relationship/relationship:Supply.L1-to-Q1.1"
                 }
         })
     }
@@ -121,31 +128,41 @@ class EngineeringToProjectionTransformationTest {
         sourceFile: String = "demo.athena",
     ): EngineeringDocument {
         val source = SourceProvenance(sourceFile, 1, 1, 1, 10)
-        val supply = EngineeringComponent(
-            id = StableSemanticIdentity("component:Supply"),
+        val supply = EngineeringEntity(
+            id = StableSemanticIdentity("entity:Supply"),
             name = "Supply",
-            kind = "PowerSupply",
+            conceptReference = definitionReference("PowerSupply", source),
             properties = emptyList<EngineeringProperty>(),
+            structureAssignments = emptyList(),
             provenance = source,
         )
-        val breaker = EngineeringComponent(
-            id = StableSemanticIdentity("component:Q1"),
+        val breaker = EngineeringEntity(
+            id = StableSemanticIdentity("entity:Q1"),
             name = "Q1",
-            kind = "Breaker",
+            conceptReference = definitionReference("Breaker", source),
             properties = emptyList<EngineeringProperty>(),
+            structureAssignments = emptyList(),
             provenance = source,
         )
         val supplyPort = com.engineeringood.athena.ir.EngineeringPort(
             id = StableSemanticIdentity("port:Supply.L1"),
-            ownerReference = reference("component:Supply", source),
+            owner = EngineeringPortOwner.Entity(EngineeringEntityReference(reference("entity:Supply", source))),
             name = "L1",
+            direction = EngineeringPortDirection.OUTPUT,
+            admittedFlowReferences = emptyList(),
+            cardinality = EngineeringPortCardinality(0, null),
+            interfaceDesignation = null,
             properties = emptyList(),
             provenance = source,
         )
         val breakerPort = com.engineeringood.athena.ir.EngineeringPort(
             id = StableSemanticIdentity("port:Q1.1"),
-            ownerReference = reference("component:Q1", source),
+            owner = EngineeringPortOwner.Entity(EngineeringEntityReference(reference("entity:Q1", source))),
             name = "1",
+            direction = EngineeringPortDirection.INPUT,
+            admittedFlowReferences = emptyList(),
+            cardinality = EngineeringPortCardinality(0, null),
+            interfaceDesignation = null,
             properties = emptyList(),
             provenance = source,
         )
@@ -156,13 +173,17 @@ class EngineeringToProjectionTransformationTest {
                 name = systemName,
                 provenance = source,
             ),
-            components = listOf(supply, breaker),
+            entities = listOf(supply, breaker),
             ports = listOf(supplyPort, breakerPort),
-            connections = listOf(
-                EngineeringConnection(
-                    id = StableSemanticIdentity("connection:Supply.L1-to-Q1.1"),
-                    from = reference("port:Supply.L1", source),
-                    to = reference("port:Q1.1", source),
+            relationships = listOf(
+                EngineeringRelationship(
+                    id = StableSemanticIdentity("relationship:Supply.L1-to-Q1.1"),
+                    definitionReference = definitionReference("supplies", source),
+                    participants = listOf(
+                        EngineeringParticipant("source", EngineeringSubjectReference.Port(reference("port:Supply.L1", source)), source),
+                        EngineeringParticipant("target", EngineeringSubjectReference.Port(reference("port:Q1.1", source)), source),
+                    ),
+                    properties = emptyList(),
                     provenance = source,
                 ),
             ),
@@ -171,8 +192,15 @@ class EngineeringToProjectionTransformationTest {
 
     private fun reference(identity: String, source: SourceProvenance): EngineeringReference =
         EngineeringReference(
-            authoredPath = identity.removePrefix("component:").removePrefix("port:").split("."),
+            authoredPath = identity.removePrefix("entity:").removePrefix("port:").split("."),
             resolvedIdentity = StableSemanticIdentity(identity),
+            provenance = source,
+        )
+
+    private fun definitionReference(name: String, source: SourceProvenance): EngineeringDefinitionReference =
+        EngineeringDefinitionReference(
+            authoredName = listOf(name),
+            resolvedId = null,
             provenance = source,
         )
 }

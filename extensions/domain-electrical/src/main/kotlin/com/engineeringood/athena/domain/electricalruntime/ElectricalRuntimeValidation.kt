@@ -1,14 +1,13 @@
 package com.engineeringood.athena.domain.electricalruntime
 
-import com.engineeringood.athena.ir.EngineeringConnection
+import com.engineeringood.athena.ir.EngineeringEntity
 import com.engineeringood.athena.ir.EngineeringPort
+import com.engineeringood.athena.ir.EngineeringPortDirection
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.ir.StableSemanticIdentity
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.RelationDeclaration
 import com.engineeringood.athena.language.ScalarValue
@@ -20,21 +19,22 @@ import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.ir.SourceProvenance
 
 internal fun validateElectricalRuntime(context: AthenaPluginValidationContext): AthenaPluginValidationResult {
-    val ownedComponents = context.document.components.filter { component -> component.isElectricalOwned() }
-    val ownedComponentIds = ownedComponents.map { component -> component.id }.toSet()
-    val ownedPorts = context.document.ports.filter { port -> port.ownerReference.resolvedIdentity in ownedComponentIds }
+    val ownedEntities = context.document.entities.filter { entity -> entity.isElectricalOwned() }
+    val ownedEntityIds = ownedEntities.map { entity -> entity.id }.toSet()
+    val ownedPorts = context.document.ports.filter { port -> port.owner.reference.resolvedIdentity in ownedEntityIds }
     val portsById = ownedPorts.associateBy { it.id }
-    val ownedConnections = context.document.connections.filter { connection ->
-        connection.from.resolvedIdentity in portsById &&
-            connection.to.resolvedIdentity in portsById
+    val ownedRelationships = context.document.relationships.filter { relationship ->
+        relationship.participants.size == 2 && relationship.participants.all { participant ->
+            val subject = participant.subject
+            subject is com.engineeringood.athena.ir.EngineeringSubjectReference.Port &&
+                subject.port.resolvedIdentity in portsById
+        }
     }
 		    val diagnostics = buildList {
 		        addAll(relationDiagnostics(context))
 		        addAll(groupedInterfaceDiagnostics(context))
-	        addAll(componentTypeDiagnostics(ownedComponents, context))
-	        addAll(portDirectionDiagnostics(ownedPorts, context))
-	        addAll(portSignalDiagnostics(ownedPorts, context))
-	        addAll(connectionCompatibilityDiagnostics(ownedConnections, portsById, context))
+		        addAll(entityConceptDiagnostics(ownedEntities, context))
+        addAll(relationshipCompatibilityDiagnostics(ownedRelationships, portsById, context))
 	    }
     return AthenaPluginValidationResult(
         contributions = listOf(
@@ -54,7 +54,7 @@ private fun relationDiagnostics(context: AthenaPluginValidationContext): List<Se
         } else {
             context.domainDiagnostic(
                 ruleId = "relation.word.unknown",
-                category = SemanticDiagnosticCategory.CONNECTION,
+                category = SemanticDiagnosticCategory.RELATIONSHIP,
                 provenance = source.file.provenance(relation.word.span),
                 message = "Unknown relation `${relation.word.value}` for domain plugin `${ELECTRICAL_RUNTIME_MANIFEST.pluginId}`. Available relations: ${ELECTRICAL_RELATION_WORD_LIST.joinToString(", ")}.",
             )
@@ -62,71 +62,46 @@ private fun relationDiagnostics(context: AthenaPluginValidationContext): List<Se
     }
 }
 
-private fun componentTypeDiagnostics(
-    components: List<com.engineeringood.athena.ir.EngineeringComponent>,
+private fun entityConceptDiagnostics(
+    entities: List<EngineeringEntity>,
     context: AthenaPluginValidationContext,
 ): List<SemanticDiagnostic> {
-    return components.mapNotNull { component ->
-        when (val type = component.properties.requiredSymbolValue("type")) {
-            PropertySymbolValue.Missing -> context.domainDiagnostic(
-                ruleId = "property.component.type.missing",
+    return entities.mapNotNull { entity ->
+        val concept = entity.conceptReference.authoredName.joinToString(".")
+        if (entity.conceptReference.authoredName.last() in VALID_DEVICE_TYPES) {
+            null
+        } else {
+            context.domainDiagnostic(
+                ruleId = "entity.concept.unsupported",
                 category = SemanticDiagnosticCategory.PROPERTY,
-                subjectIdentity = component.id,
-                provenance = component.provenance,
-                message = "Component `${component.name}` is missing required `type`.",
+                subjectIdentity = entity.id,
+                provenance = entity.provenance,
+                message = "Entity `${entity.name}` declares unsupported electrical Concept `$concept`.",
             )
-
-            is PropertySymbolValue.Invalid -> context.domainDiagnostic(
-                ruleId = "property.component.type.invalid",
-                category = SemanticDiagnosticCategory.PROPERTY,
-                subjectIdentity = component.id,
-                provenance = component.provenance,
-                message = "Component `${component.name}` declares `type` with an invalid non-symbol value `${type.value}`.",
-            )
-
-            is PropertySymbolValue.Duplicate -> context.domainDiagnostic(
-                ruleId = "property.component.type.duplicate",
-                category = SemanticDiagnosticCategory.PROPERTY,
-                subjectIdentity = component.id,
-                provenance = component.provenance,
-                message = "Component `${component.name}` declares duplicate `type` properties `${type.values}`.",
-            )
-
-            is PropertySymbolValue.SymbolText -> if (type.value !in VALID_DEVICE_TYPES) {
-                context.domainDiagnostic(
-                    ruleId = "property.component.type.invalid",
-                    category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = component.id,
-                    provenance = component.provenance,
-                    message = "Component `${component.name}` declares unsupported device type `${type.value}`.",
-                )
-            } else {
-                null
-            }
         }
     }
 }
 
 private fun groupedInterfaceDiagnostics(context: AthenaPluginValidationContext): List<SemanticDiagnostic> {
     val source = context.source ?: return emptyList()
-    return source.ast.declarations.filterIsInstance<DeviceDeclaration>().flatMap { device ->
+    return source.ast.declarations.filterIsInstance<EntityDeclaration>().flatMap { entity ->
         buildList {
-            device.interfaces.groupBy { connectivityInterface -> connectivityInterface.name }
+            entity.interfaces.groupBy { connectivityInterface -> connectivityInterface.name }
                 .filterValues { duplicates -> duplicates.size > 1 }
                 .forEach { (name, duplicates) ->
                     duplicates.drop(1).forEach { duplicate ->
                         add(
                             context.domainDiagnostic(
                                 ruleId = "connectivity.interface.duplicate",
-                                category = SemanticDiagnosticCategory.CONNECTION,
+                                category = SemanticDiagnosticCategory.RELATIONSHIP,
                                 provenance = source.file.provenance(duplicate.span),
-                                message = "Device `${device.name}` declares duplicate connectivity Interface `$name`.",
+                                message = "Entity `${entity.name}` declares duplicate connectivity Interface `$name`.",
                             ),
                         )
                     }
                 }
 
-            device.interfaces.forEach { connectivityInterface ->
+            entity.interfaces.forEach { connectivityInterface ->
                 connectivityInterface.ports.groupBy { port -> port.name }
                     .filterValues { duplicates -> duplicates.size > 1 }
                     .forEach { (name, duplicates) ->
@@ -134,17 +109,17 @@ private fun groupedInterfaceDiagnostics(context: AthenaPluginValidationContext):
                             add(
                                 context.domainDiagnostic(
                                     ruleId = "connectivity.port.duplicate",
-                                    category = SemanticDiagnosticCategory.CONNECTION,
+                                    category = SemanticDiagnosticCategory.RELATIONSHIP,
                                     provenance = source.file.provenance(duplicate.span),
                                     message = "Connectivity Interface `${connectivityInterface.name}` declares duplicate member Port `$name`.",
                                 ),
                             )
                         }
                     }
-                addAll(validateInterfaceFields(device.name, connectivityInterface.name, connectivityInterface.fields, source.file, context, true))
+                addAll(validateInterfaceFields(entity.name, connectivityInterface.name, connectivityInterface.fields, source.file, context, true))
                 connectivityInterface.ports.forEach { member ->
-                    addAll(validateInterfaceFields(device.name, member.name, member.fields, source.file, context, false))
-                    addAll(requiredDefaultConflictDiagnostics(device.name, connectivityInterface.name, connectivityInterface.fields, member.name, member.fields, source.file, context))
+                    addAll(validateInterfaceFields(entity.name, member.name, member.fields, source.file, context, false))
+                    addAll(requiredDefaultConflictDiagnostics(entity.name, connectivityInterface.name, connectivityInterface.fields, member.name, member.fields, source.file, context))
                 }
             }
         }
@@ -175,7 +150,7 @@ private fun validateInterfaceFields(
         } else {
             context.domainDiagnostic(
                 ruleId = "$prefix.${field.name}.invalid",
-                category = SemanticDiagnosticCategory.CONNECTION,
+                category = SemanticDiagnosticCategory.RELATIONSHIP,
                 provenance = file.provenance(field.span),
                 message = "$subject declares unsupported `${field.name}` value `${value ?: field.value.renderedValue()}`.",
             )
@@ -209,7 +184,7 @@ private fun requiredDefaultConflictDiagnostics(
             } else {
                 context.domainDiagnostic(
                     ruleId = "connectivity.port.default.conflict",
-                    category = SemanticDiagnosticCategory.CONNECTION,
+                    category = SemanticDiagnosticCategory.RELATIONSHIP,
                     provenance = file.provenance(memberField.span),
                     message = "Port `$ownerName.$memberName` conflicts with required default `${defaultField.name}` from Interface `$interfaceName`.",
                 )
@@ -229,8 +204,12 @@ private fun String.provenance(span: SourceSpan): SourceProvenance {
 
 private fun PropertyAssignment.scalarIdentifierText(): String? {
     return when (val value = value) {
-        is ScalarValue.Identifier -> value.text
-        is ScalarValue.StringLiteral -> null
+        is ScalarValue.Symbol -> value.text
+        is ScalarValue.Text,
+        is ScalarValue.Quantity,
+        is ScalarValue.Integer,
+        is ScalarValue.Boolean,
+        is ScalarValue.Reference -> null
     }
 }
 
@@ -240,96 +219,56 @@ private fun List<PropertyAssignment>.singleSymbolValue(name: String): String? {
 
 private fun ScalarValue.renderedValue(): String {
     return when (this) {
-        is ScalarValue.Identifier -> text
-        is ScalarValue.StringLiteral -> "\"$text\""
+        is ScalarValue.Quantity -> "$exactText ${unit.parts.joinToString(".")}"
+        is ScalarValue.Integer -> exactText
+        is ScalarValue.Boolean -> value.toString()
+        is ScalarValue.Text -> "\"$text\""
+        is ScalarValue.Symbol -> text
+        is ScalarValue.Reference -> "@${target.parts.joinToString(".")}"
     }
 }
 
-private fun portDirectionDiagnostics(
-    ports: List<EngineeringPort>,
-    context: AthenaPluginValidationContext,
-): List<SemanticDiagnostic> {
-    return ports.mapNotNull { port ->
-        when (val direction = port.properties.requiredSymbolValue("direction")) {
-            PropertySymbolValue.Missing -> context.domainDiagnostic(
-                ruleId = "property.port.direction.missing",
-                category = SemanticDiagnosticCategory.PROPERTY,
-                subjectIdentity = port.id,
-                provenance = port.provenance,
-                message = "Port `${authoredPortPath(port)}` is missing required `direction`.",
-            )
-
-            is PropertySymbolValue.Invalid -> context.domainDiagnostic(
-                ruleId = "property.port.direction.invalid",
-                category = SemanticDiagnosticCategory.PROPERTY,
-                subjectIdentity = port.id,
-                provenance = port.provenance,
-                message = "Port `${authoredPortPath(port)}` declares `direction` with an invalid non-symbol value `${direction.value}`.",
-            )
-
-            is PropertySymbolValue.Duplicate -> context.domainDiagnostic(
-                ruleId = "property.port.direction.duplicate",
-                category = SemanticDiagnosticCategory.PROPERTY,
-                subjectIdentity = port.id,
-                provenance = port.provenance,
-                message = "Port `${authoredPortPath(port)}` declares duplicate `direction` properties `${direction.values}`.",
-            )
-
-            is PropertySymbolValue.SymbolText -> if (direction.value !in VALID_DIRECTIONS) {
-                context.domainDiagnostic(
-                    ruleId = "property.port.direction.invalid",
-                    category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = port.id,
-                    provenance = port.provenance,
-                    message = "Port `${authoredPortPath(port)}` declares unsupported direction `${direction.value}`.",
-                )
-            } else {
-                null
-            }
-        }
-    }
-}
-
-private fun connectionCompatibilityDiagnostics(
-    connections: List<EngineeringConnection>,
+private fun relationshipCompatibilityDiagnostics(
+    relationships: List<com.engineeringood.athena.ir.EngineeringRelationship>,
     portsById: Map<StableSemanticIdentity, EngineeringPort>,
     context: AthenaPluginValidationContext,
 ): List<SemanticDiagnostic> {
     return buildList {
-        connections.forEach { connection ->
-            val fromPort = connection.from.resolvedIdentity?.let(portsById::get)
-            val toPort = connection.to.resolvedIdentity?.let(portsById::get)
+        relationships.forEach { relationship ->
+            val ports = relationship.participants.mapNotNull { participant ->
+                (participant.subject as? com.engineeringood.athena.ir.EngineeringSubjectReference.Port)
+                    ?.port?.resolvedIdentity?.let(portsById::get)
+            }
+            if (ports.size != 2) return@forEach
+            val fromPort = ports[0]
+            val toPort = ports[1]
             if (fromPort == null || toPort == null) {
                 return@forEach
             }
 
-            val fromDirection = fromPort.direction()
-            val toDirection = toPort.direction()
-            if (fromDirection != null && toDirection != null && !fromDirection.allowsSourceConnection(toDirection)) {
+            if (!fromPort.direction.allowsSourceConnection(toPort.direction)) {
                 add(
                     context.domainDiagnostic(
-                        ruleId = "connection.direction.illegal",
-                        category = SemanticDiagnosticCategory.CONNECTION,
-                        subjectIdentity = connection.id,
-                        provenance = connection.provenance,
-                        message = "Connection `${authoredPath(connection.from)} -> ${authoredPath(connection.to)}` must flow from `out` to `in`.",
+                        ruleId = "relationship.direction.illegal",
+                        category = SemanticDiagnosticCategory.RELATIONSHIP,
+                        subjectIdentity = relationship.id,
+                        provenance = relationship.provenance,
+                        message = "Relationship `${relationship.participants.joinToString(" -> ") { participant -> authoredPath(participant.subject.reference) }}` must flow from `out` to `in`.",
                     ),
                 )
             }
 
-            val fromSignal = fromPort.properties.optionalSymbolValue("signal")
-            val toSignal = toPort.properties.optionalSymbolValue("signal")
-            if (fromSignal is PropertySymbolValue.SymbolText &&
-                toSignal is PropertySymbolValue.SymbolText &&
-                fromSignal.value != toSignal.value
+            val fromFlows = fromPort.admittedFlowReferences.map { it.authoredName }.toSet()
+            val toFlows = toPort.admittedFlowReferences.map { it.authoredName }.toSet()
+            if (fromFlows.isNotEmpty() && toFlows.isNotEmpty() && fromFlows.intersect(toFlows).isEmpty()
             ) {
                 add(
                     context.domainDiagnostic(
-                        ruleId = "connection.signal.incompatible",
-                        category = SemanticDiagnosticCategory.CONNECTION,
-                        subjectIdentity = connection.id,
-                        provenance = connection.provenance,
-                        message = "Connection `${authoredPath(connection.from)} -> ${authoredPath(connection.to)}` mixes incompatible signals `${fromSignal.value}` and `${toSignal.value}`.",
+                        ruleId = "relationship.flow.incompatible",
+                        category = SemanticDiagnosticCategory.RELATIONSHIP,
+                        subjectIdentity = relationship.id,
+                        provenance = relationship.provenance,
+                        message = "Relationship `${relationship.participants.joinToString(" -> ") { participant -> authoredPath(participant.subject.reference) }}` has no admitted Flow shared by both Ports.",
                     ),
                 )
             }
@@ -337,51 +276,9 @@ private fun connectionCompatibilityDiagnostics(
     }
 }
 
-private fun portSignalDiagnostics(
-    ports: List<EngineeringPort>,
-    context: AthenaPluginValidationContext,
-): List<SemanticDiagnostic> {
-    return ports.flatMap { port ->
-        when (val signal = port.properties.optionalSymbolValue("signal")) {
-            PropertySymbolValue.Missing,
-            is PropertySymbolValue.SymbolText -> emptyList()
-
-            is PropertySymbolValue.Invalid -> listOf(
-                context.domainDiagnostic(
-                    ruleId = "property.port.signal.invalid",
-                    category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = port.id,
-                    provenance = port.provenance,
-                    message = "Port `${authoredPortPath(port)}` declares `signal` with an invalid non-symbol value `${signal.value}`.",
-                ),
-            )
-
-            is PropertySymbolValue.Duplicate -> listOf(
-                context.domainDiagnostic(
-                    ruleId = "property.port.signal.duplicate",
-                    category = SemanticDiagnosticCategory.PROPERTY,
-                    subjectIdentity = port.id,
-                    provenance = port.provenance,
-                    message = "Port `${authoredPortPath(port)}` declares duplicate `signal` properties `${signal.values}`.",
-                ),
-            )
-        }
-    }
-}
-
-private fun EngineeringPort.direction(): PortDirection? {
-    return when (val direction = properties.optionalSymbolValue("direction")) {
-        PropertySymbolValue.Missing -> null
-        is PropertySymbolValue.SymbolText -> VALID_DIRECTIONS[direction.value]
-        is PropertySymbolValue.Invalid,
-        is PropertySymbolValue.Duplicate,
-            -> null
-    }
-}
-
-private fun PortDirection.allowsSourceConnection(targetDirection: PortDirection): Boolean {
-    return this in setOf(PortDirection.OUT, PortDirection.BIDIRECTIONAL, PortDirection.PASSIVE) &&
-        targetDirection in setOf(PortDirection.IN, PortDirection.BIDIRECTIONAL, PortDirection.PASSIVE)
+private fun EngineeringPortDirection.allowsSourceConnection(targetDirection: EngineeringPortDirection): Boolean {
+    return this in setOf(EngineeringPortDirection.OUTPUT, EngineeringPortDirection.BIDIRECTIONAL) &&
+        targetDirection in setOf(EngineeringPortDirection.INPUT, EngineeringPortDirection.BIDIRECTIONAL)
 }
 
 private fun List<EngineeringProperty>.requiredSymbolValue(name: String): PropertySymbolValue = propertySymbolValue(name)
@@ -398,20 +295,20 @@ private fun List<EngineeringProperty>.propertySymbolValue(name: String): Propert
     }
 
     return when (val value = matchingProperties.single().value) {
-        is EngineeringPropertyValue.Symbol -> PropertySymbolValue.SymbolText(value.text)
-        is EngineeringPropertyValue.Text -> PropertySymbolValue.Invalid(value.text)
+        is EngineeringValue.Symbol -> PropertySymbolValue.SymbolText(value.text)
+        else -> PropertySymbolValue.Invalid(value.renderedValue())
     }
 }
 
-private fun authoredPortPath(port: EngineeringPort): String = authoredPath(port.ownerReference.authoredPath + port.name)
+private fun authoredPortPath(port: EngineeringPort): String = authoredPath(port.owner.reference.authoredPath + port.name)
 
 private fun authoredPath(reference: EngineeringReference): String = authoredPath(reference.authoredPath)
 
 private fun authoredPath(parts: List<String>): String = parts.joinToString(".")
 
-private fun com.engineeringood.athena.ir.EngineeringComponent.isElectricalOwned(): Boolean {
+private fun EngineeringEntity.isElectricalOwned(): Boolean {
     val domain = properties.domainMarkerValue()
-    return domain == null || domain == ELECTRICAL_DOMAIN_ID
+    return domain == ELECTRICAL_DOMAIN_ID || conceptReference.authoredName.last() in VALID_DEVICE_TYPES
 }
 
 private fun List<EngineeringProperty>.domainMarkerValue(): String? {
@@ -420,35 +317,33 @@ private fun List<EngineeringProperty>.domainMarkerValue(): String? {
         return null
     }
     return when (val value = matchingProperties.single().value) {
-        is EngineeringPropertyValue.Symbol -> value.text
-        is EngineeringPropertyValue.Text -> value.text
+        is EngineeringValue.Symbol -> value.text
+        is EngineeringValue.Text -> value.text
+        else -> null
     }
 }
 
-private fun EngineeringPropertyValue.renderedValue(): String {
+private fun EngineeringValue.renderedValue(): String {
     return when (this) {
-        is EngineeringPropertyValue.Symbol -> text
-        is EngineeringPropertyValue.Text -> "\"$text\""
+        is EngineeringValue.Quantity -> "$value ${unit.authoredName.joinToString(".")}"
+        is EngineeringValue.Integer -> value.toString()
+        is EngineeringValue.Boolean -> value.toString()
+        is EngineeringValue.Text -> "\"$text\""
+        is EngineeringValue.Symbol -> text
+        is EngineeringValue.Reference -> "@${reference.authoredPath.joinToString(".")}"
     }
 }
 
 private val VALID_DIRECTIONS = mapOf(
-    "in" to PortDirection.IN,
-    "out" to PortDirection.OUT,
-    "bidirectional" to PortDirection.BIDIRECTIONAL,
-    "passive" to PortDirection.PASSIVE,
+    "in" to EngineeringPortDirection.INPUT,
+    "out" to EngineeringPortDirection.OUTPUT,
+    "bidirectional" to EngineeringPortDirection.BIDIRECTIONAL,
 )
 
 private val VALID_MULTIPLICITIES = setOf("single", "multiple", "many")
 private val VALID_CONSTRAINT_OWNERS = setOf("semantic", "representation", "physical", "layout_preference")
 private val VALID_CONSTRAINT_STRENGTHS = setOf("required", "preferred", "optional")
-private val REQUIRED_DEFAULT_FIELD_NAMES = setOf("direction", "signal", "role", "multiplicity", "owner")
-private enum class PortDirection {
-    IN,
-    OUT,
-    BIDIRECTIONAL,
-    PASSIVE,
-}
+private val REQUIRED_DEFAULT_FIELD_NAMES = setOf("direction", "flow", "role", "multiplicity", "owner")
 
 private sealed interface PropertySymbolValue {
     data object Missing : PropertySymbolValue

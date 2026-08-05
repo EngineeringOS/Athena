@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.ide.lsp
+package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
@@ -19,9 +19,9 @@ class AthenaPackageAwareSymbolsTest {
             package com.root
 
             system Consumer {
-              device Local {}
+              entity Local { concept Generic}
               port Local.in {}
-              connect shared_out_to_local_in Shared.out to Local.in
+              power Shared.out to Local.in
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -37,7 +37,7 @@ class AthenaPackageAwareSymbolsTest {
                 package com.root
 
                 system Provider {
-                  device Shared {}
+                  entity Shared { concept Generic}
                   port Shared.out {}
                 }
             """.trimIndent(),
@@ -75,7 +75,7 @@ class AthenaPackageAwareSymbolsTest {
             assertEquals("Consumer", systemSymbol.name)
             assertEquals(SymbolKind.Module, systemSymbol.kind)
             assertEquals(
-                listOf("Local", "Local.in", "connect shared_out_to_local_in Shared.out to Local.in"),
+                listOf("Local", "Local.in", "power Shared.out to Local.in"),
                 systemSymbol.children.map { symbol -> symbol.name },
             )
         } finally {

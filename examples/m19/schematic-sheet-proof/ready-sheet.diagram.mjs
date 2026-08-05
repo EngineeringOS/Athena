@@ -62,7 +62,7 @@ export default {
             displayName: '24V Control Power',
             order: 0,
             subjectSemanticIds: [
-                'component:PSU1',
+                'entity:PSU1',
                 'port:PSU1.plus',
                 'port:PLC1.power',
                 'connection:PSU1.plus->PLC1.power'
@@ -74,7 +74,7 @@ export default {
         displayName: 'Electrical Schematic Default',
         subjects: [
             {
-                semanticId: 'component:PSU1',
+                semanticId: 'entity:PSU1',
                 symbolKey: 'device.schematic.power-supply',
                 labelPolicy: 'subject_label',
                 markerKeys: ['source-device']
@@ -95,7 +95,7 @@ export default {
     },
     crossReferences: [
         {
-            semanticId: 'component:PSU1',
+            semanticId: 'entity:PSU1',
             kind: 'repeated_reference',
             sheetIds: ['schematic/sheet/01-main', 'schematic/sheet/02-io'],
             occurrenceIds: [
@@ -108,7 +108,7 @@ export default {
         {
             anchorId: 'schematic/projection/label/port_PSU1_plus/anchor',
             portSemanticId: 'port:PSU1.plus',
-            ownerSemanticId: 'component:PSU1',
+            ownerSemanticId: 'entity:PSU1',
             nodeId: 'schematic/projection/node/component_PSU1',
             labelId: 'schematic/projection/label/port_PSU1_plus',
             x: 360,
@@ -118,7 +118,7 @@ export default {
         {
             anchorId: 'schematic/projection/label/port_PLC1_power/anchor',
             portSemanticId: 'port:PLC1.power',
-            ownerSemanticId: 'component:PLC1',
+            ownerSemanticId: 'entity:PLC1',
             nodeId: 'schematic/projection/node/component_PLC1',
             labelId: 'schematic/projection/label/port_PLC1_power',
             x: 720,
@@ -169,7 +169,7 @@ export default {
         nodes: [
             {
                 id: 'schematic/projection/node/component_PSU1',
-                semanticId: 'component:PSU1',
+                semanticId: 'entity:PSU1',
                 type: 'node',
                 kind: 'component',
                 label: 'PSU1',

@@ -1,2 +1,2 @@
-AutomationML.InternalElement -> EngineeringComponent
+AutomationML.InternalElement -> EngineeringEntity
 AutomationML.ExternalInterface -> EngineeringPort

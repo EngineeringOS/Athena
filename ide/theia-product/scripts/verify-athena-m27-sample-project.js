@@ -228,7 +228,7 @@ function assertSheetSelectorPersistenceProof(sheetSelectorPersistenceProof) {
 
 function assertNoOrphanRouteEndpointNodes(routeProof, visualProof) {
     const renderedComponentIds = new Set((visualProof?.nodeSemanticIds ?? [])
-        .filter(semanticId => typeof semanticId === 'string' && semanticId.startsWith('component:')));
+        .filter(semanticId => typeof semanticId === 'string' && semanticId.startsWith('entity:')));
     const failures = [];
     for (const routeState of routeProof?.routeStates ?? []) {
         const endpointOwners = routeEndpointOwnerComponentIds(routeState.semanticId);
@@ -256,7 +256,7 @@ function routeEndpointOwnerComponentIds(connectionSemanticId) {
             .split('->')
             .map(endpoint => endpoint.split('.')[0])
             .filter(Boolean)
-            .map(ownerName => `component:${ownerName}`)
+            .map(ownerName => `entity:${ownerName}`)
     )];
 }
 

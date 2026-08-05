@@ -322,7 +322,7 @@ class SpatialAnchorCompilerTest {
         )
         val occurrences = fixture.occurrences + SpatialOccurrenceGeometry(
             occurrenceId = SpatialOccurrenceId(MAIN_SHEET, "occ:unknown"),
-            subjectId = StableSemanticIdentity("component:unknown"),
+            subjectId = StableSemanticIdentity("entity:unknown"),
             sheetId = MAIN_SHEET,
             regionId = "region:$MAIN_SHEET",
             rectangle = SpatialRect(0, 0, 10, 10),
@@ -636,7 +636,7 @@ class SpatialAnchorCompilerTest {
 
     private fun node(id: String): ProjectionNode = ProjectionNode(
         projectionId = ProjectionNodeId(id),
-        semanticId = StableSemanticIdentity("component:${id.substringAfter(':')}"),
+        semanticId = StableSemanticIdentity("entity:${id.substringAfter(':')}"),
         label = id,
         originGeometryElementId = GeometryElementId("geometry:node:$id"),
     )

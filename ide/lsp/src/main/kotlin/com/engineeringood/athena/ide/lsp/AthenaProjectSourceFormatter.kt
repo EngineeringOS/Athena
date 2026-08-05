@@ -1,9 +1,7 @@
 package com.engineeringood.athena.ide.lsp
 
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.Declaration
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.EngineeringFunctionDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceSubjectKind
@@ -59,10 +57,8 @@ internal object AthenaProjectSourceFormatter {
 
     private fun StringBuilder.appendDeclaration(declaration: Declaration) {
         when (declaration) {
-            is DeviceDeclaration -> appendDevice(declaration)
+            is EntityDeclaration -> appendEntity(declaration)
             is PortDeclaration -> appendPort(declaration)
-            is ConnectionDeclaration -> appendConnection(declaration)
-            is ConnectionGroupDeclaration -> appendConnectionGroup(declaration)
             is RelationDeclaration -> appendRelation(declaration)
             is ExternalEvidenceDeclaration -> appendEvidence(declaration)
             is ProjectionPolicyDeclaration -> appendProjectionPolicy(declaration)
@@ -76,8 +72,8 @@ internal object AthenaProjectSourceFormatter {
         }
     }
 
-    private fun StringBuilder.appendDevice(declaration: DeviceDeclaration) {
-        appendLine("  device ${declaration.name} {")
+    private fun StringBuilder.appendEntity(declaration: EntityDeclaration) {
+        appendLine("  entity ${declaration.name} {")
         declaration.fields.forEach { field -> appendLine("    ${field.render()}") }
         declaration.nestedPorts.forEach { port -> appendNestedPort(port) }
         declaration.nestedFunctions.forEach { function -> appendFunction(function) }
@@ -92,26 +88,20 @@ internal object AthenaProjectSourceFormatter {
 
     private fun StringBuilder.appendFunction(declaration: EngineeringFunctionDeclaration) {
         appendLine("    function ${declaration.name} {")
-        appendLine("      role ${declaration.role.value}")
-        appendLine("      ports (${declaration.portReferences.joinToString(", ") { reference -> reference.render() }})")
+        appendLine("      role ${declaration.role.render()}")
+        declaration.nestedPorts.forEach { port -> appendNestedFunctionPort(port) }
         appendLine("    }")
+    }
+
+    private fun StringBuilder.appendNestedFunctionPort(declaration: PortDeclaration) {
+        appendLine("      port ${declaration.qualifiedName.parts.last()} {")
+        declaration.fields.forEach { field -> appendLine("        ${field.render()}") }
+        appendLine("      }")
     }
 
     private fun StringBuilder.appendPort(declaration: PortDeclaration) {
         appendLine("  port ${declaration.qualifiedName.render()} {")
         declaration.fields.forEach { field -> appendLine("    ${field.render()}") }
-        appendLine("  }")
-    }
-
-    private fun StringBuilder.appendConnection(declaration: ConnectionDeclaration) {
-        appendLine("  connect ${declaration.alias} ${declaration.from.render()} to ${declaration.to.render()}")
-    }
-
-    private fun StringBuilder.appendConnectionGroup(declaration: ConnectionGroupDeclaration) {
-        appendLine("  connect ${declaration.name} {")
-        declaration.connections.forEach { connection ->
-            appendLine("    ${connection.alias} ${connection.from.render()} to ${connection.to.render()}")
-        }
         appendLine("  }")
     }
 
@@ -121,7 +111,7 @@ internal object AthenaProjectSourceFormatter {
         } else {
             declaration.targets.joinToString(prefix = "[", postfix = "]") { target -> target.render() }
         }
-        appendLine("  ${declaration.word.value} ${declaration.from.render()} to $target")
+        appendLine("  ${declaration.word.value} ${declaration.source.render()} to $target")
     }
 
     private fun StringBuilder.appendEvidence(declaration: ExternalEvidenceDeclaration) {
@@ -218,7 +208,7 @@ internal object AthenaProjectSourceFormatter {
             appendLine("    }")
         }
         declaration.routes.forEach { route ->
-            appendLine("    route ${route.connectionAlias} through ${route.channelIds.renderList()}")
+            appendLine("    route ${route.relationshipId} through ${route.channelIds.renderList()}")
         }
         appendLine("  }")
     }
@@ -228,8 +218,12 @@ private fun PropertyAssignment.render(): String = "$name ${value.render()}"
 
 private fun ScalarValue.render(): String =
     when (this) {
-        is ScalarValue.Identifier -> text
-        is ScalarValue.StringLiteral -> "\"$text\""
+        is ScalarValue.Symbol -> text
+        is ScalarValue.Text -> "\"${text.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+        is ScalarValue.Quantity -> "$exactText [${unit.render()}]"
+        is ScalarValue.Integer -> exactText
+        is ScalarValue.Boolean -> value.toString()
+        is ScalarValue.Reference -> "@${target.render()}"
     }
 
 private fun LayoutStatement.render(): String =

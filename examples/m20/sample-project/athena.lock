@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:36534c289dd081ece28521e67b33262d36a2964a173a85aa65722eb971729bba
+validatedLockStateDigest: lock-state:3e63fd5050837517b07f0ab76f5c2f4497ddf524a55b5fbede0956dbe381ed16
 primaryPackage:
   name: com.engineeringood.m20.sample
   version: 1.0.0
@@ -11,15 +11,15 @@ packages:
   - name: com.engineeringood.m20.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:293593fd9a3f8ea6306a117111b370110781fb7466813df036286f6a650fe8e5
+    snapshotDigest: package-snapshot:4b38670ddded68ee26441d14ba7fd1e605079ef150b17c785468d959bf2ef52f
     sourceHashes:
       - path: com/engineeringood/m20/sample/01-schematic-sheet.athena
-        hash: sha256:74154a11925cc0332c580ea4df7fa3c63af98327c6334fadaec39faa8d124489
+        hash: sha256:4cc0384b47250dd7bcdeeb02eacd52f0cd4e9ecb51d85d69d6379d7471c5555c
       - path: com/engineeringood/m20/sample/02-dense-sheet.athena
-        hash: sha256:5048584fa608c7f2ade25fe00dab97ce602ad7e08a4f6b97cc07ebf79068de22
+        hash: sha256:06efffe9be33c3721ef951824e97d580c8cd47caa2ec215c4a7ead6710a44716
       - path: com/engineeringood/m20/sample/03-acceptance-sheet.athena
-        hash: sha256:d043dff70384d80cd47abcf32fd194cc17b00f902cec98fac73f913597b4b2a7
+        hash: sha256:1cf6d8d71cd9858620c3b38e8fd0c7ef78950559ec7832c17c82270d4166afa9
       - path: com/engineeringood/m20/sample/04-boundary-scope.athena
-        hash: sha256:9c872ef932349d0fd095c6c7a24f94ca530b114300a004e2aacc4bd790dd8eef
+        hash: sha256:6aa0af7cedef4bb59df5f4f5aed18ceca05475259ed80a49b86127385f4768cb
     resourceHashes: []
     dependencies: []

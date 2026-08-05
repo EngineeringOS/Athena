@@ -222,7 +222,7 @@ The first M19 demo should be:
 3. Open one `.athena` source file.
 4. Open the schematic sheet view.
 5. Inspect the title block, page grid, symbols, conductors, labels, and references.
-6. Click a device or terminal on the schematic.
+6. Click a entity or terminal on the schematic.
 7. Inspector shows canonical subject identity, component knowledge, ports, and related diagnostics.
 8. Source/navigation highlights or reveals the matching authored subject.
 9. Click a conductor or cross-reference marker.

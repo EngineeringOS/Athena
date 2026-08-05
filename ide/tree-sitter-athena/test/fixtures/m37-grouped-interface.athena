@@ -1,20 +1,20 @@
 system EngineeringConnectivity {
-  device Drive {
-    type MotorDrive
+  entity Drive {
+    concept MotorDrive
     connectivity enabled
 
     interface powerInput {
-      type power
+      concept power
       direction in
-      signal PowerAC
+      flow PowerAC
       role line
 
       ports {
         L1
         PE {
-          signal ProtectiveEarth
+          flow ProtectiveEarth
           role protective_earth
-          direction passive
+          direction bidirectional
         }
       }
     }

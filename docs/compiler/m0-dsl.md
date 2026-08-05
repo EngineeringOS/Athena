@@ -5,7 +5,7 @@
 Story `1.2` defines the first executable Athena language slice as a small standalone text DSL for:
 
 - system declaration
-- device declarations
+- entity declarations
 - port declarations
 - connection declarations
 
@@ -15,13 +15,13 @@ This is a syntax-only boundary. The parser does not assign semantic meaning beyo
 
 ```text
 system DemoCabinet {
-  device PLC1 {
-    type PLC
+  entity PLC1 {
+    concept PLC
     model "S7-1200"
   }
 
-  device M1 {
-    type Motor
+  entity M1 {
+    concept Motor
   }
 
   port PLC1.out {

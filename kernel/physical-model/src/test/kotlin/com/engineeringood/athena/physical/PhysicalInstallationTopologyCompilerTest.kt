@@ -11,7 +11,7 @@ class PhysicalInstallationTopologyCompilerTest {
     fun `compiles typed physical installation ir without visual or route geometry`() {
         val result = PhysicalInstallationTopologyCompiler.compile(
             intent = validIntent(),
-            contracts = listOf(contract("component:QF35"), contract("component:XT35")),
+            contracts = listOf(contract("entity:QF35"), contract("entity:XT35")),
         )
 
         val ir = assertIs<PhysicalInstallationTopologyCompilation.Success>(result).ir
@@ -26,7 +26,7 @@ class PhysicalInstallationTopologyCompilerTest {
         assertEquals(2, ir.space.mountedOccurrences.size)
         assertEquals(listOf(PhysicalObjectId("CH1")), ir.routes.single().channelIds)
         assertEquals(
-            listOf("component:QF35", "component:XT35"),
+            listOf("entity:QF35", "entity:XT35"),
             ir.space.mountedOccurrences.map { occurrence -> occurrence.contract.subjectIdentity.value },
         )
     }
@@ -40,13 +40,13 @@ class PhysicalInstallationTopologyCompilerTest {
                 rails = listOf(rail("DIN1", "MissingSurface"), rail("DIN1", "MissingSurface")),
                 channels = listOf(channel("CH1", "MissingDuct")),
                 mounts = listOf(
-                    mount("QF35Mount", "component:QF35", "D1", 100, 0),
-                    mount("QF35DuplicateMount", "component:QF35", "DIN1", 130, 0),
-                    mount("MissingContractMount", "component:K35", "DIN1", 160, 0),
+                    mount("QF35Mount", "entity:QF35", "D1", 100, 0),
+                    mount("QF35DuplicateMount", "entity:QF35", "DIN1", 130, 0),
+                    mount("MissingContractMount", "entity:K35", "DIN1", 160, 0),
                 ),
                 routes = listOf(route("MainSupply", listOf("CH2"))),
             ),
-            contracts = listOf(contract("component:QF35")),
+            contracts = listOf(contract("entity:QF35")),
         )
 
         val failure = assertIs<PhysicalInstallationTopologyCompilation.Failure>(result)
@@ -70,12 +70,12 @@ class PhysicalInstallationTopologyCompilerTest {
         val result = PhysicalInstallationTopologyCompiler.compile(
             intent = validIntent().copy(
                 mounts = listOf(
-                    mount("BMount", "component:B", "XT1", x = 40, y = 20),
-                    mount("AMount", "component:A", "XT1", x = 10, y = 20),
-                    mount("CMount", "component:C", "XT1", x = 10, y = 30),
+                    mount("BMount", "entity:B", "XT1", x = 40, y = 20),
+                    mount("AMount", "entity:A", "XT1", x = 10, y = 20),
+                    mount("CMount", "entity:C", "XT1", x = 10, y = 30),
                 ),
             ),
-            contracts = listOf(contract("component:A"), contract("component:B"), contract("component:C")),
+            contracts = listOf(contract("entity:A"), contract("entity:B"), contract("entity:C")),
         )
 
         val terminalGroup = assertIs<PhysicalInstallationTopologyCompilation.Success>(result)
@@ -85,7 +85,7 @@ class PhysicalInstallationTopologyCompilerTest {
             .single()
 
         assertEquals(
-            listOf("component:A", "component:C", "component:B"),
+            listOf("entity:A", "entity:C", "entity:B"),
             terminalGroup.orderedOccurrenceKeys.map { key -> key.canonicalSemanticSubjectId.value },
         )
     }
@@ -95,7 +95,7 @@ class PhysicalInstallationTopologyCompilerTest {
         val rails = assertIs<PhysicalInstallationTopologyCompilation.Success>(
             PhysicalInstallationTopologyCompiler.compile(
                 intent = validIntent(),
-                contracts = listOf(contract("component:QF35"), contract("component:XT35")),
+                contracts = listOf(contract("entity:QF35"), contract("entity:XT35")),
             ),
         ).ir.space.rails.associateBy { rail -> rail.id.value }
 
@@ -120,8 +120,8 @@ class PhysicalInstallationTopologyCompilerTest {
         channels = listOf(channel("CH1", "D1")),
         terminalGroups = listOf(terminalGroup("XT1", "ENC1")),
         mounts = listOf(
-            mount("QF35Mount", "component:QF35", "DIN1", 100, 0),
-            mount("XT35Mount", "component:XT35", "XT1", 10, 5),
+            mount("QF35Mount", "entity:QF35", "DIN1", 100, 0),
+            mount("XT35Mount", "entity:XT35", "XT1", 10, 5),
         ),
         routes = listOf(route("MainSupply", listOf("CH1"))),
     )
@@ -204,7 +204,7 @@ class PhysicalInstallationTopologyCompilerTest {
 
     private fun route(alias: String, channelIds: List<String>): PhysicalRouteIntentSource =
         PhysicalRouteIntentSource(
-            connectionAlias = alias,
+            relationshipId = alias,
             channelIds = channelIds.map(::PhysicalObjectId),
             provenance = provenance(alias),
         )

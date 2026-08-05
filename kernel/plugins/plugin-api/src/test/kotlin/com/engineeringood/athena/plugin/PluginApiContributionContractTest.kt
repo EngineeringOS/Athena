@@ -28,7 +28,7 @@ class PluginApiContributionContractTest {
                     AthenaDomainEntitySchema(
                         typeId = "synthetic-device",
                         displayName = "Synthetic Device",
-                        subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+                        subjectKind = AthenaDomainSchemaSubjectKind.ENTITY,
                         propertyNames = setOf("category"),
                         portTypeIds = setOf("synthetic-port"),
                     ),
@@ -38,7 +38,7 @@ class PluginApiContributionContractTest {
                         name = "category",
                         displayName = "Category",
                         valueKind = AthenaDomainPropertyValueKind.SYMBOL,
-                        appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
+                        appliesTo = setOf(AthenaDomainSchemaSubjectKind.ENTITY),
                         required = true,
                         allowedSymbolValues = setOf("synthetic-device"),
                     ),
@@ -51,8 +51,8 @@ class PluginApiContributionContractTest {
                         allowedDirections = setOf("in", "out"),
                     ),
                 ),
-                connections = listOf(
-                    AthenaDomainConnectionSchema(
+                relationships = listOf(
+                    AthenaDomainRelationshipSchema(
                         typeId = "synthetic-link",
                         displayName = "Synthetic Link",
                         sourcePortTypeIds = setOf("synthetic-port"),
@@ -99,7 +99,7 @@ class PluginApiContributionContractTest {
         assertEquals("synthetic-domain", plugin.domainSchema.domainId)
         assertEquals(listOf("synthetic-device"), plugin.domainSchema.entities.map { entity -> entity.typeId })
         assertEquals(listOf("synthetic-port"), plugin.domainSchema.ports.map { port -> port.typeId })
-        assertEquals(listOf("synthetic-link"), plugin.domainSchema.connections.map { connection -> connection.typeId })
+        assertEquals(listOf("synthetic-link"), plugin.domainSchema.relationships.map { relationship -> relationship.typeId })
         assertEquals(
             listOf("synthetic.validation.compatibility"),
             plugin.validationContributions.map { contribution -> contribution.contributionId },

@@ -23,7 +23,7 @@ groundwork that Story `5.3` can cite.
 
 1. **Add a sealed `Declaration` variant** in `AthenaLanguageModel.kt` (for example a
    hypothetical `ImportDeclaration` carrying a qualified module/package reference and a
-   `span`). Do not widen existing `DeviceDeclaration` / `PortDeclaration` /
+   `span`). Do not widen existing `EntityDeclaration` / `PortDeclaration` /
    `ConnectionDeclaration` fields to overload them with new meaning.
 2. **Adapt source -> AST** inside the internal
    `com.engineeringood.athena.language.antlr` seam established by Story `1.2` plus the

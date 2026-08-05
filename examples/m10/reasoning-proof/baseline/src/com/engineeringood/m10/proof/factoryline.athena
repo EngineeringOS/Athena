@@ -1,8 +1,8 @@
 package com.engineeringood.m10.proof
 
 system FactoryLine {
-  device M1 {
-    type Motor
+  entity M1 {
+    concept Motor
     power "7.5kw"
     voltage "400V"
     powerFactor "0.86"

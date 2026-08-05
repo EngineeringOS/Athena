@@ -37,7 +37,7 @@ The current M1 affected scope is deterministic and intentionally conservative.
   - the exact stable semantic identities reported by the accepted runtime command
 - `validationSemanticIds`
   - changed identities plus directly implied port and owning component identities
-- `renderComponentSemanticIds`
+- `renderEntitySemanticIds`
   - owning components of changed or referenced ports
 - `renderConnectionSemanticIds`
   - changed connection identities, including connections removed by undo or replay

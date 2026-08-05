@@ -1,23 +1,23 @@
 package com.engineeringood.m25.sample
 
 system TerminalLabelsAndRoutes {
-  device ControllerPLC2 {
-    type Switch
+  entity ControllerPLC2 {
+    concept Switch
     model "PLC"
   }
 
-  device TerminalStripXT2 {
-    type Switch
+  entity TerminalStripXT2 {
+    concept Switch
     model "XT2"
   }
 
-  device MotorM2 {
-    type Motor
+  entity MotorM2 {
+    concept Motor
     model "M2"
   }
 
-  device OperatorHMI2 {
-    type Lamp
+  entity OperatorHMI2 {
+    concept Lamp
     model "HMI"
   }
 

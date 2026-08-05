@@ -1,8 +1,8 @@
 package com.engineeringood.m34.sample
 
 system M34NativeCabinetProof {
-  device MainPowerSupplyPS34 {
-    type Switch
+  entity MainPowerSupplyPS34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-POWER-SUPPLY"
 
@@ -17,8 +17,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device MainBreakerQF34 {
-    type Switch
+  entity MainBreakerQF34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-BREAKER"
 
@@ -33,8 +33,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device WallSwitchS34 {
-    type Switch
+  entity WallSwitchS34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-WALL-SWITCH"
 
@@ -49,8 +49,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device ControlRelayK34 {
-    type Switch
+  entity ControlRelayK34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-CONTROL-RELAY"
 
@@ -65,8 +65,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device FieldTerminalXT34 {
-    type Switch
+  entity FieldTerminalXT34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-FIELD-TERMINAL"
 
@@ -81,8 +81,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device SpareTerminalXT34 {
-    type Switch
+  entity SpareTerminalXT34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-SPARE-TERMINAL"
 
@@ -97,8 +97,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device ShutterMotorM34 {
-    type Motor
+  entity ShutterMotorM34 {
+    concept Motor
     connectivity enabled
     model "ATHENA-M34-SHUTTER-MOTOR"
 
@@ -113,8 +113,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device PilotLampHL34 {
-    type Lamp
+  entity PilotLampHL34 {
+    concept Lamp
     connectivity enabled
     model "ATHENA-M34-PILOT-LAMP"
 
@@ -124,8 +124,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device UpperRail34 {
-    type Switch
+  entity UpperRail34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-DIN-RAIL"
 
@@ -135,8 +135,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device LowerRail34 {
-    type Switch
+  entity LowerRail34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-DIN-RAIL"
 
@@ -146,8 +146,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device CabinetEnclosure34 {
-    type Switch
+  entity CabinetEnclosure34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-CABINET-ENCLOSURE"
 
@@ -157,8 +157,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device RouteChannel34 {
-    type Switch
+  entity RouteChannel34 {
+    concept Switch
     connectivity enabled
     model "ATHENA-M34-ROUTE-CHANNEL"
 
@@ -168,8 +168,8 @@ system M34NativeCabinetProof {
     }
   }
 
-  device CabinetTitleLabel34 {
-    type Lamp
+  entity CabinetTitleLabel34 {
+    concept Lamp
     connectivity enabled
     model "ATHENA-M34-CABINET-TITLE"
 
@@ -179,13 +179,13 @@ system M34NativeCabinetProof {
     }
   }
 
-  connect mainpowersupplyps34_output_to_mainbreakerqf34_line MainPowerSupplyPS34.output to MainBreakerQF34.line
-  connect mainbreakerqf34_load_to_controlrelayk34_supply MainBreakerQF34.load to ControlRelayK34.supply
-  connect controlrelayk34_output_to_fieldterminalxt34_field ControlRelayK34.output to FieldTerminalXT34.field
-  connect fieldterminalxt34_panel_to_shuttermotorm34_up FieldTerminalXT34.panel to ShutterMotorM34.up
-  connect wallswitchs34_up_to_pilotlamphl34_status WallSwitchS34.up to PilotLampHL34.status
-  connect wallswitchs34_down_to_spareterminalxt34_field WallSwitchS34.down to SpareTerminalXT34.field
-  connect spareterminalxt34_panel_to_shuttermotorm34_down SpareTerminalXT34.panel to ShutterMotorM34.down
+  power MainPowerSupplyPS34.output to MainBreakerQF34.line
+  power MainBreakerQF34.load to ControlRelayK34.supply
+  power ControlRelayK34.output to FieldTerminalXT34.field
+  power FieldTerminalXT34.panel to ShutterMotorM34.up
+  power WallSwitchS34.up to PilotLampHL34.status
+  power WallSwitchS34.down to SpareTerminalXT34.field
+  power SpareTerminalXT34.panel to ShutterMotorM34.down
 
   layout cabinet {
     place MainBreakerQF34 near MainPowerSupplyPS34

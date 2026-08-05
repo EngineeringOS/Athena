@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:6f32ce7ff45b03487e7a19ccf67e7ee9fb7b1e0d94ab515b475a83126790a823
+validatedLockStateDigest: lock-state:b7af0b086ae85c5b1f851f465c7f401b178de17b851baeffdb26a78e2e569c68
 primaryPackage:
   name: com.engineeringood.m28.sample
   version: 1.0.0
@@ -11,11 +11,11 @@ packages:
   - name: com.engineeringood.m28.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:a0ead2b903b7a1b007d7a5c8140ba446d8b30880aa4d9da3c7de89c2409ad74b
+    snapshotDigest: package-snapshot:4ac453fe2ae73f6bad228c0e7546fdcd80ebed503c5416ee3a0282720177e742
     sourceHashes:
       - path: com/engineeringood/m28/sample/01-relationship-authoring-source.athena
-        hash: sha256:54780ddea88dc16ca6c8bea5363cb7a650bc534a2628af1dcf97d1cf0151e99e
+        hash: sha256:733896f0e3855982735562d631527b8caf2227346c8e2b47cb5ae17aa56a19f5
       - path: com/engineeringood/m28/sample/02-relationship-candidates.athena
-        hash: sha256:ce7af724acf2a7d52d7fb6f3a62a76de3030bd931687966ad2f67acd2e9ea729
+        hash: sha256:409df7f137a56c61bdef4b99765870de266680b110a0de2a8126278caea36a7e
     resourceHashes: []
     dependencies: []

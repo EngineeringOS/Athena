@@ -1,61 +1,61 @@
 package com.engineeringood.rendererbenchmark
 
 system ExpansionLine {
-  device PLC1 {
-    type Switch
+  entity PLC1 {
+    concept Switch
     model "S7-1500"
   }
 
-  device PLC2 {
-    type Switch
+  entity PLC2 {
+    concept Switch
     model "ET200SP"
   }
 
-  device PLC3 {
-    type Switch
+  entity PLC3 {
+    concept Switch
     model "ET200SP"
   }
 
-  device HMI1 {
-    type Lamp
+  entity HMI1 {
+    concept Lamp
     model "Comfort"
   }
 
-  device HMI2 {
-    type Lamp
+  entity HMI2 {
+    concept Lamp
     model "Compact"
   }
 
-  device PWR1 {
-    type Switch
+  entity PWR1 {
+    concept Switch
   }
 
-  device KM1 {
-    type Switch
+  entity KM1 {
+    concept Switch
   }
 
-  device KM2 {
-    type Switch
+  entity KM2 {
+    concept Switch
   }
 
-  device KM3 {
-    type Switch
+  entity KM3 {
+    concept Switch
   }
 
-  device KM4 {
-    type Switch
+  entity KM4 {
+    concept Switch
   }
 
-  device KM5 {
-    type Switch
+  entity KM5 {
+    concept Switch
   }
 
-  device KM6 {
-    type Switch
+  entity KM6 {
+    concept Switch
   }
 
-  device M1 {
-    type Motor
+  entity M1 {
+    concept Motor
     power "7.5kw"
     voltage "400V"
     powerFactor "0.86"
@@ -65,48 +65,48 @@ system ExpansionLine {
     relayRatedCurrent "13A"
   }
 
-  device M2 {
-    type Motor
+  entity M2 {
+    concept Motor
   }
 
-  device M3 {
-    type Motor
+  entity M3 {
+    concept Motor
   }
 
-  device M4 {
-    type Motor
+  entity M4 {
+    concept Motor
   }
 
-  device M5 {
-    type Motor
+  entity M5 {
+    concept Motor
   }
 
-  device M6 {
-    type Motor
+  entity M6 {
+    concept Motor
   }
 
-  device S1 {
-    type Switch
+  entity S1 {
+    concept Switch
   }
 
-  device S2 {
-    type Switch
+  entity S2 {
+    concept Switch
   }
 
-  device S3 {
-    type Switch
+  entity S3 {
+    concept Switch
   }
 
-  device S4 {
-    type Switch
+  entity S4 {
+    concept Switch
   }
 
-  device S5 {
-    type Switch
+  entity S5 {
+    concept Switch
   }
 
-  device S6 {
-    type Switch
+  entity S6 {
+    concept Switch
   }
 
   port PWR1.bus {

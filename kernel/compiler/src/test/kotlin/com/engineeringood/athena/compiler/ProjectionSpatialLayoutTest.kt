@@ -266,7 +266,7 @@ class ProjectionSpatialLayoutTest {
 
         assertEquals(4, result.occurrences.size)
         val unassigned = result.occurrences.last()
-        assertEquals("projection/node/component:Aux", unassigned.occurrenceId.projectionId)
+        assertEquals("projection/node/entity:Aux", unassigned.occurrenceId.projectionId)
         assertEquals("engineering-projection/sheet/01-main/region/unassigned", unassigned.regionId)
         assertTrue(unassigned.placementReason.text.contains("explicit final Unassigned Region"))
         assertFalse(unassigned.placementReason.text.contains("authored order"))
@@ -287,7 +287,7 @@ class ProjectionSpatialLayoutTest {
         assertEquals("Occurrence Supply", diagnostic.subject)
         assertEquals("is assigned to more than one Region on Sheet engineering-projection/sheet/01-main", diagnostic.problem)
         assertEquals("List Supply in exactly one Region on that Sheet.", diagnostic.correction)
-        assertTrue(diagnostic.sourceTrace.projectionIds.contains("projection/node/component:Supply"))
+        assertTrue(diagnostic.sourceTrace.projectionIds.contains("projection/node/entity:Supply"))
         assertEquals(listOf(GeometryElementId("origin:Supply")), diagnostic.sourceTrace.geometryElementIds)
     }
 
@@ -315,12 +315,12 @@ class ProjectionSpatialLayoutTest {
     fun `spatial placement rejects ambiguous duplicate labels before region resolution`() {
         val first = namedNode("Shared").copy(
             projectionId = ProjectionNodeId("projection/node/shared/first"),
-            semanticId = StableSemanticIdentity("component:SharedFirst"),
+            semanticId = StableSemanticIdentity("entity:SharedFirst"),
             originGeometryElementId = GeometryElementId("origin:SharedFirst"),
         )
         val second = namedNode("Shared").copy(
             projectionId = ProjectionNodeId("projection/node/shared/second"),
-            semanticId = StableSemanticIdentity("component:SharedSecond"),
+            semanticId = StableSemanticIdentity("entity:SharedSecond"),
             originGeometryElementId = GeometryElementId("origin:SharedSecond"),
         )
         val region = ProjectionRegion(
@@ -507,7 +507,7 @@ class ProjectionSpatialLayoutTest {
 
     @Test
     fun `explicit node ids keep semantic sibling occurrences on separate sheets`() {
-        val semanticId = StableSemanticIdentity("component:SharedSubject")
+        val semanticId = StableSemanticIdentity("entity:SharedSubject")
         val first = namedNode("FirstView").copy(semanticId = semanticId)
         val second = namedNode("SecondView").copy(semanticId = semanticId)
         val projection = projectionDocument(nodes = listOf(first, second), regions = emptyList())
@@ -665,7 +665,7 @@ class ProjectionSpatialLayoutTest {
 
     @Test
     fun `spatial placement uses exact typed occurrence identity when semantic identities repeat`() {
-        val sharedSemanticId = StableSemanticIdentity("component:Shared")
+        val sharedSemanticId = StableSemanticIdentity("entity:Shared")
         val first = namedNode("First").copy(semanticId = sharedSemanticId)
         val second = namedNode("Second").copy(semanticId = sharedSemanticId)
         val target = namedNode("Target")
@@ -849,10 +849,10 @@ class ProjectionSpatialLayoutTest {
         separated: Boolean,
     ): SpatialOccurrenceGeometry {
         val sheetId = "engineering-projection/sheet/01-main"
-        val projectionId = "projection/node/component:$name"
+        val projectionId = "projection/node/entity:$name"
         return SpatialOccurrenceGeometry(
             occurrenceId = SpatialOccurrenceId(sheetId = sheetId, projectionId = projectionId),
-            subjectId = StableSemanticIdentity("component:$name"),
+            subjectId = StableSemanticIdentity("entity:$name"),
             sheetId = sheetId,
             regionId = region.regionId,
             rectangle = SpatialRect(x = x, y = y, width = 80, height = 40),
@@ -935,40 +935,40 @@ class ProjectionSpatialLayoutTest {
 
     private fun supplyNode(): ProjectionNode =
         ProjectionNode(
-            projectionId = ProjectionNodeId("projection/node/component:Supply"),
-            semanticId = StableSemanticIdentity("component:Supply"),
+            projectionId = ProjectionNodeId("projection/node/entity:Supply"),
+            semanticId = StableSemanticIdentity("entity:Supply"),
             label = "Supply",
             originGeometryElementId = GeometryElementId("origin:Supply"),
         )
 
     private fun breakerNode(): ProjectionNode =
         ProjectionNode(
-            projectionId = ProjectionNodeId("projection/node/component:Q1"),
-            semanticId = StableSemanticIdentity("component:Q1"),
+            projectionId = ProjectionNodeId("projection/node/entity:Q1"),
+            semanticId = StableSemanticIdentity("entity:Q1"),
             label = "Q1",
             originGeometryElementId = GeometryElementId("origin:Q1"),
         )
 
     private fun loadNode(): ProjectionNode =
         ProjectionNode(
-            projectionId = ProjectionNodeId("projection/node/component:Load"),
-            semanticId = StableSemanticIdentity("component:Load"),
+            projectionId = ProjectionNodeId("projection/node/entity:Load"),
+            semanticId = StableSemanticIdentity("entity:Load"),
             label = "Load",
             originGeometryElementId = GeometryElementId("origin:Load"),
         )
 
     private fun auxNode(): ProjectionNode =
         ProjectionNode(
-            projectionId = ProjectionNodeId("projection/node/component:Aux"),
-            semanticId = StableSemanticIdentity("component:Aux"),
+            projectionId = ProjectionNodeId("projection/node/entity:Aux"),
+            semanticId = StableSemanticIdentity("entity:Aux"),
             label = "Aux",
             originGeometryElementId = GeometryElementId("origin:Aux"),
         )
 
     private fun namedNode(name: String): ProjectionNode =
         ProjectionNode(
-            projectionId = ProjectionNodeId("projection/node/component:$name"),
-            semanticId = StableSemanticIdentity("component:$name"),
+            projectionId = ProjectionNodeId("projection/node/entity:$name"),
+            semanticId = StableSemanticIdentity("entity:$name"),
             label = name,
             originGeometryElementId = GeometryElementId("origin:$name"),
         )

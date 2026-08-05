@@ -172,7 +172,7 @@ async function runGraphFirstAuthoringProof(sampleRepositoryRoot) {
     }
     const tempRepositoryRoot = path.join(resolvedTempParent, 'sample-project');
     const createEntityTag = 'GraphMotorM32';
-    const expectedSemanticId = `component:${createEntityTag}`;
+    const expectedSemanticId = `entity:${createEntityTag}`;
     try {
         fs.cpSync(sampleRepositoryRoot, tempRepositoryRoot, { recursive: true });
         const createSmoke = await runElectronSmoke(tempRepositoryRoot, '', {
@@ -191,13 +191,13 @@ async function runGraphFirstAuthoringProof(sampleRepositoryRoot) {
 
         const sourcePath = path.join(tempRepositoryRoot, SOURCE_RELATIVE);
         const persistedSource = fs.readFileSync(sourcePath, 'utf8');
-        const persistedDeviceBlock = extractNamedBlock(persistedSource, `device ${createEntityTag}`);
+        const persistedDeviceBlock = extractNamedBlock(persistedSource, `entity ${createEntityTag}`);
         if (!persistedDeviceBlock ||
             !persistedDeviceBlock.includes('port up') ||
             !persistedDeviceBlock.includes('port down') ||
             !persistedDeviceBlock.includes('port status')
         ) {
-            throw new Error(`M32 graph-first authoring did not persist the expected nested device source.\n${persistedSource}`);
+            throw new Error(`M32 graph-first authoring did not persist the expected nested entity source.\n${persistedSource}`);
         }
 
         const reopenSmoke = await runElectronSmoke(tempRepositoryRoot, '', {

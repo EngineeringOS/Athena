@@ -1,17 +1,17 @@
 package com.engineeringood.m22.sample
 
 system BaselineSheetShowcase {
-  device BaselineSW1 {
-    type Switch
+  entity BaselineSW1 {
+    concept Switch
     model "Main"
   }
 
-  device BaselineM1 {
-    type Motor
+  entity BaselineM1 {
+    concept Motor
   }
 
-  device BaselineL1 {
-    type Lamp
+  entity BaselineL1 {
+    concept Lamp
   }
 
   port BaselineSW1.out {

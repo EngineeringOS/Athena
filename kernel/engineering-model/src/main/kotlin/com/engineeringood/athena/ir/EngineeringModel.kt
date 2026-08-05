@@ -22,11 +22,11 @@ data class SourceProvenance(
 /** Root canonical engineering intermediate representation document emitted by the lowering boundary. */
 data class EngineeringDocument(
     val system: EngineeringSystem,
-    val components: List<EngineeringComponent>,
-    val ports: List<EngineeringPort>,
-    val connections: List<EngineeringConnection>,
+    val entities: List<EngineeringEntity>,
     val functions: List<EngineeringFunction> = emptyList(),
-    val connectionNetworks: List<EngineeringConnectionNetwork> = emptyList(),
+    val ports: List<EngineeringPort>,
+    val relationships: List<EngineeringRelationship> = emptyList(),
+    val flows: List<EngineeringFlow> = emptyList(),
     val externalEvidence: List<EngineeringExternalEvidenceMapping> = emptyList(),
     val projectionPolicies: List<EngineeringProjectionPolicy> = emptyList(),
     val projectionViews: List<EngineeringProjectionView> = emptyList(),
@@ -36,84 +36,6 @@ data class EngineeringDocument(
 data class EngineeringSystem(
     val id: StableSemanticIdentity,
     val name: String,
-    val provenance: SourceProvenance,
-)
-
-/** Canonical semantic representation of an engineering component such as a device. */
-data class EngineeringComponent(
-    val id: StableSemanticIdentity,
-    val name: String,
-    val kind: String,
-    val properties: List<EngineeringProperty>,
-    val provenance: SourceProvenance,
-)
-
-/** Canonical semantic representation of a port owned by another engineering object. */
-data class EngineeringPort(
-    val id: StableSemanticIdentity,
-    val ownerReference: EngineeringReference,
-    val name: String,
-    val properties: List<EngineeringProperty>,
-    val provenance: SourceProvenance,
-)
-
-/** Device-owned functional partition referencing canonical project ports. */
-data class EngineeringFunction(
-    val id: StableSemanticIdentity,
-    val ownerReference: EngineeringReference,
-    val name: String,
-    val role: EngineeringFunctionRole,
-    val portReferences: List<EngineeringReference>,
-    val provenance: SourceProvenance,
-)
-
-/** Extensible authored function role; domain plugins interpret known values. */
-@JvmInline
-value class EngineeringFunctionRole(val value: String) {
-    init {
-        require(value.isNotBlank()) { "Engineering function role must not be blank" }
-    }
-}
-
-/** Canonical semantic relationship between two authored engineering references. */
-data class EngineeringConnection(
-    val id: StableSemanticIdentity,
-    val from: EngineeringReference,
-    val to: EngineeringReference,
-    val provenance: SourceProvenance,
-    val properties: List<EngineeringProperty> = emptyList(),
-)
-
-/** Canonical semantic network derived from authored grouped connections. */
-data class EngineeringConnectionNetwork(
-    val id: StableSemanticIdentity,
-    val name: String,
-    val members: List<EngineeringConnectionNetworkMember>,
-    val junctions: List<EngineeringNetworkJunction>,
-    val compatibilityEvidence: List<EngineeringNetworkCompatibilityEvidence>,
-    val provenance: SourceProvenance,
-    val properties: List<EngineeringProperty> = emptyList(),
-)
-
-/** One connection participating in a semantic network. */
-data class EngineeringConnectionNetworkMember(
-    val connectionReference: EngineeringReference,
-    val fromPortReference: EngineeringReference,
-    val toPortReference: EngineeringReference,
-)
-
-/** One semantic junction compiled from shared network membership. */
-data class EngineeringNetworkJunction(
-    val id: StableSemanticIdentity,
-    val sharedPortReference: EngineeringReference,
-    val memberConnectionReferences: List<EngineeringReference>,
-    val provenance: SourceProvenance,
-)
-
-/** Typed evidence explaining why one semantic network is compatible. */
-data class EngineeringNetworkCompatibilityEvidence(
-    val kind: String,
-    val value: String,
     val provenance: SourceProvenance,
 )
 
@@ -210,14 +132,6 @@ data class EngineeringReference(
 /** Typed authored property carried into the canonical engineering model. */
 data class EngineeringProperty(
     val name: String,
-    val value: EngineeringPropertyValue,
+    val value: EngineeringValue,
+    val provenance: SourceProvenance,
 )
-
-/** Small typed value surface for the first M0 engineering property set. */
-sealed interface EngineeringPropertyValue {
-    /** Symbolic authored value such as `PLC`, `Digital`, or `out`. */
-    data class Symbol(val text: String) : EngineeringPropertyValue
-
-    /** Text-authored value such as a quoted model string. */
-    data class Text(val text: String) : EngineeringPropertyValue
-}

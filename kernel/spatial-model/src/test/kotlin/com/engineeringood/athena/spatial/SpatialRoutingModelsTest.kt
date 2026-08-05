@@ -222,7 +222,7 @@ class SpatialRoutingModelsTest {
     fun `spatial reality rejects anchor point away from its declared occurrence boundary side`() {
         val occurrence = SpatialOccurrenceGeometry(
             occurrenceId = SpatialOccurrenceId("sheet:main", "occurrence:Q1"),
-            subjectId = StableSemanticIdentity("component:Q1"),
+            subjectId = StableSemanticIdentity("entity:Q1"),
             sheetId = "sheet:main",
             regionId = "region:main",
             rectangle = SpatialRect(10, 20, 80, 40),
@@ -329,7 +329,7 @@ class SpatialRoutingModelsTest {
 
     private fun occurrence(projectionId: String, x: Int): SpatialOccurrenceGeometry = SpatialOccurrenceGeometry(
         occurrenceId = SpatialOccurrenceId("sheet:main", projectionId),
-        subjectId = StableSemanticIdentity("component:${projectionId.substringAfter(':')}"),
+        subjectId = StableSemanticIdentity("entity:${projectionId.substringAfter(':')}"),
         sheetId = "sheet:main",
         regionId = "region:main",
         rectangle = SpatialRect(x, 0, 80, 40),
