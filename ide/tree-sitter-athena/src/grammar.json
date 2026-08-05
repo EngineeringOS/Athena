@@ -257,7 +257,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "device_declaration"
+          "name": "entity_declaration"
         },
         {
           "type": "SYMBOL",
@@ -1884,7 +1884,7 @@
       "members": [
         {
           "type": "STRING",
-          "value": "device"
+          "value": "entity"
         },
         {
           "type": "STRING",
@@ -1942,12 +1942,12 @@
         }
       ]
     },
-    "device_declaration": {
+    "entity_declaration": {
       "type": "SEQ",
       "members": [
         {
           "type": "STRING",
-          "value": "device"
+          "value": "entity"
         },
         {
           "type": "FIELD",
@@ -1970,7 +1970,7 @@
           "type": "REPEAT",
           "content": {
             "type": "SYMBOL",
-            "name": "_device_member"
+            "name": "_entity_member"
           }
         },
         {
@@ -1987,7 +1987,7 @@
         }
       ]
     },
-    "_device_member": {
+    "_entity_member": {
       "type": "CHOICE",
       "members": [
         {
@@ -2005,6 +2005,10 @@
         {
           "type": "SYMBOL",
           "name": "function_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "structure_assignment"
         }
       ]
     },
@@ -2197,7 +2201,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "function_ports"
+                "name": "nested_port_declaration"
               }
             ]
           }
@@ -2228,59 +2232,33 @@
           "name": "value",
           "content": {
             "type": "SYMBOL",
-            "name": "identifier"
+            "name": "qualified_name"
           }
         }
       ]
     },
-    "function_ports": {
+    "structure_assignment": {
       "type": "SEQ",
       "members": [
         {
           "type": "STRING",
-          "value": "ports"
+          "value": "structure"
         },
         {
-          "type": "STRING",
-          "value": "("
+          "type": "FIELD",
+          "name": "aspect",
+          "content": {
+            "type": "SYMBOL",
+            "name": "qualified_name"
+          }
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "function_port_reference"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": ","
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "function_port_reference"
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "type": "STRING",
-          "value": ")"
-        }
-      ]
-    },
-    "function_port_reference": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_scalar_value"
+          }
         },
         {
           "type": "CHOICE",
@@ -2290,11 +2268,15 @@
               "members": [
                 {
                   "type": "STRING",
-                  "value": "."
+                  "value": "display"
                 },
                 {
-                  "type": "SYMBOL",
-                  "name": "identifier"
+                  "type": "FIELD",
+                  "name": "display",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "string"
+                  }
                 }
               ]
             },
@@ -4358,11 +4340,86 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "quantity"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "boolean"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "reference_value"
+        },
+        {
+          "type": "SYMBOL",
           "name": "identifier"
         },
         {
           "type": "SYMBOL",
           "name": "string"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "number"
+        }
+      ]
+    },
+    "quantity": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "value",
+          "content": {
+            "type": "SYMBOL",
+            "name": "number"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "FIELD",
+          "name": "unit",
+          "content": {
+            "type": "SYMBOL",
+            "name": "qualified_name"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "boolean": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "true"
+        },
+        {
+          "type": "STRING",
+          "value": "false"
+        }
+      ]
+    },
+    "reference_value": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "@"
+        },
+        {
+          "type": "FIELD",
+          "name": "target",
+          "content": {
+            "type": "SYMBOL",
+            "name": "qualified_name"
+          }
         }
       ]
     },
@@ -4412,7 +4469,7 @@
   ],
   "conflicts": [
     [
-      "device_declaration"
+      "entity_declaration"
     ],
     [
       "port_declaration"

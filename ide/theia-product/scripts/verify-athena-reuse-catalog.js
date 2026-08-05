@@ -127,7 +127,7 @@ async function main() {
         if (!String(result.originExpansionId || '').length) {
             throw new Error('Athena reuse catalog E2E did not observe an origin expansion id.');
         }
-        if (!String(result.originMatchedRole || '').includes('component:template:starter.contactor')) {
+        if (!String(result.originMatchedRole || '').includes('entity:template:starter.contactor')) {
             throw new Error('Athena reuse catalog E2E did not observe the expected matched origin membership role.');
         }
         if (!(Number(result.originMembershipCount) > 0)) {

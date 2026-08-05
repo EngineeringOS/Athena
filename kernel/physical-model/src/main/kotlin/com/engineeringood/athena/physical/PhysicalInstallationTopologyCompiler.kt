@@ -104,7 +104,7 @@ object PhysicalInstallationTopologyCompiler {
             route.channelIds.filterNot { channelId -> channelId in channelIds }.forEach { missing ->
                 diagnostics += diagnostic(
                     code = "physical.topology.route.channel_missing",
-                    subject = route.connectionAlias,
+                    subject = route.relationshipId,
                     span = route.provenance.span,
                     measured = missing.value,
                     expected = "declared route channel",
@@ -165,7 +165,7 @@ object PhysicalInstallationTopologyCompiler {
                     mountedOccurrences = mountedOccurrences,
                 ),
                 routes = intent.routes
-                    .sortedBy { route -> route.connectionAlias }
+                    .sortedBy { route -> route.relationshipId }
                     .map { route -> route.toIr() },
             ),
         )
@@ -268,7 +268,7 @@ private fun PhysicalTerminalGroupIntent.terminalOccurrenceOrder(): Comparator<Ph
     )
 
 private fun PhysicalRouteIntentSource.toIr(): PhysicalRouteIntent = PhysicalRouteIntent(
-    connectionAlias = connectionAlias,
+    relationshipId = relationshipId,
     channelIds = channelIds,
     provenance = provenance,
 )

@@ -155,7 +155,7 @@ data class PhysicalMountedOccurrenceIntent(
 )
 
 data class PhysicalRouteIntentSource(
-    val connectionAlias: String,
+    val relationshipId: String,
     val channelIds: List<PhysicalObjectId>,
     val provenance: PhysicalSourceProvenance,
 )
@@ -263,7 +263,7 @@ data class PhysicalMountedOccurrence(
 )
 
 data class PhysicalRouteIntent(
-    val connectionAlias: String,
+    val relationshipId: String,
     val channelIds: List<PhysicalObjectId>,
     val provenance: PhysicalSourceProvenance,
 )

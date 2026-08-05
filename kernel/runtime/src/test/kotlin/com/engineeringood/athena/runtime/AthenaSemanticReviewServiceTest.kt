@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.runtime
+package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.integrations.scm.git.GitSemanticBaselineAdapter
@@ -27,13 +27,13 @@ class AthenaSemanticReviewServiceTest {
                 sourceFileName = "demo.athena",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
-                        type Switch
+                      entity PLC1 {
+                        concept Switch
                       }
 
                       port PLC1.out {
                         direction out
-                        signal Digital
+                        flow Digital
                       }
                     }
                 """.trimIndent(),
@@ -45,26 +45,26 @@ class AthenaSemanticReviewServiceTest {
                 dependencyLocator = "vendor/alpha",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
+                      entity PLC1 { concept Controller
                         model "S7-1200"
                       }
 
-                      device M1 {
-                        type Motor
+                      entity M1 {
+                        concept Motor
                       }
 
                       port PLC1.out {
                         direction out
-                        signal Digital
+                        flow Digital
                       }
 
                       port M1.in {
                         direction in
-                        signal Analog
+                        flow Analog
                       }
 
-                      connect plc1_out_to_m1_in PLC1.out to M1.in
-                      connect plc1_out_to_missing_in PLC1.out to Missing.in
+                      control PLC1.out to M1.in
+                      control PLC1.out to Missing.in
                     }
                 """.trimIndent(),
             )
@@ -209,8 +209,8 @@ class AthenaSemanticReviewServiceTest {
     }
 
     @Test
-    fun `extends semantic review with engineering impact and knowledge diagnostics for the m9 electrical evidence slice`() {
-        val root = createTempDirectory("athena-runtime-semantic-review-m9-")
+    fun `summarizes entity property changes without inventing validation facts`() {
+        val root = createTempDirectory("athena-runtime-semantic-review-entity-")
         try {
             val currentRoot = root.resolve("current")
             val baselineRoot = root.resolve("baseline")
@@ -250,8 +250,8 @@ class AthenaSemanticReviewServiceTest {
             val baseline = runtime.serviceRegistry.semanticBaselines().resolveBaseline(
                 session = session,
                 descriptor = SemanticBaselineDescriptor(
-                    baselineId = "baseline-m9-review",
-                    label = "M9 baseline",
+                    baselineId = "baseline-entity-review",
+                    label = "Entity baseline",
                 ),
                 locator = SemanticBaselineLocator(
                     adapterId = GitSemanticBaselineAdapter.ADAPTER_ID,
@@ -265,27 +265,14 @@ class AthenaSemanticReviewServiceTest {
             )
             val commit = runtime.serviceRegistry.semanticCommits().prepareReview(summary)
 
-            assertEquals(1, summary.engineeringImpactConsequences.consequences.size)
             assertTrue(summary.entries.any { entry ->
                 entry.kind == SemanticReviewEntryKind.ENGINEERING_CHANGE &&
-                    entry.subjectIdentity?.value == "component:M1"
+                    entry.subjectIdentity?.value == "entity:M1"
             })
-            assertTrue(summary.entries.any { entry ->
-                entry.kind == SemanticReviewEntryKind.ENGINEERING_IMPACT &&
-                    entry.subjectIdentity?.value == "component:M1"
-            })
-            assertTrue(summary.diagnostics.any { diagnostic ->
-                diagnostic.ruleId.value == "knowledge.protection_sufficiency"
-            })
-            assertTrue(summary.entries.any { entry ->
-                entry.kind == SemanticReviewEntryKind.VALIDATION_IMPACT &&
-                    entry.factReferences.any { reference ->
-                        reference.identifier.contains("knowledge.protection_sufficiency")
-                    }
-            })
+            assertTrue(summary.diagnostics.isEmpty())
             assertTrue(commit.entries.any { entry ->
-                entry.kind.name == "ENGINEERING_IMPACT" &&
-                    entry.subjectIdentity?.value == "component:M1"
+                entry.kind.name == "ENGINEERING_CHANGE" &&
+                    entry.subjectIdentity?.value == "entity:M1"
             })
         } finally {
             root.toFile().deleteRecursively()
@@ -339,8 +326,8 @@ private fun writeReviewRepository(
 
 private val reviewKnowledgeBaselineSource = """
     system MotorImpactProof {
-      device M1 {
-        type Motor
+      entity M1 {
+        concept Motor
         power "7.5kw"
         voltage "400V"
         powerFactor "0.86"
@@ -354,8 +341,8 @@ private val reviewKnowledgeBaselineSource = """
 
 private val reviewKnowledgeChangedSource = """
     system MotorImpactProof {
-      device M1 {
-        type Motor
+      entity M1 {
+        concept Motor
         power "9kw"
         voltage "400V"
         powerFactor "0.86"

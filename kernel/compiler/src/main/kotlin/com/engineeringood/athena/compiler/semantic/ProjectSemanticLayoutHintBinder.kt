@@ -16,7 +16,7 @@ class ProjectSemanticLayoutHintBinder {
             .flatMap { namespace -> namespace.sourceUnitIds.map { sourceUnitId -> sourceUnitId to namespace } }
             .toMap()
         val declarationsByNamespaceAndName = snapshot.declarations
-            .filter { declaration -> declaration.kind == "device" || declaration.kind == "function" }
+            .filter { declaration -> declaration.kind == "entity" || declaration.kind == "function" }
             .groupBy { declaration ->
                 NamespaceNameKey(declaration.namespaceId, declaration.qualifiedAuthoredName.joinToString("."))
             }

@@ -1,11 +1,9 @@
 package com.engineeringood.athena.language.antlr
 
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.ConnectivityInterfaceDeclaration
 import com.engineeringood.athena.language.ConnectivityInterfacePortDeclaration
 import com.engineeringood.athena.language.Declaration
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.DrawingGridPosition
 import com.engineeringood.athena.language.ElementAnchorExportDeclaration
 import com.engineeringood.athena.language.ElementChildDeclaration
@@ -72,6 +70,7 @@ import com.engineeringood.athena.language.SymbolPoint
 import com.engineeringood.athena.language.SymbolSize
 import com.engineeringood.athena.language.SymbolStringField
 import com.engineeringood.athena.language.SystemDeclaration
+import com.engineeringood.athena.language.StructureAssignmentDeclaration
 import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.language.ProjectionConstructDeclaration
 import com.engineeringood.athena.language.RegionDeclaration
@@ -342,10 +341,8 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     }
 
     private fun adaptDeclaration(context: AthenaParser.DeclarationContext): Declaration {
-        context.deviceDecl()?.let { return adaptDevice(it) }
+        context.entityDecl()?.let { return adaptEntity(it) }
         context.portDecl()?.let { return adaptPort(it) }
-        context.connectGroupDecl()?.let { return adaptConnectGroup(it) }
-        context.connectDecl()?.let { return adaptConnect(it) }
         context.relationDecl()?.let { return adaptRelation(it) }
         context.evidenceDecl()?.let { return adaptEvidence(it) }
         context.projectionPolicyDecl()?.let { return adaptProjectionPolicy(it) }
@@ -357,26 +354,41 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
                 file = file,
                 line = context.start.line,
                 column = context.start.charPositionInLine + 1,
-                message = "Expected 'device', 'port', relation, 'connect', 'evidence', 'projection', 'layout', or 'installation'",
+                message = "Expected 'entity', 'port', relation, 'evidence', 'projection', 'layout', or 'installation'",
                 span = spanOfContext(context.start, context.stop),
             ),
         )
     }
 
-    private fun adaptDevice(context: AthenaParser.DeviceDeclContext): DeviceDeclaration {
-        val deviceName = context.ident().text
-        val members = context.deviceMember()
-        return DeviceDeclaration(
-            name = deviceName,
+    private fun adaptEntity(context: AthenaParser.EntityDeclContext): EntityDeclaration {
+        val entityName = context.ident().text
+        val members = context.entityMember()
+        return EntityDeclaration(
+            name = entityName,
             fields = members.mapNotNull { it.propertyAssignment()?.let { property -> adaptProperty(property) } },
             span = spanOfContext(context.start, context.stop),
-            nestedPorts = members.mapNotNull { it.nestedPortDecl()?.let { port -> adaptNestedPort(deviceName, port) } },
+            nestedPorts = members.mapNotNull { it.nestedPortDecl()?.let { port -> adaptNestedPort(listOf(entityName), port) } },
             nestedFunctions = members.mapNotNull { member ->
-                member.functionDecl()?.let { function -> adaptFunction(function) }
+                member.functionDecl()?.let { function -> adaptFunction(entityName, function) }
             },
             interfaces = members.mapNotNull { member ->
                 member.interfaceDecl()?.let { groupedInterface -> adaptConnectivityInterface(groupedInterface) }
             },
+            structureAssignments = members.mapNotNull { member ->
+                member.structureAssignmentDecl()?.let { assignment -> adaptStructureAssignment(assignment) }
+            },
+        )
+    }
+
+    private fun adaptStructureAssignment(
+        context: AthenaParser.StructureAssignmentDeclContext,
+    ): StructureAssignmentDeclaration {
+        val value = adaptScalar(context.scalarValue())
+        return StructureAssignmentDeclaration(
+            aspect = adaptAnyQualifiedName(context.qualifiedReference()),
+            value = value,
+            displayDesignation = context.STRING()?.text?.let(::unquote),
+            span = spanOfContext(context.start, context.stop),
         )
     }
 
@@ -407,29 +419,22 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         )
     }
 
-    private fun adaptFunction(context: AthenaParser.FunctionDeclContext): EngineeringFunctionDeclaration {
+    private fun adaptFunction(
+        entityName: String,
+        context: AthenaParser.FunctionDeclContext,
+    ): EngineeringFunctionDeclaration {
         val members = context.functionMember()
         val role = singletonMember(
             members.mapNotNull { member -> member.functionRoleDecl() },
             "role",
             "Function",
         ) ?: missingFunctionMember(context, "role")
-        val ports = singletonMember(
-            members.mapNotNull { member -> member.functionPortsDecl() },
-            "ports",
-            "Function",
-        ) ?: missingFunctionMember(context, "ports")
+        val functionName = context.ident().text
         return EngineeringFunctionDeclaration(
-            name = context.ident().text,
-            role = SymbolIdentifierField(
-                value = role.ident().text,
-                span = spanOfContext(role.ident().start, role.ident().stop),
-            ),
-            portReferences = ports.functionPortReference().map { reference ->
-                QualifiedName(
-                    parts = reference.ident().map { part -> part.text },
-                    span = spanOfContext(reference.start, reference.stop),
-                )
+            name = functionName,
+            role = adaptAnyQualifiedName(role.qualifiedReference()),
+            nestedPorts = members.mapNotNull { member ->
+                member.nestedPortDecl()?.let { port -> adaptNestedPort(listOf(entityName, functionName), port) }
             },
             span = spanOfContext(context.start, context.stop),
         )
@@ -449,10 +454,10 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     )
 
     private fun adaptPort(context: AthenaParser.PortDeclContext): PortDeclaration {
-        val qualifiedName = adaptQualifiedName(
-            context.twoPartName(),
-            "Expected qualified port name in owner.port form after 'port'",
-        )
+        val qualifiedName = adaptAnyQualifiedName(context.qualifiedReference())
+        if (qualifiedName.parts.size !in 2..3) {
+            throw invalidQualifiedReference(qualifiedName, "Port name must be Entity.Port or Entity.Function.Port")
+        }
         return PortDeclaration(
             qualifiedName = qualifiedName,
             fields = context.propertyAssignment().map { adaptProperty(it) },
@@ -461,13 +466,13 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     }
 
     private fun adaptNestedPort(
-        ownerName: String,
+        ownerPath: List<String>,
         context: AthenaParser.NestedPortDeclContext,
     ): PortDeclaration {
         val nameContext = context.ident()
         return PortDeclaration(
             qualifiedName = QualifiedName(
-                parts = listOf(ownerName, nameContext.text),
+                parts = ownerPath + nameContext.text,
                 span = spanOfContext(nameContext.start, nameContext.stop),
             ),
             fields = context.propertyAssignment().map { adaptProperty(it) },
@@ -475,67 +480,15 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         )
     }
 
-    private fun adaptConnect(context: AthenaParser.ConnectDeclContext): ConnectionDeclaration {
-        val from = adaptQualifiedName(
-            context.twoPartName(0),
-            "Expected qualified source reference in owner.port form after 'connect'",
-        )
-        val to = adaptQualifiedName(
-            context.twoPartName(1),
-            "Expected qualified target reference in owner.port form after 'to'",
-        )
-        return ConnectionDeclaration(
-            alias = context.ident().text,
-            aliasSpan = spanOfContext(context.ident().start, context.ident().stop),
-            from = from,
-            to = to,
-            span = spanOfContext(context.start, context.stop),
-        )
-    }
-
-    private fun adaptConnectGroup(context: AthenaParser.ConnectGroupDeclContext): ConnectionGroupDeclaration {
-        return ConnectionGroupDeclaration(
-            name = context.ident().text,
-            connections = context.connectGroupEdge().map { edge -> adaptConnectGroupEdge(edge) },
-            span = spanOfContext(context.start, context.stop),
-        )
-    }
-
-    private fun adaptConnectGroupEdge(context: AthenaParser.ConnectGroupEdgeContext): ConnectionDeclaration {
-        val from = adaptQualifiedName(
-            context.twoPartName(0),
-            "Expected qualified source reference in owner.port form after 'connect'",
-        )
-        val to = adaptQualifiedName(
-            context.twoPartName(1),
-            "Expected qualified target reference in owner.port form after 'to'",
-        )
-        return ConnectionDeclaration(
-            alias = context.ident().text,
-            aliasSpan = spanOfContext(context.ident().start, context.ident().stop),
-            from = from,
-            to = to,
-            span = spanOfContext(context.start, context.stop),
-        )
-    }
-
     private fun adaptRelation(context: AthenaParser.RelationDeclContext): RelationDeclaration {
-        val from = adaptQualifiedName(
-            context.twoPartName(),
-            "Expected qualified source reference in owner.port form after relation word '${context.relationWord().text}'",
-        )
-        val targets = context.relationTarget().twoPartName().map { target ->
-            adaptQualifiedName(
-                target,
-                "Expected qualified target reference in owner.port form after 'to'",
-            )
-        }
+        val source = adaptAnyQualifiedName(context.qualifiedReference())
+        val targets = context.relationTarget().qualifiedReference().map(::adaptAnyQualifiedName)
         return RelationDeclaration(
             word = SymbolIdentifierField(
                 value = context.relationWord().text,
                 span = spanOfContext(context.relationWord().start, context.relationWord().stop),
             ),
-            from = from,
+            source = source,
             targets = targets,
             span = spanOfContext(context.start, context.stop),
         )
@@ -1037,7 +990,7 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
 
     private fun adaptInstallationRoute(context: AthenaParser.InstallationRouteDeclContext): InstallationRouteDeclaration =
         InstallationRouteDeclaration(
-            connectionAlias = context.ident().text,
+            relationshipId = context.ident().text,
             channelIds = adaptIdentList(context.identList()),
             span = spanOfContext(context.start, context.stop),
         )
@@ -1156,7 +1109,7 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             },
             selectorKind = selector?.bindingSubjectKind()?.text?.let { kind ->
                 when (kind) {
-                    "device" -> BindingSelectorKind.Device
+                    "entity" -> BindingSelectorKind.Entity
                     "function" -> BindingSelectorKind.Function
                     else -> error("ANTLR binding subject kind escaped authored AST boundary: $kind")
                 }
@@ -1390,11 +1343,11 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             ref = ref?.let { declaration ->
                 SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
             },
-            port = anchorPort?.let { declaration -> adaptQualifiedName(declaration.twoPartName(), "Expected qualified port reference in owner.port form after 'port'") },
+            port = anchorPort?.let { declaration -> adaptPortReference(declaration.qualifiedReference(), "Anchor Port") },
             directions = directions.map { declaration ->
                 SymbolIdentifierField(declaration.directionPredicate().text, spanOfContext(declaration.start, declaration.stop))
             },
-            signals = signals.map { declaration -> adaptQualifiedName(declaration.twoPartName(), "Expected qualified signal reference in owner.signal form after 'signal'") },
+            signals = signals.map { declaration -> adaptAnyQualifiedName(declaration.qualifiedReference()) },
             point = point?.let { declaration -> adaptPoint(declaration.pointTuple()) },
             role = role?.let { declaration ->
                 SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
@@ -1454,39 +1407,63 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             val token = stringNode.symbol
             val raw = token.text ?: ""
             val content = if (raw.length >= 2) raw.substring(1, raw.length - 1) else ""
-            return ScalarValue.StringLiteral(content, spanOfToken(token))
+            return ScalarValue.Text(content, spanOfToken(token))
         }
-        val identContext = context.ident()
-        return ScalarValue.Identifier(
-            identContext.text,
-            spanOfContext(identContext.start, identContext.stop),
-        )
-    }
-
-    /**
-     * Enforces the exactly-two-dotted-parts arity for `port`/`connect` endpoints inside the adapter,
-     * preserving the handwritten parser's `owner.port` diagnostics on over-/under-qualified names.
-     */
-    private fun adaptQualifiedName(
-        context: AthenaParser.TwoPartNameContext,
-        qualifiedMessage: String,
-    ): QualifiedName {
-        val identContexts = context.ident()
-        val parts = identContexts.map { it.text }
-        if (parts.size != 2) {
-            val firstToken = identContexts.first().start
-            throw AthenaAntlrAdapterFailure(
-                SyntaxDiagnostic(
-                    file = file,
-                    line = firstToken.line,
-                    column = firstToken.charPositionInLine + 1,
-                    message = qualifiedMessage,
-                    span = spanOfToken(firstToken),
-                ),
+        context.REFERENCE_MARK()?.let {
+            return ScalarValue.Reference(
+                target = adaptAnyQualifiedName(context.qualifiedReference()),
+                span = spanOfContext(context.start, context.stop),
             )
         }
-        return QualifiedName(parts, spanOfContext(context.start, context.stop))
+        context.TRUE()?.let { token -> return ScalarValue.Boolean(true, spanOfToken(token.symbol)) }
+        context.FALSE()?.let { token -> return ScalarValue.Boolean(false, spanOfToken(token.symbol)) }
+        context.number()?.let { number ->
+            val exactText = number.text
+            if (context.LBRACK() != null) {
+                return ScalarValue.Quantity(
+                    exactText = exactText,
+                    unit = adaptAnyQualifiedName(context.qualifiedReference()),
+                    span = spanOfContext(context.start, context.stop),
+                )
+            }
+            if ('.' in exactText) {
+                throw AthenaAntlrAdapterFailure(
+                    SyntaxDiagnostic(
+                        file = file,
+                        line = number.start.line,
+                        column = number.start.charPositionInLine + 1,
+                        message = "Decimal engineering value '$exactText' requires an explicit Unit in brackets",
+                        span = spanOfContext(number.start, number.stop),
+                    ),
+                )
+            }
+            return ScalarValue.Integer(exactText, spanOfContext(number.start, number.stop))
+        }
+        val identContext = context.ident()
+        return ScalarValue.Symbol(identContext.text, spanOfContext(identContext.start, identContext.stop))
     }
+
+    private fun adaptPortReference(
+        context: AthenaParser.QualifiedReferenceContext,
+        subject: String,
+    ): QualifiedName = adaptAnyQualifiedName(context).also { reference ->
+        if (reference.parts.size !in 2..3) {
+            throw invalidQualifiedReference(reference, "$subject must be Entity.Port or Entity.Function.Port")
+        }
+    }
+
+    private fun invalidQualifiedReference(
+        reference: QualifiedName,
+        message: String,
+    ): AthenaAntlrAdapterFailure = AthenaAntlrAdapterFailure(
+        SyntaxDiagnostic(
+            file = file,
+            line = reference.span.start.line,
+            column = reference.span.start.column,
+            message = message,
+            span = reference.span,
+        ),
+    )
 
     private fun adaptAnyQualifiedName(context: AthenaParser.QualifiedReferenceContext): QualifiedName =
         QualifiedName(

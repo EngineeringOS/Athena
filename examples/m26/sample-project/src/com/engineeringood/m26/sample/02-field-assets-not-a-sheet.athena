@@ -1,18 +1,18 @@
 package com.engineeringood.m26.sample
 
 system SemanticDocumentProjectionAcceptanceField {
-  device FieldOutputModuleIOM1 {
-    type Switch
+  entity FieldOutputModuleIOM1 {
+    concept Switch
     model "FIELD-IO"
   }
 
-  device FieldTerminalXT1 {
-    type Switch
+  entity FieldTerminalXT1 {
+    concept Switch
     model "XT"
   }
 
-  device ConveyorMotorM1 {
-    type Motor
+  entity ConveyorMotorM1 {
+    concept Motor
     model "MOTOR"
   }
 

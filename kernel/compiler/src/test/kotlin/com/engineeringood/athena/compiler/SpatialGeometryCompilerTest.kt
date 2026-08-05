@@ -745,7 +745,7 @@ class SpatialGeometryCompilerTest {
 
     private fun node(name: String, projectionId: String, source: GeometryElementId): ProjectionNode = ProjectionNode(
         projectionId = ProjectionNodeId(projectionId),
-        semanticId = StableSemanticIdentity("component:$name"),
+        semanticId = StableSemanticIdentity("entity:$name"),
         label = name,
         originGeometryElementId = source,
     )

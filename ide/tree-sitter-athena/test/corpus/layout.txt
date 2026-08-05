@@ -3,8 +3,8 @@ System-scoped schematic layout block
 ========================================
 
 system MachineNo000 {
-  device PLC1 {
-    type Switch
+  entity PLC1 {
+    concept Switch
   }
   layout schematic-sheet {
     place HMI1 near PLC1
@@ -21,7 +21,7 @@ system MachineNo000 {
   (system_declaration
     name: (name)
     (declaration
-      (device_declaration
+      (entity_declaration
         name: (name)
         (property_assignment
           (property_name)

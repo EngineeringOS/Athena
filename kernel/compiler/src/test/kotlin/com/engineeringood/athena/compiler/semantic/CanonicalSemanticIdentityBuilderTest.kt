@@ -38,27 +38,27 @@ class CanonicalSemanticIdentityBuilderTest {
     }
 
     @Test
-    fun `declaration namespace and binding identities change with canonical components`() {
+    fun `declaration namespace and binding identities change with canonical inputs`() {
         val packageKey = CanonicalSemanticIdentityBuilder.packageKey(PackageIdentifier("com.controls"))
         val sourceUnitId = CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "main.athena")
-        val declaration = CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, "DEVICE", listOf("Demo", "PLC1"))
+        val declaration = CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, "ENTITY", listOf("Demo", "PLC1"))
         val namespace = CanonicalSemanticIdentityBuilder.namespaceId(packageKey, listOf("com", "controls"))
         val span = SourceSpan(SourcePosition(10, 2, 3), SourcePosition(18, 2, 11))
         val binding = CanonicalSemanticIdentityBuilder.bindingId(sourceUnitId, span, declaration)
         val otherSourceUnitId = CanonicalSemanticIdentityBuilder.sourceUnitId(packageKey, "other.athena")
-        val otherDeclaration = CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, "device", listOf("Demo", "PLC2"))
+        val otherDeclaration = CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, "entity", listOf("Demo", "PLC2"))
 
-        assertEquals("declaration:37:source:13:com.controls|11:main.athena6:device9:Demo.PLC1", declaration.value)
+        assertEquals("declaration:37:source:13:com.controls|11:main.athena6:entity9:Demo.PLC1", declaration.value)
         assertEquals("namespace:13:com.controls|12:com.controls", namespace.value)
         assertEquals(
             "binding:37:source:13:com.controls|11:main.athena2:102:1871:" +
-                "declaration:37:source:13:com.controls|11:main.athena6:device9:Demo.PLC1",
+                "declaration:37:source:13:com.controls|11:main.athena6:entity9:Demo.PLC1",
             binding.value,
         )
-        assertEquals(declaration, CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, "device", listOf("Demo", "PLC1")))
+        assertEquals(declaration, CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, "entity", listOf("Demo", "PLC1")))
         assertNotEquals(declaration, CanonicalSemanticIdentityBuilder.declarationId(sourceUnitId, "port", listOf("Demo", "PLC1")))
         assertNotEquals(declaration, otherDeclaration)
-        assertNotEquals(declaration, CanonicalSemanticIdentityBuilder.declarationId(otherSourceUnitId, "device", listOf("Demo", "PLC1")))
+        assertNotEquals(declaration, CanonicalSemanticIdentityBuilder.declarationId(otherSourceUnitId, "entity", listOf("Demo", "PLC1")))
         assertNotEquals(namespace, CanonicalSemanticIdentityBuilder.namespaceId(packageKey, listOf("com", "drives")))
         assertNotEquals(
             namespace,
@@ -112,7 +112,7 @@ class CanonicalSemanticIdentityBuilderTest {
         val changedContent = CanonicalSemanticIdentityBuilder.graphId(
             root,
             packages,
-            listOf(sourceContents[0], CanonicalSemanticIdentityBuilder.sourceContentIdentity(dependencyUnit, "system Controls { device PLC1 {} }")),
+            listOf(sourceContents[0], CanonicalSemanticIdentityBuilder.sourceContentIdentity(dependencyUnit, "system Controls { entity PLC1 { concept Controller} }")),
         )
         val changedGraph = CanonicalSemanticIdentityBuilder.graphId(
             root,

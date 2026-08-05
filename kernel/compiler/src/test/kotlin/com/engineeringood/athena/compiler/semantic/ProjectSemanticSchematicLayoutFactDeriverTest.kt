@@ -18,9 +18,9 @@ class ProjectSemanticSchematicLayoutFactDeriverTest {
             """
             package com.root
             system Root {
-              device PLC1 {}
-              device HMI1 {}
-              device XT1 {}
+              entity PLC1 { concept Controller}
+              entity HMI1 { concept Generic}
+              entity XT1 { concept Generic}
               layout schematic-sheet {
                 place HMI1 near PLC1
                 place XT1 below PLC1
@@ -51,14 +51,14 @@ class ProjectSemanticSchematicLayoutFactDeriverTest {
             """
             package com.root
             system Root {
-              device QF1 {
-                type Motor
+              entity QF1 {
+                concept Motor
               }
-              device M1 {
-                type Switch
+              entity M1 {
+                concept Switch
               }
-              device XT1 {
-                type Lamp
+              entity XT1 {
+                concept Lamp
               }
               layout schematic-sheet {
                 place M1 near QF1

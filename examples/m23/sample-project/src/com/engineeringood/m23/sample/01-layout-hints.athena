@@ -1,23 +1,23 @@
 package com.engineeringood.m23.sample
 
 system LayoutHintRoundTrip {
-  device ControllerPLC1 {
-    type Switch
+  entity ControllerPLC1 {
+    concept Switch
     model "CPU"
   }
 
-  device OperatorHMI1 {
-    type Lamp
+  entity OperatorHMI1 {
+    concept Lamp
     model "HMI"
   }
 
-  device TerminalBlockXT1 {
-    type Switch
+  entity TerminalBlockXT1 {
+    concept Switch
     model "XT1"
   }
 
-  device PrimaryLoadM1 {
-    type Motor
+  entity PrimaryLoadM1 {
+    concept Motor
     model "M1"
   }
 
@@ -46,9 +46,9 @@ system LayoutHintRoundTrip {
     signal Digital
   }
 
-  connect controllerplc1_command_to_operatorhmi1_status ControllerPLC1.command to OperatorHMI1.status
-  connect controllerplc1_command_to_terminalblockxt1_in ControllerPLC1.command to TerminalBlockXT1.in
-  connect terminalblockxt1_out_to_primaryloadm1_in TerminalBlockXT1.out to PrimaryLoadM1.in
+  power ControllerPLC1.command to OperatorHMI1.status
+  power ControllerPLC1.command to TerminalBlockXT1.in
+  power TerminalBlockXT1.out to PrimaryLoadM1.in
 
   layout schematic-sheet {
     place OperatorHMI1 near ControllerPLC1

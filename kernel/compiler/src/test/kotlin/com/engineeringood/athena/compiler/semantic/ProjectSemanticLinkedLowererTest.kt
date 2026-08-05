@@ -46,7 +46,7 @@ class ProjectSemanticLinkedLowererTest {
     }
 
     @Test
-    fun `lowers connection identity from source unit id and authored alias`() {
+    fun `lowers relationship identity from source unit id and authored meaning`() {
         val fixture = linkedLoweringFixture()
 
         val result = ProjectSemanticLinkedLowerer(
@@ -55,44 +55,9 @@ class ProjectSemanticLinkedLowererTest {
         val consumerLowering = result.loweredSourceUnits.single { it.sourceUnitId == fixture.consumerSourceUnitId }
 
         assertEquals(
-            listOf("connection:${fixture.consumerSourceUnitId.value}:provider_loop"),
-            consumerLowering.document.connections.map { it.id.value },
+            listOf("relationship:${fixture.consumerSourceUnitId.value}:control:source:PLC1.out|target:PLC1.out"),
+            consumerLowering.document.relationships.map { it.id.value },
         )
-    }
-
-    @Test
-    fun `reports duplicate connection aliases inside one source unit`() {
-        val rootId = PackageIdentifier("com.root", "1")
-        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
-        val parsed = parse(
-            "duplicate-connections.athena",
-            """
-            package com.root
-            system Root {
-              port PLC1.out {}
-              connect duplicate_alias PLC1.out to PLC1.out
-              connect duplicate_alias PLC1.out to PLC1.out
-            }
-            """.trimIndent(),
-        )
-        val sourceUnit = sourceUnit(rootKey, "duplicate-connections.athena", parsed.content, parsed.parsed.source.ast.declarations)
-        val namespace = ProjectSemanticNamespace(
-            CanonicalSemanticIdentityBuilder.namespaceId(rootKey, listOf("com", "root")),
-            rootKey,
-            listOf("com", "root"),
-            listOf(sourceUnit.sourceUnitId),
-            emptyList(),
-        )
-
-        val indexed = ProjectSemanticDeclarationIndexer().index(
-            snapshot(rootKey, listOf(ProjectSemanticPackage(rootId, rootKey, "src", emptyList())), listOf(sourceUnit), listOf(namespace)),
-        )
-
-        assertEquals(
-            listOf("semantic.connection.alias.duplicate"),
-            indexed.diagnostics.map { it.code.value },
-        )
-        assertEquals(sourceUnit.sourceUnitId, indexed.diagnostics.single().sourceUnitId)
     }
 
     @Test
@@ -149,7 +114,7 @@ class ProjectSemanticLinkedLowererTest {
         val providerSource = parse("provider.athena", "package com.root\nsystem Provider {\n  port PLC1.out {}\n}")
         val consumerSource = parse(
             "consumer.athena",
-            "package com.root\nsystem Consumer {\n  connect provider_loop PLC1.out to PLC1.out\n}",
+            "package com.root\nsystem Consumer {\n  control PLC1.out to PLC1.out\n}",
         )
         val providerUnit = sourceUnit(rootKey, "provider.athena", providerSource.content, providerSource.parsed.source.ast.declarations)
         val consumerUnit = sourceUnit(rootKey, "consumer.athena", consumerSource.content, consumerSource.parsed.source.ast.declarations)

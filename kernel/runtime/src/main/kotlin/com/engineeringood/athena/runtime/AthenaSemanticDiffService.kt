@@ -2,9 +2,6 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
-import com.engineeringood.athena.compiler.EngineeringImpactConsequenceCalculator
-import com.engineeringood.athena.ir.EngineeringImpactConsequences
-import com.engineeringood.athena.ir.EngineeringKnowledgeState
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
@@ -23,7 +20,6 @@ import com.engineeringood.athena.semantics.core.SemanticRuleId
  */
 class AthenaSemanticDiffService(
     private val calculator: SemanticDiffCalculator = SemanticDiffCalculator(),
-    private val impactCalculator: EngineeringImpactConsequenceCalculator = EngineeringImpactConsequenceCalculator(),
 ) {
     /**
      * Compares the active runtime-owned repository session against one already-resolved semantic
@@ -34,15 +30,9 @@ class AthenaSemanticDiffService(
         baseline: SemanticBaselineSnapshot,
     ): SemanticDiff {
         val current = currentSnapshot(session)
-        val diff = calculator.calculate(
+        return calculator.calculate(
             baseline = baseline,
             current = current,
-        )
-        return diff.copy(
-            engineeringImpactConsequences = engineeringImpactConsequences(
-                baseline = baseline,
-                current = current,
-            ),
         )
     }
 
@@ -89,32 +79,11 @@ class AthenaSemanticDiffService(
             engineeringDocuments = currentCompilation?.let { compilationSuccess ->
                 listOf(compilationSuccess.document)
             }.orEmpty(),
-            engineeringKnowledgeState = currentCompilation?.toKnowledgeState(),
-            knowledgeDiagnostics = currentCompilation?.validationBreakdown?.engineeringSufficiencyDiagnostics.orEmpty(),
             validationResult = currentCompilation?.semanticResult,
             diagnostics = currentDiagnostics,
         )
     }
 
-    private fun engineeringImpactConsequences(
-        baseline: SemanticBaselineSnapshot,
-        current: SemanticBaselineSnapshot,
-    ): EngineeringImpactConsequences {
-        val baselineKnowledgeState = baseline.engineeringKnowledgeState ?: return EngineeringImpactConsequences.canonical(emptyList())
-        val currentKnowledgeState = current.engineeringKnowledgeState ?: return EngineeringImpactConsequences.canonical(emptyList())
-        return impactCalculator.calculate(
-            before = baselineKnowledgeState,
-            after = currentKnowledgeState,
-        )
-    }
-}
-
-private fun CompilerCompilationSuccess.toKnowledgeState(): EngineeringKnowledgeState {
-    return EngineeringKnowledgeState(
-        derivedContext = derivedContext,
-        capabilityFacts = capabilityFacts,
-        constraintEvaluations = constraintEvaluations,
-    )
 }
 
 private fun RepositoryDiagnostic.toSemanticDiagnostic(

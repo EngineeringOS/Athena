@@ -1,38 +1,38 @@
 package com.engineeringood.m27.sample
 
 system ProfessionalSheetProofAcceptance {
-  device MainPowerSupplyPS1 {
-    type Switch
+  entity MainPowerSupplyPS1 {
+    concept Switch
     model "24VDC-PSU"
   }
 
-  device MainBreakerQF1 {
-    type Switch
+  entity MainBreakerQF1 {
+    concept Switch
     model "QF"
   }
 
-  device ControllerPLC1 {
-    type Switch
+  entity ControllerPLC1 {
+    concept Switch
     model "PLC"
   }
 
-  device OperatorHMI1 {
-    type Lamp
+  entity OperatorHMI1 {
+    concept Lamp
     model "HMI"
   }
 
-  device FieldOutputModuleIOM1 {
-    type Switch
+  entity FieldOutputModuleIOM1 {
+    concept Switch
     model "FIELD-IO"
   }
 
-  device FieldTerminalXT1 {
-    type Switch
+  entity FieldTerminalXT1 {
+    concept Switch
     model "XT"
   }
 
-  device ConveyorMotorM1 {
-    type Motor
+  entity ConveyorMotorM1 {
+    concept Motor
     model "MOTOR"
   }
 

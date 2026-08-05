@@ -1,55 +1,50 @@
 package com.engineeringood.athena.cli
 
 import java.nio.file.Files
-import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertContains
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class ParseCliTest {
     @Test
-    fun `parses the demo cabinet example without activating runtime project state`() {
-        val examplePath = resolveRepoRoot().resolve("examples/m0/demo-cabinet.athena")
-        val runtime = com.engineeringood.athena.runtime.AthenaRuntime()
-        val output = BootstrapCli(runtime = runtime).run(listOf("parse", examplePath.toString()))
+    fun `parses M42 Entity anatomy`() {
+        val path = Files.createTempFile("athena-cli-anatomy-", ".athena")
+        Files.writeString(
+            path,
+            """
+            system Anatomy {
+              entity Drive {
+                concept Drive
+                function main {
+                  role main
+                  port powerIn { direction in flow Power }
+                }
+              }
+            }
+            """.trimIndent(),
+        )
 
-        assertContains(output, "Parse successful")
-        assertContains(output, "DemoCabinet")
-        assertContains(output, "device declarations: 2")
-        assertContains(output, "port declarations: 2")
-        assertContains(output, "connection declarations: 1")
-        assertNull(runtime.activeWorkspace)
-        assertNull(runtime.activeExecutionContext)
+        try {
+            val output = BootstrapCli().run(listOf("parse", path.toString()))
+            assertContains(output, "Parse successful")
+            assertContains(output, "System: Anatomy")
+            assertContains(output, "Entities: 1")
+            assertContains(output, "Ports: 1")
+        } finally {
+            Files.deleteIfExists(path)
+        }
     }
 
     @Test
-    fun `stops the pipeline after syntax diagnostics`() {
-        val brokenSource = """
-            system Broken {
-              connect P1.out P2.in
-            }
-        """.trimIndent()
-        val brokenPath = Files.createTempFile("athena-broken-", ".athena")
-        Files.writeString(brokenPath, brokenSource)
+    fun `reports syntax diagnostics without invoking retired rendering`() {
+        val path = Files.createTempFile("athena-cli-invalid-", ".athena")
+        Files.writeString(path, "system Broken { device M1 {} }")
 
         try {
-            val output = BootstrapCli().run(listOf("parse", brokenPath.toString()))
-
+            val output = BootstrapCli().run(listOf("parse", path.toString()))
             assertContains(output, "Syntax diagnostics")
-            assertContains(output, "Pipeline stopped before semantic validation and rendering")
-            assertContains(output, brokenPath.fileName.toString())
+            assertContains(output, "Pipeline stopped before engineering lowering.")
         } finally {
-            Files.deleteIfExists(brokenPath)
+            Files.deleteIfExists(path)
         }
-    }
-
-    private fun resolveRepoRoot(): Path {
-        var current = Path.of("").toAbsolutePath()
-        while (current.parent != null && !Files.exists(current.resolve("settings.gradle.kts"))) {
-            current = current.parent
-        }
-        assertTrue(Files.exists(current.resolve("settings.gradle.kts")), "Could not locate repository root")
-        return current
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.language
+package com.engineeringood.athena.language
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,13 +16,12 @@ class AthenaM18SyntaxScopeTest {
             import com.engineeringood.controls
             import com.engineeringood.controls.Switch2
             system import {
-              device package {
+              entity package {
                 import import
               }
               port package.out {
                 direction out
               }
-              connect package_out_to_package_out package.out to package.out
             }
             """.trimIndent()
 
@@ -32,13 +31,11 @@ class AthenaM18SyntaxScopeTest {
         assertEquals(listOf("com", "engineeringood", "m18-root"), success.ast.packageDeclaration?.name?.parts)
         assertEquals(2, success.ast.imports.size)
         assertEquals(listOf("com", "engineeringood", "controls", "Switch2"), success.ast.imports[1].target.parts)
-        assertEquals(listOf("package", "package", "package"), success.ast.declarations.map {
+        assertEquals(listOf("package", "package"), success.ast.declarations.map {
             when (it) {
-                is DeviceDeclaration -> it.name
+                is EntityDeclaration -> it.name
                 is PortDeclaration -> it.qualifiedName.parts.first()
-                is ConnectionDeclaration -> it.from.parts.first()
-                is ConnectionGroupDeclaration -> it.name
-                is RelationDeclaration -> error("Relation declarations are outside this M18 compatibility fixture")
+                is RelationDeclaration -> error("Relation declarations are outside this M18 syntax fixture")
                 is ExternalEvidenceDeclaration -> error("Evidence declarations are outside this M18 compatibility fixture")
                 is ProjectionPolicyDeclaration -> error("Projection Policy declarations are outside this M18 compatibility fixture")
                 is LayoutDeclaration -> error("Layout declarations are outside this M18 compatibility fixture")
@@ -80,8 +77,8 @@ class AthenaM18SyntaxScopeTest {
             "enum" to "enum Mode {}",
             "service" to "service Control {}",
             "namespace" to "namespace controls {}",
-            "export-device" to "export device PLC1 {}",
-            "public-device" to "public device PLC1 {}",
+            "export-device" to "export entity PLC1 {}",
+            "public-device" to "public entity PLC1 {}",
             "private-port" to "private port PLC1.out {}",
             "internal-connect" to "internal connect plc1_out_to_plc1_out PLC1.out to PLC1.out",
         )

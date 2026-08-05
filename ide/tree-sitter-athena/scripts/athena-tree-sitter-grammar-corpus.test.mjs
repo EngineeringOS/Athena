@@ -15,6 +15,7 @@ const wasmPath = path.join(packageRoot, 'tree-sitter-athena.wasm');
 const m34SymbolFixturePath = path.join(packageRoot, 'test', 'fixtures', 'm34-symbol.athena');
 const m34ElementFixturePath = path.join(packageRoot, 'test', 'fixtures', 'm34-element.athena');
 const m34FunctionPlacementFixturePath = path.join(packageRoot, 'test', 'fixtures', 'm34-function-placement.athena');
+const engineeringAnatomyFixturePath = path.join(packageRoot, 'test', 'fixtures', 'engineering-anatomy.athena');
 const m18SyntaxProofDir = path.join(repoRoot, 'examples', 'm18', 'syntax-proof');
 const m23ParserParityDir = path.join(repoRoot, 'examples', 'm23', 'parser-parity-proof');
 const M18_SYNTAX_FIXTURE_NAMES = [
@@ -176,12 +177,32 @@ test('M34 function and fixed drawing placement expose syntax-only nodes without 
 
     assert.equal(tree.rootNode.descendantsOfType('function_declaration').length, 1);
     assert.equal(tree.rootNode.descendantsOfType('function_role').length, 1);
-    assert.equal(tree.rootNode.descendantsOfType('function_ports').length, 1);
+    assert.equal(tree.rootNode.descendantsOfType('nested_port_declaration').length, 2);
     assert.equal(tree.rootNode.descendantsOfType('fixed_place_statement').length, 2);
     assert.deepEqual(
         tree.rootNode.descendantsOfType('fixed_place_statement').map(node => node.childForFieldName('subject')?.text),
         ['KM1.coil', 'KM1'],
     );
+});
+
+test('engineering anatomy fixture mirrors exact scalar structure and Function-owned Port syntax', () => {
+    const parser = new Parser();
+    parser.setLanguage(language);
+    const source = readFileSync(engineeringAnatomyFixturePath, 'utf8');
+    const tree = parser.parse(source);
+
+    assert.equal(tree.rootNode.hasError, false, tree.rootNode.toString());
+    assert.equal(tree.rootNode.descendantsOfType('entity_declaration').length, 1);
+    assert.equal(tree.rootNode.descendantsOfType('function_declaration').length, 1);
+    assert.equal(tree.rootNode.descendantsOfType('nested_port_declaration').length, 1);
+    assert.equal(tree.rootNode.descendantsOfType('structure_assignment').length, 1);
+    assert.equal(tree.rootNode.descendantsOfType('quantity').length, 1);
+    assert.equal(tree.rootNode.descendantsOfType('boolean').length, 1);
+    assert.equal(tree.rootNode.descendantsOfType('reference_value').length, 2);
+
+    const retiredSource = source.replace('entity Drive', 'entity Drive');
+    const retiredTree = parser.parse(retiredSource);
+    assert.equal(retiredTree.rootNode.hasError, true, retiredTree.rootNode.toString());
 });
 
 test('M34 Tree-sitter mirrors ANTLR direction and literal boundaries', () => {

@@ -44,7 +44,7 @@ class AthenaDomainSemanticsCoordinatorTest {
 
         assertEquals(
             listOf("AlphaDevice", "ZetaDevice"),
-            lowering.components.map { it.name },
+            lowering.entities.map { it.name },
         )
 
         val validation = coordinator.validate(
@@ -54,9 +54,8 @@ class AthenaDomainSemanticsCoordinatorTest {
                     name = "Deterministic",
                     provenance = SourceProvenance(source.file, 1, 1, 1, 14),
                 ),
-                components = emptyList(),
+                entities = emptyList(),
                 ports = emptyList(),
-                connections = emptyList(),
             ),
             context = AthenaPluginValidationContext(
                 document = EngineeringDocument(
@@ -65,9 +64,8 @@ class AthenaDomainSemanticsCoordinatorTest {
                         name = "Deterministic",
                         provenance = SourceProvenance(source.file, 1, 1, 1, 14),
                     ),
-                    components = emptyList(),
+                    entities = emptyList(),
                     ports = emptyList(),
-                    connections = emptyList(),
                 ),
                 source = AthenaSourceDocument(
                     file = source.file,
@@ -140,9 +138,8 @@ class AthenaDomainSemanticsCoordinatorTest {
                 name = "Staged",
                 provenance = SourceProvenance(source.file, 1, 1, 1, 8),
             ),
-            components = emptyList(),
+            entities = emptyList(),
             ports = emptyList(),
-            connections = emptyList(),
         )
 
         val lowering = coordinator.lower(source)
@@ -169,7 +166,7 @@ class AthenaDomainSemanticsCoordinatorTest {
             ),
         )
 
-        assertEquals(listOf("LowerOnlyDevice"), lowering.components.map { it.name })
+        assertEquals(listOf("LowerOnlyDevice"), lowering.entities.map { it.name })
         assertEquals(
             listOf("domain.validation.validate-only"),
             validation.diagnostics.map { it.ruleId.value },

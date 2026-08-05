@@ -1,6 +1,6 @@
 plugin_set=dummy-only
 approved_plugins=com.engineeringood.athena.domain.dummy-runtime
-components=2
+entities=2
 ports=2
 connections=1
 views=

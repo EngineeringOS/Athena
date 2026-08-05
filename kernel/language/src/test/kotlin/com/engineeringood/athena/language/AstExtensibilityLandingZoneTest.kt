@@ -15,25 +15,16 @@ class AstExtensibilityLandingZoneTest {
     @Test
     fun `Declaration consumers see exactly the nine current sealed variants`() {
         val span = SourceSpan(SourcePosition(0, 1, 1), SourcePosition(1, 1, 2))
-        val connection = ConnectionDeclaration(
-            alias = "plc_to_motor",
-            aliasSpan = span,
-            from = QualifiedName(listOf("PLC1", "out"), span),
-            to = QualifiedName(listOf("M1", "in"), span),
-            span = span,
-        )
         val declarations: List<Declaration> = listOf(
-            DeviceDeclaration(name = "PLC1", fields = emptyList(), span = span),
+            EntityDeclaration(name = "PLC1", fields = emptyList(), span = span),
             PortDeclaration(
                 qualifiedName = QualifiedName(listOf("PLC1", "out"), span),
                 fields = emptyList(),
                 span = span,
             ),
-            connection,
-            ConnectionGroupDeclaration(name = "control_feed", connections = listOf(connection), span = span),
             RelationDeclaration(
                 word = SymbolIdentifierField("power", span),
-                from = QualifiedName(listOf("PLC1", "out"), span),
+                source = QualifiedName(listOf("PLC1", "out"), span),
                 targets = listOf(QualifiedName(listOf("M1", "in"), span)),
                 span = span,
             ),
@@ -80,21 +71,25 @@ class AstExtensibilityLandingZoneTest {
         )
 
         assertEquals(
-            listOf("device", "port", "connect", "connect-group", "relation", "evidence", "projection", "layout", "installation"),
+            listOf("entity", "port", "relation", "evidence", "projection", "layout", "installation"),
             declarations.map { declaration -> classifyDeclaration(declaration) },
         )
     }
 
     @Test
-    fun `ScalarValue consumers see exactly the two current sealed variants`() {
+    fun `ScalarValue consumers see exactly the six current sealed variants`() {
         val span = SourceSpan(SourcePosition(0, 1, 1), SourcePosition(1, 1, 2))
         val values: List<ScalarValue> = listOf(
-            ScalarValue.Identifier("Switch", span),
-            ScalarValue.StringLiteral("S7-1200", span),
+            ScalarValue.Symbol("Switch", span),
+            ScalarValue.Text("S7-1200", span),
+            ScalarValue.Quantity("7.5", QualifiedName(listOf("unit", "kilowatt"), span), span),
+            ScalarValue.Integer("4", span),
+            ScalarValue.Boolean(true, span),
+            ScalarValue.Reference(QualifiedName(listOf("M1", "main"), span), span),
         )
 
         assertEquals(
-            listOf("identifier", "string"),
+            listOf("symbol", "text", "quantity", "integer", "boolean", "reference"),
             values.map { value -> classifyScalarValue(value) },
         )
     }
@@ -106,10 +101,8 @@ class AstExtensibilityLandingZoneTest {
      */
     private fun classifyDeclaration(declaration: Declaration): String {
         return when (declaration) {
-            is DeviceDeclaration -> "device"
+            is EntityDeclaration -> "entity"
             is PortDeclaration -> "port"
-            is ConnectionDeclaration -> "connect"
-            is ConnectionGroupDeclaration -> "connect-group"
             is RelationDeclaration -> "relation"
             is ExternalEvidenceDeclaration -> "evidence"
             is ProjectionPolicyDeclaration -> "projection"
@@ -128,8 +121,12 @@ class AstExtensibilityLandingZoneTest {
      */
     private fun classifyScalarValue(value: ScalarValue): String {
         return when (value) {
-            is ScalarValue.Identifier -> "identifier"
-            is ScalarValue.StringLiteral -> "string"
+            is ScalarValue.Symbol -> "symbol"
+            is ScalarValue.Text -> "text"
+            is ScalarValue.Quantity -> "quantity"
+            is ScalarValue.Integer -> "integer"
+            is ScalarValue.Boolean -> "boolean"
+            is ScalarValue.Reference -> "reference"
         }
     }
 }

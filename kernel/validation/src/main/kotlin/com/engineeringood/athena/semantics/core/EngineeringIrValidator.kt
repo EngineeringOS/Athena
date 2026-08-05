@@ -1,13 +1,13 @@
 package com.engineeringood.athena.semantics.core
 
-import com.engineeringood.athena.ir.EngineeringComponent
-import com.engineeringood.athena.ir.EngineeringConnection
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringEntity
 import com.engineeringood.athena.ir.EngineeringFunction
 import com.engineeringood.athena.ir.EngineeringPort
-import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
+import com.engineeringood.athena.ir.EngineeringPortOwner
 import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringRelationship
+import com.engineeringood.athena.ir.EngineeringSubjectReference
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 
@@ -18,19 +18,17 @@ class EngineeringIrValidator {
         document: EngineeringDocument,
         scope: EngineeringIrValidationScope? = null,
     ): SemanticValidationResult {
-        val componentsByName = document.components.groupBy { it.name }
+        val entitiesByName = document.entities.groupBy { it.name }
+        val functionsByPath = document.functions.groupBy { function -> authoredFunctionPath(function) }
         val portsByPath = document.ports.groupBy { authoredPortPath(it) }
         val diagnostics = buildList {
-            addAll(duplicateComponentDiagnostics(document.components, scope))
-            addAll(portOwnerDiagnostics(document.ports, componentsByName, scope))
+            addAll(duplicateEntityDiagnostics(document.entities, scope))
+            addAll(portOwnerDiagnostics(document.ports, entitiesByName, functionsByPath, scope))
             addAll(duplicatePortDiagnostics(document.ports, scope))
-            addAll(connectionReferenceDiagnostics(document.connections, portsByPath, scope))
-            addAll(duplicateConnectionDiagnostics(document.connections, scope))
-            addAll(functionOwnerDiagnostics(document.functions, componentsByName, scope))
+            addAll(relationshipParticipantDiagnostics(document.relationships, portsByPath, functionsByPath, entitiesByName, scope))
+            addAll(duplicateRelationshipDiagnostics(document.relationships, scope))
+            addAll(functionOwnerDiagnostics(document.functions, entitiesByName, scope))
             addAll(duplicateFunctionDiagnostics(document.functions, scope))
-            addAll(functionPortReferenceDiagnostics(document.functions, document.ports, scope))
-            addAll(duplicateFunctionPortDiagnostics(document.functions, scope))
-            addAll(multipleFunctionPortOwnershipDiagnostics(document.functions, scope))
         }
 
         return SemanticValidationResult(
@@ -43,23 +41,23 @@ class EngineeringIrValidator {
         )
     }
 
-    private fun duplicateComponentDiagnostics(
-        components: List<EngineeringComponent>,
+    private fun duplicateEntityDiagnostics(
+        entities: List<EngineeringEntity>,
         scope: EngineeringIrValidationScope?,
     ): List<SemanticDiagnostic> {
-        return components
+        return entities
             .groupBy { it.name }
             .values
-            .filter { duplicates -> scope == null || duplicates.any { component -> scope.includes(component.id.value) } }
+            .filter { duplicates -> scope == null || duplicates.any { entity -> scope.includes(entity.id.value) } }
             .filter { it.size > 1 }
             .flatMap { duplicates ->
-                duplicates.map { component ->
+                duplicates.map { entity ->
                     errorDiagnostic(
-                        ruleId = "uniqueness.component.duplicate-authored-key",
+                        ruleId = "uniqueness.entity.duplicate-authored-key",
                         category = SemanticDiagnosticCategory.UNIQUENESS,
-                        subjectIdentity = component.id,
-                        provenance = component.provenance,
-                        message = "Duplicate component authored key `${component.name}` is not semantically unique.",
+                        subjectIdentity = entity.id,
+                        provenance = entity.provenance,
+                        message = "Duplicate Entity authored key `${entity.name}` is not semantically unique.",
                     )
                 }
             }
@@ -67,23 +65,29 @@ class EngineeringIrValidator {
 
     private fun portOwnerDiagnostics(
         ports: List<EngineeringPort>,
-        componentsByName: Map<String, List<EngineeringComponent>>,
+        entitiesByName: Map<String, List<EngineeringEntity>>,
+        functionsByPath: Map<String, List<EngineeringFunction>>,
         scope: EngineeringIrValidationScope?,
     ): List<SemanticDiagnostic> {
         return ports
             .asSequence()
             .filter { port -> scope == null || scope.includes(port.id.value) }
             .mapNotNull { port ->
+                val ownerReference = port.owner.reference()
+                val candidateCount = when (port.owner) {
+                    is EngineeringPortOwner.Entity -> entitiesByName[authoredPath(ownerReference)]?.size ?: 0
+                    is EngineeringPortOwner.Function -> functionsByPath[authoredPath(ownerReference)]?.size ?: 0
+                }
                 classifyReference(
-                    reference = port.ownerReference,
-                    candidateCount = componentsByName[authoredComponentPath(port.ownerReference)]?.size ?: 0,
+                    reference = ownerReference,
+                    candidateCount = candidateCount,
                 )?.let { classification ->
                     errorDiagnostic(
                         ruleId = classification.ruleId,
                         category = SemanticDiagnosticCategory.REFERENCE,
                         subjectIdentity = port.id,
-                        provenance = port.ownerReference.provenance,
-                        message = "Port owner `${authoredComponentPath(port.ownerReference)}` ${classification.messageFragment}.",
+                        provenance = ownerReference.provenance,
+                        message = "Port owner `${authoredPath(ownerReference)}` ${classification.messageFragment}.",
                     )
                 }
             }
@@ -112,80 +116,70 @@ class EngineeringIrValidator {
             }
     }
 
-    private fun connectionReferenceDiagnostics(
-        connections: List<EngineeringConnection>,
+    private fun relationshipParticipantDiagnostics(
+        relationships: List<EngineeringRelationship>,
         portsByPath: Map<String, List<EngineeringPort>>,
+        functionsByPath: Map<String, List<EngineeringFunction>>,
+        entitiesByName: Map<String, List<EngineeringEntity>>,
         scope: EngineeringIrValidationScope?,
-    ): List<SemanticDiagnostic> {
-        return buildList {
-            connections
-                .asSequence()
-                .filter { connection -> scope == null || scope.includes(connection.id.value) }
-                .forEach { connection ->
-                    classifyReference(connection.from, portsByPath[authoredPath(connection.from)]?.size ?: 0)?.let { classification ->
-                        add(
-                            errorDiagnostic(
-                                ruleId = classification.ruleIdForConnectionEndpoint,
-                                category = SemanticDiagnosticCategory.REFERENCE,
-                                subjectIdentity = connection.id,
-                                provenance = connection.from.provenance,
-                                message = "Connection endpoint `${authoredPath(connection.from)}` ${classification.messageFragment}.",
-                            ),
-                        )
+    ): List<SemanticDiagnostic> = buildList {
+        relationships.asSequence()
+            .filter { relationship -> scope == null || scope.includes(relationship.id.value) }
+            .forEach { relationship ->
+                relationship.participants.forEach { participant ->
+                    val reference = participant.subject.reference
+                    val candidates = when (participant.subject) {
+                        is EngineeringSubjectReference.Port -> portsByPath[authoredPath(reference)]?.size ?: 0
+                        is EngineeringSubjectReference.Function -> functionsByPath[authoredPath(reference)]?.size ?: 0
+                        is EngineeringSubjectReference.Entity -> entitiesByName[authoredPath(reference)]?.size ?: 0
                     }
-                    classifyReference(connection.to, portsByPath[authoredPath(connection.to)]?.size ?: 0)?.let { classification ->
-                        add(
-                            errorDiagnostic(
-                                ruleId = classification.ruleIdForConnectionEndpoint,
-                                category = SemanticDiagnosticCategory.REFERENCE,
-                                subjectIdentity = connection.id,
-                                provenance = connection.to.provenance,
-                                message = "Connection endpoint `${authoredPath(connection.to)}` ${classification.messageFragment}.",
-                            ),
-                        )
+                    classifyReference(reference, candidates)?.let { classification ->
+                        add(errorDiagnostic(
+                            ruleId = "reference.relationship-participant." + classification.name.lowercase(),
+                            category = SemanticDiagnosticCategory.REFERENCE,
+                            subjectIdentity = relationship.id,
+                            provenance = reference.provenance,
+                            message = "Relationship role " + participant.role + " subject " + authoredPath(reference) + " " + classification.messageFragment + ".",
+                        ))
                     }
-                }
-        }
-    }
-
-    private fun duplicateConnectionDiagnostics(
-        connections: List<EngineeringConnection>,
-        scope: EngineeringIrValidationScope?,
-    ): List<SemanticDiagnostic> {
-        return connections
-            .groupBy { authoredConnectionPath(it) }
-            .values
-            .filter { duplicates -> scope == null || duplicates.any { connection -> scope.includes(connection.id.value) } }
-            .filter { it.size > 1 }
-            .flatMap { duplicates ->
-                duplicates.map { connection ->
-                    errorDiagnostic(
-                        ruleId = "uniqueness.connection.duplicate-authored-key",
-                        category = SemanticDiagnosticCategory.UNIQUENESS,
-                        subjectIdentity = connection.id,
-                        provenance = connection.provenance,
-                        message = "Duplicate connection authored key `${authoredConnectionPath(connection)}` is not semantically unique.",
-                    )
                 }
             }
     }
 
+    private fun duplicateRelationshipDiagnostics(
+        relationships: List<EngineeringRelationship>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> = relationships
+        .groupBy { relationship -> relationship.participants.joinToString("|") { participant -> participant.role + ":" + authoredPath(participant.subject.reference) } }
+        .values
+        .filter { duplicates -> duplicates.size > 1 }
+        .filter { duplicates -> scope == null || duplicates.any { relationship -> scope.includes(relationship.id.value) } }
+        .flatMap { duplicates -> duplicates.map { relationship ->
+            errorDiagnostic(
+                ruleId = "uniqueness.relationship.duplicate-authored-key",
+                category = SemanticDiagnosticCategory.UNIQUENESS,
+                subjectIdentity = relationship.id,
+                provenance = relationship.provenance,
+                message = "Duplicate Relationship participant key is not semantically unique.",
+            )
+        } }
+
     private fun functionOwnerDiagnostics(
         functions: List<EngineeringFunction>,
-        componentsByName: Map<String, List<EngineeringComponent>>,
+        entitiesByName: Map<String, List<EngineeringEntity>>,
         scope: EngineeringIrValidationScope?,
     ): List<SemanticDiagnostic> = functions.mapNotNull { function ->
         if (scope != null && !scope.includes(function.id.value)) return@mapNotNull null
         classifyReference(
-            function.ownerReference,
-            componentsByName[authoredComponentPath(function.ownerReference)]?.size ?: 0,
+            function.owner.reference,
+            entitiesByName[authoredPath(function.owner.reference)]?.size ?: 0,
         )?.let { classification ->
             errorDiagnostic(
                 ruleId = "reference.function-owner.${classification.name.lowercase()}",
                 category = SemanticDiagnosticCategory.REFERENCE,
                 subjectIdentity = function.id,
-                provenance = function.ownerReference.provenance,
-                message = "Function owner `${authoredComponentPath(function.ownerReference)}` ${classification.messageFragment}.",
+                provenance = function.owner.reference.provenance,
+                message = "Function owner `${authoredPath(function.owner.reference)}` ${classification.messageFragment}.",
             )
         }
     }
@@ -194,7 +188,7 @@ class EngineeringIrValidator {
         functions: List<EngineeringFunction>,
         scope: EngineeringIrValidationScope?,
     ): List<SemanticDiagnostic> = functions
-        .groupBy { function -> authoredPath(function.ownerReference) to function.name }
+        .groupBy(::authoredFunctionPath)
         .values
         .filter { duplicates -> duplicates.size > 1 }
         .filter { duplicates -> scope == null || duplicates.any { function -> scope.includes(function.id.value) } }
@@ -205,88 +199,10 @@ class EngineeringIrValidator {
                     category = SemanticDiagnosticCategory.UNIQUENESS,
                     subjectIdentity = function.id,
                     provenance = function.provenance,
-                    message = "Duplicate function authored key `${authoredPath(function.ownerReference)}.${function.name}` is not semantically unique.",
+                    message = "Duplicate Function authored key `${authoredFunctionPath(function)}` is not semantically unique.",
                 )
             }
         }
-
-    private fun functionPortReferenceDiagnostics(
-        functions: List<EngineeringFunction>,
-        ports: List<EngineeringPort>,
-        scope: EngineeringIrValidationScope?,
-    ): List<SemanticDiagnostic> {
-        val portsByIdentity = ports.associateBy { port -> port.id }
-        return functions.flatMap { function ->
-            if (scope != null && !scope.includes(function.id.value)) return@flatMap emptyList()
-            val ownerPath = function.ownerReference.authoredPath
-            function.portReferences.mapNotNull { reference ->
-                val resolvedPort = reference.resolvedIdentity?.let(portsByIdentity::get)
-                when {
-                    resolvedPort == null -> errorDiagnostic(
-                        ruleId = "reference.function-port.unresolved",
-                        category = SemanticDiagnosticCategory.REFERENCE,
-                        subjectIdentity = function.id,
-                        provenance = reference.provenance,
-                        message = "Function port `${authoredPath(reference)}` does not resolve to a canonical project port.",
-                    )
-                    resolvedPort.ownerReference.authoredPath != ownerPath -> errorDiagnostic(
-                        ruleId = "reference.function-port.cross-owner",
-                        category = SemanticDiagnosticCategory.REFERENCE,
-                        subjectIdentity = function.id,
-                        provenance = reference.provenance,
-                        message = "Function port `${authoredPath(reference)}` belongs to a different physical component.",
-                    )
-                    else -> null
-                }
-            }
-        }
-    }
-
-    private fun duplicateFunctionPortDiagnostics(
-        functions: List<EngineeringFunction>,
-        scope: EngineeringIrValidationScope?,
-    ): List<SemanticDiagnostic> = functions.flatMap { function ->
-        if (scope != null && !scope.includes(function.id.value)) return@flatMap emptyList()
-        function.portReferences
-            .groupBy(::authoredPath)
-            .values
-            .filter { references -> references.size > 1 }
-            .map { references ->
-                errorDiagnostic(
-                    ruleId = "uniqueness.function-port.duplicate-reference",
-                    category = SemanticDiagnosticCategory.UNIQUENESS,
-                    subjectIdentity = function.id,
-                    provenance = references[1].provenance,
-                    message = "Function `${function.name}` references `${authoredPath(references[0])}` more than once.",
-                )
-            }
-    }
-
-    private fun multipleFunctionPortOwnershipDiagnostics(
-        functions: List<EngineeringFunction>,
-        scope: EngineeringIrValidationScope?,
-    ): List<SemanticDiagnostic> = functions
-        .flatMap { function -> function.portReferences.map { reference -> function to reference } }
-        .filter { (_, reference) -> reference.resolvedIdentity != null }
-        .groupBy { (_, reference) -> reference.resolvedIdentity }
-        .values
-        .filter { assignments -> assignments.map { (function, _) -> function.id }.distinct().size > 1 }
-        .flatMap { assignments ->
-            assignments.mapNotNull { (function, reference) ->
-                if (scope != null && !scope.includes(function.id.value)) return@mapNotNull null
-                errorDiagnostic(
-                    ruleId = "ownership.function-port.multiple",
-                    category = SemanticDiagnosticCategory.DOMAIN,
-                    subjectIdentity = function.id,
-                    provenance = reference.provenance,
-                    message = "Port `${authoredPath(reference)}` is assigned to more than one function.",
-                )
-            }
-        }
-
-    private fun authoredConnectionPath(connection: EngineeringConnection): String {
-        return "${authoredPath(connection.from)}->${authoredPath(connection.to)}"
-    }
 
     private fun classifyReference(reference: EngineeringReference, candidateCount: Int): ReferenceClassification? {
         if (reference.resolvedIdentity != null) {
@@ -298,9 +214,10 @@ class EngineeringIrValidator {
         }
     }
 
-    private fun authoredComponentPath(reference: EngineeringReference): String = authoredPath(reference)
+    private fun authoredPortPath(port: EngineeringPort): String = authoredPath(port.owner.reference().authoredPath + port.name)
 
-    private fun authoredPortPath(port: EngineeringPort): String = authoredPath(port.ownerReference.authoredPath + port.name)
+    private fun authoredFunctionPath(function: EngineeringFunction): String =
+        authoredPath(function.owner.reference.authoredPath + function.name)
 
     private fun authoredPath(reference: EngineeringReference): String = authoredPath(reference.authoredPath)
 
@@ -336,19 +253,21 @@ data class EngineeringIrValidationScope(
     fun includes(semanticId: String): Boolean = semanticId in semanticIds
 }
 
+private fun EngineeringPortOwner.reference(): EngineeringReference = when (this) {
+    is EngineeringPortOwner.Entity -> entity.reference
+    is EngineeringPortOwner.Function -> function.reference
+}
+
 private enum class ReferenceClassification(
     val ruleId: String,
-    val ruleIdForConnectionEndpoint: String,
     val messageFragment: String,
 ) {
     UNRESOLVED(
         ruleId = "reference.port-owner.unresolved",
-        ruleIdForConnectionEndpoint = "reference.connection-endpoint.unresolved",
         messageFragment = "does not resolve to any canonical semantic object",
     ),
     AMBIGUOUS(
         ruleId = "reference.port-owner.ambiguous",
-        ruleIdForConnectionEndpoint = "reference.connection-endpoint.ambiguous",
         messageFragment = "resolves ambiguously to more than one canonical semantic object",
     ),
 }

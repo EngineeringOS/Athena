@@ -1,6 +1,6 @@
 system MotorImpactProof {
-  device M1 {
-    type Motor
+  entity M1 {
+    concept Motor
     power "7.5kw"
     voltage "400V"
     powerFactor "0.86"

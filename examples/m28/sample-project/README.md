@@ -12,11 +12,11 @@ Open this folder in the IDE to verify the normal Theia path:
 
 Source files are semantic workspace units, not sheet or page boundaries.
 
-M28 canonical source style uses nested device-owned ports:
+M28 canonical source style uses nested entity-owned ports:
 
 ```athena
-device ControllerPLC1 {
-  type Switch
+entity ControllerPLC1 {
+  concept Switch
   model "PLC"
 
   port do1 {

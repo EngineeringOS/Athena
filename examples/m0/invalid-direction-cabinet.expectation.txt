@@ -1,5 +1,5 @@
 status=semantic-invalid
-components=2
+entities=2
 ports=2
 connections=1
 svg=blocked

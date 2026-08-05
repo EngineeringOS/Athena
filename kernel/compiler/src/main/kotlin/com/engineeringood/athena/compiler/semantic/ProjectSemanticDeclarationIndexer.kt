@@ -1,9 +1,7 @@
 package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.language.Declaration
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.QualifiedName
 import com.engineeringood.athena.language.RelationDeclaration
@@ -27,19 +25,9 @@ class ProjectSemanticDeclarationIndexer {
                 val ordered = duplicates.sortedWith(declarationDuplicateComparator)
                 ordered.drop(1).forEach { duplicate ->
                     diagnostics += ProjectSemanticDiagnostic(
-                        code = ProjectSemanticDiagnosticCode(
-                            if (duplicate.kind == CONNECTION_DECLARATION_KIND) {
-                                "semantic.connection.alias.duplicate"
-                            } else {
-                                "semantic.declaration.duplicate"
-                            },
-                        ),
+                        code = ProjectSemanticDiagnosticCode("semantic.declaration.duplicate"),
                         severity = ProjectSemanticDiagnosticSeverity.ERROR,
-                        message = if (duplicate.kind == CONNECTION_DECLARATION_KIND) {
-                            "Duplicate authored connection alias `${duplicate.qualifiedAuthoredName.single()}`."
-                        } else {
-                            "Duplicate authored ${duplicate.kind} declaration `${duplicate.qualifiedAuthoredName.joinToString(".")}`."
-                        },
+                        message = "Duplicate authored ${duplicate.kind} declaration `${duplicate.qualifiedAuthoredName.joinToString(".")}`.",
                         sourceUnitId = duplicate.sourceUnitId,
                         sourceSpan = duplicate.authoredSpan,
                     )
@@ -86,8 +74,8 @@ class ProjectSemanticDeclarationIndexer {
         namespaceId: NamespaceId,
     ): List<ProjectSemanticDeclaration> {
         val semanticDeclarations = when (this) {
-            is DeviceDeclaration -> listOf(
-                "device" to listOf(name) to span,
+            is EntityDeclaration -> listOf(
+                "entity" to listOf(name) to span,
             ) + nestedPorts.map { port -> "port" to port.qualifiedName.parts to port.span } +
                 interfaces.flatMap { connectivityInterface ->
                     connectivityInterface.ports.map { port ->
@@ -96,13 +84,7 @@ class ProjectSemanticDeclarationIndexer {
                 } +
                 nestedFunctions.map { function -> "function" to listOf(name, function.name) to function.span }
             is PortDeclaration -> listOf("port" to qualifiedName.parts to span)
-            is ConnectionDeclaration -> listOf(CONNECTION_DECLARATION_KIND to listOf(alias) to aliasSpan)
-            is ConnectionGroupDeclaration -> connections.map { connection ->
-                CONNECTION_DECLARATION_KIND to listOf(connection.alias) to connection.aliasSpan
-            }
-            is RelationDeclaration -> targets.map { target ->
-                CONNECTION_DECLARATION_KIND to listOf(relationMemberAlias(word.value, from, target)) to word.span
-            }
+            is RelationDeclaration -> emptyList()
             else -> return emptyList()
         }
         return semanticDeclarations.map { (kindAndName, authoredSpan) ->
@@ -119,8 +101,6 @@ class ProjectSemanticDeclarationIndexer {
     }
 
     private companion object {
-        private const val CONNECTION_DECLARATION_KIND = "connection"
-
         private data class SemanticAvailabilityKey(
             val namespaceId: NamespaceId,
             val kind: String,
@@ -144,6 +124,3 @@ class ProjectSemanticDeclarationIndexer {
         )
     }
 }
-
-private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
-    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"

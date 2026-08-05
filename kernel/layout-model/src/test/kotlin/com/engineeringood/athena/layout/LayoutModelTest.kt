@@ -54,7 +54,7 @@ class LayoutModelTest {
         )
         val controllerIntent = LayoutIntentItem(
             intentId = controllerIntentId,
-            subjectId = StableSemanticIdentity("component:plc-1"),
+            subjectId = StableSemanticIdentity("entity:plc-1"),
             occurrenceId = LayoutOccurrenceId("occurrence:schematic:plc-1"),
             role = SchematicLayoutRole.CONTROLLER,
             preferredZone = SchematicLayoutZone.CONTROL,
@@ -76,7 +76,7 @@ class LayoutModelTest {
             items = listOf(
                 LayoutIntentItem(
                     intentId = terminalIntentId,
-                    subjectId = StableSemanticIdentity("component:xt-1"),
+                    subjectId = StableSemanticIdentity("entity:xt-1"),
                     occurrenceId = LayoutOccurrenceId("occurrence:schematic:xt-1"),
                     role = SchematicLayoutRole.TERMINAL,
                     preferredZone = SchematicLayoutZone.TERMINAL,
@@ -90,7 +90,7 @@ class LayoutModelTest {
         assertEquals(LayoutSnapshotId("snapshot:m21:schematic:intent"), snapshot.snapshotId)
         assertEquals(ElectricalProjectionFamily.SCHEMATIC, snapshot.family)
         assertEquals(listOf(controllerIntentId, terminalIntentId), snapshot.items.map(LayoutIntentItem::intentId))
-        assertEquals(StableSemanticIdentity("component:plc-1"), snapshot.items.first().subjectId)
+        assertEquals(StableSemanticIdentity("entity:plc-1"), snapshot.items.first().subjectId)
         assertEquals(LayoutOccurrenceId("occurrence:schematic:plc-1"), snapshot.items.first().occurrenceId)
         assertEquals(SchematicLayoutRole.CONTROLLER, snapshot.items.first().role)
         assertEquals(SchematicLayoutZone.CONTROL, snapshot.items.first().preferredZone)
@@ -104,7 +104,7 @@ class LayoutModelTest {
     fun `layout intent snapshot contract stays renderer independent and deterministic`() {
         val powerIntent = LayoutIntentItem(
             intentId = LayoutIntentId("intent:power/ps-1"),
-            subjectId = StableSemanticIdentity("component:ps-1"),
+            subjectId = StableSemanticIdentity("entity:ps-1"),
             occurrenceId = LayoutOccurrenceId("occurrence:schematic:ps-1"),
             role = SchematicLayoutRole.POWER_SOURCE,
             preferredZone = SchematicLayoutZone.POWER,
@@ -113,7 +113,7 @@ class LayoutModelTest {
         )
         val protectionIntent = LayoutIntentItem(
             intentId = LayoutIntentId("intent:protection/qf-1"),
-            subjectId = StableSemanticIdentity("component:qf-1"),
+            subjectId = StableSemanticIdentity("entity:qf-1"),
             occurrenceId = LayoutOccurrenceId("occurrence:schematic:qf-1"),
             role = SchematicLayoutRole.PROTECTION,
             preferredZone = SchematicLayoutZone.POWER,
@@ -161,7 +161,7 @@ class LayoutModelTest {
         )
         val controller = LayoutConstraintSubject(
             intentId = LayoutIntentId("intent:controller/plc-1"),
-            subjectId = StableSemanticIdentity("component:plc-1"),
+            subjectId = StableSemanticIdentity("entity:plc-1"),
             occurrenceId = LayoutOccurrenceId("occurrence:schematic:plc-1"),
             sheetId = "sheet:m22:acceptance",
             viewId = "schematic-sheet",
@@ -169,7 +169,7 @@ class LayoutModelTest {
         )
         val terminal = LayoutConstraintSubject(
             intentId = LayoutIntentId("intent:terminal/xt-1"),
-            subjectId = StableSemanticIdentity("component:xt-1"),
+            subjectId = StableSemanticIdentity("entity:xt-1"),
             occurrenceId = LayoutOccurrenceId("occurrence:schematic:xt-1"),
             sheetId = "sheet:m22:acceptance",
             viewId = "schematic-sheet",
@@ -224,7 +224,7 @@ class LayoutModelTest {
             ),
             snapshot.constraints.map(LayoutConstraint::kind),
         )
-        assertEquals(StableSemanticIdentity("component:plc-1"), snapshot.constraints.first().subject.subjectId)
+        assertEquals(StableSemanticIdentity("entity:plc-1"), snapshot.constraints.first().subject.subjectId)
         assertEquals(LayoutOccurrenceId("occurrence:schematic:plc-1"), snapshot.constraints.first().subject.occurrenceId)
         assertEquals("sheet:m22:acceptance", snapshot.constraints.first().subject.sheetId)
         assertEquals("schematic-sheet", snapshot.constraints.first().subject.viewId)
@@ -279,7 +279,7 @@ class LayoutModelTest {
 
     @Test
     fun `preserves canonical semantic identity across groups nodes and relationships`() {
-        val componentSemanticId = StableSemanticIdentity("component:cabinet/main")
+        val componentSemanticId = StableSemanticIdentity("entity:cabinet/main")
         val portSemanticId = StableSemanticIdentity("port:cabinet/main.power")
         val groupId = LayoutGroupId("cabinet/group/main")
         val componentLayoutId = LayoutNodeId("cabinet/node/main")

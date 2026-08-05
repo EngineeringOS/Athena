@@ -29,8 +29,8 @@ The plugin does not get its own pass pipeline, semantic model, or renderer autho
 
 The real domain plugin now owns:
 
-- mapping M0 `device`, `port`, and `connect` declarations into compiler-owned lowering blueprints
-- Electrical/Runtime device type semantics such as `PLC` and `Motor`
+- mapping M0 `entity`, `port`, and `connect` declarations into compiler-owned lowering blueprints
+- Electrical/Runtime entity type semantics such as `PLC` and `Motor`
 - Electrical/Runtime direction semantics such as `in` and `out`
 - connection direction legality
 - signal compatibility checks

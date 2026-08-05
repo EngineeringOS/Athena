@@ -30,7 +30,7 @@ class AthenaM34SymbolSyntaxTest {
             "project.athena",
             """
                 system Demo {
-                  device MotorM1 {
+                  entity MotorM1 {
                     type Motor
                   }
                 }

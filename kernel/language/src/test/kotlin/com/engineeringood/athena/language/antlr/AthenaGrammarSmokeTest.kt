@@ -38,7 +38,7 @@ class AthenaGrammarSmokeTest {
         val source =
             """
             system import {
-              device import {
+              entity import {
                 import import
               }
             }
@@ -49,9 +49,9 @@ class AthenaGrammarSmokeTest {
         assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
         val system = parse.tree.systemDecl()
         assertEquals("import", system.ident().text)
-        val device = system.declaration().single().deviceDecl()
-        assertEquals("import", device.ident().text)
-        val property = device.deviceMember().single().propertyAssignment()
+        val entity = system.declaration().single().entityDecl()
+        assertEquals("import", entity.ident().text)
+        val property = entity.entityMember().single().propertyAssignment()
         assertEquals("import", property.ident().text)
         assertEquals("import", property.scalarValue().ident().text)
     }
@@ -77,7 +77,7 @@ class AthenaGrammarSmokeTest {
             """
             package com.engineeringood.factory-line
             system Demo {
-              connect plc_loop plc.out to plc.input
+              power plc.out to plc.input
             }
             """.trimIndent()
 
@@ -92,17 +92,17 @@ class AthenaGrammarSmokeTest {
     }
 
     @Test
-    fun `keeps package contextual without breaking natural connection or dotted reference parsing`() {
+    fun `keeps package contextual without breaking natural relation or dotted reference parsing`() {
         val source =
             """
             system Demo {
-              device package {
+              entity package {
                 package package
               }
               port plc.out {
                 package package
               }
-              connect plc_loop plc.out to plc.input
+              power plc.out to plc.input
             }
             """.trimIndent()
 
@@ -110,10 +110,9 @@ class AthenaGrammarSmokeTest {
 
         assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
         assertEquals(3, parse.tree.systemDecl().declaration().size)
-        val connect = parse.tree.systemDecl().declaration(2).connectDecl()
-        assertEquals("to", connect.text.substringAfter("plc.out").substringBefore("plc.input").trim())
-        assertEquals(listOf("plc.out", "plc.input"), connect.twoPartName().map { it.text })
-        assertEquals("plc_loop", connect.ident().text)
+        val relation = parse.tree.systemDecl().declaration(2).relationDecl()
+        assertEquals("power", relation.relationWord().text)
+        assertEquals("plc.input", relation.relationTarget().qualifiedReference(0).text)
     }
 
     @Test
@@ -133,7 +132,7 @@ class AthenaGrammarSmokeTest {
         val source = "\uFEFF" +
             """
             system Demo {
-              device PLC1 {
+              entity PLC1 {
                 type Switch
               }
             }
@@ -146,27 +145,27 @@ class AthenaGrammarSmokeTest {
     }
 
     @Test
-    fun `accepts single-part device names while requiring two-part port names`() {
+    fun `accepts single-part entity names while requiring two-part port names`() {
         val source =
             """
             system Demo {
-              device PLC1 {
+              entity PLC1 {
                 type Switch
               }
               port PLC1.out {
                 direction out
               }
-              connect plc_self PLC1.out to PLC1.out
+              power PLC1.out to PLC1.out
             }
             """.trimIndent()
 
         val parse = parseSource(source)
 
         assertTrue(parse.errors.isEmpty(), "Unexpected syntax errors: ${parse.errors}")
-        val device = parse.tree.systemDecl().declaration(0).deviceDecl()
-        assertEquals("PLC1", device.ident().text)
+        val entity = parse.tree.systemDecl().declaration(0).entityDecl()
+        assertEquals("PLC1", entity.ident().text)
         val port = parse.tree.systemDecl().declaration(1).portDecl()
-        assertEquals("PLC1.out", port.twoPartName().text.replace(" ", ""))
+        assertEquals("PLC1.out", port.qualifiedReference().text.replace(" ", ""))
     }
 
     @Test
@@ -174,7 +173,7 @@ class AthenaGrammarSmokeTest {
         val source =
             """
             system MachineNo000 {
-              device PLC1 {
+              entity PLC1 {
                 type Switch
               }
               layout schematic-sheet {

@@ -71,9 +71,9 @@ import kotlin.test.assertTrue
 
 class BindingResolverSelectionTest {
     @Test
-    fun `binding resolver keeps device and function selector scopes disjoint`() {
+    fun `binding resolver keeps entity and function selector scopes disjoint`() {
         val deviceRule = rule(
-            id = "binding.drive.device",
+            id = "binding.drive.entity",
             descriptorId = "descriptor.drive.iec.standard",
             packageId = "com.athena.example.representation.drive.iec",
             variant = "standard",
@@ -93,7 +93,7 @@ class BindingResolverSelectionTest {
             ),
         )
 
-        val device = BindingResolver().resolve(
+        val entity = BindingResolver().resolve(
             baseRequest(
                 activeProfile = profile("iec"),
                 bindingRules = listOf(deviceRule, functionRule),
@@ -108,8 +108,8 @@ class BindingResolverSelectionTest {
             ),
         )
 
-        assertEquals("descriptor.drive.iec.standard", device.resolution?.descriptorId?.value)
-        assertEquals("binding.drive.device", device.resolution?.bindingRuleId?.value)
+        assertEquals("descriptor.drive.iec.standard", entity.resolution?.descriptorId?.value)
+        assertEquals("binding.drive.entity", entity.resolution?.bindingRuleId?.value)
         assertEquals("descriptor.drive.iec.standard", function.resolution?.descriptorId?.value)
         assertEquals("binding.drive.function", function.resolution?.bindingRuleId?.value)
     }
@@ -185,14 +185,14 @@ class BindingResolverSelectionTest {
 
         assertTrue(result.isValid)
         val resolution = assertNotNull(result.resolution)
-        assertEquals("device:DriveA", resolution.semanticSubjectId)
+        assertEquals("entity:DriveA", resolution.semanticSubjectId)
         assertEquals("com.athena.example.engineering.drive.compact-vfd", resolution.engineeringPackageId.value)
         assertEquals("iec", resolution.presentationProfileId.value)
         assertEquals("com.athena.example.representation.drive.iec", resolution.representationPackageId.value)
         assertEquals("descriptor.drive.iec.standard", resolution.descriptorId.value)
         assertEquals("standard", resolution.variantId.value)
         assertEquals(RepresentationAnchorId("power"), resolution.anchorMapping["port:DriveA.power"])
-        assertEquals("DriveA", resolution.labelBinding[RepresentationLabelSlotId("device-tag")])
+        assertEquals("DriveA", resolution.labelBinding[RepresentationLabelSlotId("entity-tag")])
         assertEquals(PresentationStyleProfileId("industrial-print"), resolution.styleProfile)
     }
 
@@ -352,7 +352,7 @@ class BindingResolverSelectionTest {
     private fun baseRequest(
         activeProfile: PresentationProfileDescriptor,
         requiredAnchorBindings: Map<String, RepresentationAnchorId> = mapOf("port:DriveA.power" to RepresentationAnchorId("power")),
-        requiredLabelBindings: Map<RepresentationLabelSlotId, String> = mapOf(RepresentationLabelSlotId("device-tag") to "DriveA"),
+        requiredLabelBindings: Map<RepresentationLabelSlotId, String> = mapOf(RepresentationLabelSlotId("entity-tag") to "DriveA"),
         bindingRules: List<RepresentationBindingRule> = listOf(
             rule(
                 id = "binding.drive.default",
@@ -371,7 +371,7 @@ class BindingResolverSelectionTest {
         semanticFacts: Map<String, String> = mapOf("type" to "Drive"),
     ): BindingResolutionRequest = BindingResolutionRequest(
         subject = BindingSubject(
-            semanticSubjectId = "device:DriveA",
+            semanticSubjectId = "entity:DriveA",
             conceptId = EngineeringConceptId("FrequencyDrive"),
             requiredAnchorBindings = requiredAnchorBindings,
             requiredLabelBindings = requiredLabelBindings,
@@ -499,7 +499,7 @@ class BindingResolverSelectionTest {
             RepresentationAnchorDefinition(RepresentationAnchorId("power"), x = 8.0, y = 24.0, side = RepresentationAnchorSide.LEFT),
         ),
         labelSlots = listOf(
-            RepresentationLabelSlotDefinition(RepresentationLabelSlotId("device-tag"), RepresentationLabelSlotRole.DEVICE_TAG, required = true),
+            RepresentationLabelSlotDefinition(RepresentationLabelSlotId("entity-tag"), RepresentationLabelSlotRole.DEVICE_TAG, required = true),
         ),
         variants = listOf(RepresentationVariantId(variant)),
         styleTokenRefs = listOf(RepresentationStyleTokenRef(resourceId)),

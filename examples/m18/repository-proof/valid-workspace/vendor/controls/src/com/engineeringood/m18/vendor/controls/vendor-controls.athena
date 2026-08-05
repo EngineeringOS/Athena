@@ -1,6 +1,6 @@
 package com.engineeringood.m18.vendor.controls
 
 system VendorControls {
-  device Vendor {}
+  entity Vendor { concept Generic}
   port Vendor.out {}
 }

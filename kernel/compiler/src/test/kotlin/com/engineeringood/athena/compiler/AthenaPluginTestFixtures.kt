@@ -1,11 +1,10 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
+import com.engineeringood.athena.ir.EngineeringDefinitionReference
+import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.language.RelationDeclaration
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
@@ -19,6 +18,7 @@ import com.engineeringood.athena.language.ViewDeclaration
 import com.engineeringood.athena.layout.ViewDefinition
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContribution
 import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
+import com.engineeringood.athena.plugin.AthenaDomainEntityBlueprint
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
 import com.engineeringood.athena.plugin.AthenaCompilerPassContribution
@@ -37,10 +37,6 @@ import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import com.engineeringood.athena.plugin.CoreVersionRange
 import com.engineeringood.athena.plugin.host.AthenaPluginSource
 import com.engineeringood.athena.runtime.AthenaExecutionContext
-import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandContribution
-import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandContributor
-import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandFactory
-import com.engineeringood.athena.runtime.AthenaRuntimePluginCommandRejected
 import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContribution
 import com.engineeringood.athena.runtime.AthenaRuntimePluginViewContributor
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -109,13 +105,10 @@ internal class AlphaSemanticsTestPlugin : AthenaDomainPlugin {
 
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
         return AthenaDomainLoweringContribution(
-            components = listOf(
-                context.component(
+            entities = listOf(
+                context.syntheticEntity(
                     name = "AlphaDevice",
-                    kind = "device",
-                    properties = listOf(
-                        EngineeringProperty("type", EngineeringPropertyValue.Symbol("PLC")),
-                    ),
+                    concept = "PLC",
                 ),
             ),
         )
@@ -189,13 +182,10 @@ internal class ZetaSemanticsTestPlugin : AthenaDomainPlugin {
 
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
         return AthenaDomainLoweringContribution(
-            components = listOf(
-                context.component(
+            entities = listOf(
+                context.syntheticEntity(
                     name = "ZetaDevice",
-                    kind = "device",
-                    properties = listOf(
-                        EngineeringProperty("type", EngineeringPropertyValue.Symbol("Motor")),
-                    ),
+                    concept = "Motor",
                 ),
             ),
         )
@@ -228,42 +218,6 @@ internal class SovereignOwnershipClaimTestPlugin : AthenaDomainPlugin {
         ownershipClaims = setOf(
             AthenaPluginOwnershipClaim.ENGINEERING_IR,
             AthenaPluginOwnershipClaim.WORKSPACE_LIFECYCLE,
-        ),
-    )
-}
-
-internal class UndeclaredRuntimeCommandTestPlugin : AthenaDomainPlugin, AthenaRuntimePluginCommandContributor {
-    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
-        pluginId = "com.engineeringood.athena.domain.undeclared-runtime-command",
-        pluginVersion = "0.0.1-SNAPSHOT",
-        pluginType = AthenaPluginType.DOMAIN,
-        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
-        requiredExtensionPoints = setOf(AthenaExtensionPoint.DOMAIN_SEMANTICS),
-    )
-
-    override fun commandContributions(): List<AthenaRuntimePluginCommandContribution> {
-        return listOf(
-            AthenaRuntimePluginCommandContribution(
-                contributionId = "undeclared-runtime-command",
-                displayName = "Undeclared runtime command",
-                description = "Used by tests to prove hosted runtime contract rejection.",
-                factory = AthenaRuntimePluginCommandFactory {
-                    AthenaRuntimePluginCommandRejected("Not intended for execution.")
-                },
-            ),
-        )
-    }
-}
-
-internal class DeclaredButMissingRuntimeCommandTestPlugin : AthenaDomainPlugin {
-    override val manifest: AthenaPluginManifest = AthenaPluginManifest(
-        pluginId = "com.engineeringood.athena.domain.missing-runtime-command",
-        pluginVersion = "0.0.1-SNAPSHOT",
-        pluginType = AthenaPluginType.DOMAIN,
-        coreCompatibility = CoreVersionRange(minimumInclusive = "0.0.1-SNAPSHOT"),
-        requiredExtensionPoints = setOf(
-            AthenaExtensionPoint.DOMAIN_SEMANTICS,
-            AthenaExtensionPoint.RUNTIME_COMMANDS,
         ),
     )
 }
@@ -328,11 +282,10 @@ internal class LowerOnlySemanticsTestPlugin : AthenaDomainPlugin {
 
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
         return AthenaDomainLoweringContribution(
-            components = listOf(
-                context.component(
+            entities = listOf(
+                context.syntheticEntity(
                     name = "LowerOnlyDevice",
-                    kind = "device",
-                    properties = emptyList(),
+                    concept = "TestEntity",
                 ),
             ),
         )
@@ -374,15 +327,12 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
 
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
         // Exhaustive partition over Declaration so future sealed variants fail at compile time.
-        val deviceDeclarations = mutableListOf<DeviceDeclaration>()
+        val entityDeclarations = mutableListOf<EntityDeclaration>()
         val portDeclarations = mutableListOf<PortDeclaration>()
-        val connectionDeclarations = mutableListOf<ConnectionDeclaration>()
         for (declaration in context.source.ast.declarations) {
             when (declaration) {
-                is DeviceDeclaration -> deviceDeclarations += declaration
+                is EntityDeclaration -> entityDeclarations += declaration
                 is PortDeclaration -> portDeclarations += declaration
-                is ConnectionDeclaration -> connectionDeclarations += declaration
-                is ConnectionGroupDeclaration -> connectionDeclarations += declaration.connections
                 is RelationDeclaration -> Unit
                 is ExternalEvidenceDeclaration -> Unit
                 is ProjectionPolicyDeclaration -> Unit
@@ -396,38 +346,23 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
             }
         }
 
-        val components = deviceDeclarations.map { declaration ->
-            context.component(
-                name = declaration.name,
-                kind = "device",
-                properties = context.lowerProperties(declaration.fields),
-                provenance = context.provenance(declaration.span),
-            )
+        val entities = entityDeclarations.mapNotNull(context::entityOrNull)
+        val lowerableEntityNames = entities.map { entity -> entity.name }.toSet()
+        val ports = buildList {
+            addAll(portDeclarations)
+            entityDeclarations.forEach { entity ->
+                addAll(entity.nestedPorts)
+                entity.nestedFunctions.forEach { function -> addAll(function.nestedPorts) }
+            }
+        }.filter { declaration -> declaration.qualifiedName.parts.firstOrNull() in lowerableEntityNames }
+            .mapNotNull(context::portOrNull)
+        val functions = entityDeclarations.flatMap { entity ->
+            entity.nestedFunctions.map { function -> context.function(entity, function) }
         }
-        val ports = portDeclarations.map { declaration ->
-            context.port(
-                ownerPath = declaration.qualifiedName.parts.dropLast(1),
-                ownerProvenance = context.provenance(declaration.qualifiedName.span),
-                name = declaration.qualifiedName.parts.last(),
-                properties = context.lowerProperties(declaration.fields),
-                provenance = context.provenance(declaration.span),
-            )
-        }
-        val connections = connectionDeclarations.map { declaration ->
-            context.connection(
-                alias = declaration.alias,
-                fromPath = declaration.from.parts,
-                fromProvenance = context.provenance(declaration.from.span),
-                toPath = declaration.to.parts,
-                toProvenance = context.provenance(declaration.to.span),
-                provenance = context.provenance(declaration.span),
-            )
-        }
-
         return AthenaDomainLoweringContribution(
-            components = components,
+            entities = entities,
             ports = ports,
-            connections = connections,
+            functions = functions,
         )
     }
 
@@ -522,11 +457,10 @@ internal class ValidateOnlySemanticsTestPlugin : AthenaDomainPlugin {
 
     override fun lower(context: AthenaDomainLoweringContext): AthenaDomainLoweringContribution {
         return AthenaDomainLoweringContribution(
-            components = listOf(
-                context.component(
+            entities = listOf(
+                context.syntheticEntity(
                     name = "ValidateOnlyDevice",
-                    kind = "device",
-                    properties = emptyList(),
+                    concept = "TestEntity",
                 ),
             ),
         )
@@ -547,6 +481,30 @@ internal class ValidateOnlySemanticsTestPlugin : AthenaDomainPlugin {
             ),
         )
     }
+}
+
+private fun AthenaDomainLoweringContext.syntheticEntity(
+    name: String,
+    concept: String,
+): AthenaDomainEntityBlueprint {
+    val sourceProvenance = provenance(source.ast.system.span)
+    return AthenaDomainEntityBlueprint(
+        name = name,
+        conceptReference = EngineeringDefinitionReference(
+            authoredName = listOf(concept),
+            resolvedId = null,
+            provenance = sourceProvenance,
+        ),
+        properties = listOf(
+            EngineeringProperty(
+                name = "type",
+                value = EngineeringValue.Symbol(concept),
+                provenance = sourceProvenance,
+            ),
+        ),
+        structureAssignments = emptyList(),
+        provenance = sourceProvenance,
+    )
 }
 
 internal class SemanticEnrichmentOnlyTestPlugin : AthenaDomainPlugin {

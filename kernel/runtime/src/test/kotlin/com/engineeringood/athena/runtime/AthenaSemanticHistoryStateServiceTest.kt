@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.runtime
+package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.integrations.scm.git.GitSemanticBaselineAdapter
@@ -30,8 +30,8 @@ class AthenaSemanticHistoryStateServiceTest {
                 packageVersion = "0.9.0",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
-                        type Switch
+                      entity PLC1 {
+                        concept Switch
                       }
                     }
                 """.trimIndent(),
@@ -43,8 +43,8 @@ class AthenaSemanticHistoryStateServiceTest {
                 dependencyVersion = "1.0.0",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
-                        type Switch
+                      entity PLC1 {
+                        concept Switch
                       }
                     }
                 """.trimIndent(),
@@ -56,25 +56,25 @@ class AthenaSemanticHistoryStateServiceTest {
                 dependencyVersion = "2.0.0",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
+                      entity PLC1 { concept Controller
                         model "S7-1200"
                       }
 
-                      device M1 {
-                        type Motor
+                      entity M1 {
+                        concept Motor
                       }
 
                       port PLC1.out {
                         direction out
-                        signal Digital
+                        flow Digital
                       }
 
                       port M1.in {
                         direction in
-                        signal Analog
+                        flow Analog
                       }
 
-                      connect plc1_out_to_m1_in PLC1.out to M1.in
+                      power PLC1.out to M1.in
                     }
                 """.trimIndent(),
             )
@@ -117,7 +117,7 @@ class AthenaSemanticHistoryStateServiceTest {
             val summary = assertNotNull(state.historySummary)
             assertEquals("com.engineeringood.demo", summary.packageId.name)
             assertEquals(2, summary.baselineSequence.size)
-            assertEquals(SemanticReleaseRelevance.REVIEW_REQUIRED, summary.releaseRelevance)
+            assertEquals(SemanticReleaseRelevance.MAJOR_CANDIDATE, summary.releaseRelevance)
             assertEquals(SemanticContractBreakRisk.HIGH, summary.contractBreakRisk)
             assertTrue(summary.packageLineage.any { lineage -> lineage.currentVersion == "1.1.0" })
             assertTrue(summary.entries.any { entry ->

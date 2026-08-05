@@ -1,13 +1,13 @@
 package com.engineeringood.m27.sample
 
 system ProfessionalSheetProofSupportCatalog {
-  device SpareFieldGatewayGW1 {
-    type Switch
+  entity SpareFieldGatewayGW1 {
+    concept Switch
     model "SPARE-GW"
   }
 
-  device SpareTerminalXT99 {
-    type Switch
+  entity SpareTerminalXT99 {
+    concept Switch
     model "SPARE-XT"
   }
 

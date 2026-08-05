@@ -340,7 +340,7 @@ private fun authoredHistoryMessage(
                 "."
         SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED,
         SemanticChangeCategory.ENGINEERING_PROPERTY_CHANGED,
-        SemanticChangeCategory.CONNECTION_TOPOLOGY_CHANGED,
+        SemanticChangeCategory.RELATIONSHIP_CHANGED,
         SemanticChangeCategory.EXTENSION_SEMANTICS_CHANGED,
         SemanticChangeCategory.VALIDATION_STATE_CHANGED,
         -> "Package evolution from baseline $baselineLabel: ${authoredChanges.first().message}"
@@ -366,7 +366,7 @@ private fun historyReleaseRelevance(
         dependencyMovements.isNotEmpty() ||
         authoredChanges.any { change ->
             change.category == SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED ||
-                change.category == SemanticChangeCategory.CONNECTION_TOPOLOGY_CHANGED
+                change.category == SemanticChangeCategory.RELATIONSHIP_CHANGED
         }
     ) {
         return SemanticReleaseRelevance.MINOR_CANDIDATE
@@ -404,7 +404,7 @@ private fun historyContractBreakRisk(
         dependencyMovements.any() ||
         authoredChanges.any { change ->
             change.category == SemanticChangeCategory.ENGINEERING_STRUCTURE_CHANGED ||
-                change.category == SemanticChangeCategory.CONNECTION_TOPOLOGY_CHANGED ||
+                change.category == SemanticChangeCategory.RELATIONSHIP_CHANGED ||
                 change.category == SemanticChangeCategory.VALIDATION_STATE_CHANGED
         } ||
         (validationMovement != null &&

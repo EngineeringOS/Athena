@@ -11,13 +11,13 @@ class PhysicalConstraintEvaluatorTest {
     fun `accepts valid cabinet fit and edge contact without solving`() {
         val ir = validIr(
             occurrences = listOf(
-                occurrence("A", "component:A", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 100, y = 100),
-                occurrence("B", "component:B", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 120, y = 100),
-                occurrence("RailA", "component:RailA", PhysicalMountTargetRef.Rail(PhysicalObjectId("DIN1")), x = 10, y = 0),
-                occurrence("TerminalA", "component:TerminalA", PhysicalMountTargetRef.TerminalGroup(PhysicalObjectId("XT1")), x = 10, y = 5),
+                occurrence("A", "entity:A", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 100, y = 100),
+                occurrence("B", "entity:B", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 120, y = 100),
+                occurrence("RailA", "entity:RailA", PhysicalMountTargetRef.Rail(PhysicalObjectId("DIN1")), x = 10, y = 0),
+                occurrence("TerminalA", "entity:TerminalA", PhysicalMountTargetRef.TerminalGroup(PhysicalObjectId("XT1")), x = 10, y = 5),
             ),
             contractOverrides = mapOf(
-                "component:TerminalA" to contract("component:TerminalA", mounting = "terminal-snap"),
+                "entity:TerminalA" to contract("entity:TerminalA", mounting = "terminal-snap"),
             ),
         )
 
@@ -43,7 +43,7 @@ class PhysicalConstraintEvaluatorTest {
             occurrences = listOf(
                 occurrence(
                     occurrenceId = "VerticalRailMount",
-                    subject = "component:VerticalRailMount",
+                    subject = "entity:VerticalRailMount",
                     target = PhysicalMountTargetRef.Rail(verticalRail.id),
                     x = 100,
                     y = 0,
@@ -64,7 +64,7 @@ class PhysicalConstraintEvaluatorTest {
             occurrences = listOf(
                 occurrence(
                     occurrenceId = "DuctOverlap",
-                    subject = "component:DuctOverlap",
+                    subject = "entity:DuctOverlap",
                     target = PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")),
                     x = 80,
                     y = 80,
@@ -91,23 +91,23 @@ class PhysicalConstraintEvaluatorTest {
                 rail("DIN_BAD", x = 850, y = 120, length = 80),
             ),
             occurrences = listOf(
-                occurrence("BadOrientation", "component:BadOrientation", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 20, y = 20, orientation = PhysicalInstallationOrientation.Deg90),
-                occurrence("BadDepth", "component:BadDepth", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 90, y = 20),
-                occurrence("BadMounting", "component:BadMounting", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 160, y = 20),
-                occurrence("BadContainer", "component:BadContainer", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 230, y = 20),
-                occurrence("CollisionA", "component:CollisionA", PhysicalMountTargetRef.TerminalGroup(PhysicalObjectId("XT1")), x = 10, y = 5),
-                occurrence("CollisionB", "component:CollisionB", PhysicalMountTargetRef.TerminalGroup(PhysicalObjectId("XT1")), x = 20, y = 5),
-                occurrence("ClearanceA", "component:ClearanceA", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 300, y = 20),
-                occurrence("ClearanceB", "component:ClearanceB", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 325, y = 20),
-                occurrence("RailNormal", "component:RailNormal", PhysicalMountTargetRef.Rail(PhysicalObjectId("DIN1")), x = 10, y = 2),
-                occurrence("RailAlong", "component:RailAlong", PhysicalMountTargetRef.Rail(PhysicalObjectId("DIN1")), x = 70, y = 0),
+                occurrence("BadOrientation", "entity:BadOrientation", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 20, y = 20, orientation = PhysicalInstallationOrientation.Deg90),
+                occurrence("BadDepth", "entity:BadDepth", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 90, y = 20),
+                occurrence("BadMounting", "entity:BadMounting", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 160, y = 20),
+                occurrence("BadContainer", "entity:BadContainer", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 230, y = 20),
+                occurrence("CollisionA", "entity:CollisionA", PhysicalMountTargetRef.TerminalGroup(PhysicalObjectId("XT1")), x = 10, y = 5),
+                occurrence("CollisionB", "entity:CollisionB", PhysicalMountTargetRef.TerminalGroup(PhysicalObjectId("XT1")), x = 20, y = 5),
+                occurrence("ClearanceA", "entity:ClearanceA", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 300, y = 20),
+                occurrence("ClearanceB", "entity:ClearanceB", PhysicalMountTargetRef.Surface(PhysicalObjectId("Backplate")), x = 325, y = 20),
+                occurrence("RailNormal", "entity:RailNormal", PhysicalMountTargetRef.Rail(PhysicalObjectId("DIN1")), x = 10, y = 2),
+                occurrence("RailAlong", "entity:RailAlong", PhysicalMountTargetRef.Rail(PhysicalObjectId("DIN1")), x = 70, y = 0),
             ),
             contractOverrides = mapOf(
-                "component:BadOrientation" to contract("component:BadOrientation", allowed = setOf(PhysicalInstallationOrientation.Deg0)),
-                "component:BadDepth" to contract("component:BadDepth", depth = 300),
-                "component:BadMounting" to contract("component:BadMounting", mounting = "terminal-snap"),
-                "component:BadContainer" to contract("component:BadContainer", containers = setOf("panel")),
-                "component:ClearanceA" to contract("component:ClearanceA", clearance = PhysicalInstallationClearance(mm(2), mm(20), mm(2), mm(2))),
+                "entity:BadOrientation" to contract("entity:BadOrientation", allowed = setOf(PhysicalInstallationOrientation.Deg0)),
+                "entity:BadDepth" to contract("entity:BadDepth", depth = 300),
+                "entity:BadMounting" to contract("entity:BadMounting", mounting = "terminal-snap"),
+                "entity:BadContainer" to contract("entity:BadContainer", containers = setOf("panel")),
+                "entity:ClearanceA" to contract("entity:ClearanceA", clearance = PhysicalInstallationClearance(mm(2), mm(20), mm(2), mm(2))),
             ),
         )
 

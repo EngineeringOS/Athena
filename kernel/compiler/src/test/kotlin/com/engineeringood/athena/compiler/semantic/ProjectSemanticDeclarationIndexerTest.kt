@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 class ProjectSemanticDeclarationIndexerTest {
     @Test
-    fun `indexes authored device and port declarations into their semantic namespace`() {
+    fun `indexes authored entity and port declarations into their semantic namespace`() {
         val fixture = declarationFixture()
 
         val indexed = ProjectSemanticDeclarationIndexer().index(fixture.snapshot)
@@ -23,9 +23,8 @@ class ProjectSemanticDeclarationIndexerTest {
         assertEquals(indexed.declarations, compilerIndexed.declarations)
         assertEquals(
             listOf(
-                "connection:plc_self",
                 "port:PLC1.out",
-                "device:PLC1",
+                "entity:PLC1",
             ),
             indexed.declarations.map { "${it.kind}:${it.qualifiedAuthoredName.joinToString(".")}" },
         )
@@ -38,7 +37,7 @@ class ProjectSemanticDeclarationIndexerTest {
     }
 
     @Test
-    fun `indexes nested device owned ports with canonical owner dot port name`() {
+    fun `indexes nested entity owned ports with canonical owner dot port name`() {
         val rootId = PackageIdentifier("com.root", "1")
         val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
         val rootDeclarations = declarations(
@@ -46,7 +45,7 @@ class ProjectSemanticDeclarationIndexerTest {
             """
             package com.root
             system Root {
-              device PLC1 {
+              entity PLC1 { concept Controller
                 port out {
                   direction out
                   signal Digital
@@ -65,7 +64,7 @@ class ProjectSemanticDeclarationIndexerTest {
         assertEquals(
             listOf(
                 "port:PLC1.out",
-                "device:PLC1",
+                "entity:PLC1",
             ),
             indexed.declarations.map { "${it.kind}:${it.qualifiedAuthoredName.joinToString(".")}" },
         )
@@ -81,7 +80,7 @@ class ProjectSemanticDeclarationIndexerTest {
             """
             package com.root
             system Root {
-              device MotorM37 {
+              entity MotorM37 { concept Generic
                 interface powerInput {
                   ports {
                     down { direction in signal Power role switched terminal "D" }
@@ -101,7 +100,7 @@ class ProjectSemanticDeclarationIndexerTest {
         assertEquals(
             listOf(
                 "port:MotorM37.down",
-                "device:MotorM37",
+                "entity:MotorM37",
             ),
             indexed.declarations.map { "${it.kind}:${it.qualifiedAuthoredName.joinToString(".")}" },
         )
@@ -117,7 +116,7 @@ class ProjectSemanticDeclarationIndexerTest {
             """
             package com.root
             system Root {
-              device PLC1 {
+              entity PLC1 { concept Controller
                 port out {
                   direction out
                   signal Digital
@@ -172,8 +171,8 @@ class ProjectSemanticDeclarationIndexerTest {
             """
             package com.root
             system Root {
-              device PLC1 {}
-              device PLC1 {}
+              entity PLC1 { concept Controller}
+              entity PLC1 { concept Controller}
             }
             """.trimIndent(),
         )
@@ -201,9 +200,9 @@ class ProjectSemanticDeclarationIndexerTest {
             rootKey,
             "a.athena",
             "a",
-            declarations("a.athena", "package com.root\nsystem A {\n  device PLC1 {}\n}"),
+            declarations("a.athena", "package com.root\nsystem A {\n  entity PLC1 {}\n}"),
         )
-        val secondDeclarations = declarations("b.athena", "package com.root\nsystem B {\n  device PLC1 {}\n}")
+        val secondDeclarations = declarations("b.athena", "package com.root\nsystem B {\n  entity PLC1 {}\n}")
         val secondSource = sourceUnit(rootKey, "b.athena", "b", secondDeclarations)
         val namespace = namespace(rootKey, listOf("com", "root"), listOf(firstSource.sourceUnitId, secondSource.sourceUnitId))
 
@@ -229,7 +228,7 @@ class ProjectSemanticDeclarationIndexerTest {
     fun `canonical snapshot rejects declarations outside known namespaces and source units`() {
         val fixture = declarationFixture()
         val indexed = ProjectSemanticDeclarationIndexer().index(fixture.snapshot)
-        val declaration = indexed.declarations.single { it.kind == "device" }
+        val declaration = indexed.declarations.single { it.kind == "entity" }
 
         assertFailsWith<IllegalArgumentException> {
             ProjectSemanticGraphSnapshot.canonical(
@@ -253,9 +252,9 @@ class ProjectSemanticDeclarationIndexerTest {
             """
             package com.root
             system Root {
-              device PLC1 {}
+              entity PLC1 { concept Controller}
               port PLC1.out {}
-              connect plc_self PLC1.out to PLC1.out
+              power PLC1.out to PLC1.out
             }
             """.trimIndent(),
         )

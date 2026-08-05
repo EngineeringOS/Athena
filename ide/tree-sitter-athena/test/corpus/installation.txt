@@ -3,11 +3,11 @@ Cabinet installation forms
 ============================
 
 system Demo {
-  device QF1 {
-    type Breaker
+  entity QF1 {
+    concept Breaker
   }
-  device M1 {
-    type Motor
+  entity M1 {
+    concept Motor
   }
   port QF1.line {
     direction out
@@ -50,13 +50,13 @@ system Demo {
   (system_declaration
     name: (name)
     (declaration
-      (device_declaration
+      (entity_declaration
         name: (name)
         (property_assignment
           (property_name)
           (identifier))))
     (declaration
-      (device_declaration
+      (entity_declaration
         name: (name)
         (property_assignment
           (property_name)

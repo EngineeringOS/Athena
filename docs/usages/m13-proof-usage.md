@@ -143,7 +143,7 @@ What this proves:
 3. Open `src/factory-line.athena`.
 4. Open `Graphical View`.
 5. Switch between `cabinet`, `wiring`, and `schematic`.
-6. Confirm the graph surface is using presentation-owned device parts and connectors rather than generic cards and generic lines as the primary rendering source.
+6. Confirm the graph surface is using presentation-owned entity parts and connectors rather than generic cards and generic lines as the primary rendering source.
 
 What this proves:
 

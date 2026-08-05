@@ -79,7 +79,7 @@ cmd /c "call java25 && .\gradlew.bat --no-daemon --console=plain :ide:lsp:test -
 1. Start the Athena desktop shell.
 2. Open `examples/m4/open-repository-proof`.
 3. Open `src/factory-line.athena`.
-4. Change `device M1` to another valid device identity, or add one valid connection through source.
+4. Change `entity M1` to another valid entity identity, or add one valid connection through source.
 5. Observe that source evaluation reports an Athena-owned mutation category, outcome, validation feedback, and semantic consequences instead of a separate editor-local result model.
 
 What this proves:

@@ -1,8 +1,8 @@
 package com.engineeringood.m30.sample
 
 system RollingShutterControlProof {
-  device MainPowerSupplyPS30 {
-    type Switch
+  entity MainPowerSupplyPS30 {
+    concept Switch
     model "24VDC-PSU"
 
     port lplus {
@@ -11,8 +11,8 @@ system RollingShutterControlProof {
     }
   }
 
-  device MainBreakerQF30 {
-    type Switch
+  entity MainBreakerQF30 {
+    concept Switch
     model "QF"
 
     port line {
@@ -26,8 +26,8 @@ system RollingShutterControlProof {
     }
   }
 
-  device WallSwitchS30 {
-    type Switch
+  entity WallSwitchS30 {
+    concept Switch
     model "UP-DOWN"
 
     port up {
@@ -41,8 +41,8 @@ system RollingShutterControlProof {
     }
   }
 
-  device ControlRelayK30 {
-    type Switch
+  entity ControlRelayK30 {
+    concept Switch
     model "K30"
 
     port supply {
@@ -76,8 +76,8 @@ system RollingShutterControlProof {
     }
   }
 
-  device FieldTerminalXT30 {
-    type Switch
+  entity FieldTerminalXT30 {
+    concept Switch
     model "XT30"
 
     port controlUp {
@@ -101,8 +101,8 @@ system RollingShutterControlProof {
     }
   }
 
-  device ShutterMotorM30 {
-    type Motor
+  entity ShutterMotorM30 {
+    concept Motor
     model "ROLLING-SHUTTER"
 
     port up {
@@ -116,8 +116,8 @@ system RollingShutterControlProof {
     }
   }
 
-  device PilotLampHL30 {
-    type Lamp
+  entity PilotLampHL30 {
+    concept Lamp
     model "STATUS"
 
     port status {

@@ -1,12 +1,12 @@
-﻿system DenseQualifiedNames {
-  device ControllerA {
-    type Switch
+system DenseQualifiedNames {
+  entity ControllerA {
+    concept Switch
     model "CPU-313C"
     note "primary controller"
   }
 
-  device DriveB {
-    type Motor
+  entity DriveB {
+    concept Motor
     rating "7.5kW"
   }
 

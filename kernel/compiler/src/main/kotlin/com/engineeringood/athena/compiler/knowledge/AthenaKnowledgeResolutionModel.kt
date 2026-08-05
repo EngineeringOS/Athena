@@ -1,9 +1,5 @@
 package com.engineeringood.athena.compiler.knowledge
 
-import com.engineeringood.athena.component.ResolvedComponentDefinition
-import com.engineeringood.athena.connection.ResolvedSemanticPortDefinition
-import com.engineeringood.athena.part.ResolvedPartImplementation
-import com.engineeringood.athena.physical.ResolvedPhysicalTraitDefinition
 import com.engineeringood.athena.repository.PackageIdentifier
 import java.nio.file.Path
 
@@ -120,44 +116,7 @@ data class AthenaCompilationKnowledgeContext(
     val candidates: List<AthenaKnowledgeCandidatePackage>,
     val activeArtifacts: List<AthenaActiveKnowledgeArtifact>,
     val rejectedPackages: List<AthenaRejectedKnowledgePackage>,
-    val componentKnowledgeContributors: List<String> = emptyList(),
-    val activeComponentConceptCount: Int = 0,
-    val activeComponentImplementationCount: Int = 0,
-    val resolvedComponents: List<ResolvedComponentDefinition> = emptyList(),
-    val resolvedImplementations: List<ResolvedPartImplementation> = emptyList(),
-    val resolvedSemanticPorts: List<ResolvedSemanticPortDefinition> = emptyList(),
-    val resolvedPhysicalTraits: List<ResolvedPhysicalTraitDefinition> = emptyList(),
-    val componentKnowledgeDiagnostics: List<AthenaComponentKnowledgeDiagnostic> = emptyList(),
 ) {
-    /** Returns one resolved component definition for [semanticId] when available. */
-    fun resolvedComponent(semanticId: String): ResolvedComponentDefinition? {
-        return resolvedComponents.firstOrNull { resolved -> resolved.semanticSubjectId.value == semanticId }
-    }
-
-    /** Returns resolved semantic-port definitions owned by [ownerSemanticId] in deterministic order. */
-    fun resolvedSemanticPortsForOwner(ownerSemanticId: String): List<ResolvedSemanticPortDefinition> {
-        return resolvedSemanticPorts.filter { resolved -> resolved.ownerSemanticId.value == ownerSemanticId }
-    }
-
-    /** Returns one resolved physical-trait definition for [semanticId] when available. */
-    fun resolvedPhysicalTrait(semanticId: String): ResolvedPhysicalTraitDefinition? {
-        return resolvedPhysicalTraits.firstOrNull { resolved -> resolved.semanticSubjectId.value == semanticId }
-    }
-
-    /** Returns a copy enriched with compiler-owned resolved component knowledge. */
-    fun withResolvedComponentKnowledge(snapshot: AthenaResolvedComponentKnowledgeSnapshot): AthenaCompilationKnowledgeContext {
-        return copy(
-            componentKnowledgeContributors = snapshot.contributingArtifactIds,
-            activeComponentConceptCount = snapshot.activeConceptCount,
-            activeComponentImplementationCount = snapshot.activeImplementationCount,
-            resolvedComponents = snapshot.resolvedComponents,
-            resolvedImplementations = snapshot.resolvedImplementations,
-            resolvedSemanticPorts = snapshot.resolvedSemanticPorts,
-            resolvedPhysicalTraits = snapshot.resolvedPhysicalTraits,
-            componentKnowledgeDiagnostics = snapshot.diagnostics,
-        )
-    }
-
     companion object {
         /** Returns an empty governed knowledge context for compiler runs that do not evaluate any reviewed packages. */
         fun empty(

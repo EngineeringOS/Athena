@@ -8,6 +8,8 @@ import com.engineeringood.athena.spatial.SpatialGridReferenceSubject
 import com.engineeringood.athena.spatial.SpatialQualitySnapshot
 import com.engineeringood.athena.spatial.SpatialQualitySnapshotId
 import com.engineeringood.athena.spatial.SpatialReality
+import com.engineeringood.athena.spatial.SpatialLane
+import com.engineeringood.athena.spatial.SpatialRoute
 import com.engineeringood.athena.spatial.SpatialSheet
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 
@@ -15,7 +17,6 @@ class ProjectionSpatialCompiler(
     private val layout: ProjectionSpatialLayout = ProjectionSpatialLayout(),
     private val geometryCompiler: SpatialGeometryCompiler = SpatialGeometryCompiler(),
     private val anchorCompiler: SpatialAnchorCompiler = SpatialAnchorCompiler(),
-    private val routeCompiler: SpatialRouteCompiler = SpatialRouteCompiler(),
     private val qualityCompiler: SpatialQualityCompiler = SpatialQualityCompiler(),
 ) : RealityTransformation<ProjectionDocument, SpatialDocument> {
     private val gridCompiler = SpatialGridCompiler()
@@ -58,18 +59,6 @@ class ProjectionSpatialCompiler(
         if (anchorResult.diagnostics.isNotEmpty()) {
             return anchorResult.diagnostics.toSpatialTransformationFailure()
         }
-        val routeResult = routeCompiler.compile(
-            projection = input,
-            sheets = input.sheets.map { sheet ->
-                SpatialRoutingSheetInput(sheet.sheetId.value, ProjectionSpatialLayout.DRAWING_AREA)
-            },
-            occurrences = layoutResult.occurrences,
-            anchors = anchorResult.anchorPositions,
-        )
-        if (routeResult.diagnostics.isNotEmpty()) {
-            return routeResult.diagnostics.toSpatialTransformationFailure()
-        }
-
         val output = SpatialDocument(
             input.sheets
                 .sortedWith(compareBy({ sheet -> sheet.order }, { sheet -> sheet.sheetId.value }))
@@ -81,8 +70,8 @@ class ProjectionSpatialCompiler(
                     val constructs = geometryResult.constructs.filter { fact -> fact.sheetId == sheetId }
                     val alignments = geometryResult.alignments.filter { fact -> fact.sheetId == sheetId }
                     val anchors = anchorResult.anchorPositions.filter { fact -> fact.sheetId == sheetId }
-                    val lanes = routeResult.lanes.filter { fact -> fact.sheetId == sheetId }
-                    val routes = routeResult.routes.filter { fact -> fact.sheetId == sheetId }
+                    val lanes = emptyList<SpatialLane>()
+                    val routes = emptyList<SpatialRoute>()
                     val gridReferences = gridResult.references.filter { fact -> fact.sheetId == sheetId }
                     val qualityTrace = qualityTrace(
                         sheetId = sheetId,

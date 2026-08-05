@@ -2,7 +2,7 @@ package com.engineeringood.athena.domain.electricalruntime
 
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
 import com.engineeringood.athena.plugin.AthenaCompilerPassContribution
-import com.engineeringood.athena.plugin.AthenaDomainConnectionSchema
+import com.engineeringood.athena.plugin.AthenaDomainRelationshipSchema
 import com.engineeringood.athena.plugin.AthenaDomainEntitySchema
 import com.engineeringood.athena.plugin.AthenaDomainPortSchema
 import com.engineeringood.athena.plugin.AthenaDomainPropertySchema
@@ -12,15 +12,11 @@ import com.engineeringood.athena.plugin.AthenaDomainSchemaSubjectKind
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPluginManifest
 import com.engineeringood.athena.plugin.AthenaPluginType
-import com.engineeringood.athena.plugin.AthenaExtensionPoint.PRESENTATION_PACKS
-import com.engineeringood.athena.plugin.AthenaRenderContribution
-import com.engineeringood.athena.plugin.AthenaRenderSurface
-import com.engineeringood.athena.plugin.AthenaRenderSurfaceMapping
 import com.engineeringood.athena.plugin.AthenaValidationContribution
 import com.engineeringood.athena.plugin.CoreVersionRange
 
 internal const val ELECTRICAL_DOMAIN_ID = "electrical-runtime"
-internal const val ELECTRICAL_VALIDATION_CONTRIBUTION_ID = "electrical-runtime.validation.component-and-port-rules"
+internal const val ELECTRICAL_VALIDATION_CONTRIBUTION_ID = "electrical-runtime.validation.entity-and-port-rules"
 
 internal val VALID_DEVICE_TYPES = setOf(
     "Breaker",
@@ -49,10 +45,7 @@ internal val ELECTRICAL_RUNTIME_MANIFEST = AthenaPluginManifest(
     requiredExtensionPoints = setOf(
         AthenaExtensionPoint.DOMAIN_SEMANTICS,
         AthenaExtensionPoint.VIEW_DEFINITIONS,
-        PRESENTATION_PACKS,
         AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
-        AthenaExtensionPoint.RUNTIME_COMMANDS,
-        AthenaExtensionPoint.RUNTIME_VIEWS,
     ),
 )
 
@@ -63,28 +56,28 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
     capabilities = setOf(ELECTRICAL_DOMAIN_ID),
     relationWords = ELECTRICAL_RELATION_WORDS,
     entities = listOf(
-        electricalComponent("Breaker", "Circuit protection and isolation device."),
-        electricalComponent("Contactor", "Electromagnetically operated switching device with partitioned functions."),
-        electricalComponent("FuseDisconnector", "Fused isolation device."),
-        electricalComponent("Lamp", "Electrical indicator or load component."),
-        electricalComponent("LimitSwitch", "Mechanically actuated position switch."),
-        electricalComponent("Motor", "Electrical rotating load component."),
-        electricalComponent("PowerSource", "Electrical supply source."),
-        electricalComponent("ProtectiveEarth", "Protective bonding endpoint."),
-        electricalComponent("PushButton", "Manually actuated control switch."),
-        electricalComponent("Switch", "Generic electrical switching component retained for existing projects."),
-        electricalComponent("Terminal", "Field or panel terminal assembly."),
-        electricalComponent("Transformer", "Electrical transformer with isolated winding ports."),
+        electricalEntity("Breaker", "Circuit protection and isolation Entity."),
+        electricalEntity("Contactor", "Electromagnetically operated switching Entity with partitioned Functions."),
+        electricalEntity("FuseDisconnector", "Fused isolation Entity."),
+        electricalEntity("Lamp", "Electrical indicator or load Entity."),
+        electricalEntity("LimitSwitch", "Mechanically actuated position switch."),
+        electricalEntity("Motor", "Electrical rotating load Entity."),
+        electricalEntity("PowerSource", "Electrical supply source."),
+        electricalEntity("ProtectiveEarth", "Protective bonding endpoint."),
+        electricalEntity("PushButton", "Manually actuated control switch."),
+        electricalEntity("Switch", "Generic electrical switching Entity."),
+        electricalEntity("Terminal", "Field or panel terminal assembly."),
+        electricalEntity("Transformer", "Electrical transformer with isolated winding Ports."),
     ),
     properties = listOf(
         AthenaDomainPropertySchema(
             name = "type",
-            displayName = "Component type",
+            displayName = "Entity type",
             valueKind = AthenaDomainPropertyValueKind.SYMBOL,
-            appliesTo = setOf(AthenaDomainSchemaSubjectKind.COMPONENT),
+            appliesTo = setOf(AthenaDomainSchemaSubjectKind.ENTITY),
             required = true,
             allowedSymbolValues = VALID_DEVICE_TYPES,
-            description = "Proof-domain type selector interpreted by the electrical evidence plugin over generic components.",
+            description = "Electrical type selector interpreted by the domain plugin over generic Entities.",
         ),
         AthenaDomainPropertySchema(
             name = "direction",
@@ -121,21 +114,21 @@ internal val ELECTRICAL_DOMAIN_SCHEMA = AthenaDomainSchema(
             allowedDirections = setOf("in", "out"),
         ),
     ),
-    connections = listOf(
-        AthenaDomainConnectionSchema(
+    relationships = listOf(
+        AthenaDomainRelationshipSchema(
             typeId = "Wire",
             displayName = "Wire",
-            description = "Hosted wire connection interpreted over the generic connection surface.",
+            description = "Hosted wire relationship interpreted over typed relationship participants.",
             sourcePortTypeIds = setOf("electrical-port"),
             targetPortTypeIds = setOf("electrical-port"),
         ),
     ),
 )
 
-private fun electricalComponent(typeId: String, description: String) = AthenaDomainEntitySchema(
+private fun electricalEntity(typeId: String, description: String) = AthenaDomainEntitySchema(
     typeId = typeId,
     displayName = typeId,
-    subjectKind = AthenaDomainSchemaSubjectKind.COMPONENT,
+    subjectKind = AthenaDomainSchemaSubjectKind.ENTITY,
     description = description,
     propertyNames = setOf("type"),
     portTypeIds = setOf("electrical-port"),
@@ -161,72 +154,5 @@ internal val ELECTRICAL_COMPILER_PASS_CONTRIBUTIONS = listOf(
         stage = AthenaCompilerContributionStage.VALIDATE,
         displayName = "Electrical validation",
         description = "Applies hosted electrical compatibility and property validation during the compiler-owned validate stage.",
-    ),
-)
-
-internal val ELECTRICAL_RENDER_CONTRIBUTIONS = listOf(
-    AthenaRenderContribution(
-        contributionId = "electrical-runtime.render.cabinet",
-        displayName = "Electrical cabinet rendering intent",
-        description = "Publishes cabinet-view visual intent for hosted electrical structure without taking renderer ownership.",
-        viewIds = setOf("cabinet"),
-        rendererTargets = setOf("svg", "graph-workbench"),
-        surfaceMappings = listOf(
-            AthenaRenderSurfaceMapping(
-                surface = AthenaRenderSurface.CANVAS,
-                tokens = mapOf(
-                    "canvasTint" to "var(--athena-graph-cabinet-canvas-tint)",
-                    "gridMajor" to "var(--athena-graph-cabinet-grid-major)",
-                    "gridMinor" to "var(--athena-graph-cabinet-grid-minor)",
-                ),
-            ),
-            AthenaRenderSurfaceMapping(
-                surface = AthenaRenderSurface.NODE,
-                tokens = mapOf(
-                    "fill" to "var(--athena-graph-cabinet-node-fill)",
-                    "stroke" to "var(--athena-graph-cabinet-node-stroke)",
-                    "label" to "var(--athena-graph-cabinet-node-label)",
-                    "meta" to "var(--athena-graph-cabinet-node-meta)",
-                ),
-            ),
-            AthenaRenderSurfaceMapping(
-                surface = AthenaRenderSurface.EDGE,
-                tokens = mapOf(
-                    "stroke" to "var(--athena-graph-cabinet-edge-stroke)",
-                ),
-            ),
-        ),
-    ),
-    AthenaRenderContribution(
-        contributionId = "electrical-runtime.render.wiring",
-        displayName = "Electrical wiring rendering intent",
-        description = "Publishes wiring-view visual intent for hosted electrical connectivity without taking renderer ownership.",
-        viewIds = setOf("wiring"),
-        rendererTargets = setOf("svg", "graph-workbench"),
-        surfaceMappings = listOf(
-            AthenaRenderSurfaceMapping(
-                surface = AthenaRenderSurface.CANVAS,
-                tokens = mapOf(
-                    "canvasTint" to "var(--athena-graph-wiring-canvas-tint)",
-                    "gridMajor" to "var(--athena-graph-wiring-grid-major)",
-                    "gridMinor" to "var(--athena-graph-wiring-grid-minor)",
-                ),
-            ),
-            AthenaRenderSurfaceMapping(
-                surface = AthenaRenderSurface.NODE,
-                tokens = mapOf(
-                    "fill" to "var(--athena-graph-wiring-node-fill)",
-                    "stroke" to "var(--athena-graph-wiring-node-stroke)",
-                    "label" to "var(--athena-graph-wiring-node-label)",
-                    "meta" to "var(--athena-graph-wiring-node-meta)",
-                ),
-            ),
-            AthenaRenderSurfaceMapping(
-                surface = AthenaRenderSurface.EDGE,
-                tokens = mapOf(
-                    "stroke" to "var(--athena-graph-wiring-edge-stroke)",
-                ),
-            ),
-        ),
     ),
 )

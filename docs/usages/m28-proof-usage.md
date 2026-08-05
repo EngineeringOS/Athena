@@ -4,12 +4,12 @@ M28 introduces governed component anatomy and semantic relationship authoring.
 
 ## Canonical Component Anatomy
 
-New Athena source should author ports inside the owning device:
+New Athena source should author ports inside the owning entity:
 
 ```athena
 system M28NestedPortProof {
-  device SpareTerminalXT99 {
-    type Switch
+  entity SpareTerminalXT99 {
+    concept Switch
     model "SPARE-XT"
 
     port in1 {
@@ -20,7 +20,7 @@ system M28NestedPortProof {
 }
 ```
 
-The nested `port in1` block is a first-class port declaration. It is not a device property and it
+The nested `port in1` block is a first-class port declaration. It is not a entity property and it
 does not create a new identity scheme. The canonical identity remains:
 
 ```text
@@ -39,10 +39,10 @@ port SpareTerminalXT99.in1 {
 ```
 
 That form is legacy-compatible, not canonical. New M28 examples, docs, and generated source should
-prefer nested device-owned ports.
+prefer nested entity-owned ports.
 
 If a source file declares the same canonical port in both forms, Athena reports a duplicate authored
-declaration for `Device.port`.
+declaration for `Entity.port`.
 
 ## Semantic Relationship Authoring
 
@@ -117,7 +117,7 @@ truth, source writes, or identity inferred from SVG geometry or DOM text.
 Run Gradle commands sequentially on Windows:
 
 ```powershell
-.\gradlew.bat --no-daemon --console=plain :kernel:language:test --tests "com.engineeringood.athena.language.AthenaLanguageParserTest.parses nested device owned ports as first class component anatomy"
+.\gradlew.bat --no-daemon --console=plain :kernel:language:test --tests "com.engineeringood.athena.language.AthenaLanguageParserTest.parses nested entity owned ports as first class component anatomy"
 .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test --tests "com.engineeringood.athena.compiler.AthenaM28NestedPortCompilerTest" --tests "com.engineeringood.athena.compiler.AthenaM28SampleProjectCompilerTest" --tests "com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclarationIndexerTest"
 .\gradlew.bat --no-daemon --console=plain :kernel:authoring-model:test
 .\gradlew.bat --no-daemon --console=plain :ide:lsp:test --tests "com.engineeringood.athena.ide.lsp.AthenaAuthoringRequestTest" --tests "com.engineeringood.athena.ide.lsp.AthenaM28ProductAuthoringSmokeTest"

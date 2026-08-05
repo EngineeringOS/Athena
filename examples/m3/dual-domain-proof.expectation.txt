@@ -1,6 +1,6 @@
 plugin_set=both
 approved_plugins=com.engineeringood.athena.domain.dummy-runtime,com.engineeringood.athena.domain.electrical-runtime
-components=4
+entities=4
 ports=4
 connections=2
 views=cabinet,wiring,schematic,documentation

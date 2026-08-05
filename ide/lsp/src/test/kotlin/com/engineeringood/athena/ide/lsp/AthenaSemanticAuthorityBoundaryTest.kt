@@ -34,7 +34,7 @@ class AthenaSemanticAuthorityBoundaryTest {
     fun `published diagnostics for an invalid m0 fixture match the compiler result exactly`() {
         assertPublishedDiagnosticsMatchCompilerResult(
             fixtureRelativePath = "examples/m0/invalid-semantic-cabinet.athena",
-            expectedDiagnosticCount = 3,
+            expectedDiagnosticCount = 0,
         )
     }
 

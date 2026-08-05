@@ -1,23 +1,23 @@
 package com.engineeringood.m21.sample
 
 system RoutingAndLabelReadability {
-  device RoutePLC1 {
-    type Switch
+  entity RoutePLC1 {
+    concept Switch
     model "CPU"
   }
 
-  device RouteSensorS1 {
-    type Switch
+  entity RouteSensorS1 {
+    concept Switch
     model "S1"
   }
 
-  device RouteActuatorY1 {
-    type Lamp
+  entity RouteActuatorY1 {
+    concept Lamp
     model "Y1"
   }
 
-  device RouteTerminalXT2 {
-    type Switch
+  entity RouteTerminalXT2 {
+    concept Switch
     model "XT2"
   }
 

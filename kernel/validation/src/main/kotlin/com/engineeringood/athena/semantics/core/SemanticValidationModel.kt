@@ -14,7 +14,7 @@ enum class SemanticDiagnosticCategory {
     REFERENCE,
     UNIQUENESS,
     PROPERTY,
-    CONNECTION,
+    RELATIONSHIP,
     PROJECTION,
     DOMAIN,
     KNOWLEDGE,

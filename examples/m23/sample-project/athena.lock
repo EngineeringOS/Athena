@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:d2c68a0e4ff1a26a6a173970596b8348b61d9c41fb05b7a443ca8a504ec73429
+validatedLockStateDigest: lock-state:5e4d2c2b8687fd14de55d4f6b474e5a799ba13b116399517660ac6da6f8f7f05
 primaryPackage:
   name: com.engineeringood.m23.sample
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.m23.sample
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:e7e2d5fc4e803d53ac01072f0b0cd8abe9659b48f8156e72b0dc19e39ff45c36
+    snapshotDigest: package-snapshot:44be9accce7c706302e3dd020bc05d647d1f55e9e403cdaa5df02727c34c9917
     sourceHashes:
       - path: com/engineeringood/m23/sample/01-layout-hints.athena
-        hash: sha256:057bb72165b0fc591261e720a6c4c6214854f098c8134ba14de8a633d29af91d
+        hash: sha256:fe8a605a6cb9ea0aa2de0b5454cbcebb137a39a1bf2e3baa00329b86f38be754
     resourceHashes: []
     dependencies: []

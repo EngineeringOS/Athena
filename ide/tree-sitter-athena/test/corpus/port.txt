@@ -3,12 +3,12 @@ Port declaration with qualified name and fields
 ==============================
 
 system Demo {
-  device PLC1 {
-    type Switch
+  entity PLC1 {
+    concept Switch
   }
   port PLC1.out {
     direction out
-    signal Digital
+    flow Digital
   }
 }
 
@@ -18,7 +18,7 @@ system Demo {
   (system_declaration
     name: (name)
     (declaration
-      (device_declaration
+      (entity_declaration
         name: (name)
         (property_assignment
           (property_name)
@@ -61,17 +61,17 @@ system Demo {
             (string_content)))))))
 
 ==============================
-Nested device-owned port declaration
+Nested Entity-owned port declaration
 ==============================
 
 system Demo {
-  device SpareTerminalXT99 {
-    type Switch
+  entity SpareTerminalXT99 {
+    concept Switch
     model "SPARE-XT"
 
     port in1 {
       direction in
-      signal Digital
+      flow Digital
     }
   }
 }
@@ -82,7 +82,7 @@ system Demo {
   (system_declaration
     name: (name)
     (declaration
-      (device_declaration
+      (entity_declaration
         name: (name)
         (property_assignment
           (property_name)

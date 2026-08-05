@@ -1,23 +1,23 @@
 package com.engineeringood.m26.sample
 
 system SemanticDocumentProjectionAcceptance {
-  device MainPowerSupplyPS1 {
-    type Switch
+  entity MainPowerSupplyPS1 {
+    concept Switch
     model "24VDC-PSU"
   }
 
-  device MainBreakerQF1 {
-    type Switch
+  entity MainBreakerQF1 {
+    concept Switch
     model "QF"
   }
 
-  device ControllerPLC1 {
-    type Switch
+  entity ControllerPLC1 {
+    concept Switch
     model "PLC"
   }
 
-  device OperatorHMI1 {
-    type Lamp
+  entity OperatorHMI1 {
+    concept Lamp
     model "HMI"
   }
 

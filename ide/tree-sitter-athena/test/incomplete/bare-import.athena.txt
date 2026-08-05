@@ -1,5 +1,5 @@
 import
 system Demo {
-  device PLC1 {
+  entity PLC1 {
   }
 }

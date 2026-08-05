@@ -137,7 +137,7 @@ class SchematicLayoutEngineTest {
         val controller = result.placementFacts.single { fact -> fact.role == SchematicLayoutRole.CONTROLLER }
 
         assertEquals(LayoutIntentId("intent:control/plc-1"), controller.intentId)
-        assertEquals(StableSemanticIdentity("component:plc-1"), controller.subjectId)
+        assertEquals(StableSemanticIdentity("entity:plc-1"), controller.subjectId)
         assertEquals(LayoutOccurrenceId("occurrence:schematic:plc-1"), controller.occurrenceId)
         assertEquals(snapshot.snapshotId, controller.snapshotId)
         assertEquals(SchematicLayoutZone.CONTROL, controller.preferredZone)
@@ -190,7 +190,7 @@ class SchematicLayoutEngineTest {
         val snapshot = sampleIntentSnapshot()
         val strategyResult = RuleBasedSchematicLayoutStrategy().solve(snapshot)
         val badFact = strategyResult.placementFacts.first().copy(
-            subjectId = StableSemanticIdentity("component:wrong"),
+            subjectId = StableSemanticIdentity("entity:wrong"),
         )
 
         assertFailsWith<IllegalArgumentException> {
@@ -319,7 +319,7 @@ class SchematicLayoutEngineTest {
     fun `optimization applies preferred zone constraints and emits governed grouping facts`() {
         val hmi = LayoutIntentItem(
             intentId = LayoutIntentId("intent:hmi/hmi-1"),
-            subjectId = StableSemanticIdentity("component:hmi-1"),
+            subjectId = StableSemanticIdentity("entity:hmi-1"),
             occurrenceId = LayoutOccurrenceId("occurrence:schematic:hmi-1"),
             role = SchematicLayoutRole.HMI,
             preferredZone = SchematicLayoutZone.ANNOTATION,
@@ -460,7 +460,7 @@ class SchematicLayoutEngineTest {
             items = listOf(
                 LayoutIntentItem(
                     intentId = LayoutIntentId("intent:control/plc-1"),
-                    subjectId = StableSemanticIdentity("component:plc-1"),
+                    subjectId = StableSemanticIdentity("entity:plc-1"),
                     occurrenceId = LayoutOccurrenceId("occurrence:schematic:plc-1"),
                     role = SchematicLayoutRole.CONTROLLER,
                     preferredZone = SchematicLayoutZone.CONTROL,
@@ -470,7 +470,7 @@ class SchematicLayoutEngineTest {
                 ),
                 LayoutIntentItem(
                     intentId = LayoutIntentId("intent:protection/qf-1"),
-                    subjectId = StableSemanticIdentity("component:qf-1"),
+                    subjectId = StableSemanticIdentity("entity:qf-1"),
                     occurrenceId = LayoutOccurrenceId("occurrence:schematic:qf-1"),
                     role = SchematicLayoutRole.PROTECTION,
                     preferredZone = SchematicLayoutZone.POWER,
@@ -478,7 +478,7 @@ class SchematicLayoutEngineTest {
                 ),
                 LayoutIntentItem(
                     intentId = LayoutIntentId("intent:power/ps-1"),
-                    subjectId = StableSemanticIdentity("component:ps-1"),
+                    subjectId = StableSemanticIdentity("entity:ps-1"),
                     occurrenceId = LayoutOccurrenceId("occurrence:schematic:ps-1"),
                     role = SchematicLayoutRole.POWER_SOURCE,
                     preferredZone = SchematicLayoutZone.POWER,
@@ -486,7 +486,7 @@ class SchematicLayoutEngineTest {
                 ),
                 LayoutIntentItem(
                     intentId = LayoutIntentId("intent:terminal/xt-1"),
-                    subjectId = StableSemanticIdentity("component:xt-1"),
+                    subjectId = StableSemanticIdentity("entity:xt-1"),
                     occurrenceId = LayoutOccurrenceId("occurrence:schematic:xt-1"),
                     role = SchematicLayoutRole.TERMINAL,
                     preferredZone = SchematicLayoutZone.TERMINAL,
@@ -494,7 +494,7 @@ class SchematicLayoutEngineTest {
                 ),
                 LayoutIntentItem(
                     intentId = LayoutIntentId("intent:load/m-1"),
-                    subjectId = StableSemanticIdentity("component:m-1"),
+                    subjectId = StableSemanticIdentity("entity:m-1"),
                     occurrenceId = LayoutOccurrenceId("occurrence:schematic:m-1"),
                     role = SchematicLayoutRole.LOAD,
                     preferredZone = SchematicLayoutZone.LOAD,

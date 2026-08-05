@@ -10,7 +10,6 @@ import com.engineeringood.athena.layout.ViewEmphasis
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.AthenaExtensionPoint
 import com.engineeringood.athena.plugin.AthenaPluginType
-import com.engineeringood.athena.plugin.AthenaRenderSurface
 import com.engineeringood.athena.plugin.AthenaSemanticReviewEnrichmentContributor
 import com.engineeringood.athena.plugin.AthenaViewDefinitionContributor
 import kotlin.test.Test
@@ -19,7 +18,7 @@ import kotlin.test.assertIs
 
 class ElectricalRuntimeDomainPluginTest {
     @Test
-    fun `publishes the sample electrical runtime plugin through the domain contract`() {
+    fun `publishes the electrical runtime plugin through the domain contract`() {
         val plugin = ElectricalRuntimeDomainPlugin()
 
         assertIs<AthenaDomainPlugin>(plugin)
@@ -29,10 +28,7 @@ class ElectricalRuntimeDomainPluginTest {
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
                 AthenaExtensionPoint.VIEW_DEFINITIONS,
-                AthenaExtensionPoint.PRESENTATION_PACKS,
                 AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
-                AthenaExtensionPoint.RUNTIME_COMMANDS,
-                AthenaExtensionPoint.RUNTIME_VIEWS,
             ),
             plugin.manifest.requiredExtensionPoints,
         )
@@ -143,7 +139,7 @@ class ElectricalRuntimeDomainPluginTest {
         )
         assertEquals(
             listOf("Wire"),
-            plugin.domainSchema.connections.map { connection -> connection.typeId },
+            plugin.domainSchema.relationships.map { relationship -> relationship.typeId },
         )
         assertEquals(setOf("power", "control", "earth"), plugin.domainSchema.relationWords)
         assertEquals(
@@ -173,28 +169,4 @@ class ElectricalRuntimeDomainPluginTest {
         )
     }
 
-    @Test
-    fun `publishes graphical surface mappings through extension owned render contributions`() {
-        val plugin = ElectricalRuntimeDomainPlugin()
-
-        val cabinetContribution = plugin.renderContributions.first { contribution ->
-            contribution.contributionId == "electrical-runtime.render.cabinet"
-        }
-        val wiringContribution = plugin.renderContributions.first { contribution ->
-            contribution.contributionId == "electrical-runtime.render.wiring"
-        }
-
-        assertEquals(setOf("svg", "graph-workbench"), cabinetContribution.rendererTargets)
-        assertEquals(
-            listOf(AthenaRenderSurface.CANVAS, AthenaRenderSurface.NODE, AthenaRenderSurface.EDGE),
-            cabinetContribution.surfaceMappings.map { mapping -> mapping.surface },
-        )
-        assertEquals("var(--athena-graph-cabinet-canvas-tint)", cabinetContribution.surfaceMappings.first().tokens["canvasTint"])
-        assertEquals(setOf("svg", "graph-workbench"), wiringContribution.rendererTargets)
-        assertEquals(
-            listOf(AthenaRenderSurface.CANVAS, AthenaRenderSurface.NODE, AthenaRenderSurface.EDGE),
-            wiringContribution.surfaceMappings.map { mapping -> mapping.surface },
-        )
-        assertEquals("var(--athena-graph-wiring-edge-stroke)", wiringContribution.surfaceMappings.last().tokens["stroke"])
-    }
 }

@@ -14,7 +14,7 @@ class ViewDeclarationParserTest {
         val source =
             """
             system ViewDemo {
-              device D { }
+              entity D { }
               view schematic {
                 sheet S1
                 sheet S2

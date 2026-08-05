@@ -1,60 +1,60 @@
 package com.engineeringood.m39.realityproductproof
 
 system RealityProductProof {
-  device Supply {
-    type PowerSource
+  entity Supply {
+    concept PowerSource
     connectivity enabled
     tag "PS39"
-    port L1 { direction out signal Power role line terminal "L1" }
-    port N { direction out signal Power role neutral terminal "N" }
+    port L1 { direction out flow Power role line terminal "L1" }
+    port N { direction out flow Power role neutral terminal "N" }
   }
 
-  device Breaker {
-    type Breaker
+  entity Breaker {
+    concept Breaker
     connectivity enabled
     tag "QF39"
-    port line { direction in signal Power role line terminal "1" }
-    port load { direction out signal Power role switched terminal "2" }
+    port line { direction in flow Power role line terminal "1" }
+    port load { direction out flow Power role switched terminal "2" }
   }
 
-  device Drive {
-    type Terminal
+  entity Drive {
+    concept Terminal
     connectivity enabled
     tag "U39"
-    port L { direction in signal Power role switched terminal "L" }
-    port N { direction in signal Power role neutral terminal "N" }
-    port U { direction out signal Power role switched terminal "U" }
-    port enable { direction in signal Control role control terminal "DI1" }
-    port PE { direction passive signal Ground role protective terminal "PE" }
+    port L { direction in flow Power role switched terminal "L" }
+    port N { direction in flow Power role neutral terminal "N" }
+    port U { direction out flow Power role switched terminal "U" }
+    port enable { direction in flow Control role control terminal "DI1" }
+    port PE { direction bidirectional flow Ground role protective terminal "PE" }
   }
 
-  device StartButton {
-    type Terminal
+  entity StartButton {
+    concept Terminal
     connectivity enabled
     tag "S39"
-    port out { direction out signal Control role control terminal "13" }
+    port out { direction out flow Control role control terminal "13" }
   }
 
-  device Motor {
-    type Motor
+  entity Motor {
+    concept Motor
     connectivity enabled
     tag "M39"
-    port U { direction in signal Power role switched terminal "U" }
-    port PE { direction passive signal Ground role protective terminal "PE" }
+    port U { direction in flow Power role switched terminal "U" }
+    port PE { direction bidirectional flow Ground role protective terminal "PE" }
   }
 
-  device EarthBar {
-    type ProtectiveEarth
+  entity EarthBar {
+    concept ProtectiveEarth
     connectivity enabled
     tag "PE39"
-    port PE { direction passive signal Ground role protective terminal "PE" }
+    port PE { direction bidirectional flow Ground role protective terminal "PE" }
   }
 
-  device Cabinet {
-    type ProtectiveEarth
+  entity Cabinet {
+    concept ProtectiveEarth
     connectivity enabled
     tag "CAB39"
-    port PE { direction passive signal Ground role protective terminal "PE" }
+    port PE { direction bidirectional flow Ground role protective terminal "PE" }
   }
 
   power Supply.L1 to Breaker.line

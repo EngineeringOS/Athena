@@ -177,7 +177,7 @@ function buildStructuredAuthoringProofPayloads(repositoryRoot, graphWorkbenchPro
         proofEnvelope('capability-discovery', sourceUri, {
             activeSourceContext: 'M31 governed authoring capability discovery',
             capabilityModel: 'Authoring Capability Model',
-            subjectIds: 'system:RollingShutterGovernedAuthoringProof,component:ControlRelayK31,component:SpareTerminalXT31',
+            subjectIds: 'system:RollingShutterGovernedAuthoringProof,entity:ControlRelayK31,entity:SpareTerminalXT31',
             availableActions: 'create-semantic-entity,create-semantic-relationship,reveal-source,reveal-graphical-view',
             semanticAuthority: '.athena semantic persistence',
         }),
@@ -185,7 +185,7 @@ function buildStructuredAuthoringProofPayloads(repositoryRoot, graphWorkbenchPro
             activeSourceContext: 'M31 single-intent entity creation transaction',
             transactionType: 'SemanticAuthoringTransaction',
             intentCardinality: 'single-intent',
-            targetEntityId: 'component:ServiceMotorM31',
+            targetEntityId: 'entity:ServiceMotorM31',
             conceptTemplateId: 'engineering-concept-template:m31-service-motor',
             revisionGuard: 'Revision Guard',
             lifecycle: 'requested,resolved,validated,previewed,accepted,committed,reprojected',
@@ -194,7 +194,7 @@ function buildStructuredAuthoringProofPayloads(repositoryRoot, graphWorkbenchPro
         proofEnvelope('nested-source-edit', sourceUri, {
             activeSourceContext: 'M31 backend-owned nested source edit preview and accept',
             sourceEditAuthority: 'backend-authoring-protocol/source-serializer',
-            sourceEditShape: 'device ServiceMotorM31 with nested port serviceIn',
+            sourceEditShape: 'entity ServiceMotorM31 with nested port serviceIn',
             nestedPortIds: 'port:ServiceMotorM31.serviceIn,port:SpareTerminalXT31.in1',
             previewThenAccept: 'true',
         }),
@@ -226,8 +226,8 @@ function buildStructuredAuthoringProofPayloads(repositoryRoot, graphWorkbenchPro
             sheetRoleCount: '2',
             sheetRoles: 'control-and-plc-logic,field-wiring-and-terminal-transition',
             sourceSheetId: 'documentation/sheet/01-control',
-            targetSheetId: 'documentation/sheet/02-field-device',
-            typedCrossReferenceIds: 'cross-reference:documentation/sheet/01-control->documentation/sheet/02-field-device',
+            targetSheetId: 'documentation/sheet/02-field-entity',
+            typedCrossReferenceIds: 'cross-reference:documentation/sheet/01-control->documentation/sheet/02-field-entity',
             sheetSelectorOptionCount: String(sheetSelectorOptionCount(sheetGraphWorkbenchProof)),
             sheetSelectorOptionTexts: normalizeArray(documentProjectionProof.sheetViewOptionTexts).join(','),
             sheetSelectorOptionCountBeforeViewSwitch: String(sheetSelectorProof.optionCountBeforeViewSwitch ?? 0),
@@ -323,7 +323,7 @@ function assertStructuredAuthoringProofPayloads(proofPayloads) {
     }
     requireIncludes(serialized, 'SemanticAuthoringTransaction', 'transaction vocabulary');
     requireIncludes(serialized, 'Revision Guard', 'revision guard');
-    requireIncludes(serialized, 'component:ServiceMotorM31', 'entity creation target');
+    requireIncludes(serialized, 'entity:ServiceMotorM31', 'entity creation target');
     requireIncludes(serialized, 'port:ControlRelayK31.spareOut', 'relationship source endpoint');
     requireIncludes(serialized, 'port:SpareTerminalXT31.in1', 'relationship target endpoint');
     requireIncludes(serialized, 'control-and-plc-logic', 'control sheet role');

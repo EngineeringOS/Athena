@@ -1,8 +1,8 @@
 package com.engineeringood.m28.sample
 
 system RelationshipRejectionCandidates {
-  device CandidateOutputModuleIOM28 {
-    type Switch
+  entity CandidateOutputModuleIOM28 {
+    concept Switch
     model "FIELD-IO"
 
     port do1 {
@@ -16,8 +16,8 @@ system RelationshipRejectionCandidates {
     }
   }
 
-  device CandidateTerminalXT28 {
-    type Switch
+  entity CandidateTerminalXT28 {
+    concept Switch
     model "XT"
 
     port in1 {
@@ -36,8 +36,8 @@ system RelationshipRejectionCandidates {
     }
   }
 
-  device CandidateMotorM28 {
-    type Motor
+  entity CandidateMotorM28 {
+    concept Motor
     model "MOTOR"
 
     port u1 {

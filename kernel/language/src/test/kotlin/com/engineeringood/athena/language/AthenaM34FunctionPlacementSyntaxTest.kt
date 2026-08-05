@@ -11,21 +11,20 @@ class AthenaM34FunctionPlacementSyntaxTest {
         val source =
             """
             system FunctionPlacement {
-              device KM1 {
+              entity KM1 {
                 type Contactor
-                port A1 {
-                  direction in
-                  signal Control
-                  terminal "A1"
-                }
-                port A2 {
-                  direction out
-                  signal Control
-                  terminal "A2"
-                }
                 function coil {
                   role coil
-                  ports (A1, KM1.A2)
+                  port A1 {
+                    direction in
+                    signal Control
+                    terminal "A1"
+                  }
+                  port A2 {
+                    direction out
+                    signal Control
+                    terminal "A2"
+                  }
                 }
               }
               layout schematic {
@@ -36,24 +35,27 @@ class AthenaM34FunctionPlacementSyntaxTest {
             """.trimIndent()
 
         val success = assertIs<ParseSuccess>(AthenaLanguageParser().parse("function-placement.athena", source))
-        val device = assertIs<DeviceDeclaration>(success.ast.declarations[0])
-        val function = device.nestedFunctions.single()
+        val entity = assertIs<EntityDeclaration>(success.ast.declarations[0])
+        val function = entity.nestedFunctions.single()
 
         assertEquals("coil", function.name)
-        assertEquals("coil", function.role.value)
-        assertEquals(listOf(listOf("A1"), listOf("KM1", "A2")), function.portReferences.map { it.parts })
+        assertEquals(listOf("coil"), function.role.parts)
+        assertEquals(
+            listOf(listOf("KM1", "coil", "A1"), listOf("KM1", "coil", "A2")),
+            function.nestedPorts.map { it.qualifiedName.parts },
+        )
         assertTrue(function.span.start.offset < function.role.span.start.offset)
-        assertTrue(function.portReferences.all { reference -> reference.span.start.offset in function.span.start.offset..function.span.end.offset })
+        assertTrue(function.nestedPorts.all { port -> port.span.start.offset in function.span.start.offset..function.span.end.offset })
 
         val layout = assertIs<LayoutDeclaration>(success.ast.declarations[1])
         val functionPlacement = assertIs<LayoutStatement.PlaceAt>(layout.statements[0])
         assertEquals(listOf("KM1", "coil"), functionPlacement.subject.parts)
         assertEquals(DrawingGridPosition(column = 7, row = 4, span = functionPlacement.position.span), functionPlacement.position)
         assertEquals(LayoutOrientation.Vertical, functionPlacement.orientation)
-        val componentPlacement = assertIs<LayoutStatement.PlaceAt>(layout.statements[1])
-        assertEquals(listOf("KM1"), componentPlacement.subject.parts)
-        assertEquals(LayoutOrientation.Horizontal, componentPlacement.orientation)
-        assertTrue(functionPlacement.span.start.line < componentPlacement.span.start.line)
+        val entityPlacement = assertIs<LayoutStatement.PlaceAt>(layout.statements[1])
+        assertEquals(listOf("KM1"), entityPlacement.subject.parts)
+        assertEquals(LayoutOrientation.Horizontal, entityPlacement.orientation)
+        assertTrue(functionPlacement.span.start.line < entityPlacement.span.start.line)
     }
 
     @Test
@@ -66,7 +68,7 @@ class AthenaM34FunctionPlacementSyntaxTest {
         )) {
             val result = AthenaLanguageParser().parse(
                 "$name.athena",
-                "system Demo { device KM1 {} layout schematic { $placement } }",
+                "system Demo { entity KM1 {} layout schematic { $placement } }",
             )
 
             assertIs<ParseFailure>(result, name)

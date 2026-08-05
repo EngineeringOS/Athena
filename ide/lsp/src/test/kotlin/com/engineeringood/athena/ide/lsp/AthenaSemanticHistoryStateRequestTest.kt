@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.ide.lsp
+package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import kotlin.io.path.createDirectories
@@ -23,8 +23,8 @@ class AthenaSemanticHistoryStateRequestTest {
                 packageVersion = "0.9.0",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
-                        type Switch
+                      entity PLC1 {
+                        concept Switch
                       }
                     }
                 """.trimIndent(),
@@ -36,8 +36,8 @@ class AthenaSemanticHistoryStateRequestTest {
                 dependencyVersion = "1.0.0",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
-                        type Switch
+                      entity PLC1 {
+                        concept Switch
                       }
                     }
                 """.trimIndent(),
@@ -49,25 +49,25 @@ class AthenaSemanticHistoryStateRequestTest {
                 dependencyVersion = "2.0.0",
                 sourceText = """
                     system Demo {
-                      device PLC1 {
+                      entity PLC1 { concept Controller
                         model "S7-1200"
                       }
 
-                      device M1 {
-                        type Motor
+                      entity M1 {
+                        concept Motor
                       }
 
                       port PLC1.out {
                         direction out
-                        signal Digital
+                        flow Digital
                       }
 
                       port M1.in {
                         direction in
-                        signal Analog
+                        flow Analog
                       }
 
-                      connect plc1_out_to_m1_in PLC1.out to M1.in
+                      power PLC1.out to M1.in
                     }
                 """.trimIndent(),
             )
@@ -111,7 +111,7 @@ class AthenaSemanticHistoryStateRequestTest {
                 assertEquals(2, payload.baselines.size)
                 val history = assertNotNull(payload.history)
                 assertEquals(2, history.baselineCount)
-                assertEquals("review-required", history.releaseRelevance)
+                assertEquals("major-candidate", history.releaseRelevance)
                 assertEquals("high", history.contractBreakRisk)
                 assertTrue(history.packageLineage.any { lineage -> lineage.currentVersion == "1.1.0" })
                 assertTrue(history.entries.any { entry ->

@@ -2,9 +2,9 @@ package com.engineeringood.athena.plugin
 
 /** Generic canonical subject kinds that a plugin-declared schema may interpret without extending grammar. */
 enum class AthenaDomainSchemaSubjectKind {
-    COMPONENT,
+    ENTITY,
     PORT,
-    CONNECTION,
+    RELATIONSHIP,
 }
 
 /** Typed property value kinds a plugin may declare for its domain schema. */
@@ -23,7 +23,7 @@ data class AthenaDomainSchema(
     val entities: List<AthenaDomainEntitySchema> = emptyList(),
     val properties: List<AthenaDomainPropertySchema> = emptyList(),
     val ports: List<AthenaDomainPortSchema> = emptyList(),
-    val connections: List<AthenaDomainConnectionSchema> = emptyList(),
+    val relationships: List<AthenaDomainRelationshipSchema> = emptyList(),
 ) {
     companion object {
         /** Empty schema used when a plugin does not declare domain schema metadata yet. */
@@ -64,8 +64,8 @@ data class AthenaDomainPortSchema(
     val allowedDirections: Set<String> = emptySet(),
 )
 
-/** Generic connection type declaration contributed by one hosted domain. */
-data class AthenaDomainConnectionSchema(
+/** Generic relationship type declaration contributed by one hosted domain. */
+data class AthenaDomainRelationshipSchema(
     val typeId: String,
     val displayName: String,
     val description: String = "",

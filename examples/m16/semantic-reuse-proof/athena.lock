@@ -3,7 +3,7 @@
 version: 2
 schema: repository-lock-v2
 compilerSchema: athena-lock-v2
-validatedLockStateDigest: lock-state:9cf27fdf475db2179950cb09528705c9453bf782a8a4edcd461717bbaa271357
+validatedLockStateDigest: lock-state:b6fb8f0d1d1efab8a2ef299aa5f32083f20975e102925d294341354f19695b63
 primaryPackage:
   name: com.engineeringood.examples.m16.semantic.reuse.proof
   version: 1.0.0
@@ -11,9 +11,9 @@ packages:
   - name: com.engineeringood.examples.m16.semantic.reuse.proof
     version: 1.0.0
     sourceRoot: src
-    snapshotDigest: package-snapshot:4cffdedf2d5e57ec19b3f5b39cd169435437cb21ad8295c82581388fa9813352
+    snapshotDigest: package-snapshot:9e238d345763272344db239b9206cb217045b516b58c823439b4e51bea9b97ba
     sourceHashes:
       - path: com/engineeringood/examples/m16/semantic/reuse/proof/semantic-reuse-proof.athena
-        hash: sha256:2db2c017c70ebc7993c06d117f8dd4b3ef2620140d0490a7dc4fc2bfbc0eb98e
+        hash: sha256:25055f6208262ffdf16a689b24db13934a894e749dcf235bfd2e27b8262f6b08
     resourceHashes: []
     dependencies: []

@@ -4,5 +4,4 @@ plugins {
 
 dependencies {
     implementation(project(":kernel:package-model"))
-    implementation(project(":kernel:representation-model"))
 }

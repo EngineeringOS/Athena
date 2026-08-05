@@ -2,22 +2,15 @@ package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.compiler.defaultAthenaKnowledgePackageSource
-import com.engineeringood.athena.renderer.svg.SvgRenderer
 
 /** Runtime-owned typed registry for platform capabilities needed by the active execution context. */
 class AthenaServiceRegistry(
     compilerProvider: (() -> AthenaCompiler)? = null,
-    rendererProvider: () -> SvgRenderer = { SvgRenderer() },
     pluginRuntimeServicesProvider: (() -> AthenaPluginRuntimeServices)? = null,
-    authoringSessionRuntimeServiceProvider: (() -> AthenaAuthoringSessionRuntimeService)? = null,
-    semanticMacroRuntimeServiceProvider: (() -> AthenaSemanticMacroRuntimeService)? = null,
-    sourceMutationRuntimeServiceProvider: (() -> AthenaSourceMutationRuntimeService)? = null,
-    graphCommandIntentRuntimeServiceProvider: (() -> AthenaGraphCommandIntentRuntimeService)? = null,
     semanticBaselineServiceProvider: (() -> AthenaSemanticBaselineService)? = null,
     semanticDiffServiceProvider: (() -> AthenaSemanticDiffService)? = null,
     semanticReviewServiceProvider: (() -> AthenaSemanticReviewService)? = null,
     semanticCommitServiceProvider: (() -> AthenaSemanticCommitService)? = null,
-    semanticMutationReviewServiceProvider: (() -> AthenaSemanticMutationReviewService)? = null,
     semanticScmStateServiceProvider: (() -> AthenaSemanticScmStateService)? = null,
     semanticHistoryStateServiceProvider: (() -> AthenaSemanticHistoryStateService)? = null,
 ) {
@@ -32,7 +25,6 @@ class AthenaServiceRegistry(
                 .map { contribution -> contribution.domainPlugin },
         )
     }
-    private val rendererInstance by lazy(LazyThreadSafetyMode.NONE, rendererProvider)
     private val engineeringGraphInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaEngineeringGraphService() }
     private val repositoryReportInstance by lazy(LazyThreadSafetyMode.NONE) {
         AthenaRepositoryReportService(::compiler)
@@ -54,12 +46,6 @@ class AthenaServiceRegistry(
             reviewService = semanticReviewServiceInstance,
         )
     }
-    private val semanticMutationReviewServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
-        semanticMutationReviewServiceProvider?.invoke() ?: AthenaSemanticMutationReviewService(
-            reviewService = semanticReviewServiceInstance,
-            commitService = semanticCommitServiceInstance,
-        )
-    }
     private val semanticScmStateServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
         semanticScmStateServiceProvider?.invoke() ?: AthenaSemanticScmStateService(
             baselineService = semanticBaselineServiceInstance,
@@ -73,33 +59,9 @@ class AthenaServiceRegistry(
             diffService = semanticDiffServiceInstance,
         )
     }
-    private val sourceMutationRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
-        sourceMutationRuntimeServiceProvider?.invoke() ?: AthenaSourceMutationRuntimeService()
-    }
-    private val authoringSessionRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
-        authoringSessionRuntimeServiceProvider?.invoke() ?: AthenaAuthoringSessionRuntimeService()
-    }
-    private val semanticMacroRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
-        semanticMacroRuntimeServiceProvider?.invoke() ?: AthenaSemanticMacroRuntimeService()
-    }
-    private val componentKnowledgeRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
-        AthenaComponentKnowledgeRuntimeService()
-    }
-    private val graphCommandIntentRuntimeServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
-        graphCommandIntentRuntimeServiceProvider?.invoke() ?: AthenaGraphCommandIntentRuntimeService()
-    }
-    private val commandRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaCommandRuntimeService() }
-    private val aiProposalRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaAiProposalRuntimeService() }
-    private val aiReasoningRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaAiReasoningRuntimeService() }
-    private val aiReasoningSessionRuntimeInstance by lazy(LazyThreadSafetyMode.NONE) {
-        AthenaAiReasoningSessionRuntimeService()
-    }
 
     /** Resolves the shared compiler capability for the current runtime. */
     fun compiler(): AthenaCompiler = compilerInstance
-
-    /** Resolves the shared SVG renderer capability for the current runtime. */
-    fun renderer(): SvgRenderer = rendererInstance
 
     /** Resolves the shared engineering-graph capability for the current runtime. */
     fun engineeringGraph(): AthenaEngineeringGraphService = engineeringGraphInstance
@@ -119,41 +81,11 @@ class AthenaServiceRegistry(
     /** Resolves the shared semantic commit capability for the current runtime. */
     fun semanticCommits(): AthenaSemanticCommitService = semanticCommitServiceInstance
 
-    /** Resolves the shared accepted-mutation review capability for the current runtime. */
-    fun semanticMutationReviews(): AthenaSemanticMutationReviewService = semanticMutationReviewServiceInstance
-
     /** Resolves the shared semantic SCM projection capability for the current runtime. */
     fun semanticScmStates(): AthenaSemanticScmStateService = semanticScmStateServiceInstance
 
     /** Resolves the shared semantic history projection capability for the current runtime. */
     fun semanticHistoryStates(): AthenaSemanticHistoryStateService = semanticHistoryStateServiceInstance
-
-    /** Resolves the shared source-mutation evaluation capability for the current runtime. */
-    fun sourceMutationRuntime(): AthenaSourceMutationRuntimeService = sourceMutationRuntimeServiceInstance
-
-    /** Resolves the shared authoring-preview session capability for the current runtime. */
-    fun authoringSessions(): AthenaAuthoringSessionRuntimeService = authoringSessionRuntimeServiceInstance
-
-    /** Resolves the shared Semantic Macro seam capability for the current runtime. */
-    fun reuseRuntime(): AthenaSemanticMacroRuntimeService = semanticMacroRuntimeServiceInstance
-
-    /** Resolves the shared component-knowledge inspection capability for the current runtime. */
-    fun componentKnowledgeRuntime(): AthenaComponentKnowledgeRuntimeService = componentKnowledgeRuntimeServiceInstance
-
-    /** Resolves the shared graph command-intent capability for the current runtime. */
-    fun graphCommandIntentRuntime(): AthenaGraphCommandIntentRuntimeService = graphCommandIntentRuntimeServiceInstance
-
-    /** Resolves the shared command-runtime capability for the current runtime. */
-    fun commandRuntime(): AthenaCommandRuntimeService = commandRuntimeInstance
-
-    /** Resolves the shared optional AI proposal capability for the current runtime. */
-    fun aiProposalRuntime(): AthenaAiProposalRuntimeService = aiProposalRuntimeInstance
-
-    /** Resolves the shared optional AI reasoning capability for the current runtime. */
-    fun aiReasoningRuntime(): AthenaAiReasoningRuntimeService = aiReasoningRuntimeInstance
-
-    /** Resolves the shared optional AI reasoning session capability for the current runtime. */
-    fun aiReasoningSessions(): AthenaAiReasoningSessionRuntimeService = aiReasoningSessionRuntimeInstance
 
     /** Resolves shared plugin-related runtime services without exposing compiler-owned plugin internals. */
     fun pluginRuntimeServices(): AthenaPluginRuntimeServices = pluginRuntimeServicesInstance

@@ -1,19 +1,18 @@
 system FunctionPlacement {
-  device KM1 {
-    type Contactor
-    port A1 {
-      direction in
-      signal Control
-      terminal "A1"
-    }
-    port A2 {
-      direction out
-      signal Control
-      terminal "A2"
-    }
+  entity KM1 {
+    concept Contactor
     function coil {
       role coil
-      ports (A1, KM1.A2)
+      port A1 {
+        direction in
+        flow Control
+        terminal "A1"
+      }
+      port A2 {
+        direction out
+        flow Control
+        terminal "A2"
+      }
     }
   }
   layout schematic {

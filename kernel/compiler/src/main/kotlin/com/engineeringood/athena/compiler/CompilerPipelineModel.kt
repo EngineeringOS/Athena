@@ -1,13 +1,12 @@
 package com.engineeringood.athena.compiler
 
-/** Stable identifiers for the explicit compiler passes that make up the current M3 pipeline. */
+/** Stable identifiers for the M42 engineering-reality pipeline. */
 enum class CompilerPassId {
     PARSE,
-    LOWER,
-    SEMANTIC_ENRICHMENT,
-    VALIDATE,
-    BACKEND_PREPARATION,
-    BACKEND_EMISSION,
+    LOWER_ENGINEERING_REALITY,
+    VALIDATE_ENGINEERING_REALITY,
+    PROJECT,
+    DERIVE_SPATIAL,
 }
 
 /** Declared metadata for one compiler pass, including its responsibility and typed boundary. */

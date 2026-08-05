@@ -130,7 +130,7 @@ data class SystemDeclaration(
  * ## Future system-body syntax landing zone
  *
  * New constructs authored inside a system block are added as sealed variants on this hierarchy
- * without widening [DeviceDeclaration], [PortDeclaration], or [ConnectionDeclaration], and without
+ * without widening [EntityDeclaration] or [PortDeclaration], and without
  * making Engineering IR lowering depend on parser-tree types. File-header metadata such as
  * [PackageDeclaration] and [ImportDeclaration] remains on [SourceFileAst].
  *
@@ -324,7 +324,7 @@ data class ElementLabelExportDeclaration(
 )
 
 enum class BindingSelectorKind {
-    Device,
+    Entity,
     Function,
 }
 
@@ -350,19 +350,28 @@ data class BindingDeclaration(
 ) : RepresentationDeclaration
 
 /**
- * Syntax node for a `device` declaration and its authored property fields.
+ * Syntax node for an `entity` declaration and its authored anatomy.
  *
  * Part of the frozen Athena-owned authored syntax contract; syntax-only and stable across
  * future parser implementation changes.
  */
-data class DeviceDeclaration(
+data class EntityDeclaration(
     val name: String,
     val fields: List<PropertyAssignment>,
     override val span: SourceSpan,
     val nestedPorts: List<PortDeclaration> = emptyList(),
     val nestedFunctions: List<EngineeringFunctionDeclaration> = emptyList(),
     val interfaces: List<ConnectivityInterfaceDeclaration> = emptyList(),
+    val structureAssignments: List<StructureAssignmentDeclaration> = emptyList(),
 ) : Declaration
+
+/** Syntax-only assignment to one package-defined structure aspect. */
+data class StructureAssignmentDeclaration(
+    val aspect: QualifiedName,
+    val value: ScalarValue,
+    val displayDesignation: String?,
+    val span: SourceSpan,
+)
 
 /** Syntax-only grouping of related engineering Ports on one governed connectivity owner. */
 data class ConnectivityInterfaceDeclaration(
@@ -379,11 +388,11 @@ data class ConnectivityInterfacePortDeclaration(
     val span: SourceSpan,
 )
 
-/** Syntax-only functional partition of one authored physical device. */
+/** Syntax-only functional partition of one authored Entity. */
 data class EngineeringFunctionDeclaration(
     val name: String,
-    val role: SymbolIdentifierField,
-    val portReferences: List<QualifiedName>,
+    val role: QualifiedName,
+    val nestedPorts: List<PortDeclaration>,
     val span: SourceSpan,
 )
 
@@ -399,37 +408,10 @@ data class PortDeclaration(
     override val span: SourceSpan,
 ) : Declaration
 
-/**
- * Syntax node for a `connect` declaration between two qualified endpoints.
- *
- * Part of the frozen Athena-owned authored syntax contract; syntax-only and stable across
- * future parser implementation changes.
- */
-data class ConnectionDeclaration(
-    val alias: String,
-    val aliasSpan: SourceSpan,
-    val from: QualifiedName,
-    val to: QualifiedName,
-    override val span: SourceSpan,
-) : Declaration
-
-/**
- * Syntax node for a readable source grouping of repeated `connect` edges.
- *
- * This is authoring structure only. The group name is preserved for outline/folding/provenance,
- * while semantic lowering keeps canonical [com.engineeringood.athena.ir.EngineeringConnection]
- * facts flat.
- */
-data class ConnectionGroupDeclaration(
-    val name: String,
-    val connections: List<ConnectionDeclaration>,
-    override val span: SourceSpan,
-) : Declaration
-
 /** Syntax node for a human-first domain relation such as `power A.out to B.in`. */
 data class RelationDeclaration(
     val word: SymbolIdentifierField,
-    val from: QualifiedName,
+    val source: QualifiedName,
     val targets: List<QualifiedName>,
     override val span: SourceSpan,
 ) : Declaration {
@@ -686,7 +668,7 @@ data class InstallationMountDeclaration(
 )
 
 data class InstallationRouteDeclaration(
-    val connectionAlias: String,
+    val relationshipId: String,
     val channelIds: List<String>,
     val span: SourceSpan,
 )
@@ -756,7 +738,7 @@ data class QualifiedName(
 )
 
 /**
- * Represents one authored field assignment inside a `device` or `port` block.
+ * Represents one authored field assignment inside an `entity` or `port` block.
  *
  * Part of the frozen Athena-owned authored syntax contract; syntax-only and stable across
  * future parser implementation changes.
@@ -779,14 +761,39 @@ sealed interface ScalarValue {
     val span: SourceSpan
 
     /** Identifier-valued field such as a model code or symbolic mode. */
-    data class Identifier(
+    data class Symbol(
         val text: String,
         override val span: SourceSpan,
     ) : ScalarValue
 
     /** String literal field value as authored in the source file. */
-    data class StringLiteral(
+    data class Text(
         val text: String,
+        override val span: SourceSpan,
+    ) : ScalarValue
+
+    /** Exact Quantity literal whose Unit reference remains syntax-owned until knowledge resolution. */
+    data class Quantity(
+        val exactText: String,
+        val unit: QualifiedName,
+        override val span: SourceSpan,
+    ) : ScalarValue
+
+    /** Arbitrary-size integer literal. */
+    data class Integer(
+        val exactText: String,
+        override val span: SourceSpan,
+    ) : ScalarValue
+
+    /** Boolean literal. */
+    data class Boolean(
+        val value: kotlin.Boolean,
+        override val span: SourceSpan,
+    ) : ScalarValue
+
+    /** Authored reference to one project subject. */
+    data class Reference(
+        val target: QualifiedName,
         override val span: SourceSpan,
     ) : ScalarValue
 }

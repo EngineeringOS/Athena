@@ -1,10 +1,10 @@
 ============================
-Valid system with device
+Valid system with entity
 ============================
 
 system Demo {
-  device PLC1 {
-    type Switch
+  entity PLC1 {
+    concept Switch
   }
 }
 
@@ -14,7 +14,7 @@ system Demo {
   (system_declaration
     name: (name)
     (declaration
-      (device_declaration
+      (entity_declaration
         name: (name)
         (property_assignment
           (property_name)

@@ -1,8 +1,6 @@
 package com.engineeringood.athena.scm
 
 import com.engineeringood.athena.ir.EngineeringDocument
-import com.engineeringood.athena.ir.EngineeringImpactConsequences
-import com.engineeringood.athena.ir.EngineeringKnowledgeState
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.repository.PackageIdentifier
@@ -33,8 +31,6 @@ data class SemanticBaselineSnapshot(
     val descriptor: SemanticBaselineDescriptor,
     val repositoryReport: RepositoryGraphReport,
     val engineeringDocuments: List<EngineeringDocument> = emptyList(),
-    val engineeringKnowledgeState: EngineeringKnowledgeState? = null,
-    val knowledgeDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val validationResult: SemanticValidationResult? = null,
     val diagnostics: List<SemanticDiagnostic> = emptyList(),
 )
@@ -49,7 +45,7 @@ enum class SemanticChangeCategory {
     PACKAGE_DEPENDENCY_CHANGED,
     ENGINEERING_STRUCTURE_CHANGED,
     ENGINEERING_PROPERTY_CHANGED,
-    CONNECTION_TOPOLOGY_CHANGED,
+    RELATIONSHIP_CHANGED,
     VALIDATION_STATE_CHANGED,
     EXTENSION_SEMANTICS_CHANGED,
 }
@@ -129,7 +125,6 @@ data class SemanticDiff(
     val snapshot: SemanticBaselineSnapshot,
     val authoredChanges: List<SemanticChangeRecord> = emptyList(),
     val derivedConsequences: List<SemanticDerivedConsequence> = emptyList(),
-    val engineeringImpactConsequences: EngineeringImpactConsequences = EngineeringImpactConsequences.canonical(emptyList()),
 ) {
     /** Distinct package identities touched either directly by authored change or derived fallout. */
     val affectedPackages: List<PackageIdentifier>
@@ -152,7 +147,6 @@ enum class SemanticReviewEntryKind {
     REPOSITORY_CONTRACT,
     PACKAGE_DEPENDENCY,
     ENGINEERING_CHANGE,
-    ENGINEERING_IMPACT,
     DERIVED_CONSEQUENCE,
     VALIDATION_IMPACT,
     INPUT_WARNING,
@@ -161,7 +155,6 @@ enum class SemanticReviewEntryKind {
 /** Stable semantic fact categories that one review entry may trace back to. */
 enum class SemanticReviewFactKind {
     AUTHORED_CHANGE,
-    ENGINEERING_IMPACT,
     DERIVED_CONSEQUENCE,
     DIAGNOSTIC,
 }
@@ -227,7 +220,6 @@ data class SemanticReviewSummary(
     val affectedPackages: List<PackageIdentifier> = emptyList(),
     val authoredChanges: List<SemanticChangeRecord> = emptyList(),
     val derivedConsequences: List<SemanticDerivedConsequence> = emptyList(),
-    val engineeringImpactConsequences: EngineeringImpactConsequences = EngineeringImpactConsequences.canonical(emptyList()),
     val diagnostics: List<SemanticDiagnostic> = emptyList(),
     val entries: List<SemanticReviewEntry> = emptyList(),
     val enrichments: List<SemanticReviewEnrichment> = emptyList(),
@@ -239,7 +231,6 @@ enum class SemanticCommitEntryKind {
     REPOSITORY_CONTRACT,
     PACKAGE_DEPENDENCY,
     ENGINEERING_CHANGE,
-    ENGINEERING_IMPACT,
     DERIVED_CONSEQUENCE,
     VALIDATION_CONSEQUENCE,
     INPUT_WARNING,
@@ -249,7 +240,6 @@ enum class SemanticCommitEntryKind {
 enum class SemanticCommitFactKind {
     REVIEW_ENTRY,
     AUTHORED_CHANGE,
-    ENGINEERING_IMPACT,
     DERIVED_CONSEQUENCE,
     DIAGNOSTIC,
 }
@@ -292,7 +282,6 @@ data class SemanticCommitIntent(
     val affectedPackages: List<PackageIdentifier> = emptyList(),
     val authoredChanges: List<SemanticChangeRecord> = emptyList(),
     val derivedConsequences: List<SemanticDerivedConsequence> = emptyList(),
-    val engineeringImpactConsequences: EngineeringImpactConsequences = EngineeringImpactConsequences.canonical(emptyList()),
     val diagnostics: List<SemanticDiagnostic> = emptyList(),
     val entries: List<SemanticCommitEntry> = emptyList(),
     val summary: String? = null,

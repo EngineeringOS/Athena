@@ -34,7 +34,7 @@ class RouteChannelTopologyCompilerTest {
         )
         assertEquals(
             mapOf("A" to 0, "M" to 1, "Z" to 2),
-            topology.laneAssignments.associate { assignment -> assignment.connectionAlias to assignment.laneIndex },
+            topology.laneAssignments.associate { assignment -> assignment.relationshipId to assignment.laneIndex },
         )
         assertEquals(3, topology.evidence.allocatedLaneCount)
     }
@@ -134,7 +134,7 @@ class RouteChannelTopologyCompilerTest {
     )
 
     private fun route(alias: String, vararg channelIds: String): PhysicalRouteIntent = PhysicalRouteIntent(
-        connectionAlias = alias,
+        relationshipId = alias,
         channelIds = channelIds.map(::PhysicalObjectId),
         provenance = PhysicalSourceProvenance(
             PhysicalSourceUnitId("src/main.athena"),

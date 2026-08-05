@@ -8,19 +8,20 @@ object EngineeringReality {
 
     val ownedFacts: List<String> = listOf(
         "system",
-        "device",
+        "entity",
+        "function",
         "port",
-        "signal",
-        "connection",
-        "network",
+        "flow",
+        "relationship",
         "constraint",
     )
 
     val identityRules: List<RealityIdentityRule> = listOf(
         RealityIdentityRule("system", "System identity comes from the authored system id."),
-        RealityIdentityRule("device", "Device identity comes from the authored component path."),
-        RealityIdentityRule("port", "Port identity comes from the owning device plus port name."),
-        RealityIdentityRule("connection", "Connection identity comes from source and target port identities."),
+        RealityIdentityRule("entity", "Entity identity comes from its authored semantic path."),
+        RealityIdentityRule("function", "Function identity comes from its owning Entity plus Function name."),
+        RealityIdentityRule("port", "Port identity comes from its exact Entity or Function owner plus Port name."),
+        RealityIdentityRule("relationship", "Relationship identity comes from authored definition and participant roles."),
     )
 
     val requiredFacts: List<String> = listOf(

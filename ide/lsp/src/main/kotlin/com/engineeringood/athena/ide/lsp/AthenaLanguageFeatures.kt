@@ -2,9 +2,6 @@ package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
-import com.engineeringood.athena.compiler.AthenaRepresentationSourceCompiler
-import com.engineeringood.athena.compiler.AthenaRepresentationSourceDiagnostic
-import com.engineeringood.athena.compiler.AthenaRepresentationSourceInput
 import com.engineeringood.athena.compiler.semantic.CanonicalSemanticIdentityBuilder
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticBinding
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDeclaration
@@ -12,13 +9,10 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnostic
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticSourceInput
 import com.engineeringood.athena.compiler.semantic.SourceUnitId
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPublicationResult
-import com.engineeringood.athena.language.AthenaLanguageParser
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.BindingDeclaration
 import com.engineeringood.athena.language.BindingSelectorKind
 import com.engineeringood.athena.language.Declaration
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.ElementAnchorExportDeclaration
 import com.engineeringood.athena.language.ElementChildDeclaration
 import com.engineeringood.athena.language.ElementDeclaration
@@ -29,7 +23,6 @@ import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.LayoutStatement
-import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.ProjectionConstructDeclaration
 import com.engineeringood.athena.language.ProjectionPolicyDeclaration
@@ -54,7 +47,7 @@ import com.engineeringood.athena.language.SymbolIdentifierField
 import com.engineeringood.athena.language.ViewDeclaration
 import com.engineeringood.athena.language.SheetDeclaration
 import com.engineeringood.athena.language.GridDeclaration
-import com.engineeringood.athena.ir.EngineeringPropertyValue
+import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.repository.PackageIdentifier
 import java.io.File
 import java.nio.file.Files
@@ -88,14 +81,6 @@ data class AthenaTrackedDocument(
     val projectSemanticSourceUnitUris: Map<SourceUnitId, String> = emptyMap(),
     val projectSemanticDiagnostics: List<ProjectSemanticDiagnostic> = emptyList(),
     val projectSemanticNavigation: AthenaProjectSemanticNavigationSnapshot? = null,
-    val representation: AthenaRepresentationDocumentSnapshot? = null,
-)
-
-data class AthenaRepresentationDocumentSnapshot(
-    val ast: SourceFileAst?,
-    val diagnostics: List<AthenaRepresentationSourceDiagnostic>,
-    val formattedSource: String?,
-    val navigation: AthenaRepresentationNavigationIndex?,
 )
 
 data class AthenaProjectSemanticDiagnosticsSnapshot(
@@ -144,29 +129,28 @@ data class AthenaSemanticInspectionPayload(
     val systemName: String?,
     val diagnosticsCount: Int,
     val diagnosticSummaries: List<String>,
-    val knowledgeInspection: AthenaEngineeringKnowledgeInspectionPayload? = null,
-    val componentCount: Int,
+    val entityCount: Int,
     val portCount: Int,
-    val connectionCount: Int,
-    val components: List<AthenaSemanticInspectionComponent>,
+    val relationshipCount: Int,
+    val entities: List<AthenaSemanticInspectionEntity>,
     val ports: List<AthenaSemanticInspectionPort>,
-    val connections: List<AthenaSemanticInspectionConnection>,
+    val relationships: List<AthenaSemanticInspectionRelationship>,
 )
 
 /**
- * One read-only component entry inside the semantic inspection payload.
+ * One read-only entity entry inside the semantic inspection payload.
  */
-data class AthenaSemanticInspectionComponent(
+data class AthenaSemanticInspectionEntity(
     val semanticId: String,
     val name: String,
-    val kind: String,
+    val concept: String,
     val properties: String,
     val authoredProperties: List<AthenaSemanticInspectionProperty>,
     val sourceRange: Range,
 )
 
 /**
- * One structured authored component property published for guided inspector flows.
+ * One structured authored entity property published for guided inspector flows.
  */
 data class AthenaSemanticInspectionProperty(
     val name: String,
@@ -186,13 +170,18 @@ data class AthenaSemanticInspectionPort(
 )
 
 /**
- * One read-only connection entry inside the semantic inspection payload.
+ * One read-only Relationship entry inside the semantic inspection payload.
  */
-data class AthenaSemanticInspectionConnection(
+data class AthenaSemanticInspectionRelationship(
     val semanticId: String,
-    val fromPath: String,
-    val toPath: String,
+    val definition: String,
+    val participants: List<AthenaSemanticInspectionParticipant>,
     val sourceRange: Range,
+)
+
+data class AthenaSemanticInspectionParticipant(
+    val role: String,
+    val subjectPath: String,
 )
 
 /**
@@ -208,12 +197,6 @@ class AthenaLanguageFeatures(
     private val sourceRootPath: Path? = null,
 ) {
     private val documentsByUri = linkedMapOf<String, AthenaTrackedDocument>()
-    private val representationCompiler = AthenaRepresentationSourceCompiler()
-    private val representationParser = AthenaLanguageParser()
-    private val representationPackageRootPaths: Set<Path> by lazy {
-        repositoryRoot?.representationPackageRootPaths().orEmpty()
-    }
-
     /**
      * Recompiles [text] as the current content for [uri] and stores the result as the latest server-owned state.
      */
@@ -233,13 +216,10 @@ class AthenaLanguageFeatures(
             }
         }
 
-        val representation = representationDocument(path, text)
         val compilation = compiler.compile(path, text)
         val success = compilation as? CompilerCompilationSuccess
-        val projectSemanticSnapshot = if (representation == null) success?.let {
+        val projectSemanticSnapshot = success?.let {
             projectSemanticDiagnostics(path, text, it)
-        } else {
-            null
         }
         val tracked = AthenaTrackedDocument(
             uri = uri,
@@ -255,73 +235,9 @@ class AthenaLanguageFeatures(
             projectSemanticSourceUnitUris = projectSemanticSnapshot?.sourceUnitUris.orEmpty(),
             projectSemanticDiagnostics = projectSemanticSnapshot?.diagnostics.orEmpty(),
             projectSemanticNavigation = projectSemanticSnapshot?.navigation,
-            representation = representation,
         )
         documentsByUri[uri] = tracked
         return tracked
-    }
-
-    private fun representationDocument(path: Path, text: String): AthenaRepresentationDocumentSnapshot? {
-        val file = path.toAbsolutePath().normalize().toString()
-        val normalizedPath = path.toAbsolutePath().normalize()
-        if (normalizedPath.fileName.toString().endsWith(".svg", ignoreCase = true) &&
-            normalizedPath.isWithinAny(representationPackageRootPaths)
-        ) {
-            return AthenaRepresentationDocumentSnapshot(
-                ast = null,
-                diagnostics = representationCompiler.lintSvg(file, text),
-                formattedSource = null,
-                navigation = null,
-            )
-        }
-        val parsed = representationParser.parse(file, text)
-        val ast = (parsed as? ParseSuccess)?.ast
-        val insideRepresentationPackageRoot = normalizedPath.isWithinAny(representationPackageRootPaths)
-        val isRepresentation = ast?.unit is RepresentationSourceUnit ||
-            text.hasRepresentationSyntax() ||
-            insideRepresentationPackageRoot
-        if (!isRepresentation) return null
-        val lintDiagnostics = if (insideRepresentationPackageRoot) {
-            representationCompiler.compile(representationPackageInputs(normalizedPath, text)).diagnostics
-                .filter { diagnostic -> Path.of(diagnostic.file).toAbsolutePath().normalize() == normalizedPath }
-        } else {
-            representationCompiler.lint(file, text)
-        }
-        val formatted = representationCompiler.format(file, text).formattedSource
-        return AthenaRepresentationDocumentSnapshot(
-            ast = ast?.takeIf { it.unit is RepresentationSourceUnit },
-            diagnostics = lintDiagnostics,
-            formattedSource = formatted,
-            navigation = ast?.takeIf { it.unit is RepresentationSourceUnit }?.let { AthenaRepresentationNavigationIndex(uri = path.toUri().toString(), ast = it) },
-        )
-    }
-
-    private fun representationPackageInputs(
-        currentPath: Path,
-        currentText: String,
-    ): List<AthenaRepresentationSourceInput> {
-        val packageRoot = representationPackageRootPaths
-            .filter { root -> currentPath.startsWith(root) }
-            .maxByOrNull { root -> root.nameCount }
-            ?: return listOf(AthenaRepresentationSourceInput(currentPath.toString(), currentText))
-        if (!Files.isDirectory(packageRoot)) {
-            return listOf(AthenaRepresentationSourceInput(currentPath.toString(), currentText))
-        }
-        return Files.walk(packageRoot).use { stream ->
-            stream
-                .filter { candidate -> Files.isRegularFile(candidate) }
-                .filter { candidate -> candidate.fileName.toString().endsWith(".athena", ignoreCase = true) }
-                .toList()
-                .map { candidate -> candidate.toAbsolutePath().normalize() }
-                .distinct()
-                .sortedBy { candidate -> packageRoot.relativize(candidate).toString() }
-                .map { candidate ->
-                    AthenaRepresentationSourceInput(
-                        file = candidate.toString(),
-                        source = if (candidate == currentPath) currentText else Files.readString(candidate),
-                    )
-                }
-        }
     }
 
     private fun projectSemanticDiagnostics(
@@ -570,9 +486,6 @@ class AthenaLanguageFeatures(
     fun completion(params: org.eclipse.lsp4j.CompletionParams): CompletionList {
         val tracked = trackedDocument(params.textDocument.uri)
             ?: return CompletionList(false, defaultKeywordCompletions())
-        if (tracked.representation != null) {
-            return CompletionList(false, representationKeywordCompletions())
-        }
         val success = tracked.compilation as? CompilerCompilationSuccess
         val cursor = tracked.text.cursorContext(
             position = params.position,
@@ -584,7 +497,7 @@ class AthenaLanguageFeatures(
                 "out" to CompletionItemKind.EnumMember,
             )
 
-            cursor.expectsSignalValue -> completionItems(
+            cursor.expectsFlowValue -> completionItems(
                 "Digital" to CompletionItemKind.EnumMember,
             )
 
@@ -593,23 +506,23 @@ class AthenaLanguageFeatures(
                 "vertical" to CompletionItemKind.EnumMember,
             )
 
-            cursor.expectsTypeValue -> {
-                val knownTypes = success
+            cursor.expectsConceptValue -> {
+                val knownConcepts = success
                     ?.source
                     ?.ast
                     ?.declarations
                     ?.asSequence()
-                    ?.filterIsInstance<DeviceDeclaration>()
+                    ?.filterIsInstance<EntityDeclaration>()
                     ?.flatMap { declaration ->
                         declaration.fields.asSequence()
-                            .filter { field -> field.name == "type" }
-                            .mapNotNull { field -> (field.value as? ScalarValue.Identifier)?.text }
+                            .filter { field -> field.name == "concept" }
+                            .mapNotNull { field -> (field.value as? ScalarValue.Symbol)?.text }
                     }
                     ?.distinct()
                     ?.toList()
                     .orEmpty()
-                completionItems(*(knownTypes.ifEmpty { listOf("Motor", "Switch") }
-                    .map { type -> type to CompletionItemKind.Class }
+                completionItems(*(knownConcepts.ifEmpty { listOf("Motor", "Switch") }
+                    .map { concept -> concept to CompletionItemKind.Class }
                     .toTypedArray()))
             }
 
@@ -626,8 +539,8 @@ class AthenaLanguageFeatures(
                     .toTypedArray()))
             }
 
-            cursor.insideDeviceBlock -> completionItems(
-                "type" to CompletionItemKind.Property,
+            cursor.insideEntityBlock -> completionItems(
+                "concept" to CompletionItemKind.Property,
                 "model" to CompletionItemKind.Property,
                 "port" to CompletionItemKind.Keyword,
                 "function" to CompletionItemKind.Keyword,
@@ -635,12 +548,12 @@ class AthenaLanguageFeatures(
 
             cursor.insidePortBlock -> completionItems(
                 "direction" to CompletionItemKind.Property,
-                "signal" to CompletionItemKind.Property,
+                "flow" to CompletionItemKind.Property,
             )
 
             cursor.insideFunctionBlock -> completionItems(
                 "role" to CompletionItemKind.Property,
-                "ports" to CompletionItemKind.Property,
+                "port" to CompletionItemKind.Keyword,
             )
 
             else -> defaultKeywordCompletions()
@@ -662,9 +575,6 @@ class AthenaLanguageFeatures(
      */
     fun documentSymbols(params: DocumentSymbolParams): List<Either<org.eclipse.lsp4j.SymbolInformation, DocumentSymbol>> {
         val tracked = trackedDocument(params.textDocument.uri) ?: return emptyList()
-        tracked.representation?.ast?.let { ast ->
-            return ast.toRepresentationDocumentSymbols()
-        }
         val success = tracked.compilation as? CompilerCompilationSuccess ?: return emptyList()
         val ast = success.source.ast
         val children = ast.declarations.map { declaration -> declaration.toDocumentSymbol() }
@@ -699,7 +609,6 @@ class AthenaLanguageFeatures(
     fun definition(uri: String, position: Position): List<Location> {
         val tracked = trackedDocument(uri) ?: return emptyList()
         val offset = tracked.text.offsetAt(position)
-        tracked.representation?.navigation?.definition(offset)?.takeIf { it.isNotEmpty() }?.let { return it }
         tracked.projectSemanticNavigation
             ?.let { navigation -> AthenaProjectSemanticNavigationIndex(navigation).definition(offset) }
             ?.takeIf { locations -> locations.isNotEmpty() }
@@ -728,11 +637,10 @@ class AthenaLanguageFeatures(
 
     fun formatting(uri: String): List<TextEdit> {
         val tracked = trackedDocument(uri) ?: return emptyList()
-        val formatted = tracked.representation?.formattedSource
-            ?: (tracked.compilation as? CompilerCompilationSuccess)
-                ?.source
-                ?.ast
-                ?.let(AthenaProjectSourceFormatter::format)
+        val formatted = (tracked.compilation as? CompilerCompilationSuccess)
+            ?.source
+            ?.ast
+            ?.let(AthenaProjectSourceFormatter::format)
             ?: return emptyList()
         return listOf(
             TextEdit(
@@ -752,9 +660,8 @@ class AthenaLanguageFeatures(
      *
      * Semantic-authority guardrail: this payload is built purely from
      * `CompilerCompilationParseFailure` / `CompilerCompilationSuccess` fields
-     * (`semanticResult.diagnostics`, `validationBreakdown.engineeringSufficiencyDiagnostics`,
-     * `derivedContext`, `capabilityFacts`, `constraintEvaluations`) plus `AthenaNavigationIndex`
-     * source ranges derived from the authored `SourceFileAst`. It must never grow a second,
+     * (`semanticResult.diagnostics`) plus `AthenaNavigationIndex` source ranges derived from the
+     * authored `SourceFileAst`. It must never grow a second,
      * Tree-sitter-backed code path (Epic 3) or read an ANTLR4 parse-tree/visitor type (Epic 2) as a
      * semantic-truth or diagnostics source; semantic meaning stays compiler-owned.
      */
@@ -770,25 +677,18 @@ class AthenaLanguageFeatures(
                 diagnosticSummaries = compilation.diagnostics.map { diagnostic ->
                     "L${diagnostic.line}:${diagnostic.column} ${diagnostic.message}"
                 },
-                knowledgeInspection = null,
-                componentCount = 0,
+                entityCount = 0,
                 portCount = 0,
-                connectionCount = 0,
-                components = emptyList(),
+                relationshipCount = 0,
+                entities = emptyList(),
                 ports = emptyList(),
-                connections = emptyList(),
+                relationships = emptyList(),
             )
 
             is CompilerCompilationSuccess -> {
                 val document = compilation.document
                 val navigationIndex = tracked.navigationIndex
-                val visibleDiagnostics = (
-                    compilation.semanticResult.diagnostics +
-                        compilation.validationBreakdown.engineeringSufficiencyDiagnostics
-                    ).distinct()
-                val knowledgeDiagnostics = compilation.validationBreakdown.engineeringSufficiencyDiagnostics
-                    .distinct()
-                    .sortedWith(knowledgeDiagnosticComparator())
+                val visibleDiagnostics = compilation.semanticResult.diagnostics.distinct()
                 AthenaSemanticInspectionPayload(
                     uri = tracked.uri,
                     version = tracked.version,
@@ -798,29 +698,22 @@ class AthenaLanguageFeatures(
                     diagnosticSummaries = visibleDiagnostics.map { diagnostic ->
                         "${diagnostic.ruleId.value}: ${diagnostic.message}"
                     },
-                    knowledgeInspection = AthenaEngineeringKnowledgeInspectionPayload(
-                        derivedSubjectCount = compilation.derivedContext.subjects.size,
-                        capabilityFactCount = compilation.capabilityFacts.subjects.sumOf { subject -> subject.facts.size },
-                        constraintEvaluationCount = compilation.constraintEvaluations.subjects.sumOf { subject -> subject.evaluations.size },
-                        knowledgeDiagnosticsCount = knowledgeDiagnostics.size,
-                        knowledgeDiagnostics = knowledgeDiagnostics.map { diagnostic -> diagnostic.toKnowledgePayload() },
-                    ),
-                    componentCount = document.components.size,
+                    entityCount = document.entities.size,
                     portCount = document.ports.size,
-                    connectionCount = document.connections.size,
-                    components = document.components
-                        .sortedBy { component -> component.name }
-                        .map { component ->
-                            AthenaSemanticInspectionComponent(
-                                semanticId = component.id.value,
-                                name = component.name,
-                                kind = component.kind,
-                                properties = component.properties.summaryText(),
-                                authoredProperties = component.properties.map { property -> property.toInspectionProperty() },
+                    relationshipCount = document.relationships.size,
+                    entities = document.entities
+                        .sortedBy { entity -> entity.name }
+                        .map { entity ->
+                            AthenaSemanticInspectionEntity(
+                                semanticId = entity.id.value,
+                                name = entity.name,
+                                concept = entity.conceptReference.authoredName.joinToString("."),
+                                properties = entity.properties.summaryText(),
+                                authoredProperties = entity.properties.map { property -> property.toInspectionProperty() },
                                 sourceRange = requireSourceRange(
-                                    semanticId = component.id.value,
-                                    kind = "component",
-                                    range = navigationIndex?.componentSourceRange(component.name),
+                                    semanticId = entity.id.value,
+                                    kind = "entity",
+                                    range = navigationIndex?.entitySourceRange(entity.name),
                                 ),
                             )
                         },
@@ -839,22 +732,26 @@ class AthenaLanguageFeatures(
                                 ),
                             )
                         },
-                    connections = document.connections
-                        .sortedWith(compareBy(
-                            { connection -> connection.from.authoredPath() },
-                            { connection -> connection.to.authoredPath() },
-                        ))
-                        .map { connection ->
-                            AthenaSemanticInspectionConnection(
-                                semanticId = connection.id.value,
-                                fromPath = connection.from.authoredPath(),
-                                toPath = connection.to.authoredPath(),
+                    relationships = document.relationships
+                        .sortedBy { relationship -> relationship.id.value }
+                        .map { relationship ->
+                            val definition = relationship.definitionReference.authoredName.joinToString(".")
+                            val participants = relationship.participants.map { participant ->
+                                AthenaSemanticInspectionParticipant(
+                                    role = participant.role,
+                                    subjectPath = participant.subject.reference.authoredPath(),
+                                )
+                            }
+                            AthenaSemanticInspectionRelationship(
+                                semanticId = relationship.id.value,
+                                definition = definition,
+                                participants = participants,
                                 sourceRange = requireSourceRange(
-                                    semanticId = connection.id.value,
-                                    kind = "connection",
-                                    range = navigationIndex?.connectionSourceRange(
-                                        fromPath = connection.from.authoredPath(),
-                                        toPath = connection.to.authoredPath(),
+                                    semanticId = relationship.id.value,
+                                    kind = "relationship",
+                                    range = navigationIndex?.relationshipSourceRange(
+                                        definition = definition,
+                                        participantPaths = participants.map { participant -> participant.subjectPath },
                                     ),
                                 ),
                             )
@@ -867,7 +764,7 @@ class AthenaLanguageFeatures(
     private fun defaultKeywordCompletions(): List<CompletionItem> {
         return completionItems(
             "system" to CompletionItemKind.Keyword,
-            "device" to CompletionItemKind.Keyword,
+            "entity" to CompletionItemKind.Keyword,
             "port" to CompletionItemKind.Keyword,
             "function" to CompletionItemKind.Keyword,
             "role" to CompletionItemKind.Property,
@@ -915,7 +812,7 @@ class AthenaLanguageFeatures(
             "role" to CompletionItemKind.Property,
             "accepts" to CompletionItemKind.Keyword,
             "direction" to CompletionItemKind.Property,
-            "signal" to CompletionItemKind.Property,
+            "flow" to CompletionItemKind.Property,
             "child" to CompletionItemKind.Keyword,
             "translate" to CompletionItemKind.Property,
             "rotate" to CompletionItemKind.Property,
@@ -933,7 +830,7 @@ class AthenaLanguageFeatures(
             "where" to CompletionItemKind.Keyword,
             "use" to CompletionItemKind.Keyword,
             "variant" to CompletionItemKind.Property,
-            "device" to CompletionItemKind.Class,
+            "entity" to CompletionItemKind.Class,
             "function" to CompletionItemKind.Class,
         )
     }
@@ -1089,11 +986,11 @@ class AthenaRepresentationNavigationIndex(
  * Small server-owned navigation index derived from the current source AST.
  *
  * Migration-continuity guardrail: every lookup here depends only on the
- * authored `SourceFileAst` (`DeviceDeclaration`, `PortDeclaration`, `ConnectionDeclaration`,
- * `ConnectionGroupDeclaration`, `QualifiedName`) and its `SourceSpan`/`SourcePosition` values.
+ * authored `SourceFileAst` (`EntityDeclaration`, `PortDeclaration`, `RelationDeclaration`,
+ * `QualifiedName`) and its `SourceSpan`/`SourcePosition` values.
  * Now that Epic 2 has replaced the handwritten parser with ANTLR4-backed parsing,
  * `documentSymbols`, `definition`, `references`, and the
- * `componentSourceRange`/`portSourceRange`/`connectionSourceRange` helpers must keep working
+ * `entitySourceRange`/`portSourceRange`/`connectionSourceRange` helpers must keep working
  * unchanged as long as the resulting `SourceFileAst` and its spans are populated correctly,
  * because they read the authored AST contract, never parser internals. After Epic 3's Tree-sitter
  * integration, these utilities stay LSP-served and AST-backed; Tree-sitter must not become an
@@ -1103,30 +1000,30 @@ class AthenaNavigationIndex(
     private val documentUri: String,
     private val ast: SourceFileAst,
 ) {
-    private val deviceDeclarations = ast.declarations.filterIsInstance<DeviceDeclaration>().associateBy { declaration -> declaration.name }
+    private val entityDeclarations = ast.declarations.filterIsInstance<EntityDeclaration>().associateBy { declaration -> declaration.name }
     private val portDeclarations = (
         ast.declarations.filterIsInstance<PortDeclaration>() +
-            ast.declarations.filterIsInstance<DeviceDeclaration>().flatMap { declaration -> declaration.nestedPorts }
+            ast.declarations.filterIsInstance<EntityDeclaration>().flatMap { declaration -> declaration.nestedPorts }
         ).associateBy { declaration ->
         declaration.qualifiedName.parts.joinToString(".")
     }
     private val groupedInterfacePortSpans = ast.declarations
-        .filterIsInstance<DeviceDeclaration>()
-        .flatMap { device ->
-            device.interfaces.flatMap { connectivityInterface ->
+        .filterIsInstance<EntityDeclaration>()
+        .flatMap { entity ->
+            entity.interfaces.flatMap { connectivityInterface ->
                 connectivityInterface.ports.map { port ->
-                    "${device.name}.${port.name}" to port.span
+                    "${entity.name}.${port.name}" to port.span
                 }
             }
         }
         .toMap()
     private val functionDeclarations = ast.declarations
-        .filterIsInstance<DeviceDeclaration>()
-        .flatMap { device ->
-            device.nestedFunctions.map { function -> "${device.name}.${function.name}" to function }
+        .filterIsInstance<EntityDeclaration>()
+        .flatMap { entity ->
+            entity.nestedFunctions.map { function -> "${entity.name}.${function.name}" to function }
         }
         .toMap()
-    private val connectionDeclarations = ast.authoredConnectionDeclarations()
+    private val relationDeclarations = ast.declarations.filterIsInstance<RelationDeclaration>()
     private val functionReferences = ast.declarations
         .filterIsInstance<LayoutDeclaration>()
         .flatMap { declaration -> declaration.statements }
@@ -1141,15 +1038,19 @@ class AthenaNavigationIndex(
         ast.declarations.filterIsInstance<PortDeclaration>().forEach { declaration ->
             add(AthenaOwnerReference(declaration.qualifiedName.parts.first(), declaration.ownerSpan()))
         }
-        connectionDeclarations.forEach { declaration ->
-            add(AthenaOwnerReference(declaration.from.parts.first(), declaration.from.ownerSpan()))
-            add(AthenaOwnerReference(declaration.to.parts.first(), declaration.to.ownerSpan()))
+        relationDeclarations.forEach { declaration ->
+            add(AthenaOwnerReference(declaration.source.parts.first(), declaration.source.ownerSpan()))
+            declaration.targets.forEach { target ->
+                add(AthenaOwnerReference(target.parts.first(), target.ownerSpan()))
+            }
         }
     }
     private val portReferences = buildList {
-        connectionDeclarations.forEach { declaration ->
-            add(AthenaPortReference(declaration.from.parts.joinToString("."), declaration.from.span))
-            add(AthenaPortReference(declaration.to.parts.joinToString("."), declaration.to.span))
+        relationDeclarations.forEach { declaration ->
+            add(AthenaPortReference(declaration.source.parts.joinToString("."), declaration.source.span))
+            declaration.targets.forEach { target ->
+                add(AthenaPortReference(target.parts.joinToString("."), target.span))
+            }
         }
     }
 
@@ -1159,7 +1060,7 @@ class AthenaNavigationIndex(
     fun definition(offset: Int): List<Location> {
         val target = targetAt(offset) ?: return emptyList()
         return when (target) {
-            is AthenaTarget.Device -> deviceDeclarations[target.name]
+            is AthenaTarget.Entity -> entityDeclarations[target.name]
                 ?.let { declaration -> listOf(documentLocation(declaration.nameSpan())) }
                 .orEmpty()
 
@@ -1183,12 +1084,12 @@ class AthenaNavigationIndex(
     fun references(offset: Int, includeDeclaration: Boolean): List<Location> {
         val target = targetAt(offset) ?: return emptyList()
         return when (target) {
-            is AthenaTarget.Device -> buildList {
+            is AthenaTarget.Entity -> buildList {
                 if (includeDeclaration) {
-                    deviceDeclarations[target.name]?.let { declaration -> add(documentLocation(declaration.nameSpan())) }
+                    entityDeclarations[target.name]?.let { declaration -> add(documentLocation(declaration.nameSpan())) }
                 }
                 ownerReferences
-                    .filter { reference -> reference.deviceName == target.name }
+                    .filter { reference -> reference.entityName == target.name }
                     .mapTo(this) { reference -> documentLocation(reference.span) }
             }
 
@@ -1218,10 +1119,10 @@ class AthenaNavigationIndex(
     }
 
     /**
-     * Resolves the full authored declaration range for one inspected component.
+     * Resolves the full authored declaration range for one inspected entity.
      */
-    fun componentSourceRange(componentName: String): Range? {
-        return deviceDeclarations[componentName]?.span?.toLspRange()
+    fun entitySourceRange(entityName: String): Range? {
+        return entityDeclarations[entityName]?.span?.toLspRange()
     }
 
     /**
@@ -1233,13 +1134,13 @@ class AthenaNavigationIndex(
     }
 
     /**
-     * Resolves the full authored declaration range for one inspected connection.
+     * Resolves the full authored declaration range for one inspected Relationship.
      */
-    fun connectionSourceRange(fromPath: String, toPath: String): Range? {
-        return connectionDeclarations
+    fun relationshipSourceRange(definition: String, participantPaths: List<String>): Range? {
+        return relationDeclarations
             .firstOrNull { declaration ->
-                declaration.from.parts.joinToString(".") == fromPath &&
-                    declaration.to.parts.joinToString(".") == toPath
+                declaration.word.value == definition &&
+                    (listOf(declaration.source) + declaration.targets).map { path -> path.parts.joinToString(".") } == participantPaths
             }
             ?.span
             ?.toLspRange()
@@ -1252,11 +1153,11 @@ class AthenaNavigationIndex(
         functionReferences.firstOrNull { reference -> reference.span.contains(offset) }?.let { reference ->
             return AthenaTarget.Function(reference.qualifiedName)
         }
-        deviceDeclarations.values.firstOrNull { declaration -> declaration.nameSpan().contains(offset) }?.let { declaration ->
-            return AthenaTarget.Device(declaration.name)
+        entityDeclarations.values.firstOrNull { declaration -> declaration.nameSpan().contains(offset) }?.let { declaration ->
+            return AthenaTarget.Entity(declaration.name)
         }
         ownerReferences.firstOrNull { reference -> reference.span.contains(offset) }?.let { reference ->
-            return AthenaTarget.Device(reference.deviceName)
+            return AthenaTarget.Entity(reference.entityName)
         }
         portReferences.firstOrNull { reference -> reference.span.contains(offset) }?.let { reference ->
             return AthenaTarget.Port(reference.qualifiedName)
@@ -1266,35 +1167,6 @@ class AthenaNavigationIndex(
 
     private fun documentLocation(span: SourceSpan): Location {
         return Location(documentUri, span.toLspRange())
-    }
-}
-
-private fun SourceFileAst.authoredConnectionDeclarations(): List<ConnectionDeclaration> {
-    return declarations.flatMap { declaration ->
-        when (declaration) {
-            is ConnectionDeclaration -> listOf(declaration)
-            is ConnectionGroupDeclaration -> declaration.connections
-            is RelationDeclaration -> declaration.targets.map { target ->
-                ConnectionDeclaration(
-                    alias = relationMemberAlias(declaration.word.value, declaration.from, target),
-                    aliasSpan = declaration.word.span,
-                    from = declaration.from,
-                    to = target,
-                    span = declaration.span,
-                )
-            }
-            is DeviceDeclaration -> emptyList()
-            is ExternalEvidenceDeclaration -> emptyList()
-            is ProjectionPolicyDeclaration -> emptyList()
-            is PortDeclaration -> emptyList()
-            is LayoutDeclaration -> emptyList()
-            is InstallationDeclaration -> emptyList()
-            is ViewDeclaration -> emptyList()
-            is SheetDeclaration -> emptyList()
-            is GridDeclaration -> emptyList()
-            is RegionDeclaration -> emptyList()
-            is ProjectionConstructDeclaration -> emptyList()
-        }
     }
 }
 
@@ -1533,9 +1405,9 @@ private fun ElementLabelExportDeclaration.toDocumentSymbol(): DocumentSymbol = D
 
 private fun BindingSelectorKind?.renderName(): String = when (this) {
     BindingSelectorKind.Function -> "function"
-    BindingSelectorKind.Device,
+    BindingSelectorKind.Entity,
     null,
-        -> "device"
+        -> "entity"
 }
 
 /**
@@ -1543,9 +1415,9 @@ private fun BindingSelectorKind?.renderName(): String = when (this) {
  */
 sealed interface AthenaTarget {
     /**
-     * Device declaration or owner reference target.
+     * Entity declaration or owner reference target.
      */
-    data class Device(val name: String) : AthenaTarget
+    data class Entity(val name: String) : AthenaTarget
 
     /**
      * Port declaration or endpoint reference target.
@@ -1563,19 +1435,19 @@ data class AthenaCompletionContext(
     val fragment: String,
     val expectsQualifiedPort: Boolean,
     val expectsDirectionValue: Boolean,
-    val expectsSignalValue: Boolean,
-    val expectsTypeValue: Boolean,
+    val expectsFlowValue: Boolean,
+    val expectsConceptValue: Boolean,
     val expectsOrientationValue: Boolean,
-    val insideDeviceBlock: Boolean,
+    val insideEntityBlock: Boolean,
     val insidePortBlock: Boolean,
     val insideFunctionBlock: Boolean,
 )
 
 /**
- * One owner-segment reference to a device symbol.
+ * One owner-segment reference to a entity symbol.
  */
 data class AthenaOwnerReference(
-    val deviceName: String,
+    val entityName: String,
     val span: SourceSpan,
 )
 
@@ -1595,10 +1467,10 @@ data class AthenaFunctionReference(
 
 private fun Declaration.toDocumentSymbol(): DocumentSymbol {
     return when (this) {
-        is DeviceDeclaration -> DocumentSymbol().apply {
+        is EntityDeclaration -> DocumentSymbol().apply {
             name = this@toDocumentSymbol.name
             kind = SymbolKind.Class
-            detail = "device"
+            detail = "entity"
             range = span.toLspRange()
             selectionRange = nameSpan().toLspRange()
             children = fields.map { field -> field.toDocumentSymbol() } +
@@ -1608,30 +1480,13 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
 
         is PortDeclaration -> toDocumentSymbol(displayName = qualifiedName.parts.joinToString("."))
 
-        is ConnectionDeclaration -> DocumentSymbol().apply {
-            name = "connect $alias ${from.parts.joinToString(".")} to ${to.parts.joinToString(".")}"
-            kind = SymbolKind.Operator
-            detail = "connect"
-            range = span.toLspRange()
-            selectionRange = span.toLspRange()
-        }
-
-        is ConnectionGroupDeclaration -> DocumentSymbol().apply {
-            name = "connect ${this@toDocumentSymbol.name}"
-            kind = SymbolKind.Module
-            detail = "connect group"
-            range = span.toLspRange()
-            selectionRange = span.toLspRange()
-            children = connections.map { connection -> connection.toConnectEdgeDocumentSymbol() }
-        }
-
         is RelationDeclaration -> DocumentSymbol().apply {
             val targetLabel = if (targets.size == 1) {
                 targets.single().parts.joinToString(".")
             } else {
                 targets.joinToString(prefix = "[", postfix = "]") { target -> target.parts.joinToString(".") }
             }
-            name = "${word.value} ${from.parts.joinToString(".")} to $targetLabel"
+            name = "${word.value} ${source.parts.joinToString(".")} to $targetLabel"
             kind = SymbolKind.Operator
             detail = "relation"
             range = span.toLspRange()
@@ -1697,7 +1552,7 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
                 mounts.mapTo(this) { member -> member.toInstallationDocumentSymbol("mount") }
                 routes.mapTo(this) { route ->
                     DocumentSymbol().apply {
-                        name = "route ${route.connectionAlias}"
+                        name = "route ${route.relationshipId}"
                         kind = SymbolKind.Operator
                         detail = "route"
                         range = route.span.toLspRange()
@@ -1770,19 +1625,6 @@ private fun Any.toInstallationDocumentSymbol(kindName: String): DocumentSymbol {
     }
 }
 
-private fun ConnectionDeclaration.toConnectEdgeDocumentSymbol(): DocumentSymbol {
-    return DocumentSymbol().apply {
-        name = "$alias ${from.parts.joinToString(".")} to ${to.parts.joinToString(".")}"
-        kind = SymbolKind.Operator
-        detail = "connect edge"
-        range = span.toLspRange()
-        selectionRange = span.toLspRange()
-    }
-}
-
-private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
-    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"
-
 private fun PortDeclaration.toDocumentSymbol(displayName: String): DocumentSymbol {
     return DocumentSymbol().apply {
         name = displayName
@@ -1799,27 +1641,20 @@ private fun EngineeringFunctionDeclaration.toDocumentSymbol(): DocumentSymbol {
     return DocumentSymbol().apply {
         name = declaration.name
         kind = SymbolKind.Function
-        detail = "engineering function: ${declaration.role.value}"
+        detail = "engineering function: ${declaration.role.parts.joinToString(".")}"
         range = declaration.span.toLspRange()
         selectionRange = declaration.nameSpan().toLspRange()
         children = listOf(
             DocumentSymbol().apply {
                 name = "role"
                 kind = SymbolKind.Property
-                detail = declaration.role.value
+                detail = declaration.role.parts.joinToString(".")
                 range = declaration.role.span.toLspRange()
                 selectionRange = declaration.role.span.toLspRange()
             },
-            DocumentSymbol().apply {
-                name = "ports"
-                kind = SymbolKind.Array
-                detail = declaration.portReferences.joinToString(", ") { reference ->
-                    reference.parts.joinToString(".")
-                }
-                range = declaration.portReferenceSpan().toLspRange()
-                selectionRange = declaration.portReferenceSpan().toLspRange()
-            },
-        )
+        ) + declaration.nestedPorts.map { port ->
+            port.toDocumentSymbol(displayName = port.qualifiedName.parts.last())
+        }
     }
 }
 
@@ -1849,19 +1684,23 @@ private fun PropertyAssignment.toDocumentSymbol(): DocumentSymbol {
         name = this@toDocumentSymbol.name
         kind = SymbolKind.Property
         detail = when (propertyValue) {
-            is ScalarValue.Identifier -> propertyValue.text
-            is ScalarValue.StringLiteral -> "\"${propertyValue.text}\""
+            is ScalarValue.Symbol -> propertyValue.text
+            is ScalarValue.Text -> "\"${propertyValue.text}\""
+            is ScalarValue.Quantity -> "${propertyValue.exactText} [${propertyValue.unit.parts.joinToString(".")}]"
+            is ScalarValue.Integer -> propertyValue.exactText
+            is ScalarValue.Boolean -> propertyValue.value.toString()
+            is ScalarValue.Reference -> "@${propertyValue.target.parts.joinToString(".")}"
         }
         range = span.toLspRange()
         selectionRange = span.toLspRange()
     }
 }
 
-private fun DeviceDeclaration.nameSpan(): SourceSpan {
+private fun EntityDeclaration.nameSpan(): SourceSpan {
     val start = SourcePosition(
-        offset = span.start.offset + "device ".length,
+        offset = span.start.offset + "entity ".length,
         line = span.start.line,
-        column = span.start.column + "device ".length,
+        column = span.start.column + "entity ".length,
     )
     val end = start.advanceBy(name)
     return SourceSpan(start, end)
@@ -1874,12 +1713,6 @@ private fun EngineeringFunctionDeclaration.nameSpan(): SourceSpan {
         column = span.start.column + "function ".length,
     )
     return SourceSpan(start, start.advanceBy(name))
-}
-
-private fun EngineeringFunctionDeclaration.portReferenceSpan(): SourceSpan {
-    val first = portReferences.firstOrNull()?.span ?: return span
-    val last = portReferences.last().span
-    return SourceSpan(first.start, last.end)
 }
 
 private fun PortDeclaration.ownerSpan(): SourceSpan {
@@ -1903,10 +1736,14 @@ private fun List<com.engineeringood.athena.ir.EngineeringProperty>.summaryText()
     }.ifBlank { "no properties" }
 }
 
-private fun EngineeringPropertyValue.summaryText(): String {
+private fun EngineeringValue.summaryText(): String {
     return when (this) {
-        is EngineeringPropertyValue.Symbol -> text
-        is EngineeringPropertyValue.Text -> "\"$text\""
+        is EngineeringValue.Quantity -> "$value [${unit.authoredName.joinToString(".")}]"
+        is EngineeringValue.Integer -> value.toString()
+        is EngineeringValue.Boolean -> value.toString()
+        is EngineeringValue.Symbol -> text
+        is EngineeringValue.Text -> "\"$text\""
+        is EngineeringValue.Reference -> "@${reference.authoredPath.joinToString(".")}"
     }
 }
 
@@ -1914,29 +1751,29 @@ private fun com.engineeringood.athena.ir.EngineeringProperty.toInspectionPropert
     return AthenaSemanticInspectionProperty(
         name = name,
         valueKind = when (value) {
-            is EngineeringPropertyValue.Symbol -> "symbol"
-            is EngineeringPropertyValue.Text -> "text"
+            is EngineeringValue.Quantity -> "quantity"
+            is EngineeringValue.Integer -> "integer"
+            is EngineeringValue.Boolean -> "boolean"
+            is EngineeringValue.Symbol -> "symbol"
+            is EngineeringValue.Text -> "text"
+            is EngineeringValue.Reference -> "reference"
         },
         valueText = when (val propertyValue = value) {
-            is EngineeringPropertyValue.Symbol -> propertyValue.text
-            is EngineeringPropertyValue.Text -> propertyValue.text
+            is EngineeringValue.Quantity -> "${propertyValue.value} [${propertyValue.unit.authoredName.joinToString(".")}]"
+            is EngineeringValue.Integer -> propertyValue.value.toString()
+            is EngineeringValue.Boolean -> propertyValue.value.toString()
+            is EngineeringValue.Symbol -> propertyValue.text
+            is EngineeringValue.Text -> propertyValue.text
+            is EngineeringValue.Reference -> propertyValue.reference.authoredPath.joinToString(".")
         },
     )
 }
 
 private fun com.engineeringood.athena.ir.EngineeringReference.authoredPath(): String = authoredPath.joinToString(".")
 
-private fun com.engineeringood.athena.ir.EngineeringPort.summaryPath(): String = (ownerReference.authoredPath + name).joinToString(".")
+private fun com.engineeringood.athena.ir.EngineeringPort.summaryPath(): String =
+    (owner.reference.authoredPath + name).joinToString(".")
 
-private fun knowledgeDiagnosticComparator(): Comparator<com.engineeringood.athena.semantics.core.SemanticDiagnostic> {
-    return compareBy<com.engineeringood.athena.semantics.core.SemanticDiagnostic>(
-        { diagnostic -> diagnostic.ruleId.value },
-        { diagnostic -> diagnostic.provenance.file },
-        { diagnostic -> diagnostic.provenance.startLine },
-        { diagnostic -> diagnostic.provenance.startColumn },
-        { diagnostic -> diagnostic.message },
-    )
-}
 
 private fun requireSourceRange(
     semanticId: String,
@@ -1965,14 +1802,13 @@ private fun String.cursorContext(
     return AthenaCompletionContext(
         fragment = fragment,
         expectsQualifiedPort = trimmedPrefix.startsWith("port ") ||
-            trimmedPrefix.startsWith("ports ") ||
             trimmedPrefix.startsWith("connect ") ||
             trimmedPrefix.contains("->"),
         expectsDirectionValue = trimmedPrefix.matches(Regex(".*\\bdirection\\s+[A-Za-z_]*$")),
-        expectsSignalValue = trimmedPrefix.matches(Regex(".*\\bsignal\\s+[A-Za-z_]*$")),
-        expectsTypeValue = trimmedPrefix.matches(Regex(".*\\btype\\s+[A-Za-z_]*$")),
+        expectsFlowValue = trimmedPrefix.matches(Regex(".*\\bflow\\s+[A-Za-z_]*$")),
+        expectsConceptValue = trimmedPrefix.matches(Regex(".*\\bconcept\\s+[A-Za-z_]*$")),
         expectsOrientationValue = trimmedPrefix.matches(Regex(".*\\borientation\\s+[A-Za-z_]*$")),
-        insideDeviceBlock = enclosingDeclaration is DeviceDeclaration &&
+        insideEntityBlock = enclosingDeclaration is EntityDeclaration &&
             enclosingPort == null &&
             enclosingFunction == null,
         insidePortBlock = enclosingDeclaration is PortDeclaration || enclosingPort != null,
@@ -1986,13 +1822,13 @@ private fun SourceFileAst?.declarationAt(offset: Int): Declaration? {
 
 private fun SourceFileAst?.nestedPortAt(offset: Int): PortDeclaration? = this
     ?.declarations
-    ?.filterIsInstance<DeviceDeclaration>()
+    ?.filterIsInstance<EntityDeclaration>()
     ?.flatMap { declaration -> declaration.nestedPorts }
     ?.firstOrNull { declaration -> declaration.span.contains(offset) }
 
 private fun SourceFileAst?.functionAt(offset: Int): EngineeringFunctionDeclaration? = this
     ?.declarations
-    ?.filterIsInstance<DeviceDeclaration>()
+    ?.filterIsInstance<EntityDeclaration>()
     ?.flatMap { declaration -> declaration.nestedFunctions }
     ?.firstOrNull { declaration -> declaration.span.contains(offset) }
 
@@ -2095,16 +1931,17 @@ private val declarationKeywordTokens = setOf(
     "package",
     "import",
     "system",
-    "device",
+    "entity",
     "port",
-    "type",
+    "concept",
     "model",
-    "terminal",
+    "designationType",
+    "designation",
 )
 
 private val portKeywordTokens = setOf(
     "direction",
-    "signal",
+    "flow",
     "in",
     "out",
     "bidirectional",
@@ -2113,7 +1950,7 @@ private val portKeywordTokens = setOf(
 private val functionKeywordTokens = setOf(
     "function",
     "role",
-    "ports",
+    "port",
 )
 
 private val relationshipKeywordTokens = setOf(
@@ -2158,7 +1995,7 @@ private val installationKeywordTokens = setOf(
     "wall",
     "lanes",
     "margin",
-    "device",
+    "entity",
     "through",
 )
 
@@ -2234,7 +2071,7 @@ private fun String.semanticTokenData(): List<Int> {
                 text.startsWith("\"") -> "string"
                 text.first().isDigit() || text.first() == '-' -> "number"
                 text in layoutOperatorTokens -> "athenaLayoutOperator"
-                line.isBindingSelectorLine() && text in setOf("select", "device", "function", "where") ->
+                line.isBindingSelectorLine() && text in setOf("select", "entity", "function", "where") ->
                     "athenaBindingKeyword"
                 line.isBindingElementLine() && text in setOf("use", "element", "version") ->
                     "athenaBindingKeyword"

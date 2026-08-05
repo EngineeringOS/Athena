@@ -2,8 +2,8 @@
   <title>DemoCabinet</title>
   <text x="40" y="28" class="system-label">DemoCabinet</text>
   <polyline points="104,86 210,86 210,86 316,86" class="connection" data-connection-id="connection:examples/m0/demo-cabinet.athena:plc_to_motor" />
-  <rect x="40" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="component:PLC1" />
+  <rect x="40" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="entity:PLC1" />
   <text x="52" y="88" class="label">PLC1</text>
-  <rect x="300" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="component:M1" />
+  <rect x="300" y="60" width="140" height="72" rx="8" ry="8" class="component" data-subject="entity:M1" />
   <text x="312" y="88" class="label">M1</text>
 </svg>

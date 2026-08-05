@@ -26,7 +26,7 @@ data class RouteChannelLaneFact(
 )
 
 data class RouteChannelLaneAssignment(
-    val connectionAlias: String,
+    val relationshipId: String,
     val channelId: PhysicalObjectId,
     val laneIndex: Int,
 )
@@ -87,7 +87,7 @@ object RouteChannelTopologyCompiler {
         channels.sortedBy { channel -> channel.id.value }.forEach { channel ->
             val aliases = routes
                 .filter { route -> channel.id in route.channelIds }
-                .map { route -> route.connectionAlias }
+                .map { route -> route.relationshipId }
                 .distinct()
                 .sorted()
             if (aliases.size > channel.lanes) {
@@ -106,7 +106,7 @@ object RouteChannelTopologyCompiler {
         }
 
         val adjacencies = mutableListOf<RouteChannelAdjacencyFact>()
-        routes.sortedBy { route -> route.connectionAlias }.forEach { route ->
+        routes.sortedBy { route -> route.relationshipId }.forEach { route ->
             route.channelIds.zipWithNext().forEach { (fromId, toId) ->
                 val from = channelsById[fromId] ?: return@forEach
                 val to = channelsById[toId] ?: return@forEach
@@ -144,7 +144,7 @@ object RouteChannelTopologyCompiler {
             RouteChannelTopology(
                 channels = topologyChannels,
                 lanes = lanes,
-                laneAssignments = laneAssignments.sortedWith(compareBy({ it.channelId.value }, { it.connectionAlias })),
+                laneAssignments = laneAssignments.sortedWith(compareBy({ it.channelId.value }, { it.relationshipId })),
                 adjacencies = adjacencies.distinctBy { adjacency ->
                     "${adjacency.fromChannelId.value}->${adjacency.toChannelId.value}"
                 },

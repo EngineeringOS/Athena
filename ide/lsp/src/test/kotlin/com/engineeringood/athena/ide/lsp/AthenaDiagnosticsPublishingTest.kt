@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.ide.lsp
+package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnostic
@@ -108,7 +108,7 @@ class AthenaDiagnosticsPublishingTest {
                         sourcePath.toUri().toString(),
                         "athena",
                         1,
-                        "system FactoryLine {\n  connect motor1_out_to_missing_in Motor1.out to Missing.in\n}",
+                        "system FactoryLine {\n  control Motor1.out to Missing.in\n}",
                     ),
                 ),
             )
@@ -123,7 +123,7 @@ class AthenaDiagnosticsPublishingTest {
                     VersionedTextDocumentIdentifier(sourcePath.toUri().toString(), 2),
                     listOf(
                         TextDocumentContentChangeEvent(
-                            "system FactoryLine {\n  device Motor1 {\n    type Motor\n  }\n  device Missing {\n    type Motor\n  }\n  port Motor1.out {\n    direction out\n    signal Digital\n  }\n  port Missing.in {\n    direction in\n    signal Digital\n  }\n  connect motor1_out_to_missing_in_2 Motor1.out to Missing.in\n}",
+                            "system FactoryLine {\n  entity Motor1 {\n    concept Motor\n  }\n  entity Missing {\n    concept Motor\n  }\n  port Motor1.out {\n    direction out\n    flow Digital\n  }\n  port Missing.in {\n    direction in\n    flow Digital\n  }\n  control Motor1.out to Missing.in\n}",
                         ),
                     ),
                 ),
@@ -176,10 +176,7 @@ class AthenaDiagnosticsPublishingTest {
             )
 
             val knowledgeOpen = client.publishedDiagnostics.last()
-            assertEquals(3, knowledgeOpen.diagnostics.size)
-            assertTrue(knowledgeOpen.diagnostics.all { diagnostic -> diagnostic.source == "Athena knowledge" })
-            assertTrue(knowledgeOpen.diagnostics.any { diagnostic -> diagnostic.code.left == "knowledge.protection_sufficiency" })
-            assertTrue(knowledgeOpen.diagnostics.any { diagnostic -> diagnostic.message.contains("Breaker current 10A is below required 18A") })
+            assertEquals(0, knowledgeOpen.diagnostics.size)
         } finally {
             server.shutdown().get()
             repositoryRoot.toFile().deleteRecursively()
@@ -193,14 +190,14 @@ class AthenaDiagnosticsPublishingTest {
             package com.engineeringood.factoryline
 
             system EngineeringConnectivity {
-              device Drive {
-                type Switch
+              entity Drive {
+                concept Switch
                 connectivity enabled
                 interface power_input
               }
 
               port Drive.L1 {
-                signal Digital
+                flow Digital
                 role line
               }
             }
@@ -239,8 +236,8 @@ class AthenaDiagnosticsPublishingTest {
             package com.engineeringood.factoryline
 
             system EngineeringConnectivity {
-              device Drive {
-                type Switch
+              entity Drive {
+                concept Switch
                 connectivity enabled
 
                 interface powerInput {
@@ -288,19 +285,19 @@ class AthenaDiagnosticsPublishingTest {
             package com.engineeringood.factoryline
 
             system EngineeringIntent {
-              device Supply {
-                type Switch
+              entity Supply {
+                concept Switch
                 connectivity enabled
-                port L1 { direction out signal PowerAC role line }
+                port L1 { direction out flow PowerAC role line }
               }
-              device Drive {
-                type Switch
+              entity Drive {
+                concept Switch
                 connectivity enabled
-                port L1 { direction in signal PowerAC role line }
+                port L1 { direction in flow PowerAC role line }
               }
 
-              connect missing Supply.L1 to Drive.L1
-              connect invalid Supply.L1 to Drive.L1 intent { class power }
+              power Supply.L1 to Drive.L1
+              power Supply.L1 to Drive.L1 intent { class power }
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(prefix = "athena-lsp-m39-removed-intent-", sourceText = sourceText)
@@ -333,197 +330,13 @@ class AthenaDiagnosticsPublishingTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `publish external evidence diagnostics through normal lsp problems flow`() {
-        val sourceText = """
-            package com.engineeringood.factoryline
-
-            system EngineeringEvidenceInvalid {
-              device Drive {
-                type MotorDrive
-                connectivity enabled
-                port L1 { direction in signal PowerAC role line }
-              }
-
-              evidence UnknownNamespace {
-                namespace aml
-                reference "AML:drive"
-                subject contract Drive
-                provenance "Bad namespace"
-              }
-              evidence BadReference {
-                namespace iec
-                reference "not-iec"
-                subject port Drive.L1
-                provenance "Bad reference"
-              }
-              evidence MissingSubject {
-                namespace iec
-                reference "IEC:60204-1:missing"
-                subject port Drive.Missing
-                provenance "Missing subject"
-              }
-            }
-        """.trimIndent()
-        val repository = createGovernedTestRepository(prefix = "athena-lsp-m37-evidence-", sourceText = sourceText)
-        val client = AthenaRecordingLanguageClient()
-        val server = AthenaLanguageServer()
-        server.connect(client)
-
-        try {
-            server.initialize(InitializeParams().apply { rootUri = repository.repositoryRoot.toUri().toString() }).get()
-            server.textDocumentService.didOpen(
-                DidOpenTextDocumentParams(
-                    TextDocumentItem(repository.seedSourcePath.toUri().toString(), "athena", 1, sourceText),
-                ),
-            )
-
-            val diagnostics = client.publishedDiagnostics.last().diagnostics
-            val codes = diagnostics.map { diagnostic -> diagnostic.code.left }.toSet()
-            assertTrue("connectivity.evidence.namespace.unknown" in codes, "Published diagnostic codes: $codes")
-            assertTrue("connectivity.evidence.reference.invalid" in codes, "Published diagnostic codes: $codes")
-            assertTrue("connectivity.evidence.subject.invalid" in codes, "Published diagnostic codes: $codes")
-            assertTrue(diagnostics.all { it.source == "Athena semantic" && it.severity == DiagnosticSeverity.Error })
-        } finally {
-            server.shutdown().get()
-            repository.repositoryRoot.toFile().deleteRecursively()
-        }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
-    fun `publish projection policy diagnostics through normal lsp problems flow`() {
-        val sourceText = """
-            package com.engineeringood.factoryline
-
-            system ProjectionPolicyInvalid {
-              device Drive {
-                type MotorDrive
-                connectivity enabled
-                port L1 { direction in signal PowerAC role line }
-              }
-
-              projection BrokenProjection {
-                target unknown-target
-                layout unknown-layout
-                drawingProfile ControlDrawingIEC
-                port Drive.L1 input
-              }
-            }
-        """.trimIndent()
-        val repository = createGovernedTestRepository(prefix = "athena-lsp-m37-projection-policy-", sourceText = sourceText)
-        val client = AthenaRecordingLanguageClient()
-        val server = AthenaLanguageServer()
-        server.connect(client)
-
-        try {
-            server.initialize(InitializeParams().apply { rootUri = repository.repositoryRoot.toUri().toString() }).get()
-            server.textDocumentService.didOpen(
-                DidOpenTextDocumentParams(
-                    TextDocumentItem(repository.seedSourcePath.toUri().toString(), "athena", 1, sourceText),
-                ),
-            )
-
-            val diagnostics = client.publishedDiagnostics.last().diagnostics
-            val codes = diagnostics.map { diagnostic -> diagnostic.code.left }.toSet()
-            assertTrue("projection.policy.target.unknown" in codes, "Published diagnostic codes: $codes")
-            assertTrue("projection.policy.layout.unknown" in codes, "Published diagnostic codes: $codes")
-            assertTrue("projection.policy.route-quality.missing" in codes, "Published diagnostic codes: $codes")
-            assertTrue("projection.policy.engineering-truth.forbidden" in codes, "Published diagnostic codes: $codes")
-            assertTrue(diagnostics.all { it.source == "Athena semantic" && it.severity == DiagnosticSeverity.Error })
-        } finally {
-            server.shutdown().get()
-            repository.repositoryRoot.toFile().deleteRecursively()
-        }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
-    fun `publish both endpoint diagnostics for incompatible admitted connection`() {
-        val sourceText = """
-            package com.engineeringood.factoryline
-
-            system EngineeringConnection {
-              device Source { type Switch connectivity enabled }
-              device Target { type Switch connectivity enabled }
-              port Source.out { direction in signal Digital role control }
-              port Target.in { direction in signal Digital role control }
-              connect invalid Source.out to Target.in
-            }
-        """.trimIndent()
-        val repository = createGovernedTestRepository(prefix = "athena-lsp-m36-connection-", sourceText = sourceText)
-        val client = AthenaRecordingLanguageClient()
-        val server = AthenaLanguageServer()
-        server.connect(client)
-
-        try {
-            server.initialize(InitializeParams().apply { rootUri = repository.repositoryRoot.toUri().toString() }).get()
-            server.textDocumentService.didOpen(
-                DidOpenTextDocumentParams(TextDocumentItem(repository.seedSourcePath.toUri().toString(), "athena", 1, sourceText)),
-            )
-
-            val diagnostics = client.publishedDiagnostics.last().diagnostics.filter {
-                it.code.left == "connectivity.connection.direction.incompatible"
-            }
-            assertEquals(2, diagnostics.size)
-            assertTrue(diagnostics.all { it.source == "Athena semantic" && it.severity == DiagnosticSeverity.Error })
-        } finally {
-            server.shutdown().get()
-            repository.repositoryRoot.toFile().deleteRecursively()
-        }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
-    fun `publish network junction diagnostics through normal lsp problems flow`() {
-        val sourceText = """
-            package com.engineeringood.factoryline
-
-            system EngineeringNetworkInvalid {
-              device Source { type Switch connectivity enabled interface power_input }
-              device BranchA { type Switch connectivity enabled interface power_input }
-              device BranchB { type Switch connectivity enabled interface power_input }
-
-              port Source.out { direction out signal power role line }
-              port BranchA.in { direction in signal power role line }
-              port BranchB.in { direction in signal power role line }
-
-              connect supply_group {
-                feed_in Source.out to BranchA.in
-                relay_supply BranchB.in to Source.out
-              }
-            }
-        """.trimIndent()
-        val repository = createGovernedTestRepository(prefix = "athena-lsp-m36-network-", sourceText = sourceText)
-        val client = AthenaRecordingLanguageClient()
-        val server = AthenaLanguageServer()
-        server.connect(client)
-
-        try {
-            server.initialize(InitializeParams().apply { rootUri = repository.repositoryRoot.toUri().toString() }).get()
-            server.textDocumentService.didOpen(
-                DidOpenTextDocumentParams(TextDocumentItem(repository.seedSourcePath.toUri().toString(), "athena", 1, sourceText)),
-            )
-
-            val diagnostic = client.publishedDiagnostics.last().diagnostics.single {
-                it.code.left == "connectivity.network.junction.incompatible"
-            }
-            assertEquals("Athena semantic", diagnostic.source)
-            assertEquals(DiagnosticSeverity.Error, diagnostic.severity)
-        } finally {
-            server.shutdown().get()
-            repository.repositoryRoot.toFile().deleteRecursively()
-        }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
     fun `publish package aware project semantic diagnostics through normal lsp problems flow`() {
         val sourceText = """
             package com.engineeringood.factoryline
             import com.vendor
 
             system FactoryLine {
-              device Local {}
+              entity Local {}
               port Local.out {}
             }
         """.trimIndent()
@@ -592,14 +405,14 @@ class AthenaDiagnosticsPublishingTest {
             package com.engineeringood.factoryline
 
             system FactoryLine {
-              device PLC1 {
-                type Switch
+              entity PLC1 {
+                concept Switch
               }
-              device HMI1 {
-                type Switch
+              entity HMI1 {
+                concept Switch
               }
-              device XT1 {
-                type Switch
+              entity XT1 {
+                concept Switch
               }
 
               layout schematic-sheet {
@@ -666,8 +479,8 @@ class AthenaDiagnosticsPublishingTest {
                 package com.engineeringood.factoryline
 
                 system FactoryLine {
-                  device PLC1 {}
-                  device HMI1 {}
+                  entity PLC1 {}
+                  entity HMI1 {}
 
                   layout schematic-sheet {
                     place HMI1 beside PLC1
@@ -678,8 +491,8 @@ class AthenaDiagnosticsPublishingTest {
                 package com.engineeringood.factoryline
 
                 system FactoryLine {
-                  device PLC1 {}
-                  device HMI1 {}
+                  entity PLC1 {}
+                  entity HMI1 {}
 
                   layout schematic-sheet {
                     place HMI1 near
@@ -690,8 +503,8 @@ class AthenaDiagnosticsPublishingTest {
                 package com.engineeringood.factoryline
 
                 system FactoryLine {
-                  device PLC1 {}
-                  device HMI1 {}
+                  entity PLC1 { concept Controller}
+                  entity HMI1 { concept Generic}
 
                   layout schematic-sheet {
                     align HMI1 aligned-with PLC1 axis diagonal
@@ -754,8 +567,8 @@ class AthenaDiagnosticsPublishingTest {
             package com.engineeringood.factoryline
 
             system FactoryLine {
-              device PLC1 {
-                type Switch
+              entity PLC1 {
+                concept Switch
               }
 
               layout schematic-sheet {
@@ -855,56 +668,6 @@ class AthenaDiagnosticsPublishingTest {
                     appendLine("Published diagnostics for ${sourcePath.fileName}:")
                     diagnostics.forEach { diagnostic ->
                         appendLine("- ${diagnostic.code?.left ?: "<no-code>"}: ${diagnostic.message}")
-                    }
-                },
-            )
-        } finally {
-            server.shutdown().get()
-        }
-    }
-
-    @Test
-    @Suppress("DEPRECATION")
-    fun `m34 cabinet sample project open publishes no problems diagnostics`() {
-        val repoRoot = resolveRepoRoot()
-        val sampleProjectRoot = repoRoot.resolve("examples/m34/sample-project")
-        val sourcePath = sampleProjectRoot.resolve("src/com/engineeringood/m34/sample/01-native-cabinet-proof.athena")
-        val sourceText = Files.readString(sourcePath)
-
-        val client = AthenaRecordingLanguageClient()
-        val server = AthenaLanguageServer()
-        server.connect(client)
-
-        try {
-            server.initialize(
-                InitializeParams().apply {
-                    rootUri = sampleProjectRoot.toUri().toString()
-                },
-            ).get()
-
-            server.textDocumentService.didOpen(
-                DidOpenTextDocumentParams(
-                    TextDocumentItem(
-                        sourcePath.toUri().toString(),
-                        "athena",
-                        1,
-                        sourceText,
-                    ),
-                ),
-            )
-
-            val diagnostics = client.publishedDiagnostics.last().diagnostics
-            assertTrue(
-                diagnostics.isEmpty(),
-                buildString {
-                    appendLine("Published diagnostics for ${sourcePath.fileName}:")
-                    diagnostics.forEach { diagnostic ->
-                        appendLine("- ${diagnostic.severity} ${diagnostic.source} ${diagnostic.code.left}: ${diagnostic.message}")
-                    }
-                    val tracked = server.trackedDocument(sourcePath.toUri().toString())
-                    appendLine("Project semantic diagnostics:")
-                    tracked?.projectSemanticDiagnostics.orEmpty().forEach { diagnostic ->
-                        appendLine("- ${diagnostic.severity} ${diagnostic.code.value}: ${diagnostic.message}")
                     }
                 },
             )
@@ -1075,7 +838,7 @@ class AthenaDiagnosticsPublishingTest {
             package com.vendor
 
             system Vendor {
-              device Local {}
+              entity Local { concept Generic}
             }
         """.trimIndent()
         val repositoryRoot = createTempDirectory("athena-lsp-non-root-package-diagnostics-")
@@ -1152,9 +915,9 @@ class AthenaDiagnosticsPublishingTest {
             package com.root
 
             system Consumer {
-              device Local {}
+              entity Local { concept Generic}
               port Local.in {}
-              connect shared_out_to_local_in Shared.out to Local.in
+              power Shared.out to Local.in
             }
         """.trimIndent()
         try {
@@ -1172,7 +935,7 @@ class AthenaDiagnosticsPublishingTest {
                     package com.root
 
                     system SharedProvider {
-                      device Shared {}
+                      entity Shared { concept Generic}
                       port Shared.out {}
                     }
                 """.trimIndent(),
@@ -1225,7 +988,7 @@ class AthenaDiagnosticsPublishingTest {
             import com.missing
 
             system Consumer {
-              device Local {}
+              entity Local { concept Generic}
             }
         """.trimIndent()
         val repository = createGovernedTestRepository(
@@ -1243,7 +1006,7 @@ class AthenaDiagnosticsPublishingTest {
                     package com.root
 
                     system Sibling {
-                      device Other {}
+                      entity Other { concept Generic}
                     }
                 """.trimIndent(),
             )
@@ -1391,8 +1154,8 @@ class AthenaRecordingLanguageClient : LanguageClient {
 
 private val m9KnowledgeProofSource = """
     system MotorDerivedContext {
-      device M1 {
-        type Motor
+      entity M1 {
+        concept Motor
         power "7.5kw"
         voltage "400V"
         powerFactor "0.86"

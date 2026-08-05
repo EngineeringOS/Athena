@@ -11,7 +11,7 @@ class AthenaLanguageContractTest {
         val source =
             """
             system Demo {
-              device PLC1 {
+              entity PLC1 {
                 type PLC
               }
             }
@@ -22,7 +22,7 @@ class AthenaLanguageContractTest {
         val success = assertIs<ParseSuccess>(result)
         assertIs<SourceFileAst>(success.ast)
         assertEquals("Demo", success.ast.system.name)
-        assertTrue(success.ast.declarations.single() is DeviceDeclaration)
+        assertTrue(success.ast.declarations.single() is EntityDeclaration)
     }
 
     @Test

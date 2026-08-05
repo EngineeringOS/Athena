@@ -6,10 +6,10 @@
  * Downstream code must use only com.engineeringood.athena.language contracts.
  *
  * Scope includes file-level package and import declarations, system-scoped layout block grammar
- * admission, nested device-owned ports, compact grouped connect authoring, standalone typed
+ * admission, nested Entity- or Function-owned ports, compact grouped connect authoring, standalone typed
  * Symbol/Element declarations, typed installation cabinet declarations, and grouped connectivity
  * Interface declarations:
- * system, package, import, device, port, connect, grouped connect, qualified names,
+ * system, package, import, entity, port, relation, qualified names,
  * string literals, property assignments, layout place/align/group statements,
  * symbol/element/profile/binding/resource declarations, and installation cabinet source only.
  * No expression / macro-use forms.
@@ -45,10 +45,8 @@ systemDecl
     ;
 
 declaration
-    : deviceDecl
+    : entityDecl
     | portDecl
-    | connectGroupDecl
-    | connectDecl
     | relationDecl
     | evidenceDecl
     | projectionPolicyDecl
@@ -57,15 +55,16 @@ declaration
     | installationDecl
     ;
 
-deviceDecl
-    : DEVICE ident LBRACE deviceMember* RBRACE
+entityDecl
+    : ENTITY ident LBRACE entityMember* RBRACE
     ;
 
-deviceMember
+entityMember
     : propertyAssignment
     | nestedPortDecl
     | interfaceDecl
     | functionDecl
+    | structureAssignmentDecl
     ;
 
 nestedPortDecl
@@ -78,19 +77,15 @@ functionDecl
 
 functionMember
     : functionRoleDecl
-    | functionPortsDecl
+    | nestedPortDecl
     ;
 
 functionRoleDecl
-    : ROLE ident
+    : ROLE qualifiedReference
     ;
 
-functionPortsDecl
-    : PORTS LPAREN functionPortReference (COMMA functionPortReference)* RPAREN
-    ;
-
-functionPortReference
-    : ident (DOT ident)?
+structureAssignmentDecl
+    : STRUCTURE qualifiedReference scalarValue (DISPLAY STRING)?
     ;
 
 interfaceDecl
@@ -111,23 +106,11 @@ interfacePortMember
     ;
 
 portDecl
-    : PORT twoPartName LBRACE propertyAssignment* RBRACE
-    ;
-
-connectDecl
-    : CONNECT ident twoPartName connectionSeparator twoPartName
-    ;
-
-connectGroupDecl
-    : CONNECT ident LBRACE connectGroupEdge* RBRACE
-    ;
-
-connectGroupEdge
-    : ident twoPartName connectionSeparator twoPartName
+    : PORT qualifiedReference LBRACE propertyAssignment* RBRACE
     ;
 
 relationDecl
-    : relationWord twoPartName connectionSeparator relationTarget
+    : relationWord qualifiedReference connectionSeparator relationTarget
     ;
 
 connectionSeparator
@@ -140,8 +123,8 @@ relationWord
     ;
 
 relationTarget
-    : twoPartName
-    | LBRACK twoPartName (COMMA twoPartName)* RBRACK
+    : qualifiedReference
+    | LBRACK qualifiedReference (COMMA qualifiedReference)* RBRACK
     ;
 
 evidenceDecl
@@ -214,7 +197,6 @@ projectionPolicyProofDecl
 
 projectionPolicyEngineeringTruthDecl
     : PORT qualifiedReference ident?
-    | CONNECT ident qualifiedReference TO qualifiedReference
     | EVIDENCE ident?
     | ANCHOR ident?
     ;
@@ -518,7 +500,7 @@ selectSubjectWhereDecl
     ;
 
 bindingSubjectKind
-    : DEVICE
+    : ENTITY
     | FUNCTION
     ;
 
@@ -687,7 +669,7 @@ refDecl
     ;
 
 anchorPortDecl
-    : PORT twoPartName
+    : PORT qualifiedReference
     ;
 
 directionDecl
@@ -695,7 +677,7 @@ directionDecl
     ;
 
 signalDecl
-    : SIGNAL twoPartName
+    : SIGNAL qualifiedReference
     ;
 
 directionPredicate
@@ -729,18 +711,6 @@ number
     | POSITIVE_INTEGER
     ;
 
-/**
- * Dotted authored name. The grammar accepts one-or-more dotted parts so that
- * over-/under-qualified port and connect endpoints still parse into a tree; the
- * internal ParseAdapter enforces the exact two-part arity and emits the same
- * `owner.port` diagnostics the handwritten parser produced (AD-111: arity is an
- * authored-AST concern, not an ad hoc grammar patch). The rule name is retained
- * for source/tooling continuity.
- */
-twoPartName
-    : ident (DOT ident)*
-    ;
-
 qualifiedReference
     : ident (DOT ident)*
     ;
@@ -750,7 +720,12 @@ propertyAssignment
     ;
 
 scalarValue
-    : ident
+    : number LBRACK qualifiedReference RBRACK
+    | number
+    | TRUE
+    | FALSE
+    | REFERENCE_MARK qualifiedReference
+    | ident
     | STRING
     ;
 
@@ -761,7 +736,7 @@ scalarValue
 ident
     : IDENT
     | SYSTEM
-    | DEVICE
+    | ENTITY
     | PORT
     | FUNCTION
     | PORTS
@@ -779,7 +754,6 @@ ident
     | PROOF
     | DEFAULT
     | POLICY
-    | CONNECT
     | PACKAGE
     | IMPORT
     | LAYOUT
@@ -838,6 +812,8 @@ ident
     | ELEMENT
     | PROFILE
     | ROLE
+    | STRUCTURE
+    | DISPLAY
     | BINDING
     | PROJECTION
     | STANDARD
@@ -888,7 +864,7 @@ ident
     ;
 
 SYSTEM : 'system' ;
-DEVICE : 'device' ;
+ENTITY : 'entity' ;
 PORT : 'port' ;
 FUNCTION : 'function' ;
 PORTS : 'ports' ;
@@ -906,7 +882,6 @@ ROUTE_QUALITY : 'routeQuality' ;
 PROOF : 'proof' ;
 DEFAULT : 'default' ;
 POLICY : 'policy' ;
-CONNECT : 'connect' ;
 PACKAGE : 'package' ;
 IMPORT : 'import' ;
 LAYOUT : 'layout' ;
@@ -1008,6 +983,8 @@ STYLE : 'style' ;
 ANCHOR : 'anchor' ;
 POINT : 'point' ;
 ROLE : 'role' ;
+STRUCTURE : 'structure' ;
+DISPLAY : 'display' ;
 ACCEPTS : 'accepts' ;
 DIRECTION : 'direction' ;
 SIGNAL : 'signal' ;
@@ -1015,6 +992,9 @@ REF : 'ref' ;
 IN : 'in' ;
 OUT : 'out' ;
 BIDIRECTIONAL : 'bidirectional' ;
+TRUE : 'true' ;
+FALSE : 'false' ;
+REFERENCE_MARK : '@' ;
 LBRACE : '{' ;
 RBRACE : '}' ;
 LBRACK : '[' ;

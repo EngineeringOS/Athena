@@ -4,15 +4,9 @@ import com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationRepor
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeArtifactKind
 import com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext
 import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeProvenance
-import com.engineeringood.athena.ir.EngineeringCapabilityFacts
-import com.engineeringood.athena.ir.EngineeringConstraintEvaluations
-import com.engineeringood.athena.geometry.GeometryDocument
-import com.engineeringood.athena.ir.DerivedEngineeringContext
 import com.engineeringood.athena.ir.EngineeringDocument
-import com.engineeringood.athena.layout.LayoutDocument
 import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.plugin.AthenaDomainValidationAttribution
-import com.engineeringood.athena.presentation.PresentationDocument
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticValidationResult
@@ -72,38 +66,6 @@ data class CompilerSyntaxDiagnostic(
 /** Unified compiler entry-path result that carries parse, lowering, and validation outcomes. */
 sealed interface CompilerCompilationResult
 
-/**
- * Incremental recompute mode used by one downstream compiler pass after a runtime-owned mutation.
- */
-enum class CompilerIncrementalPassMode {
-    SCOPED,
-    FULL_FALLBACK,
-}
-
-/**
- * Runtime-visible affected semantic scope derived for one incremental recompute cycle.
- */
-data class CompilerAffectedScope(
-    val changedSemanticIds: List<String>,
-    val validationSemanticIds: List<String>,
-    val renderComponentSemanticIds: List<String>,
-    val renderConnectionSemanticIds: List<String>,
-)
-
-/**
- * Inspectable incremental recompute report emitted after a runtime-owned semantic mutation.
- */
-data class CompilerIncrementalUpdateReport(
-    val affectedScope: CompilerAffectedScope,
-    val validationMode: CompilerIncrementalPassMode,
-    val layoutMode: CompilerIncrementalPassMode,
-    val layoutScopedViewIds: List<String>,
-    val geometryMode: CompilerIncrementalPassMode,
-    val geometryScopedViewIds: List<String>,
-    val renderingMode: CompilerIncrementalPassMode,
-    val renderingViewIds: List<String>,
-)
-
 /** Stable metadata reference for one governed knowledge artifact that may be attributed to a compiler-facing result. */
 data class CompilerKnowledgeArtifactReference(
     val artifactId: String,
@@ -116,7 +78,6 @@ data class CompilerKnowledgeArtifactReference(
 enum class CompilerKnowledgeAttributionTarget {
     KNOWLEDGE_CONTEXT,
     SEMANTIC_RESULT,
-    RENDERING,
 }
 
 /** Explicit governed knowledge attribution metadata for one compiler-facing result target. */
@@ -141,7 +102,6 @@ data class CompilerValidationBreakdown(
     val connectivityDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val projectionPolicyDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val domainDiagnostics: List<SemanticDiagnostic> = emptyList(),
-    val engineeringSufficiencyDiagnostics: List<SemanticDiagnostic> = emptyList(),
     val domainValidationAttributions: List<AthenaDomainValidationAttribution> = emptyList(),
 )
 
@@ -170,26 +130,16 @@ class CompilerSpatialDocuments private constructor(
 data class CompilerCompilationSuccess(
     val source: CompilerSourceDocument,
     val document: EngineeringDocument,
-    val derivedContext: DerivedEngineeringContext = DerivedEngineeringContext.canonical(emptyList()),
-    val capabilityFacts: EngineeringCapabilityFacts = EngineeringCapabilityFacts.canonical(emptyList()),
-    val constraintEvaluations: EngineeringConstraintEvaluations = EngineeringConstraintEvaluations.canonical(emptyList()),
     val semanticResult: SemanticValidationResult,
     val validationBreakdown: CompilerValidationBreakdown = CompilerValidationBreakdown(),
-    val connectionIr: ConnectionIr? = null,
-    val layouts: List<LayoutDocument> = emptyList(),
-    val geometries: List<GeometryDocument> = emptyList(),
     val projections: List<ProjectionDocument> = emptyList(),
-    val authoredProjectionViews: List<ProjectionDocument> = emptyList(),
-    val authoredProjectionDiagnostics: List<String> = emptyList(),
+    val projectionDiagnostics: List<String> = emptyList(),
     val spatialDocuments: CompilerSpatialDocuments = CompilerSpatialDocuments.empty(),
     val realityTransformationDiagnostics: List<RealityTransformationDiagnostic> = emptyList(),
-    val presentations: List<PresentationDocument> = emptyList(),
-    val rendering: CompilerRenderingResult,
     val knowledgeContext: AthenaCompilationKnowledgeContext,
     val boundaryValidation: AthenaBoundaryValidationReport,
     val knowledgeAttributions: List<CompilerKnowledgeAttribution>,
     val pipeline: CompilerPipelineReport,
-    val incrementalUpdateReport: CompilerIncrementalUpdateReport? = null,
 ) : CompilerCompilationResult
 
 /**
@@ -198,11 +148,8 @@ data class CompilerCompilationSuccess(
 fun CompilerCompilationResult.diagnosticMessages(): List<String> {
     return when (this) {
         is CompilerCompilationParseFailure -> diagnostics.map { diagnostic -> diagnostic.message }
-        is CompilerCompilationSuccess -> ((
-            semanticResult.diagnostics +
-                validationBreakdown.engineeringSufficiencyDiagnostics
-            ).map { diagnostic -> diagnostic.message } +
-            authoredProjectionDiagnostics +
+        is CompilerCompilationSuccess -> (semanticResult.diagnostics.map { diagnostic -> diagnostic.message } +
+            projectionDiagnostics +
             realityTransformationDiagnostics.map(RealityTransformationDiagnostic::message)).distinct()
     }
 }

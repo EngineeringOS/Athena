@@ -159,7 +159,7 @@ class AthenaPluginContractTest {
     }
 
     @Test
-    fun `supports directly instantiating the sample electrical runtime domain plugin`() {
+    fun `supports directly instantiating the electrical runtime domain plugin`() {
         val plugin = ElectricalRuntimeDomainPlugin()
 
         val result = AthenaPluginValidator().validate(plugin)
@@ -171,10 +171,7 @@ class AthenaPluginContractTest {
             setOf(
                 AthenaExtensionPoint.DOMAIN_SEMANTICS,
                 AthenaExtensionPoint.VIEW_DEFINITIONS,
-                AthenaExtensionPoint.PRESENTATION_PACKS,
                 AthenaExtensionPoint.SEMANTIC_REVIEW_ENRICHMENT,
-                AthenaExtensionPoint.RUNTIME_COMMANDS,
-                AthenaExtensionPoint.RUNTIME_VIEWS,
             ),
             plugin.manifest.requiredExtensionPoints,
         )
@@ -225,10 +222,10 @@ class AthenaPluginContractTest {
         assertEquals(listOf("electrical-port"), plugin.domainSchema.ports.map { port -> port.typeId })
         assertEquals(
             listOf("Wire"),
-            plugin.domainSchema.connections.map { connection -> connection.typeId },
+            plugin.domainSchema.relationships.map { relationship -> relationship.typeId },
         )
         assertEquals(
-            listOf("electrical-runtime.validation.component-and-port-rules"),
+            listOf("electrical-runtime.validation.entity-and-port-rules"),
             plugin.validationContributions.map { contribution -> contribution.contributionId },
         )
         assertEquals(
@@ -237,17 +234,6 @@ class AthenaPluginContractTest {
                 AthenaCompilerContributionStage.VALIDATE,
             ),
             plugin.compilerPassContributions.map { contribution -> contribution.stage },
-        )
-        assertEquals(
-            listOf(setOf("cabinet"), setOf("wiring")),
-            plugin.renderContributions.map { contribution -> contribution.viewIds },
-        )
-        assertEquals(
-            listOf(
-                setOf("svg", "graph-workbench"),
-                setOf("svg", "graph-workbench"),
-            ),
-            plugin.renderContributions.map { contribution -> contribution.rendererTargets },
         )
     }
 }

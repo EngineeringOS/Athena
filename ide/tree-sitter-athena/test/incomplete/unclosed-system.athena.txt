@@ -1,4 +1,4 @@
 system DemoCabinet {
-  device PLC1 {
-    type Switch
+  entity PLC1 {
+    concept Switch
   }

@@ -1,10 +1,10 @@
-﻿system InvalidDirectionCabinet {
-  device M1 {
-    type Motor
+system InvalidDirectionCabinet {
+  entity M1 {
+    concept Motor
   }
 
-  device M2 {
-    type Motor
+  entity M2 {
+    concept Motor
   }
 
   port M1.in {
@@ -17,5 +17,5 @@
     signal Digital
   }
 
-  connect m1_in_to_m2_in M1.in to M2.in
+  power M1.in to M2.in
 }

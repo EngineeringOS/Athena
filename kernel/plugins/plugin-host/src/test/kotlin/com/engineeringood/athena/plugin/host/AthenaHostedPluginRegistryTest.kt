@@ -35,7 +35,7 @@ class AthenaHostedPluginRegistryTest {
         )
         assertTrue(
             initialized.inventory.approvedPlugins.any { plugin ->
-                AthenaHostedPluginContributionCategory.RUNTIME_COMMAND in plugin.contributionCategories
+                AthenaHostedPluginContributionCategory.DOMAIN_SEMANTICS in plugin.contributionCategories
             },
         )
         assertTrue(

@@ -4,8 +4,8 @@ import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationResult
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.ir.EngineeringProperty
-import com.engineeringood.athena.ir.EngineeringPropertyValue
 import com.engineeringood.athena.ir.EngineeringReference
+import com.engineeringood.athena.ir.EngineeringValue
 
 /**
  * Runtime-owned result for projecting the active project into a queryable engineering graph.
@@ -140,9 +140,9 @@ data class AthenaEngineeringGraphNode(
  */
 enum class AthenaEngineeringGraphNodeKind {
     SYSTEM,
-    COMPONENT,
+    ENTITY,
     PORT,
-    CONNECTION,
+    RELATIONSHIP,
 }
 
 /**
@@ -167,8 +167,7 @@ data class AthenaEngineeringGraphReference(
  */
 enum class AthenaEngineeringGraphReferenceKind {
     OWNER,
-    CONNECTION_SOURCE,
-    CONNECTION_TARGET,
+    RELATIONSHIP_PARTICIPANT,
 }
 
 /**
@@ -184,9 +183,9 @@ data class AthenaEngineeringGraphRelationship(
  * Runtime-facing relationship kinds used by the engineering graph projection.
  */
 enum class AthenaEngineeringGraphRelationshipKind {
-    SYSTEM_CONTAINS_COMPONENT,
-    COMPONENT_OWNS_PORT,
-    CONNECTION_REFERENCE,
+    SYSTEM_CONTAINS_ENTITY,
+    ENTITY_OWNS_PORT,
+    RELATIONSHIP_PARTICIPANT,
 }
 
 /**
@@ -221,13 +220,13 @@ private fun CompilerCompilationSuccess.toEngineeringGraph(): AthenaEngineeringGr
             ),
         )
 
-        document.components.forEach { component ->
+        document.entities.forEach { entity ->
             add(
                 AthenaEngineeringGraphNode(
-                    semanticId = component.id.value,
-                    kind = AthenaEngineeringGraphNodeKind.COMPONENT,
-                    displayName = component.name,
-                    properties = component.properties.toGraphProperties(),
+                    semanticId = entity.id.value,
+                    kind = AthenaEngineeringGraphNodeKind.ENTITY,
+                    displayName = entity.name,
+                    properties = entity.properties.toGraphProperties(),
                 ),
             )
         }
@@ -238,45 +237,54 @@ private fun CompilerCompilationSuccess.toEngineeringGraph(): AthenaEngineeringGr
                     semanticId = port.id.value,
                     kind = AthenaEngineeringGraphNodeKind.PORT,
                     displayName = port.name,
-                    properties = port.properties.toGraphProperties(),
+                    properties = listOf(
+                        AthenaEngineeringGraphProperty("direction", port.direction.name.lowercase()),
+                        AthenaEngineeringGraphProperty(
+                            "flows",
+                            port.admittedFlowReferences.joinToString(",") { flow -> flow.authoredName.joinToString(".") },
+                        ),
+                    ) + port.properties.toGraphProperties(),
                     references = listOf(
-                        port.ownerReference.toGraphReference(AthenaEngineeringGraphReferenceKind.OWNER),
+                        port.owner.reference.toGraphReference(AthenaEngineeringGraphReferenceKind.OWNER),
                     ),
                 ),
             )
         }
 
-        document.connections.forEach { connection ->
+        document.relationships.forEach { relationship ->
             add(
                 AthenaEngineeringGraphNode(
-                    semanticId = connection.id.value,
-                    kind = AthenaEngineeringGraphNodeKind.CONNECTION,
-                    displayName = "${connection.from.authoredPath.joinToString(".")} -> ${connection.to.authoredPath.joinToString(".")}",
-                    references = listOf(
-                        connection.from.toGraphReference(AthenaEngineeringGraphReferenceKind.CONNECTION_SOURCE),
-                        connection.to.toGraphReference(AthenaEngineeringGraphReferenceKind.CONNECTION_TARGET),
-                    ),
+                    semanticId = relationship.id.value,
+                    kind = AthenaEngineeringGraphNodeKind.RELATIONSHIP,
+                    displayName = relationship.definitionReference.authoredName.joinToString("."),
+                    properties = relationship.properties.toGraphProperties(),
+                    references = relationship.participants.map { participant ->
+                        participant.subject.reference.toGraphReference(
+                            AthenaEngineeringGraphReferenceKind.RELATIONSHIP_PARTICIPANT,
+                        )
+                    },
                 ),
             )
         }
+
     }
 
     val relationships = buildList {
-        document.components.forEach { component ->
+        document.entities.forEach { entity ->
             add(
                 AthenaEngineeringGraphRelationship(
-                    kind = AthenaEngineeringGraphRelationshipKind.SYSTEM_CONTAINS_COMPONENT,
+                    kind = AthenaEngineeringGraphRelationshipKind.SYSTEM_CONTAINS_ENTITY,
                     sourceSemanticId = document.system.id.value,
-                    targetSemanticId = component.id.value,
+                    targetSemanticId = entity.id.value,
                 ),
             )
         }
 
         document.ports.forEach { port ->
-            port.ownerReference.resolvedIdentity?.let { ownerIdentity ->
+            port.owner.reference.resolvedIdentity?.let { ownerIdentity ->
                 add(
                     AthenaEngineeringGraphRelationship(
-                        kind = AthenaEngineeringGraphRelationshipKind.COMPONENT_OWNS_PORT,
+                        kind = AthenaEngineeringGraphRelationshipKind.ENTITY_OWNS_PORT,
                         sourceSemanticId = ownerIdentity.value,
                         targetSemanticId = port.id.value,
                     ),
@@ -284,27 +292,20 @@ private fun CompilerCompilationSuccess.toEngineeringGraph(): AthenaEngineeringGr
             }
         }
 
-        document.connections.forEach { connection ->
-            connection.from.resolvedIdentity?.let { sourceIdentity ->
-                add(
-                    AthenaEngineeringGraphRelationship(
-                        kind = AthenaEngineeringGraphRelationshipKind.CONNECTION_REFERENCE,
-                        sourceSemanticId = connection.id.value,
-                        targetSemanticId = sourceIdentity.value,
-                    ),
-                )
-            }
-
-            connection.to.resolvedIdentity?.let { targetIdentity ->
-                add(
-                    AthenaEngineeringGraphRelationship(
-                        kind = AthenaEngineeringGraphRelationshipKind.CONNECTION_REFERENCE,
-                        sourceSemanticId = connection.id.value,
-                        targetSemanticId = targetIdentity.value,
-                    ),
-                )
+        document.relationships.forEach { relationship ->
+            relationship.participants.forEach { participant ->
+                participant.subject.reference.resolvedIdentity?.let { subjectIdentity ->
+                    add(
+                        AthenaEngineeringGraphRelationship(
+                            kind = AthenaEngineeringGraphRelationshipKind.RELATIONSHIP_PARTICIPANT,
+                            sourceSemanticId = relationship.id.value,
+                            targetSemanticId = subjectIdentity.value,
+                        ),
+                    )
+                }
             }
         }
+
     }
 
     return AthenaEngineeringGraph(
@@ -322,8 +323,12 @@ private fun List<EngineeringProperty>.toGraphProperties(): List<AthenaEngineerin
         AthenaEngineeringGraphProperty(
             name = property.name,
             value = when (val value = property.value) {
-                is EngineeringPropertyValue.Symbol -> value.text
-                is EngineeringPropertyValue.Text -> value.text
+                is EngineeringValue.Quantity -> "${value.value} ${value.unit.authoredName.joinToString(".")}"
+                is EngineeringValue.Integer -> value.value.toString()
+                is EngineeringValue.Boolean -> value.value.toString()
+                is EngineeringValue.Text -> value.text
+                is EngineeringValue.Symbol -> value.text
+                is EngineeringValue.Reference -> value.reference.authoredPath.joinToString(".")
             },
         )
     }

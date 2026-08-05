@@ -1,15 +1,10 @@
-﻿system DuplicateIdentityCabinet {
-  device PLC1 {
-    type Switch
+system DuplicateIdentityCabinet {
+  entity PLC1 {
+    concept Switch
   }
 
-  device PLC1 {
-    type Switch
-  }
-
-  port PLC1.out {
-    direction out
-    signal Digital
+  entity PLC1 {
+    concept Switch
   }
 
   port PLC1.out {
@@ -17,6 +12,11 @@
     signal Digital
   }
 
-  connect plc1_out_to_plc1_out PLC1.out to PLC1.out
-  connect plc1_out_to_plc1_out_2 PLC1.out to PLC1.out
+  port PLC1.out {
+    direction out
+    signal Digital
+  }
+
+  power PLC1.out to PLC1.out
+  power PLC1.out to PLC1.out
 }

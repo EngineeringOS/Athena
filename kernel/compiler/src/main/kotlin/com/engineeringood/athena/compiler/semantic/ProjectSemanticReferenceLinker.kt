@@ -1,7 +1,5 @@
 package com.engineeringood.athena.compiler.semantic
 
-import com.engineeringood.athena.language.ConnectionDeclaration
-import com.engineeringood.athena.language.ConnectionGroupDeclaration
 import com.engineeringood.athena.language.QualifiedName
 import com.engineeringood.athena.language.RelationDeclaration
 
@@ -28,28 +26,16 @@ class ProjectSemanticReferenceLinker {
                 .flatMap { namespaceId -> namespacesById[namespaceId]?.declarationIds.orEmpty() }
                 .distinct()
                 .mapNotNull(declarationsById::get)
-                .filter { it.kind == PORT_DECLARATION_KIND }
+                .filter { it.kind in ADMITTED_SUBJECT_KINDS }
             sourceUnit.authoredDeclarations
                 .flatMap { declaration ->
                     when (declaration) {
-                        is ConnectionDeclaration -> listOf(declaration)
-                        is ConnectionGroupDeclaration -> declaration.connections
-                        is RelationDeclaration -> declaration.targets.map { target ->
-                            ConnectionDeclaration(
-                                alias = relationMemberAlias(declaration.word.value, declaration.from, target),
-                                aliasSpan = declaration.word.span,
-                                from = declaration.from,
-                                to = target,
-                                span = declaration.span,
-                            )
-                        }
+                        is RelationDeclaration -> listOf(declaration.source) + declaration.targets
                         else -> emptyList()
                     }
                 }
-                .flatMap { connection ->
-                    listOf(connection.from, connection.to).mapNotNull { reference ->
-                        linkReference(sourceUnit.sourceUnitId, reference, availableDeclarations, diagnostics)
-                    }
+                .flatMap { reference ->
+                    listOfNotNull(linkReference(sourceUnit.sourceUnitId, reference, availableDeclarations, diagnostics))
                 }
         }
         return ProjectSemanticGraphSnapshot.canonical(
@@ -116,9 +102,6 @@ class ProjectSemanticReferenceLinker {
     }
 
     private companion object {
-        private const val PORT_DECLARATION_KIND = "port"
+        private val ADMITTED_SUBJECT_KINDS = setOf("entity", "function", "port")
     }
 }
-
-private fun relationMemberAlias(relationWord: String, from: QualifiedName, target: QualifiedName): String =
-    "${relationWord}_${from.parts.joinToString("_")}_to_${target.parts.joinToString("_")}"

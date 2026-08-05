@@ -11,14 +11,14 @@ internal fun enrichElectricalRuntimeReview(
     review: SemanticReviewSummary,
 ): List<SemanticReviewEnrichment> {
     val matchingDiagnostics = review.diagnostics.filter { diagnostic ->
-        diagnostic.ruleId.value.contains("connection.direction", ignoreCase = true) ||
-            diagnostic.ruleId.value.contains("connection.signal", ignoreCase = true) ||
+        diagnostic.ruleId.value.contains("relationship.direction", ignoreCase = true) ||
+            diagnostic.ruleId.value.contains("relationship.flow", ignoreCase = true) ||
             diagnostic.message.contains("`direction`", ignoreCase = true) ||
             diagnostic.message.contains("`signal`", ignoreCase = true) ||
-            diagnostic.message.contains("device type", ignoreCase = true)
+            diagnostic.message.contains("entity type", ignoreCase = true)
     }
     val matchingEntries = review.entries.filter { entry ->
-        entry.message.contains("Connection", ignoreCase = true) ||
+        entry.message.contains("Relationship", ignoreCase = true) ||
             entry.message.contains("signal", ignoreCase = true) ||
             entry.message.contains("direction", ignoreCase = true)
     }
@@ -54,7 +54,7 @@ internal fun enrichElectricalRuntimeReview(
         SemanticReviewEnrichment(
             pluginId = pluginId,
             kind = SemanticReviewEnrichmentKind.REVIEW_HINT,
-            message = "Check direction, signal, and device-type consistency before finalizing the change.",
+            message = "Check direction, signal, and entity-type consistency before finalizing the change.",
             factReferences = factReferences,
         ),
         SemanticReviewEnrichment(

@@ -2,12 +2,12 @@
 //
 // AD-107: Tree-sitter owns syntax UX only (highlighting/structure), never semantic truth.
 // AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset,
-// M23 system-scoped layout-block admission, M28 nested device-owned ports, compact grouped connect
+// M23 system-scoped layout-block admission, Entity- and Function-owned ports, compact grouped connect
 // authoring, the frozen M34 native Symbol/Element syntax subset, M35 installation cabinet syntax,
 // M37 grouped connectivity Interface syntax, external evidence mapping syntax, and Projection Policy syntax.
 // `kernel/language/src/main/kotlin/com/engineeringood/athena/language/AthenaLanguageModel.kt` /
 // `AthenaLanguageParser.kt`: optional package, repeated imports, one system block, and the
-// existing device/port/connect, layout, qualified-name, string, identifier, property, and M34
+// existing entity/port/connect, layout, qualified-name, exact scalar, property, and M34
 // Symbol/Element/Profile/Binding syntax.
 //
 // Do NOT add aliases, wildcards, visibility, comments, generic expressions, or renderer/transport
@@ -23,14 +23,14 @@ module.exports = grammar({
 
   extras: $ => [/\s/],
 
-  // Enables Tree-sitter's keyword-extraction optimization so the `system`/`device`/`port`/
+  // Enables Tree-sitter's keyword-extraction optimization so the `system`/`entity`/`port`/
   // `connect`/`to`-adjacent literal tokens below take priority over the generic identifier
   // token when they match the same text, mirroring how the handwritten JVM tokenizer treats
   // keywords as identifier lexemes matched positionally rather than as reserved words.
   word: $ => $.identifier,
 
   conflicts: $ => [
-    [$.device_declaration],
+    [$.entity_declaration],
     [$.port_declaration],
     [$.nested_port_declaration],
     [$.function_declaration],
@@ -102,7 +102,7 @@ module.exports = grammar({
     ),
 
     declaration: $ => choice(
-      $.device_declaration,
+      $.entity_declaration,
       $.port_declaration,
       $.connect_declaration,
       $.relation_declaration,
@@ -506,7 +506,7 @@ module.exports = grammar({
       optional('}'),
     ),
 
-    binding_subject_kind: _ => choice('device', 'function'),
+    binding_subject_kind: _ => choice('entity', 'function'),
 
     binding_use_element: $ => seq(
       'use',
@@ -521,19 +521,20 @@ module.exports = grammar({
       field('value', $.string),
     ),
 
-    device_declaration: $ => seq(
-      'device',
+    entity_declaration: $ => seq(
+      'entity',
       field('name', alias($.identifier, $.name)),
       '{',
-      repeat($._device_member),
+      repeat($._entity_member),
       optional('}'),
     ),
 
-    _device_member: $ => choice(
+    _entity_member: $ => choice(
       $.interface_declaration,
       $.property_assignment,
       $.nested_port_declaration,
       $.function_declaration,
+      $.structure_assignment,
     ),
 
     interface_declaration: $ => seq(
@@ -564,25 +565,20 @@ module.exports = grammar({
       'function',
       field('name', alias($.identifier, $.name)),
       '{',
-      repeat(choice($.function_role, $.function_ports)),
+      repeat(choice($.function_role, $.nested_port_declaration)),
       optional('}'),
     ),
 
     function_role: $ => seq(
       'role',
-      field('value', $.identifier),
+      field('value', $.qualified_name),
     ),
 
-    function_ports: $ => seq(
-      'ports',
-      '(',
-      commaSep1($.function_port_reference),
-      ')',
-    ),
-
-    function_port_reference: $ => seq(
-      $.identifier,
-      optional(seq('.', $.identifier)),
+    structure_assignment: $ => seq(
+      'structure',
+      field('aspect', $.qualified_name),
+      field('value', $._scalar_value),
+      optional(seq('display', field('display', $.string))),
     ),
 
     nested_port_declaration: $ => seq(
@@ -1004,8 +1000,26 @@ module.exports = grammar({
     ),
 
     _scalar_value: $ => choice(
+      $.quantity,
+      $.boolean,
+      $.reference_value,
       $.identifier,
       $.string,
+      $.number,
+    ),
+
+    quantity: $ => seq(
+      field('value', $.number),
+      '[',
+      field('unit', $.qualified_name),
+      ']',
+    ),
+
+    boolean: _ => choice('true', 'false'),
+
+    reference_value: $ => seq(
+      '@',
+      field('target', $.qualified_name),
     ),
 
     identifier: $ => /[A-Za-z_][A-Za-z0-9_]*/,

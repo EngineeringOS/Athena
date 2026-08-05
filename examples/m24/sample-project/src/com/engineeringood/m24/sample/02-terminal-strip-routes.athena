@@ -1,23 +1,23 @@
 package com.engineeringood.m24.sample
 
 system TerminalStripRouteProof {
-  device TerminalRoutePLC1 {
-    type Switch
+  entity TerminalRoutePLC1 {
+    concept Switch
     model "PLC"
   }
 
-  device TerminalStripXT1 {
-    type Switch
+  entity TerminalStripXT1 {
+    concept Switch
     model "XT1"
   }
 
-  device ValveY1 {
-    type Lamp
+  entity ValveY1 {
+    concept Lamp
     model "Y1"
   }
 
-  device SensorB1 {
-    type Switch
+  entity SensorB1 {
+    concept Switch
     model "B1"
   }
 
@@ -61,10 +61,10 @@ system TerminalStripRouteProof {
     signal Digital
   }
 
-  connect terminalrouteplc1_do1_to_terminalstripxt1_in1 TerminalRoutePLC1.do1 to TerminalStripXT1.in1
-  connect terminalrouteplc1_do2_to_terminalstripxt1_in2 TerminalRoutePLC1.do2 to TerminalStripXT1.in2
-  connect terminalstripxt1_out1_to_valvey1_command TerminalStripXT1.out1 to ValveY1.command
-  connect terminalstripxt1_out2_to_sensorb1_feedback TerminalStripXT1.out2 to SensorB1.feedback
+  power TerminalRoutePLC1.do1 to TerminalStripXT1.in1
+  power TerminalRoutePLC1.do2 to TerminalStripXT1.in2
+  power TerminalStripXT1.out1 to ValveY1.command
+  power TerminalStripXT1.out2 to SensorB1.feedback
 
   layout schematic-sheet {
     place TerminalStripXT1 below TerminalRoutePLC1

@@ -4,13 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":kernel:runtime"))
-    implementation(project(":kernel:compiler"))
-    implementation(project(":kernel:engineering-model"))
     implementation(project(":kernel:language"))
-    implementation(project(":extensions:domain-dummy"))
-    implementation(project(":extensions:domain-electrical"))
-    implementation(project(":kernel:svg-renderer"))
 }
 
 application {

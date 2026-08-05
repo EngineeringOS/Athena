@@ -1,6 +1,6 @@
 package com.engineeringood.athena.compiler.semantic
 
-import com.engineeringood.athena.language.DeviceDeclaration
+import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.ScalarValue
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.LayoutConstraintSnapshot
@@ -79,16 +79,16 @@ class ProjectSemanticSchematicLayoutFactDeriver(
     private fun authoredTypesBySubjectId(snapshot: ProjectSemanticGraphSnapshot): Map<String, String> {
         return snapshot.sourceUnits.flatMap { sourceUnit ->
             sourceUnit.authoredDeclarations
-                .filterIsInstance<DeviceDeclaration>()
+                .filterIsInstance<EntityDeclaration>()
                 .mapNotNull { declaration ->
                     val authoredType = declaration.fields
-                        .firstOrNull { field -> field.name == "type" }
+                        .firstOrNull { field -> field.name == "concept" }
                         ?.value
                         ?.authoredText()
                         ?: return@mapNotNull null
                     val declarationId = CanonicalSemanticIdentityBuilder.declarationId(
                         sourceUnit.sourceUnitId,
-                        "device",
+                        "entity",
                         listOf(declaration.name),
                     )
                     declarationId.value to authoredType
@@ -110,8 +110,12 @@ class ProjectSemanticSchematicLayoutFactDeriver(
     }
 
     private fun ScalarValue.authoredText(): String = when (this) {
-        is ScalarValue.Identifier -> text
-        is ScalarValue.StringLiteral -> text
+        is ScalarValue.Quantity -> "$exactText ${unit.parts.joinToString(".")}"
+        is ScalarValue.Integer -> exactText
+        is ScalarValue.Boolean -> value.toString()
+        is ScalarValue.Text -> text
+        is ScalarValue.Symbol -> text
+        is ScalarValue.Reference -> target.parts.joinToString(".")
     }
 
     private fun zoneFor(role: SchematicLayoutRole): SchematicLayoutZone {

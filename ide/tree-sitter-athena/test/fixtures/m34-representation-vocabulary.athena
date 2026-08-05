@@ -52,7 +52,7 @@ binding ContactorCoilIEC {
   priority 200
 
   select function where {
-    type Contactor
+    concept Contactor
     role coil
   }
 

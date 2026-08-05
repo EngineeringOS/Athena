@@ -2,6 +2,6 @@ package com.engineeringood.m18.root
 import com.engineeringood.m18.missing
 
 system InvalidImport {
-  device Local {}
+  entity Local { concept Generic}
   port Local.out {}
 }
