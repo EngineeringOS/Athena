@@ -4,6 +4,7 @@ import com.engineeringood.athena.ir.EngineeringProperty
 import com.engineeringood.athena.ir.EngineeringDefinitionReference
 import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.language.RelationDeclaration
+import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.GridDeclaration
@@ -333,6 +334,9 @@ internal class GenericLoweringOnlyTestPlugin : AthenaDomainPlugin {
             when (declaration) {
                 is EntityDeclaration -> entityDeclarations += declaration
                 is PortDeclaration -> portDeclarations += declaration
+                is ConnectionDeclaration -> Unit
+                is com.engineeringood.athena.language.NetDeclaration -> Unit
+                is com.engineeringood.athena.language.ConnectionSpecificationDeclaration -> Unit
                 is RelationDeclaration -> Unit
                 is ExternalEvidenceDeclaration -> Unit
                 is ProjectionPolicyDeclaration -> Unit

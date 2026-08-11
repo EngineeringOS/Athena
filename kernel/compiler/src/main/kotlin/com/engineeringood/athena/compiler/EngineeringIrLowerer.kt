@@ -2,6 +2,13 @@ package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.ir.EngineeringConnection
+import com.engineeringood.athena.ir.EngineeringNet
+import com.engineeringood.athena.ir.EngineeringConnectionSpecification
+import com.engineeringood.athena.ir.ConnectionSpecificationScope
+import com.engineeringood.athena.ir.ConnectionEndpoint
+import com.engineeringood.athena.ir.ConnectionEndpointRole
+import com.engineeringood.athena.ir.ConnectionKind
 import com.engineeringood.athena.ir.EngineeringEntity
 import com.engineeringood.athena.ir.EngineeringEntityReference
 import com.engineeringood.athena.ir.EngineeringExternalEvidenceMapping
@@ -22,6 +29,8 @@ import com.engineeringood.athena.ir.EngineeringProjectionView
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.EngineeringDefinitionReference
 import com.engineeringood.athena.ir.EngineeringFlow
+import com.engineeringood.athena.ir.EngineeringDefinitionId
+import com.engineeringood.athena.ir.EngineeringPackageName
 import com.engineeringood.athena.ir.EngineeringParticipant
 import com.engineeringood.athena.ir.EngineeringRelationship
 import com.engineeringood.athena.ir.EngineeringSubjectReference
@@ -31,11 +40,17 @@ import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
+import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.NetDeclaration
+import com.engineeringood.athena.language.NetEndpointRole
+import com.engineeringood.athena.language.ConnectionSpecificationDeclaration
 import com.engineeringood.athena.language.ProjectionPolicyDeclaration
 import com.engineeringood.athena.language.RelationDeclaration
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.language.ViewDeclaration
 import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
+import com.engineeringood.athena.plugin.AthenaDomainLoweringContext
+import com.engineeringood.athena.plugin.AthenaSourceDocument
 
 /** Lowers the syntax-only AST into the first canonical Engineering IR document.
  *
@@ -128,7 +143,112 @@ class EngineeringIrLowerer(
             keySelector = { pathKey(it.owner.reference().authoredPath + it.name) },
             idSelector = { it.id },
         )
-        val portsById = ports.associateBy { it.id }
+        val loweringContext = AthenaDomainLoweringContext(AthenaSourceDocument(source.file, source.ast))
+        val connections = source.ast.declarations
+            .filterIsInstance<ConnectionDeclaration>()
+            .filter { declaration ->
+                portIdsByAuthoredPath[pathKey(declaration.source.parts)] != null &&
+                    portIdsByAuthoredPath[pathKey(declaration.target.parts)] != null &&
+                    runCatching {
+                        EngineeringConnectionFactRules.violations(
+                            ConnectionKind.valueOf(declaration.kind.value.uppercase().replace('-', '_')),
+                            declaration.properties,
+                        ).isEmpty()
+                    }.getOrDefault(false)
+            }
+            .map { declaration ->
+                val kind = ConnectionKind.valueOf(declaration.kind.value.uppercase().replace('-', '_'))
+                val sourcePath = declaration.source.parts
+                val targetPath = declaration.target.parts
+                EngineeringConnection(
+                    id = StableSemanticIdentity(
+                        "connection:$portableSourceUnitId:${kind.name.lowercase()}:${pathKey(sourcePath)}->${pathKey(targetPath)}",
+                    ),
+                    kind = kind,
+                    endpoints = listOf(
+                        ConnectionEndpoint(
+                            port = EngineeringReference(
+                                authoredPath = sourcePath,
+                                resolvedIdentity = portIdsByAuthoredPath[pathKey(sourcePath)],
+                                provenance = declaration.source.span.toProvenance(source.file),
+                            ),
+                            role = ConnectionEndpointRole.SOURCE,
+                            provenance = declaration.source.span.toProvenance(source.file),
+                        ),
+                        ConnectionEndpoint(
+                            port = EngineeringReference(
+                                authoredPath = targetPath,
+                                resolvedIdentity = portIdsByAuthoredPath[pathKey(targetPath)],
+                                provenance = declaration.target.span.toProvenance(source.file),
+                            ),
+                            role = ConnectionEndpointRole.SINK,
+                            provenance = declaration.target.span.toProvenance(source.file),
+                        ),
+                    ),
+                    properties = loweringContext.lowerProperties(declaration.properties),
+                    provenance = declaration.span.toProvenance(source.file),
+                )
+            }
+        val nets = source.ast.declarations.filterIsInstance<NetDeclaration>().mapNotNull { declaration ->
+            val endpoints = declaration.endpoints.map { endpoint ->
+                ConnectionEndpoint(
+                    port = EngineeringReference(
+                        authoredPath = endpoint.port.parts,
+                        resolvedIdentity = portIdsByAuthoredPath[pathKey(endpoint.port.parts)],
+                        provenance = endpoint.port.span.toProvenance(source.file),
+                    ),
+                    role = when (endpoint.role) {
+                        NetEndpointRole.SOURCE -> ConnectionEndpointRole.SOURCE
+                        NetEndpointRole.SINK -> ConnectionEndpointRole.SINK
+                        NetEndpointRole.PASS -> ConnectionEndpointRole.PASS
+                    },
+                    provenance = endpoint.span.toProvenance(source.file),
+                )
+            }
+            val kind = runCatching { ConnectionKind.valueOf(declaration.kind.value.uppercase().replace('-', '_')) }.getOrNull()
+            if (kind == null || EngineeringConnectionFactRules.violations(kind, declaration.properties).isNotEmpty() ||
+                endpoints.size < 2 || endpoints.map { it.port.authoredPath }.distinct().size != endpoints.size ||
+                endpoints.any { it.port.resolvedIdentity == null }) return@mapNotNull null
+            EngineeringNet(
+                id = StableSemanticIdentity("net:$portableSourceUnitId:${declaration.name}"),
+                name = declaration.name,
+                kind = kind,
+                endpoints = endpoints,
+                potentialOrSignal = declaration.potentialOrSignal?.let { reference ->
+                    EngineeringReference(reference.parts, null, reference.span.toProvenance(source.file))
+                },
+                properties = loweringContext.lowerProperties(declaration.properties),
+                provenance = declaration.span.toProvenance(source.file),
+            )
+        }
+        val connectionSpecifications = source.ast.declarations.filterIsInstance<ConnectionSpecificationDeclaration>().map { declaration ->
+            EngineeringConnectionSpecification(
+                id = StableSemanticIdentity("connection-spec:$portableSourceUnitId:${declaration.scope.name.lowercase()}:${declaration.subject?.parts?.joinToString(".") ?: "project"}"),
+                scope = when (declaration.scope) {
+                    com.engineeringood.athena.language.ConnectionSpecificationScope.PROJECT -> ConnectionSpecificationScope.PROJECT
+                    com.engineeringood.athena.language.ConnectionSpecificationScope.POTENTIAL -> ConnectionSpecificationScope.POTENTIAL
+                    com.engineeringood.athena.language.ConnectionSpecificationScope.SIGNAL -> ConnectionSpecificationScope.SIGNAL
+                    com.engineeringood.athena.language.ConnectionSpecificationScope.NET -> ConnectionSpecificationScope.NET
+                    com.engineeringood.athena.language.ConnectionSpecificationScope.CONNECTION -> ConnectionSpecificationScope.CONNECTION
+                },
+                subject = declaration.subject?.let { reference -> EngineeringReference(reference.parts, null, reference.span.toProvenance(source.file)) },
+                properties = loweringContext.lowerProperties(declaration.properties),
+                provenance = declaration.span.toProvenance(source.file),
+            )
+        }
+        val specificationResolution = ConnectionSpecificationResolver.resolve(
+            specifications = connectionSpecifications,
+            nets = nets,
+            connections = connections,
+        )
+        val resolvedConnections = connections
+            .filterNot { it.id.value in specificationResolution.invalidSubjects }
+            .map { connection ->
+                connection.copy(effectiveProperties = specificationResolution.connectionProperties[connection.id.value].orEmpty())
+            }
+        val resolvedNets = nets
+            .filterNot { it.id.value in specificationResolution.invalidSubjects }
+            .map { net -> net.copy(effectiveProperties = specificationResolution.netProperties[net.id.value].orEmpty()) }
 
         val subjectReferencesByPath = buildMap {
             entities.forEach { entity ->
@@ -154,13 +274,20 @@ class EngineeringIrLowerer(
         val relationships = source.ast.declarations
             .filterIsInstance<RelationDeclaration>()
             .map { relation ->
-                val participantPaths = listOf(relation.source to "source") + relation.targets.mapIndexed { index, target ->
-                    target to if (index == 0) "target" else "target-${index + 1}"
-                }
-                val participants = participantPaths.map { (path, role) ->
+                val participantPaths = listOf(relation.source) + relation.targets
+                val usedRoles = mutableSetOf<String>()
+                val participants = participantPaths.mapIndexed { index, path ->
+                    val role = authoredParticipantRole(path, index, ports, usedRoles)
+                    usedRoles += role
                     val provenance = path.span.toProvenance(source.file)
                     val subject = subjectReferencesByPath[path.parts]
-                        ?: EngineeringSubjectReference.Port(EngineeringReference(path.parts, null, provenance))
+                        ?: EngineeringSubjectReference.Unresolved(
+                            EngineeringReference(
+                                authoredPath = path.parts,
+                                resolvedIdentity = null,
+                                provenance = provenance,
+                            ),
+                        )
                     EngineeringParticipant(role, subject, provenance)
                 }
                 val identityParticipants = participants
@@ -171,7 +298,12 @@ class EngineeringIrLowerer(
                     id = StableSemanticIdentity("relationship:$portableSourceUnitId:${relation.word.value}:$identityParticipants"),
                     definitionReference = EngineeringDefinitionReference(
                         authoredName = listOf(relation.word.value),
-                        resolvedId = null,
+                        resolvedId = EngineeringDefinitionId(
+                            packageName = EngineeringPackageName(
+                                source.ast.packageDeclaration?.name?.parts?.joinToString(".") ?: "project",
+                            ),
+                            qualifiedName = relation.word.value,
+                        ),
                         provenance = relation.word.span.toProvenance(source.file),
                     ),
                     participants = participants,
@@ -179,26 +311,7 @@ class EngineeringIrLowerer(
                     provenance = relation.span.toProvenance(source.file),
                 )
             }
-        val flows = relationships.flatMap { relationship ->
-            relationship.participants
-                .filter { participant -> participant.role != "source" }
-                .map { sink ->
-                    EngineeringFlow(
-                        id = StableSemanticIdentity("flow:${relationship.id.value}:${sink.role}"),
-                        relationship = EngineeringReference(
-                            authoredPath = listOf(relationship.id.value),
-                            resolvedIdentity = relationship.id,
-                            provenance = relationship.provenance,
-                        ),
-                        definitionReference = relationship.definitionReference,
-                        sourceRole = "source",
-                        sinkRole = sink.role,
-                        medium = null,
-                        properties = emptyList(),
-                        provenance = relationship.provenance,
-                    )
-                }
-        }
+        val flows = emptyList<EngineeringFlow>()
 
 
         return EngineeringDocument(
@@ -212,6 +325,9 @@ class EngineeringIrLowerer(
             relationships = relationships,
             flows = flows,
             functions = functions,
+            connections = resolvedConnections,
+            nets = resolvedNets,
+            connectionSpecifications = connectionSpecifications,
             externalEvidence = source.ast.declarations
                 .filterIsInstance<ExternalEvidenceDeclaration>()
                 .map { evidence -> evidence.toExternalEvidence(source.file) },
@@ -246,6 +362,24 @@ class EngineeringIrLowerer(
     private fun withDuplicateSuffix(baseIdentity: String, duplicateOrdinal: Int): String {
         return if (duplicateOrdinal == 1) baseIdentity else "$baseIdentity#$duplicateOrdinal"
     }
+}
+
+private fun authoredParticipantRole(
+    path: com.engineeringood.athena.language.QualifiedName,
+    index: Int,
+    ports: List<EngineeringPort>,
+    usedRoles: Set<String>,
+): String {
+    val baseRole = ports.firstOrNull { port ->
+        port.owner.reference().authoredPath + port.name == path.parts
+    }?.properties?.firstOrNull { property -> property.name == "role" }
+        ?.value
+        ?.let { value -> (value as? EngineeringValue.Symbol)?.text }
+        ?: "participant-${index + 1}"
+    if (baseRole !in usedRoles) return baseRole
+    var suffix = 2
+    while ("$baseRole-$suffix" in usedRoles) suffix++
+    return "$baseRole-$suffix"
 }
 
 private fun String.toPortableSourceUnitId(): String {

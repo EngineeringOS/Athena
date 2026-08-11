@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "M46.deterministic-export-proof",
+  "source": "examples/m46/rolling-shutter",
+  "sceneAuthority": "reopened accepted Canonical Scene publication",
+  "viewport": {
+    "width": 1700,
+    "height": 1600,
+    "deviceScaleFactor": 1
+  },
+  "svg": {
+    "path": "_bmad-output/implementation-artifacts/m46/exports/m46-rolling-shutter.svg",
+    "digest": "sha256:e6a36736e385d42f08bdf246ec9b1ba6bc1d21a9125daa53253b7ec19ee6f153",
+    "bytes": 10809,
+    "repeatedBytesIdentical": true
+  },
+  "png": {
+    "path": "_bmad-output/implementation-artifacts/m46/exports/m46-rolling-shutter.png",
+    "digest": "sha256:0a1b47e6961186a7f08904af6a78f9cbfd669cbb5f60d1f30afdf2771b4de1e0",
+    "bytes": 27896,
+    "width": 1700,
+    "height": 1600,
+    "repeatedBytesIdentical": true,
+    "nonBlank": true
+  },
+  "visualFacts": {
+    "root": "svg",
+    "viewBox": "0 0 99 70",
+    "images": 14,
+    "routes": 14,
+    "nonScalingRoutes": 14,
+    "frameSegments": 4,
+    "routeStrokeWidths": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "frameStrokeWidths": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "backgroundRects": 1,
+    "backgroundFills": [
+      "rgb(255, 255, 255)"
+    ],
+    "labels": 15,
+    "labelFontSizes": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "topologyMarkers": 3,
+    "constructionGridPatterns": 0,
+    "bottomTableLines": 0
+  }
+}

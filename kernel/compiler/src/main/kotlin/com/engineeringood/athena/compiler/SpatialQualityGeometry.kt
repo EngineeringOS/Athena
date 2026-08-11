@@ -3,11 +3,11 @@ package com.engineeringood.athena.compiler
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialPoint
 import com.engineeringood.athena.spatial.SpatialRect
-import com.engineeringood.athena.spatial.SpatialRoute
-import com.engineeringood.athena.spatial.SpatialRouteSegment
+import com.engineeringood.athena.spatial.ConnectionRoutePlan
+import com.engineeringood.athena.spatial.ConnectionRouteSegment
 import java.math.BigInteger
 
-internal fun SpatialRouteSegment.intersectsOpenInterior(rectangle: SpatialRect): Boolean {
+internal fun ConnectionRouteSegment.intersectsOpenInterior(rectangle: SpatialRect): Boolean {
     if (start == end) return false
     val horizontal = openParameterInterval(start.x, end.x, rectangle.x, rectangle.right) ?: return false
     val vertical = openParameterInterval(start.y, end.y, rectangle.y, rectangle.bottom) ?: return false
@@ -16,8 +16,8 @@ internal fun SpatialRouteSegment.intersectsOpenInterior(rectangle: SpatialRect):
     return lower < upper
 }
 
-internal fun spatialRouteCrossingCount(routes: List<SpatialRoute>): Int {
-    val crossings = mutableSetOf<SpatialRouteCrossing>()
+internal fun spatialRouteCrossingCount(routes: List<ConnectionRoutePlan>): Int {
+    val crossings = mutableSetOf<ConnectionRoutePlanCrossing>()
     for (firstIndex in routes.indices) {
         for (secondIndex in (firstIndex + 1) until routes.size) {
             val first = routes[firstIndex]
@@ -27,7 +27,7 @@ internal fun spatialRouteCrossingCount(routes: List<SpatialRoute>): Int {
                     val point = firstSegment.perpendicularIntersection(secondSegment) ?: continue
                     if (point in first.points && point in second.points) continue
                     if (first.sharesEndpointAnchorAt(second, point)) continue
-                    crossings += SpatialRouteCrossing.of(first, second, point)
+                    crossings += ConnectionRoutePlanCrossing.of(first, second, point)
                 }
             }
         }
@@ -69,20 +69,20 @@ private fun coveredHeight(rectangles: List<SpatialRect>, left: Int, right: Int):
     return Math.addExact(covered, currentEnd.toLong() - currentStart.toLong())
 }
 
-private data class SpatialRouteCrossing(
+private data class ConnectionRoutePlanCrossing(
     val firstRouteId: String,
     val secondRouteId: String,
     val point: SpatialPoint,
 ) {
     companion object {
-        fun of(first: SpatialRoute, second: SpatialRoute, point: SpatialPoint): SpatialRouteCrossing {
+        fun of(first: ConnectionRoutePlan, second: ConnectionRoutePlan, point: SpatialPoint): ConnectionRoutePlanCrossing {
             val routeIds = listOf(first.routeId.value, second.routeId.value).sorted()
-            return SpatialRouteCrossing(routeIds[0], routeIds[1], point)
+            return ConnectionRoutePlanCrossing(routeIds[0], routeIds[1], point)
         }
     }
 }
 
-private fun SpatialRoute.sharesEndpointAnchorAt(other: SpatialRoute, point: SpatialPoint): Boolean {
+private fun ConnectionRoutePlan.sharesEndpointAnchorAt(other: ConnectionRoutePlan, point: SpatialPoint): Boolean {
     val endpoints = listOf(sourceAnchorId to points.first(), targetAnchorId to points.last())
     val otherEndpoints = listOf(other.sourceAnchorId to other.points.first(), other.targetAnchorId to other.points.last())
     return endpoints.any { endpoint ->
@@ -90,7 +90,7 @@ private fun SpatialRoute.sharesEndpointAnchorAt(other: SpatialRoute, point: Spat
     }
 }
 
-private fun SpatialRouteSegment.perpendicularIntersection(other: SpatialRouteSegment): SpatialPoint? {
+private fun ConnectionRouteSegment.perpendicularIntersection(other: ConnectionRouteSegment): SpatialPoint? {
     if (start == end || other.start == other.end) return null
     val horizontal = start.y == end.y
     val vertical = start.x == end.x

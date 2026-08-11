@@ -1,6 +1,11 @@
 package com.engineeringood.athena.packageplatform
 
 @JvmInline
+value class PresentationProfileId(val value: String) {
+    override fun toString(): String = value
+}
+
+@JvmInline
 value class PresentationProfileVersion(val value: String) {
     override fun toString(): String = value
 }

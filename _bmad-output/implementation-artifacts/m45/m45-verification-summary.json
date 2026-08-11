@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "M45.verification-summary.v1",
+  "date": "2026-08-10",
+  "result": "PASS",
+  "inventory": {
+    "directPackages": 3,
+    "symbols": 10,
+    "elements": 11,
+    "parts": 6,
+    "macros": 1,
+    "variants": 3,
+    "placeholders": 1,
+    "compositeElements": 1,
+    "dualProjectionFunctions": 1,
+    "occurrences": 13,
+    "routes": 10,
+    "frameColumns": 17,
+    "frameRows": 16
+  },
+  "tests": {
+    "kernelLanguage": 30,
+    "kernelRepositoryModel": 5,
+    "kernelPackageModel": 17,
+    "kernelPackageRuntime": 25,
+    "kernelCompiler": 223,
+    "kernelInteractionModel": 5,
+    "kernelPresentationModel": 15,
+    "kernelSvgRenderer": 3,
+    "kernelRuntime": 27,
+    "ideLsp": 55,
+    "frontend": 52,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "productProof": {
+    "workspaceRootExact": true,
+    "lspRepositoryRootExact": true,
+    "repositoryReady": true,
+    "publicationReady": true,
+    "desktopScreenshot": "screenshots/m45-rolling-shutter-desktop-1920x1080.png",
+    "narrowScreenshot": "screenshots/m45-rolling-shutter-narrow-720x900.png"
+  },
+  "exports": {
+    "svgDigest": "sha256:e3b7c61995e4cacec4e8c46d21180413319b3e5ad43dece61e924263ecc60ff1",
+    "pngDigest": "sha256:9ed0d24fa002a21355e9b0cc6751f7d8afab2d235879f9b912c844220db24f04",
+    "repeatedPngBytesIdentical": true
+  },
+  "hygiene": {
+    "encodingAudit": "PASS",
+    "sourceSetAudit": "PASS",
+    "forbiddenAuthorityMatches": 0,
+    "milestoneProductionClassMatches": 0
+  },
+  "evidence": [
+    "m45-acceptance-audit.md",
+    "m45-verification-log.md",
+    "m45-product-proof.json",
+    "m45-story-5-4-proof.json",
+    "exports/m45-export-proof.json",
+    "evidence/m45-operation-transcript.txt",
+    "evidence/m45-reopen-evidence.txt",
+    "evidence/m45-lock-lineage-snapshot.txt"
+  ]
+}

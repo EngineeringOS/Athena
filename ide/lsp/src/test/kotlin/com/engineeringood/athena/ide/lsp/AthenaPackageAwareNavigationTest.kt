@@ -14,7 +14,6 @@ import kotlin.test.assertEquals
 
 class AthenaPackageAwareNavigationTest {
     @Test
-    @Suppress("DEPRECATION")
     fun `definition and references cross governed source units through project semantic snapshot`() {
         val consumerText = """
             package com.root
@@ -47,11 +46,7 @@ class AthenaPackageAwareNavigationTest {
 
         val server = AthenaLanguageServer()
         try {
-            server.initialize(
-                org.eclipse.lsp4j.InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
+            server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
             val consumerUri = consumerPath.toUri().toString()
             val providerUri = providerPath.toUri().toString()
@@ -100,7 +95,6 @@ class AthenaPackageAwareNavigationTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `definition uses unsaved sibling buffers when building the project semantic snapshot`() {
         val consumerText = """
             package com.root
@@ -141,11 +135,7 @@ class AthenaPackageAwareNavigationTest {
 
         val server = AthenaLanguageServer()
         try {
-            server.initialize(
-                org.eclipse.lsp4j.InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
+            server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
             val consumerUri = consumerPath.toUri().toString()
             val providerUri = providerPath.toUri().toString()

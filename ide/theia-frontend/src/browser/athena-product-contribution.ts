@@ -5,6 +5,7 @@ import { MenuContribution, MenuModelRegistry } from '@theia/core/lib/common/menu
 import { injectable, inject } from '@theia/core/shared/inversify';
 import { WorkspaceCommands } from '@theia/workspace/lib/browser/workspace-commands';
 import { AthenaHomeWidget } from './athena-home-widget';
+import { AthenaPresentationWidget } from './athena-presentation-widget';
 import { AthenaRepositoryCreationService } from './athena-repository-creation-service';
 import {
     ATHENA_VIEW_MENU,
@@ -12,12 +13,14 @@ import {
     AthenaCommands,
     AthenaWorkbenchExtension
 } from './athena-workbench-extensions';
+import { isExpandableWorkbenchArea } from './athena-product-layout';
 
 @injectable()
 export class AthenaProductContribution extends AbstractViewContribution<AthenaHomeWidget>
 implements FrontendApplicationContribution, CommandContribution, MenuContribution {
     @inject(AthenaRepositoryCreationService)
     protected readonly repositoryCreationService: AthenaRepositoryCreationService;
+
 
     constructor() {
         super({
@@ -35,6 +38,7 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
             reveal: true
         });
         await this.ensureProfessionalWorkbenchLayout();
+        await this.revealWorkbenchWidget(AthenaPresentationWidget.ID, 'main');
     }
 
     onStart(_app: FrontendApplication): void {
@@ -120,7 +124,9 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         }
 
         for (const area of expandedAreas) {
-            this.shell.expandPanel(area);
+            if (isExpandableWorkbenchArea(area)) {
+                this.shell.expandPanel(area);
+            }
         }
     }
 
@@ -143,7 +149,9 @@ implements FrontendApplicationContribution, CommandContribution, MenuContributio
         area: ApplicationShell.Area
     ): Promise<void> {
         await this.ensureWidget(widgetId, { area });
-        this.shell.expandPanel(area);
+        if (isExpandableWorkbenchArea(area)) {
+            this.shell.expandPanel(area);
+        }
         await this.shell.activateWidget(widgetId);
     }
 

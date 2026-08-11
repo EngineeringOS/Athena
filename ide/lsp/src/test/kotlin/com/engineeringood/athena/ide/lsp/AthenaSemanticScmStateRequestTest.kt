@@ -7,11 +7,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.eclipse.lsp4j.InitializeParams
 
 class AthenaSemanticScmStateRequestTest {
     @Test
-    @Suppress("DEPRECATION")
     fun `semantic scm request exposes runtime owned review and commit payloads`() {
         val root = kotlin.io.path.createTempDirectory("athena-lsp-semantic-scm-")
         val current = root.resolve("current")
@@ -59,11 +57,7 @@ class AthenaSemanticScmStateRequestTest {
 
             val server = AthenaLanguageServer()
             try {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = current.toUri().toString()
-                    },
-                ).get()
+                server.initialize(workspaceInitializeParams(current)).get()
 
                 val payload = server.semanticScmState(
                     AthenaSemanticScmStateParams(
@@ -96,7 +90,6 @@ class AthenaSemanticScmStateRequestTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `semantic scm request surfaces unresolved baseline diagnostics`() {
         val repository = createGovernedTestRepository("athena-lsp-semantic-scm-missing-")
         val repositoryRoot = repository.repositoryRoot
@@ -105,11 +98,7 @@ class AthenaSemanticScmStateRequestTest {
 
             val server = AthenaLanguageServer()
             try {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = repositoryRoot.toUri().toString()
-                    },
-                ).get()
+                server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
                 val payload = server.semanticScmState(
                     AthenaSemanticScmStateParams(

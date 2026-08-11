@@ -1,7 +1,6 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.compiler.AthenaCompiler
-import com.engineeringood.athena.compiler.defaultAthenaKnowledgePackageSource
 import com.engineeringood.athena.integrations.scm.git.GitSemanticBaselineAdapter
 import com.engineeringood.athena.runtime.AthenaExecutionContext
 import com.engineeringood.athena.runtime.AthenaRuntime
@@ -81,9 +80,7 @@ private fun defaultAthenaLspRuntime(): AthenaRuntime {
                     baselineResolver = SemanticBaselineResolver(
                         adapters = listOf(
                             GitSemanticBaselineAdapter {
-                                AthenaCompiler(
-                                    knowledgePackageSource = defaultAthenaKnowledgePackageSource(),
-                                )
+                                AthenaCompiler()
                             },
                         ),
                     ),
@@ -116,8 +113,7 @@ data class AthenaLspSessionHostReady(
     val primaryPackageName: String,
     val session: RepositoryGraphSession,
 ) : AthenaLspSessionHostResult {
-    /** Backward-compatible active execution context for existing M4/M5 runtime consumers. */
-    val context: AthenaExecutionContext
+    val executionContext: AthenaExecutionContext
         get() = session.executionContext
 
     override fun toEventLine(): String {

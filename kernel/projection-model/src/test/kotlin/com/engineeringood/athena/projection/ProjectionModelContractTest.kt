@@ -2,6 +2,7 @@ package com.engineeringood.athena.projection
 
 import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.StableSemanticIdentity
+import com.engineeringood.athena.ir.ConnectionEndpointRole
 import com.engineeringood.athena.layout.ElectricalProjectionDescriptor
 import com.engineeringood.athena.layout.ElectricalProjectionFamily
 import com.engineeringood.athena.layout.LayoutIntent
@@ -27,10 +28,32 @@ class ProjectionModelContractTest {
                 ),
             ),
             connections = listOf(
-                ProjectionConnection(
-                    projectionId = ProjectionConnectionId("cabinet/projection/connection/PLC1_out_M1_in"),
+                ConnectionProjection(
+                    projectionId = ConnectionProjectionId("cabinet/projection/connection/PLC1_out_M1_in"),
                     semanticId = StableSemanticIdentity("connection:test:plc1_out_to_m1_in"),
+                    identityKind = ConnectionProjectionIdentityKind.CONNECTION,
+                    role = ConnectionProjectionRole.CONNECTION,
                     originGeometryElementId = GeometryElementId("cabinet/geometry/path/connection_PLC1_out_M1_in"),
+                    participants = listOf(
+                        ConnectionProjectionParticipant(
+                            ConnectionEndpointRole.SOURCE,
+                            ConnectionProjectionEndpoint(
+                                ProjectionOccurrencePortId(
+                                    ProjectionNodeId("cabinet/projection/node/component_PLC1"),
+                                    StableSemanticIdentity("port:PLC1.out"),
+                                ),
+                            ),
+                        ),
+                        ConnectionProjectionParticipant(
+                            ConnectionEndpointRole.SINK,
+                            ConnectionProjectionEndpoint(
+                                ProjectionOccurrencePortId(
+                                    ProjectionNodeId("cabinet/projection/node/component_PLC1"),
+                                    StableSemanticIdentity("port:PLC1.in"),
+                                ),
+                            ),
+                        ),
+                    ),
                 ),
             ),
         )
@@ -52,8 +75,8 @@ class ProjectionModelContractTest {
         val nodeProperties = ProjectionNode::class.java.declaredFields.map { field -> field.name }.toSet()
         val portProperties = ProjectionOccurrencePort::class.java.declaredFields.map { field -> field.name }.toSet()
         val portIdentityProperties = ProjectionOccurrencePortId::class.java.declaredFields.map { field -> field.name }.toSet()
-        val endpointProperties = ProjectionConnectionEndpoint::class.java.declaredFields.map { field -> field.name }.toSet()
-        val connectionProperties = ProjectionConnection::class.java.declaredFields.map { field -> field.name }.toSet()
+        val endpointProperties = ConnectionProjectionEndpoint::class.java.declaredFields.map { field -> field.name }.toSet()
+        val connectionProperties = ConnectionProjection::class.java.declaredFields.map { field -> field.name }.toSet()
 
         assertEquals(
             setOf("view", "nodes", "connections", "occurrencePorts", "resolvedSubjects", "sheets", "notationPack", "crossReferences"),
@@ -64,13 +87,7 @@ class ProjectionModelContractTest {
         assertEquals(setOf("occurrenceId", "portId"), portIdentityProperties)
         assertEquals(setOf("occurrencePortId"), endpointProperties)
         assertEquals(
-            setOf(
-                "projectionId",
-                "semanticId",
-                "originGeometryElementId",
-                "source",
-                "target",
-            ),
+            setOf("projectionId", "semanticId", "identityKind", "role", "originGeometryElementId", "sourceTrace", "participants", "logicalRouteConstraints"),
             connectionProperties,
         )
         assertFalse("canvasWidth" in documentProperties)
@@ -94,7 +111,7 @@ class ProjectionModelContractTest {
             occurrencePortId = occurrencePortId,
             originGeometryElementId = GeometryElementId("projection:port:Q1.1"),
         )
-        val endpoint = ProjectionConnectionEndpoint(occurrencePortId)
+        val endpoint = ConnectionProjectionEndpoint(occurrencePortId)
 
         assertEquals(occurrenceId, port.occurrencePortId.occurrenceId)
         assertEquals(portId, endpoint.occurrencePortId.portId)

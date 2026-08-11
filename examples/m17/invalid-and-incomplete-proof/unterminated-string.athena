@@ -1,5 +1,0 @@
-system UnterminatedString {
-  entity PLC1 { concept Controller
-    model "unterminated
-  }
-}

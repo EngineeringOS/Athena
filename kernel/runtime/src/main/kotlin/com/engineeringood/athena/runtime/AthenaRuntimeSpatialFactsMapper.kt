@@ -61,9 +61,9 @@ private fun SpatialSheet.toRuntimeSpatialSheetFacts(): AthenaRuntimeSpatialSheet
             )
         },
         routes = routes.map { route ->
-            AthenaRuntimeSpatialRouteFacts(
+            AthenaRuntimeConnectionRoutePlanFacts(
                 routeId = route.routeId.value,
-                projectionConnectionId = route.routeId.projectionConnectionId,
+                projectionConnectionId = route.projectionConnectionId,
                 connectionId = route.connectionId.value,
                 sourceAnchorId = route.sourceAnchorId.value,
                 targetAnchorId = route.targetAnchorId.value,

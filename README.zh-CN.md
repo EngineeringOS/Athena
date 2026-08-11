@@ -47,7 +47,6 @@ Athena 是 EngineeringOS 语义编译器论点的 JVM-first 实现工作区。
 - 通过同一 JVM path 执行的 deterministic semantic commit intent，保持 commit preparation semantic-first 且 adapter-ready
 - 以稳定 package identity 与 version meaning 为锚点的 package-aware semantic history 与 release relevance contract
 - 通过 runtime / LSP / Theia Semantic SCM panel 投影 review、commit preparation、package evolution 与 release relevance，同时不把语义主权移入前端
-- 第一个 `integrations/graph-glsp` translation-only 图形适配器边界，它消费 Athena-owned projection-session payload，但不会引入第二条 semantic transport
 - M8 统一 mutation 模型：source 与 graph 现在共享 runtime-owned mutation category、graph semantic mutation proof、graph projection mutation proof、共享 semantic review fact，以及跨 source / graph / semantic SCM 的 canonical reveal
 
 当前还没有进入最终 UX 阶段。
@@ -62,7 +61,6 @@ Athena 按架构职责组织实现资产。当前 JVM / Gradle 模块位于 `ker
 | `ide` | `node: theia-frontend` | [`ide/theia-frontend/`](ide/theia-frontend/README.md) | Theia 前端贡献、工作台布局、面板与命令 |
 | `ide` | `node: theia-backend` | [`ide/theia-backend/`](ide/theia-backend/README.md) | Theia 后端贡献、启动、路径处理与进程编排 |
 | `ide` | `gradle: :ide:lsp` | [`ide/lsp/`](ide/lsp/README.md) | Athena LSP host 与 IDE 路径的 JVM 语义服务边界 |
-| `integrations` | `node: graph-glsp` | [`integrations/graph-glsp/`](integrations/graph-glsp/README.md) | translation-only 图形适配器，负责把 GLSP-class protocol 与 rendering vocabulary 保持在 Athena-owned projection session 下游 |
 | `integrations` | `:integrations:scm-git` | [`integrations/scm-git/`](integrations/scm-git/README.md) | 第一个 semantic baseline 供应商适配器 |
 | `kernel` | `:kernel:language` | [`kernel/language/`](kernel/language/README.md) | 作者 DSL 的语法层与解析器 |
 | `kernel` | `:kernel:repository-model` | [`kernel/repository-model/`](kernel/repository-model/README.md) | M5 的规范 repository/package 合同边界 |

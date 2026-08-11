@@ -1,0 +1,1 @@
+{"paintElementCount": 100000, "visiblePercent": 5, "viewportCss": {"width": 1600, "height": 1000}, "cssDpr": 1, "warmupFrames": 60, "measuredFrames": 300, "gates": {"firstStablePaintMs": 5000, "incrementalHeapMiB": 512, "interactionP95Ms": 50, "selectionP95Ms": 100, "identityErrors": 0}}

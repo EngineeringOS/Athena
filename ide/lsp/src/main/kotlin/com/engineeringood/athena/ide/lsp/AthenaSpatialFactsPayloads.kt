@@ -15,7 +15,7 @@ data class AthenaSpatialSheetFactsPayload(
     val regions: List<AthenaSpatialRegionFactsPayload>,
     val constructs: List<AthenaSpatialConstructFactsPayload>,
     val anchors: List<AthenaSpatialAnchorFactsPayload>,
-    val routes: List<AthenaSpatialRouteFactsPayload>,
+    val routes: List<AthenaConnectionRoutePlanFactsPayload>,
     val lanes: List<AthenaSpatialLaneFactsPayload>,
     val gridReferences: List<AthenaSpatialGridReferenceFactsPayload>,
     val quality: AthenaSpatialQualityFactsPayload,
@@ -53,7 +53,7 @@ data class AthenaSpatialAnchorFactsPayload(
     val point: AthenaSpatialPointPayload,
 )
 
-data class AthenaSpatialRouteFactsPayload(
+data class AthenaConnectionRoutePlanFactsPayload(
     val routeId: String,
     val projectionConnectionId: String,
     val connectionId: String,

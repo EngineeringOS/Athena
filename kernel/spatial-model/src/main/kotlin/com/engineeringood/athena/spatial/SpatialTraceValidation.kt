@@ -123,6 +123,19 @@ internal fun spatialTraceDiagnostics(sheet: SpatialSheet): List<SpatialDiagnosti
                 )
             }
         }
+        sheet.annotations.forEach { annotation ->
+            val required = listOf(sheet.sheetId, annotation.semanticId.value)
+            if (annotation.sourceTrace.projectionIds.take(required.size) != required) {
+                add(
+                    traceIssue(
+                        subject = "Annotation ${annotation.id.value}",
+                        problem = "Source Trace does not retain Sheet and semantic annotation identity",
+                        correction = "Retain Sheet ${sheet.sheetId} followed by ${annotation.semanticId.value} in the annotation trace.",
+                        trace = annotation.sourceTrace,
+                    ),
+                )
+            }
+        }
         val expectedQualityTrace = qualityTrace(sheet)
         if (sheet.quality.sourceTrace != expectedQualityTrace) {
             add(
@@ -144,8 +157,9 @@ private fun qualityTrace(sheet: SpatialSheet): SpatialSourceTrace {
         sheet.constructs.map(SpatialConstructGeometry::sourceTrace) +
         sheet.alignments.map(SpatialAlignment::sourceTrace) +
         sheet.anchors.map(SpatialAnchorPosition::sourceTrace) +
-        sheet.routes.map(SpatialRoute::sourceTrace) +
-        sheet.gridReferences.map(SpatialGridReference::sourceTrace)
+        sheet.routes.map(ConnectionRoutePlan::sourceTrace) +
+        sheet.gridReferences.map(SpatialGridReference::sourceTrace) +
+        sheet.annotations.map(ConnectionAnnotation::sourceTrace)
     return SpatialSourceTrace(
         projectionIds = listOf(sheet.sheetId) +
             (sheet.sourceTrace.projectionIds + traces.flatMap(SpatialSourceTrace::projectionIds))

@@ -4,6 +4,12 @@ import com.engineeringood.athena.language.ConnectivityInterfaceDeclaration
 import com.engineeringood.athena.language.ConnectivityInterfacePortDeclaration
 import com.engineeringood.athena.language.Declaration
 import com.engineeringood.athena.language.EntityDeclaration
+import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.ConnectionSpecificationDeclaration
+import com.engineeringood.athena.language.ConnectionSpecificationScope
+import com.engineeringood.athena.language.NetDeclaration
+import com.engineeringood.athena.language.NetEndpointDeclaration
+import com.engineeringood.athena.language.NetEndpointRole
 import com.engineeringood.athena.language.DrawingGridPosition
 import com.engineeringood.athena.language.ElementAnchorExportDeclaration
 import com.engineeringood.athena.language.ElementChildDeclaration
@@ -15,8 +21,29 @@ import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceSubjectDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceSubjectKind
 import com.engineeringood.athena.language.BindingDeclaration
+import com.engineeringood.athena.language.BindingPlaceholderValues
 import com.engineeringood.athena.language.BindingSelectorKind
 import com.engineeringood.athena.language.ImportDeclaration
+import com.engineeringood.athena.language.KnowledgeCapabilityDeclaration
+import com.engineeringood.athena.language.KnowledgeCapabilityDirection
+import com.engineeringood.athena.language.KnowledgeConceptDeclaration
+import com.engineeringood.athena.language.KnowledgeConstraintDeclaration
+import com.engineeringood.athena.language.KnowledgeDeclaration
+import com.engineeringood.athena.language.KnowledgeDimensionDeclaration
+import com.engineeringood.athena.language.KnowledgeExpression
+import com.engineeringood.athena.language.KnowledgeBinaryOperator
+import com.engineeringood.athena.language.KnowledgeFlowDeclaration
+import com.engineeringood.athena.language.KnowledgeFormulaDeclaration
+import com.engineeringood.athena.language.KnowledgeFunction
+import com.engineeringood.athena.language.KnowledgeInterval
+import com.engineeringood.athena.language.KnowledgePartDeclaration
+import com.engineeringood.athena.language.KnowledgeParticipantRoleDeclaration
+import com.engineeringood.athena.language.KnowledgePredicate
+import com.engineeringood.athena.language.KnowledgeComparisonOperator
+import com.engineeringood.athena.language.KnowledgeRelationshipDeclaration
+import com.engineeringood.athena.language.KnowledgeSourceUnit
+import com.engineeringood.athena.language.KnowledgeSubjectLevel
+import com.engineeringood.athena.language.KnowledgeUnitDeclaration
 import com.engineeringood.athena.language.InstallationChannelDeclaration
 import com.engineeringood.athena.language.InstallationClearanceLiteral
 import com.engineeringood.athena.language.InstallationDeclaration
@@ -38,11 +65,14 @@ import com.engineeringood.athena.language.LayoutAxis
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.LayoutOrientation
 import com.engineeringood.athena.language.LayoutStatement
+import com.engineeringood.athena.language.MacroChildDeclaration
+import com.engineeringood.athena.language.MacroDeclaration
 import com.engineeringood.athena.language.PackageDeclaration
 import com.engineeringood.athena.language.ParseFailure
 import com.engineeringood.athena.language.ParseResult
 import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.language.PortDeclaration
+import com.engineeringood.athena.language.PlaceholderDeclaration
 import com.engineeringood.athena.language.ProjectionForbiddenEngineeringTruthDeclaration
 import com.engineeringood.athena.language.ProjectionPolicyDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
@@ -76,6 +106,7 @@ import com.engineeringood.athena.language.ProjectionConstructDeclaration
 import com.engineeringood.athena.language.RegionDeclaration
 import com.engineeringood.athena.language.SheetDeclaration
 import com.engineeringood.athena.language.ViewDeclaration
+import com.engineeringood.athena.language.VariantDeclaration
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
@@ -228,7 +259,11 @@ internal class AthenaAntlrSyntaxErrorListener(
             file = file,
             line = line,
             column = column,
-            message = msg ?: "Syntax error",
+            message = if (source.lineSequence().take(line).any { it.trimStart().startsWith("connect ") }) {
+                "Connection syntax is incomplete. Use `connect <kind> <source-port> to <target-port>` and declare both Engineering Ports."
+            } else {
+                msg ?: "Syntax error"
+            },
             span = span,
         )
     }
@@ -245,11 +280,21 @@ private fun sourceOffset(source: String, line: Int, column: Int): Int {
 }
 
 /** Walks the generated ANTLR parse tree and constructs the authored AST. */
+private val SUPPORTED_CONNECTION_KINDS = setOf(
+    "conductor",
+    "wire",
+    "cable-core",
+    "jumper",
+    "busbar",
+    "signal",
+)
+
 internal class AthenaAntlrAstAdapter(private val file: String) {
     fun adapt(tree: AthenaParser.SourceFileContext): SourceFileAst {
         val packageDeclaration = tree.packageDecl()?.let { adaptPackage(it) }
         val imports = adaptImports(tree.importDecl())
         val systemContext = tree.systemDecl()
+        val domainContext = tree.domainDecl()
         val unit = if (systemContext != null) {
             ProjectSourceUnit(
                 system = SystemDeclaration(
@@ -258,11 +303,16 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
                 ),
                 declarations = systemContext.declaration().map { adaptDeclaration(it) },
             )
+        } else if (domainContext != null) {
+            KnowledgeSourceUnit(
+                domain = domainContext.ident().text,
+                declarations = domainContext.knowledgeDeclaration().map { adaptKnowledgeDeclaration(it) },
+            )
         } else {
             RepresentationSourceUnit(tree.representationDecl().map(::adaptRepresentation))
         }
-        val unitStart = systemContext?.start ?: tree.representationDecl().first().start
-        val unitStop = systemContext?.stop ?: tree.representationDecl().last().stop
+        val unitStart = systemContext?.start ?: domainContext?.start ?: tree.representationDecl().first().start
+        val unitStop = systemContext?.stop ?: domainContext?.stop ?: tree.representationDecl().last().stop
         val unitSpan = spanOfContext(unitStart, unitStop)
         val fileStart = packageDeclaration?.span?.start ?: imports.firstOrNull()?.span?.start ?: unitSpan.start
         return SourceFileAst(
@@ -343,6 +393,9 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     private fun adaptDeclaration(context: AthenaParser.DeclarationContext): Declaration {
         context.entityDecl()?.let { return adaptEntity(it) }
         context.portDecl()?.let { return adaptPort(it) }
+        context.connectionDecl()?.let { return adaptConnection(it) }
+        context.netDecl()?.let { return adaptNet(it) }
+        context.connectionSpecificationDecl()?.let { return adaptConnectionSpecification(it) }
         context.relationDecl()?.let { return adaptRelation(it) }
         context.evidenceDecl()?.let { return adaptEvidence(it) }
         context.projectionPolicyDecl()?.let { return adaptProjectionPolicy(it) }
@@ -358,6 +411,161 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
                 span = spanOfContext(context.start, context.stop),
             ),
         )
+    }
+
+    private fun adaptKnowledgeDeclaration(context: AthenaParser.KnowledgeDeclarationContext): KnowledgeDeclaration {
+        context.conceptDecl()?.let { declaration ->
+            return KnowledgeConceptDeclaration(
+                name = declaration.ident().text,
+                properties = declaration.propertyAssignment().map(::adaptProperty),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.partDecl()?.let { declaration ->
+            return KnowledgePartDeclaration(
+                name = declaration.ident().text,
+                concept = adaptAnyQualifiedName(declaration.qualifiedReference()),
+                properties = declaration.propertyAssignment().map(::adaptProperty),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.capabilityDecl()?.let { declaration ->
+            return KnowledgeCapabilityDeclaration(
+                name = declaration.ident().text,
+                direction = if (declaration.PROVIDES() != null) KnowledgeCapabilityDirection.PROVIDES else KnowledgeCapabilityDirection.REQUIRES,
+                properties = declaration.propertyAssignment().map(::adaptProperty),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.knowledgeRelationshipDecl()?.let { declaration ->
+            val roles = declaration.relationshipMember().mapNotNull { member ->
+                member.ROLE()?.let {
+                    KnowledgeParticipantRoleDeclaration(
+                        name = member.ident().text,
+                        level = when (member.subjectLevel().text) {
+                            "entity" -> KnowledgeSubjectLevel.ENTITY
+                            "function" -> KnowledgeSubjectLevel.FUNCTION
+                            else -> KnowledgeSubjectLevel.PORT
+                        },
+                        requiredCapability = member.qualifiedReference()?.let(::adaptAnyQualifiedName),
+                        span = spanOfContext(member.start, member.stop),
+                    )
+                }
+            }
+            return KnowledgeRelationshipDeclaration(
+                name = declaration.ident().text,
+                roles = roles,
+                connectivity = declaration.relationshipMember().firstOrNull { it.CONNECTIVITY() != null }
+                    ?.scalarValue()?.text == "true",
+                properties = declaration.relationshipMember().mapNotNull { it.propertyAssignment()?.let(::adaptProperty) },
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.flowDecl()?.let { declaration ->
+            val references = declaration.qualifiedReference()
+            return KnowledgeFlowDeclaration(
+                name = declaration.ident(0).text,
+                relationship = adaptAnyQualifiedName(references.first()),
+                sourceRole = declaration.ident(1).text,
+                sinkRole = declaration.ident(2).text,
+                medium = references.getOrNull(1)?.let(::adaptAnyQualifiedName),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.dimensionDecl()?.let { declaration ->
+            return KnowledgeDimensionDeclaration(
+                name = declaration.ident().text,
+                bases = declaration.qualifiedReference().map(::adaptAnyQualifiedName),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.unitDecl()?.let { declaration ->
+            return KnowledgeUnitDeclaration(
+                name = declaration.ident().text,
+                dimension = adaptAnyQualifiedName(declaration.qualifiedReference()),
+                scale = adaptScalar(declaration.scalarValue(0)),
+                offset = declaration.scalarValue(1)?.let(::adaptScalar),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.formulaDecl()?.let { declaration ->
+            return KnowledgeFormulaDeclaration(
+                name = declaration.ident().text,
+                expression = adaptKnowledgeExpression(declaration.formulaExpression()),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        context.constraintDecl()?.let { declaration ->
+            return KnowledgeConstraintDeclaration(
+                name = declaration.ident().text,
+                predicate = adaptKnowledgePredicate(declaration.constraintPredicate()),
+                span = spanOfContext(declaration.start, declaration.stop),
+            )
+        }
+        throw AthenaAntlrAdapterFailure(
+            SyntaxDiagnostic(file, context.start.line, context.start.charPositionInLine + 1,
+                "Expected governed knowledge declaration", spanOfContext(context.start, context.stop)),
+        )
+    }
+
+    private fun adaptKnowledgeExpression(context: AthenaParser.FormulaExpressionContext): KnowledgeExpression {
+        val children = context.formulaExpression()
+        if (children.size == 2) {
+            val operator = when {
+                context.MULTIPLY() != null -> KnowledgeBinaryOperator.MULTIPLY
+                context.DIVIDE() != null -> KnowledgeBinaryOperator.DIVIDE
+                context.PLUS() != null -> KnowledgeBinaryOperator.ADD
+                else -> KnowledgeBinaryOperator.SUBTRACT
+            }
+            return KnowledgeExpression.Binary(operator, adaptKnowledgeExpression(children[0]), adaptKnowledgeExpression(children[1]), spanOfContext(context.start, context.stop))
+        }
+        if (context.MINIMUM() != null || context.MAXIMUM() != null || context.ROUND_UP() != null) {
+            val function = when {
+                context.MINIMUM() != null -> KnowledgeFunction.MIN
+                context.MAXIMUM() != null -> KnowledgeFunction.MAX
+                else -> KnowledgeFunction.ROUND_UP
+            }
+            return KnowledgeExpression.Call(function, children.map(::adaptKnowledgeExpression), spanOfContext(context.start, context.stop))
+        }
+        context.formulaPrimary()?.let { primary ->
+            primary.number()?.let { return KnowledgeExpression.Number(it.text, spanOfContext(it.start, it.stop)) }
+            primary.qualifiedReference()?.let { return KnowledgeExpression.Reference(adaptAnyQualifiedName(it), spanOfContext(it.start, it.stop)) }
+            return adaptKnowledgeExpression(primary.formulaExpression())
+        }
+        throw IllegalArgumentException("Malformed formula expression")
+    }
+
+    private fun adaptKnowledgePredicate(context: AthenaParser.ConstraintPredicateContext): KnowledgePredicate {
+        val nested = context.constraintPredicate()
+        if (nested.isNotEmpty()) {
+            val predicates = nested.map(::adaptKnowledgePredicate)
+            return if (context.ALL() != null) KnowledgePredicate.All(predicates, spanOfContext(context.start, context.stop))
+            else KnowledgePredicate.Any(predicates, spanOfContext(context.start, context.stop))
+        }
+        val expressions = context.formulaExpression()
+        val left = adaptKnowledgeExpression(expressions.first())
+        val rightOrInterval = expressions.getOrNull(1)
+        context.intervalLiteral()?.let { interval ->
+            val bounds = interval.formulaExpression()
+            return KnowledgePredicate.Membership(
+                left,
+                KnowledgeInterval(
+                    lower = adaptKnowledgeExpression(bounds[0]), upper = adaptKnowledgeExpression(bounds[1]),
+                    lowerInclusive = interval.LBRACK() != null, upperInclusive = interval.RBRACK() != null,
+                    span = spanOfContext(interval.start, interval.stop),
+                ),
+                spanOfContext(context.start, context.stop),
+            )
+        }
+        val operator = when {
+            context.comparisonOperator().GREATER() != null -> KnowledgeComparisonOperator.GREATER
+            context.comparisonOperator().GREATER_EQUAL() != null -> KnowledgeComparisonOperator.GREATER_OR_EQUAL
+            context.comparisonOperator().LESS() != null -> KnowledgeComparisonOperator.LESS
+            context.comparisonOperator().LESS_EQUAL() != null -> KnowledgeComparisonOperator.LESS_OR_EQUAL
+            context.comparisonOperator().EQUAL() != null -> KnowledgeComparisonOperator.EQUAL
+            else -> KnowledgeComparisonOperator.NOT_EQUAL
+        }
+        return KnowledgePredicate.Comparison(operator, left, adaptKnowledgeExpression(requireNotNull(rightOrInterval)), spanOfContext(context.start, context.stop))
     }
 
     private fun adaptEntity(context: AthenaParser.EntityDeclContext): EntityDeclaration {
@@ -494,6 +702,91 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
         )
     }
 
+    private fun adaptConnection(context: AthenaParser.ConnectionDeclContext): ConnectionDeclaration {
+        val references = context.qualifiedReference()
+        val kind = context.connectionKind().text
+        if (kind !in SUPPORTED_CONNECTION_KINDS) {
+            val kindSpan = spanOfContext(context.connectionKind().start, context.connectionKind().stop)
+            throw AthenaAntlrAdapterFailure(
+                SyntaxDiagnostic(
+                    file = file,
+                    line = kindSpan.start.line,
+                    column = kindSpan.start.column,
+                    message = "Connection kind '$kind' is not supported. Use conductor, wire, cable-core, jumper, busbar, or signal.",
+                    span = kindSpan,
+                ),
+            )
+        }
+        val source = adaptAnyQualifiedName(references[0])
+        val target = adaptAnyQualifiedName(references[1])
+        if (source.parts == target.parts) {
+            throw AthenaAntlrAdapterFailure(
+                SyntaxDiagnostic(
+                    file = file,
+                    line = target.span.start.line,
+                    column = target.span.start.column,
+                    message = "Connection endpoint '${target.parts.joinToString(".")}' is repeated. Choose two distinct Engineering Ports.",
+                    span = target.span,
+                ),
+            )
+        }
+        return ConnectionDeclaration(
+            kind = SymbolIdentifierField(
+                value = kind,
+                span = spanOfContext(context.connectionKind().start, context.connectionKind().stop),
+            ),
+            source = source,
+            target = target,
+            properties = context.propertyAssignment().map(::adaptProperty),
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptNet(context: AthenaParser.NetDeclContext): NetDeclaration {
+        val kind = context.connectionKind().text
+        if (kind !in SUPPORTED_CONNECTION_KINDS) {
+            val kindSpan = spanOfContext(context.connectionKind().start, context.connectionKind().stop)
+            throw AthenaAntlrAdapterFailure(SyntaxDiagnostic(file, kindSpan.start.line, kindSpan.start.column,
+                "Connection kind '$kind' is not supported. Use conductor, wire, cable-core, jumper, busbar, or signal.", kindSpan))
+        }
+        val endpointMembers = context.netMember().filter { it.SOURCE() != null || it.SINK() != null || it.PASS() != null }
+        return NetDeclaration(
+            name = context.ident().text,
+            kind = SymbolIdentifierField(kind, spanOfContext(context.connectionKind().start, context.connectionKind().stop)),
+            endpoints = endpointMembers.map { member ->
+                NetEndpointDeclaration(
+                    role = when {
+                        member.SOURCE() != null -> NetEndpointRole.SOURCE
+                        member.SINK() != null -> NetEndpointRole.SINK
+                        else -> NetEndpointRole.PASS
+                    },
+                    port = adaptAnyQualifiedName(member.qualifiedReference()),
+                    span = spanOfContext(member.start, member.stop),
+                )
+            },
+            potentialOrSignal = context.netMember().firstOrNull { it.SIGNAL() != null || it.POTENTIAL() != null }
+                ?.qualifiedReference()?.let(::adaptAnyQualifiedName),
+            properties = context.netMember().mapNotNull { it.propertyAssignment()?.let(::adaptProperty) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptConnectionSpecification(context: AthenaParser.ConnectionSpecificationDeclContext): ConnectionSpecificationDeclaration {
+        val scope = when (context.connectionSpecificationScope().text) {
+            "project" -> ConnectionSpecificationScope.PROJECT
+            "potential" -> ConnectionSpecificationScope.POTENTIAL
+            "signal" -> ConnectionSpecificationScope.SIGNAL
+            "net" -> ConnectionSpecificationScope.NET
+            else -> ConnectionSpecificationScope.CONNECTION
+        }
+        return ConnectionSpecificationDeclaration(
+            scope = scope,
+            subject = context.qualifiedReference()?.let(::adaptAnyQualifiedName),
+            properties = context.propertyAssignment().map(::adaptProperty),
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
     private fun adaptEvidence(context: AthenaParser.EvidenceDeclContext): ExternalEvidenceDeclaration {
         val members = context.evidenceMember()
         val namespace = requiredEvidenceMember(
@@ -614,7 +907,7 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     private fun adaptRegion(context: AthenaParser.RegionDeclContext): RegionDeclaration {
         val name = context.STRING().text.trim('"')
         val occurrences = context.regionMember()
-            .flatMap { member -> member.regionOccurrenceList().ident().map { occurrence -> occurrence.text } }
+            .flatMap { member -> member.regionOccurrenceList().qualifiedReference().map { occurrence -> occurrence.text } }
         return RegionDeclaration(
             name = name,
             occurrences = occurrences,
@@ -1062,6 +1355,9 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     private fun adaptRepresentation(context: AthenaParser.RepresentationDeclContext): RepresentationDeclaration {
         context.symbolDecl()?.let { return adaptSymbol(it) }
         context.elementDecl()?.let { return adaptElement(it) }
+        context.macroDecl()?.let { return adaptMacro(it) }
+        context.variantDecl()?.let { return adaptVariant(it) }
+        context.placeholderDecl()?.let { return adaptPlaceholder(it) }
         context.profileDecl()?.let { return adaptProfile(it) }
         context.bindingDecl()?.let { return adaptBinding(it) }
         throw AthenaAntlrAdapterFailure(
@@ -1069,7 +1365,7 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
                 file = file,
                 line = context.start.line,
                 column = context.start.charPositionInLine + 1,
-                message = "Expected 'symbol', 'element', 'profile', or 'binding'",
+                message = "Expected 'symbol', 'element', 'macro', 'variant', 'placeholder', 'profile', or 'binding'",
                 span = spanOfContext(context.start, context.stop),
             ),
         )
@@ -1098,9 +1394,16 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
     private fun adaptBinding(context: AthenaParser.BindingDeclContext): BindingDeclaration {
         val members = context.bindingMember()
         val useElement = singletonMember(members.mapNotNull { it.useElementDecl() }, "use element", "Binding")
+        val usePart = singletonMember(members.mapNotNull { it.usePartDecl() }, "use part", "Binding")
         val selector = singletonMember(members.mapNotNull { it.selectSubjectWhereDecl() }, "select subject where", "Binding")
         return BindingDeclaration(
             name = context.ident().text,
+            bindingId = singletonMember(members.mapNotNull { it.bindingIdDecl() }, "id", "Binding")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            projection = singletonMember(members.mapNotNull { it.bindingProjectionDecl() }, "projection", "Binding")?.let { declaration ->
+                SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
+            },
             profile = singletonMember(members.mapNotNull { it.bindingProfileDecl() }, "profile", "Binding")?.let { declaration ->
                 SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
             },
@@ -1123,8 +1426,27 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             useVersion = useElement?.let { declaration ->
                 SymbolStringField(unquote(declaration.STRING(1).text), spanOfToken(declaration.STRING(1).symbol))
             },
-            variant = singletonMember(members.mapNotNull { it.variantDecl() }, "variant", "Binding")?.let { declaration ->
+            usePart = usePart?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING(0).text), spanOfToken(declaration.STRING(0).symbol))
+            },
+            partVersion = usePart?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING(1).text), spanOfToken(declaration.STRING(1).symbol))
+            },
+            implementationRole = singletonMember(members.mapNotNull { it.implementationRoleDecl() }, "role", "Binding")?.let { declaration ->
+                SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
+            },
+            variant = singletonMember(members.mapNotNull { it.bindingVariantDecl() }, "variant", "Binding")?.let { declaration ->
                 SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            placeholderValues = singletonMember(
+                members.mapNotNull { it.placeholderValuesDecl() },
+                "placeholders",
+                "Binding",
+            )?.let { declaration ->
+                BindingPlaceholderValues(
+                    values = declaration.propertyAssignment().map(::adaptProperty),
+                    span = spanOfContext(declaration.start, declaration.stop),
+                )
             },
             span = spanOfContext(context.start, context.stop),
         )
@@ -1146,6 +1468,82 @@ internal class AthenaAntlrAstAdapter(private val file: String) {
             children = members.mapNotNull { it.elementChildDecl()?.let(::adaptElementChild) },
             exportedAnchors = members.mapNotNull { it.exportAnchorDecl()?.let(::adaptElementAnchorExport) },
             exportedLabels = members.mapNotNull { it.exportLabelDecl()?.let(::adaptElementLabelExport) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptMacro(context: AthenaParser.MacroDeclContext): MacroDeclaration {
+        val members = context.macroMember()
+        return MacroDeclaration(
+            name = context.ident().text,
+            identity = singletonMember(members.mapNotNull { it.identityDecl() }, "identity", "Macro")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            version = singletonMember(members.mapNotNull { it.versionDecl() }, "version", "Macro")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            children = members.mapNotNull { it.macroChildDecl()?.let(::adaptMacroChild) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptMacroChild(context: AthenaParser.MacroChildDeclContext): MacroChildDeclaration {
+        val members = context.macroChildMember()
+        return MacroChildDeclaration(
+            id = context.ident().text,
+            elementIdentity = singletonMember(members.mapNotNull { it.macroElementRefDecl() }, "element", "Macro child")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            translate = singletonMember(members.mapNotNull { it.translateDecl() }, "translate", "Macro child")?.let { declaration ->
+                adaptPoint(declaration.pointTuple())
+            },
+            rotate = singletonMember(members.mapNotNull { it.rotateDecl() }, "rotate", "Macro child")?.let { declaration ->
+                ElementNumberField(adaptNumber(declaration.number()), spanOfContext(declaration.start, declaration.stop))
+            },
+            functionSlot = singletonMember(members.mapNotNull { it.macroFunctionSlotDecl() }, "function", "Macro child")?.let { declaration ->
+                SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
+            },
+            bindingRole = singletonMember(members.mapNotNull { it.implementationRoleDecl() }, "role", "Macro child")?.let { declaration ->
+                SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
+            },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptVariant(context: AthenaParser.VariantDeclContext): VariantDeclaration {
+        val members = context.variantMember()
+        return VariantDeclaration(
+            name = context.ident().text,
+            identity = singletonMember(members.mapNotNull { it.identityDecl() }, "identity", "Variant")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            version = singletonMember(members.mapNotNull { it.versionDecl() }, "version", "Variant")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            elementIdentity = singletonMember(members.mapNotNull { it.macroElementRefDecl() }, "element", "Variant")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            resources = members.mapNotNull { it.resourceDecl()?.let(::adaptResource) },
+            span = spanOfContext(context.start, context.stop),
+        )
+    }
+
+    private fun adaptPlaceholder(context: AthenaParser.PlaceholderDeclContext): PlaceholderDeclaration {
+        val members = context.placeholderMember()
+        return PlaceholderDeclaration(
+            name = context.ident().text,
+            identity = singletonMember(members.mapNotNull { it.identityDecl() }, "identity", "Placeholder")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            version = singletonMember(members.mapNotNull { it.versionDecl() }, "version", "Placeholder")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            targetPath = singletonMember(members.mapNotNull { it.placeholderTargetDecl() }, "target", "Placeholder")?.let { declaration ->
+                SymbolStringField(unquote(declaration.STRING().text), spanOfToken(declaration.STRING().symbol))
+            },
+            valueType = singletonMember(members.mapNotNull { it.placeholderTypeDecl() }, "type", "Placeholder")?.let { declaration ->
+                SymbolIdentifierField(declaration.ident().text, spanOfContext(declaration.start, declaration.stop))
+            },
             span = spanOfContext(context.start, context.stop),
         )
     }

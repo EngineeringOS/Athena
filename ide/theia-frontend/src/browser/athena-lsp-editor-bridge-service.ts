@@ -25,6 +25,7 @@ import {
 import { AthenaTreeSitterHighlightingService } from './athena-tree-sitter-highlighting-service';
 import { toAthenaBackendUrl } from './athena-backend-endpoint';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
+import { AthenaScenePublication, EditOperationEnvelope, EditOperationResult, SourceRevision } from './diagram/generated/types';
 
 const ATHENA_LIGHT_TOKEN_COLORS = {
     declaration: '0B5CAD',
@@ -339,277 +340,55 @@ export type AthenaRepositoryGraphSessionPayload = {
     diagnostics: AthenaRepositoryDiagnosticPayload[];
 };
 
-export type AthenaProjectionViewPayload = {
-    viewId: string;
-    displayName: string;
-    description: string;
-    familyId?: string;
-    ownershipContract: AthenaProjectionOwnershipContractPayload;
+export type AthenaConnectionReadModelSourceTrace = {
+    relativePath: string;
+    startLine: number;
+    startCharacter: number;
+    endLine: number;
+    endCharacter: number;
+    subjectId: string;
 };
 
-export type AthenaProjectionOwnershipContractPayload = {
-    interactivity: string;
-    displayScopes: string[];
-    semanticCommandIds: string[];
-    projectionCommandIds: string[];
-    transientInteractionKinds: string[];
-    persistedProjectionMetadataKeys: string[];
-};
-
-export type AthenaProjectionGovernedCommandPayload = {
-    commandId: string;
-    displayName: string;
-    description: string;
-    requiredArguments: string[];
-};
-
-export type AthenaProjectionComponentPayload = {
-    projectionId: string;
-    semanticId: string;
-    label: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-};
-
-export type AthenaProjectionConnectionPayload = {
-    projectionId: string;
-    semanticId: string;
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-};
-
-export type AthenaProjectionLabelPayload = {
-    projectionId: string;
-    semanticId: string;
-    label: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-};
-
-export type AthenaProjectionSheetPayload = {
-    sheetId: string;
-    displayName: string;
-    order: number;
-    previousSheetId?: string;
-    nextSheetId?: string;
-    subjectSemanticIds: string[];
-    policyEvidence?: AthenaProjectionSheetPolicyEvidencePayload;
-    publication: AthenaProjectionSheetPublicationPayload;
-};
-
-export type AthenaProjectionSheetPolicyEvidencePayload = {
-    policyId: string;
-    policyVersion: string;
-    policyDeterministicIdentity: string;
-    sheetViewRole: string;
-    sheetViewRoleOrder: number;
-};
-
-export type AthenaProjectionSheetPublicationPayload = {
-    pageSize: AthenaProjectionSheetPageSizePayload;
-    frame: AthenaProjectionSheetFramePayload;
-    coordinateZones: AthenaProjectionSheetCoordinateZonePayload[];
-    titleBlock: AthenaProjectionSheetTitleBlockPayload;
-    revisionMetadata: AthenaProjectionSheetRevisionMetadataPayload;
-    viewComposition: AthenaProjectionSheetViewCompositionPayload;
-};
-
-export type AthenaProjectionSheetPageSizePayload = {
-    format: string;
-    orientation: string;
-};
-
-export type AthenaProjectionSheetFramePayload = {
-    frameId: string;
-    style: string;
-};
-
-export type AthenaProjectionSheetCoordinateZonePayload = {
-    zoneId: string;
-    label: string;
-    order: number;
-};
-
-export type AthenaProjectionSheetTitleBlockPayload = {
-    sheetTitle: string;
-    sheetFamily: string;
-    sheetNumber: string;
-};
-
-export type AthenaProjectionSheetRevisionMetadataPayload = {
-    revisionCode: string;
-    revisionNote: string;
-};
-
-export type AthenaProjectionSheetViewCompositionPayload = {
-    primaryViewId: string;
-    primarySheetOrder: number;
-    subjectSemanticIds: string[];
-};
-
-export type AthenaProjectionNotationSubjectPayload = {
-    semanticId: string;
-    symbolKey: string;
-    labelPolicy: string;
-    markerKeys: string[];
-};
-
-export type AthenaProjectionNotationPackPayload = {
-    packId: string;
-    displayName: string;
-    subjects: AthenaProjectionNotationSubjectPayload[];
-};
-
-export type AthenaProjectionCrossReferencePayload = {
-    semanticId: string;
-    kind: string;
-    sheetIds: string[];
-    occurrenceIds: string[];
-};
-
-export type AthenaProjectionPointPayload = {
-    x: number;
-    y: number;
-};
-
-export type AthenaProjectionSheetLayoutPayload = {
-    sheetId: string;
-    displayName: string;
-    order: number;
-    subjectSemanticIds: string[];
-    representationFamilyId: string;
-    frame: AthenaProjectionSheetLayoutFramePayload;
-    placements: AthenaProjectionSheetLayoutPlacementPayload[];
-    routingGuidance: AthenaProjectionSheetLayoutRoutingGuidancePayload[];
-    labelLayouts: AthenaProjectionSheetLayoutLabelLayoutPayload[];
-};
-
-export type AthenaProjectionSheetLayoutFramePayload = {
-    canvasWidth: number;
-    canvasHeight: number;
-    gridMajorStep: number;
-    gridMinorStep: number;
-};
-
-export type AthenaProjectionSheetLayoutPlacementPayload = {
-    projectionId: string;
-    semanticId: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-};
-
-export type AthenaProjectionSheetLayoutRoutingGuidancePayload = {
-    projectionConnectionId: string;
-    connectionSemanticId: string;
-    sourcePoint: AthenaProjectionPointPayload;
-    targetPoint: AthenaProjectionPointPayload;
-    routingStyle: string;
-    bendPoints: AthenaProjectionPointPayload[];
-};
-
-export type AthenaProjectionSheetLayoutLabelLayoutPayload = {
-    projectionId: string;
-    semanticId: string;
-    label: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-};
-
-export type AthenaProjectionReadyPayload = {
-    viewId: string;
-    familyId?: string;
-    systemName: string;
-    canvasWidth: number;
-    canvasHeight: number;
-    activeSheetId?: string;
-    sheets: AthenaProjectionSheetPayload[];
-    sheetLayout?: AthenaProjectionSheetLayoutPayload;
-    notationPack?: AthenaProjectionNotationPackPayload;
-    crossReferences: AthenaProjectionCrossReferencePayload[];
-    activeRenderContributions: AthenaProjectionRenderContributionPayload[];
-    components: AthenaProjectionComponentPayload[];
-    connections: AthenaProjectionConnectionPayload[];
-    labels: AthenaProjectionLabelPayload[];
-    projectionRegionIds: string[];
-    projectionConstructIds: string[];
-    spatialFacts?: AthenaProjectionSpatialFactsPayload;
-};
-
-export type AthenaProjectionSpatialFactsPayload = {
-    viewId: string;
-    activeSheetId?: string;
-    sheets: AthenaProjectionSpatialSheetPayload[];
-};
-
-export type AthenaProjectionSpatialSheetPayload = {
-    sheetId: string;
-    extent: AthenaProjectionRectPayload;
-    drawingArea: AthenaProjectionRectPayload;
-    occurrences: Array<{ occurrenceId: string; semanticId: string; regionId: string; bounds: AthenaProjectionRectPayload }>;
-    regions: Array<{ regionId: string; bounds: AthenaProjectionRectPayload; memberOccurrenceIds: string[] }>;
-    constructs: Array<{ constructId: string; kind: string; name?: string; bounds: AthenaProjectionRectPayload; memberOccurrenceIds: string[] }>;
-    anchors: Array<{ anchorId: string; occurrenceId: string; portSemanticId: string; side: string; point: AthenaProjectionPointPayload }>;
-    routes: Array<{ routeId: string; projectionConnectionId: string; connectionId: string; sourceAnchorId: string; targetAnchorId: string; laneId: string; points: AthenaProjectionPointPayload[] }>;
-    lanes: Array<{ laneId: string; orientation: string; coordinate: number; routeIds: string[] }>;
-    gridReferences: Array<{ gridReferenceId: string; subjectId: string; cellReference: string; rowLabel: string; columnNumber: number }>;
-    quality: { occurrenceOverlapCount: number; constructContainmentFailureCount: number; routeBodyIntersectionCount: number; routeCrossingCount: number; twistCount: number; usedLaneCount: number; peakRoutesPerLane: number; density: number; occupancy: number };
-};
-
-export type AthenaProjectionRectPayload = { x: number; y: number; width: number; height: number };
-
-export type AthenaProjectionRenderContributionPayload = {
-    pluginId: string;
-    contributionId: string;
-    displayName: string;
-    description: string;
-    rendererTarget: string;
-    surfaceMappings: AthenaProjectionSurfaceMappingPayload[];
-};
-
-export type AthenaProjectionSurfaceMappingPayload = {
-    surface: string;
-    tokens: Record<string, string>;
-};
-
-export type AthenaProjectionDiagnosticPayload = {
-    severity: string;
+export type AthenaConnectionReadModelDiagnostic = {
+    subject: string;
+    problem: string;
+    correction: string;
     code: string;
-    message: string;
-    provenance?: string;
 };
 
-export type AthenaProjectionCommandParams = {
-    commandId: string;
-    viewId?: string;
+export type AthenaConnectionReadModelEndpoint = {
+    portId: string;
+    authoredPath: string;
+    role: string;
+    sourceTrace: AthenaConnectionReadModelSourceTrace;
 };
 
-export type AthenaProjectionSessionPayload = {
-    projectName: string;
-    semanticPath: string;
-    activeViewId: string;
-    supportedViews: AthenaProjectionViewPayload[];
-    governedCommands: AthenaProjectionGovernedCommandPayload[];
-    status: string;
-    readyProjection?: AthenaProjectionReadyPayload;
-    unavailableReason?: string;
-    diagnostics: AthenaProjectionDiagnosticPayload[];
+export type AthenaConnectionReadModelItem = {
+    itemKind: 'CONNECTION' | 'NET';
+    semanticId: string;
+    displayName: string;
+    connectionKind: string;
+    endpoints: AthenaConnectionReadModelEndpoint[];
+    potentialOrSignal?: string;
+    resolvedSpecifications: Array<{ name: string; value: string }>;
+    validation: {
+        state: 'VALID' | 'WARNING';
+        diagnostics: AthenaConnectionReadModelDiagnostic[];
+    };
+    placed: boolean;
+    projectionCount: number;
+    projectionTraceIds: string[];
+    sourceTrace: AthenaConnectionReadModelSourceTrace;
 };
 
-export type AthenaProjectionCommandPayload = {
-    commandId: string;
-    status: string;
-    reason?: string;
-    session?: AthenaProjectionSessionPayload;
+export type AthenaConnectionReadModelPublication = {
+    schemaVersion: 1;
+    state: 'READY' | 'STALE' | 'UNAVAILABLE';
+    attemptedInputRevision: string;
+    acceptedInputRevision?: string;
+    connectionIrDigest?: string;
+    items: AthenaConnectionReadModelItem[];
+    diagnostics: AthenaConnectionReadModelDiagnostic[];
 };
 
 @injectable()
@@ -926,7 +705,6 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             this.openedDocumentVersions.set(snapshot.uri, snapshot.version);
             if (method === 'textDocument/didOpen') {
                 this.outputChannel.appendLine(`frontend -> textDocument/didOpen -> Athena LSP -> runtime/compiler :: ${snapshot.uri}`);
-                this.outputChannel.show({ preserveFocus: true });
                 void this.repositorySessionService.refreshSessionState().catch(error => this.reportBridgeFailure(error));
                 if (!this.semanticBoundaryMessageShown) {
                     this.semanticBoundaryMessageShown = true;
@@ -1049,6 +827,32 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             'athena/repositoryGraphSession',
             {}
         );
+    }
+
+    async requestDiagramScene(): Promise<AthenaScenePublication | undefined> {
+        return this.sendLanguageRequest<AthenaScenePublication>('athena/diagramScene', {});
+    }
+
+    async requestConnectionReadModel(widget: EditorWidget | undefined = this.editorManager.currentEditor): Promise<AthenaConnectionReadModelPublication | undefined> {
+        const sourceEditor = this.isAthenaEditor(widget) && !widget.editor.uri.toString().toLowerCase().endsWith('.sheet.athena')
+            ? widget
+            : undefined;
+        const model = sourceEditor
+            ? monaco.editor.getModel(monaco.Uri.parse(sourceEditor.editor.uri.toString())) ?? undefined
+            : undefined;
+        return this.sendLanguageRequest<AthenaConnectionReadModelPublication>(
+            'athena/connectionReadModel',
+            sourceEditor ? { textDocument: { uri: sourceEditor.editor.uri.toString() } } : {},
+            model,
+        );
+    }
+
+    async requestEditOperation(operation: EditOperationEnvelope): Promise<EditOperationResult | undefined> {
+        return this.sendLanguageRequest<EditOperationResult>('athena/applyEditOperation', operation);
+    }
+
+    async requestPresentationEditContext(): Promise<{ schemaVersion: 1; state: 'READY' | 'UNAVAILABLE'; sceneId?: string; sourceRevision: SourceRevision; sheetId?: string; engineeringWritableFiles: string[]; routeWritableFiles: string[]; placementWritableFiles: string[]; styleWritableFiles: string[]; diagnostics: Array<{ subject: string; problem: string; correction: string; code: string }> } | undefined> {
+        return this.sendLanguageRequest('athena/presentationEditContext', {});
     }
 
     protected async sendLanguageRequest<T>(

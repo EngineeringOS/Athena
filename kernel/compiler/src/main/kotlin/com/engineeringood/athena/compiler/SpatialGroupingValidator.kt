@@ -8,6 +8,7 @@ import com.engineeringood.athena.projection.ProjectionSheetConstruct
 import com.engineeringood.athena.spatial.SpatialDiagnostic
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialOccurrenceId
+import com.engineeringood.athena.spatial.SpatialRect
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 
 internal class SpatialGroupingValidator(
@@ -16,11 +17,15 @@ internal class SpatialGroupingValidator(
     fun validate(
         projection: ProjectionDocument,
         occurrences: List<SpatialOccurrenceGeometry>,
+        pageGeometries: Map<String, SpatialPageGeometryProfile> = emptyMap(),
     ): List<SpatialDiagnostic> {
         val sheets = projection.sheets.sortedWith(compareBy({ sheet -> sheet.order }, { sheet -> sheet.sheetId.value }))
         val diagnostics = mutableListOf<SpatialDiagnostic>()
         diagnostics += occurrenceIdentityDiagnostics(projection, occurrences)
         sheets.forEach { sheet ->
+            val pageGeometry = pageGeometries[sheet.sheetId.value]
+            val drawingArea = pageGeometry?.drawingArea ?: ProjectionSpatialLayout.DRAWING_AREA
+            val groupingPadding = pageGeometry?.groupingPadding ?: ProjectionSpatialLayout.GROUPING_PADDING
             val sheetNodes = projection.nodes.filter { node -> planner.sheetOwns(sheet, node) }
             val nodesByLabel = sheetNodes.groupBy(ProjectionNode::label)
             val occurrenceById = occurrences
@@ -51,6 +56,8 @@ internal class SpatialGroupingValidator(
                     groupSource = region.originGeometryElementId,
                     memberNodes = memberResolution.resolvedNodes,
                     memberOccurrences = memberResolution.resolvedOccurrences,
+                    drawingArea = drawingArea,
+                    groupingPadding = groupingPadding,
                 )
             }
             planner.placementGroups(sheet, projection)
@@ -74,6 +81,8 @@ internal class SpatialGroupingValidator(
                         groupSource = sheet.originGeometryElementId,
                         memberNodes = memberResolution.resolvedNodes,
                         memberOccurrences = memberResolution.resolvedOccurrences,
+                        drawingArea = drawingArea,
+                        groupingPadding = groupingPadding,
                     )
                 }
             sheet.constructs.filter { construct -> construct.constructId.value.isNotBlank() }.forEach { construct ->
@@ -98,6 +107,8 @@ internal class SpatialGroupingValidator(
                     groupSource = construct.originGeometryElementId,
                     memberNodes = memberResolution.resolvedNodes,
                     memberOccurrences = memberResolution.resolvedOccurrences,
+                    drawingArea = drawingArea,
+                    groupingPadding = groupingPadding,
                 )
             }
         }
@@ -355,17 +366,19 @@ internal class SpatialGroupingValidator(
         groupSource: GeometryElementId,
         memberNodes: List<ProjectionNode>,
         memberOccurrences: List<SpatialOccurrenceGeometry>,
+        drawingArea: SpatialRect,
+        groupingPadding: Int,
     ): List<SpatialDiagnostic> {
         if (memberOccurrences.isEmpty()) return emptyList()
-        val padded = paddedGroupingUnionOrNull(memberOccurrences.map(SpatialOccurrenceGeometry::rectangle))
-        if (padded?.isInside(ProjectionSpatialLayout.DRAWING_AREA) == true) return emptyList()
+        val padded = paddedGroupingUnionOrNull(memberOccurrences.map(SpatialOccurrenceGeometry::rectangle), groupingPadding)
+        if (padded?.isInside(drawingArea) == true) return emptyList()
         return listOf(
             SpatialDiagnostic(
                 subject = subject,
-                problem = "has a ${ProjectionSpatialLayout.GROUPING_PADDING}-unit padded $geometryName outside " +
-                    "Drawing Area (${ProjectionSpatialLayout.DRAWING_AREA.x},${ProjectionSpatialLayout.DRAWING_AREA.y}," +
-                    "${ProjectionSpatialLayout.DRAWING_AREA.width},${ProjectionSpatialLayout.DRAWING_AREA.height})",
-                correction = "Keep every $subject member at least ${ProjectionSpatialLayout.GROUPING_PADDING} units " +
+                problem = "has a ${groupingPadding}-unit padded $geometryName outside " +
+                    "Drawing Area (${drawingArea.x},${drawingArea.y}," +
+                    "${drawingArea.width},${drawingArea.height})",
+                correction = "Keep every $subject member at least $groupingPadding units " +
                     "inside the Drawing Area.",
                 sourceTrace = groupTrace(sheet, groupId, groupSource, memberNodes),
             ),

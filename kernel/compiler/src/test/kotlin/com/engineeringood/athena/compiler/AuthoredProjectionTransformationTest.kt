@@ -48,12 +48,10 @@ class AuthoredProjectionTransformationTest {
             listOf("port:Supply.L1", "port:Breaker.line"),
             first.output.occurrencePorts.map { port -> port.occurrencePortId.portId.value },
         )
-        val connection = first.output.connections.single()
-        assertEquals("port:Supply.L1", connection.source?.occurrencePortId?.portId?.value)
-        assertEquals("port:Breaker.line", connection.target?.occurrencePortId?.portId?.value)
+        assertTrue(first.output.connections.isEmpty(), "Generic EngineeringRelationship must not become route truth.")
         val subjectIds = first.output.sheets.single().subjects.map { it.semanticId.value }
         assertEquals(listOf("entity:Supply", "entity:Breaker"), subjectIds.take(2))
-        assertTrue(subjectIds.single { subjectId -> subjectId.startsWith("relationship:") }.contains(":power:"))
+        assertTrue(subjectIds.none { subjectId -> subjectId.startsWith("relationship:") })
         assertEquals(listOf("power-rail"), first.output.sheets.single().constructs.map { it.kind })
     }
 

@@ -45,18 +45,7 @@ class EngineeringToProjectionTransformationTest {
                 port.occurrencePortId.occurrenceId.value to port.occurrencePortId.portId.value
             },
         )
-        assertEquals(listOf("relationship:Supply.L1-to-Q1.1"), success.output.connections.map { connection ->
-            connection.semanticId.value
-        })
-        val connection = success.output.connections.single()
-        assertEquals(
-            "projection/node/entity:Supply" to "port:Supply.L1",
-            connection.source?.occurrencePortId?.let { endpoint -> endpoint.occurrenceId.value to endpoint.portId.value },
-        )
-        assertEquals(
-            "projection/node/entity:Q1" to "port:Q1.1",
-            connection.target?.occurrencePortId?.let { endpoint -> endpoint.occurrenceId.value to endpoint.portId.value },
-        )
+        assertTrue(success.output.connections.isEmpty())
         assertEquals(1, success.output.sheets.size)
         assertEquals(0, success.output.sheets.single().order)
         assertEquals("engineering-projection/sheet/01-main", success.output.sheets.single().sheetId.value)
@@ -69,17 +58,11 @@ class EngineeringToProjectionTransformationTest {
         val subjects = output.sheets.single().subjects
 
         assertContains(subjects.map { subject -> subject.semanticId.value }, "entity:Supply")
-        assertContains(subjects.map { subject -> subject.semanticId.value }, "relationship:Supply.L1-to-Q1.1")
         assertTrue(subjects.any { subject ->
             subject.semanticId.value == "entity:Supply" &&
                 subject.nodeIds.any { nodeId -> nodeId.value == "projection/node/entity:Supply" }
         })
-        assertTrue(subjects.any { subject ->
-            subject.semanticId.value == "relationship:Supply.L1-to-Q1.1" &&
-                subject.connectionIds.any { connectionId ->
-                    connectionId.value == "projection/relationship/relationship:Supply.L1-to-Q1.1"
-                }
-        })
+        assertFalse(subjects.any { subject -> subject.connectionIds.isNotEmpty() })
     }
 
     @Test

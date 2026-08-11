@@ -55,7 +55,7 @@ class ProjectSemanticLinkedLowererTest {
         val consumerLowering = result.loweredSourceUnits.single { it.sourceUnitId == fixture.consumerSourceUnitId }
 
         assertEquals(
-            listOf("relationship:${fixture.consumerSourceUnitId.value}:control:source:PLC1.out|target:PLC1.out"),
+            listOf("relationship:${fixture.consumerSourceUnitId.value}:control:source-2:PLC1.out|source:PLC1.out"),
             consumerLowering.document.relationships.map { it.id.value },
         )
     }
@@ -78,7 +78,9 @@ class ProjectSemanticLinkedLowererTest {
     fun `lowers source unit documents independently without AST paste`() {
         val fixture = linkedLoweringFixture()
 
-        val result = ProjectSemanticLinkedLowerer().lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
+        val result = ProjectSemanticLinkedLowerer(
+            EngineeringIrLowerer(AthenaDomainSemanticsCoordinator(listOf(GenericLoweringOnlyTestPlugin()))),
+        ).lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
 
         assertEquals(2, result.loweredSourceUnits.size)
         assertEquals(
@@ -101,8 +103,11 @@ class ProjectSemanticLinkedLowererTest {
             fixture.linkedSnapshot.diagnostics.reversed(),
         )
 
-        val forward = ProjectSemanticLinkedLowerer().lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
-        val reversedResult = ProjectSemanticLinkedLowerer().lower(reversed, fixture.documentsBySourceUnit)
+        val lowerer = ProjectSemanticLinkedLowerer(
+            EngineeringIrLowerer(AthenaDomainSemanticsCoordinator(listOf(GenericLoweringOnlyTestPlugin()))),
+        )
+        val forward = lowerer.lower(fixture.linkedSnapshot, fixture.documentsBySourceUnit)
+        val reversedResult = lowerer.lower(reversed, fixture.documentsBySourceUnit)
 
         assertEquals(forward.loweredSourceUnits, reversedResult.loweredSourceUnits)
         assertEquals(forward.diagnostics, reversedResult.diagnostics)
@@ -111,10 +116,10 @@ class ProjectSemanticLinkedLowererTest {
     private fun linkedLoweringFixture(): LinkedLoweringFixture {
         val rootId = PackageIdentifier("com.root", "1")
         val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
-        val providerSource = parse("provider.athena", "package com.root\nsystem Provider {\n  port PLC1.out {}\n}")
+        val providerSource = parse("provider.athena", "package com.root\nsystem Provider {\n  entity PLC1 { concept Generic }\n}")
         val consumerSource = parse(
             "consumer.athena",
-            "package com.root\nsystem Consumer {\n  control PLC1.out to PLC1.out\n}",
+            "package com.root\nsystem Consumer {\n  entity PLC1 { concept Generic }\n  port PLC1.out { direction out flow control role source }\n  control PLC1.out to PLC1.out\n}",
         )
         val providerUnit = sourceUnit(rootKey, "provider.athena", providerSource.content, providerSource.parsed.source.ast.declarations)
         val consumerUnit = sourceUnit(rootKey, "consumer.athena", consumerSource.content, consumerSource.parsed.source.ast.declarations)

@@ -1,4 +1,0 @@
-status=syntax-failure
-syntaxErrorLine=1
-syntaxErrorColumn=1
-syntaxErrorMessageContains=public

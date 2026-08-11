@@ -16,10 +16,11 @@ class SpatialRoutingModelsTest {
         val targetOccurrence = occurrence("occurrence:B", 140)
         val source = anchor(sourceOccurrence, "port:A.out", SpatialBoundarySide.RIGHT, SpatialPoint(80, 20))
         val target = anchor(targetOccurrence, "port:B.in", SpatialBoundarySide.LEFT, SpatialPoint(140, 20))
-        val routeId = SpatialRouteId("sheet:main", "connection:A-B")
+        val routeId = ConnectionRoutePlanId("sheet:main", "connection:A-B")
         val laneId = SpatialLaneId("sheet:main", SpatialLaneOrientation.HORIZONTAL, 20)
         val projectionIds = mutableListOf(
             "sheet:main",
+            "connection:A-B",
             "connection:A-B",
             "occurrence:A",
             "port:A.out",
@@ -28,10 +29,11 @@ class SpatialRoutingModelsTest {
         )
         val geometryIds = mutableListOf(GeometryElementId("geometry:connection:A-B"))
         val sourceTrace = SpatialSourceTrace(projectionIds, geometryIds)
-        val route = SpatialRoute(
+        val route = ConnectionRoutePlan(
             routeId = routeId,
             sheetId = "sheet:main",
             connectionId = StableSemanticIdentity("connection:A-B"),
+            projectionConnectionId = "connection:A-B",
             sourceAnchorId = source.anchorId,
             targetAnchorId = target.anchorId,
             laneId = laneId,
@@ -45,7 +47,7 @@ class SpatialRoutingModelsTest {
         assertEquals("sheet:main", route.sourceAnchorId.occurrenceId.sheetId)
         assertEquals("occurrence:A", route.sourceAnchorId.occurrenceId.projectionId)
         assertEquals("port:A.out", route.sourceAnchorId.portId.value)
-        assertEquals(6, route.sourceTrace.projectionIds.size)
+        assertEquals(7, route.sourceTrace.projectionIds.size)
         assertEquals(1, route.sourceTrace.geometryElementIds.size)
         assertEquals(route, route.copy())
         assertNotEquals(
@@ -61,7 +63,7 @@ class SpatialRoutingModelsTest {
 
     @Test
     fun `public basic Route and Lane facts expose no professional optimization surface`() {
-        val propertyNames = (SpatialRoute::class.java.declaredFields + SpatialLane::class.java.declaredFields)
+        val propertyNames = (ConnectionRoutePlan::class.java.declaredFields + SpatialLane::class.java.declaredFields)
             .map { field -> field.name.lowercase() }
         val forbidden = listOf(
             "planner",
@@ -83,14 +85,14 @@ class SpatialRoutingModelsTest {
 
     @Test
     fun `route and lane identities are sheet qualified collision safe facts`() {
-        val route = SpatialRouteId("sheet:a", "connection:a:b")
-        val otherRoute = SpatialRouteId("sheet", "a:connection:a:b")
+        val route = ConnectionRoutePlanId("sheet:a", "connection:a:b")
+        val otherRoute = ConnectionRoutePlanId("sheet", "a:connection:a:b")
         val lane = SpatialLaneId("sheet:a", SpatialLaneOrientation.HORIZONTAL, 20)
 
         assertNotEquals(route, otherRoute)
         assertNotEquals(route.value, otherRoute.value)
         assertEquals(
-            "route:sheet=sheet%3Aa:connection=connection%3Aa%3Ab",
+            "route-plan:sheet=sheet%3Aa:route=connection%3Aa%3Ab",
             route.value,
         )
         assertEquals(
@@ -102,7 +104,7 @@ class SpatialRoutingModelsTest {
     @Test
     fun `lane requires used unique same sheet routes and matching channel identity`() {
         val laneId = SpatialLaneId("sheet:main", SpatialLaneOrientation.HORIZONTAL, 20)
-        val routeId = SpatialRouteId("sheet:main", "connection:A-B")
+        val routeId = ConnectionRoutePlanId("sheet:main", "connection:A-B")
         val routeIds = mutableListOf(routeId)
         val lane = SpatialLane(laneId, "sheet:main", SpatialLaneOrientation.HORIZONTAL, 20, routeIds)
 
@@ -122,7 +124,7 @@ class SpatialRoutingModelsTest {
                 "sheet:main",
                 SpatialLaneOrientation.HORIZONTAL,
                 20,
-                listOf(SpatialRouteId("sheet:other", "connection:A-B")),
+                listOf(ConnectionRoutePlanId("sheet:other", "connection:A-B")),
             )
         }
     }
@@ -132,10 +134,11 @@ class SpatialRoutingModelsTest {
         val source = anchor(occurrence("occurrence:A", 0), "port:A.out", SpatialBoundarySide.RIGHT, SpatialPoint(80, 20))
         val target = anchor(occurrence("occurrence:B", 140), "port:B.in", SpatialBoundarySide.LEFT, SpatialPoint(140, 20))
         val points = mutableListOf(source.point, target.point)
-        val route = SpatialRoute(
-            routeId = SpatialRouteId("sheet:main", "connection:A-B"),
+        val route = ConnectionRoutePlan(
+            routeId = ConnectionRoutePlanId("sheet:main", "connection:A-B"),
             sheetId = "sheet:main",
             connectionId = StableSemanticIdentity("connection:A-B"),
+            projectionConnectionId = "connection:A-B",
             sourceAnchorId = source.anchorId,
             targetAnchorId = target.anchorId,
             laneId = SpatialLaneId("sheet:main", SpatialLaneOrientation.HORIZONTAL, 20),
@@ -291,7 +294,7 @@ class SpatialRoutingModelsTest {
         val targetOccurrence = occurrence("occurrence:B", 140)
         val source = anchor(sourceOccurrence, "port:A.out", SpatialBoundarySide.RIGHT, SpatialPoint(80, 20))
         val target = anchor(targetOccurrence, "port:B.in", SpatialBoundarySide.LEFT, SpatialPoint(140, 20))
-        val routeId = SpatialRouteId("sheet:main", "route:A-B")
+        val routeId = ConnectionRoutePlanId("sheet:main", "route:A-B")
         val laneId = SpatialLaneId("sheet:main", SpatialLaneOrientation.HORIZONTAL, 20)
         val result = SpatialReality.validate(
             spatialDocument(
@@ -307,10 +310,11 @@ class SpatialRoutingModelsTest {
                     ),
                 ),
                 routes = listOf(
-                    SpatialRoute(
+                    ConnectionRoutePlan(
                         routeId = routeId,
                         sheetId = "sheet:main",
                         connectionId = StableSemanticIdentity("connection:A-B"),
+                        projectionConnectionId = "connection:A-B",
                         sourceAnchorId = source.anchorId,
                         targetAnchorId = target.anchorId,
                         laneId = laneId,
@@ -364,7 +368,7 @@ class SpatialRoutingModelsTest {
         occurrences: List<SpatialOccurrenceGeometry>,
         anchors: List<SpatialAnchorPosition>,
         lanes: List<SpatialLane> = emptyList(),
-        routes: List<SpatialRoute> = emptyList(),
+        routes: List<ConnectionRoutePlan> = emptyList(),
     ): SpatialDocument {
         val sheetId = "sheet:main"
         val drawingArea = SpatialRect(0, 0, 1200, 800)

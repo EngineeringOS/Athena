@@ -1,0 +1,18 @@
+sheet rolling_shutter {
+  page format A4 landscape
+  frame: 17 * 16
+  snap: 4
+  "Supply.main" at (6, 8)
+  "Q1.protection" at (16, 8)
+  "KM1.mainContact" at (26, 8)
+  "OL1.protection" at (36, 8)
+  "X1.powerTerminal" at (46, 8)
+  "M1.drive" at (56, 8)
+  "S1.limitOpen" at (8, 28)
+  "S2.limitClosed" at (20, 48)
+  "PLC1.control" at (32, 34)
+  "KM1.coil" at (44, 34)
+  "H1.openLamp" at (56, 48)
+  "KM1.auxiliary" at (44, 48)
+  "H2.closedLamp" at (56, 56)
+}

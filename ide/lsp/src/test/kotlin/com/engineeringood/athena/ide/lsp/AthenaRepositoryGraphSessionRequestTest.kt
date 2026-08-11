@@ -7,12 +7,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
-import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.TextDocumentItem
 
 class AthenaRepositoryGraphSessionRequestTest {
     @Test
-    @Suppress("DEPRECATION")
     fun `repository graph session request exposes runtime owned canonical package state`() {
         val repository = createGovernedTestRepository("athena-lsp-repository-session-")
         val repositoryRoot = repository.repositoryRoot
@@ -22,11 +20,7 @@ class AthenaRepositoryGraphSessionRequestTest {
 
             val server = AthenaLanguageServer()
             try {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = repositoryRoot.toUri().toString()
-                    },
-                ).get()
+                server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
                 server.textDocumentService.didOpen(
                     DidOpenTextDocumentParams(
@@ -65,7 +59,6 @@ class AthenaRepositoryGraphSessionRequestTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `repository graph session request surfaces stale lock diagnostics`() {
         val repository = createGovernedTestRepository("athena-lsp-repository-session-invalid-")
         val repositoryRoot = repository.repositoryRoot
@@ -81,11 +74,7 @@ class AthenaRepositoryGraphSessionRequestTest {
 
             val server = AthenaLanguageServer()
             try {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = repositoryRoot.toUri().toString()
-                    },
-                ).get()
+                server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
                 val payload = server.repositoryGraphSession(
                     AthenaRepositoryGraphSessionParams(),

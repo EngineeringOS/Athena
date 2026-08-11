@@ -6,6 +6,8 @@ import { FILE_NAVIGATOR_ID } from '@theia/navigator/lib/browser/navigator-widget
 import { OutputWidget } from '@theia/output/lib/browser/output-widget';
 import { AthenaRepositoryGraphWidget } from './athena-repository-graph-widget';
 import { AthenaSemanticInspectionWidget } from './athena-semantic-inspection-widget';
+import { AthenaPresentationWidget } from './athena-presentation-widget';
+import { AthenaConnectionNavigatorWidget } from './athena-connection-navigator-widget';
 
 export const ATHENA_VIEW_MENU = [...CommonMenus.VIEW, '9_athena'];
 
@@ -58,6 +60,18 @@ export namespace AthenaCommands {
         label: 'Reveal Repository Graph'
     };
 
+    export const REVEAL_PRESENTATION: Command = {
+        id: 'athena.revealPresentation',
+        category: 'Athena',
+        label: 'Open Engineering Document'
+    };
+
+    export const REVEAL_CONNECTION_NAVIGATOR: Command = {
+        id: 'athena.revealConnectionNavigator',
+        category: 'Athena',
+        label: 'Reveal Connections'
+    };
+
 }
 
 export interface AthenaWorkbenchExtension {
@@ -79,28 +93,33 @@ export const ATHENA_WORKBENCH_EXTENSIONS: readonly AthenaWorkbenchExtension[] = 
         startupRank: 100
     },
     {
+        command: AthenaCommands.REVEAL_CONNECTION_NAVIGATOR,
+        widgetId: AthenaConnectionNavigatorWidget.ID,
+        area: 'left',
+        menuOrder: '2.5',
+        quickActionLabel: 'Connections',
+        startupRank: 120
+    },
+    {
         command: AthenaCommands.REVEAL_PROBLEMS,
         widgetId: PROBLEMS_WIDGET_ID,
         area: 'bottom',
         menuOrder: '3',
-        quickActionLabel: 'Problems',
-        startupRank: 200
+        quickActionLabel: 'Problems'
     },
     {
         command: AthenaCommands.REVEAL_OUTPUT,
         widgetId: OutputWidget.ID,
         area: 'bottom',
         menuOrder: '4',
-        quickActionLabel: 'Output',
-        startupRank: 250
+        quickActionLabel: 'Output'
     },
     {
         command: AthenaCommands.REVEAL_REPOSITORY_GRAPH,
         widgetId: AthenaRepositoryGraphWidget.ID,
         area: 'right',
         menuOrder: '6',
-        quickActionLabel: 'Repository Graph',
-        startupRank: 300
+        quickActionLabel: 'Repository Graph'
     },
     {
         command: AthenaCommands.REVEAL_SEMANTIC_INSPECTION,
@@ -108,5 +127,13 @@ export const ATHENA_WORKBENCH_EXTENSIONS: readonly AthenaWorkbenchExtension[] = 
         area: 'right',
         menuOrder: '8',
         quickActionLabel: 'Semantic Inspection'
+    },
+    {
+        command: AthenaCommands.REVEAL_PRESENTATION,
+        widgetId: AthenaPresentationWidget.ID,
+        area: 'main',
+        menuOrder: '9',
+        quickActionLabel: 'Engineering Document',
+        startupRank: 350
     }
 ];

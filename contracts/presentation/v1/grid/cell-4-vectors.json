@@ -1,0 +1,12 @@
+{
+  "formulaVersion": "athena-grid-1",
+  "subdivisions": 4,
+  "vectors": [
+    {"address": "A1", "micro": null, "anchor": {"x": 2, "y": 2}},
+    {"address": "A1", "micro": {"x": 1, "y": 1}, "anchor": {"x": 0, "y": 0}},
+    {"address": "A1", "micro": {"x": 4, "y": 4}, "anchor": {"x": 3, "y": 3}},
+    {"address": "A2", "micro": null, "anchor": {"x": 6, "y": 2}},
+    {"address": "B1", "micro": null, "anchor": {"x": 2, "y": 6}},
+    {"address": "A2", "micro": {"x": 1, "y": 1}, "anchor": {"x": 4, "y": 0}}
+  ]
+}

@@ -1,6 +1,7 @@
 import '../../src/browser/style/index.css';
 
-import { FrontendApplicationContribution, WidgetFactory } from '@theia/core/lib/browser';
+import { FrontendApplicationContribution, OpenHandler, WidgetFactory } from '@theia/core/lib/browser';
+import { NavigatorTreeDecorator } from '@theia/navigator/lib/browser/navigator-decorator-service';
 import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
 import { ContainerModule } from '@theia/core/shared/inversify';
 import { AthenaHomeWidget } from './athena-home-widget';
@@ -12,6 +13,11 @@ import { AthenaRepositorySessionService } from './athena-repository-session-serv
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
 import { AthenaSemanticInspectionWidget } from './athena-semantic-inspection-widget';
 import { AthenaTreeSitterHighlightingService } from './athena-tree-sitter-highlighting-service';
+import { AthenaPresentationWidget } from './athena-presentation-widget';
+import { AthenaSheetCompanionOpener } from './athena-sheet-companion-opener';
+import { AthenaCompanionTreeDecorator } from './athena-companion-tree-decorator';
+import { AthenaWorkbenchAutomationContribution } from './athena-workbench-automation';
+import { AthenaConnectionNavigatorWidget } from './athena-connection-navigator-widget';
 
 export default new ContainerModule(bind => {
     bind(AthenaRepositoryCreationService).toSelf().inSingletonScope();
@@ -22,10 +28,18 @@ export default new ContainerModule(bind => {
     bind(FrontendApplicationContribution).toService(AthenaRepositorySessionService);
     bind(FrontendApplicationContribution).toService(AthenaLspEditorBridgeService);
     bind(FrontendApplicationContribution).toService(AthenaSemanticSelectionService);
+    bind(AthenaWorkbenchAutomationContribution).toSelf().inSingletonScope();
+    bind(FrontendApplicationContribution).toService(AthenaWorkbenchAutomationContribution);
 
     bind(AthenaHomeWidget).toSelf();
     bind(AthenaRepositoryGraphWidget).toSelf();
     bind(AthenaSemanticInspectionWidget).toSelf();
+    bind(AthenaPresentationWidget).toSelf();
+    bind(AthenaConnectionNavigatorWidget).toSelf();
+    bind(AthenaSheetCompanionOpener).toSelf().inSingletonScope();
+    bind(OpenHandler).toService(AthenaSheetCompanionOpener);
+    bind(AthenaCompanionTreeDecorator).toSelf().inSingletonScope();
+    bind(NavigatorTreeDecorator).toService(AthenaCompanionTreeDecorator);
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaHomeWidget.ID,
         createWidget: () => context.container.get<AthenaHomeWidget>(AthenaHomeWidget)
@@ -37,6 +51,14 @@ export default new ContainerModule(bind => {
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaSemanticInspectionWidget.ID,
         createWidget: () => context.container.get<AthenaSemanticInspectionWidget>(AthenaSemanticInspectionWidget)
+    })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(context => ({
+        id: AthenaPresentationWidget.ID,
+        createWidget: () => context.container.get<AthenaPresentationWidget>(AthenaPresentationWidget)
+    })).inSingletonScope();
+    bind(WidgetFactory).toDynamicValue(context => ({
+        id: AthenaConnectionNavigatorWidget.ID,
+        createWidget: () => context.container.get<AthenaConnectionNavigatorWidget>(AthenaConnectionNavigatorWidget)
     })).inSingletonScope();
 
     bind(AthenaProductContribution).toSelf().inSingletonScope();

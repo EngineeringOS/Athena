@@ -9,6 +9,9 @@ import com.engineeringood.athena.compiler.semantic.ProjectSemanticDiagnosticSeve
 import com.engineeringood.athena.compiler.semantic.ProjectSemanticRelatedLocation
 import com.engineeringood.athena.compiler.semantic.SourceUnitId
 import com.engineeringood.athena.language.SourceSpan
+import com.engineeringood.athena.language.SheetCompanionParseFailure
+import com.engineeringood.athena.language.SheetCompanionParseResult
+import com.engineeringood.athena.language.SyntaxDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticDiagnostic
@@ -72,6 +75,9 @@ class AthenaLanguageServer(
     private var languageClient: LanguageClient? = null
     private var sessionSnapshot: AthenaLspSessionSnapshot? = null
     private var activeSession: AthenaLspSessionHostReady? = null
+    private var editOperationService: EditOperationService? = null
+    private var diagramPublicationService: AthenaDiagramPublicationService? = null
+    private var connectionReadModelService: ConnectionReadModelService? = null
     private var languageFeatures: AthenaLanguageFeatures? = null
     private val openDocumentUris = ConcurrentHashMap.newKeySet<String>()
 
@@ -146,7 +152,7 @@ class AthenaLanguageServer(
                 ?: throw ResponseErrorException(
                     ResponseError(
                         ResponseErrorCode.InvalidParams,
-                        "Athena LSP requires a repository root in rootUri, workspaceFolders, or initializationOptions.repositoryRoot.",
+                        "Athena LSP requires a repository root in workspaceFolders or initializationOptions.repositoryRoot.",
                         null,
                     ),
                 )
@@ -155,9 +161,12 @@ class AthenaLanguageServer(
                 is AthenaLspSessionHostReady -> {
                     val languageFeatureInitializationMs: Long
                     activeSession = activation
+                    diagramPublicationService = AthenaDiagramPublicationService(activation)
+                    connectionReadModelService = ConnectionReadModelService(activation.repositoryRoot)
+                    editOperationService = EditOperationService(activation, requireNotNull(diagramPublicationService))
                     languageFeatureInitializationMs = measureTimeMillis {
                         languageFeatures = AthenaLanguageFeatures(
-                            compiler = activation.context.compiler(),
+                            compiler = activation.executionContext.compiler(),
                             repositoryRoot = activation.repositoryRoot,
                             sourceRootPath = activation.sourceRootPath,
                         )
@@ -243,6 +252,9 @@ class AthenaLanguageServer(
         sessionHost.shutdown()
         openDocumentUris.clear()
         activeSession = null
+        editOperationService = null
+        diagramPublicationService = null
+        connectionReadModelService = null
         languageFeatures = null
         sessionSnapshot = null
         return CompletableFuture.completedFuture(Any())
@@ -252,6 +264,9 @@ class AthenaLanguageServer(
         sessionHost.shutdown()
         openDocumentUris.clear()
         activeSession = null
+        editOperationService = null
+        diagramPublicationService = null
+        connectionReadModelService = null
         languageFeatures = null
         sessionSnapshot = null
     }
@@ -282,6 +297,24 @@ class AthenaLanguageServer(
         )
     }
 
+    /** Publishes accepted semantic connectivity independently from its drawing projections. */
+    @JsonRequest("athena/connectionReadModel")
+    fun connectionReadModel(params: AthenaConnectionReadModelParams): CompletableFuture<Map<String, Any?>?> =
+        CompletableFuture.completedFuture(connectionReadModelDomain(params)?.toWirePayload())
+
+    internal fun connectionReadModelDomain(params: AthenaConnectionReadModelParams): ConnectionReadModelPublication? {
+        val session = activeSession ?: return null
+        val tracked = params.textDocument
+            ?.uri
+            ?.let { uri -> languageFeatures?.trackedDocument(uri) }
+            ?.takeIf { document -> document.path.toAbsolutePath().normalize() == session.sourcePath.toAbsolutePath().normalize() }
+        val revision = SourceRevisionService(session)
+            .attempted(tracked?.text?.toByteArray(Charsets.UTF_8))
+            .sceneInputRevision
+        val compilation = tracked?.compilation ?: session.executionContext.compiler().compile(session.sourcePath)
+        return connectionReadModelService?.publish(revision, compilation)
+    }
+
     /**
      * Returns baseline-driven semantic review and commit-preparation state through the Athena LSP boundary.
      */
@@ -289,7 +322,7 @@ class AthenaLanguageServer(
     fun semanticScmState(params: AthenaSemanticScmStateParams): CompletableFuture<AthenaSemanticScmStatePayload?> {
         val activation = activeSession
         return CompletableFuture.completedFuture(
-            activation?.context
+            activation?.executionContext
                 ?.services
                 ?.semanticScmStates()
                 ?.inspect(
@@ -308,7 +341,7 @@ class AthenaLanguageServer(
     fun semanticHistoryState(params: AthenaSemanticHistoryStateParams): CompletableFuture<AthenaSemanticHistoryStatePayload?> {
         val activation = activeSession
         return CompletableFuture.completedFuture(
-            activation?.context
+            activation?.executionContext
                 ?.services
                 ?.semanticHistoryStates()
                 ?.inspect(
@@ -320,22 +353,57 @@ class AthenaLanguageServer(
         )
     }
 
-    /**
-     * Returns the current runtime-owned projection session through the Athena LSP boundary.
-     */
-    @JsonRequest("athena/projectionSession")
-    fun projectionSession(params: AthenaProjectionSessionParams): CompletableFuture<AthenaProjectionSessionPayload?> {
+    /** Returns one closed M43 scene publication. */
+    @JsonRequest("athena/diagramScene")
+    fun diagramScene(params: AthenaDiagramSceneParams): CompletableFuture<Map<String, Any?>?> {
         @Suppress("UnusedParameter")
         val ignored = params
-        return CompletableFuture.completedFuture(
-            activeSession?.toProjectionSessionPayload(
-                snapshot = sessionSnapshot,
-                languageFeatures = languageFeatures,
-            ),
-        )
+        return CompletableFuture.completedFuture(diagramPublicationService?.current()?.toDiagramScenePayload())
     }
 
-    @Suppress("DEPRECATION")
+    @JsonRequest("athena/presentationEditContext")
+    fun presentationEditContext(params: AthenaDiagramSceneParams): CompletableFuture<Map<String, Any?>?> {
+        @Suppress("UnusedParameter")
+        val ignored = params
+        return CompletableFuture.completedFuture(activeSession?.presentationEditContext()?.toWirePayload())
+    }
+
+    internal fun presentationEditContextDomain(): AthenaPresentationEditContextPayload? = activeSession?.presentationEditContext()
+
+    /** Applies one typed edit intent through source revision and transaction authority. */
+    @JsonRequest("athena/applyEditOperation")
+    fun applyEditOperation(payload: Map<String, Any?>): CompletableFuture<Map<String, Any?>?> {
+        val session = activeSession ?: return CompletableFuture.completedFuture(null)
+        val operation = runCatching { editOperationFromWire(payload) }.getOrElse { failure ->
+            val operationId = (payload["operationId"] as? String)
+                ?.takeIf { value -> runCatching { java.util.UUID.fromString(value) }.getOrNull()?.version() == 4 }
+                ?: java.util.UUID.randomUUID().toString()
+            return CompletableFuture.completedFuture(
+                com.engineeringood.athena.interaction.EditOperationResult.rejected(
+                    operationId,
+                    SourceRevisionService(session).current(),
+                    com.engineeringood.athena.interaction.OperationRejectionReason.INVALID,
+                    listOf(com.engineeringood.athena.interaction.OperationDiagnostic("Edit operation", failure.message ?: "Edit Operation payload is invalid.", "Refresh and submit one generated typed Edit Operation.", "edit.operation.payload-invalid")),
+                ).toWirePayload(),
+            )
+        }
+        return CompletableFuture.completedFuture(applyEditOperation(operation).get()?.toWirePayload())
+    }
+
+    fun applyEditOperation(operation: com.engineeringood.athena.interaction.EditOperationEnvelope): CompletableFuture<com.engineeringood.athena.interaction.EditOperationResult?> =
+        CompletableFuture.completedFuture(
+            activeSession?.let { session ->
+                editOperationService?.apply(operation) ?: com.engineeringood.athena.interaction.EditOperationResult.rejected(
+                    operation.operationId,
+                    SourceRevisionService(session).current(),
+                    com.engineeringood.athena.interaction.OperationRejectionReason.UNAVAILABLE,
+                    listOf(com.engineeringood.athena.interaction.OperationDiagnostic(session.projectName, "Edit Operation service is unavailable.", "Reactivate Athena repository session.", "edit.operation.unavailable")),
+                )
+            },
+        )
+
+    internal fun acceptedOperationJournal() = editOperationService?.journalEntries().orEmpty()
+
     private fun resolveRepositoryRoot(params: InitializeParams): Path? {
         val workspaceUri = params.workspaceFolders
             ?.firstOrNull()
@@ -343,11 +411,6 @@ class AthenaLanguageServer(
             ?.toRepositoryRootPath()
         if (workspaceUri != null) {
             return workspaceUri
-        }
-
-        val rootUri = params.rootUri?.toRepositoryRootPath()
-        if (rootUri != null) {
-            return rootUri
         }
 
         val initializationOptions = params.initializationOptions as? Map<*, *>
@@ -391,12 +454,13 @@ class AthenaLanguageServer(
             version = version,
             text = documentText,
         )
-        val diagnostics = trackedDocument.compilation.toLspDiagnostics() +
-            trackedDocument.projectSemanticDiagnostics.toLspDiagnostics(
-                documentUri = documentUri,
-                currentSourceUnitId = trackedDocument.projectSemanticSourceUnitId,
-                sourceUnitUris = trackedDocument.projectSemanticSourceUnitUris,
-            )
+        val diagnostics = trackedDocument.sheetCompanion?.toLspDiagnostics()
+            ?: (trackedDocument.compilation.toLspDiagnostics() +
+                trackedDocument.projectSemanticDiagnostics.toLspDiagnostics(
+                    documentUri = documentUri,
+                    currentSourceUnitId = trackedDocument.projectSemanticSourceUnitId,
+                    sourceUnitUris = trackedDocument.projectSemanticSourceUnitUris,
+                ))
         languageClient?.publishDiagnostics(
             PublishDiagnosticsParams().apply {
                 uri = documentUri
@@ -574,6 +638,22 @@ private fun CompilerCompilationResult.toLspDiagnostics(): List<Diagnostic> {
             .distinct()
             .map { diagnostic -> diagnostic.toLspDiagnostic() }
     }
+}
+
+private fun SheetCompanionParseResult.toLspDiagnostics(): List<Diagnostic> = when (this) {
+    is SheetCompanionParseFailure -> diagnostics.map(SyntaxDiagnostic::toLspDiagnostic)
+    else -> emptyList()
+}
+
+private fun SyntaxDiagnostic.toLspDiagnostic(): Diagnostic = Diagnostic().apply {
+    severity = DiagnosticSeverity.Error
+    source = "Athena Sheet Companion"
+    code = Either.forLeft("sheet-companion")
+    message = this@toLspDiagnostic.message
+    range = Range(
+        Position((span.start.line - 1).coerceAtLeast(0), (span.start.column - 1).coerceAtLeast(0)),
+        Position((span.end.line - 1).coerceAtLeast(0), (span.end.column - 1).coerceAtLeast(0)),
+    )
 }
 
 private fun CompilerSyntaxDiagnostic.toLspDiagnostic(): Diagnostic {

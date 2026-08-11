@@ -1,7 +1,0 @@
-package com.engineeringood.m18.root
-
-system SinglePackageSuccess {
-  entity Single { concept Generic}
-  port Single.out {}
-  connect single_out_to_single_out Single.out to Single.out
-}

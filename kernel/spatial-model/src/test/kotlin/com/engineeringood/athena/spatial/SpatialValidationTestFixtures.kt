@@ -81,7 +81,7 @@ internal object SpatialValidationTestFixtures {
             constructs.map(SpatialConstructGeometry::sourceTrace) +
             alignments.map(SpatialAlignment::sourceTrace) +
             anchors.map(SpatialAnchorPosition::sourceTrace) +
-            routes.map(SpatialRoute::sourceTrace) +
+            routes.map(ConnectionRoutePlan::sourceTrace) +
             gridReferences.map(SpatialGridReference::sourceTrace)
         val currentTrace = SpatialSourceTrace(
             projectionIds = listOf(sheetId) +
@@ -143,12 +143,13 @@ internal object SpatialValidationTestFixtures {
             SpatialBoundarySide.LEFT,
             SpatialPoint(400, 120),
         )
-        val routeId = SpatialRouteId(sheetId, "connection:main")
+        val routeId = ConnectionRoutePlanId(sheetId, "connection:main")
         val laneId = SpatialLaneId(sheetId, SpatialLaneOrientation.HORIZONTAL, 120)
-        val route = SpatialRoute(
+        val route = ConnectionRoutePlan(
             routeId = routeId,
             sheetId = sheetId,
             connectionId = StableSemanticIdentity("connection:main"),
+            projectionConnectionId = "connection:main",
             sourceAnchorId = sourceAnchor.anchorId,
             targetAnchorId = targetAnchor.anchorId,
             laneId = laneId,
@@ -197,7 +198,7 @@ internal object SpatialValidationTestFixtures {
             listOf(region.sourceTrace, construct.sourceTrace) +
             alignments.map(SpatialAlignment::sourceTrace) +
             anchors.map(SpatialAnchorPosition::sourceTrace) +
-            routes.map(SpatialRoute::sourceTrace) +
+            routes.map(ConnectionRoutePlan::sourceTrace) +
             gridReferences.map(SpatialGridReference::sourceTrace)
         val qualityTrace = SpatialSourceTrace(
             projectionIds = listOf(sheetId) +
@@ -302,6 +303,7 @@ internal object SpatialValidationTestFixtures {
     fun routeTrace(sheetId: String): SpatialSourceTrace = SpatialSourceTrace(
         projectionIds = listOf(
             sheetId,
+            "connection:main",
             "connection:main",
             "occurrence:source",
             "port:source",

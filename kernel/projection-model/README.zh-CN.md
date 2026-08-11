@@ -56,7 +56,7 @@
 
 - `ProjectionDocument`
 - `ProjectionNode`
-- `ProjectionConnection`
+- `ConnectionProjection`
 - `ProjectionSheet`
 - `ProjectionSheetSubject`
 - `ProjectionNotationPack`

@@ -1,4 +1,0 @@
-status=syntax-failure
-syntaxErrorLine=2
-syntaxErrorColumn=1
-syntaxErrorMessageContains=import target

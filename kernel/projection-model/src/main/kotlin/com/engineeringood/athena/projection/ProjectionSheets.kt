@@ -12,7 +12,7 @@ import com.engineeringood.athena.ir.StableSemanticIdentity
 data class ProjectionSheetSubject(
     val semanticId: StableSemanticIdentity,
     val nodeIds: List<ProjectionNodeId> = emptyList(),
-    val connectionIds: List<ProjectionConnectionId> = emptyList(),
+    val connectionIds: List<ConnectionProjectionId> = emptyList(),
 )
 
 /**
@@ -182,6 +182,7 @@ data class ProjectionSheetGrid(
     val gridId: String,
     val rows: Int,
     val columns: Int,
+    val subdivisions: Int = 4,
 )
 
 /**

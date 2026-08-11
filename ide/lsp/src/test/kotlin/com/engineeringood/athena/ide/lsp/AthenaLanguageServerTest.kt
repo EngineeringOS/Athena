@@ -1,7 +1,8 @@
 package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
-import org.eclipse.lsp4j.InitializeParams
+import org.eclipse.lsp4j.DocumentSymbolParams
+import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.eclipse.lsp4j.TextDocumentItem
 import java.util.concurrent.ExecutionException
 import kotlin.io.path.createDirectories
@@ -18,7 +19,43 @@ import kotlin.test.assertTrue
  */
 class AthenaLanguageServerTest {
     @Test
-    @Suppress("DEPRECATION")
+    fun `sheet companion has outline and no project parser diagnostic`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-sheet-lsp-",
+            sourceFileName = "rolling-shutter.athena",
+            sourceText = "system RollingShutter { }",
+        )
+        val sheetPath = repository.sourceRoot.resolve("com/engineeringood/factoryline/rolling-shutter.sheet.athena")
+        val sheetText = """
+            sheet rolling-shutter {
+              page format A3 landscape
+              frame: 17 * 16
+              snap: 1
+              title "Rolling Shutter"
+              "Supply" at (8, 12)
+            }
+        """.trimIndent()
+        sheetPath.writeText(sheetText)
+        val server = AthenaLanguageServer()
+        try {
+            server.initialize(workspaceInitializeParams(repository.repositoryRoot)).get()
+            val uri = sheetPath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(TextDocumentItem(uri, "athena-sheet", 1, sheetText)),
+            )
+            val symbols = server.textDocumentService.documentSymbol(
+                DocumentSymbolParams(TextDocumentIdentifier(uri)),
+            ).get()
+            assertEquals("sheet rolling-shutter", symbols.single().right.name)
+            assertEquals(5, symbols.single().right.children.size)
+            assertTrue(server.trackedDocument(uri)?.sheetCompanion is com.engineeringood.athena.language.SheetCompanionParseSuccess)
+        } finally {
+            server.shutdown().get()
+            repository.repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `initialize activates one governed repository-backed runtime session`() {
         val repositoryRoot = createTempDirectory("athena-lsp-")
         repositoryRoot.resolve("athena.yaml").writeText(
@@ -51,11 +88,7 @@ class AthenaLanguageServerTest {
 
         val server = AthenaLanguageServer()
         try {
-            val result = server.initialize(
-                InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
+            val result = server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
             val transportPayload = result.capabilities.experimental as Map<*, *>
             assertEquals(repositoryRoot.toAbsolutePath().normalize().toString(), transportPayload["repositoryRoot"])
@@ -89,7 +122,6 @@ class AthenaLanguageServerTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `initialize rejects invalid repositories when the governed source root has no authored source`() {
         val repositoryRoot = createTempDirectory("athena-lsp-invalid-")
         repositoryRoot.resolve("athena.yaml").writeText(
@@ -105,11 +137,7 @@ class AthenaLanguageServerTest {
         val server = AthenaLanguageServer()
         try {
             val exception = assertFailsWith<ExecutionException> {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = repositoryRoot.toUri().toString()
-                    },
-                ).get()
+                server.initialize(workspaceInitializeParams(repositoryRoot)).get()
             }
 
             val message = exception.cause?.message.orEmpty()

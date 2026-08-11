@@ -34,6 +34,10 @@ class AthenaRepositoryLockMaterializerTest {
                         locator: vendor/alpha
                 """.trimIndent(),
             )
+            repositoryRoot.resolve("src/com/engineeringood/root/resources/terminal.svg").apply {
+                parent.createDirectories()
+                writeText("<svg viewBox=\"0 0 4 4\"/>")
+            }
             writeGovernedRepository(
                 repositoryRoot = repositoryRoot.resolve("vendor").resolve("alpha"),
                 packageName = "com.engineeringood.alpha",
@@ -56,11 +60,12 @@ class AthenaRepositoryLockMaterializerTest {
             assertEquals(first.renderedLock, second.renderedLock)
             assertEquals(firstBytes, secondBytes)
             assertEquals(first.renderedLock, firstBytes)
-            assertTrue(firstBytes.contains("version: 2"))
-            assertTrue(firstBytes.contains("schema: repository-lock-v2"))
-            assertTrue(firstBytes.contains("compilerSchema: athena-lock-v2"))
-            assertTrue(firstBytes.contains("snapshotDigest: package-snapshot:"))
+            assertTrue(firstBytes.contains("version: 3"))
+            assertTrue(firstBytes.contains("schema: athena-lock-v3"))
+            assertTrue(firstBytes.contains("compilerSchema: athena-lock-v3-c14n-v1"))
+            assertTrue(firstBytes.contains("manifestDigest: sha256:"))
             assertTrue(firstBytes.contains("sourceHashes:"))
+            assertTrue(firstBytes.contains("resources/terminal.svg"))
             assertTrue(firstBytes.contains("primaryPackage:"))
             assertTrue(firstBytes.contains("sourceRoot: vendor/alpha/src"))
             assertTrue(firstBytes.contains("dependencies: []"))
@@ -99,7 +104,7 @@ class AthenaRepositoryLockMaterializerTest {
     }
 
     @Test
-    fun `source content changes the admitted package snapshot digest independently from lock bytes`() {
+    fun `source content changes admitted source hash evidence independently from lock bytes`() {
         val repositoryRoot = createTempDirectory("athena-lock-digest-")
         try {
             writeGovernedRepository(
@@ -131,8 +136,8 @@ class AthenaRepositoryLockMaterializerTest {
             assertFalse(stale.isValid)
             assertTrue(stale.diagnostics.any { diagnostic -> diagnostic.code == "repository.lock.stale" })
             assertTrue(
-                stale.renderedExpectedLock!!.substringAfter("snapshotDigest: ") != first.renderedLock.substringAfter("snapshotDigest: "),
-                "Source bytes must affect package snapshot digest.",
+                stale.renderedExpectedLock!!.substringAfter("sourceHashes:") != first.renderedLock.substringAfter("sourceHashes:"),
+                "Source bytes must affect admitted source hash evidence.",
             )
         } finally {
             repositoryRoot.toFile().deleteRecursively()
@@ -171,9 +176,9 @@ class AthenaRepositoryLockMaterializerTest {
             )
             repositoryRoot.resolve("athena.lock").writeText(
                 """
-                    version: 2
-                    schema: repository-lock-v2
-                    compilerSchema: athena-lock-v2
+                    version: 3
+                    schema: athena-lock-v3
+                    compilerSchema: athena-lock-v3-c14n-v1
                     validatedLockStateDigest: lock-state:stale
                     primaryPackage:
                       name: com.engineeringood.root
@@ -182,7 +187,7 @@ class AthenaRepositoryLockMaterializerTest {
                       - name: com.engineeringood.root
                         version: 1.0.0
                         sourceRoot: src
-                        snapshotDigest: package-snapshot:stale
+                        manifestDigest: sha256:${"f".repeat(64)}
                         sourceHashes: []
                         resourceHashes: []
                         dependencies: []

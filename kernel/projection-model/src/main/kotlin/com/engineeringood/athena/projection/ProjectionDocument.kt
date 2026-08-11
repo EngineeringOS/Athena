@@ -11,7 +11,7 @@ import com.engineeringood.athena.layout.ViewDefinition
 data class ProjectionDocument(
     val view: ViewDefinition,
     val nodes: List<ProjectionNode>,
-    val connections: List<ProjectionConnection>,
+    val connections: List<ConnectionProjection>,
     val occurrencePorts: List<ProjectionOccurrencePort> = emptyList(),
     val resolvedSubjects: List<ProjectionResolvedSubject> = emptyList(),
     val sheets: List<ProjectionSheet> = emptyList(),

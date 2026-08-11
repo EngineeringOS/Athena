@@ -3,7 +3,6 @@ package com.engineeringood.athena.integrations.scm.git
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
-import com.engineeringood.athena.compiler.defaultAthenaKnowledgePackageSource
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
 import com.engineeringood.athena.repository.RepositoryGraphReport
@@ -29,9 +28,7 @@ import kotlin.io.path.pathString
  */
 class GitSemanticBaselineAdapter(
     private val compilerProvider: () -> AthenaCompiler = {
-        AthenaCompiler(
-            knowledgePackageSource = defaultAthenaKnowledgePackageSource(),
-        )
+        AthenaCompiler()
     },
 ) : SemanticBaselineAdapter {
     override val adapterId: String = ADAPTER_ID

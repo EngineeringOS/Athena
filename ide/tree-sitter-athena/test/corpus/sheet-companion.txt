@@ -1,0 +1,38 @@
+===========================
+Sheet Companion
+===========================
+sheet "rolling-shutter" {
+  page format A3 landscape
+  grid: 17 * 16  cell: 4
+  title "Rolling Shutter Control"
+  "Supply" at A2
+  "Q1" at C3 micro(2,1) lock
+}
+---
+
+(source_file
+  (sheet_companion
+    name: (string
+      (string_content))
+    (sheet_page
+      format: (identifier))
+    (sheet_grid
+      columns: (positive_integer)
+      rows: (positive_integer)
+      cell: (positive_integer))
+    (sheet_title
+      value: (string
+        (string_content)))
+    (sheet_placement
+      occurrence: (string
+        (string_content))
+      cell: (sheet_cell
+        (sheet_cell)))
+    (sheet_placement
+      occurrence: (string
+        (string_content))
+      cell: (sheet_cell
+        (sheet_cell))
+      micro: (sheet_micro
+        (positive_integer)
+        (positive_integer)))))

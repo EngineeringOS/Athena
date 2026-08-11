@@ -7,6 +7,7 @@ data class SpatialGridDefinition(
     val rows: Int,
     val columns: Int,
     val sourceTrace: SpatialSourceTrace,
+    val subdivisions: Int = 4,
 ) {
     init {
         require(sheetId.isNotBlank()) { "Spatial grid Sheet identity must not be blank." }
@@ -15,6 +16,9 @@ data class SpatialGridDefinition(
             "Spatial grid rows must be between 1 and $MAX_SUPPORTED_ROWS."
         }
         require(columns > 0) { "Spatial grid columns must be positive." }
+        require(subdivisions > 0 && subdivisions % 4 == 0) {
+            "Spatial grid subdivisions must be a positive multiple of 4."
+        }
     }
 
     companion object {

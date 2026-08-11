@@ -53,6 +53,7 @@ class AthenaRepositoryGraphResolver(
         resolvedNodesByKey[rootNode.packageKey] = rootNode
         cachedInputResultsByRootKey[stablePathKey(rootResolutionRoot)] = rootInputResult
         pendingRepositories += PendingRepositoryResolution(rootResolutionRoot, rootInputResult)
+        val localCatalog = rootValidation.localPackageCatalog
 
         while (pendingRepositories.isNotEmpty()) {
             val pendingRepository = pendingRepositories.removeFirst()
@@ -87,6 +88,8 @@ class AthenaRepositoryGraphResolver(
         resolvePendingIdentityReferences(
             resolvedNodesByKey = resolvedNodesByKey,
             pendingIdentityReferences = pendingIdentityReferences,
+            localPackageCatalog = localCatalog,
+            rootResolutionRoot = rootResolutionRoot,
             diagnostics = diagnostics,
         )
 
@@ -179,18 +182,32 @@ class AthenaRepositoryGraphResolver(
     }
 
     private fun resolvePendingIdentityReferences(
-        resolvedNodesByKey: Map<String, ResolvedRepositoryNode>,
+        resolvedNodesByKey: MutableMap<String, ResolvedRepositoryNode>,
         pendingIdentityReferences: List<PendingIdentityReference>,
+        localPackageCatalog: List<LocalPackageCatalogEntry>,
+        rootResolutionRoot: Path,
         diagnostics: MutableList<RepositoryDiagnostic>,
     ) {
         pendingIdentityReferences.forEach { pendingReference ->
             val ownerNode = resolvedNodesByKey[pendingReference.ownerPackageKey] ?: return@forEach
-            val matches = resolvedNodesByKey.values.filter { candidate ->
+            val graphMatches = resolvedNodesByKey.values.filter { candidate ->
                 candidate.packageId.name == pendingReference.dependency.packageId.name &&
                     (
                         pendingReference.dependency.packageId.version == null ||
                             candidate.packageId.version == pendingReference.dependency.packageId.version
-                        )
+                )
+            }
+            val catalogMatches = localPackageCatalog.filter { candidate ->
+                candidate.packageId.name == pendingReference.dependency.packageId.name &&
+                    (pendingReference.dependency.packageId.version == null ||
+                        candidate.packageId.version == pendingReference.dependency.packageId.version)
+            }
+            val matches = if (graphMatches.isNotEmpty()) graphMatches else catalogMatches.map { candidate ->
+                ResolvedRepositoryNode(
+                    packageId = candidate.packageId,
+                    repositoryRoot = candidate.packageRoot,
+                    graphSourceRoot = rootResolutionRoot.relativize(candidate.packageRoot).toDisplayPath(),
+                )
             }
 
             when {
@@ -204,7 +221,13 @@ class AthenaRepositoryGraphResolver(
                     message = "Dependency `${pendingReference.dependency.packageId.render()}` matched multiple discovered package versions. Declare an explicit version to disambiguate.",
                 )
 
-                else -> ownerNode.addDirectDependency(matches.single().packageId)
+                else -> {
+                    val selected = matches.single()
+                    if (selected !in resolvedNodesByKey.values) {
+                        resolvedNodesByKey[selected.packageKey] = selected
+                    }
+                    ownerNode.addDirectDependency(selected.packageId)
+                }
             }
         }
     }

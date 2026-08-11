@@ -9,6 +9,7 @@ import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.EntityDeclaration
+import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
@@ -94,6 +95,9 @@ class DummyRuntimeDomainPlugin : AthenaDomainPlugin, AthenaRuntimePluginViewCont
                     portDeclarations += declaration.nestedFunctions.flatMap { function -> function.nestedPorts }
                 }
                 is PortDeclaration -> portDeclarations += declaration
+                is ConnectionDeclaration -> Unit
+                is com.engineeringood.athena.language.NetDeclaration -> Unit
+                is com.engineeringood.athena.language.ConnectionSpecificationDeclaration -> Unit
                 is RelationDeclaration -> Unit
 		                is ExternalEvidenceDeclaration -> Unit
 	                is com.engineeringood.athena.language.ProjectionPolicyDeclaration -> Unit

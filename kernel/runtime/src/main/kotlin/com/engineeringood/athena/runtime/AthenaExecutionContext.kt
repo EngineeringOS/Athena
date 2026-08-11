@@ -23,6 +23,9 @@ class AthenaExecutionContext(
     /** Resolves the runtime-owned engineering-graph capability for the active project. */
     fun engineeringGraph(): AthenaEngineeringGraphService = services.engineeringGraph()
 
+    /** Resolves the runtime-owned Connection IR publication boundary. */
+    fun connectionPublications(): AthenaConnectionPublicationService = services.connectionPublications()
+
     /** Resolves the runtime-owned hosted plugin services for the active project. */
     fun pluginRuntimeServices(): AthenaPluginRuntimeServices = services.pluginRuntimeServices()
 

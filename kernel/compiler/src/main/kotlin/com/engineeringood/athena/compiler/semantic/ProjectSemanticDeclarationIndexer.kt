@@ -82,7 +82,12 @@ class ProjectSemanticDeclarationIndexer {
                         "port" to listOf(name, port.name) to port.span
                     }
                 } +
-                nestedFunctions.map { function -> "function" to listOf(name, function.name) to function.span }
+                nestedFunctions.flatMap { function ->
+                    listOf("function" to listOf(name, function.name) to function.span) +
+                        function.nestedPorts.map { port ->
+                            "port" to port.qualifiedName.parts to port.span
+                        }
+                }
             is PortDeclaration -> listOf("port" to qualifiedName.parts to span)
             is RelationDeclaration -> emptyList()
             else -> return emptyList()

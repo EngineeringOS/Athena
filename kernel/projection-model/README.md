@@ -56,7 +56,7 @@ The current M7 slice publishes:
 
 - `ProjectionDocument`
 - `ProjectionNode`
-- `ProjectionConnection`
+- `ConnectionProjection`
 - `ProjectionSheet`
 - `ProjectionSheetSubject`
 - `ProjectionNotationPack`

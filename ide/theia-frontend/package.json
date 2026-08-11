@@ -6,6 +6,7 @@
   "license": "MIT",
   "dependencies": {
     "@engineeringood/athena-tree-sitter-grammar": "link:../tree-sitter-athena",
+    "ajv": "8.20.0",
     "web-tree-sitter": "^0.26.0",
     "@theia/core": "1.73.1",
     "@theia/editor": "1.73.1",
@@ -15,6 +16,7 @@
     "@theia/output": "1.73.1",
     "@theia/workspace": "1.73.1",
     "inversify": "^6.2.2",
+    "konva": "10.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -32,6 +34,8 @@
   },
   "scripts": {
     "clean": "rimraf lib *.tsbuildinfo",
+    "contracts:generate": "node scripts/generate-diagram-contracts.mjs",
+    "contracts:check": "node scripts/generate-diagram-contracts.mjs --check",
     "build": "tsc -b --force",
     "test": "yarn build && node --test scripts/*.test.mjs"
   }

@@ -1,0 +1,1 @@
+{"operations": ["pan", "zoom", "select", "drag"], "warmupFrames": 60, "measuredFrames": 300, "requiresStableSceneRevision": true}

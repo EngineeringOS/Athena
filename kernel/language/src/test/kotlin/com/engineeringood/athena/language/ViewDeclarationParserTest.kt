@@ -54,6 +54,29 @@ class ViewDeclarationParserTest {
     }
 
     @Test
+    fun `parses qualified function occurrences in authored regions`() {
+        val source =
+            """
+            system FunctionView {
+              entity KM1 {
+                concept contactor
+                function coil { role control }
+                function mainContact { role switching }
+              }
+              view schematic {
+                sheet S1
+                region "Contactor Functions" { occurrences [KM1.coil, KM1.mainContact] }
+              }
+            }
+            """.trimIndent()
+
+        val success = assertIs<ParseSuccess>(AthenaLanguageParser().parse("function-view.athena", source))
+        val view = assertIs<ViewDeclaration>(success.ast.declarations.filterIsInstance<ViewDeclaration>().single())
+
+        assertEquals(listOf("KM1.coil", "KM1.mainContact"), view.regions.single().occurrences)
+    }
+
+    @Test
     fun `parses view without grid`() {
         val source =
             """

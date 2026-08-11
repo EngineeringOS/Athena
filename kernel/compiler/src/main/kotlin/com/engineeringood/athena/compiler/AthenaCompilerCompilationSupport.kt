@@ -1,8 +1,20 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
+import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.language.AthenaSheetCompanionParser
+import com.engineeringood.athena.language.SheetCompanionParseFailure
+import com.engineeringood.athena.language.SheetCompanionParseSuccess
+import com.engineeringood.athena.language.SheetCompanionFound
+import com.engineeringood.athena.language.SheetCompanionLocator
+import com.engineeringood.athena.language.AthenaSheetStyleCompanionParser
+import com.engineeringood.athena.language.SheetStyleCompanionLocator
+import com.engineeringood.athena.language.SheetStyleCompanionParseSuccess
+import com.engineeringood.athena.language.SheetStyleCompanionSource
 import com.engineeringood.athena.language.RepresentationSourceUnit
+import com.engineeringood.athena.projection.ProjectionDocument
+import com.engineeringood.athena.projection.ProjectionSheetGrid
 import com.engineeringood.athena.plugin.AthenaCompilerContributionStage
 import com.engineeringood.athena.plugin.AthenaPluginValidationContext
 import com.engineeringood.athena.plugin.AthenaSemanticEnrichmentContext
@@ -17,6 +29,11 @@ import com.engineeringood.athena.semantics.core.SemanticValidationResult
 import com.engineeringood.athena.spatial.SpatialDocument
 import com.engineeringood.athena.spatial.SpatialReality
 import com.engineeringood.athena.spatial.SpatialSourceTrace
+import com.engineeringood.athena.spatial.ConnectionAnnotationDisplayRole
+import com.engineeringood.athena.spatial.ConnectionAnnotationSelection
+import com.engineeringood.athena.ir.StableSemanticIdentity
+import java.nio.file.Files
+import java.nio.file.Path
 
 internal class AthenaCompilerCompilationSupport(
     private val lowerer: EngineeringIrLowerer,
@@ -25,12 +42,11 @@ internal class AthenaCompilerCompilationSupport(
 ) {
     fun compileParsedSource(
         parseResult: CompilerParseResult,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
+        sheetCompanionOverride: com.engineeringood.athena.language.SheetCompanionSource? = null,
     ): CompilerCompilationResult {
         return when (parseResult) {
-            is CompilerParseFailure -> parseFailure(parseResult, knowledgeContext, boundaryValidation)
-            is CompilerParseSuccess -> compileParsedSource(parseResult.source, knowledgeContext, boundaryValidation)
+            is CompilerParseFailure -> parseFailure(parseResult)
+            is CompilerParseSuccess -> compileParsedSource(parseResult.source, sheetCompanionOverride)
         }
     }
 
@@ -50,11 +66,10 @@ internal class AthenaCompilerCompilationSupport(
 
     private fun compileParsedSource(
         source: CompilerSourceDocument,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
+        sheetCompanionOverride: com.engineeringood.athena.language.SheetCompanionSource?,
     ): CompilerCompilationResult {
         if (source.ast.unit is RepresentationSourceUnit) {
-            return representationSourceFailure(source, knowledgeContext, boundaryValidation)
+            return representationSourceFailure(source)
         }
 
         val document = lowerer.lower(source)
@@ -64,22 +79,49 @@ internal class AthenaCompilerCompilationSupport(
             document = document,
             enrichmentDiagnostics = enrichment.diagnostics,
         )
+        val connectionIrResult = ConnectionIrCompiler().compile(document, validation.semanticResult)
+        val connectionIr = (connectionIrResult as? ConnectionIrCompilation.Success)?.document
+        val connectionIrDiagnostics = (connectionIrResult as? ConnectionIrCompilation.Failure)?.diagnostics.orEmpty()
         val projection = if (validation.semanticResult.continuationDecision == SemanticContinuationDecision.CONTINUE) {
-            AuthoredProjectionViewCompiler.compile(document)
+            AuthoredProjectionViewCompiler.compile(document, connectionIr)
         } else {
             null
         }
-        val projections = (projection as? AuthoredProjectionCompilation.Success)?.documents.orEmpty()
+        val rawProjections = (projection as? AuthoredProjectionCompilation.Success)?.documents.orEmpty()
         val projectionDiagnostics = (projection as? AuthoredProjectionCompilation.Failure)
             ?.diagnostics
             ?.map { diagnostic -> diagnostic.message }
             .orEmpty()
+        val sheetCompanion = loadSheetCompanion(source, sheetCompanionOverride)
+        val styleCompanion = loadSheetStyleCompanion(source)
+        val projectionIntentResults = rawProjections.map { projectedDocument ->
+            applySheetCompanionProjectionIntent(projectedDocument, sheetCompanion.source)
+        }
+        val projections = projectionIntentResults.map(SheetProjectionIntentResult::projection)
+        val annotationSelections = styleAnnotationSelections(styleCompanion?.source, connectionIr, projections)
         val spatialCandidates = mutableListOf<SpatialDocument>()
         val spatialDiagnostics = mutableListOf<RealityTransformationDiagnostic>()
         if (projectionDiagnostics.isEmpty()) {
+            spatialDiagnostics += sheetCompanion.diagnostics
+            spatialDiagnostics += projectionIntentResults.flatMap(SheetProjectionIntentResult::diagnostics)
             projections.forEach { projectedDocument ->
-                when (val result = ProjectionSpatialCompiler().transform(projectedDocument)) {
-                    is RealityTransformationResult.Success -> spatialCandidates += result.output
+                when (val result = ProjectionSpatialCompiler().transform(
+                    projectedDocument,
+                    placementConstraints = emptyList(),
+                    connectionIr = connectionIr,
+                    annotationSelections = annotationSelections,
+                )) {
+                    is RealityTransformationResult.Success -> {
+                        val constrained = applySheetCompanion(
+                            projectedDocument,
+                            result.output,
+                            sheetCompanion.source,
+                            connectionIr,
+                            annotationSelections,
+                        )
+                        spatialDiagnostics += constrained.diagnostics
+                        constrained.document?.let(spatialCandidates::add)
+                    }
                     is RealityTransformationResult.Failure -> spatialDiagnostics += result.diagnostics
                 }
             }
@@ -92,6 +134,7 @@ internal class AthenaCompilerCompilationSupport(
             source = source,
             document = document,
             semanticResult = validation.semanticResult,
+            sheetCompanion = sheetCompanion.source,
             validationBreakdown = validation.validationBreakdown,
             projections = projections,
             projectionDiagnostics = projectionDiagnostics,
@@ -108,9 +151,6 @@ internal class AthenaCompilerCompilationSupport(
                     RealityTransformationDiagnostic::message,
                 ),
             ),
-            knowledgeContext = knowledgeContext,
-            boundaryValidation = boundaryValidation,
-            knowledgeAttributions = buildKnowledgeAttributions(knowledgeContext),
             pipeline = CompilerPipelineReport(
                 listOf(
                     CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.SUCCEEDED, systemIdentitySummary(source)),
@@ -128,17 +168,73 @@ internal class AthenaCompilerCompilationSupport(
                     spatialPass(validation.semanticResult, projectionDiagnostics, spatialResolution.documents.size, spatialDiagnostics),
                 ),
             ),
+            connectionIr = connectionIr,
+            connectionIrDiagnostics = connectionIrDiagnostics,
+        )
+    }
+
+    private fun applySheetCompanionProjectionIntent(
+        projection: ProjectionDocument,
+        companion: com.engineeringood.athena.language.SheetCompanionSource?,
+    ): SheetProjectionIntentResult {
+        if (companion == null) return SheetProjectionIntentResult(projection, emptyList())
+        val target = projection.sheets.firstOrNull { sheet ->
+            sheet.displayName == companion.name || sheet.sheetId.value == companion.name
+        } ?: projection.sheets.singleOrNull() ?: return SheetProjectionIntentResult(projection, emptyList())
+        val publication = target.publication.copy(
+            pageSize = target.publication.pageSize.copy(
+                format = companion.page.format,
+                orientation = companion.page.orientation.name.lowercase(),
+            ),
+            titleBlock = target.publication.titleBlock.copy(
+                sheetTitle = companion.title?.text ?: target.publication.titleBlock.sheetTitle,
+            ),
+        )
+        val companionSheet = target.copy(
+            grid = target.grid?.copy(
+                rows = companion.frame.rows,
+                columns = companion.frame.columns,
+            ) ?: ProjectionSheetGrid(
+                gridId = "${target.sheetId.value}/plot-frame",
+                rows = companion.frame.rows,
+                columns = companion.frame.columns,
+            ),
+            publication = publication,
+            composition = target.composition.copy(publication = publication),
+        )
+        val sheetProjection = projection.copy(
+            sheets = projection.sheets.map { sheet ->
+                if (sheet.sheetId == target.sheetId) companionSheet else sheet
+            },
+        )
+        val routeMapping = SheetCompanionProjectionPlacementMapper().mapRouteConstraints(
+            companion,
+            companionSheet,
+            sheetProjection,
+        )
+        val routeDiagnostics = routeMapping.diagnostics.map { diagnostic ->
+            RealityTransformationDiagnostic(
+                reality = "Sheet Companion",
+                message = diagnostic.message,
+                subject = companionSheet.sheetId.value,
+                problem = diagnostic.message,
+                correction = "Use a Connection Projection placed on this Sheet and a unique stable route target.",
+                sourceTrace = SpatialSourceTrace(
+                    projectionIds = listOf(companionSheet.sheetId.value),
+                    geometryElementIds = listOf(companionSheet.originGeometryElementId),
+                ),
+            )
+        }
+        return SheetProjectionIntentResult(
+            projection = sheetProjection.copy(connections = routeMapping.connections),
+            diagnostics = routeDiagnostics,
         )
     }
 
     private fun parseFailure(
         result: CompilerParseFailure,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
     ): CompilerCompilationParseFailure = CompilerCompilationParseFailure(
         diagnostics = result.diagnostics,
-        knowledgeContext = knowledgeContext,
-        boundaryValidation = boundaryValidation,
         pipeline = CompilerPipelineReport(
             listOf(
                 CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.FAILED, "${result.diagnostics.size} syntax diagnostics"),
@@ -152,8 +248,6 @@ internal class AthenaCompilerCompilationSupport(
 
     private fun representationSourceFailure(
         source: CompilerSourceDocument,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
     ): CompilerCompilationParseFailure {
         val span = source.ast.span
         return CompilerCompilationParseFailure(
@@ -167,8 +261,6 @@ internal class AthenaCompilerCompilationSupport(
                     message = "Representation source is outside the M42 engineering source contract.",
                 ),
             ),
-            knowledgeContext = knowledgeContext,
-            boundaryValidation = boundaryValidation,
             pipeline = CompilerPipelineReport(
                 listOf(
                     CompilerPassRecord(PARSE_PASS, CompilerPassExecutionStatus.SUCCEEDED, "representation source"),
@@ -250,29 +342,178 @@ internal class AthenaCompilerCompilationSupport(
         message = "No approved domain plugin claimed the authored domain semantics in `${document.system.name}`.",
     )
 
-    private fun buildKnowledgeAttributions(
-        context: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-    ): List<CompilerKnowledgeAttribution> {
-        val artifacts = context.activeArtifacts.map { artifact ->
-            CompilerKnowledgeArtifactReference(
-                artifactId = artifact.artifactId,
-                artifactKind = artifact.artifactKind,
-                artifactVersion = artifact.artifactVersion,
-                provenance = artifact.provenance,
+    private fun loadSheetCompanion(
+        source: CompilerSourceDocument,
+        sheetCompanionOverride: com.engineeringood.athena.language.SheetCompanionSource?,
+    ): SheetCompanionLoadResult {
+        if (sheetCompanionOverride != null) return SheetCompanionLoadResult(sheetCompanionOverride, emptyList())
+        val sourcePath = runCatching { Path.of(source.file) }.getOrNull() ?: return SheetCompanionLoadResult(null, emptyList())
+        val fileName = sourcePath.fileName?.toString() ?: return SheetCompanionLoadResult(null, emptyList())
+        if (!fileName.endsWith(".athena") || fileName.endsWith(".sheet.athena")) {
+            return SheetCompanionLoadResult(null, emptyList())
+        }
+        val location = SheetCompanionLocator.locate(sourcePath)
+        val companionPath = (location as? SheetCompanionFound)?.path
+        if (companionPath == null) {
+            val expected = location.expectedPath
+            val problem = when (location) {
+                is com.engineeringood.athena.language.SheetCompanionMissing ->
+                    "Sheet Companion `${expected.fileName}` is missing."
+                is com.engineeringood.athena.language.SheetCompanionAmbiguous ->
+                    "Sheet Companion `${expected.fileName}` has more than one candidate."
+                is SheetCompanionFound -> error("Found companion must have a path.")
+            }
+            return SheetCompanionLoadResult(
+                null,
+                listOf(sheetCompanionDiagnostic(sourcePath, expected, problem)),
             )
         }
-        return listOf(
-            CompilerKnowledgeAttribution(
-                target = CompilerKnowledgeAttributionTarget.KNOWLEDGE_CONTEXT,
-                responsibleArtifacts = artifacts,
-                rationale = "Reviewed package facts admitted for this compilation.",
-            ),
-            CompilerKnowledgeAttribution(
-                target = CompilerKnowledgeAttributionTarget.SEMANTIC_RESULT,
-                responsibleArtifacts = emptyList(),
-                rationale = "M42 knowledge evaluation is not installed by Story 1.1.",
-            ),
-        )
+        return when (val parsed = AthenaSheetCompanionParser().parse(companionPath.toString(), Files.readString(companionPath))) {
+            is SheetCompanionParseSuccess -> SheetCompanionLoadResult(parsed.source, emptyList())
+            is SheetCompanionParseFailure -> SheetCompanionLoadResult(
+                null,
+                parsed.diagnostics.map { diagnostic ->
+                    sheetCompanionDiagnostic(
+                        sourcePath = sourcePath,
+                        companionPath = companionPath,
+                        problem = diagnostic.message,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun loadSheetStyleCompanion(source: CompilerSourceDocument): SheetStyleCompanionLoadResult? {
+        val sourcePath = runCatching { Path.of(source.file) }.getOrNull() ?: return null
+        val fileName = sourcePath.fileName?.toString() ?: return null
+        val sheetPath = sourcePath.resolveSibling(fileName.removeSuffix(".athena") + ".sheet.athena")
+        if (!Files.exists(sheetPath)) return null
+        val location = SheetStyleCompanionLocator.locate(sheetPath)
+        val stylePath = (location as? SheetCompanionFound)?.path ?: return null
+        return when (val parsed = AthenaSheetStyleCompanionParser().parse(stylePath.toString(), Files.readString(stylePath))) {
+            is SheetStyleCompanionParseSuccess -> SheetStyleCompanionLoadResult(parsed.source)
+            else -> null
+        }
+    }
+
+    private fun styleAnnotationSelections(
+        style: SheetStyleCompanionSource?,
+        connectionIr: com.engineeringood.athena.connection.ConnectionDocument?,
+        projections: List<ProjectionDocument>,
+    ): List<ConnectionAnnotationSelection> {
+        if (style == null || connectionIr == null) return emptyList()
+        val facts = connectionIr.connections.map { fact -> fact.id to (fact.id.value.substringAfterLast(':')) } +
+            connectionIr.nets.map { fact -> fact.id to fact.name }
+        val intents = style.styles.flatMap { it.annotations }
+        return projections.flatMap { projection ->
+            projection.sheets.flatMap { sheet ->
+                intents.mapNotNull { intent ->
+                    val fact = facts.firstOrNull { (_, name) -> name == intent.subjectName } ?: return@mapNotNull null
+                    val role = when (intent.displayRole) {
+                        "kind" -> ConnectionAnnotationDisplayRole.KIND
+                        "potential-or-signal" -> ConnectionAnnotationDisplayRole.POTENTIAL_OR_SIGNAL
+                        "specification" -> ConnectionAnnotationDisplayRole.SPECIFICATION
+                        else -> return@mapNotNull null
+                    }
+                    ConnectionAnnotationSelection(
+                        sheetId = sheet.sheetId.value,
+                        semanticId = StableSemanticIdentity(fact.first.value),
+                        displayRole = role,
+                        sourceTrace = SpatialSourceTrace(
+                            projectionIds = listOf(sheet.sheetId.value, fact.first.value),
+                            geometryElementIds = listOf(GeometryElementId("annotation:${fact.first.value}")),
+                        ),
+                    )
+                }
+            }
+        }.distinct()
+    }
+
+    private fun sheetCompanionDiagnostic(
+        sourcePath: Path,
+        companionPath: Path,
+        problem: String,
+    ): RealityTransformationDiagnostic = RealityTransformationDiagnostic(
+        reality = "Sheet Companion",
+        message = problem,
+        subject = companionPath.fileName.toString(),
+        problem = problem,
+        correction = "Correct the Sheet Companion statement before publishing Spatial Reality.",
+        sourceTrace = SpatialSourceTrace(
+            projectionIds = listOf(sourcePath.toString(), companionPath.toString()),
+            geometryElementIds = listOf(GeometryElementId("sheet-companion:${companionPath.fileName}")),
+        ),
+    )
+
+    private fun applySheetCompanion(
+        projection: com.engineeringood.athena.projection.ProjectionDocument,
+        spatial: SpatialDocument,
+        companion: com.engineeringood.athena.language.SheetCompanionSource?,
+        connectionIr: com.engineeringood.athena.connection.ConnectionDocument? = null,
+        annotationSelections: List<ConnectionAnnotationSelection> = emptyList(),
+    ): ConstrainedSpatialResult {
+        if (companion == null) return ConstrainedSpatialResult(spatial, emptyList())
+        val sheet = projection.sheets.firstOrNull { candidate ->
+            candidate.displayName == companion.name || candidate.sheetId.value == companion.name
+        } ?: projection.sheets.singleOrNull()
+        if (sheet == null) {
+            return ConstrainedSpatialResult(
+                null,
+                listOf(
+                    RealityTransformationDiagnostic(
+                        reality = "Sheet Companion",
+                        message = "Sheet Companion `${companion.name}` does not resolve to a Projection Sheet.",
+                        subject = companion.name,
+                        problem = "No matching Projection Sheet exists.",
+                        correction = "Use the authored Projection Sheet name.",
+                        sourceTrace = SpatialSourceTrace(listOf(companion.name), emptyList()),
+                    ),
+                ),
+            )
+        }
+        val mapping = SheetCompanionProjectionPlacementMapper().map(companion, sheet, projection)
+        val mappingDiagnostics = mapping.diagnostics.map { diagnostic ->
+            RealityTransformationDiagnostic(
+                reality = "Sheet Companion",
+                message = diagnostic.message,
+                subject = sheet.sheetId.value,
+                problem = diagnostic.message,
+                correction = "Use an occurrence label present on the Projection Sheet.",
+                sourceTrace = SpatialSourceTrace(
+                    projectionIds = listOf(sheet.sheetId.value),
+                    geometryElementIds = listOf(sheet.originGeometryElementId),
+                ),
+            )
+        }
+        if (mappingDiagnostics.isNotEmpty()) return ConstrainedSpatialResult(null, mappingDiagnostics)
+        val pageGeometries = projection.sheets.associate { candidate ->
+            candidate.sheetId.value to SpatialPageGeometryProfiles.logical(
+                grid = requireNotNull(candidate.grid),
+                pageSize = candidate.publication.pageSize,
+            )
+        }
+        return when (val constrained = ProjectionSpatialCompiler().transform(
+            input = projection,
+            placementConstraints = mapping.constraints,
+            pageGeometries = pageGeometries,
+            connectionIr = connectionIr,
+            annotationSelections = annotationSelections,
+        )) {
+            is RealityTransformationResult.Success -> ConstrainedSpatialResult(constrained.output, emptyList())
+            is RealityTransformationResult.Failure -> ConstrainedSpatialResult(
+                null,
+                constrained.diagnostics.map { diagnostic ->
+                    RealityTransformationDiagnostic(
+                        reality = diagnostic.reality,
+                        message = diagnostic.message,
+                        subject = diagnostic.subject,
+                        problem = diagnostic.problem,
+                        correction = diagnostic.correction,
+                        sourceTrace = diagnostic.sourceTrace,
+                    )
+                },
+            )
+        }
     }
 
     private fun projectionPass(
@@ -301,6 +542,23 @@ internal class AthenaCompilerCompilationSupport(
         else -> CompilerPassRecord(SPATIAL_PASS, CompilerPassExecutionStatus.SUCCEEDED, "$count spatial documents")
     }
 }
+
+private data class SheetCompanionLoadResult(
+    val source: com.engineeringood.athena.language.SheetCompanionSource?,
+    val diagnostics: List<RealityTransformationDiagnostic>,
+)
+
+private data class SheetStyleCompanionLoadResult(val source: SheetStyleCompanionSource)
+
+private data class SheetProjectionIntentResult(
+    val projection: com.engineeringood.athena.projection.ProjectionDocument,
+    val diagnostics: List<RealityTransformationDiagnostic>,
+)
+
+private data class ConstrainedSpatialResult(
+    val document: SpatialDocument?,
+    val diagnostics: List<RealityTransformationDiagnostic>,
+)
 
 internal data class CanonicalSpatialResolution(
     val documents: List<SpatialDocument>,

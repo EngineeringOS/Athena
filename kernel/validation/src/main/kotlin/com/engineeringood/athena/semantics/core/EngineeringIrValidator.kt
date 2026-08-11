@@ -5,6 +5,10 @@ import com.engineeringood.athena.ir.EngineeringEntity
 import com.engineeringood.athena.ir.EngineeringFunction
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringPortOwner
+import com.engineeringood.athena.ir.EngineeringPortDirection
+import com.engineeringood.athena.ir.ConnectionEndpointRole
+import com.engineeringood.athena.ir.EngineeringConnection
+import com.engineeringood.athena.ir.EngineeringNet
 import com.engineeringood.athena.ir.EngineeringReference
 import com.engineeringood.athena.ir.EngineeringRelationship
 import com.engineeringood.athena.ir.EngineeringSubjectReference
@@ -29,6 +33,10 @@ class EngineeringIrValidator {
             addAll(duplicateRelationshipDiagnostics(document.relationships, scope))
             addAll(functionOwnerDiagnostics(document.functions, entitiesByName, scope))
             addAll(duplicateFunctionDiagnostics(document.functions, scope))
+            addAll(connectionEndpointDiagnostics(document.connections, document.ports, scope))
+            addAll(duplicateConnectionDiagnostics(document.connections, scope))
+            addAll(netEndpointDiagnostics(document.nets, document.ports, scope))
+            addAll(duplicateNetDiagnostics(document.nets, scope))
         }
 
         return SemanticValidationResult(
@@ -132,6 +140,7 @@ class EngineeringIrValidator {
                         is EngineeringSubjectReference.Port -> portsByPath[authoredPath(reference)]?.size ?: 0
                         is EngineeringSubjectReference.Function -> functionsByPath[authoredPath(reference)]?.size ?: 0
                         is EngineeringSubjectReference.Entity -> entitiesByName[authoredPath(reference)]?.size ?: 0
+                        is EngineeringSubjectReference.Unresolved -> 0
                     }
                     classifyReference(reference, candidates)?.let { classification ->
                         add(errorDiagnostic(
@@ -203,6 +212,106 @@ class EngineeringIrValidator {
                 )
             }
         }
+
+    private fun connectionEndpointDiagnostics(
+        connections: List<EngineeringConnection>,
+        ports: List<EngineeringPort>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> {
+        val portsById = ports.associateBy { it.id }
+        return connections.asSequence()
+            .filter { connection -> scope == null || scope.includes(connection.id.value) }
+            .flatMap { connection ->
+                connection.endpoints.asSequence().mapNotNull { endpoint ->
+                    val port = endpoint.port.resolvedIdentity?.let(portsById::get)
+                    when {
+                        port == null -> errorDiagnostic(
+                            ruleId = "reference.connection-endpoint.unresolved",
+                            category = SemanticDiagnosticCategory.REFERENCE,
+                            subjectIdentity = connection.id,
+                            provenance = endpoint.provenance,
+                            message = "Connection endpoint `${authoredPath(endpoint.port)}` does not resolve to an Engineering Port. Declare that Port or correct this connection path.",
+                        )
+                        endpoint.role == ConnectionEndpointRole.SOURCE && port.direction == EngineeringPortDirection.INPUT -> errorDiagnostic(
+                            ruleId = "direction.connection-source.illegal",
+                            category = SemanticDiagnosticCategory.RELATIONSHIP,
+                            subjectIdentity = connection.id,
+                            provenance = endpoint.provenance,
+                            message = "Connection source `${authoredPath(endpoint.port)}` cannot use an input Port. Change its direction to output or bidirectional, or choose another source Port.",
+                        )
+                        endpoint.role == ConnectionEndpointRole.SINK && port.direction == EngineeringPortDirection.OUTPUT -> errorDiagnostic(
+                            ruleId = "direction.connection-sink.illegal",
+                            category = SemanticDiagnosticCategory.RELATIONSHIP,
+                            subjectIdentity = connection.id,
+                            provenance = endpoint.provenance,
+                            message = "Connection sink `${authoredPath(endpoint.port)}` cannot use an output Port. Change its direction to input or bidirectional, or choose another sink Port.",
+                        )
+                        else -> null
+                    }
+                }
+            }
+            .toList()
+    }
+
+    private fun duplicateConnectionDiagnostics(
+        connections: List<EngineeringConnection>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> = connections
+        .groupBy { it.id }
+        .values
+        .filter { duplicates -> duplicates.size > 1 }
+        .filter { duplicates -> scope == null || duplicates.any { connection -> scope.includes(connection.id.value) } }
+        .flatMap { duplicates -> duplicates.map { connection ->
+            errorDiagnostic(
+                ruleId = "uniqueness.connection.duplicate-authored-key",
+                category = SemanticDiagnosticCategory.UNIQUENESS,
+                subjectIdentity = connection.id,
+                provenance = connection.provenance,
+                message = "Duplicate Engineering Connection authored key `${connection.id.value}` is not semantically unique.",
+            )
+        } }
+
+    private fun netEndpointDiagnostics(
+        nets: List<EngineeringNet>,
+        ports: List<EngineeringPort>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> {
+        val portsById = ports.associateBy { it.id }
+        return nets.asSequence()
+            .filter { net -> scope == null || scope.includes(net.id.value) }
+            .flatMap { net -> net.endpoints.asSequence().mapNotNull { endpoint ->
+                val port = endpoint.port.resolvedIdentity?.let(portsById::get)
+                when {
+                    port == null -> errorDiagnostic(
+                        "reference.net-endpoint.unresolved", SemanticDiagnosticCategory.REFERENCE, net.id, endpoint.provenance,
+                        "Net endpoint `${authoredPath(endpoint.port)}` does not resolve to an Engineering Port. Declare that Port or correct this Net path.",
+                    )
+                    endpoint.role == ConnectionEndpointRole.SOURCE && port.direction == EngineeringPortDirection.INPUT -> errorDiagnostic(
+                        "direction.net-source.illegal", SemanticDiagnosticCategory.RELATIONSHIP, net.id, endpoint.provenance,
+                        "Net source `${authoredPath(endpoint.port)}` cannot use an input Port. Change its direction to output or bidirectional, or choose another source Port.",
+                    )
+                    endpoint.role == ConnectionEndpointRole.SINK && port.direction == EngineeringPortDirection.OUTPUT -> errorDiagnostic(
+                        "direction.net-sink.illegal", SemanticDiagnosticCategory.RELATIONSHIP, net.id, endpoint.provenance,
+                        "Net sink `${authoredPath(endpoint.port)}` cannot use an output Port. Change its direction to input or bidirectional, or choose another sink Port.",
+                    )
+                    else -> null
+                }
+            } }
+            .toList()
+    }
+
+    private fun duplicateNetDiagnostics(
+        nets: List<EngineeringNet>,
+        scope: EngineeringIrValidationScope?,
+    ): List<SemanticDiagnostic> = nets.groupBy { it.id }.values
+        .filter { it.size > 1 }
+        .filter { duplicates -> scope == null || duplicates.any { scope.includes(it.id.value) } }
+        .flatMap { duplicates -> duplicates.map { net ->
+            errorDiagnostic(
+                "uniqueness.net.duplicate-authored-key", SemanticDiagnosticCategory.UNIQUENESS, net.id, net.provenance,
+                "Duplicate Engineering Net authored key `${net.name}` is not semantically unique.",
+            )
+        } }
 
     private fun classifyReference(reference: EngineeringReference, candidateCount: Int): ReferenceClassification? {
         if (reference.resolvedIdentity != null) {

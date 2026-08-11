@@ -40,7 +40,7 @@ internal fun <K, T> exactCoverage(
                         },
                     ),
                 )
-            } else if (actualTrace(matches.single()) != expectation.canonicalSourceTrace) {
+            } else if (!actualTrace(matches.single()).retainsCanonicalProjectionProvenance(expectation.canonicalSourceTrace)) {
                 add(
                     SpatialDiagnostic(
                         subject = expectation.subject,
@@ -62,6 +62,27 @@ internal fun <K, T> exactCoverage(
             )
         }
     }
+}
+
+/**
+ * Sheet Companion placement is authored evidence, not a Projection fact. It is appended after
+ * the canonical Projection trace so Spatial facts retain both authorities without allowing the
+ * canonical prefix or geometry evidence to be replaced.
+ */
+private fun SpatialSourceTrace.retainsCanonicalProjectionProvenance(
+    canonical: SpatialSourceTrace,
+): Boolean {
+    if (geometryElementIds != canonical.geometryElementIds) return false
+    if (projectionIds.size < canonical.projectionIds.size) return false
+    if (projectionIds.take(canonical.projectionIds.size) != canonical.projectionIds) return false
+    return projectionIds.drop(canonical.projectionIds.size).all(::isAuthoredPlacementEvidence)
+}
+
+private fun isAuthoredPlacementEvidence(value: String): Boolean {
+    if (!value.startsWith("sheet-companion:")) return false
+    val separator = value.lastIndexOf(':')
+    if (separator <= 0 || separator == value.lastIndex) return false
+    return value.substring(separator + 1).toIntOrNull()?.let { line -> line > 0 } == true
 }
 
 internal fun sheetTrace(sheet: ProjectionSheet): SpatialSourceTrace = SpatialSourceTrace(

@@ -1,5 +1,0 @@
-status=valid
-entities=3
-ports=4
-connections=2
-svg=emitted

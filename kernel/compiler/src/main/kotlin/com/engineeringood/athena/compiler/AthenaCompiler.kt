@@ -1,9 +1,5 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorResolver
-import com.engineeringood.athena.compiler.boundary.AthenaBoundaryDescriptorSource
-import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgePackageSource
-import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeResolver
 import com.engineeringood.athena.compiler.plugin.AthenaDomainSemanticsCoordinator
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoadOptions
 import com.engineeringood.athena.compiler.repository.AthenaRepositoryContractLoader
@@ -36,6 +32,7 @@ import com.engineeringood.athena.language.ParseFailure
 import com.engineeringood.athena.language.ParseResult
 import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.language.RepresentationSourceUnit
+import com.engineeringood.athena.language.SheetCompanionSource
 import com.engineeringood.athena.plugin.AthenaDomainPlugin
 import com.engineeringood.athena.plugin.host.AthenaApprovedPluginInventory
 import com.engineeringood.athena.plugin.host.AthenaPluginDiscovery
@@ -51,10 +48,6 @@ class AthenaCompiler(
     private val pluginDiscovery: AthenaPluginDiscovery = AthenaPluginDiscovery(),
     hostedPluginDiscoveryReport: AthenaPluginDiscoveryReport? = null,
     hostedDomainPlugins: List<AthenaDomainPlugin>? = null,
-    private val knowledgePackageSource: AthenaKnowledgePackageSource = AthenaKnowledgePackageSource.empty(),
-    private val knowledgeResolver: AthenaKnowledgeResolver = AthenaKnowledgeResolver(),
-    private val boundaryDescriptorSource: AthenaBoundaryDescriptorSource = AthenaBoundaryDescriptorSource.empty(),
-    private val boundaryDescriptorResolver: AthenaBoundaryDescriptorResolver = AthenaBoundaryDescriptorResolver(),
     private val repositoryContractLoader: AthenaRepositoryContractLoader = AthenaRepositoryContractLoader(),
     private val repositoryResolutionInputBuilder: AthenaRepositoryResolutionInputBuilder = AthenaRepositoryResolutionInputBuilder(),
     private val repositoryGraphResolver: AthenaRepositoryGraphResolver = AthenaRepositoryGraphResolver(
@@ -94,8 +87,11 @@ class AthenaCompiler(
 
     fun compile(path: Path, sourceText: String): CompilerCompilationResult = compileParsedSource(
         parseResult = parseSource(path.toString(), sourceText),
-        knowledgeContext = knowledgeResolver.resolve(knowledgePackageSource),
-        boundaryValidation = boundaryDescriptorResolver.resolve(boundaryDescriptorSource),
+    )
+
+    fun compile(path: Path, sheetCompanionOverride: SheetCompanionSource): CompilerCompilationResult = compileParsedSource(
+        parseResult = parseSource(path),
+        sheetCompanionOverride = sheetCompanionOverride,
     )
 
     fun lower(path: Path): CompilerLoweringResult {
@@ -130,6 +126,12 @@ class AthenaCompiler(
 
     fun materializeRepositoryLock(repositoryRoot: Path): AthenaRepositoryLockMaterializationResult =
         repositoryLockMaterializer.materialize(repositoryRoot)
+
+    fun compilePresentationAssets(
+        repositoryRoot: Path,
+        packageSnapshots: List<com.engineeringood.athena.repository.RepositoryLockedPackage>,
+    ): PresentationAssetPackageCompilationResult =
+        PresentationAssetPackageCompiler().compile(repositoryRoot, packageSnapshots)
 
     fun validateRepositoryLock(repositoryRoot: Path): AthenaRepositoryLockValidationResult =
         repositoryLockMaterializer.validate(repositoryRoot)
@@ -169,15 +171,13 @@ class AthenaCompiler(
 
     fun compile(path: Path): CompilerCompilationResult = compileParsedSource(
         parseResult = parseSource(path),
-        knowledgeContext = knowledgeResolver.resolve(knowledgePackageSource),
-        boundaryValidation = boundaryDescriptorResolver.resolve(boundaryDescriptorSource),
     )
 
     private fun compileParsedSource(
         parseResult: CompilerParseResult,
-        knowledgeContext: com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext,
-        boundaryValidation: com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport,
-    ): CompilerCompilationResult = compilationSupport.compileParsedSource(parseResult, knowledgeContext, boundaryValidation)
+        sheetCompanionOverride: SheetCompanionSource? = null,
+    ): CompilerCompilationResult =
+        compilationSupport.compileParsedSource(parseResult, sheetCompanionOverride)
 
     private fun parseSource(path: Path): CompilerParseResult {
         val sourceText = runCatching { Files.readString(path) }.getOrElse { exception ->

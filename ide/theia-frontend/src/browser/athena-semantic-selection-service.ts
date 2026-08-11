@@ -1,15 +1,19 @@
 import { Emitter } from '@theia/core';
 import { FrontendApplication, FrontendApplicationContribution } from '@theia/core/lib/browser';
 import { Disposable, DisposableCollection } from '@theia/core/lib/common/disposable';
+import URI from '@theia/core/lib/common/uri';
 import { inject, injectable } from '@theia/core/shared/inversify';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
-import { AthenaLspEditorBridgeService } from './athena-lsp-editor-bridge-service';
+import { AthenaConnectionReadModelSourceTrace, AthenaLspEditorBridgeService } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import {
     AthenaActiveSemanticSelection,
     resolveSemanticSelectionFromInspection,
+    resolveSemanticSelectionFromPublishedSourceTrace,
+    resolveSemanticSelectionFromSceneTrace,
     resolveSemanticSelectionFromSourceRange
 } from './athena-semantic-selection-model';
+import { SceneTrace } from './diagram/generated/types';
 
 /** Frontend-only semantic-selection coordinator for cross-surface synchronization. */
 @injectable()
@@ -65,6 +69,31 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
         return nextSelection;
     }
 
+    async selectSceneTrace(trace: SceneTrace, semanticId: string): Promise<AthenaActiveSemanticSelection> {
+        const repositoryRoot = this.repositorySessionService.state.repositoryRoot;
+        const resolved = repositoryRoot
+            ? resolveSemanticSelectionFromSceneTrace(repositoryRoot, trace, semanticId)
+            : undefined;
+        if (!resolved?.sourceUri) return this.selectSemanticId(semanticId);
+        await this.editorManager.open(new URI(resolved.sourceUri), { mode: 'activate' });
+        this.setSelection(resolved);
+        return resolved;
+    }
+
+    async selectPublishedSourceTrace(
+        trace: AthenaConnectionReadModelSourceTrace,
+        semanticId: string,
+    ): Promise<AthenaActiveSemanticSelection> {
+        const repositoryRoot = this.repositorySessionService.state.repositoryRoot;
+        const resolved = repositoryRoot
+            ? resolveSemanticSelectionFromPublishedSourceTrace(repositoryRoot, trace, semanticId)
+            : undefined;
+        if (!resolved?.sourceUri) return this.selectSemanticId(semanticId);
+        await this.editorManager.open(new URI(resolved.sourceUri), { mode: 'activate' });
+        this.setSelection(resolved);
+        return resolved;
+    }
+
     async clearSelection(): Promise<void> {
         this.setSelection(undefined);
     }
@@ -117,6 +146,13 @@ export class AthenaSemanticSelectionService implements FrontendApplicationContri
         );
         if (resolvedFromSource) {
             this.setSelection(resolvedFromSource, false);
+            return;
+        }
+
+        if (this.selectionValue?.kind === 'trace' &&
+            this.selectionValue.sourceUri === currentEditor.editor.uri.toString() &&
+            this.selectionValue.sourceRange &&
+            rangesEqual(this.selectionValue.sourceRange, currentEditor.editor.selection)) {
             return;
         }
 

@@ -36,10 +36,12 @@ class SpatialSheet(
     alignments: List<SpatialAlignment>,
     anchors: List<SpatialAnchorPosition>,
     lanes: List<SpatialLane>,
-    routes: List<SpatialRoute>,
+    routes: List<ConnectionRoutePlan>,
     gridReferences: List<SpatialGridReference>,
     val quality: SpatialQualitySnapshot,
     val sourceTrace: SpatialSourceTrace,
+    val connectionTopology: ConnectionRouteTopologyPlan = ConnectionRouteTopologyPlan.EMPTY,
+    annotations: List<ConnectionAnnotation> = emptyList(),
 ) {
     val occurrences: List<SpatialOccurrenceGeometry> = occurrences.immutableDocumentCopy()
     val regions: List<SpatialRegionGeometry> = regions.immutableDocumentCopy()
@@ -47,8 +49,9 @@ class SpatialSheet(
     val alignments: List<SpatialAlignment> = alignments.immutableDocumentCopy()
     val anchors: List<SpatialAnchorPosition> = anchors.immutableDocumentCopy()
     val lanes: List<SpatialLane> = lanes.immutableDocumentCopy()
-    val routes: List<SpatialRoute> = routes.immutableDocumentCopy()
+    val routes: List<ConnectionRoutePlan> = routes.immutableDocumentCopy()
     val gridReferences: List<SpatialGridReference> = gridReferences.immutableDocumentCopy()
+    val annotations: List<ConnectionAnnotation> = annotations.immutableDocumentCopy()
 
     init {
         require(sheetId.isNotBlank()) { "Spatial Sheet identity must not be blank." }
@@ -65,10 +68,12 @@ class SpatialSheet(
         alignments: List<SpatialAlignment> = this.alignments,
         anchors: List<SpatialAnchorPosition> = this.anchors,
         lanes: List<SpatialLane> = this.lanes,
-        routes: List<SpatialRoute> = this.routes,
+        routes: List<ConnectionRoutePlan> = this.routes,
         gridReferences: List<SpatialGridReference> = this.gridReferences,
         quality: SpatialQualitySnapshot = this.quality,
         sourceTrace: SpatialSourceTrace = this.sourceTrace,
+        connectionTopology: ConnectionRouteTopologyPlan = this.connectionTopology,
+        annotations: List<ConnectionAnnotation> = this.annotations,
     ): SpatialSheet = SpatialSheet(
         sheetId,
         extent,
@@ -84,6 +89,8 @@ class SpatialSheet(
         gridReferences,
         quality,
         sourceTrace,
+        connectionTopology,
+        annotations,
     )
 
     override fun equals(other: Any?): Boolean =
@@ -101,7 +108,9 @@ class SpatialSheet(
             routes == other.routes &&
             gridReferences == other.gridReferences &&
             quality == other.quality &&
-            sourceTrace == other.sourceTrace
+            sourceTrace == other.sourceTrace &&
+            connectionTopology == other.connectionTopology &&
+            annotations == other.annotations
 
     override fun hashCode(): Int = listOf(
         sheetId,
@@ -118,13 +127,15 @@ class SpatialSheet(
         gridReferences,
         quality,
         sourceTrace,
+        connectionTopology,
+        annotations,
     ).hashCode()
 
     override fun toString(): String =
         "SpatialSheet(sheetId=$sheetId, extent=$extent, drawingArea=$drawingArea, grid=$grid, " +
             "occurrences=$occurrences, regions=$regions, constructs=$constructs, alignments=$alignments, " +
             "anchors=$anchors, lanes=$lanes, routes=$routes, gridReferences=$gridReferences, " +
-            "quality=$quality, sourceTrace=$sourceTrace)"
+            "quality=$quality, sourceTrace=$sourceTrace, connectionTopology=$connectionTopology, annotations=$annotations)"
 }
 
 object SpatialReality {
@@ -144,6 +155,7 @@ object SpatialReality {
         "grid definition",
         "Grid Reference",
         "quality snapshot",
+        "connection annotation",
     )
 
     val identityRules: List<RealityIdentityRule> = listOf(
@@ -156,6 +168,7 @@ object SpatialReality {
         RealityIdentityRule("grid definition", "Grid identity names its owning Sheet and Projection grid."),
         RealityIdentityRule("Grid Reference", "Grid Reference identity names its owning Sheet and typed subject."),
         RealityIdentityRule("quality snapshot", "Quality snapshot identity names its owning Sheet and contributing Spatial facts."),
+        RealityIdentityRule("connection annotation", "Annotation identity names its owning Sheet, Connection or Net, and display role."),
     )
 
     val requiredFacts: List<String> = listOf(
@@ -164,6 +177,7 @@ object SpatialReality {
         "anchor position identity",
         "lane identity",
         "route identity",
+        "connection annotation identity",
     )
 
     val declaration: RealityDeclaration = RealityDeclaration(

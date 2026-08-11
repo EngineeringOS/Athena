@@ -329,6 +329,34 @@ data class DrawingGridPosition(
     }
 }
 
+/** Positive one-based canonical placement point owned by a Sheet Companion. */
+data class SheetPlacementPoint(
+    val x: Int,
+    val y: Int,
+) {
+    init { require(x > 0 && y > 0) { "Sheet point coordinates must be positive." } }
+}
+
+/**
+ * Presentation-only placement constraint lowered from a Sheet Companion.
+ * It carries occurrence identity and authored intent, never exact geometry.
+ */
+data class SheetPlacementConstraint(
+    val sheetId: String,
+    val occurrenceName: String,
+    val occurrenceId: LayoutOccurrenceId,
+    val point: SheetPlacementPoint,
+    val snapStep: Int,
+    val locked: Boolean,
+    val sourceSpan: LayoutSourceSpan,
+) {
+    init {
+        require(sheetId.isNotBlank()) { "Sheet placement Sheet identity must not be blank." }
+        require(occurrenceName.isNotBlank()) { "Sheet placement occurrence name must not be blank." }
+        require(snapStep > 0) { "Sheet snap step must be positive." }
+    }
+}
+
 enum class LayoutOrientation {
     HORIZONTAL,
     VERTICAL,

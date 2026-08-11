@@ -1,6 +1,0 @@
-status=semantic-invalid
-entities=2
-ports=2
-connections=2
-svg=blocked
-diagnostics=reference.connection-endpoint.unresolved,connection.flow.incompatible

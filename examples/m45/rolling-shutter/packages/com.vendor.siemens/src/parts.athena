@@ -1,0 +1,5 @@
+package com.vendor.siemens
+domain electrical {
+  part siemens_3rt2026 concept Switching { manufacturer "Siemens" article "3RT2026" capability "Switching" }
+  part siemens_3ru2116 concept Protection { manufacturer "Siemens" article "3RU2116" capability "Protection" }
+}

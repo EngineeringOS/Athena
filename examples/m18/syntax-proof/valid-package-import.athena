@@ -1,8 +1,0 @@
-package com.engineeringood.m18-root
-import com.engineeringood.controls
-import com.engineeringood.controls.Switch2
-system SyntaxProof {
-  entity PLC1 {
-    concept Switch
-  }
-}

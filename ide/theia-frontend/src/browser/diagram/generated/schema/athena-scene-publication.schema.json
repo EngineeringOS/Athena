@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://athena.dev/schema/presentation/v1/athena-scene-publication.schema.json",
+  "title": "AthenaScenePublication",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "state", "attemptedInputRevision", "diagnostics"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "state": {"enum": ["READY", "STALE", "UNAVAILABLE"]},
+    "attemptedInputRevision": {"type": "string", "pattern": "^input:sha256:[0-9a-f]{64}$"},
+    "acceptedInputRevision": {"type": "string", "pattern": "^input:sha256:[0-9a-f]{64}$"},
+    "scene": {"$ref": "athena-diagram-scene.schema.json"},
+    "assetBundle": {"$ref": "#/$defs/assetBundle"},
+    "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}}
+  },
+  "oneOf": [
+    {"properties": {"state": {"const": "READY"}, "acceptedInputRevision": {"$ref": "#/properties/acceptedInputRevision"}, "scene": {"$ref": "athena-diagram-scene.schema.json"}, "assetBundle": {"$ref": "#/$defs/assetBundle"}}, "required": ["acceptedInputRevision", "scene", "assetBundle"]},
+    {"properties": {"state": {"const": "STALE"}, "acceptedInputRevision": {"$ref": "#/properties/acceptedInputRevision"}, "scene": {"$ref": "athena-diagram-scene.schema.json"}, "assetBundle": {"$ref": "#/$defs/assetBundle"}, "diagnostics": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/diagnostic"}}}, "required": ["acceptedInputRevision", "scene", "assetBundle"]},
+    {"properties": {"state": {"const": "UNAVAILABLE"}, "acceptedInputRevision": false, "scene": false, "assetBundle": false, "diagnostics": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/diagnostic"}}}}
+  ],
+  "$defs": {
+    "assetBundle": {
+      "type": "object", "additionalProperties": false, "required": ["inputRevision", "entries"],
+      "properties": {
+        "inputRevision": {"type": "string", "pattern": "^input:sha256:[0-9a-f]{64}$"},
+        "entries": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["entryId", "digest", "bytesBase64"], "properties": {"entryId": {"type": "string", "minLength": 1}, "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "bytesBase64": {"type": "string"}}}}
+      }
+    },
+    "diagnostic": {
+      "type": "object", "additionalProperties": false, "required": ["subject", "problem", "correction", "code"],
+      "properties": {"subject": {"type": "string", "minLength": 1}, "problem": {"type": "string", "minLength": 1}, "correction": {"type": "string", "minLength": 1}, "code": {"type": "string", "minLength": 1}}
+    }
+  }
+}

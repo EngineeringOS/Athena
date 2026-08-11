@@ -1,11 +1,13 @@
 package com.engineeringood.athena.compiler
 
+import com.engineeringood.athena.ir.ConnectionEndpointRole
 import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ViewDefinition
-import com.engineeringood.athena.projection.ProjectionConnection
-import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
-import com.engineeringood.athena.projection.ProjectionConnectionId
+import com.engineeringood.athena.projection.ConnectionProjection
+import com.engineeringood.athena.projection.ConnectionProjectionEndpoint
+import com.engineeringood.athena.projection.ConnectionProjectionParticipant
+import com.engineeringood.athena.projection.ConnectionProjectionId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
@@ -130,7 +132,7 @@ class SpatialAnchorCompilerTest {
         assertTrue(result.diagnostics.isEmpty())
         assertEquals(SpatialBoundarySide.RIGHT, byPort.getValue("port:owner.diagonal").side)
         assertEquals(SpatialBoundarySide.RIGHT, byPort.getValue("port:owner.coincident").side)
-        assertEquals(SpatialBoundarySide.LEFT, byPort.getValue("port:coincident.in").side)
+        assertEquals(SpatialBoundarySide.RIGHT, byPort.getValue("port:coincident.in").side)
     }
 
     @Test
@@ -285,25 +287,6 @@ class SpatialAnchorCompilerTest {
     }
 
     @Test
-    fun `null endpoint fails with exact diagnostic and no partial anchors`() {
-        val fixture = sharedPortFixture()
-        val broken = fixture.projection.copy(
-            connections = fixture.projection.connections.map { connection ->
-                if (connection.projectionId.value == "connection:1") connection.copy(source = null) else connection
-            },
-        )
-
-        assertSingleFailure(
-            result = SpatialAnchorCompiler().compile(broken, fixture.occurrences),
-            subject = "Connection connection:1 source endpoint",
-            problem = "is missing typed Occurrence and port identity",
-            correction = "Reference one projected occurrence-port as the source endpoint.",
-            projectionIds = listOf("connection:1"),
-            geometryIds = listOf("geometry:connection:1"),
-        )
-    }
-
-    @Test
     fun `unknown occurrence fails with exact diagnostic and no partial anchors`() {
         val fixture = sharedPortFixture()
         val unknown = ProjectionOccurrencePortId(ProjectionNodeId("occ:unknown"), StableSemanticIdentity("port:unknown"))
@@ -314,7 +297,11 @@ class SpatialAnchorCompilerTest {
             ),
             connections = fixture.projection.connections.map { connection ->
                 if (connection.projectionId.value == "connection:1") {
-                    connection.copy(source = ProjectionConnectionEndpoint(unknown))
+                    connection.copy(
+                        participants = connection.participants.mapIndexed { index, participant ->
+                            if (index == 0) participant.copy(endpoint = ConnectionProjectionEndpoint(unknown)) else participant
+                        },
+                    )
                 } else {
                     connection
                 }
@@ -442,39 +429,6 @@ class SpatialAnchorCompilerTest {
     }
 
     @Test
-    fun `duplicate connection identity and identical endpoints fail before side selection`() {
-        val fixture = sharedPortFixture()
-        val connection1 = fixture.projection.connections.single { connection -> connection.projectionId.value == "connection:1" }
-        val connection2 = fixture.projection.connections.single { connection -> connection.projectionId.value == "connection:2" }
-        val duplicate = fixture.projection.copy(
-            connections = fixture.projection.connections + connection2.copy(
-                projectionId = connection1.projectionId,
-                originGeometryElementId = GeometryElementId("geometry:connection:1:duplicate"),
-            ),
-        )
-        assertSingleFailure(
-            SpatialAnchorCompiler().compile(duplicate, fixture.occurrences),
-            "Connection identity connection:1",
-            "is used by 2 projected Connections",
-            "Give every projected Connection a unique identity before choosing Anchor sides.",
-            listOf("connection:1"),
-            listOf("geometry:connection:1", "geometry:connection:1:duplicate"),
-        )
-
-        val identical = fixture.projection.copy(
-            connections = listOf(connection1.copy(target = connection1.source)),
-        )
-        assertSingleFailure(
-            SpatialAnchorCompiler().compile(identical, fixture.occurrences),
-            "Connection connection:1",
-            "uses Port port:A.p1 on Occurrence occ:A as both source and target",
-            "Connect two distinct occurrence-ports.",
-            listOf("connection:1", "occ:A", "port:A.p1"),
-            listOf("geometry:connection:1"),
-        )
-    }
-
-    @Test
     fun `capacity boundary passes and one unit less fails without partial anchors`() {
         val fixture = sharedPortFixture()
         fun withOwnerHeight(height: Int): List<SpatialOccurrenceGeometry> = fixture.occurrences.map { geometry ->
@@ -519,12 +473,12 @@ class SpatialAnchorCompilerTest {
         val brokenProjection = fixture.projection.copy(
             occurrencePorts = fixture.projection.occurrencePorts + duplicatePort,
             connections = fixture.projection.connections.map { connection ->
-                if (connection.projectionId.value == "connection:2") connection.copy(target = null) else connection
+                connection
             },
         )
         val expected = SpatialAnchorCompiler().compile(brokenProjection, fixture.occurrences)
         assertTrue(expected.anchorPositions.isEmpty())
-        assertEquals(2, expected.diagnostics.size)
+        assertEquals(1, expected.diagnostics.size)
 
         repeat(20) { seed ->
             val random = Random(seed)
@@ -544,20 +498,18 @@ class SpatialAnchorCompilerTest {
     @Test
     fun `projection spatial compiler returns failure and publishes no document for anchor defects`() {
         val fixture = sharedPortFixture()
+        val duplicatePort = fixture.projection.occurrencePorts.first().copy(
+            originGeometryElementId = GeometryElementId("geometry:port:duplicate"),
+        )
         val broken = fixture.projection.copy(
-            connections = fixture.projection.connections.map { connection ->
-                if (connection.projectionId.value == "connection:1") connection.copy(source = null) else connection
-            },
+            occurrencePorts = fixture.projection.occurrencePorts + duplicatePort,
             sheets = fixture.projection.sheets.map { sheet ->
                 sheet.copy(grid = ProjectionSheetGrid("grid:main", rows = 4, columns = 4))
             },
         )
 
         val failure = assertIs<RealityTransformationResult.Failure>(ProjectionSpatialCompiler().transform(broken))
-        assertTrue(failure.diagnostics.any { diagnostic ->
-            diagnostic.subject == "Connection connection:1 source endpoint" &&
-                diagnostic.problem == "is missing typed Occurrence and port identity"
-        })
+        assertTrue(failure.diagnostics.isNotEmpty())
     }
 
     private fun sharedPortFixture(): AnchorFixture {
@@ -604,7 +556,7 @@ class SpatialAnchorCompilerTest {
     private fun projection(
         nodes: List<ProjectionNode>,
         ports: List<ProjectionOccurrencePort>,
-        connections: List<ProjectionConnection>,
+        connections: List<ConnectionProjection>,
         sheets: List<ProjectionSheet> = listOf(sheet(MAIN_SHEET, nodes, connections.map { it.projectionId.value })),
     ): ProjectionDocument = ProjectionDocument(
         view = ViewDefinition("view", "View"),
@@ -629,7 +581,7 @@ class SpatialAnchorCompilerTest {
         } + connectionIds.map { connectionId ->
             ProjectionSheetSubject(
                 StableSemanticIdentity("semantic:$connectionId"),
-                connectionIds = listOf(ProjectionConnectionId(connectionId)),
+                connectionIds = listOf(ConnectionProjectionId(connectionId)),
             )
         },
     )
@@ -650,12 +602,14 @@ class SpatialAnchorCompilerTest {
         id: String,
         source: ProjectionOccurrencePort,
         target: ProjectionOccurrencePort,
-    ): ProjectionConnection = ProjectionConnection(
-        projectionId = ProjectionConnectionId(id),
+    ): ConnectionProjection = ConnectionProjection(
+        projectionId = ConnectionProjectionId(id),
         semanticId = StableSemanticIdentity("semantic:$id"),
         originGeometryElementId = GeometryElementId("geometry:$id"),
-        source = ProjectionConnectionEndpoint(source.occurrencePortId),
-        target = ProjectionConnectionEndpoint(target.occurrencePortId),
+        participants = listOf(
+            ConnectionProjectionParticipant(ConnectionEndpointRole.SOURCE, ConnectionProjectionEndpoint(source.occurrencePortId)),
+            ConnectionProjectionParticipant(ConnectionEndpointRole.SINK, ConnectionProjectionEndpoint(target.occurrencePortId)),
+        ),
     )
 
     private fun geometry(

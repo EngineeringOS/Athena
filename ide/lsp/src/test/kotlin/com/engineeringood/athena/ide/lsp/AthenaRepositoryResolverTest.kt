@@ -82,4 +82,38 @@ class AthenaRepositoryResolverTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+
+    @Test
+    fun `resolve never uses a Sheet Companion as the engineering source seed`() {
+        val repositoryRoot = kotlin.io.path.createTempDirectory("athena-repository-")
+        try {
+            repositoryRoot.resolve("athena.yaml").writeText(
+                """
+                    primaryPackage:
+                      name: com.engineeringood.factoryline
+                      version: 0.1.0
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            val packageRoot = repositoryRoot.resolve("src/com/engineeringood/factoryline").createDirectories()
+            val sourcePath = packageRoot.resolve("z-control.athena")
+            packageRoot.resolve("a-control.sheet.athena").writeText(
+                """
+                    sheet "control" {
+                      page format A3 landscape
+                      frame: 17 * 16
+                      snap: 1
+                    }
+                """.trimIndent(),
+            )
+            sourcePath.writeText(governedAthenaSource("system Control { }"))
+
+            val resolution = AthenaRepositoryResolver().resolve(repositoryRoot)
+
+            val success = assertIs<AthenaRepositoryResolutionSuccess>(resolution)
+            assertEquals(sourcePath.toAbsolutePath().normalize(), success.descriptor.sourcePath)
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
 }

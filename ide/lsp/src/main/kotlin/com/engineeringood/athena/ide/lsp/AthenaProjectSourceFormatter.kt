@@ -1,6 +1,9 @@
 package com.engineeringood.athena.ide.lsp
 
 import com.engineeringood.athena.language.Declaration
+import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.NetDeclaration
+import com.engineeringood.athena.language.ConnectionSpecificationDeclaration
 import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.EngineeringFunctionDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
@@ -59,6 +62,9 @@ internal object AthenaProjectSourceFormatter {
         when (declaration) {
             is EntityDeclaration -> appendEntity(declaration)
             is PortDeclaration -> appendPort(declaration)
+            is ConnectionDeclaration -> appendConnection(declaration)
+            is NetDeclaration -> appendNet(declaration)
+            is ConnectionSpecificationDeclaration -> appendConnectionSpecification(declaration)
             is RelationDeclaration -> appendRelation(declaration)
             is ExternalEvidenceDeclaration -> appendEvidence(declaration)
             is ProjectionPolicyDeclaration -> appendProjectionPolicy(declaration)
@@ -112,6 +118,33 @@ internal object AthenaProjectSourceFormatter {
             declaration.targets.joinToString(prefix = "[", postfix = "]") { target -> target.render() }
         }
         appendLine("  ${declaration.word.value} ${declaration.source.render()} to $target")
+    }
+
+    private fun StringBuilder.appendConnection(declaration: ConnectionDeclaration) {
+        if (declaration.properties.isEmpty()) {
+            appendLine("  connect ${declaration.kind.value} ${declaration.source.render()} to ${declaration.target.render()}")
+        } else {
+            appendLine("  connect ${declaration.kind.value} ${declaration.source.render()} to ${declaration.target.render()} {")
+            declaration.properties.forEach { property ->
+                appendLine("    ${property.name} ${property.value.render()}")
+            }
+            appendLine("  }")
+        }
+    }
+
+    private fun StringBuilder.appendNet(declaration: NetDeclaration) {
+        appendLine("  net ${declaration.name} ${declaration.kind.value} {")
+        declaration.endpoints.forEach { endpoint -> appendLine("    ${endpoint.role.name.lowercase()} ${endpoint.port.render()}") }
+        declaration.potentialOrSignal?.let { reference -> appendLine("    signal ${reference.render()}") }
+        declaration.properties.forEach { property -> appendLine("    ${property.render()}") }
+        appendLine("  }")
+    }
+
+    private fun StringBuilder.appendConnectionSpecification(declaration: ConnectionSpecificationDeclaration) {
+        val subject = declaration.subject?.let { " ${it.render()}" }.orEmpty()
+        appendLine("  connection-spec ${declaration.scope.name.lowercase().replace('_', '-')} $subject {")
+        declaration.properties.forEach { property -> appendLine("    ${property.render()}") }
+        appendLine("  }")
     }
 
     private fun StringBuilder.appendEvidence(declaration: ExternalEvidenceDeclaration) {

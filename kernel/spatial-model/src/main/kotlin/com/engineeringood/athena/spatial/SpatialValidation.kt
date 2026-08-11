@@ -22,6 +22,7 @@ object SpatialValidation {
                 addAll(qualityDiagnostics(sheet))
                 addAll(spatialTraceDiagnostics(sheet))
                 addAll(spatialRoutingDiagnostics(sheet))
+                addAll(annotationDiagnostics(sheet))
             }
         }.canonicalSpatialDiagnostics()
         return SpatialValidationResult(diagnostics)
@@ -93,6 +94,9 @@ object SpatialValidation {
         sheet.gridReferences.filter { it.sheetId != sheet.sheetId }.forEach {
             add(sheet.foreignIssue("Grid Reference ${it.cellReference}", it.sheetId, it.sourceTrace))
         }
+        sheet.annotations.filter { it.sheetId != sheet.sheetId }.forEach {
+            add(sheet.foreignIssue("Annotation ${it.id.value}", it.sheetId, it.sourceTrace))
+        }
     }
 
     private fun identityDiagnostics(sheet: SpatialSheet): List<SpatialDiagnostic> = buildList {
@@ -129,6 +133,13 @@ object SpatialValidation {
                 gridReferenceSubject(fact.subject),
                 fact.sourceTrace,
                 "Publish exactly one Grid Reference for this Sheet-qualified subject.",
+            )
+        })
+        addAll(duplicateFacts(sheet.annotations, ConnectionAnnotation::id) { fact ->
+            Triple(
+                "Annotation ${fact.id.value} on Sheet ${fact.sheetId}",
+                fact.sourceTrace,
+                "Publish exactly one Connection Annotation for this Sheet-qualified identity.",
             )
         })
     }
@@ -174,11 +185,58 @@ object SpatialValidation {
                 ),
             )
         }
+        sheet.annotations.filterNot { it.bounds.isInside(sheet.drawingArea) }.forEach { annotation ->
+            add(
+                SpatialDiagnostic(
+                    subject = "Annotation ${annotation.id.value}",
+                    problem = "label bounds are outside Drawing Area ${sheet.drawingArea.text()}",
+                    correction = "Move the selected annotation completely inside its Sheet Drawing Area.",
+                    sourceTrace = annotation.sourceTrace,
+                ),
+            )
+        }
     }
 
     private fun qualityDiagnostics(sheet: SpatialSheet): List<SpatialDiagnostic> = buildList {
         qualityRatioDiagnostic(sheet, "Density", sheet.quality.metrics.density)?.let(::add)
         qualityRatioDiagnostic(sheet, "Occupancy", sheet.quality.metrics.occupancy)?.let(::add)
+    }
+
+    private fun annotationDiagnostics(sheet: SpatialSheet): List<SpatialDiagnostic> = buildList {
+        val rectangles = sheet.annotations
+        rectangles.forEachIndexed { index, annotation ->
+            if (sheet.routes.none { it.connectionId == annotation.semanticId }) {
+                add(
+                    SpatialDiagnostic(
+                        subject = "Annotation ${annotation.id.value}",
+                        problem = "semantic subject has no matching placed Connection Route",
+                        correction = "Publish one same-Sheet Route for ${annotation.semanticId.value} or remove the annotation.",
+                        sourceTrace = annotation.sourceTrace,
+                    ),
+                )
+            }
+            rectangles.drop(index + 1).filter { annotation.bounds.overlapsStrict(it.bounds) }.forEach { other ->
+                add(
+                    SpatialDiagnostic(
+                        subject = "Annotations ${annotation.id.value} and ${other.id.value}",
+                        problem = "label bounds overlap",
+                        correction = "Move one annotation to a free logical anchor before publishing the Sheet.",
+                        sourceTrace = annotation.sourceTrace,
+                    ),
+                )
+            }
+            val routeCollision = sheet.routes.any { route -> annotation.bounds.intersectsRoute(route.segments) }
+            if (routeCollision) {
+                add(
+                    SpatialDiagnostic(
+                        subject = "Annotation ${annotation.id.value}",
+                        problem = "label bounds intersect a connection route",
+                        correction = "Move the annotation away from route linework before publishing the Sheet.",
+                        sourceTrace = annotation.sourceTrace,
+                    ),
+                )
+            }
+        }
     }
 
     private fun qualityRatioDiagnostic(
@@ -199,4 +257,17 @@ object SpatialValidation {
         )
     }
 
+}
+
+private fun SpatialRect.overlapsStrict(other: SpatialRect): Boolean =
+    x < other.right && right > other.x && y < other.bottom && bottom > other.y
+
+private fun SpatialRect.intersectsRoute(segments: List<ConnectionRouteSegment>): Boolean = segments.any { segment ->
+    when (segment.orientation) {
+        SpatialLaneOrientation.HORIZONTAL -> segment.start.y > y && segment.start.y < bottom &&
+            maxOf(minOf(segment.start.x, segment.end.x), x) < minOf(maxOf(segment.start.x, segment.end.x), right)
+        SpatialLaneOrientation.VERTICAL -> segment.start.x > x && segment.start.x < right &&
+            maxOf(minOf(segment.start.y, segment.end.y), y) < minOf(maxOf(segment.start.y, segment.end.y), bottom)
+        null -> false
+    }
 }

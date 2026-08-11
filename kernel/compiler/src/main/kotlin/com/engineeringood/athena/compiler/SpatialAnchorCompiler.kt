@@ -1,7 +1,7 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.geometry.GeometryElementId
-import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ConnectionProjection
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionOccurrencePort
 import com.engineeringood.athena.projection.ProjectionOccurrencePortId
@@ -26,14 +26,14 @@ internal data class SpatialAnchorRequest(
     val geometry: SpatialOccurrenceGeometry,
     val portFact: ProjectionOccurrencePort,
     val side: SpatialBoundarySide,
-    val incidentConnections: List<ProjectionConnection>,
+    val incidentConnections: List<ConnectionProjection>,
     val sheetOrigin: GeometryElementId,
     val occurrenceOrigin: GeometryElementId,
 ) {
     fun traceGeometryIds(): List<GeometryElementId> =
         listOf(sheetOrigin, occurrenceOrigin, portFact.originGeometryElementId) +
             geometry.sourceTrace.geometryElementIds +
-            incidentConnections.map(ProjectionConnection::originGeometryElementId)
+            incidentConnections.map(ConnectionProjection::originGeometryElementId)
 }
 
 class SpatialAnchorCompiler internal constructor(
@@ -73,10 +73,9 @@ class SpatialAnchorCompiler internal constructor(
         occurrences: List<SpatialOccurrenceGeometry>,
     ): List<SpatialAnchorRequest> {
         val incidents = projection.connections.flatMap { connection ->
-            listOfNotNull(
-                connection.source?.occurrencePortId?.let { endpoint -> endpoint to (connection to EndpointRole.SOURCE) },
-                connection.target?.occurrencePortId?.let { endpoint -> endpoint to (connection to EndpointRole.TARGET) },
-            )
+            connection.participants.map { participant ->
+                participant.endpoint.occurrencePortId to (connection to EndpointRole.PARTICIPANT)
+            }
         }.groupBy(keySelector = { (endpoint, _) -> endpoint }, valueTransform = { (_, incident) -> incident })
         return incidents.flatMap { (endpoint, endpointIncidents) ->
             val node = projection.nodes.single { candidate -> candidate.projectionId == endpoint.occurrenceId }
@@ -99,10 +98,9 @@ class SpatialAnchorCompiler internal constructor(
                 }
                 val portFact = projection.occurrencePorts.single { port -> port.occurrencePortId == endpoint }
                 val canonicalIncident = sheetIncidents.minBy { (connection, _) -> connection.projectionId.value }
-                val peerEndpoint = when (canonicalIncident.second) {
-                    EndpointRole.SOURCE -> requireNotNull(canonicalIncident.first.target).occurrencePortId
-                    EndpointRole.TARGET -> requireNotNull(canonicalIncident.first.source).occurrencePortId
-                }
+                val peerEndpoint = canonicalIncident.first.participants
+                    .map { participant -> participant.endpoint.occurrencePortId }
+                    .first { candidate -> candidate != endpoint }
                 val peerGeometries = occurrences.filter { occurrence ->
                     occurrence.occurrenceId.projectionId == peerEndpoint.occurrenceId.value
                 }
@@ -113,7 +111,7 @@ class SpatialAnchorCompiler internal constructor(
                     endpoint = endpoint,
                     geometry = geometry,
                     portFact = portFact,
-                    side = preferredSide(geometry, peerGeometry, canonicalIncident.second),
+                    side = preferredSide(geometry, peerGeometry),
                     incidentConnections = sheetIncidents.map { (connection, _) -> connection }
                         .distinctBy { connection -> connection.projectionId }
                         .sortedBy { connection -> connection.projectionId.value },
@@ -127,14 +125,13 @@ class SpatialAnchorCompiler internal constructor(
     private fun preferredSide(
         owner: SpatialOccurrenceGeometry,
         peer: SpatialOccurrenceGeometry,
-        role: EndpointRole,
     ): SpatialBoundarySide {
         val dx2 = doubledCenter(peer.rectangle.x, peer.rectangle.width) -
             doubledCenter(owner.rectangle.x, owner.rectangle.width)
         val dy2 = doubledCenter(peer.rectangle.y, peer.rectangle.height) -
             doubledCenter(owner.rectangle.y, owner.rectangle.height)
         if (dx2 == 0L && dy2 == 0L) {
-            return if (role == EndpointRole.SOURCE) SpatialBoundarySide.RIGHT else SpatialBoundarySide.LEFT
+            return SpatialBoundarySide.RIGHT
         }
         return if (abs(dx2) >= abs(dy2)) {
             if (dx2 > 0L) SpatialBoundarySide.RIGHT else SpatialBoundarySide.LEFT
@@ -181,13 +178,10 @@ class SpatialAnchorCompiler internal constructor(
     private fun failure(diagnostics: List<SpatialDiagnostic>): SpatialAnchorCompilationResult =
         SpatialAnchorCompilationResult(anchorPositions = emptyList(), diagnostics = diagnostics)
 
-    private enum class EndpointRole {
-        SOURCE,
-        TARGET,
-    }
+    private enum class EndpointRole { PARTICIPANT }
 }
 
-internal fun ProjectionDocument.connectionSheetIds(connection: ProjectionConnection): List<String> =
+internal fun ProjectionDocument.connectionSheetIds(connection: ConnectionProjection): List<String> =
     sheets.filter { sheet ->
         sheet.subjects.any { subject -> connection.projectionId in subject.connectionIds }
     }.map { sheet -> sheet.sheetId.value }.sorted()

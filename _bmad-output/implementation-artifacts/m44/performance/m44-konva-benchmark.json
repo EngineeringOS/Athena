@@ -1,0 +1,2443 @@
+{
+  "schemaVersion": "M44.performance-proof",
+  "status": "passed",
+  "profile": {
+    "os": "win32 10.0.22631",
+    "viewport": {
+      "width": 1600,
+      "height": 1000,
+      "dpr": 1
+    },
+    "dpr": 1,
+    "adapter": "KonvaDiagramAdapter@10.3.0",
+    "fixture": "M44 rolling-shutter 300-real-occurrence authoring profile",
+    "note": "Profile clones admitted active-scene occurrences and assets for measurement only; source authority remains M44 Canonical Scene."
+  },
+  "measurements": {
+    "scenePaintElementCount": 300,
+    "visiblePaintElements": 1088,
+    "visiblePercent": 362.66666666666663,
+    "firstStablePaintMs": 130.5,
+    "incrementalHeapMiB": 0,
+    "interactionP95Ms": 40.8,
+    "panZoomP95Ms": 41.4,
+    "dragPreviewP95Ms": 38.5,
+    "selectionP95Ms": 40.2,
+    "identityErrors": 0,
+    "traceErrors": 0,
+    "unhandledErrors": 0,
+    "stableSceneRevision": true,
+    "samples": [
+      {
+        "frame": 0,
+        "operation": "pan",
+        "durationMs": 29.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 1,
+        "operation": "zoom",
+        "durationMs": 31,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 2,
+        "operation": "select",
+        "durationMs": 27.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 3,
+        "operation": "drag",
+        "durationMs": 26,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 4,
+        "operation": "pan",
+        "durationMs": 25.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 5,
+        "operation": "zoom",
+        "durationMs": 33,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 6,
+        "operation": "select",
+        "durationMs": 27.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 7,
+        "operation": "drag",
+        "durationMs": 31.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 8,
+        "operation": "pan",
+        "durationMs": 28.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 9,
+        "operation": "zoom",
+        "durationMs": 30,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 10,
+        "operation": "select",
+        "durationMs": 33.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 11,
+        "operation": "drag",
+        "durationMs": 27,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 12,
+        "operation": "pan",
+        "durationMs": 29.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 13,
+        "operation": "zoom",
+        "durationMs": 26.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 14,
+        "operation": "select",
+        "durationMs": 33.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 15,
+        "operation": "drag",
+        "durationMs": 26.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 16,
+        "operation": "pan",
+        "durationMs": 25.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 17,
+        "operation": "zoom",
+        "durationMs": 27.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 18,
+        "operation": "select",
+        "durationMs": 25,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 19,
+        "operation": "drag",
+        "durationMs": 28.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 20,
+        "operation": "pan",
+        "durationMs": 69.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 21,
+        "operation": "zoom",
+        "durationMs": 50.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 22,
+        "operation": "select",
+        "durationMs": 39.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 23,
+        "operation": "drag",
+        "durationMs": 33.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 24,
+        "operation": "pan",
+        "durationMs": 135.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 25,
+        "operation": "zoom",
+        "durationMs": 58.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 26,
+        "operation": "select",
+        "durationMs": 45.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 27,
+        "operation": "drag",
+        "durationMs": 38.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 28,
+        "operation": "pan",
+        "durationMs": 37.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 29,
+        "operation": "zoom",
+        "durationMs": 35.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 30,
+        "operation": "select",
+        "durationMs": 31.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 31,
+        "operation": "drag",
+        "durationMs": 31.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 32,
+        "operation": "pan",
+        "durationMs": 31.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 33,
+        "operation": "zoom",
+        "durationMs": 34.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 34,
+        "operation": "select",
+        "durationMs": 26.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 35,
+        "operation": "drag",
+        "durationMs": 29.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 36,
+        "operation": "pan",
+        "durationMs": 32.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 37,
+        "operation": "zoom",
+        "durationMs": 35.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 38,
+        "operation": "select",
+        "durationMs": 34.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 39,
+        "operation": "drag",
+        "durationMs": 28.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 40,
+        "operation": "pan",
+        "durationMs": 32,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 41,
+        "operation": "zoom",
+        "durationMs": 38.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 42,
+        "operation": "select",
+        "durationMs": 53.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 43,
+        "operation": "drag",
+        "durationMs": 68.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 44,
+        "operation": "pan",
+        "durationMs": 29,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 45,
+        "operation": "zoom",
+        "durationMs": 32.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 46,
+        "operation": "select",
+        "durationMs": 25.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 47,
+        "operation": "drag",
+        "durationMs": 27.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 48,
+        "operation": "pan",
+        "durationMs": 40.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 49,
+        "operation": "zoom",
+        "durationMs": 29.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 50,
+        "operation": "select",
+        "durationMs": 30.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 51,
+        "operation": "drag",
+        "durationMs": 29.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 52,
+        "operation": "pan",
+        "durationMs": 30.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 53,
+        "operation": "zoom",
+        "durationMs": 26.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 54,
+        "operation": "select",
+        "durationMs": 40.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 55,
+        "operation": "drag",
+        "durationMs": 29.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 56,
+        "operation": "pan",
+        "durationMs": 31,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 57,
+        "operation": "zoom",
+        "durationMs": 29.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 58,
+        "operation": "select",
+        "durationMs": 29.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 59,
+        "operation": "drag",
+        "durationMs": 26.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 60,
+        "operation": "pan",
+        "durationMs": 34.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 61,
+        "operation": "zoom",
+        "durationMs": 34.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 62,
+        "operation": "select",
+        "durationMs": 33.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 63,
+        "operation": "drag",
+        "durationMs": 26.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 64,
+        "operation": "pan",
+        "durationMs": 37.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 65,
+        "operation": "zoom",
+        "durationMs": 26,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 66,
+        "operation": "select",
+        "durationMs": 31.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 67,
+        "operation": "drag",
+        "durationMs": 25.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 68,
+        "operation": "pan",
+        "durationMs": 29.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 69,
+        "operation": "zoom",
+        "durationMs": 25.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 70,
+        "operation": "select",
+        "durationMs": 30,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 71,
+        "operation": "drag",
+        "durationMs": 26,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 72,
+        "operation": "pan",
+        "durationMs": 27.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 73,
+        "operation": "zoom",
+        "durationMs": 26.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 74,
+        "operation": "select",
+        "durationMs": 29.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 75,
+        "operation": "drag",
+        "durationMs": 29.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 76,
+        "operation": "pan",
+        "durationMs": 30.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 77,
+        "operation": "zoom",
+        "durationMs": 28.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 78,
+        "operation": "select",
+        "durationMs": 25.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 79,
+        "operation": "drag",
+        "durationMs": 27.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 80,
+        "operation": "pan",
+        "durationMs": 38.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 81,
+        "operation": "zoom",
+        "durationMs": 27.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 82,
+        "operation": "select",
+        "durationMs": 28.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 83,
+        "operation": "drag",
+        "durationMs": 30.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 84,
+        "operation": "pan",
+        "durationMs": 30.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 85,
+        "operation": "zoom",
+        "durationMs": 27.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 86,
+        "operation": "select",
+        "durationMs": 25.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 87,
+        "operation": "drag",
+        "durationMs": 23.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 88,
+        "operation": "pan",
+        "durationMs": 32.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 89,
+        "operation": "zoom",
+        "durationMs": 28.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 90,
+        "operation": "select",
+        "durationMs": 26.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 91,
+        "operation": "drag",
+        "durationMs": 24.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 92,
+        "operation": "pan",
+        "durationMs": 25.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 93,
+        "operation": "zoom",
+        "durationMs": 25.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 94,
+        "operation": "select",
+        "durationMs": 26.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 95,
+        "operation": "drag",
+        "durationMs": 31,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 96,
+        "operation": "pan",
+        "durationMs": 41.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 97,
+        "operation": "zoom",
+        "durationMs": 37.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 98,
+        "operation": "select",
+        "durationMs": 37.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 99,
+        "operation": "drag",
+        "durationMs": 38.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 100,
+        "operation": "pan",
+        "durationMs": 30.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 101,
+        "operation": "zoom",
+        "durationMs": 28.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 102,
+        "operation": "select",
+        "durationMs": 32,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 103,
+        "operation": "drag",
+        "durationMs": 25.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 104,
+        "operation": "pan",
+        "durationMs": 29.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 105,
+        "operation": "zoom",
+        "durationMs": 30.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 106,
+        "operation": "select",
+        "durationMs": 33.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 107,
+        "operation": "drag",
+        "durationMs": 27.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 108,
+        "operation": "pan",
+        "durationMs": 26.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 109,
+        "operation": "zoom",
+        "durationMs": 27.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 110,
+        "operation": "select",
+        "durationMs": 25.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 111,
+        "operation": "drag",
+        "durationMs": 25.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 112,
+        "operation": "pan",
+        "durationMs": 26.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 113,
+        "operation": "zoom",
+        "durationMs": 30.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 114,
+        "operation": "select",
+        "durationMs": 24.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 115,
+        "operation": "drag",
+        "durationMs": 26.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 116,
+        "operation": "pan",
+        "durationMs": 25,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 117,
+        "operation": "zoom",
+        "durationMs": 28.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 118,
+        "operation": "select",
+        "durationMs": 25,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 119,
+        "operation": "drag",
+        "durationMs": 24.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 120,
+        "operation": "pan",
+        "durationMs": 26.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 121,
+        "operation": "zoom",
+        "durationMs": 28.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 122,
+        "operation": "select",
+        "durationMs": 27.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 123,
+        "operation": "drag",
+        "durationMs": 28.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 124,
+        "operation": "pan",
+        "durationMs": 27.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 125,
+        "operation": "zoom",
+        "durationMs": 31,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 126,
+        "operation": "select",
+        "durationMs": 35.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 127,
+        "operation": "drag",
+        "durationMs": 29.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 128,
+        "operation": "pan",
+        "durationMs": 29,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 129,
+        "operation": "zoom",
+        "durationMs": 28.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 130,
+        "operation": "select",
+        "durationMs": 38.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 131,
+        "operation": "drag",
+        "durationMs": 25.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 132,
+        "operation": "pan",
+        "durationMs": 35.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 133,
+        "operation": "zoom",
+        "durationMs": 29.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 134,
+        "operation": "select",
+        "durationMs": 27.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 135,
+        "operation": "drag",
+        "durationMs": 30.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 136,
+        "operation": "pan",
+        "durationMs": 28.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 137,
+        "operation": "zoom",
+        "durationMs": 31,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 138,
+        "operation": "select",
+        "durationMs": 29.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 139,
+        "operation": "drag",
+        "durationMs": 36.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 140,
+        "operation": "pan",
+        "durationMs": 32.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 141,
+        "operation": "zoom",
+        "durationMs": 36.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 142,
+        "operation": "select",
+        "durationMs": 42.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 143,
+        "operation": "drag",
+        "durationMs": 93.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 144,
+        "operation": "pan",
+        "durationMs": 32.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 145,
+        "operation": "zoom",
+        "durationMs": 37,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 146,
+        "operation": "select",
+        "durationMs": 38.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 147,
+        "operation": "drag",
+        "durationMs": 37,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 148,
+        "operation": "pan",
+        "durationMs": 33.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 149,
+        "operation": "zoom",
+        "durationMs": 34.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 150,
+        "operation": "select",
+        "durationMs": 26.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 151,
+        "operation": "drag",
+        "durationMs": 35.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 152,
+        "operation": "pan",
+        "durationMs": 35.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 153,
+        "operation": "zoom",
+        "durationMs": 36.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 154,
+        "operation": "select",
+        "durationMs": 26.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 155,
+        "operation": "drag",
+        "durationMs": 28.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 156,
+        "operation": "pan",
+        "durationMs": 25.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 157,
+        "operation": "zoom",
+        "durationMs": 40.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 158,
+        "operation": "select",
+        "durationMs": 24,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 159,
+        "operation": "drag",
+        "durationMs": 28.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 160,
+        "operation": "pan",
+        "durationMs": 26.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 161,
+        "operation": "zoom",
+        "durationMs": 40,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 162,
+        "operation": "select",
+        "durationMs": 36.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 163,
+        "operation": "drag",
+        "durationMs": 42.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 164,
+        "operation": "pan",
+        "durationMs": 35.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 165,
+        "operation": "zoom",
+        "durationMs": 34.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 166,
+        "operation": "select",
+        "durationMs": 26.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 167,
+        "operation": "drag",
+        "durationMs": 30.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 168,
+        "operation": "pan",
+        "durationMs": 24.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 169,
+        "operation": "zoom",
+        "durationMs": 32.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 170,
+        "operation": "select",
+        "durationMs": 24.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 171,
+        "operation": "drag",
+        "durationMs": 38,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 172,
+        "operation": "pan",
+        "durationMs": 35.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 173,
+        "operation": "zoom",
+        "durationMs": 34.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 174,
+        "operation": "select",
+        "durationMs": 35.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 175,
+        "operation": "drag",
+        "durationMs": 32.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 176,
+        "operation": "pan",
+        "durationMs": 30.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 177,
+        "operation": "zoom",
+        "durationMs": 29.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 178,
+        "operation": "select",
+        "durationMs": 25.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 179,
+        "operation": "drag",
+        "durationMs": 25.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 180,
+        "operation": "pan",
+        "durationMs": 36.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 181,
+        "operation": "zoom",
+        "durationMs": 26.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 182,
+        "operation": "select",
+        "durationMs": 23.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 183,
+        "operation": "drag",
+        "durationMs": 24.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 184,
+        "operation": "pan",
+        "durationMs": 25.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 185,
+        "operation": "zoom",
+        "durationMs": 36.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 186,
+        "operation": "select",
+        "durationMs": 37.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 187,
+        "operation": "drag",
+        "durationMs": 27.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 188,
+        "operation": "pan",
+        "durationMs": 30.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 189,
+        "operation": "zoom",
+        "durationMs": 33.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 190,
+        "operation": "select",
+        "durationMs": 24.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 191,
+        "operation": "drag",
+        "durationMs": 27.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 192,
+        "operation": "pan",
+        "durationMs": 29,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 193,
+        "operation": "zoom",
+        "durationMs": 33.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 194,
+        "operation": "select",
+        "durationMs": 26.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 195,
+        "operation": "drag",
+        "durationMs": 31.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 196,
+        "operation": "pan",
+        "durationMs": 30.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 197,
+        "operation": "zoom",
+        "durationMs": 32,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 198,
+        "operation": "select",
+        "durationMs": 26.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 199,
+        "operation": "drag",
+        "durationMs": 24.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 200,
+        "operation": "pan",
+        "durationMs": 27.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 201,
+        "operation": "zoom",
+        "durationMs": 26.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 202,
+        "operation": "select",
+        "durationMs": 24.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 203,
+        "operation": "drag",
+        "durationMs": 31.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 204,
+        "operation": "pan",
+        "durationMs": 31.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 205,
+        "operation": "zoom",
+        "durationMs": 26.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 206,
+        "operation": "select",
+        "durationMs": 29.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 207,
+        "operation": "drag",
+        "durationMs": 28.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 208,
+        "operation": "pan",
+        "durationMs": 30.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 209,
+        "operation": "zoom",
+        "durationMs": 26.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 210,
+        "operation": "select",
+        "durationMs": 35.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 211,
+        "operation": "drag",
+        "durationMs": 24.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 212,
+        "operation": "pan",
+        "durationMs": 38.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 213,
+        "operation": "zoom",
+        "durationMs": 27.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 214,
+        "operation": "select",
+        "durationMs": 31,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 215,
+        "operation": "drag",
+        "durationMs": 36.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 216,
+        "operation": "pan",
+        "durationMs": 25.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 217,
+        "operation": "zoom",
+        "durationMs": 37.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 218,
+        "operation": "select",
+        "durationMs": 30.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 219,
+        "operation": "drag",
+        "durationMs": 25.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 220,
+        "operation": "pan",
+        "durationMs": 28,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 221,
+        "operation": "zoom",
+        "durationMs": 29.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 222,
+        "operation": "select",
+        "durationMs": 26.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 223,
+        "operation": "drag",
+        "durationMs": 25,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 224,
+        "operation": "pan",
+        "durationMs": 36.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 225,
+        "operation": "zoom",
+        "durationMs": 25.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 226,
+        "operation": "select",
+        "durationMs": 28.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 227,
+        "operation": "drag",
+        "durationMs": 26.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 228,
+        "operation": "pan",
+        "durationMs": 28.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 229,
+        "operation": "zoom",
+        "durationMs": 32.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 230,
+        "operation": "select",
+        "durationMs": 24.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 231,
+        "operation": "drag",
+        "durationMs": 27.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 232,
+        "operation": "pan",
+        "durationMs": 26.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 233,
+        "operation": "zoom",
+        "durationMs": 35.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 234,
+        "operation": "select",
+        "durationMs": 30.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 235,
+        "operation": "drag",
+        "durationMs": 23.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 236,
+        "operation": "pan",
+        "durationMs": 27,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 237,
+        "operation": "zoom",
+        "durationMs": 32.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 238,
+        "operation": "select",
+        "durationMs": 26.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 239,
+        "operation": "drag",
+        "durationMs": 27.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 240,
+        "operation": "pan",
+        "durationMs": 70.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 241,
+        "operation": "zoom",
+        "durationMs": 64.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 242,
+        "operation": "select",
+        "durationMs": 27,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 243,
+        "operation": "drag",
+        "durationMs": 26.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 244,
+        "operation": "pan",
+        "durationMs": 26.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 245,
+        "operation": "zoom",
+        "durationMs": 32.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 246,
+        "operation": "select",
+        "durationMs": 25,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 247,
+        "operation": "drag",
+        "durationMs": 34.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 248,
+        "operation": "pan",
+        "durationMs": 29.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 249,
+        "operation": "zoom",
+        "durationMs": 34.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 250,
+        "operation": "select",
+        "durationMs": 31.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 251,
+        "operation": "drag",
+        "durationMs": 32.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 252,
+        "operation": "pan",
+        "durationMs": 40.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 253,
+        "operation": "zoom",
+        "durationMs": 41.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 254,
+        "operation": "select",
+        "durationMs": 24.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 255,
+        "operation": "drag",
+        "durationMs": 35.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 256,
+        "operation": "pan",
+        "durationMs": 30,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 257,
+        "operation": "zoom",
+        "durationMs": 33.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 258,
+        "operation": "select",
+        "durationMs": 27.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 259,
+        "operation": "drag",
+        "durationMs": 29.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 260,
+        "operation": "pan",
+        "durationMs": 26.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 261,
+        "operation": "zoom",
+        "durationMs": 31.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 262,
+        "operation": "select",
+        "durationMs": 26.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 263,
+        "operation": "drag",
+        "durationMs": 33.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 264,
+        "operation": "pan",
+        "durationMs": 29.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 265,
+        "operation": "zoom",
+        "durationMs": 35.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 266,
+        "operation": "select",
+        "durationMs": 32,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 267,
+        "operation": "drag",
+        "durationMs": 31.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 268,
+        "operation": "pan",
+        "durationMs": 26.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 269,
+        "operation": "zoom",
+        "durationMs": 32,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 270,
+        "operation": "select",
+        "durationMs": 24.7,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 271,
+        "operation": "drag",
+        "durationMs": 26.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 272,
+        "operation": "pan",
+        "durationMs": 27,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 273,
+        "operation": "zoom",
+        "durationMs": 26.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 274,
+        "operation": "select",
+        "durationMs": 34.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 275,
+        "operation": "drag",
+        "durationMs": 24,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 276,
+        "operation": "pan",
+        "durationMs": 32.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 277,
+        "operation": "zoom",
+        "durationMs": 25.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 278,
+        "operation": "select",
+        "durationMs": 33.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 279,
+        "operation": "drag",
+        "durationMs": 28.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 280,
+        "operation": "pan",
+        "durationMs": 27.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 281,
+        "operation": "zoom",
+        "durationMs": 27.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 282,
+        "operation": "select",
+        "durationMs": 26.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 283,
+        "operation": "drag",
+        "durationMs": 31,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 284,
+        "operation": "pan",
+        "durationMs": 26.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 285,
+        "operation": "zoom",
+        "durationMs": 25.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 286,
+        "operation": "select",
+        "durationMs": 25.2,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 287,
+        "operation": "drag",
+        "durationMs": 28,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 288,
+        "operation": "pan",
+        "durationMs": 27.3,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 289,
+        "operation": "zoom",
+        "durationMs": 26.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 290,
+        "operation": "select",
+        "durationMs": 23.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 291,
+        "operation": "drag",
+        "durationMs": 24,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 292,
+        "operation": "pan",
+        "durationMs": 23.8,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 293,
+        "operation": "zoom",
+        "durationMs": 29.1,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 294,
+        "operation": "select",
+        "durationMs": 24.6,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 295,
+        "operation": "drag",
+        "durationMs": 30.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 296,
+        "operation": "pan",
+        "durationMs": 25.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 297,
+        "operation": "zoom",
+        "durationMs": 36.9,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 298,
+        "operation": "select",
+        "durationMs": 26.5,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      },
+      {
+        "frame": 299,
+        "operation": "drag",
+        "durationMs": 30.4,
+        "visiblePaintElements": 1088,
+        "selectedId": "occurrence:sha256:0000000000000000000000000000000000000000000000000000000000000001",
+        "traceId": "trace:sha256:bf8e50afa303bd401ceceb95cc9979b1bcef0d5ab464ae866136a05fb373fbcd"
+      }
+    ]
+  },
+  "gates": {
+    "panZoomP95Ms": true,
+    "dragPreviewP95Ms": true,
+    "incrementalHeapMiB": true,
+    "selectionP95Ms": true,
+    "stableSceneRevision": true,
+    "identityErrors": true,
+    "traceErrors": true,
+    "unhandledErrors": true
+  }
+}

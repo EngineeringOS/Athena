@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "M43.product-proof",
+  "repositoryRoot": "D:/Aaron/workspace/projects/2026/eos/Athena/examples/m43/rolling-shutter",
+  "sourcePath": "D:/Aaron/workspace/projects/2026/eos/Athena/examples/m43/rolling-shutter/src/com/engineeringood/m43/rollingshutter/rolling-shutter.athena",
+  "sheetPath": "D:/Aaron/workspace/projects/2026/eos/Athena/examples/m43/rolling-shutter/src/com/engineeringood/m43/rollingshutter/rolling-shutter.sheet.athena",
+  "projectionReality": {
+    "status": "ready",
+    "sheetCount": 1
+  },
+  "spatialReality": {
+    "gridColumns": 17,
+    "gridRows": 16,
+    "occurrenceCount": 8,
+    "routeCount": 7
+  },
+  "presentationReality": {
+    "title": "Rolling Shutter Control",
+    "viewports": [
+      {
+        "name": "desktop-1920x1080",
+        "requestedViewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "status": "ready",
+        "workspaceOpened": true,
+        "workspaceRoots": [
+          "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m43\\rolling-shutter"
+        ],
+        "title": "Engineering Document",
+        "sceneId": "scene:sha256:13268a3ba994c74172fa9182fa0665d6f5cee57d94796f2e102541584474ad32",
+        "sceneDigest": "sha256:42ec250358fde288947e66f2354b3c2d8ed95178d90dea697a1bf7ac77bc3614",
+        "gridRows": 16,
+        "gridColumns": 17,
+        "occurrenceCount": 8,
+        "routeCount": 7,
+        "svgOccurrenceCount": 0,
+        "canvas": {
+          "width": 3648,
+          "height": 1982,
+          "nonWhiteSamples": 52995
+        },
+        "centerPanel": {
+          "width": 1824,
+          "height": 991
+        },
+        "sourceEditorCount": 1,
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "traceInteraction": {
+          "selectedKind": "occurrence",
+          "selectedOccurrenceId": "occurrence:sha256:3e53fef9b42bcd2c91fe4626ca91882ed110679b17069dc44c7adc01fac43ae0",
+          "selected": true,
+          "traceId": "trace:sha256:cffa169e7fde7e5e291330fb95d067b8d69e32816eb2fe78b0810b144dd34b0f",
+          "sourceDecorationCount": 0,
+          "sourceEditorCount": 1
+        },
+        "screenshotPath": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m43\\m43-rolling-shutter-desktop-1920x1080.png"
+      },
+      {
+        "name": "mobile-720x900",
+        "requestedViewport": {
+          "width": 720,
+          "height": 900
+        },
+        "status": "ready",
+        "workspaceOpened": true,
+        "workspaceRoots": [
+          "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m43\\rolling-shutter"
+        ],
+        "title": "Engineering Document",
+        "sceneId": "scene:sha256:13268a3ba994c74172fa9182fa0665d6f5cee57d94796f2e102541584474ad32",
+        "sceneDigest": "sha256:42ec250358fde288947e66f2354b3c2d8ed95178d90dea697a1bf7ac77bc3614",
+        "gridRows": 16,
+        "gridColumns": 17,
+        "occurrenceCount": 8,
+        "routeCount": 7,
+        "svgOccurrenceCount": 0,
+        "canvas": {
+          "width": 1248,
+          "height": 1622,
+          "nonWhiteSamples": 10120
+        },
+        "centerPanel": {
+          "width": 624,
+          "height": 811
+        },
+        "sourceEditorCount": 1,
+        "viewport": {
+          "width": 720,
+          "height": 900
+        },
+        "traceInteraction": {
+          "selectedKind": "occurrence",
+          "selectedOccurrenceId": "occurrence:sha256:87ab1b79da521e20d2c1b51b7e3694dace64559bd0f0fe1636bc072571e5d2c7",
+          "selected": true,
+          "traceId": "trace:sha256:6245b7234c67cc71ec39af9cfc85932917026280b2d409e5b03d36078b279f87",
+          "sourceDecorationCount": 0,
+          "sourceEditorCount": 1
+        },
+        "screenshotPath": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m43\\m43-rolling-shutter-mobile-720x900.png"
+      }
+    ]
+  },
+  "sourceTraceInteraction": [
+    {
+      "selectedKind": "occurrence",
+      "selectedOccurrenceId": "occurrence:sha256:3e53fef9b42bcd2c91fe4626ca91882ed110679b17069dc44c7adc01fac43ae0",
+      "selected": true,
+      "traceId": "trace:sha256:cffa169e7fde7e5e291330fb95d067b8d69e32816eb2fe78b0810b144dd34b0f",
+      "sourceDecorationCount": 0,
+      "sourceEditorCount": 1
+    },
+    {
+      "selectedKind": "occurrence",
+      "selectedOccurrenceId": "occurrence:sha256:87ab1b79da521e20d2c1b51b7e3694dace64559bd0f0fe1636bc072571e5d2c7",
+      "selected": true,
+      "traceId": "trace:sha256:6245b7234c67cc71ec39af9cfc85932917026280b2d409e5b03d36078b279f87",
+      "sourceDecorationCount": 0,
+      "sourceEditorCount": 1
+    }
+  ]
+}

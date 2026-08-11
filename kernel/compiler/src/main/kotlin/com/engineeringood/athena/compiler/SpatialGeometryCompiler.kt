@@ -46,11 +46,12 @@ class SpatialGeometryCompiler {
     private val planner = ProjectionPlacementPlanner()
     private val validator = SpatialGroupingValidator(planner)
 
-    fun compile(
+    internal fun compile(
         projection: ProjectionDocument,
         occurrences: List<SpatialOccurrenceGeometry>,
+        pageGeometries: Map<String, SpatialPageGeometryProfile> = emptyMap(),
     ): SpatialGeometryCompilationResult {
-        val diagnostics = validator.validate(projection, occurrences)
+        val diagnostics = validator.validate(projection, occurrences, pageGeometries)
         if (diagnostics.isNotEmpty()) {
             return SpatialGeometryCompilationResult(diagnostics = diagnostics)
         }
@@ -60,6 +61,8 @@ class SpatialGeometryCompiler {
         projection.sheets
             .sortedWith(compareBy({ sheet -> sheet.order }, { sheet -> sheet.sheetId.value }))
             .forEach { sheet ->
+                val groupingPadding = pageGeometries[sheet.sheetId.value]?.groupingPadding
+                    ?: ProjectionSpatialLayout.GROUPING_PADDING
                 val sheetNodes = projection.nodes.filter { node -> planner.sheetOwns(sheet, node) }
                 val nodesByLabel = sheetNodes.associateBy(ProjectionNode::label)
                 val occurrencesByProjectionId = occurrences
@@ -76,7 +79,7 @@ class SpatialGeometryCompiler {
                         regionId = regionId,
                         sheetId = sheet.sheetId.value,
                         memberOccurrenceIds = members.map(SpatialOccurrenceGeometry::occurrenceId),
-                        bounds = paddedGroupingUnion(members.map(SpatialOccurrenceGeometry::rectangle)),
+                        bounds = paddedGroupingUnion(members.map(SpatialOccurrenceGeometry::rectangle), groupingPadding),
                         sourceTrace = sourceTrace,
                     )
                     val alignmentSource = SpatialAlignmentSource.Region(regionId)
@@ -107,7 +110,7 @@ class SpatialGeometryCompiler {
                         kind = construct.kind,
                         name = construct.name,
                         memberOccurrenceIds = members.map(SpatialOccurrenceGeometry::occurrenceId),
-                        envelope = paddedGroupingUnion(members.map(SpatialOccurrenceGeometry::rectangle)),
+                        envelope = paddedGroupingUnion(members.map(SpatialOccurrenceGeometry::rectangle), groupingPadding),
                         sourceTrace = sourceTrace,
                     )
                     val alignmentSource = SpatialAlignmentSource.Construct(constructId)
@@ -142,23 +145,26 @@ class SpatialGeometryCompiler {
 
 private fun <T> List<T>.immutableGeometryCopy(): List<T> = Collections.unmodifiableList(toList())
 
-internal fun paddedGroupingUnion(rectangles: List<SpatialRect>): SpatialRect {
-    return requireNotNull(paddedGroupingUnionOrNull(rectangles)) {
+internal fun paddedGroupingUnion(rectangles: List<SpatialRect>, padding: Int = ProjectionSpatialLayout.GROUPING_PADDING): SpatialRect {
+    return requireNotNull(paddedGroupingUnionOrNull(rectangles, padding)) {
         "Padded grouping geometry must fit within Int drawing units."
     }
 }
 
-internal fun paddedGroupingUnionOrNull(rectangles: List<SpatialRect>): SpatialRect? {
+internal fun paddedGroupingUnionOrNull(
+    rectangles: List<SpatialRect>,
+    padding: Int = ProjectionSpatialLayout.GROUPING_PADDING,
+): SpatialRect? {
     if (rectangles.isEmpty()) return null
     val minX = rectangles.minOf { rectangle -> rectangle.x }.toLong()
     val minY = rectangles.minOf { rectangle -> rectangle.y }.toLong()
     val maxRight = rectangles.maxOf { rectangle -> rectangle.x.toLong() + rectangle.width.toLong() }
     val maxBottom = rectangles.maxOf { rectangle -> rectangle.y.toLong() + rectangle.height.toLong() }
-    val padding = ProjectionSpatialLayout.GROUPING_PADDING.toLong()
-    val x = minX - padding
-    val y = minY - padding
-    val right = maxRight + padding
-    val bottom = maxBottom + padding
+    val paddingLong = padding.toLong()
+    val x = minX - paddingLong
+    val y = minY - paddingLong
+    val right = maxRight + paddingLong
+    val bottom = maxBottom + paddingLong
     val width = right - x
     val height = bottom - y
     if (x !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong() ||

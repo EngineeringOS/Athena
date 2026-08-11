@@ -1,6 +1,0 @@
-status=semantic-invalid
-entities=2
-ports=2
-connections=2
-svg=blocked
-diagnostics=uniqueness.entity.duplicate-authored-key,uniqueness.entity.duplicate-authored-key,reference.port-owner.ambiguous,reference.port-owner.ambiguous,uniqueness.port.duplicate-authored-key,uniqueness.port.duplicate-authored-key,reference.connection-endpoint.ambiguous,reference.connection-endpoint.ambiguous,reference.connection-endpoint.ambiguous,reference.connection-endpoint.ambiguous,uniqueness.connection.duplicate-authored-key,uniqueness.connection.duplicate-authored-key

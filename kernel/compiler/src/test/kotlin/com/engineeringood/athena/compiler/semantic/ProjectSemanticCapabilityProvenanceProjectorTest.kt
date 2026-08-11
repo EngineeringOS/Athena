@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.compiler.semantic
+package com.engineeringood.athena.compiler.semantic
 
 import com.engineeringood.athena.compiler.AthenaCompiler
 import com.engineeringood.athena.language.AthenaLanguageParser

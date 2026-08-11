@@ -1,11 +1,13 @@
 package com.engineeringood.athena.compiler
 
+import com.engineeringood.athena.ir.ConnectionEndpointRole
 import com.engineeringood.athena.geometry.GeometryElementId
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.layout.ViewDefinition
-import com.engineeringood.athena.projection.ProjectionConnection
-import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
-import com.engineeringood.athena.projection.ProjectionConnectionId
+import com.engineeringood.athena.projection.ConnectionProjection
+import com.engineeringood.athena.projection.ConnectionProjectionEndpoint
+import com.engineeringood.athena.projection.ConnectionProjectionParticipant
+import com.engineeringood.athena.projection.ConnectionProjectionId
 import com.engineeringood.athena.projection.ProjectionConstructId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
@@ -172,15 +174,17 @@ class ProjectionSpatialLayoutTest {
                 authoredSecond.label,
             ),
         )
-        val connection = ProjectionConnection(
-            projectionId = ProjectionConnectionId("projection/connection/source-target"),
+        val connection = ConnectionProjection(
+            projectionId = ConnectionProjectionId("projection/connection/source-target"),
             semanticId = StableSemanticIdentity("connection:source-target"),
             originGeometryElementId = GeometryElementId("origin:connection:source-target"),
-            source = ProjectionConnectionEndpoint(
-                ProjectionOccurrencePortId(source.projectionId, StableSemanticIdentity("port:Source.out")),
-            ),
-            target = ProjectionConnectionEndpoint(
-                ProjectionOccurrencePortId(target.projectionId, StableSemanticIdentity("port:Target.in")),
+            participants = listOf(
+                ConnectionProjectionParticipant(ConnectionEndpointRole.SOURCE, ConnectionProjectionEndpoint(
+                    ProjectionOccurrencePortId(source.projectionId, StableSemanticIdentity("port:Source.out")),
+                )),
+                ConnectionProjectionParticipant(ConnectionEndpointRole.SINK, ConnectionProjectionEndpoint(
+                    ProjectionOccurrencePortId(target.projectionId, StableSemanticIdentity("port:Target.in")),
+                )),
             ),
         )
         val projection = projectionDocument(nodes = nodes, regions = listOf(region)).let { document ->
@@ -674,15 +678,17 @@ class ProjectionSpatialLayoutTest {
             regions = listOf(ProjectionRegion("region:all", "All", listOf("First", "Second", "Target"))),
         ).copy(
             connections = listOf(
-                ProjectionConnection(
-                    projectionId = ProjectionConnectionId("connection:ambiguous"),
+                ConnectionProjection(
+                    projectionId = ConnectionProjectionId("connection:ambiguous"),
                     semanticId = StableSemanticIdentity("connection:ambiguous"),
                     originGeometryElementId = GeometryElementId("origin:connection:ambiguous"),
-                    source = ProjectionConnectionEndpoint(
-                        ProjectionOccurrencePortId(first.projectionId, StableSemanticIdentity("port:First.out")),
-                    ),
-                    target = ProjectionConnectionEndpoint(
-                        ProjectionOccurrencePortId(target.projectionId, StableSemanticIdentity("port:Target.in")),
+                    participants = listOf(
+                        ConnectionProjectionParticipant(ConnectionEndpointRole.SOURCE, ConnectionProjectionEndpoint(
+                            ProjectionOccurrencePortId(first.projectionId, StableSemanticIdentity("port:First.out")),
+                        )),
+                        ConnectionProjectionParticipant(ConnectionEndpointRole.SINK, ConnectionProjectionEndpoint(
+                            ProjectionOccurrencePortId(target.projectionId, StableSemanticIdentity("port:Target.in")),
+                        )),
                     ),
                 ),
             ),
@@ -793,7 +799,7 @@ class ProjectionSpatialLayoutTest {
         val projectionPropertyNames = listOf(
             ProjectionDocument::class.java,
             ProjectionNode::class.java,
-            ProjectionConnection::class.java,
+            ConnectionProjection::class.java,
         ).flatMap { type -> type.declaredFields.map { field -> field.name } }
         val forbidden = listOf("x", "y", "width", "height", "bounds", "anchorPosition", "lane", "routePoints")
 
@@ -878,7 +884,7 @@ class ProjectionSpatialLayoutTest {
     private fun projectionDocument(
         nodes: List<ProjectionNode> = listOf(supplyNode(), breakerNode(), loadNode()),
         regions: List<ProjectionRegion> = projectionRegions(),
-        connections: List<ProjectionConnection> = listOf(testConnection()),
+        connections: List<ConnectionProjection> = listOf(testConnection()),
     ): ProjectionDocument {
         val view = ViewDefinition(id = "engineering-projection", displayName = "Engineering Projection")
         val subjects = nodes.map { node -> ProjectionSheetSubject(node.semanticId, nodeIds = listOf(node.projectionId)) } +
@@ -909,10 +915,24 @@ class ProjectionSpatialLayoutTest {
         )
     }
 
-    private fun testConnection(): ProjectionConnection = ProjectionConnection(
-        projectionId = ProjectionConnectionId("projection/connection/connection:Supply.L1-to-Q1.1"),
+    private fun testConnection(): ConnectionProjection = ConnectionProjection(
+        projectionId = ConnectionProjectionId("projection/connection/connection:Supply.L1-to-Q1.1"),
         semanticId = StableSemanticIdentity("connection:Supply.L1-to-Q1.1"),
         originGeometryElementId = GeometryElementId("origin:connection"),
+        participants = listOf(
+            ConnectionProjectionParticipant(
+                ConnectionEndpointRole.SOURCE,
+                ConnectionProjectionEndpoint(
+                    ProjectionOccurrencePortId(ProjectionNodeId("projection/node/unused-source"), StableSemanticIdentity("port:unused.source")),
+                ),
+            ),
+            ConnectionProjectionParticipant(
+                ConnectionEndpointRole.SINK,
+                ConnectionProjectionEndpoint(
+                    ProjectionOccurrencePortId(ProjectionNodeId("projection/node/unused-target"), StableSemanticIdentity("port:unused.target")),
+                ),
+            ),
+        ),
     )
 
     private fun projectionRegions(): List<ProjectionRegion> = listOf(

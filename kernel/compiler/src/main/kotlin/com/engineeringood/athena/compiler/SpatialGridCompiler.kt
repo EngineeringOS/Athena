@@ -61,6 +61,7 @@ internal class SpatialGridCompiler {
                 drawingArea = sheet.drawingArea,
                 rows = grid.rows,
                 columns = grid.columns,
+                subdivisions = grid.subdivisions,
                 sourceTrace = sheet.sourceTrace,
             )
         }

@@ -1,7 +1,6 @@
 package com.engineeringood.athena.runtime
 
 import com.engineeringood.athena.compiler.AthenaCompiler
-import com.engineeringood.athena.compiler.defaultAthenaKnowledgePackageSource
 
 /** Runtime-owned typed registry for platform capabilities needed by the active execution context. */
 class AthenaServiceRegistry(
@@ -13,19 +12,22 @@ class AthenaServiceRegistry(
     semanticCommitServiceProvider: (() -> AthenaSemanticCommitService)? = null,
     semanticScmStateServiceProvider: (() -> AthenaSemanticScmStateService)? = null,
     semanticHistoryStateServiceProvider: (() -> AthenaSemanticHistoryStateService)? = null,
+    connectionPublicationServiceProvider: (() -> AthenaConnectionPublicationService)? = null,
 ) {
     private val pluginRuntimeServicesInstance by lazy(LazyThreadSafetyMode.NONE) {
         pluginRuntimeServicesProvider?.invoke() ?: AthenaHostedPluginRuntimeServices()
     }
     private val compilerInstance by lazy(LazyThreadSafetyMode.NONE) {
         compilerProvider?.invoke() ?: AthenaCompiler(
-            knowledgePackageSource = defaultAthenaKnowledgePackageSource(),
             hostedPluginDiscoveryReport = pluginRuntimeServicesInstance.discoveryReport(),
             hostedDomainPlugins = pluginRuntimeServicesInstance.domainSemanticsContributions()
                 .map { contribution -> contribution.domainPlugin },
         )
     }
     private val engineeringGraphInstance by lazy(LazyThreadSafetyMode.NONE) { AthenaEngineeringGraphService() }
+    private val connectionPublicationServiceInstance by lazy(LazyThreadSafetyMode.NONE) {
+        connectionPublicationServiceProvider?.invoke() ?: AthenaConnectionPublicationService()
+    }
     private val repositoryReportInstance by lazy(LazyThreadSafetyMode.NONE) {
         AthenaRepositoryReportService(::compiler)
     }
@@ -65,6 +67,9 @@ class AthenaServiceRegistry(
 
     /** Resolves the shared engineering-graph capability for the current runtime. */
     fun engineeringGraph(): AthenaEngineeringGraphService = engineeringGraphInstance
+
+    /** Resolves the runtime-owned accepted Connection IR publication boundary. */
+    fun connectionPublications(): AthenaConnectionPublicationService = connectionPublicationServiceInstance
 
     /** Resolves the shared repository-report capability for the current runtime. */
     fun repositoryReports(): AthenaRepositoryReportService = repositoryReportInstance

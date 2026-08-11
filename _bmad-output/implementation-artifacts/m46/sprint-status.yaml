@@ -1,0 +1,70 @@
+# generated: 2026-08-10T19:44:51+08:00
+# last_updated: 2026-08-10T19:44:51+08:00
+# project: Athena
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts/m46
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic becomes in-progress when its first story is created.
+# - Story implementation follows ready-for-dev -> in-progress -> review -> done.
+# - Every story uses BMad create-story and dev-story workflows.
+# - Gradle verification runs sequentially on this Windows repository.
+
+generated: 2026-08-10T19:44:51+08:00
+last_updated: 2026-08-11T12:58:00+08:00
+project: Athena
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts/m46
+
+development_status:
+  epic-1: in-progress
+  1-1-author-typed-binary-engineering-connections: done
+  1-2-author-engineering-nets-and-connection-specifications: review
+  1-3-validate-and-compile-canonical-connection-ir: review
+  1-4-publish-connection-projections-and-remove-generic-route-truth: review
+  epic-1-retrospective: optional
+
+  epic-2: in-progress
+  2-1-plan-deterministic-orthogonal-connection-routes: review
+  2-2-plan-junctions-crossings-shared-trunks-and-interruptions: review
+  2-3-place-compact-connection-annotations-and-validate-quality: review
+  epic-2-retrospective: optional
+
+  epic-3: in-progress
+  3-1-publish-sceneconnection-and-deterministic-svg: review
+  3-2-paint-and-select-professional-connections-in-konva: review
+  3-3-navigate-placed-and-unplaced-connectivity: review
+  3-4-connect-reconnect-and-adjust-routes-through-transactions: review
+  epic-3-retrospective: optional
+
+  epic-4: in-progress
+  4-1-build-m46-rolling-shutter-connection-project: review
+  4-2-prove-incremental-connection-performance: review
+  4-3-prove-edit-reopen-and-deterministic-export: review
+  epic-4-retrospective: optional
+
+  epic-5: in-progress
+  5-1-run-full-m46-verification-and-hygiene: in-progress
+  5-2-publish-m46-closure-and-retrospective: backlog
+  epic-5-retrospective: optional

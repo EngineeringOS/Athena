@@ -1,6 +1,0 @@
-status=semantic-invalid
-entities=1
-ports=0
-connections=0
-svg=blocked
-diagnostics=engineering.port.direction.invalid

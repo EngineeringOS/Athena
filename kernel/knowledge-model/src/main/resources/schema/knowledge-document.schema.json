@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://athena.dev/schema/knowledge-document.json",
+  "schemaVersion": 1,
+  "type": "object",
+  "required": ["$schema", "schemaVersion", "packages", "definitions"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"const": "https://athena.dev/schema/knowledge-document.json"},
+    "schemaVersion": {"type": "integer", "const": 1},
+    "packages": {"type": "array", "x-athena-order": "STABLE_ID", "items": {"type": "object", "required": ["name", "version"], "additionalProperties": false, "properties": {"name": {"type": "string"}, "version": {"type": "string"}}}},
+    "definitions": {"type": "array", "x-athena-order": "STABLE_ID", "items": {"type": "object", "required": ["id", "kind", "source"], "additionalProperties": false, "properties": {"id": {"type": "string"}, "kind": {"type": "string"}, "source": {"type": "string"}}}}
+  }
+}

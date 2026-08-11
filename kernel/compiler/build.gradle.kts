@@ -7,6 +7,8 @@ dependencies {
     implementation(project(":kernel:plugins:plugin-host"))
     implementation(project(":kernel:repository-model"))
     implementation(project(":kernel:engineering-model"))
+    implementation(project(":kernel:connection-model"))
+    implementation(project(":kernel:knowledge-model"))
     implementation(project(":kernel:geometry-model"))
     implementation(project(":kernel:layout-engine"))
     implementation(project(":kernel:layout-model"))
@@ -16,8 +18,10 @@ dependencies {
     implementation(project(":kernel:document-projection-model"))
     implementation(project(":kernel:package-runtime"))
     implementation(project(":kernel:projection-model"))
+    implementation(project(":kernel:presentation-model"))
     implementation(project(":kernel:language"))
     implementation(project(":kernel:validation"))
+    implementation(libs.snakeyaml.engine)
     testImplementation(project(":kernel:runtime"))
     testImplementation(project(":extensions:domain-dummy"))
     testImplementation(project(":extensions:domain-electrical"))
@@ -37,4 +41,3 @@ tasks.register<JavaExec>("generateM41SpatialQualityBaseline") {
         setArgs(listOf(rootProject.projectDir.absolutePath, timestamp))
     }
 }
-

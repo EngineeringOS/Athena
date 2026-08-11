@@ -11,14 +11,9 @@ value class ProjectionNodeId(val value: String) {
     override fun toString(): String = value
 }
 
-/**
- * Projection-local identifier for one connection in a derived projection document.
- *
- * The identifier is stable only within one projection view and remains secondary to canonical
- * semantic identity.
- */
+/** Projection-local identifier for one ConnectionProjection in a derived view. */
 @JvmInline
-value class ProjectionConnectionId(val value: String) {
+value class ConnectionProjectionId(val value: String) {
     override fun toString(): String = value
 }
 

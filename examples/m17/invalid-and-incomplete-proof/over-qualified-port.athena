@@ -1,5 +1,0 @@
-system OverQualifiedPort {
-  port Plant.Cabinet.PLC1.out {
-    direction out
-  }
-}

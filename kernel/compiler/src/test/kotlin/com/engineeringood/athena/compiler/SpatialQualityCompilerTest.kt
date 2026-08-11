@@ -9,7 +9,7 @@ import com.engineeringood.athena.spatial.SpatialLaneOrientation
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialPoint
 import com.engineeringood.athena.spatial.SpatialRect
-import com.engineeringood.athena.spatial.SpatialRoute
+import com.engineeringood.athena.spatial.ConnectionRoutePlan
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -346,7 +346,7 @@ class SpatialQualityCompilerTest {
         occurrences: List<SpatialOccurrenceGeometry> = emptyList(),
         constructs: List<SpatialConstructGeometry> = emptyList(),
         lanes: List<SpatialLane> = emptyList(),
-        routes: List<SpatialRoute> = emptyList(),
+        routes: List<ConnectionRoutePlan> = emptyList(),
     ) = SpatialQualityCompiler().measure(
         drawingArea = drawingArea,
         occurrences = occurrences,
@@ -396,7 +396,7 @@ class SpatialQualityCompilerTest {
         sourceAnchorId: com.engineeringood.athena.spatial.SpatialAnchorId = testSpatialAnchorId(sourceOccurrenceId),
         targetAnchorId: com.engineeringood.athena.spatial.SpatialAnchorId = testSpatialAnchorId(targetOccurrenceId),
         laneId: SpatialLaneId = testSpatialLaneId(SpatialLaneOrientation.HORIZONTAL, 0),
-    ): SpatialRoute = testSpatialRoute(
+    ): ConnectionRoutePlan = testConnectionRoutePlan(
         routeId = id,
         connectionId = "connection:$id",
         sourceAnchorId = sourceAnchorId,

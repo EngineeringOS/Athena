@@ -11,6 +11,189 @@ import kotlin.test.assertTrue
 
 class AthenaRepositoryGraphResolverTest {
     @Test
+    fun `selects declared direct child package from project catalog into canonical graph`() {
+        val repositoryRoot = createTempDirectory("athena-package-catalog-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      sourceRoot: src
+                    dependencies:
+                      - name: com.vendor.drive
+                        version: 1.0.0
+                        source: local-package
+                """.trimIndent(),
+            )
+            writeCatalogPackage(
+                repositoryRoot = repositoryRoot,
+                directoryName = "com.vendor.drive",
+                packageName = "com.vendor.drive",
+                version = "1.0.0",
+            )
+            writeCatalogPackage(
+                repositoryRoot = repositoryRoot,
+                directoryName = "com.vendor.unused",
+                packageName = "com.vendor.unused",
+                version = "1.0.0",
+            )
+
+            val result = AthenaCompiler().resolveRepositoryGraph(repositoryRoot)
+
+            assertTrue(result.isValid, result.diagnostics.joinToString("\n") { "${it.code}: ${it.message}" })
+            assertEquals(
+                listOf("com.engineeringood.root", "com.vendor.drive"),
+                result.graph?.packages?.map { it.packageId.name },
+            )
+            assertEquals("packages/com.vendor.drive", result.graph?.packages?.last()?.sourceRoot)
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `rejects direct child package whose id differs from directory name`() {
+        val repositoryRoot = createTempDirectory("athena-package-catalog-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            writeCatalogPackage(
+                repositoryRoot = repositoryRoot,
+                directoryName = "com.vendor.wrong",
+                packageName = "com.vendor.drive",
+                version = "1.0.0",
+            )
+
+            val result = AthenaCompiler().resolveRepositoryGraph(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertTrue(result.diagnostics.any { it.code == "repository.catalog.package-id.directory-mismatch" })
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `rejects nested package manifests under direct catalog child`() {
+        val repositoryRoot = createTempDirectory("athena-package-catalog-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            val nested = repositoryRoot.resolve("packages/com.vendor.drive/nested").createDirectories()
+            nested.resolve("package.yaml").writeText(
+                """
+                    packageId:
+                      name: com.vendor.drive
+                      version: 1.0.0
+                """.trimIndent(),
+            )
+
+            val result = AthenaCompiler().resolveRepositoryGraph(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertTrue(
+                result.diagnostics.any { diagnostic ->
+                    diagnostic.code == "repository.catalog.package-manifest.missing" ||
+                        diagnostic.code == "repository.catalog.package-manifest.nested-forbidden"
+                },
+                result.diagnostics.toString(),
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `rejects malformed package manifest instead of guessing fields`() {
+        val repositoryRoot = createTempDirectory("athena-package-catalog-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            val packageRoot = repositoryRoot.resolve("packages/com.vendor.drive").createDirectories()
+            packageRoot.resolve("package.yaml").writeText(
+                """
+                    packageId:
+                      name: com.vendor.drive
+                      version: [1.0.0
+                """.trimIndent(),
+            )
+
+            val result = AthenaCompiler().resolveRepositoryGraph(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertTrue(
+                result.diagnostics.any { it.code == "repository.catalog.package-manifest.malformed" },
+                result.diagnostics.toString(),
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `rejects duplicate package manifest keys deterministically`() {
+        val repositoryRoot = createTempDirectory("athena-package-catalog-")
+        try {
+            writeGovernedRepository(
+                repositoryRoot = repositoryRoot,
+                packageName = "com.engineeringood.root",
+                sourceFileName = "root.athena",
+                manifestBody = """
+                    primaryPackage:
+                      name: com.engineeringood.root
+                      sourceRoot: src
+                """.trimIndent(),
+            )
+            val packageRoot = repositoryRoot.resolve("packages/com.vendor.drive").createDirectories()
+            packageRoot.resolve("package.yaml").writeText(
+                """
+                    packageId:
+                      name: com.vendor.drive
+                      name: com.vendor.other
+                      version: 1.0.0
+                """.trimIndent(),
+            )
+
+            val result = AthenaCompiler().resolveRepositoryGraph(repositoryRoot)
+
+            assertFalse(result.isValid)
+            assertTrue(
+                result.diagnostics.any { it.code == "repository.catalog.package-manifest.malformed" },
+                result.diagnostics.toString(),
+            )
+        } finally {
+            repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `resolves deterministic local first graph with transitive local path and local package references`() {
         val repositoryRoot = createTempDirectory("athena-graph-resolution-")
         try {
@@ -163,6 +346,22 @@ class AthenaRepositoryGraphResolverTest {
             repositoryRoot.toFile().deleteRecursively()
         }
     }
+}
+
+private fun writeCatalogPackage(
+    repositoryRoot: java.nio.file.Path,
+    directoryName: String,
+    packageName: String,
+    version: String,
+) {
+    val packageRoot = repositoryRoot.resolve("packages").resolve(directoryName).createDirectories()
+    packageRoot.resolve("package.yaml").writeText(
+        """
+            packageId:
+              name: $packageName
+              version: $version
+        """.trimIndent(),
+    )
 }
 
 private fun writeGovernedRepository(

@@ -860,7 +860,7 @@
     node-gyp "^12.2.0"
     read-binary-file-arch "^1.0.6"
 
-"@engineeringood/athena-graph-glsp@link:../integrations/graph-glsp":
+"@engineeringood/athena-tree-sitter-grammar@link:tree-sitter-athena":
   version "0.0.0"
   uid ""
 
@@ -3037,6 +3037,16 @@ ajv-keywords@^5.1.0:
   dependencies:
     fast-deep-equal "^3.1.3"
 
+ajv@8.20.0, ajv@^8.0.0, ajv@^8.17.1, ajv@^8.6.3, ajv@^8.9.0:
+  version "8.20.0"
+  resolved "https://registry.npmmirror.com/ajv/-/ajv-8.20.0.tgz#304b3636add88ba7d936760dd50ece006dea95f9"
+  integrity sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==
+  dependencies:
+    fast-deep-equal "^3.1.3"
+    fast-uri "^3.0.1"
+    json-schema-traverse "^1.0.0"
+    require-from-string "^2.0.2"
+
 ajv@^6.12.4, ajv@^6.12.5, ajv@^6.15.0:
   version "6.15.0"
   resolved "https://registry.npmmirror.com/ajv/-/ajv-6.15.0.tgz#07e982c74626167aa7a2495c53817892d7139492"
@@ -3046,16 +3056,6 @@ ajv@^6.12.4, ajv@^6.12.5, ajv@^6.15.0:
     fast-json-stable-stringify "^2.0.0"
     json-schema-traverse "^0.4.1"
     uri-js "^4.2.2"
-
-ajv@^8.0.0, ajv@^8.17.1, ajv@^8.6.3, ajv@^8.9.0:
-  version "8.20.0"
-  resolved "https://registry.npmmirror.com/ajv/-/ajv-8.20.0.tgz#304b3636add88ba7d936760dd50ece006dea95f9"
-  integrity sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==
-  dependencies:
-    fast-deep-equal "^3.1.3"
-    fast-uri "^3.0.1"
-    json-schema-traverse "^1.0.0"
-    require-from-string "^2.0.2"
 
 anser@^2.3.5:
   version "2.3.5"
@@ -6044,6 +6044,11 @@ klaw-sync@^6.0.0:
   dependencies:
     graceful-fs "^4.1.11"
 
+konva@10.3.0:
+  version "10.3.0"
+  resolved "https://registry.npmmirror.com/konva/-/konva-10.3.0.tgz#960c39cb3518357284ae35b189c7dc3295570bd5"
+  integrity sha512-gt19K2gzY4lHbnkvsku7eSmB+A9PTS2jG4F9coBMsdjM1UKfJNxJbDbXVpeCW1wjEGRwBD3nBamcHnqJhAeKlg==
+
 layout-base@^1.0.0:
   version "1.0.2"
   resolved "https://registry.npmmirror.com/layout-base/-/layout-base-1.0.2.tgz#1291e296883c322a9dd4c5dd82063721b53e26e2"
@@ -8747,6 +8752,11 @@ watchpack@^2.5.2:
   dependencies:
     graceful-fs "^4.1.2"
 
+web-tree-sitter@^0.26.0:
+  version "0.26.11"
+  resolved "https://registry.npmmirror.com/web-tree-sitter/-/web-tree-sitter-0.26.11.tgz#4cf91d060f4203b9975bf7f8f66008b1466457d6"
+  integrity sha512-Q5Dm3YTIXSXuH6FxX6RuzX2Qwpc4DPGiYMU87Wg5Z8OIStiQFiUex4zMDc0vBTw78EphaYJacncJghCHzbZptg==
+
 webdriver-bidi-protocol@0.4.2:
   version "0.4.2"
   resolved "https://registry.npmmirror.com/webdriver-bidi-protocol/-/webdriver-bidi-protocol-0.4.2.tgz#f51bb71c2606e90e3d5727607c728b25d617b58b"
@@ -9007,7 +9017,7 @@ yallist@^5.0.0:
   resolved "https://registry.npmmirror.com/yallist/-/yallist-5.0.0.tgz#00e2de443639ed0d78fd87de0d27469fbcffb533"
   integrity sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw==
 
-yaml@^2.2.2:
+yaml@^2.2.2, yaml@^2.9.0:
   version "2.9.0"
   resolved "https://registry.npmmirror.com/yaml/-/yaml-2.9.0.tgz#78274afd93598a1dfdd6130df6a566defcbf9aa4"
   integrity sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==

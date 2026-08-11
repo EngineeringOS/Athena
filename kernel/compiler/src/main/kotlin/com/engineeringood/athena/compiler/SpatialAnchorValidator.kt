@@ -1,7 +1,7 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.geometry.GeometryElementId
-import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ConnectionProjection
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionOccurrencePortId
@@ -18,10 +18,7 @@ internal class SpatialAnchorValidator {
     ): List<SpatialDiagnostic> {
         val connectionsById = projection.connections.groupBy { connection -> connection.projectionId }
         val endpointIncidents = projection.connections.flatMap { connection ->
-            listOfNotNull(
-                connection.source?.occurrencePortId?.let { endpoint -> endpoint to connection },
-                connection.target?.occurrencePortId?.let { endpoint -> endpoint to connection },
-            )
+            connection.participants.map { participant -> participant.endpoint.occurrencePortId to connection }
         }.groupBy(keySelector = { (endpoint, _) -> endpoint }, valueTransform = { (_, connection) -> connection })
         return buildList {
             connectionsById
@@ -33,24 +30,25 @@ internal class SpatialAnchorValidator {
                             problem = "is used by ${duplicates.size} projected Connections",
                             correction = "Give every projected Connection a unique identity before choosing Anchor sides.",
                             projectionIds = listOf(connectionId.value),
-                            geometryIds = duplicates.map(ProjectionConnection::originGeometryElementId),
+                            geometryIds = duplicates.map(ConnectionProjection::originGeometryElementId),
                         ),
                     )
-                }
+            }
             projection.connections.forEach { connection ->
-                if (connection.source == null) {
-                    add(missingEndpointDiagnostic(connection, "source"))
+                if (connection.participants.size < 2) {
+                    add(missingEndpointDiagnostic(connection, "participant"))
                 }
-                if (connection.target == null) {
-                    add(missingEndpointDiagnostic(connection, "target"))
-                }
-                val source = connection.source
-                if (source != null && source == connection.target) {
-                    val endpoint = source.occurrencePortId
+                val duplicate = connection.participants
+                    .groupBy { participant -> participant.endpoint.occurrencePortId }
+                    .filterValues { endpoints -> endpoints.size > 1 }
+                    .keys
+                    .singleOrNull()
+                if (duplicate != null) {
+                    val endpoint = duplicate
                     add(
                         diagnostic(
                             subject = "Connection ${connection.projectionId.value}",
-                            problem = "uses ${endpointText(endpoint)} as both source and target",
+                            problem = "uses ${endpointText(endpoint)} for multiple participants",
                             correction = "Connect two distinct occurrence-ports.",
                             projectionIds = listOf(
                                 connection.projectionId.value,
@@ -92,7 +90,7 @@ internal class SpatialAnchorValidator {
 
     private fun endpointDiagnostics(
         endpoint: ProjectionOccurrencePortId,
-        incidentConnections: List<ProjectionConnection>,
+        incidentConnections: List<ConnectionProjection>,
         projection: ProjectionDocument,
         occurrences: List<SpatialOccurrenceGeometry>,
     ): List<SpatialDiagnostic> {
@@ -159,7 +157,7 @@ internal class SpatialAnchorValidator {
                         problem = "cannot select an owning Sheet from its incident Connections",
                         correction = "Publish every incident Connection on exactly one Sheet that contains this Occurrence.",
                         projectionIds = projectionIds + incidentConnections.map { connection -> connection.projectionId.value },
-                        geometryIds = geometryIds + incidentConnections.map(ProjectionConnection::originGeometryElementId),
+                        geometryIds = geometryIds + incidentConnections.map(ConnectionProjection::originGeometryElementId),
                     ),
                 )
             }
@@ -238,7 +236,7 @@ internal class SpatialAnchorValidator {
             }
         }
 
-    private fun missingEndpointDiagnostic(connection: ProjectionConnection, role: String): SpatialDiagnostic =
+    private fun missingEndpointDiagnostic(connection: ConnectionProjection, role: String): SpatialDiagnostic =
         diagnostic(
             subject = "Connection ${connection.projectionId.value} $role endpoint",
             problem = "is missing typed Occurrence and port identity",

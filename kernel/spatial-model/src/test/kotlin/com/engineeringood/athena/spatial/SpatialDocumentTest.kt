@@ -57,13 +57,14 @@ class SpatialDocumentTest {
             sourceTrace = trace(sheetId, "region:rail-a"),
         )
         val anchor = anchor(sheetId, "occurrence:Q1", "port:Q1.1", SpatialPoint(10, 40))
-        val routeId = SpatialRouteId(sheetId, "route:Q1-M1")
+        val routeId = ConnectionRoutePlanId(sheetId, "route:Q1-M1")
         val laneId = SpatialLaneId(sheetId, SpatialLaneOrientation.HORIZONTAL, 40)
         val lane = SpatialLane(laneId, sheetId, SpatialLaneOrientation.HORIZONTAL, 40, listOf(routeId))
-        val route = SpatialRoute(
+        val route = ConnectionRoutePlan(
             routeId = routeId,
             sheetId = sheetId,
             connectionId = StableSemanticIdentity("connection:Q1-M1"),
+            projectionConnectionId = "route:Q1-M1",
             sourceAnchorId = anchor.anchorId,
             targetAnchorId = anchorId(sheetId, "occurrence:M1", "port:M1.1"),
             laneId = laneId,
@@ -175,7 +176,7 @@ class SpatialDocumentTest {
     @Test
     fun `spatial document declares authority identity and required facts`() {
         val q1Anchor = anchor("sheet:main", "occurrence:Q1", "port:Q1.1", SpatialPoint(12, 24))
-        val routeId = SpatialRouteId("sheet:main", "route:Q1-M1")
+        val routeId = ConnectionRoutePlanId("sheet:main", "route:Q1-M1")
         val laneId = SpatialLaneId("sheet:main", SpatialLaneOrientation.HORIZONTAL, 24)
         val sheet = testSheet(
             occurrences = listOf(
@@ -234,10 +235,11 @@ class SpatialDocumentTest {
                 ),
             ),
             routes = listOf(
-                SpatialRoute(
+                ConnectionRoutePlan(
                     routeId = routeId,
                     sheetId = "sheet:main",
                     connectionId = StableSemanticIdentity("connection:Q1-M1"),
+                    projectionConnectionId = "route:Q1-M1",
                     sourceAnchorId = q1Anchor.anchorId,
                     targetAnchorId = anchorId("sheet:main", "occurrence:M1", "port:M1.1"),
                     laneId = laneId,
@@ -291,10 +293,11 @@ class SpatialDocumentTest {
                 listOf(
                     testSheet(
                         routes = listOf(
-                    SpatialRoute(
-                        routeId = SpatialRouteId("sheet:main", "route:broken"),
+                    ConnectionRoutePlan(
+                        routeId = ConnectionRoutePlanId("sheet:main", "route:broken"),
                         sheetId = "sheet:main",
-                        connectionId = StableSemanticIdentity(""),
+                        connectionId = StableSemanticIdentity("connection:broken"),
+                        projectionConnectionId = "route:broken",
                         sourceAnchorId = anchorId("sheet:main", "occurrence:broken-source", "port:broken-source"),
                         targetAnchorId = anchorId("sheet:main", "occurrence:broken-target", "port:broken-target"),
                         laneId = SpatialLaneId("sheet:main", SpatialLaneOrientation.HORIZONTAL, 0),
@@ -350,7 +353,15 @@ class SpatialDocumentTest {
     }
 
     private fun routeTrace(routeId: String): SpatialSourceTrace = SpatialSourceTrace(
-        projectionIds = listOf("sheet:main", routeId, "occurrence:source", "port:source", "occurrence:target", "port:target"),
+        projectionIds = listOf(
+            "sheet:main",
+            routeId,
+            routeId,
+            "occurrence:source",
+            "port:source",
+            "occurrence:target",
+            "port:target",
+        ),
         geometryElementIds = listOf(GeometryElementId("geometry:$routeId")),
     )
 
@@ -366,7 +377,7 @@ class SpatialDocumentTest {
         alignments: List<SpatialAlignment> = emptyList(),
         anchors: List<SpatialAnchorPosition> = emptyList(),
         lanes: List<SpatialLane> = emptyList(),
-        routes: List<SpatialRoute> = emptyList(),
+        routes: List<ConnectionRoutePlan> = emptyList(),
         gridReferences: List<SpatialGridReference> = emptyList(),
         quality: SpatialQualitySnapshot = SpatialQualitySnapshot(
             qualitySnapshotId = SpatialQualitySnapshotId("sheet:main"),

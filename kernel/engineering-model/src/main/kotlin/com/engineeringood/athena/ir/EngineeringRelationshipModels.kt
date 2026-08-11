@@ -18,6 +18,12 @@ sealed interface EngineeringSubjectReference {
         override val reference: EngineeringReference
             get() = port
     }
+
+    /** Invalid authored subject retained only so validation can report exact provenance. */
+    data class Unresolved(val authored: EngineeringReference) : EngineeringSubjectReference {
+        override val reference: EngineeringReference
+            get() = authored
+    }
 }
 
 /** One named role binding in a project Engineering Relationship. */
@@ -41,7 +47,14 @@ data class EngineeringRelationship(
     val participants: List<EngineeringParticipant>,
     val properties: List<EngineeringProperty>,
     val provenance: SourceProvenance,
-)
+) {
+    init {
+        require(participants.size >= 2) { "Engineering Relationship requires at least two participants" }
+        require(participants.map { it.role }.distinct().size == participants.size) {
+            "Engineering Relationship participant roles must be unique"
+        }
+    }
+}
 
 /** Independent project Flow fact attached to a Relationship and its named roles. */
 data class EngineeringFlow(

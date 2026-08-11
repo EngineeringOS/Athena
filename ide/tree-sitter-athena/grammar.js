@@ -2,7 +2,7 @@
 //
 // AD-107: Tree-sitter owns syntax UX only (highlighting/structure), never semantic truth.
 // AD-110: this grammar mirrors the current M18 package/import plus M17 system syntax subset,
-// M23 system-scoped layout-block admission, Entity- and Function-owned ports, compact grouped connect
+// M23 system-scoped layout-block admission, Entity- and Function-owned ports, typed binary connection
 // authoring, the frozen M34 native Symbol/Element syntax subset, M35 installation cabinet syntax,
 // M37 grouped connectivity Interface syntax, external evidence mapping syntax, and Projection Policy syntax.
 // `kernel/language/src/main/kotlin/com/engineeringood/athena/language/AthenaLanguageModel.kt` /
@@ -43,6 +43,8 @@ module.exports = grammar({
     [$.interface_port_member],
     [$.evidence_declaration],
     [$.projection_policy_declaration],
+    [$.connection_specification_declaration],
+    [$.net_declaration],
   ],
 
   rules: {
@@ -50,10 +52,40 @@ module.exports = grammar({
       optional(choice($.package_declaration, $.incomplete_package_declaration)),
       repeat(choice($.import_declaration, $.incomplete_import_declaration)),
       choice(
+        $.sheet_companion,
         $.system_declaration,
+        $.domain_declaration,
         repeat1($._representation_declaration),
       ),
     ),
+
+    sheet_companion: $ => seq(
+      'sheet',
+      field('name', choice($.string, $.identifier)),
+      '{',
+      repeat(choice($.sheet_page, $.sheet_grid, $.sheet_title, $.sheet_placement)),
+      optional('}'),
+    ),
+
+    sheet_page: $ => seq('page', 'format', field('format', $.identifier), field('orientation', choice('landscape', 'portrait'))),
+
+    sheet_grid: $ => seq(
+      'grid', ':', field('columns', $.positive_integer), '*', field('rows', $.positive_integer),
+      'cell', ':', field('cell', $.positive_integer),
+    ),
+
+    sheet_title: $ => seq('title', field('value', $.string)),
+
+    sheet_placement: $ => seq(
+      field('occurrence', choice($.string, $.identifier)),
+      'at', field('cell', $.sheet_cell),
+      optional(seq('micro', field('micro', $.sheet_micro))),
+      optional('lock'),
+    ),
+
+    sheet_cell: $ => alias($.identifier, $.sheet_cell),
+
+    sheet_micro: $ => seq('(', $.positive_integer, ',', $.positive_integer, ')'),
 
     _representation_declaration: $ => choice(
       $.symbol_declaration,
@@ -101,10 +133,57 @@ module.exports = grammar({
       optional('}'),
     ),
 
+    domain_declaration: $ => seq(
+      'domain',
+      field('name', alias($.identifier, $.name)),
+      '{',
+      repeat($.knowledge_declaration),
+      optional('}'),
+    ),
+
+    knowledge_declaration: $ => choice(
+      $.knowledge_concept,
+      $.knowledge_part,
+      $.knowledge_capability,
+      $.knowledge_relationship,
+      $.knowledge_flow,
+      $.knowledge_dimension,
+      $.knowledge_unit,
+      $.knowledge_formula,
+      $.knowledge_constraint,
+    ),
+
+    knowledge_concept: $ => seq('concept', field('name', alias($.identifier, $.name)), '{', repeat($.property_assignment), '}'),
+    knowledge_part: $ => seq('part', field('name', alias($.identifier, $.name)), 'concept', $.qualified_name, '{', repeat($.property_assignment), '}'),
+    knowledge_capability: $ => seq('capability', field('name', alias($.identifier, $.name)), choice('provides', 'requires'), '{', repeat($.property_assignment), '}'),
+    knowledge_relationship: $ => seq('relationship', field('name', alias($.identifier, $.name)), '{', repeat(choice($.knowledge_role, $.property_assignment)), '}'),
+    knowledge_role: $ => seq('role', field('name', alias($.identifier, $.name)), 'level', choice('entity', 'function', 'port'), optional(seq('requires', $.qualified_name))),
+    knowledge_flow: $ => seq('flow', field('name', alias($.identifier, $.name)), 'relationship', $.qualified_name, 'source', $.identifier, 'sink', $.identifier, optional(seq('medium', $.qualified_name))),
+    knowledge_dimension: $ => seq('dimension', field('name', alias($.identifier, $.name)), 'bases', '[', $.qualified_name, repeat(seq(',', $.qualified_name)), ']'),
+    knowledge_unit: $ => seq('unit', field('name', alias($.identifier, $.name)), 'dimension', $.qualified_name, 'scale', $._scalar_value, optional(seq('offset', $._scalar_value))),
+    knowledge_formula: $ => seq('formula', field('name', alias($.identifier, $.name)), '=', $.knowledge_expression),
+    knowledge_constraint: $ => seq('constraint', field('name', alias($.identifier, $.name)), $.knowledge_predicate),
+    knowledge_predicate: $ => choice(
+      seq($.knowledge_expression, choice('>', '>=', '<', '<=', '=', '!='), $.knowledge_expression),
+      seq($.knowledge_expression, 'in', $.knowledge_interval),
+      seq(choice('all', 'any'), '[', $.knowledge_predicate, repeat(seq(',', $.knowledge_predicate)), ']'),
+    ),
+    knowledge_interval: $ => seq(choice('[', '('), $.knowledge_expression, ',', $.knowledge_expression, choice(']', ')')),
+    knowledge_expression: $ => choice(
+      $.number,
+      $.qualified_name,
+      seq(choice('min', 'max', 'round-up'), '(', $.knowledge_expression, ',', $.knowledge_expression, ')'),
+      seq('(', $.knowledge_expression, ')'),
+      prec.left(2, seq($.knowledge_expression, choice('*', '/'), $.knowledge_expression)),
+      prec.left(1, seq($.knowledge_expression, choice('+', '-'), $.knowledge_expression)),
+    ),
+
     declaration: $ => choice(
       $.entity_declaration,
       $.port_declaration,
       $.connect_declaration,
+      $.net_declaration,
+      $.connection_specification_declaration,
       $.relation_declaration,
       $.evidence_declaration,
       $.projection_policy_declaration,
@@ -599,26 +678,40 @@ module.exports = grammar({
 
     connect_declaration: $ => seq(
       'connect',
-      field('name', alias($.identifier, $.name)),
-      choice(
-        seq(
-          field('from', $.qualified_name),
-          $._connection_separator,
-          field('to', $.qualified_name),
-        ),
-        seq(
-          '{',
-          repeat($.connect_group_edge),
-          '}',
-        ),
-      ),
-    ),
-
-    connect_group_edge: $ => seq(
-      field('name', alias($.identifier, $.name)),
+      field('kind', $.connection_kind),
       field('from', $.qualified_name),
       $._connection_separator,
       field('to', $.qualified_name),
+      optional(seq('{', repeat($.property_assignment), '}')),
+    ),
+
+    net_declaration: $ => seq(
+      'net',
+      field('name', alias($.identifier, $.name)),
+      field('kind', $.connection_kind),
+      '{',
+      repeat(choice(
+        seq('source', $.qualified_name),
+        seq('sink', $.qualified_name),
+        seq('pass', $.qualified_name),
+        seq(choice('potential', 'signal'), $.qualified_name),
+        $.property_assignment,
+      )),
+      optional('}'),
+    ),
+
+    connection_specification_declaration: $ => seq(
+      'connection-spec',
+      field('scope', choice('project', 'potential', 'signal', 'net', 'connection')),
+      optional($.qualified_name),
+      '{',
+      repeat($.property_assignment),
+      optional('}'),
+    ),
+
+    connection_kind: $ => seq(
+      $.identifier,
+      optional(seq('-', $.identifier)),
     ),
 
     relation_declaration: $ => seq(

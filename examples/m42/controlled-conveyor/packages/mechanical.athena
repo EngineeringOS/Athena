@@ -1,0 +1,10 @@
+package engineering.mechanical
+domain mechanical {
+  concept conveyor { kind transport }
+  capability mechanicalDrive provides { medium torque }
+  relationship drives {
+    role driver level entity
+    role driven level entity
+    connectivity false
+  }
+}

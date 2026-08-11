@@ -1,0 +1,23 @@
+{
+  "contractVersion": 1,
+  "schemaVersion": 1,
+  "gridFormulaVersion": "athena-grid-1",
+  "svgProfileVersion": "svg-safe-1",
+  "artifacts": [
+    "scene/rolling-shutter.json",
+    "scene/invalid-scenes.json",
+    "scene/digest-vectors.json",
+    "grid/cell-4-vectors.json",
+    "grid/cell-8-vectors.json",
+    "operations/set-style-operation.json",
+    "operations/rejection-vectors.json",
+    "trace/expected-origins.json",
+    "assets/admitted.svg",
+    "assets/rejected-vectors.json",
+    "assets/bundle-manifest.json",
+    "render/rolling-shutter.svg",
+    "render/png-proof-manifest.json",
+    "benchmark/scene-100k-manifest.json",
+    "benchmark/interaction-transcript.json"
+  ]
+}

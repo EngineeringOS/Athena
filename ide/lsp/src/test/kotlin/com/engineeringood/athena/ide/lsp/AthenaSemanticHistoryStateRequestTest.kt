@@ -7,11 +7,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.eclipse.lsp4j.InitializeParams
 
 class AthenaSemanticHistoryStateRequestTest {
     @Test
-    @Suppress("DEPRECATION")
     fun `semantic history request exposes runtime owned package evolution payloads`() {
         val root = kotlin.io.path.createTempDirectory("athena-lsp-semantic-history-")
         val current = root.resolve("current")
@@ -77,11 +75,7 @@ class AthenaSemanticHistoryStateRequestTest {
 
             val server = AthenaLanguageServer()
             try {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = current.toUri().toString()
-                    },
-                ).get()
+                server.initialize(workspaceInitializeParams(current)).get()
 
                 val payload = server.semanticHistoryState(
                     AthenaSemanticHistoryStateParams(
@@ -126,7 +120,6 @@ class AthenaSemanticHistoryStateRequestTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `semantic history request surfaces unresolved baseline diagnostics`() {
         val repository = createGovernedTestRepository("athena-lsp-semantic-history-missing-")
         val repositoryRoot = repository.repositoryRoot
@@ -135,11 +128,7 @@ class AthenaSemanticHistoryStateRequestTest {
 
             val server = AthenaLanguageServer()
             try {
-                server.initialize(
-                    InitializeParams().apply {
-                        rootUri = repositoryRoot.toUri().toString()
-                    },
-                ).get()
+                server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
                 val payload = server.semanticHistoryState(
                     AthenaSemanticHistoryStateParams(

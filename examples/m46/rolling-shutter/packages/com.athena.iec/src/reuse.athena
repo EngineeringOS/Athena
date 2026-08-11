@@ -1,0 +1,27 @@
+package com.athena.iec
+
+element starter_element {
+  identity "starter_element"
+  version "1.0.0"
+  child protection { symbol "breaker" translate (0, 0) }
+  child switching { symbol "contactor" translate (4, 0) }
+  export anchor inlet from protection.inlet
+  export anchor load from switching.load
+}
+
+macro rolling_shutter_starter {
+  identity "rolling_shutter_starter"
+  version "1.0.0"
+  child contactor {
+    element "contactor_element"
+    translate (0, 0)
+    function switching
+    role primary
+  }
+  child motor {
+    element "motor_element"
+    translate (30, 0)
+    function load
+    role primary
+  }
+}

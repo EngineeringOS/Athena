@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://engineeringood.com/athena/schema/athena-edit-operation.schema.json",
+  "title": "Athena Edit Operation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "operationId", "sceneId", "authorityClass", "sourceRevision", "target", "sourceTrace", "requestedWritableFiles", "body"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "operationId": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "sceneId": { "type": "string", "pattern": "^scene:sha256:[0-9a-f]{64}$" },
+    "authorityClass": { "enum": ["PRESENTATION", "REPRESENTATION", "ENGINEERING", "JOURNAL"] },
+    "sourceRevision": { "$ref": "#/$defs/sourceRevision" },
+    "target": { "$ref": "#/$defs/target" },
+    "sourceTrace": { "$ref": "#/$defs/sourceTrace" },
+    "requestedWritableFiles": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$" } },
+    "body": { "oneOf": [
+      { "$ref": "#/$defs/move" }, { "$ref": "#/$defs/align" }, { "$ref": "#/$defs/distribute" },
+      { "$ref": "#/$defs/snap" }, { "$ref": "#/$defs/setStyle" }, { "$ref": "#/$defs/changeSymbol" },
+      { "$ref": "#/$defs/connectPorts" }, { "$ref": "#/$defs/reconnectConnectionEndpoint" }, { "$ref": "#/$defs/adjustConnectionRoute" },
+      { "$ref": "#/$defs/bindPart" }, { "$ref": "#/$defs/addPackageDependency" }, { "$ref": "#/$defs/insertElement" }, { "$ref": "#/$defs/insertMacro" }, { "$ref": "#/$defs/undo" }, { "$ref": "#/$defs/redo" }
+    ] }
+  },
+  "allOf": [
+    {
+      "if": { "type": "object", "properties": { "body": { "type": "object", "properties": { "kind": { "enum": ["MOVE_OCCURRENCE", "ALIGN_OCCURRENCES", "DISTRIBUTE_OCCURRENCES", "SNAP_OCCURRENCE_TO_GRID", "SET_STYLE", "ADJUST_CONNECTION_ROUTE"] } }, "required": ["kind"] } } },
+      "then": { "type": "object", "properties": { "authorityClass": { "const": "PRESENTATION" } } }
+    },
+    {
+      "if": { "type": "object", "properties": { "body": { "type": "object", "properties": { "kind": { "enum": ["CHANGE_SYMBOL", "INSERT_ELEMENT_OCCURRENCE", "INSERT_MACRO_OCCURRENCES"] } }, "required": ["kind"] } } },
+      "then": { "type": "object", "properties": { "authorityClass": { "const": "REPRESENTATION" } } }
+    },
+    {
+      "if": { "type": "object", "properties": { "body": { "type": "object", "properties": { "kind": { "enum": ["CONNECT_PORTS", "RECONNECT_CONNECTION_ENDPOINT", "BIND_PART", "ADD_PACKAGE_DEPENDENCY"] } }, "required": ["kind"] } } },
+      "then": { "type": "object", "properties": { "authorityClass": { "const": "ENGINEERING" } } }
+    },
+    {
+      "if": { "type": "object", "properties": { "body": { "type": "object", "properties": { "kind": { "enum": ["UNDO", "REDO"] } }, "required": ["kind"] } } },
+      "then": { "type": "object", "properties": { "authorityClass": { "const": "JOURNAL" } } }
+    }
+  ],
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "revisionDigest": { "oneOf": [{ "const": "absent" }, { "$ref": "#/$defs/digest" }] },
+    "packageItemDigest": { "type": "object", "additionalProperties": false, "required": ["packageId", "itemId", "sha256"], "properties": { "packageId": { "type": "string", "minLength": 1 }, "itemId": { "type": "string", "minLength": 1 }, "sha256": { "$ref": "#/$defs/digest" } } },
+    "sourceRevision": { "type": "object", "additionalProperties": false, "required": ["sceneInputRevision", "sourceRootIdentity", "engineeringSourceDigest", "sheetDigest", "styleDigest", "lockDigest", "packageItemDigests", "compilerVersion", "sceneSchemaVersion", "profileVersion"], "properties": {
+      "sceneInputRevision": { "type": "string", "pattern": "^input:sha256:[0-9a-f]{64}$" }, "sourceRootIdentity": { "type": "string", "pattern": "^source-root:sha256:[0-9a-f]{64}$" },
+      "engineeringSourceDigest": { "$ref": "#/$defs/digest" }, "sheetDigest": { "$ref": "#/$defs/digest" }, "styleDigest": { "$ref": "#/$defs/revisionDigest" }, "lockDigest": { "$ref": "#/$defs/revisionDigest" },
+      "packageItemDigests": { "type": "array", "items": { "$ref": "#/$defs/packageItemDigest" } }, "compilerVersion": { "type": "string", "minLength": 1 }, "sceneSchemaVersion": { "type": "string", "minLength": 1 }, "profileVersion": { "type": "string", "minLength": 1 }
+    } },
+    "target": { "type": "object", "additionalProperties": false, "required": ["identities"], "properties": { "identities": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } } } },
+    "sourceTrace": { "type": "object", "additionalProperties": false, "required": ["traceId", "subjectId"], "properties": { "traceId": { "type": "string", "pattern": "^trace:sha256:[0-9a-f]{64}$" }, "subjectId": { "type": "string", "minLength": 1 } } },
+    "point": { "type": "object", "additionalProperties": false, "required": ["x", "y"], "properties": { "x": { "type": "integer", "minimum": 1 }, "y": { "type": "integer", "minimum": 1 } } },
+    "styleTarget": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["ROLE", "OCCURRENCE"] }, "id": { "type": "string", "minLength": 1 } } },
+    "styleFields": { "type": "object", "additionalProperties": false, "minProperties": 1, "properties": { "strokeRgba": { "type": "string" }, "fillRgba": { "type": "string" }, "strokeWidth": { "type": "integer", "minimum": 1 }, "dash": { "type": "array", "items": { "type": "integer", "minimum": 1 } }, "lineCap": { "enum": ["butt", "round", "square"] }, "lineJoin": { "enum": ["miter", "round", "bevel"] }, "opacity": { "type": "integer", "minimum": 0, "maximum": 255 }, "fontSize": { "type": "integer", "minimum": 1 }, "fontWeight": { "type": "integer", "minimum": 1, "maximum": 1000 }, "routeMarker": { "enum": ["NONE", "END_ARROW"] }, "portDisplay": { "enum": ["HIDDEN", "MARKER", "MARKER_AND_LABEL"] } } },
+    "move": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "occurrenceId", "point", "lockAction"], "properties": { "kind": { "const": "MOVE_OCCURRENCE" }, "sheetId": { "type": "string" }, "occurrenceId": { "type": "string" }, "point": { "$ref": "#/$defs/point" }, "lockAction": { "enum": ["PRESERVE", "LOCK", "UNLOCK"] } } },
+    "align": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "occurrenceIds", "axis"], "properties": { "kind": { "const": "ALIGN_OCCURRENCES" }, "sheetId": { "type": "string" }, "occurrenceIds": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "type": "string" } }, "axis": { "enum": ["LEFT", "CENTER_X", "RIGHT", "TOP", "CENTER_Y", "BOTTOM"] } } },
+    "distribute": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "occurrenceIds", "axis"], "properties": { "kind": { "const": "DISTRIBUTE_OCCURRENCES" }, "sheetId": { "type": "string" }, "occurrenceIds": { "type": "array", "minItems": 3, "uniqueItems": true, "items": { "type": "string" } }, "axis": { "enum": ["HORIZONTAL", "VERTICAL"] } } },
+    "snap": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "occurrenceId", "point"], "properties": { "kind": { "const": "SNAP_OCCURRENCE_TO_GRID" }, "sheetId": { "type": "string" }, "occurrenceId": { "type": "string" }, "point": { "$ref": "#/$defs/point" } } },
+    "setStyle": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "target", "fields"], "properties": { "kind": { "const": "SET_STYLE" }, "sheetId": { "type": "string" }, "target": { "$ref": "#/$defs/styleTarget" }, "fields": { "$ref": "#/$defs/styleFields" } } },
+    "placeholderEditValue": { "type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": { "kind": { "enum": ["TEXT", "NUMBER", "BOOLEAN"] }, "value": { "type": "string" } } },
+    "changeSymbol": { "type": "object", "additionalProperties": false, "required": ["kind", "occurrenceId", "representationRef", "variantRef", "placeholderValues"], "properties": { "kind": { "const": "CHANGE_SYMBOL" }, "occurrenceId": { "type": "string" }, "representationRef": { "type": "string" }, "variantRef": { "type": ["string", "null"] }, "placeholderValues": { "type": "object", "propertyNames": { "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$" }, "additionalProperties": { "$ref": "#/$defs/placeholderEditValue" } } } },
+    "portIdentity": { "type": "string", "pattern": "^port:[A-Za-z][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)+$" },
+    "connectionIdentity": { "type": "string", "pattern": "^connection:[A-Za-z0-9._:/>-]+$" },
+    "projectionIdentity": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._:/>-]+$" },
+    "quantityRequirementValue": { "type": "object", "additionalProperties": false, "required": ["kind", "value", "unit"], "properties": { "kind": { "const": "QUANTITY" }, "value": { "type": "string", "pattern": "^(?:0\\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(?:\\.[0-9]+)?)$" }, "unit": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._*/^-]*$" } } },
+    "symbolRequirementValue": { "type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": { "kind": { "const": "SYMBOL" }, "value": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]*$" } } },
+    "booleanRequirementValue": { "type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": { "kind": { "const": "BOOLEAN" }, "value": { "type": "boolean" } } },
+    "connectionRequirementValue": { "oneOf": [{ "$ref": "#/$defs/quantityRequirementValue" }, { "$ref": "#/$defs/symbolRequirementValue" }, { "$ref": "#/$defs/booleanRequirementValue" }] },
+    "connectionRequirement": { "oneOf": [
+      { "type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": { "kind": { "enum": ["CROSS_SECTION", "REQUIRED_LENGTH"] }, "value": { "$ref": "#/$defs/quantityRequirementValue" } } },
+      { "type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": { "kind": { "enum": ["COLOR_CODE", "CONDUCTOR_TYPE", "SOURCE_TERMINATION", "TARGET_TERMINATION"] }, "value": { "$ref": "#/$defs/symbolRequirementValue" } } },
+      { "type": "object", "additionalProperties": false, "required": ["kind", "value"], "properties": { "kind": { "const": "SHIELDING" }, "value": { "$ref": "#/$defs/booleanRequirementValue" } } }
+    ] },
+    "sourceConnectionEndpoint": { "type": "object", "additionalProperties": false, "required": ["role", "portId"], "properties": { "role": { "const": "SOURCE" }, "portId": { "$ref": "#/$defs/portIdentity" } } },
+    "sinkConnectionEndpoint": { "type": "object", "additionalProperties": false, "required": ["role", "portId"], "properties": { "role": { "const": "SINK" }, "portId": { "$ref": "#/$defs/portIdentity" } } },
+    "connectPorts": { "type": "object", "additionalProperties": false, "required": ["kind", "connectionKind", "endpoints", "requirements"], "properties": { "kind": { "const": "CONNECT_PORTS" }, "connectionKind": { "enum": ["CONDUCTOR", "WIRE", "CABLE_CORE", "JUMPER", "BUSBAR", "SIGNAL"] }, "endpoints": { "type": "array", "prefixItems": [{ "$ref": "#/$defs/sourceConnectionEndpoint" }, { "$ref": "#/$defs/sinkConnectionEndpoint" }], "items": false, "minItems": 2, "maxItems": 2 }, "requirements": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/connectionRequirement" } } }, "allOf": [{ "if": { "properties": { "connectionKind": { "enum": ["WIRE", "CABLE_CORE"] } }, "required": ["connectionKind"] }, "then": { "properties": { "requirements": { "type": "array", "contains": { "type": "object", "properties": { "kind": { "const": "CROSS_SECTION" } }, "required": ["kind"] }, "minContains": 1, "maxContains": 1 } } } }] },
+    "reconnectConnectionEndpoint": { "type": "object", "additionalProperties": false, "required": ["kind", "connectionId", "endpointRole", "replacementPortId"], "properties": { "kind": { "const": "RECONNECT_CONNECTION_ENDPOINT" }, "connectionId": { "$ref": "#/$defs/connectionIdentity" }, "endpointRole": { "enum": ["SOURCE", "SINK"] }, "replacementPortId": { "$ref": "#/$defs/portIdentity" } } },
+    "logicalRouteTarget": { "type": "object", "additionalProperties": false, "required": ["kind", "ordinal"], "properties": { "kind": { "enum": ["SEGMENT", "BEND"] }, "ordinal": { "type": "integer", "minimum": 1 } } },
+    "logicalRoutePoint": { "type": "object", "additionalProperties": false, "required": ["column", "row"], "properties": { "column": { "type": "integer", "minimum": 1 }, "row": { "type": "integer", "minimum": 1 } } },
+    "adjustConnectionRoute": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "connectionId", "projectionId", "target", "point"], "properties": { "kind": { "const": "ADJUST_CONNECTION_ROUTE" }, "sheetId": { "type": "string", "minLength": 1 }, "connectionId": { "$ref": "#/$defs/connectionIdentity" }, "projectionId": { "$ref": "#/$defs/projectionIdentity" }, "target": { "$ref": "#/$defs/logicalRouteTarget" }, "point": { "$ref": "#/$defs/logicalRoutePoint" } } },
+    "bindPart": { "type": "object", "additionalProperties": false, "required": ["kind", "functionId", "implementationRole", "partRef"], "properties": { "kind": { "const": "BIND_PART" }, "functionId": { "type": "string" }, "implementationRole": { "type": "string" }, "partRef": { "type": "string" } } },
+    "addPackageDependency": { "type": "object", "additionalProperties": false, "required": ["kind", "packageName", "packageVersion"], "properties": { "kind": { "const": "ADD_PACKAGE_DEPENDENCY" }, "packageName": { "type": "string" }, "packageVersion": { "type": "string" } } },
+    "insertElement": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "functionId", "elementRef", "column", "row", "subGridX", "subGridY"], "properties": { "kind": { "const": "INSERT_ELEMENT_OCCURRENCE" }, "sheetId": { "type": "string" }, "functionId": { "type": "string" }, "elementRef": { "type": "string" }, "column": { "type": "integer", "minimum": 1 }, "row": { "type": "integer", "minimum": 1 }, "subGridX": { "type": "integer", "minimum": 0 }, "subGridY": { "type": "integer", "minimum": 0 } } },
+    "insertMacro": { "type": "object", "additionalProperties": false, "required": ["kind", "sheetId", "macroRef", "functionIdsBySlot", "column", "row"], "properties": { "kind": { "const": "INSERT_MACRO_OCCURRENCES" }, "sheetId": { "type": "string" }, "macroRef": { "type": "string" }, "functionIdsBySlot": { "type": "object", "minProperties": 1, "propertyNames": { "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$" }, "additionalProperties": { "type": "string" } }, "column": { "type": "integer", "minimum": 1 }, "row": { "type": "integer", "minimum": 1 } } },
+    "undo": { "type": "object", "additionalProperties": false, "required": ["kind", "journalEntryId"], "properties": { "kind": { "const": "UNDO" }, "journalEntryId": { "type": "string" } } },
+    "redo": { "type": "object", "additionalProperties": false, "required": ["kind", "journalEntryId"], "properties": { "kind": { "const": "REDO" }, "journalEntryId": { "type": "string" } } }
+  }
+}

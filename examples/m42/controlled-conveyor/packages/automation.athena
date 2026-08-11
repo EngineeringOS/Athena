@@ -1,0 +1,10 @@
+package engineering.automation
+domain automation {
+  concept controller { kind automation }
+  capability controlSignal provides { medium control }
+  relationship controls {
+    role controller level entity
+    role controlled level entity
+    connectivity false
+  }
+}

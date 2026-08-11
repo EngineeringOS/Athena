@@ -72,6 +72,45 @@ class ProjectSemanticDeclarationIndexerTest {
     }
 
     @Test
+    fun `indexes function owned ports with canonical entity function port name`() {
+        val rootId = PackageIdentifier("com.root", "1")
+        val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)
+        val rootDeclarations = declarations(
+            "function-port.athena",
+            """
+            package com.root
+            system Root {
+              entity PLC1 { concept Controller
+                function control {
+                  role controller
+                  port output {
+                    direction out
+                    signal Digital
+                  }
+                }
+              }
+            }
+            """.trimIndent(),
+        )
+        val source = sourceUnit(rootKey, "function-port.athena", "function port", rootDeclarations)
+        val namespace = namespace(rootKey, listOf("com", "root"), listOf(source.sourceUnitId))
+
+        val indexed = ProjectSemanticDeclarationIndexer().index(
+            snapshot(rootKey, listOf(ProjectSemanticPackage(rootId, rootKey, "src", emptyList())), listOf(source), listOf(namespace)),
+        )
+
+        assertEquals(
+            listOf(
+                "port:PLC1.control.output",
+                "entity:PLC1",
+                "function:PLC1.control",
+            ),
+            indexed.declarations.map { "${it.kind}:${it.qualifiedAuthoredName.joinToString(".")}" },
+        )
+        assertEquals(emptyList(), indexed.diagnostics)
+    }
+
+    @Test
     fun `indexes grouped interface ports with flattened owner dot port name`() {
         val rootId = PackageIdentifier("com.root", "1")
         val rootKey = CanonicalSemanticIdentityBuilder.packageKey(rootId)

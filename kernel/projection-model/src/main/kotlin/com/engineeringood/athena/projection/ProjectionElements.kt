@@ -24,19 +24,3 @@ data class ProjectionOccurrencePort(
     val occurrencePortId: ProjectionOccurrencePortId,
     val originGeometryElementId: GeometryElementId,
 )
-
-/** Typed endpoint reference retained even when the matching projected port fact is absent. */
-data class ProjectionConnectionEndpoint(
-    val occurrencePortId: ProjectionOccurrencePortId,
-)
-
-/**
- * One view-specific projection connection occurrence anchored to canonical semantic identity.
- */
-data class ProjectionConnection(
-    val projectionId: ProjectionConnectionId,
-    val semanticId: StableSemanticIdentity,
-    val originGeometryElementId: GeometryElementId,
-    val source: ProjectionConnectionEndpoint? = null,
-    val target: ProjectionConnectionEndpoint? = null,
-)

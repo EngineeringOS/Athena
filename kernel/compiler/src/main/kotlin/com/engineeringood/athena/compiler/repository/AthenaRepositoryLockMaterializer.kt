@@ -5,7 +5,9 @@ import com.engineeringood.athena.repository.PackageIdentifier
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
 import com.engineeringood.athena.repository.RepositoryLockedPackage
+import com.engineeringood.athena.repository.RepositoryLockedItem
 import com.engineeringood.athena.repository.RepositoryLock
+import com.engineeringood.athena.repository.RepositoryResourceHash
 import com.engineeringood.athena.repository.RepositorySourceHash
 import com.engineeringood.athena.repository.ResolvedPackage
 import com.engineeringood.athena.repository.ResolvedPackageGraph
@@ -47,8 +49,23 @@ class AthenaRepositoryLockMaterializer(
         val lockBuild = graphResult.graph.toCanonicalRepositoryLock(graphResult.repositoryRoot, admissionLimits)
         val lock = lockBuild.lock
         val renderedLock = renderRepositoryLock(lock)
+        if (lockBuild.diagnostics.isNotEmpty()) {
+            return AthenaRepositoryLockMaterializationResult(
+                repositoryRoot = graphResult.repositoryRoot,
+                manifestPath = graphResult.manifestPath,
+                lockPath = graphResult.lockPath,
+                manifestPresent = graphResult.manifestPresent,
+                lockPresent = graphResult.lockPresent,
+                repository = graphResult.repository,
+                resolutionInput = graphResult.resolutionInput,
+                graph = graphResult.graph,
+                lock = lock,
+                renderedLock = renderedLock,
+                diagnostics = graphResult.diagnostics + lockBuild.diagnostics,
+            )
+        }
         val writeDiagnostics = writeLockAtomically(graphResult.lockPath, renderedLock)
-        if (lockBuild.diagnostics.isNotEmpty() || writeDiagnostics.isNotEmpty()) {
+        if (writeDiagnostics.isNotEmpty()) {
             return AthenaRepositoryLockMaterializationResult(
                 repositoryRoot = graphResult.repositoryRoot,
                 manifestPath = graphResult.manifestPath,
@@ -131,7 +148,7 @@ class AthenaRepositoryLockMaterializer(
                 add(
                     diagnostic(
                         code = "repository.lock.schema-incompatible",
-                        message = "Canonical `athena.lock` uses an unsupported schema. Materialize RepositoryLockV2 from current compiler authority.",
+                        message = "Canonical `athena.lock` uses an unsupported schema. Materialize athena-lock-v3 from current compiler authority.",
                     ),
                 )
             } else if (parseResult.lock != null) {
@@ -183,6 +200,7 @@ private data class CanonicalRepositoryLockBuild(
 
 private data class AdmittedSourceHashResult(
     val sourceHashes: List<RepositorySourceHash>,
+    val resourceHashes: List<RepositoryResourceHash>,
     val admittedBytes: Long,
     val diagnostics: List<RepositoryDiagnostic>,
 )
@@ -243,18 +261,36 @@ private fun ResolvedPackage.toLockedPackage(
     limits: PackageAdmissionLimits,
 ): Pair<RepositoryLockedPackage, AdmittedSourceHashResult> {
     val sourceAdmission = admittedSourceHashes(repositoryRoot, sourceRoot, limits)
+    val packageRoot = resolveSourceRoot(repositoryRoot, sourceRoot)
+    val packageManifest = packageRoot.resolve("package.yaml")
+    val nativeIndex = if (!Files.isRegularFile(packageManifest, LinkOption.NOFOLLOW_LINKS)) {
+        NativePackageItemIndexBuild(emptyList(), emptyList())
+    } else when (val manifestResult = LocalPackageManifestParser.parse(packageManifest)) {
+        is LocalPackageManifestParseResult.Success -> NativePackageItemIndexCompiler().compile(
+            packageId = packageId,
+            packageRoot = packageRoot,
+            manifest = manifestResult.manifest,
+            admittedResources = sourceAdmission.resourceHashes,
+        )
+        is LocalPackageManifestParseResult.Failure -> NativePackageItemIndexBuild(
+            items = emptyList(),
+            diagnostics = listOf(
+                diagnostic(
+                    code = "package.index.manifest.invalid",
+                    message = "Package manifest at `${packageRoot.resolve("package.yaml").toDisplayPath()}` cannot build a native Package Index: ${manifestResult.problem}",
+                ),
+            ),
+        )
+    }
     return RepositoryLockedPackage(
         packageId = packageId,
         sourceRoot = sourceRoot,
-        snapshotDigest = packageSnapshotDigest(
-            packageId = packageId,
-            sourceRoot = sourceRoot,
-            sourceHashes = sourceAdmission.sourceHashes,
-        ),
+        manifestDigest = manifestDigest(repositoryRoot, sourceRoot),
+        itemDigests = nativeIndex.items,
         sourceHashes = sourceAdmission.sourceHashes,
-        resourceHashes = emptyList(),
+        resourceHashes = sourceAdmission.resourceHashes,
         directDependencies = directDependencies,
-    ) to sourceAdmission
+    ) to sourceAdmission.copy(diagnostics = sourceAdmission.diagnostics + nativeIndex.diagnostics)
 }
 
 private fun renderRepositoryLock(lock: RepositoryLock): String {
@@ -296,7 +332,22 @@ private fun renderResolvedPackageBlock(resolvedPackage: RepositoryLockedPackage)
             add("    version: $version")
         }
         add("    sourceRoot: ${resolvedPackage.sourceRoot}")
-        add("    snapshotDigest: ${resolvedPackage.snapshotDigest}")
+        add("    manifestDigest: ${resolvedPackage.manifestDigest}")
+        if (resolvedPackage.itemDigests.isEmpty()) {
+            add("    items: []")
+        } else {
+            add("    items:")
+            resolvedPackage.itemDigests.sortedBy { "${it.kind}:${it.itemId}@${it.itemVersion}" }.forEach { item ->
+                add("      - itemId: ${item.itemId}")
+                add("        itemVersion: ${item.itemVersion}")
+                add("        kind: ${item.kind}")
+                add("        digest: ${item.digest}")
+                add("        sourcePath: ${item.sourcePath}")
+                add("        resourceRefs: [${item.resourceReferences.sorted().joinToString(", ")}]")
+                add("        attributes: [${item.attributes.toSortedMap().entries.joinToString(", ") { (key, value) -> "$key=$value" }}]")
+            }
+        }
+        add("    assetProfile: ${resolvedPackage.assetProfile}")
         if (resolvedPackage.sourceHashes.isEmpty()) {
             add("    sourceHashes: []")
         } else {
@@ -349,7 +400,7 @@ private fun parseRepositoryLock(lockText: String): AthenaParsedRepositoryLockRes
     if (validatedLockStateDigest.isNullOrBlank()) {
         diagnostics += diagnostic(
             code = "repository.lock.validated-state-digest.missing",
-            message = "RepositoryLockV2 must declare `validatedLockStateDigest`.",
+            message = "athena-lock-v3 must declare `validatedLockStateDigest`.",
         )
     }
 
@@ -474,6 +525,7 @@ private fun parseResolvedPackages(
 
         val packageEntries = linkedMapOf<String, String?>()
         val dependencyEntries = mutableListOf<Map<String, String?>>()
+        val itemEntries = mutableListOf<Map<String, String?>>()
         val sourceHashEntries = mutableListOf<Map<String, String?>>()
         val resourceHashEntries = mutableListOf<Map<String, String?>>()
         val inlineEntry = line.trimmed.removePrefix("-").trim()
@@ -566,6 +618,18 @@ private fun parseResolvedPackages(
                 continue
             }
 
+            if (detail.indent == 4 && detail.trimmed.startsWith("items:")) {
+                index = parseHashEntries(
+                    lockLines = lockLines,
+                    startIndex = index,
+                    diagnostics = diagnostics,
+                    target = itemEntries,
+                    codePrefix = "repository.lock.packages.items",
+                    allowedKeys = setOf("itemId", "itemVersion", "kind", "digest", "sourcePath", "resourceRefs", "attributes"),
+                )
+                continue
+            }
+
             if (!parseKeyValueEntry(packageEntries, detail.trimmed)) {
                 diagnostics += diagnostic(
                     code = "repository.lock.packages.item.malformed",
@@ -582,17 +646,17 @@ private fun parseResolvedPackages(
             subject = "package",
         )
         val sourceRoot = packageEntries["sourceRoot"]
-        val snapshotDigest = packageEntries["snapshotDigest"]
+    val manifestDigest = packageEntries["manifestDigest"]
         if (sourceRoot.isNullOrBlank()) {
             diagnostics += diagnostic(
                 code = "repository.lock.packages.source-root.missing",
                 message = "Each canonical lock package entry must declare `sourceRoot`.",
             )
         }
-        if (snapshotDigest.isNullOrBlank()) {
+        if (manifestDigest.isNullOrBlank()) {
             diagnostics += diagnostic(
-                code = "repository.lock.packages.snapshot-digest.missing",
-                message = "Each canonical lock package entry must declare `snapshotDigest`.",
+                code = "repository.lock.packages.manifest-digest.missing",
+                message = "Each canonical lock package entry must declare `manifestDigest`.",
             )
         }
         val directDependencies = dependencyEntries.mapNotNull { dependencyEntry ->
@@ -617,14 +681,55 @@ private fun parseResolvedPackages(
             }
         }
 
-        if (packageIdentifier != null && !sourceRoot.isNullOrBlank() && !snapshotDigest.isNullOrBlank()) {
+        val itemDigests = itemEntries.mapNotNull { entry ->
+            val itemId = entry["itemId"]
+            val itemVersion = entry["itemVersion"]
+            val kind = entry["kind"]
+            val digest = entry["digest"]
+            val sourcePath = entry["sourcePath"]
+            if (itemId.isNullOrBlank() || itemVersion.isNullOrBlank() || kind.isNullOrBlank() || digest.isNullOrBlank() || sourcePath.isNullOrBlank()) {
+                diagnostics += diagnostic(
+                    code = "repository.lock.packages.items.item.malformed",
+                    message = "Package item entries must declare itemId, itemVersion, kind, digest, and sourcePath.",
+                )
+                null
+            } else {
+                RepositoryLockedItem(
+                    itemId = itemId,
+                    itemVersion = itemVersion,
+                    kind = kind,
+                    digest = digest,
+                    sourcePath = sourcePath,
+                    resourceReferences = parseInlineReferences(entry["resourceRefs"]),
+                    attributes = parseInlineAttributes(entry["attributes"]),
+                )
+            }
+        }
+
+        if (packageIdentifier != null && !sourceRoot.isNullOrBlank() && !manifestDigest.isNullOrBlank()) {
+            val resourceHashes = resourceHashEntries.mapNotNull { entry ->
+                val key = entry["key"]
+                val path = entry["path"]
+                val hash = entry["hash"]
+                if (key.isNullOrBlank() || path.isNullOrBlank() || hash.isNullOrBlank()) {
+                    diagnostics += diagnostic(
+                        code = "repository.lock.packages.resource-hashes.item.malformed",
+                        message = "Resource hash entries must declare `key`, `path`, and `hash`.",
+                    )
+                    null
+                } else {
+                    RepositoryResourceHash(key = key, path = path, hash = hash)
+                }
+            }
             packages += RepositoryLockedPackage(
                 packageId = packageIdentifier,
                 sourceRoot = sourceRoot,
-                snapshotDigest = snapshotDigest,
+                manifestDigest = manifestDigest,
+                itemDigests = itemDigests,
                 sourceHashes = sourceHashes,
-                resourceHashes = emptyList(),
-                directDependencies = directDependencies,
+                    resourceHashes = resourceHashes,
+                    directDependencies = directDependencies,
+                    assetProfile = packageEntries["assetProfile"] ?: "svg-safe-1",
             )
         }
     }
@@ -694,6 +799,25 @@ private fun parseHashEntries(
     }
     return index
 }
+
+private fun parseInlineReferences(value: String?): List<String> {
+    val text = value?.trim().orEmpty()
+    if (text == "[]" || text.isBlank()) return emptyList()
+    if (!text.startsWith('[') || !text.endsWith(']')) return emptyList()
+    return text.removePrefix("[").removeSuffix("]")
+        .split(',')
+        .map(String::trim)
+        .filter(String::isNotBlank)
+        .sorted()
+}
+
+private fun parseInlineAttributes(value: String?): Map<String, String> = parseInlineReferences(value)
+    .mapNotNull { entry ->
+        val separator = entry.indexOf('=')
+        if (separator <= 0 || separator == entry.lastIndex) null
+        else entry.substring(0, separator).trim() to entry.substring(separator + 1).trim()
+    }
+    .toMap()
 
 private fun readTopLevelBlockEntries(
     lockLines: List<LockLine>,
@@ -816,6 +940,7 @@ private fun admittedSourceHashes(
     if (rootDiagnostics.isNotEmpty()) {
         return AdmittedSourceHashResult(
             sourceHashes = emptyList(),
+            resourceHashes = emptyList(),
             admittedBytes = 0L,
             diagnostics = rootDiagnostics,
         )
@@ -823,6 +948,7 @@ private fun admittedSourceHashes(
     if (!Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS)) {
         return AdmittedSourceHashResult(
             sourceHashes = emptyList(),
+            resourceHashes = emptyList(),
             admittedBytes = 0L,
             diagnostics = listOf(
                 diagnostic(
@@ -835,6 +961,7 @@ private fun admittedSourceHashes(
 
     val diagnostics = mutableListOf<RepositoryDiagnostic>()
     val sourceHashes = mutableListOf<RepositorySourceHash>()
+    val resourceHashes = mutableListOf<RepositoryResourceHash>()
     var admittedBytes = 0L
     Files.walk(root).use { stream ->
         stream
@@ -847,13 +974,45 @@ private fun admittedSourceHashes(
                 }
             }
             .filter { path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) }
-            .filter { path -> path.fileName.toString().endsWith(".athena") }
+            .filter { path ->
+                val name = path.fileName.toString()
+                name.endsWith(".athena") &&
+                    !name.endsWith(".sheet.athena") &&
+                    !name.endsWith(".sheet.style.athena") &&
+                    !name.endsWith(".binding.athena") &&
+                    !isPackageResource(path, root)
+            }
             .sorted(Comparator.comparing { path -> root.relativize(path).toDisplayPath() })
             .forEach { path ->
                 val bytes = Files.readAllBytes(path)
                 admittedBytes += bytes.size.toLong()
                 val relativePath = root.relativize(path).toDisplayPath()
                 sourceHashes += RepositorySourceHash(
+                    path = relativePath,
+                    hash = "sha256:${sha256(bytes)}",
+                )
+            }
+    }
+    Files.walk(root).use { stream ->
+        stream
+            .peek { path ->
+                if (Files.isSymbolicLink(path)) {
+                    diagnostics += diagnostic(
+                        code = "repository.admission.resource.link-forbidden",
+                        message = "Package resource admission rejects link or reparse candidate `${path.toDisplayPath()}`.",
+                    )
+                }
+            }
+            .filter { path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS) }
+            .filter { path -> isPackageResource(path, root) }
+            .filter { path -> path.fileName.toString().substringAfterLast('.', "").lowercase() in PRESENTATION_RESOURCE_EXTENSIONS }
+            .sorted(Comparator.comparing { path -> root.relativize(path).toDisplayPath() })
+            .forEach { path ->
+                val bytes = Files.readAllBytes(path)
+                admittedBytes += bytes.size.toLong()
+                val relativePath = root.relativize(path).toDisplayPath()
+                resourceHashes += RepositoryResourceHash(
+                    key = relativePath,
                     path = relativePath,
                     hash = "sha256:${sha256(bytes)}",
                 )
@@ -872,9 +1031,16 @@ private fun admittedSourceHashes(
             message = "Package source root `${root.toDisplayPath()}` exceeds PackageAdmissionLimits package byte budget.",
         )
     }
+    if (resourceHashes.size > limits.maxDeclaredResourcesPerPackage) {
+        diagnostics += diagnostic(
+            code = "repository.admission.budget.resources-exceeded",
+            message = "Package source root `${root.toDisplayPath()}` exceeds PackageAdmissionLimits declared resource budget.",
+        )
+    }
 
     return AdmittedSourceHashResult(
         sourceHashes = sourceHashes,
+        resourceHashes = resourceHashes,
         admittedBytes = admittedBytes,
         diagnostics = diagnostics,
     )
@@ -959,21 +1125,16 @@ private fun sourceRootTopologyDiagnostics(
     return diagnostics
 }
 
-private fun packageSnapshotDigest(
-    packageId: PackageIdentifier,
-    sourceRoot: String,
-    sourceHashes: List<RepositorySourceHash>,
-): String = "package-snapshot:" + sha256(
-    buildString {
-        appendLine("schema=$REPOSITORY_LOCK_COMPILER_SCHEMA")
-        appendLine("package=${packageId.name}@${packageId.version.orEmpty()}")
-        appendLine("sourceRoot=$sourceRoot")
-        sourceHashes.forEach { source ->
-            appendLine("source=${source.path}:${source.hash}")
-        }
-        appendLine("resources=")
-    }.toByteArray(Charsets.UTF_8),
-)
+private fun manifestDigest(repositoryRoot: Path, sourceRoot: String): String {
+    val path = resolveSourceRoot(repositoryRoot, sourceRoot).resolve("package.yaml")
+    return if (Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) "sha256:${sha256(Files.readAllBytes(path))}" else "sha256:${"0".repeat(64)}"
+}
+
+private val PRESENTATION_RESOURCE_EXTENSIONS = setOf("svg", "png", "woff2")
+
+private fun isPackageResource(path: Path, sourceRoot: Path): Boolean = sourceRoot.relativize(path).any { segment ->
+    segment.toString().equals("resources", ignoreCase = true)
+}
 
 private fun validatedLockStateDigest(packages: List<RepositoryLockedPackage>): String = "lock-state:" + sha256(
     buildString {
@@ -981,7 +1142,10 @@ private fun validatedLockStateDigest(packages: List<RepositoryLockedPackage>): S
         packages.sortedBy { locked -> stablePackageIdentifierKey(locked.packageId) + "|" + locked.sourceRoot }.forEach { locked ->
             appendLine("package=${locked.packageId.name}@${locked.packageId.version.orEmpty()}")
             appendLine("sourceRoot=${locked.sourceRoot}")
-            appendLine("snapshot=${locked.snapshotDigest}")
+            appendLine("manifest=${locked.manifestDigest}")
+            locked.itemDigests.sortedBy { it.itemId + "@" + it.itemVersion }.forEach { item ->
+                appendLine("item=${item.itemId}@${item.itemVersion}:${item.digest}")
+            }
             locked.directDependencies.sortedBy(::stablePackageIdentifierKey).forEach { dependency ->
                 appendLine("dependency=${dependency.name}@${dependency.version.orEmpty()}")
             }
@@ -1036,7 +1200,7 @@ private fun diagnostic(
     )
 }
 
-private const val REPOSITORY_LOCK_VERSION = 2
-private const val REPOSITORY_LOCK_SCHEMA = "repository-lock-v2"
-private const val REPOSITORY_LOCK_COMPILER_SCHEMA = "athena-lock-v2"
+private const val REPOSITORY_LOCK_VERSION = 3
+private const val REPOSITORY_LOCK_SCHEMA = "athena-lock-v3"
+private const val REPOSITORY_LOCK_COMPILER_SCHEMA = "athena-lock-v3-c14n-v1"
 private val LOCK_PACKAGE_NAME_PATTERN = Regex("^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$")

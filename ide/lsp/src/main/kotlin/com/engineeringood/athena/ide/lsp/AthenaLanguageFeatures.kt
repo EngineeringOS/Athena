@@ -12,6 +12,9 @@ import com.engineeringood.athena.compiler.repository.AthenaRepositoryReportPubli
 import com.engineeringood.athena.language.BindingDeclaration
 import com.engineeringood.athena.language.BindingSelectorKind
 import com.engineeringood.athena.language.Declaration
+import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.NetDeclaration
+import com.engineeringood.athena.language.ConnectionSpecificationDeclaration
 import com.engineeringood.athena.language.EntityDeclaration
 import com.engineeringood.athena.language.ElementAnchorExportDeclaration
 import com.engineeringood.athena.language.ElementChildDeclaration
@@ -23,6 +26,8 @@ import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
 import com.engineeringood.athena.language.LayoutDeclaration
 import com.engineeringood.athena.language.LayoutStatement
+import com.engineeringood.athena.language.MacroDeclaration
+import com.engineeringood.athena.language.PlaceholderDeclaration
 import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.ProjectionConstructDeclaration
 import com.engineeringood.athena.language.ProjectionPolicyDeclaration
@@ -45,8 +50,13 @@ import com.engineeringood.athena.language.SymbolGraphicDeclaration
 import com.engineeringood.athena.language.SymbolGraphicPrimitiveDeclaration
 import com.engineeringood.athena.language.SymbolIdentifierField
 import com.engineeringood.athena.language.ViewDeclaration
+import com.engineeringood.athena.language.VariantDeclaration
 import com.engineeringood.athena.language.SheetDeclaration
 import com.engineeringood.athena.language.GridDeclaration
+import com.engineeringood.athena.language.AthenaSheetCompanionParser
+import com.engineeringood.athena.language.SheetCompanionParseFailure
+import com.engineeringood.athena.language.SheetCompanionParseResult
+import com.engineeringood.athena.language.SheetCompanionParseSuccess
 import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.repository.PackageIdentifier
 import java.io.File
@@ -81,6 +91,7 @@ data class AthenaTrackedDocument(
     val projectSemanticSourceUnitUris: Map<SourceUnitId, String> = emptyMap(),
     val projectSemanticDiagnostics: List<ProjectSemanticDiagnostic> = emptyList(),
     val projectSemanticNavigation: AthenaProjectSemanticNavigationSnapshot? = null,
+    val sheetCompanion: SheetCompanionParseResult? = null,
 )
 
 data class AthenaProjectSemanticDiagnosticsSnapshot(
@@ -216,6 +227,11 @@ class AthenaLanguageFeatures(
             }
         }
 
+        val sheetCompanion = if (path.fileName.toString().endsWith(".sheet.athena")) {
+            AthenaSheetCompanionParser().parse(path.toString(), text)
+        } else {
+            null
+        }
         val compilation = compiler.compile(path, text)
         val success = compilation as? CompilerCompilationSuccess
         val projectSemanticSnapshot = success?.let {
@@ -235,6 +251,7 @@ class AthenaLanguageFeatures(
             projectSemanticSourceUnitUris = projectSemanticSnapshot?.sourceUnitUris.orEmpty(),
             projectSemanticDiagnostics = projectSemanticSnapshot?.diagnostics.orEmpty(),
             projectSemanticNavigation = projectSemanticSnapshot?.navigation,
+            sheetCompanion = sheetCompanion,
         )
         documentsByUri[uri] = tracked
         return tracked
@@ -245,6 +262,9 @@ class AthenaLanguageFeatures(
         text: String,
         success: CompilerCompilationSuccess?,
     ): AthenaProjectSemanticDiagnosticsSnapshot? {
+        if (!path.isProjectSemanticSource()) {
+            return null
+        }
         if (!text.hasPackageAwareSyntax()) {
             return null
         }
@@ -349,7 +369,7 @@ class AthenaLanguageFeatures(
             Files.walk(packageSourceRoot).use { stream ->
                 stream
                     .filter { candidate -> Files.isRegularFile(candidate) }
-                    .filter { candidate -> candidate.fileName.toString().endsWith(".athena") }
+                    .filter { candidate -> candidate.isProjectSemanticSource() }
                     .toList()
                     .mapNotNull { candidate ->
                         val normalizedCandidate = candidate.toAbsolutePath().normalize()
@@ -575,6 +595,9 @@ class AthenaLanguageFeatures(
      */
     fun documentSymbols(params: DocumentSymbolParams): List<Either<org.eclipse.lsp4j.SymbolInformation, DocumentSymbol>> {
         val tracked = trackedDocument(params.textDocument.uri) ?: return emptyList()
+        tracked.sheetCompanion?.let { result ->
+            return result.toDocumentSymbols()
+        }
         val success = tracked.compilation as? CompilerCompilationSuccess ?: return emptyList()
         val ast = success.source.ast
         val children = ast.declarations.map { declaration -> declaration.toDocumentSymbol() }
@@ -770,6 +793,11 @@ class AthenaLanguageFeatures(
             "role" to CompletionItemKind.Property,
             "ports" to CompletionItemKind.Property,
             "connect" to CompletionItemKind.Keyword,
+            "net" to CompletionItemKind.Keyword,
+            "connection-spec" to CompletionItemKind.Keyword,
+            "source" to CompletionItemKind.Keyword,
+            "sink" to CompletionItemKind.Keyword,
+            "pass" to CompletionItemKind.Keyword,
             "layout" to CompletionItemKind.Keyword,
             "place" to CompletionItemKind.Keyword,
             "at" to CompletionItemKind.Keyword,
@@ -903,6 +931,7 @@ class AthenaRepresentationNavigationIndex(
         when (declaration) {
             is SymbolDeclaration -> declaration.resources.map { resource -> resource.id to resource }
             is ElementDeclaration -> declaration.resources.map { resource -> resource.id to resource }
+            is VariantDeclaration -> declaration.resources.map { resource -> resource.id to resource }
             else -> emptyList()
         }
     }.toMap()
@@ -1003,7 +1032,10 @@ class AthenaNavigationIndex(
     private val entityDeclarations = ast.declarations.filterIsInstance<EntityDeclaration>().associateBy { declaration -> declaration.name }
     private val portDeclarations = (
         ast.declarations.filterIsInstance<PortDeclaration>() +
-            ast.declarations.filterIsInstance<EntityDeclaration>().flatMap { declaration -> declaration.nestedPorts }
+            ast.declarations.filterIsInstance<EntityDeclaration>().flatMap { declaration ->
+                declaration.nestedPorts +
+                    declaration.nestedFunctions.flatMap { function -> function.nestedPorts }
+            }
         ).associateBy { declaration ->
         declaration.qualifiedName.parts.joinToString(".")
     }
@@ -1024,6 +1056,7 @@ class AthenaNavigationIndex(
         }
         .toMap()
     private val relationDeclarations = ast.declarations.filterIsInstance<RelationDeclaration>()
+    private val connectionDeclarations = ast.declarations.filterIsInstance<ConnectionDeclaration>()
     private val functionReferences = ast.declarations
         .filterIsInstance<LayoutDeclaration>()
         .flatMap { declaration -> declaration.statements }
@@ -1044,6 +1077,10 @@ class AthenaNavigationIndex(
                 add(AthenaOwnerReference(target.parts.first(), target.ownerSpan()))
             }
         }
+        connectionDeclarations.forEach { declaration ->
+            add(AthenaOwnerReference(declaration.source.parts.first(), declaration.source.ownerSpan()))
+            add(AthenaOwnerReference(declaration.target.parts.first(), declaration.target.ownerSpan()))
+        }
     }
     private val portReferences = buildList {
         relationDeclarations.forEach { declaration ->
@@ -1051,6 +1088,10 @@ class AthenaNavigationIndex(
             declaration.targets.forEach { target ->
                 add(AthenaPortReference(target.parts.joinToString("."), target.span))
             }
+        }
+        connectionDeclarations.forEach { declaration ->
+            add(AthenaPortReference(declaration.source.parts.joinToString("."), declaration.source.span))
+            add(AthenaPortReference(declaration.target.parts.joinToString("."), declaration.target.span))
         }
     }
 
@@ -1235,6 +1276,55 @@ private fun RepresentationDeclaration.toDocumentSymbol(): DocumentSymbol = when 
             element.exportedAnchors.mapTo(this) { export -> export.toDocumentSymbol() }
             element.exportedLabels.mapTo(this) { export -> export.toDocumentSymbol() }
         }
+        }
+    }
+
+    is MacroDeclaration -> DocumentSymbol().apply {
+        name = this@toDocumentSymbol.name
+        kind = SymbolKind.Module
+        detail = "macro"
+        range = span.toLspRange()
+        selectionRange = span.toLspRange()
+        children = buildList {
+            identity?.let { add(it.toDocumentSymbol("identity")) }
+            version?.let { add(it.toDocumentSymbol("version")) }
+            this@toDocumentSymbol.children.mapTo(this) { child ->
+                DocumentSymbol().apply {
+                    name = child.id
+                    kind = SymbolKind.Object
+                    detail = "macro child"
+                    range = child.span.toLspRange()
+                    selectionRange = child.span.toLspRange()
+                }
+            }
+        }
+    }
+
+    is VariantDeclaration -> DocumentSymbol().apply {
+        name = this@toDocumentSymbol.name
+        kind = SymbolKind.EnumMember
+        detail = "variant"
+        range = span.toLspRange()
+        selectionRange = span.toLspRange()
+        children = buildList {
+            identity?.let { add(it.toDocumentSymbol("identity")) }
+            version?.let { add(it.toDocumentSymbol("version")) }
+            elementIdentity?.let { add(it.toDocumentSymbol("element")) }
+            resources.mapTo(this) { it.toResourceDocumentSymbol() }
+        }
+    }
+
+    is PlaceholderDeclaration -> DocumentSymbol().apply {
+        name = this@toDocumentSymbol.name
+        kind = SymbolKind.Variable
+        detail = "placeholder"
+        range = span.toLspRange()
+        selectionRange = span.toLspRange()
+        children = buildList {
+            identity?.let { add(it.toDocumentSymbol("identity")) }
+            version?.let { add(it.toDocumentSymbol("version")) }
+            targetPath?.let { add(it.toDocumentSymbol("target")) }
+            valueType?.let { add(it.toDocumentSymbol("type")) }
         }
     }
 
@@ -1479,6 +1569,30 @@ private fun Declaration.toDocumentSymbol(): DocumentSymbol {
         }
 
         is PortDeclaration -> toDocumentSymbol(displayName = qualifiedName.parts.joinToString("."))
+
+        is ConnectionDeclaration -> DocumentSymbol().apply {
+            name = "connect ${this@toDocumentSymbol.kind.value} ${source.parts.joinToString(".")} to ${target.parts.joinToString(".")}"
+            kind = SymbolKind.Interface
+            detail = "engineering connection"
+            range = span.toLspRange()
+            selectionRange = this@toDocumentSymbol.kind.span.toLspRange()
+        }
+
+        is NetDeclaration -> DocumentSymbol().apply {
+            name = "net ${this@toDocumentSymbol.name}"
+            kind = SymbolKind.Interface
+            detail = "engineering net"
+            range = span.toLspRange()
+            selectionRange = this@toDocumentSymbol.kind.span.toLspRange()
+        }
+
+        is ConnectionSpecificationDeclaration -> DocumentSymbol().apply {
+            name = "connection-spec ${this@toDocumentSymbol.scope.name.lowercase()}"
+            kind = SymbolKind.Property
+            detail = "connection specification"
+            range = span.toLspRange()
+            selectionRange = span.toLspRange()
+        }
 
         is RelationDeclaration -> DocumentSymbol().apply {
             val targetLabel = if (targets.size == 1) {
@@ -1865,38 +1979,6 @@ private fun String.hasRepresentationSyntax(): Boolean {
     }
 }
 
-private fun Path.representationPackageRootPaths(): Set<Path> {
-    val manifest = resolve("athena.yaml")
-    if (!Files.isRegularFile(manifest)) return emptySet()
-    val lines = Files.readAllLines(manifest)
-    val roots = mutableListOf<Path>()
-    var insideRepresentationPackageRoots = false
-    lines.forEach { rawLine ->
-        val line = rawLine.substringBefore('#')
-        if (line.isBlank()) return@forEach
-        val indent = line.indexOfFirst { character -> !character.isWhitespace() }.coerceAtLeast(0)
-        val trimmed = line.trim()
-        if (indent == 0) {
-            insideRepresentationPackageRoots = trimmed == "representationPackageRoots:"
-            return@forEach
-        }
-        if (!insideRepresentationPackageRoots || indent < 2 || !trimmed.startsWith("-")) {
-            return@forEach
-        }
-        val root = trimmed.removePrefix("-").trim().trim('"')
-        if (root.isNotBlank() &&
-            !root.startsWith("/") &&
-            !root.contains('\\') &&
-            !root.split('/').any { segment -> segment.isBlank() || segment == ".." }
-        ) {
-            roots.add(resolve(root).toAbsolutePath().normalize())
-        }
-    }
-    return roots.toSet()
-}
-
-private fun Path.isWithinAny(roots: Set<Path>): Boolean = roots.any { root -> startsWith(root) }
-
 private fun String.fullDocumentRange(): Range {
     val lines = split('\n')
     val lastLine = (lines.size - 1).coerceAtLeast(0)
@@ -1955,6 +2037,14 @@ private val functionKeywordTokens = setOf(
 
 private val relationshipKeywordTokens = setOf(
     "connect",
+    "connection-spec",
+    "net",
+    "source",
+    "sink",
+    "pass",
+    "potential",
+    "signal",
+    "to",
 )
 
 private val layoutKeywordTokens = setOf(
@@ -2154,6 +2244,14 @@ private fun Path.sourceRootRelativePath(sourceRoot: Path): String? {
     return relative.takeIf { it.isNotBlank() && !it.startsWith("..") }
 }
 
+private fun Path.isProjectSemanticSource(): Boolean {
+    val name = fileName.toString()
+    return name.endsWith(".athena") &&
+        !name.endsWith(".sheet.athena") &&
+        !name.endsWith(".sheet.style.athena") &&
+        !name.endsWith(".binding.athena")
+}
+
 private fun Path.resolveSourceUnitUri(sourceRootRelativePath: String): String {
     return resolve(sourceRootRelativePath.replace('/', File.separatorChar))
         .toAbsolutePath()
@@ -2170,3 +2268,29 @@ private fun SourcePosition.advanceBy(text: String): SourcePosition {
 }
 
 private fun SourceSpan.contains(offset: Int): Boolean = offset in start.offset until end.offset
+
+private fun SheetCompanionParseResult.toDocumentSymbols(): List<Either<org.eclipse.lsp4j.SymbolInformation, DocumentSymbol>> {
+    val source = (this as? SheetCompanionParseSuccess)?.source ?: return emptyList()
+    fun symbol(name: String, detail: String, span: SourceSpan, kind: SymbolKind): DocumentSymbol =
+        DocumentSymbol().apply {
+            this.name = name
+            this.detail = detail
+            this.kind = kind
+            this.range = span.toLspRange()
+            this.selectionRange = span.toLspRange()
+        }
+
+    val children = buildList {
+        add(symbol("page ${source.page.format} ${source.page.orientation.name.lowercase()}", "page", source.page.span, SymbolKind.Namespace))
+        add(symbol("frame ${source.frame.columns}x${source.frame.rows}", "frame", source.frame.span, SymbolKind.Struct))
+        add(symbol("snap ${source.snap.step}", "snap", source.snap.span, SymbolKind.Struct))
+        source.title?.let { title -> add(symbol("title ${title.text}", "title", title.span, SymbolKind.String)) }
+        source.placements.forEach { placement ->
+            add(symbol("${placement.occurrence} at (${placement.point.x}, ${placement.point.y})", "placement", placement.span, SymbolKind.Field))
+        }
+    }
+    val root = symbol("sheet ${source.name}", "Sheet Companion", source.span, SymbolKind.File).apply {
+        this.children = children
+    }
+    return listOf(Either.forRight(root))
+}

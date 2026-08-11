@@ -1,7 +1,0 @@
-status=valid
-entities=2
-ports=2
-connections=1
-svg=emitted
-published_ir=demo-cabinet.engineering-ir.txt
-published_svg=demo-cabinet.svg

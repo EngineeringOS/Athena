@@ -46,7 +46,7 @@ class AthenaRepositoryResolver(
             )
         val manifest = repository.manifest
         val sourceRootPath = normalizedRepositoryRoot.resolve(manifest.primaryPackage.sourceRoot)
-        val sourceFiles = findAthenaSources(sourceRootPath)
+        val sourceFiles = findEngineeringSources(sourceRootPath)
         if (sourceFiles.isEmpty()) {
             return AthenaRepositoryResolutionFailure(
                 reason = "Governed source root `${manifest.primaryPackage.sourceRoot}/` does not contain an authored `.athena` source for the current IDE seed.",
@@ -67,11 +67,17 @@ class AthenaRepositoryResolver(
         )
     }
 
-    private fun findAthenaSources(searchRoot: Path): List<Path> {
+    private fun findEngineeringSources(searchRoot: Path): List<Path> {
         Files.walk(searchRoot).use { paths ->
             return paths
                 .filter { candidate -> candidate.isRegularFile() }
                 .filter { candidate -> candidate.extension.equals("athena", ignoreCase = true) }
+                .filter { candidate ->
+                    val fileName = candidate.fileName.toString()
+                    !fileName.endsWith(".sheet.athena", ignoreCase = true) &&
+                        !fileName.endsWith(".sheet.style.athena", ignoreCase = true) &&
+                        !fileName.endsWith(".binding.athena", ignoreCase = true)
+                }
                 .sorted()
                 .collect(Collectors.toList())
         }

@@ -1,4 +1,0 @@
-status=syntax-failure
-syntaxErrorLine=4
-syntaxErrorColumn=1
-syntaxErrorMessageContains=}

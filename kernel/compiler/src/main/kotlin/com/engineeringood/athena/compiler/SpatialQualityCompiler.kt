@@ -6,7 +6,7 @@ import com.engineeringood.athena.spatial.SpatialDiagnostic
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialQualityMetrics
 import com.engineeringood.athena.spatial.SpatialRect
-import com.engineeringood.athena.spatial.SpatialRoute
+import com.engineeringood.athena.spatial.ConnectionRoutePlan
 import com.engineeringood.athena.spatial.SpatialSheet
 
 class SpatialQualityCompiler {
@@ -15,7 +15,7 @@ class SpatialQualityCompiler {
         occurrences: List<SpatialOccurrenceGeometry>,
         constructs: List<SpatialConstructGeometry>,
         lanes: List<SpatialLane>,
-        routes: List<SpatialRoute>,
+        routes: List<ConnectionRoutePlan>,
     ): SpatialQualityMetrics {
         val laneUse = laneUse(routes, lanes)
         val drawingAreaArea = drawingArea.width.toLong() * drawingArea.height.toLong()
@@ -56,7 +56,7 @@ class SpatialQualityCompiler {
 
     private fun bodyIntersectionCount(
         occurrences: List<SpatialOccurrenceGeometry>,
-        routes: List<SpatialRoute>,
+        routes: List<ConnectionRoutePlan>,
     ): Int = routes.sumOf { route ->
         val endpointOwners = setOf(route.sourceAnchorId.occurrenceId, route.targetAnchorId.occurrenceId)
         val bodies = occurrences.filterNot { occurrence -> occurrence.occurrenceId in endpointOwners }
@@ -65,17 +65,17 @@ class SpatialQualityCompiler {
         }
     }
 
-    private fun twistCount(routes: List<SpatialRoute>): Int = routes.sumOf { route ->
+    private fun twistCount(routes: List<ConnectionRoutePlan>): Int = routes.sumOf { route ->
         route.segments.count { segment ->
             segment.start.x != segment.end.x && segment.start.y != segment.end.y
         }
     }
 
-    private fun laneUse(routes: List<SpatialRoute>, lanes: List<SpatialLane>): Pair<Int, Int> {
+    private fun laneUse(routes: List<ConnectionRoutePlan>, lanes: List<SpatialLane>): Pair<Int, Int> {
         val existingLaneIds = lanes.map(SpatialLane::laneId).toSet()
         val routeCounts = routes
             .filter { route -> route.laneId in existingLaneIds }
-            .groupingBy(SpatialRoute::laneId)
+            .groupingBy(ConnectionRoutePlan::laneId)
             .eachCount()
         return routeCounts.size to (routeCounts.values.maxOrNull() ?: 0)
     }

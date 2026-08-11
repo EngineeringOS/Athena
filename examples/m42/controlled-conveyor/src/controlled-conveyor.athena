@@ -1,0 +1,10 @@
+package conveyor.project
+system conveyor {
+  entity Supply concept entity {}
+  entity Q1 concept entity {}
+  entity KM1 concept entity {}
+  entity M1 concept entity {}
+  entity OL1 concept entity {}
+  entity PLC1 concept entity {}
+  entity CV1 concept entity {}
+}

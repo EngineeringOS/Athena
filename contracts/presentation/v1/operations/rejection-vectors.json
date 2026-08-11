@@ -1,0 +1,7 @@
+{
+  "vectors": [
+    { "id": "stale-source-revision", "reason": "STALE", "sourceChanged": false, "sceneChanged": false, "journalChanged": false },
+    { "id": "accepted-operation-id-content-conflict", "reason": "CONFLICT", "sourceChanged": false, "sceneChanged": false, "journalChanged": false },
+    { "id": "unsupported-classified-handler", "reason": "UNSUPPORTED", "sourceChanged": false, "sceneChanged": false, "journalChanged": false }
+  ]
+}

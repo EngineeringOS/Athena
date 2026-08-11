@@ -1,4 +1,4 @@
-﻿package com.engineeringood.athena.plugin
+package com.engineeringood.athena.plugin
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

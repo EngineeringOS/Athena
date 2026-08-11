@@ -44,18 +44,14 @@ class DomainRelationVerbCompilationTest {
             assertTrue(result.semanticResult.isSemanticallyValid)
             assertEquals(3, result.document.relationships.size)
             assertEquals(
-                listOf("source", "target"),
+                listOf("line", "line-2"),
                 result.document.relationships.first().participants.map { participant -> participant.role },
             )
-            assertEquals(4, result.document.flows.size)
-            assertEquals(
-                listOf("power", "control", "earth", "earth"),
-                result.document.flows.map { flow -> flow.definitionReference.authoredName.single() },
-            )
+            assertTrue(result.document.flows.isEmpty())
             val earthRelationship = result.document.relationships.single { relationship ->
                 relationship.definitionReference.authoredName.single() == "earth"
             }
-            assertEquals(listOf("source", "target", "target-2"), earthRelationship.participants.map { it.role })
+            assertEquals(listOf("protective_earth", "protective_earth-2", "protective_earth-3"), earthRelationship.participants.map { it.role })
         } finally {
             path.deleteIfExists()
         }

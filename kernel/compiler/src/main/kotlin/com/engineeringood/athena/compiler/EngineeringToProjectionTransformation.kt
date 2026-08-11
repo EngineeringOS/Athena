@@ -1,16 +1,21 @@
 package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.geometry.GeometryElementId
+import com.engineeringood.athena.connection.ConnectionDocument
+import com.engineeringood.athena.connection.ConnectionFact
+import com.engineeringood.athena.connection.NetFact
 import com.engineeringood.athena.ir.EngineeringDocument
 import com.engineeringood.athena.ir.EngineeringFunction
 import com.engineeringood.athena.ir.EngineeringPort
 import com.engineeringood.athena.ir.EngineeringPortOwner
 import com.engineeringood.athena.ir.EngineeringReality
-import com.engineeringood.athena.ir.EngineeringSubjectReference
 import com.engineeringood.athena.layout.ViewDefinition
-import com.engineeringood.athena.projection.ProjectionConnection
-import com.engineeringood.athena.projection.ProjectionConnectionEndpoint
-import com.engineeringood.athena.projection.ProjectionConnectionId
+import com.engineeringood.athena.projection.ConnectionProjection
+import com.engineeringood.athena.projection.ConnectionProjectionEndpoint
+import com.engineeringood.athena.projection.ConnectionProjectionParticipant
+import com.engineeringood.athena.projection.ConnectionProjectionId
+import com.engineeringood.athena.projection.ConnectionProjectionIdentityKind
+import com.engineeringood.athena.projection.ConnectionProjectionRole
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionNodeId
@@ -27,6 +32,7 @@ class EngineeringToProjectionTransformation(
         id = "engineering-projection",
         displayName = "Engineering Projection",
     ),
+    private val connectionIr: ConnectionDocument? = null,
 ) : RealityTransformation<EngineeringDocument, ProjectionDocument> {
     override fun transform(input: EngineeringDocument): RealityTransformationResult<ProjectionDocument> {
         val engineeringValidation = EngineeringReality.validate(input)
@@ -46,31 +52,33 @@ class EngineeringToProjectionTransformation(
                 originGeometryElementId = GeometryElementId("projection-origin/port/${port.id.value}"),
             )
         }
-        val relationshipConnections = input.relationships
-            .filter { relationship ->
-                relationship.participants.size == 2 &&
-                    relationship.participants.all { participant ->
-                        participant.subject is EngineeringSubjectReference.Port
+        val connections = connectionIr?.let { ir ->
+            (ir.connections.map { Triple(it.id, it.endpoints, ConnectionProjectionIdentityKind.CONNECTION) } +
+                ir.nets.map { Triple(it.id, it.endpoints, ConnectionProjectionIdentityKind.NET) })
+                .mapNotNull { (identity, endpoints, identityKind) ->
+                    val participants = endpoints.mapNotNull { endpoint ->
+                        val port = portsBySemanticId[endpoint.portId] ?: return@mapNotNull null
+                        val ownerId = port.projectedEntityId(functionsById) ?: return@mapNotNull null
+                        val owner = nodesBySemanticId[ownerId] ?: return@mapNotNull null
+                        ConnectionProjectionParticipant(
+                            role = endpoint.role,
+                            endpoint = ConnectionProjectionEndpoint(
+                                com.engineeringood.athena.projection.ProjectionOccurrencePortId(owner.projectionId, endpoint.portId),
+                            ),
+                        )
                     }
-            }
-            .map { relationship ->
-                val ports = relationship.participants.map { participant ->
-                    (participant.subject as EngineeringSubjectReference.Port).port.resolvedIdentity
-                        ?.let(portsBySemanticId::get)
+                    if (participants.size != endpoints.size) return@mapNotNull null
+                    val origin = GeometryElementId("projection-origin/connection/${identity.value}")
+                    ConnectionProjection(
+                        projectionId = ConnectionProjectionId("${view.id}/${identityKind.name.lowercase()}/${identity.value}"),
+                        semanticId = identity,
+                        identityKind = identityKind,
+                        role = if (identityKind == ConnectionProjectionIdentityKind.NET) ConnectionProjectionRole.NET else ConnectionProjectionRole.CONNECTION,
+                        originGeometryElementId = origin,
+                        participants = participants,
+                    )
                 }
-                ProjectionConnection(
-                    projectionId = ProjectionConnectionId("projection/relationship/" + relationship.id.value),
-                    semanticId = relationship.id,
-                    originGeometryElementId = GeometryElementId("projection-origin/relationship/" + relationship.id.value),
-                    source = ports.getOrNull(0)?.projectedEntityId(functionsById)
-                        ?.let(nodesBySemanticId::get)
-                        ?.let { owner -> ProjectionConnectionEndpoint(ProjectionOccurrencePortId(owner.projectionId, ports[0]!!.id)) },
-                    target = ports.getOrNull(1)?.projectedEntityId(functionsById)
-                        ?.let(nodesBySemanticId::get)
-                        ?.let { owner -> ProjectionConnectionEndpoint(ProjectionOccurrencePortId(owner.projectionId, ports[1]!!.id)) },
-                )
-            }
-        val connections = relationshipConnections
+        }.orEmpty()
         val subjects = sheetSubjects(
             nodes = nodes,
             connections = connections,
@@ -115,7 +123,7 @@ class EngineeringToProjectionTransformation(
 
     private fun sheetSubjects(
         nodes: List<ProjectionNode>,
-        connections: List<ProjectionConnection>,
+        connections: List<ConnectionProjection>,
     ): List<ProjectionSheetSubject> {
         val nodeSubjects = nodes.map { node ->
             ProjectionSheetSubject(

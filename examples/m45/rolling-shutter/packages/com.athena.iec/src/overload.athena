@@ -1,0 +1,16 @@
+package com.athena.iec
+symbol overload {
+  identity "overload"
+  version "1.0.0"
+  resource geometry { kind svg path "resources/overload.svg" }
+  graphic svg resource geometry
+  anchor inlet { port Overload.inlet direction in signal Power point (-1, 0) }
+  anchor line { port Overload.line direction out signal Power point (1, 0) }
+}
+element overload_element {
+  identity "overload_element"
+  version "1.0.0"
+  child overload { symbol "overload" translate (0, 0) }
+  export anchor inlet from overload.inlet
+  export anchor line from overload.line
+}

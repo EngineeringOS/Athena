@@ -1,6 +1,6 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.projection.ProjectionConnection
+import com.engineeringood.athena.projection.ConnectionProjection
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionOccurrencePortId
@@ -10,7 +10,7 @@ import com.engineeringood.athena.spatial.SpatialConstructId
 import com.engineeringood.athena.spatial.SpatialGridReferenceSubject
 import com.engineeringood.athena.spatial.SpatialOccurrenceId
 import com.engineeringood.athena.spatial.SpatialRegionId
-import com.engineeringood.athena.spatial.SpatialRouteId
+import com.engineeringood.athena.spatial.ConnectionRoutePlanId
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 
 internal class ProjectionSpatialCoverageInventory(
@@ -90,7 +90,7 @@ internal class ProjectionSpatialCoverageInventory(
     ): List<CoverageExpectation<SpatialAnchorId>> {
         val visibleConnections = visibleConnections(projection, sheet)
         val incidents = visibleConnections.flatMap { connection ->
-            listOfNotNull(connection.source?.occurrencePortId, connection.target?.occurrencePortId)
+            connection.participants.map { participant -> participant.endpoint.occurrencePortId }
                 .map { endpoint -> endpoint to connection }
         }.groupBy(keySelector = { (endpoint, _) -> endpoint }, valueTransform = { (_, connection) -> connection })
         return incidents.map { (endpoint, connections) ->
@@ -112,14 +112,24 @@ internal class ProjectionSpatialCoverageInventory(
     fun routeExpectations(
         projection: ProjectionDocument,
         sheet: ProjectionSheet,
-    ): List<CoverageExpectation<SpatialRouteId>> = visibleConnections(projection, sheet).map { connection ->
-        val routeId = SpatialRouteId(sheet.sheetId.value, connection.projectionId.value)
-        CoverageExpectation(
-            key = routeId,
-            subject = "Route ${routeId.value}",
-            sourceTrace = routeTrace(projection, sheet, connection),
-            canonicalSourceTrace = canonicalRouteTrace(projection, sheet, connection),
-        )
+    ): List<CoverageExpectation<ConnectionRoutePlanId>> = visibleConnections(projection, sheet).flatMap { connection ->
+        connection.routeLegs().map { leg ->
+            val routeProjectionId = connection.projectionId.value + leg.routeProjectionIdSuffix
+            val routeId = ConnectionRoutePlanId(sheet.sheetId.value, routeProjectionId)
+            CoverageExpectation(
+                key = routeId,
+                subject = "Route ${routeId.value}",
+                sourceTrace = routeTrace(projection, sheet, connection),
+                canonicalSourceTrace = canonicalRouteTrace(
+                    projection,
+                    sheet,
+                    connection,
+                    leg.source,
+                    leg.target,
+                    routeProjectionId,
+                ),
+            )
+        }
     }
 
     fun gridReferenceExpectations(
@@ -144,7 +154,7 @@ internal class ProjectionSpatialCoverageInventory(
             )
         }
 
-    fun visibleConnections(projection: ProjectionDocument, sheet: ProjectionSheet): List<ProjectionConnection> =
+    fun visibleConnections(projection: ProjectionDocument, sheet: ProjectionSheet): List<ConnectionProjection> =
         projection.connections
             .filter { connection -> connection.projectionId in sheet.subjects.flatMap { it.connectionIds } }
             .sortedBy { connection -> connection.projectionId.value }
@@ -154,7 +164,7 @@ internal class ProjectionSpatialCoverageInventory(
         sheet: ProjectionSheet,
         node: ProjectionNode,
         endpoint: ProjectionOccurrencePortId,
-        connections: List<ProjectionConnection>,
+        connections: List<ConnectionProjection>,
     ): SpatialSourceTrace = SpatialSourceTrace(
         projectionIds = listOf(sheet.sheetId.value, node.projectionId.value, endpoint.portId.value) +
             connections.map { connection -> connection.projectionId.value }.distinct().sorted(),
@@ -162,16 +172,16 @@ internal class ProjectionSpatialCoverageInventory(
             listOf(sheet.originGeometryElementId, node.originGeometryElementId) +
                 projection.occurrencePorts.filter { port -> port.occurrencePortId == endpoint }
                     .map { port -> port.originGeometryElementId } +
-                connections.map(ProjectionConnection::originGeometryElementId)
+                connections.map(ConnectionProjection::originGeometryElementId)
             ).distinctBy { geometryId -> geometryId.value }.sortedBy { geometryId -> geometryId.value },
     )
 
     private fun routeTrace(
         projection: ProjectionDocument,
         sheet: ProjectionSheet,
-        connection: ProjectionConnection,
+        connection: ConnectionProjection,
     ): SpatialSourceTrace {
-        val endpoints = listOfNotNull(connection.source?.occurrencePortId, connection.target?.occurrencePortId)
+        val endpoints = connection.participants.map { participant -> participant.endpoint.occurrencePortId }
         val nodes = endpoints.mapNotNull { endpoint ->
             projection.nodes.firstOrNull { node -> node.projectionId == endpoint.occurrenceId }
         }
@@ -192,7 +202,7 @@ internal class ProjectionSpatialCoverageInventory(
         sheet: ProjectionSheet,
         node: ProjectionNode,
         endpoint: ProjectionOccurrencePortId,
-        connections: List<ProjectionConnection>,
+        connections: List<ConnectionProjection>,
     ): SpatialSourceTrace {
         val required = endpointTrace(projection, sheet, node, endpoint, connections)
         val group = planner.placementGroups(sheet, projection).single { candidate ->
@@ -204,18 +214,19 @@ internal class ProjectionSpatialCoverageInventory(
         )
     }
 
-    private fun canonicalRouteTrace(
+    internal fun canonicalRouteTrace(
         projection: ProjectionDocument,
         sheet: ProjectionSheet,
-        connection: ProjectionConnection,
+        connection: ConnectionProjection,
+        source: ProjectionOccurrencePortId = connection.participants.first().endpoint.occurrencePortId,
+        target: ProjectionOccurrencePortId = connection.participants.drop(1).first().endpoint.occurrencePortId,
+        routeProjectionId: String = connection.projectionId.value,
     ): SpatialSourceTrace {
-        val source = requireNotNull(connection.source).occurrencePortId
-        val target = requireNotNull(connection.target).occurrencePortId
         val visible = visibleConnections(projection, sheet)
         fun anchorTrace(endpoint: ProjectionOccurrencePortId): SpatialSourceTrace {
             val node = projection.nodes.single { candidate -> candidate.projectionId == endpoint.occurrenceId }
             val incidents = visible.filter { candidate ->
-                candidate.source?.occurrencePortId == endpoint || candidate.target?.occurrencePortId == endpoint
+                candidate.participants.any { participant -> participant.endpoint.occurrencePortId == endpoint }
             }
             return canonicalAnchorTrace(projection, sheet, node, endpoint, incidents)
         }
@@ -223,6 +234,7 @@ internal class ProjectionSpatialCoverageInventory(
         val targetTrace = anchorTrace(target)
         val requiredProjectionIds = listOf(
             sheet.sheetId.value,
+            routeProjectionId,
             connection.projectionId.value,
             source.occurrenceId.value,
             source.portId.value,

@@ -1,0 +1,112 @@
+package com.engineeringood.m45.rollingshutter
+
+system rolling_shutter {
+  entity Supply {
+    concept Supply
+    function main {
+      role supply
+      port L1 { direction out signal Power role line }
+    }
+  }
+  entity Q1 {
+    concept Breaker
+    function protection {
+      role protection
+      port inlet { direction in signal Power role line }
+      port line { direction out signal Power role line }
+    }
+  }
+  entity KM1 {
+    concept Contactor
+    function mainContact {
+      role switching
+      port power { direction in signal Power role line }
+      port load { direction out signal Power role line }
+    }
+    function coil {
+      role control
+      port control { direction in signal Control role line }
+    }
+    function auxiliary {
+      role auxiliary
+      port control { direction in signal Control role line }
+      port output { direction out signal Control role line }
+    }
+  }
+  entity OL1 {
+    concept Overload
+    function protection {
+      role protection
+      port inlet { direction in signal Power role line }
+      port line { direction out signal Power role line }
+    }
+  }
+  entity M1 {
+    concept Motor
+    function drive {
+      role load
+      port power { direction in signal Power role line }
+    }
+  }
+  entity PLC1 {
+    concept Controller
+    function control {
+      role controller
+      port input { direction in signal Control role line }
+      port output { direction out signal Control role line }
+    }
+  }
+  entity S1 {
+    concept Sensor
+    function limitOpen {
+      role sensing
+      port output { direction out signal Control role line }
+    }
+  }
+  entity S2 {
+    concept Sensor
+    function limitClosed {
+      role sensing
+      port output { direction out signal Control role line }
+    }
+  }
+  entity X1 {
+    concept Terminal
+    function powerTerminal {
+      role terminal
+      port inlet { direction in signal Power role line }
+      port outlet { direction out signal Power role line }
+    }
+  }
+  entity H1 {
+    concept Lamp
+    function openLamp {
+      role indication
+      port inlet { direction in signal Control role line }
+    }
+  }
+  entity H2 {
+    concept Lamp
+    function closedLamp {
+      role indication
+      port inlet { direction in signal Control role line }
+    }
+  }
+
+  power Supply.main.L1 to Q1.protection.inlet
+  power Q1.protection.line to KM1.mainContact.power
+  power KM1.mainContact.load to OL1.protection.inlet
+  power OL1.protection.line to X1.powerTerminal.inlet
+  power X1.powerTerminal.outlet to M1.drive.power
+  control S1.limitOpen.output to PLC1.control.input
+  control S2.limitClosed.output to PLC1.control.input
+  control PLC1.control.output to KM1.coil.control
+  control KM1.auxiliary.output to H1.openLamp.inlet
+  control PLC1.control.output to H2.closedLamp.inlet
+
+  view schematic {
+    sheet rolling_shutter
+    region "Power" { occurrences [Supply.main, Q1.protection, KM1.mainContact, OL1.protection, X1.powerTerminal, M1.drive] }
+    region "Control" { occurrences [PLC1.control, S1.limitOpen, S2.limitClosed, KM1.coil, KM1.auxiliary, H1.openLamp, H2.closedLamp] }
+  }
+}

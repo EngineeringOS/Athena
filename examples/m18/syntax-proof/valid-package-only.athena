@@ -1,6 +1,0 @@
-package com.engineeringood.standalone
-system StandaloneProof {
-  entity PLC1 {
-    concept Switch
-  }
-}

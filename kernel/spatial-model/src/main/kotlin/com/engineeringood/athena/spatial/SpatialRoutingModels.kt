@@ -62,20 +62,6 @@ data class SpatialAnchorPosition(
     }
 }
 
-data class SpatialRouteId(
-    val sheetId: String,
-    val projectionConnectionId: String,
-) {
-    init {
-        require(sheetId.isNotBlank()) { "Spatial Route Sheet identity must not be blank." }
-        require(projectionConnectionId.isNotBlank()) { "Spatial Route Projection Connection identity must not be blank." }
-    }
-
-    val value: String
-        get() = "route:sheet=${sheetId.encodedIdentityPart()}:" +
-            "connection=${projectionConnectionId.encodedIdentityPart()}"
-}
-
 enum class SpatialLaneOrientation {
     HORIZONTAL,
     VERTICAL,
@@ -95,34 +81,14 @@ data class SpatialLaneId(
             "orientation=${orientation.name.lowercase()}:coordinate=$coordinate"
 }
 
-data class SpatialRouteSegment(
-    val start: SpatialPoint,
-    val end: SpatialPoint,
-) {
-    val isPositiveOrthogonal: Boolean
-        get() = start != end && (start.x == end.x || start.y == end.y)
-
-    val orientation: SpatialLaneOrientation?
-        get() = when {
-            start == end -> null
-            start.y == end.y -> SpatialLaneOrientation.HORIZONTAL
-            start.x == end.x -> SpatialLaneOrientation.VERTICAL
-            else -> null
-        }
-
-    val manhattanLength: Long
-        get() = kotlin.math.abs(start.x.toLong() - end.x.toLong()) +
-            kotlin.math.abs(start.y.toLong() - end.y.toLong())
-}
-
 class SpatialLane(
     val laneId: SpatialLaneId,
     val sheetId: String,
     val orientation: SpatialLaneOrientation,
     val coordinate: Int,
-    routeIds: List<SpatialRouteId>,
+    routeIds: List<ConnectionRoutePlanId>,
 ) {
-    val routeIds: List<SpatialRouteId> = Collections.unmodifiableList(routeIds.toList())
+    val routeIds: List<ConnectionRoutePlanId> = Collections.unmodifiableList(routeIds.toList())
 
     init {
         require(laneId.sheetId == sheetId) { "Spatial Lane identity must name its owning Sheet." }
@@ -141,7 +107,7 @@ class SpatialLane(
         sheetId: String = this.sheetId,
         orientation: SpatialLaneOrientation = this.orientation,
         coordinate: Int = this.coordinate,
-        routeIds: List<SpatialRouteId> = this.routeIds,
+        routeIds: List<ConnectionRoutePlanId> = this.routeIds,
     ): SpatialLane = SpatialLane(laneId, sheetId, orientation, coordinate, routeIds)
 
     override fun equals(other: Any?): Boolean =
@@ -157,76 +123,4 @@ class SpatialLane(
     override fun toString(): String =
         "SpatialLane(laneId=$laneId, sheetId=$sheetId, orientation=$orientation, coordinate=$coordinate, " +
             "routeIds=$routeIds)"
-}
-
-class SpatialRoute(
-    val routeId: SpatialRouteId,
-    val sheetId: String,
-    val connectionId: StableSemanticIdentity,
-    val sourceAnchorId: SpatialAnchorId,
-    val targetAnchorId: SpatialAnchorId,
-    val laneId: SpatialLaneId,
-    val sourceTrace: SpatialSourceTrace,
-    points: List<SpatialPoint>,
-) {
-    val points: List<SpatialPoint> = Collections.unmodifiableList(points.toList())
-
-    init {
-        require(routeId.sheetId == sheetId) { "Spatial Route identity must name its owning Sheet." }
-        require(laneId.sheetId == sheetId) { "Spatial Route Lane must belong to its owning Sheet." }
-        require(sourceAnchorId.sheetId == sheetId && targetAnchorId.sheetId == sheetId) {
-            "Spatial Route Anchors must belong to its owning Sheet."
-        }
-        require(this.points.size >= 2) { "Spatial route must contain at least two points." }
-    }
-
-    val segments: List<SpatialRouteSegment>
-        get() = points.zipWithNext(::SpatialRouteSegment)
-
-    fun copy(
-        routeId: SpatialRouteId = this.routeId,
-        sheetId: String = this.sheetId,
-        connectionId: StableSemanticIdentity = this.connectionId,
-        sourceAnchorId: SpatialAnchorId = this.sourceAnchorId,
-        targetAnchorId: SpatialAnchorId = this.targetAnchorId,
-        laneId: SpatialLaneId = this.laneId,
-        sourceTrace: SpatialSourceTrace = this.sourceTrace,
-        points: List<SpatialPoint> = this.points,
-    ): SpatialRoute = SpatialRoute(
-        routeId,
-        sheetId,
-        connectionId,
-        sourceAnchorId,
-        targetAnchorId,
-        laneId,
-        sourceTrace,
-        points,
-    )
-
-    override fun equals(other: Any?): Boolean =
-        this === other || other is SpatialRoute &&
-            routeId == other.routeId &&
-            sheetId == other.sheetId &&
-            connectionId == other.connectionId &&
-            sourceAnchorId == other.sourceAnchorId &&
-            targetAnchorId == other.targetAnchorId &&
-            laneId == other.laneId &&
-            sourceTrace == other.sourceTrace &&
-            points == other.points
-
-    override fun hashCode(): Int = listOf(
-        routeId,
-        sheetId,
-        connectionId,
-        sourceAnchorId,
-        targetAnchorId,
-        laneId,
-        sourceTrace,
-        points,
-    ).hashCode()
-
-    override fun toString(): String =
-        "SpatialRoute(routeId=$routeId, sheetId=$sheetId, connectionId=$connectionId, " +
-            "sourceAnchorId=$sourceAnchorId, targetAnchorId=$targetAnchorId, laneId=$laneId, " +
-            "sourceTrace=$sourceTrace, points=$points)"
 }

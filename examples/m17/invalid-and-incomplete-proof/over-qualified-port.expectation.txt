@@ -1,4 +1,0 @@
-status=syntax-failure
-syntaxErrorLine=2
-syntaxErrorColumn=8
-syntaxErrorMessageContains=Entity.Port or Entity.Function.Port

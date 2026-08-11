@@ -146,7 +146,7 @@ class SpatialValidationTest {
         }
         val anchorTrace = trace(valid.sheetId, sourceOccurrence.occurrenceId.projectionId)
         val anchors = listOf(valid.anchors.first().copy(sourceTrace = anchorTrace), valid.anchors.last())
-        val routeTrace = trace(valid.sheetId, valid.routes.single().routeId.projectionConnectionId)
+        val routeTrace = trace(valid.sheetId, valid.routes.single().routeId.projectionRouteId)
         val route = valid.routes.single().copy(sourceTrace = routeTrace)
         val gridReferenceTrace = trace(valid.sheetId, "grid-reference:wrong")
         val gridReferences = valid.gridReferences.mapIndexed { index, reference ->
@@ -230,8 +230,8 @@ class SpatialValidationTest {
                 ),
                 SpatialDiagnostic(
                     "Route ${route.routeId.value}",
-                    "Source Trace does not retain Sheet, Connection, and endpoint occurrence-port order",
-                    "Publish the six required Route trace positions in source-to-target order, including repeats.",
+                    "Source Trace does not retain Sheet, Route, Connection, and endpoint occurrence-port order",
+                    "Publish the seven required Route trace positions in source-to-target order, including repeats.",
                     routeTrace,
                 ),
                 SpatialDiagnostic(
@@ -788,7 +788,7 @@ class SpatialValidationTest {
     fun `Route and Lane membership is exact reciprocal and Sheet local`() {
         val valid = validSheet()
         val route = valid.routes.single()
-        val phantomRouteId = SpatialRouteId(valid.sheetId, "connection:phantom")
+        val phantomRouteId = ConnectionRoutePlanId(valid.sheetId, "connection:phantom")
         val lane = valid.lanes.single().copy(routeIds = listOf(phantomRouteId))
 
         val result = SpatialValidation.validate(
@@ -852,8 +852,8 @@ class SpatialValidationTest {
             valid.copy(routes = listOf(reversedRoute)) to listOf(
                 SpatialDiagnostic(
                     "Route ${route.routeId.value}",
-                    "Source Trace does not retain Sheet, Connection, and endpoint occurrence-port order",
-                    "Publish the six required Route trace positions in source-to-target order, including repeats.",
+                    "Source Trace does not retain Sheet, Route, Connection, and endpoint occurrence-port order",
+                    "Publish the seven required Route trace positions in source-to-target order, including repeats.",
                     route.sourceTrace,
                 ),
             ),
@@ -965,8 +965,8 @@ class SpatialValidationTest {
             listOf(
                 SpatialDiagnostic(
                     "Route ${route.routeId.value}",
-                    "Source Trace does not retain Sheet, Connection, and endpoint occurrence-port order",
-                    "Publish the six required Route trace positions in source-to-target order, including repeats.",
+                    "Source Trace does not retain Sheet, Route, Connection, and endpoint occurrence-port order",
+                    "Publish the seven required Route trace positions in source-to-target order, including repeats.",
                     route.sourceTrace,
                 ),
                 SpatialDiagnostic(
@@ -990,8 +990,8 @@ class SpatialValidationTest {
             listOf(
                 SpatialDiagnostic(
                     "Route ${route.routeId.value}",
-                    "Source Trace does not retain Sheet, Connection, and endpoint occurrence-port order",
-                    "Publish the six required Route trace positions in source-to-target order, including repeats.",
+                    "Source Trace does not retain Sheet, Route, Connection, and endpoint occurrence-port order",
+                    "Publish the seven required Route trace positions in source-to-target order, including repeats.",
                     route.sourceTrace,
                 ),
                 SpatialDiagnostic(

@@ -1,13 +1,62 @@
 import { Range } from '@theia/core/shared/vscode-languageserver-protocol';
-import { AthenaSemanticInspectionPayload } from './athena-lsp-editor-bridge-service';
+import URI from '@theia/core/lib/common/uri';
+import { AthenaConnectionReadModelSourceTrace, AthenaSemanticInspectionPayload } from './athena-lsp-editor-bridge-service';
+import { SceneTrace } from './diagram/generated/types';
 
 export type AthenaActiveSemanticSelection = {
     semanticId: string;
     label?: string;
-    kind?: 'entity' | 'port' | 'relationship';
+    kind?: 'entity' | 'port' | 'relationship' | 'trace';
     sourceUri?: string;
     sourceRange?: Range;
 };
+
+export function resolveSemanticSelectionFromSceneTrace(
+    repositoryRoot: string,
+    trace: SceneTrace,
+    semanticId: string,
+): AthenaActiveSemanticSelection | undefined {
+    const origin = trace.origins.find(candidate => candidate.primary) ?? trace.origins[0];
+    if (!origin || !repositoryRoot || !isRepositoryRelativePath(origin.relativePath)) return undefined;
+    const start = { line: origin.startLine, character: origin.startCharacter };
+    const unchangedEnd = origin.endLine === start.line && origin.endCharacter === start.character;
+    const end = unchangedEnd
+        ? { line: start.line, character: start.character + 1 }
+        : { line: origin.endLine, character: origin.endCharacter };
+    const sourcePath = `${repositoryRoot.replace(/[\\/]+$/, '')}/${origin.relativePath.replaceAll('\\', '/')}`;
+    return {
+        semanticId,
+        label: origin.subjectId,
+        kind: 'trace',
+        sourceUri: URI.fromFilePath(sourcePath).toString(),
+        sourceRange: { start, end },
+    };
+}
+
+export function resolveSemanticSelectionFromPublishedSourceTrace(
+    repositoryRoot: string,
+    trace: AthenaConnectionReadModelSourceTrace,
+    semanticId: string,
+): AthenaActiveSemanticSelection | undefined {
+    if (!repositoryRoot || !isRepositoryRelativePath(trace.relativePath)) return undefined;
+    const start = {
+        line: Math.max(0, trace.startLine - 1),
+        character: Math.max(0, trace.startCharacter - 1),
+    };
+    const end = {
+        line: Math.max(start.line, trace.endLine - 1),
+        character: Math.max(0, trace.endCharacter - 1),
+    };
+    if (end.line === start.line && end.character <= start.character) end.character = start.character + 1;
+    const sourcePath = `${repositoryRoot.replace(/[\\/]+$/, '')}/${trace.relativePath.replaceAll('\\', '/')}`;
+    return {
+        semanticId,
+        label: trace.subjectId,
+        kind: 'trace',
+        sourceUri: URI.fromFilePath(sourcePath).toString(),
+        sourceRange: { start, end },
+    };
+}
 
 type AthenaSemanticInspectionEntry = {
     semanticId: string;
@@ -130,4 +179,12 @@ function rangeWeight(range: Range): number {
         ? Math.max(range.end.character - range.start.character, 0)
         : Math.max(range.end.character + range.start.character, 0);
     return (lineSpan * 10_000) + characterSpan;
+}
+
+function isRepositoryRelativePath(value: string): boolean {
+    const normalized = value.replaceAll('\\', '/');
+    return normalized.length > 0 &&
+        !normalized.startsWith('/') &&
+        !/^[A-Za-z]:/.test(normalized) &&
+        normalized.split('/').every(segment => segment.length > 0 && segment !== '.' && segment !== '..');
 }

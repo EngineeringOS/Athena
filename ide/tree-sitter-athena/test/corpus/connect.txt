@@ -9,7 +9,13 @@ system Demo {
   port PLC1.out {
     direction out
   }
-  connect plc_self PLC1.out to PLC1.out
+  port PLC1.in {
+    direction in
+  }
+  connect wire PLC1.out to PLC1.in
+  connect cable-core PLC1.out -> PLC1.in {
+    colorCode black
+  }
 }
 
 ---
@@ -32,50 +38,37 @@ system Demo {
           (property_name)
           (identifier))))
     (declaration
+      (port_declaration
+        (qualified_name
+          (identifier)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (identifier))))
+    (declaration
       (connect_declaration
-        name: (name)
+        kind: (connection_kind
+          (identifier))
         from: (qualified_name
           (identifier)
           (identifier))
         to: (qualified_name
           (identifier)
-          (identifier))))))
-
-============================
-Grouped connect forms
-============================
-
-system Demo {
-  connect control_feed {
-    motor_command PLC1.out to M1.in
-    motor_feedback M1.feedback to PLC1.feedback
-  }
-}
-
----
-
-(source_file
-  (system_declaration
-    name: (name)
+          (identifier))))
     (declaration
       (connect_declaration
-        name: (name)
-        (connect_group_edge
-          name: (name)
-          from: (qualified_name
-            (identifier)
-            (identifier))
-          to: (qualified_name
-            (identifier)
-            (identifier)))
-        (connect_group_edge
-          name: (name)
-          from: (qualified_name
-            (identifier)
-            (identifier))
-          to: (qualified_name
-            (identifier)
-            (identifier)))))))
+        kind: (connection_kind
+          (identifier)
+          (identifier))
+        from: (qualified_name
+          (identifier)
+          (identifier))
+        to: (qualified_name
+          (identifier)
+          (identifier))
+        (property_assignment
+          (property_name)
+          (identifier))))))
 
 ============================
 Domain relation forms
@@ -136,35 +129,6 @@ system Demo {
           (qualified_name
             (identifier)
             (identifier)))))))
-
-============================
-Removed connection intent syntax
-============================
-
-system Demo {
-  connect supply Supply.L1 to Drive.L1 intent { class power }
-}
-
----
-
-(source_file
-  (system_declaration
-    name: (name)
-    (ERROR
-      (declaration
-        (connect_declaration
-          name: (name)
-          from: (qualified_name
-            (identifier)
-            (identifier))
-          to: (qualified_name
-            (identifier)
-            (identifier))))
-      (identifier))
-    (ERROR
-      (identifier)
-      (qualified_name
-        (identifier)))))
 
 ============================
 Projection policy

@@ -6,8 +6,8 @@ import com.engineeringood.athena.spatial.SpatialAnchorId
 import com.engineeringood.athena.spatial.SpatialDiagnostic
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialOccurrenceId
-import com.engineeringood.athena.spatial.SpatialRoute
-import com.engineeringood.athena.spatial.SpatialRouteId
+import com.engineeringood.athena.spatial.ConnectionRoutePlan
+import com.engineeringood.athena.spatial.ConnectionRoutePlanId
 import com.engineeringood.athena.spatial.SpatialSheet
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 
@@ -20,7 +20,7 @@ internal class ProjectionSpatialAuthorityValidator(
         expectedSheet: ProjectionSheet,
         actualSheets: List<SpatialSheet>,
         occurrences: List<SpatialOccurrenceGeometry>,
-        routes: List<SpatialRoute>,
+        routes: List<ConnectionRoutePlan>,
     ): List<SpatialDiagnostic> = buildList {
         if (actualSheets.size == 1) addAll(rootDiagnostics(expectedSheet, actualSheets.single()))
         addAll(occurrencePayloadDiagnostics(projection, expectedSheet, occurrences))
@@ -106,47 +106,59 @@ internal class ProjectionSpatialAuthorityValidator(
     private fun routePayloadDiagnostics(
         projection: ProjectionDocument,
         sheet: ProjectionSheet,
-        actual: List<SpatialRoute>,
+        actual: List<ConnectionRoutePlan>,
     ): List<SpatialDiagnostic> {
-        val actualById = actual.groupBy(SpatialRoute::routeId)
+        val actualById = actual.groupBy(ConnectionRoutePlan::routeId)
         return inventory.visibleConnections(projection, sheet).flatMap { connection ->
-            val routeId = SpatialRouteId(sheet.sheetId.value, connection.projectionId.value)
-            val route = actualById[routeId].orEmpty().singleOrNull() ?: return@flatMap emptyList()
-            val source = requireNotNull(connection.source).occurrencePortId
-            val target = requireNotNull(connection.target).occurrencePortId
-            val expectedSource = SpatialAnchorId(
-                sheet.sheetId.value,
-                SpatialOccurrenceId(sheet.sheetId.value, source.occurrenceId.value),
-                source.portId,
-            )
-            val expectedTarget = SpatialAnchorId(
-                sheet.sheetId.value,
-                SpatialOccurrenceId(sheet.sheetId.value, target.occurrenceId.value),
-                target.portId,
-            )
-            buildList {
-                if (route.sourceAnchorId != expectedSource || route.targetAnchorId != expectedTarget) {
-                    add(
-                        SpatialDiagnostic(
-                            subject = "Route ${route.routeId.value}",
-                            problem = "ordered endpoint Anchors do not equal Projection source ${expectedSource.value} " +
-                                "and target ${expectedTarget.value}",
-                            correction =
-                                "Preserve Projection source and target occurrence-port order in the Spatial Route.",
-                            sourceTrace = route.sourceTrace,
-                        ),
-                    )
-                }
-                if (route.connectionId != connection.semanticId) {
-                    add(
-                        SpatialDiagnostic(
-                            subject = "Route ${route.routeId.value}",
-                            problem = "semantic Connection ${route.connectionId.value} does not equal Projection subject " +
-                                connection.semanticId.value,
-                            correction = "Preserve the canonical Projection semantic Connection on the Spatial Route.",
-                            sourceTrace = route.sourceTrace,
-                        ),
-                    )
+            connection.routeLegs().flatMap { leg ->
+                val projectionRouteId = connection.projectionId.value + leg.routeProjectionIdSuffix
+                val routeId = ConnectionRoutePlanId(sheet.sheetId.value, projectionRouteId)
+                val route = actualById[routeId].orEmpty().singleOrNull() ?: return@flatMap emptyList()
+                val expectedSource = SpatialAnchorId(
+                    sheet.sheetId.value,
+                    SpatialOccurrenceId(sheet.sheetId.value, leg.source.occurrenceId.value),
+                    leg.source.portId,
+                )
+                val expectedTarget = SpatialAnchorId(
+                    sheet.sheetId.value,
+                    SpatialOccurrenceId(sheet.sheetId.value, leg.target.occurrenceId.value),
+                    leg.target.portId,
+                )
+                buildList {
+                    if (route.sourceAnchorId != expectedSource || route.targetAnchorId != expectedTarget) {
+                        add(
+                            SpatialDiagnostic(
+                                subject = "Route ${route.routeId.value}",
+                                problem = "ordered route-leg Anchors do not equal Projection route leg " +
+                                    "${expectedSource.value} and ${expectedTarget.value}",
+                                correction =
+                                    "Preserve Projection route-leg occurrence-port order in the Spatial Route.",
+                                sourceTrace = route.sourceTrace,
+                            ),
+                        )
+                    }
+                    if (route.projectionConnectionId != connection.projectionId.value) {
+                        add(
+                            SpatialDiagnostic(
+                                subject = "Route ${route.routeId.value}",
+                                problem = "Projection Connection ${route.projectionConnectionId} does not equal " +
+                                    connection.projectionId.value,
+                                correction = "Preserve the canonical Projection Connection on every Spatial Route leg.",
+                                sourceTrace = route.sourceTrace,
+                            ),
+                        )
+                    }
+                    if (route.connectionId != connection.semanticId) {
+                        add(
+                            SpatialDiagnostic(
+                                subject = "Route ${route.routeId.value}",
+                                problem = "semantic Connection ${route.connectionId.value} does not equal Projection subject " +
+                                    connection.semanticId.value,
+                                correction = "Preserve the canonical Projection semantic Connection on the Spatial Route.",
+                                sourceTrace = route.sourceTrace,
+                            ),
+                        )
+                    }
                 }
             }
         }

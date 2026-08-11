@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "M45.product-proof",
+  "workspaceRoot": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter",
+  "sourcePath": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter\\src\\com\\engineeringood\\m45\\rollingshutter\\rolling-shutter.athena",
+  "viewports": [
+    {
+      "name": "desktop-1920x1080",
+      "width": 1920,
+      "height": 1080,
+      "ready": true,
+      "workspaceOpened": true,
+      "workspaceRoots": [
+        "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter"
+      ],
+      "repositoryLifecycle": "ready",
+      "repositoryRoot": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter",
+      "lspRepositoryRoot": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter",
+      "publicationState": "READY",
+      "sceneId": "scene:sha256:13268a3ba994c74172fa9182fa0665d6f5cee57d94796f2e102541584474ad32",
+      "sceneDigest": "sha256:8aa6835faee540f2d9d4f98dcf0249df5bf823b317b95b97dfc0e58b9e9fdad3",
+      "gridColumns": 17,
+      "gridRows": 16,
+      "occurrenceCount": 13,
+      "routeCount": 10,
+      "canvas": {
+        "width": 1384,
+        "height": 812,
+        "nonWhiteSamples": 1
+      },
+      "selectedProof": {
+        "sourceEditorCount": 2,
+        "sourceFile": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter\\src\\com\\engineeringood\\m45\\rollingshutter\\rolling-shutter.athena",
+        "selectedKind": "occurrence",
+        "selectedTraceId": "trace:sha256:ae2390e5f56f05999259ad32c07d16c4ddbe01ad402cf857c0b4ac5bd0f361a5",
+        "sourceDecorationCount": 1
+      },
+      "observed": {
+        "shell": true,
+        "host": true,
+        "healthyCenter": true,
+        "painted": true,
+        "nonWhite": 1,
+        "assetError": "",
+        "assetsReady": true,
+        "expectedAssetCount": 10,
+        "loadedAssetCount": 10,
+        "innerHeight": 952,
+        "hostHeight": 812,
+        "canvasCount": 3,
+        "notificationCount": 0
+      },
+      "screenshotPath": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m45\\screenshots\\m45-rolling-shutter-desktop-1920x1080.png"
+    },
+    {
+      "name": "narrow-720x900",
+      "width": 720,
+      "height": 900,
+      "ready": true,
+      "workspaceOpened": true,
+      "workspaceRoots": [
+        "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter"
+      ],
+      "repositoryLifecycle": "ready",
+      "repositoryRoot": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter",
+      "lspRepositoryRoot": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter",
+      "publicationState": "READY",
+      "sceneId": "scene:sha256:13268a3ba994c74172fa9182fa0665d6f5cee57d94796f2e102541584474ad32",
+      "sceneDigest": "sha256:8aa6835faee540f2d9d4f98dcf0249df5bf823b317b95b97dfc0e58b9e9fdad3",
+      "gridColumns": 17,
+      "gridRows": 16,
+      "occurrenceCount": 13,
+      "routeCount": 10,
+      "canvas": {
+        "width": 504,
+        "height": 750,
+        "nonWhiteSamples": 1
+      },
+      "selectedProof": {
+        "sourceEditorCount": 2,
+        "sourceFile": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\examples\\m45\\rolling-shutter\\src\\com\\engineeringood\\m45\\rollingshutter\\rolling-shutter.athena",
+        "selectedKind": "occurrence",
+        "selectedTraceId": "trace:sha256:460c56b52856e3d01f0abbb73f126cb7ea55adde57ebcdbeb29433d56aa498a9",
+        "sourceDecorationCount": 1
+      },
+      "observed": {
+        "shell": true,
+        "host": true,
+        "healthyCenter": true,
+        "painted": true,
+        "nonWhite": 1,
+        "assetError": "",
+        "assetsReady": true,
+        "expectedAssetCount": 10,
+        "loadedAssetCount": 10,
+        "innerHeight": 900,
+        "hostHeight": 750,
+        "canvasCount": 3,
+        "notificationCount": 0
+      },
+      "screenshotPath": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m45\\screenshots\\m45-rolling-shutter-narrow-720x900.png"
+    }
+  ]
+}

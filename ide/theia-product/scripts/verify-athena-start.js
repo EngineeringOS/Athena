@@ -91,8 +91,16 @@ async function main() {
 }
 
 async function verifyRepositorySession() {
-    const repositoryRoot = path.resolve(__dirname, '..', '..', '..', 'examples', 'm4', 'open-repository-proof');
-    const documentPath = path.join(repositoryRoot, 'src', 'com', 'engineeringood', 'factoryline', 'factoryline.athena');
+    const repositoryRoot = path.resolve(__dirname, '..', '..', '..', 'examples', 'm44', 'rolling-shutter');
+    const documentPath = path.join(
+        repositoryRoot,
+        'src',
+        'com',
+        'engineeringood',
+        'm44',
+        'rollingshutter',
+        'rolling-shutter.athena'
+    );
     const documentUri = pathToFileURL(documentPath).toString();
     const manager = new AthenaRepositorySessionManager();
 

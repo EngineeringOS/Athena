@@ -1,0 +1,11 @@
+packageId:
+  name: com.athena.iec
+  version: 1.0.0
+provenance:
+  source: curated-iec
+  license: IEC-reference
+exports:
+  symbols: [supply, breaker, contactor, overload, motor]
+  elements: [supply_element, breaker_element, contactor_element, overload_element, motor_element, starter_element]
+  parts: [generic_breaker, generic_contactor, generic_overload]
+  macros: [rolling_shutter_starter]

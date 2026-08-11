@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "M43.product-proof",
+  "repositoryRoot": "D:/Aaron/workspace/projects/2026/eos/Athena/examples/m43/rolling-shutter",
+  "sourcePath": "D:/Aaron/workspace/projects/2026/eos/Athena/examples/m43/rolling-shutter/src/com/engineeringood/m43/rollingshutter/rolling-shutter.athena",
+  "sheetPath": "D:/Aaron/workspace/projects/2026/eos/Athena/examples/m43/rolling-shutter/src/com/engineeringood/m43/rollingshutter/rolling-shutter.sheet.athena",
+  "projectionReality": {
+    "status": "ready",
+    "sheetCount": 1
+  },
+  "spatialReality": {
+    "gridColumns": 17,
+    "gridRows": 16,
+    "occurrenceCount": 8,
+    "routeCount": 7
+  },
+  "presentationReality": {
+    "title": "Rolling Shutter Control",
+    "viewports": [
+      {
+        "name": "desktop-1920x1080",
+        "requestedViewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "status": "ready",
+        "title": "Rolling Shutter Control",
+        "gridRows": 16,
+        "gridColumns": 17,
+        "occurrenceCount": 8,
+        "routeCount": 7,
+        "svgOccurrenceCount": 8,
+        "canvas": {
+          "width": 1200,
+          "height": 800
+        },
+        "sourceEditorCount": 1,
+        "viewport": {
+          "width": 1920,
+          "height": 1080
+        },
+        "traceInteraction": {
+          "selectedOccurrenceId": "schematic/sheet/rolling_shutter/occurrence/KM1",
+          "selected": true,
+          "sourceDecorationCount": 0
+        },
+        "screenshotPath": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m43\\m43-rolling-shutter-desktop-1920x1080.png"
+      },
+      {
+        "name": "mobile-720x900",
+        "requestedViewport": {
+          "width": 720,
+          "height": 900
+        },
+        "status": "ready",
+        "title": "Rolling Shutter Control",
+        "gridRows": 16,
+        "gridColumns": 17,
+        "occurrenceCount": 8,
+        "routeCount": 7,
+        "svgOccurrenceCount": 8,
+        "canvas": {
+          "width": 1200,
+          "height": 800
+        },
+        "sourceEditorCount": 1,
+        "viewport": {
+          "width": 720,
+          "height": 900
+        },
+        "traceInteraction": {
+          "selectedOccurrenceId": "schematic/sheet/rolling_shutter/occurrence/KM1",
+          "selected": true,
+          "sourceDecorationCount": 0
+        },
+        "screenshotPath": "D:\\Aaron\\workspace\\projects\\2026\\eos\\Athena\\_bmad-output\\implementation-artifacts\\m43\\m43-rolling-shutter-mobile-720x900.png"
+      }
+    ]
+  },
+  "sourceTraceInteraction": [
+    {
+      "selectedOccurrenceId": "schematic/sheet/rolling_shutter/occurrence/KM1",
+      "selected": true,
+      "sourceDecorationCount": 0
+    },
+    {
+      "selectedOccurrenceId": "schematic/sheet/rolling_shutter/occurrence/KM1",
+      "selected": true,
+      "sourceDecorationCount": 0
+    }
+  ]
+}

@@ -1,9 +1,0 @@
-{
-  "packageId": "com.athena.sample.representation.power.supply.iec",
-  "profile": "m32-iec",
-  "descriptorId": "descriptor.power-supply.iec",
-  "resourceId": "resource.power-supply.iec",
-  "anchors": ["lplus"],
-  "labelSlots": ["device-tag"],
-  "engineeringAuthority": false
-}

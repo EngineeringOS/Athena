@@ -82,9 +82,9 @@ data class RepositoryManifest(
  * The lock records the reproducibility-critical package resolution result in a stable typed form.
  */
 data class RepositoryLock(
-    val version: Int = 2,
-    val schema: String = "repository-lock-v2",
-    val compilerSchema: String = "athena-lock-v2",
+    val version: Int = 3,
+    val schema: String = "athena-lock-v3",
+    val compilerSchema: String = "athena-lock-v3-c14n-v1",
     val validatedLockStateDigest: String = "lock-state:unlocked",
     val primaryPackage: PackageIdentifier,
     val packages: List<ResolvedPackage> = emptyList(),
@@ -93,14 +93,34 @@ data class RepositoryLock(
     override val artifactRole: RepositoryArtifactRole = RepositoryArtifactRole.DERIVED_STATE
 }
 
-/** One package's immutable admitted snapshot evidence in `RepositoryLock` v2. */
+/** One package's immutable admitted facts in `athena-lock-v3`. */
 data class RepositoryLockedPackage(
     val packageId: PackageIdentifier,
     val sourceRoot: String,
-    val snapshotDigest: String,
+    val manifestDigest: String,
+    val itemDigests: List<RepositoryLockedItem> = emptyList(),
     val sourceHashes: List<RepositorySourceHash> = emptyList(),
     val resourceHashes: List<RepositoryResourceHash> = emptyList(),
     val directDependencies: List<PackageIdentifier> = emptyList(),
+    val semanticDependencies: List<RepositorySemanticDependency> = emptyList(),
+    val assetProfile: String = "svg-safe-1",
+)
+
+data class RepositoryLockedItem(
+    val itemId: String,
+    val itemVersion: String,
+    val kind: String,
+    val digest: String,
+    val sourcePath: String,
+    val resourceReferences: List<String> = emptyList(),
+    val attributes: Map<String, String> = emptyMap(),
+)
+
+data class RepositorySemanticDependency(
+    val contractKind: String,
+    val contractId: String,
+    val contractVersion: String,
+    val provider: PackageIdentifier,
 )
 
 /** Hash evidence for one admitted governed Athena source file. */

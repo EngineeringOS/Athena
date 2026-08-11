@@ -21,7 +21,7 @@ package com.engineeringood.athena.language.antlr;
 }
 
 sourceFile
-    : packageDecl? importDecl* (systemDecl | representationDecl+) EOF
+    : packageDecl? importDecl* (systemDecl | domainDecl | representationDecl+) EOF
     ;
 
 packageDecl
@@ -44,9 +44,113 @@ systemDecl
     : SYSTEM ident LBRACE declaration* RBRACE
     ;
 
+domainDecl
+    : DOMAIN ident LBRACE knowledgeDeclaration* RBRACE
+    ;
+
+knowledgeDeclaration
+    : conceptDecl
+    | partDecl
+    | capabilityDecl
+    | knowledgeRelationshipDecl
+    | flowDecl
+    | dimensionDecl
+    | unitDecl
+    | formulaDecl
+    | constraintDecl
+    ;
+
+conceptDecl
+    : CONCEPT ident LBRACE propertyAssignment* RBRACE
+    ;
+
+partDecl
+    : PART ident CONCEPT qualifiedReference LBRACE propertyAssignment* RBRACE
+    ;
+
+capabilityDecl
+    : CAPABILITY ident (PROVIDES | REQUIRES) LBRACE propertyAssignment* RBRACE
+    ;
+
+knowledgeRelationshipDecl
+    : RELATIONSHIP ident LBRACE relationshipMember* RBRACE
+    ;
+
+relationshipMember
+    : ROLE ident LEVEL subjectLevel (REQUIRES qualifiedReference)?
+    | CONNECTIVITY scalarValue
+    | propertyAssignment
+    ;
+
+subjectLevel
+    : ENTITY
+    | FUNCTION
+    | PORT
+    ;
+
+flowDecl
+    : FLOW ident RELATIONSHIP qualifiedReference SOURCE ident SINK ident (MEDIUM qualifiedReference)?
+    ;
+
+dimensionDecl
+    : DIMENSION ident BASES LBRACK qualifiedReference (COMMA qualifiedReference)* RBRACK
+    ;
+
+unitDecl
+    : UNIT ident DIMENSION qualifiedReference SCALE scalarValue (OFFSET scalarValue)?
+    ;
+
+formulaDecl
+    : FORMULA ident EQUAL formulaExpression
+    ;
+
+constraintDecl
+    : CONSTRAINT ident constraintPredicate
+    ;
+
+constraintPredicate
+    : formulaExpression comparisonOperator formulaExpression
+    | formulaExpression IN intervalLiteral
+    | ALL LBRACK constraintPredicate (COMMA constraintPredicate)* RBRACK
+    | ANY LBRACK constraintPredicate (COMMA constraintPredicate)* RBRACK
+    ;
+
+comparisonOperator
+    : GREATER
+    | GREATER_EQUAL
+    | LESS
+    | LESS_EQUAL
+    | EQUAL
+    | NOT_EQUAL
+    ;
+
+intervalLiteral
+    : (LBRACK | LPAREN) formulaExpression COMMA formulaExpression (RBRACK | RPAREN)
+    ;
+
+formulaExpression
+    : formulaExpression MULTIPLY formulaExpression
+    | formulaExpression DIVIDE formulaExpression
+    | formulaExpression PLUS formulaExpression
+    | formulaExpression MINUS formulaExpression
+    | MINIMUM LPAREN formulaExpression COMMA formulaExpression RPAREN
+    | MAXIMUM LPAREN formulaExpression COMMA formulaExpression RPAREN
+    | ROUND_UP LPAREN formulaExpression COMMA formulaExpression RPAREN
+    | formulaPrimary
+    ;
+
+formulaPrimary
+    : number
+    | qualifiedReference
+    | LPAREN formulaExpression RPAREN
+    ;
+
 declaration
     : entityDecl
     | portDecl
+    | connectionDecl
+    | netDecl
+    | connectionSpecificationDecl
     | relationDecl
     | evidenceDecl
     | projectionPolicyDecl
@@ -107,6 +211,39 @@ interfacePortMember
 
 portDecl
     : PORT qualifiedReference LBRACE propertyAssignment* RBRACE
+    ;
+
+connectionDecl
+    : CONNECT connectionKind qualifiedReference connectionSeparator qualifiedReference (LBRACE propertyAssignment* RBRACE)?
+    ;
+
+netDecl
+    : NET ident connectionKind LBRACE netMember* RBRACE
+    ;
+
+netMember
+    : SOURCE qualifiedReference
+    | SINK qualifiedReference
+    | PASS qualifiedReference
+    | SIGNAL qualifiedReference
+    | POTENTIAL qualifiedReference
+    | propertyAssignment
+    ;
+
+connectionSpecificationDecl
+    : CONNECTION_SPEC connectionSpecificationScope (qualifiedReference)? LBRACE propertyAssignment* RBRACE
+    ;
+
+connectionSpecificationScope
+    : PROJECT
+    | POTENTIAL
+    | SIGNAL
+    | NET
+    | CONNECTION
+    ;
+
+connectionKind
+    : ident (MINUS ident)?
     ;
 
 relationDecl
@@ -234,7 +371,7 @@ regionMember
     ;
 
 regionOccurrenceList
-    : (ident (COMMA ident)*)?
+    : (qualifiedReference (COMMA qualifiedReference)*)?
     ;
 
 readingOrderDecl
@@ -444,6 +581,9 @@ symbolDecl
 representationDecl
     : symbolDecl
     | elementDecl
+    | macroDecl
+    | variantDecl
+    | placeholderDecl
     | profileDecl
     | bindingDecl
     ;
@@ -480,15 +620,28 @@ bindingDecl
     ;
 
 bindingMember
-    : bindingProfileDecl
+    : bindingIdDecl
+    | bindingProjectionDecl
+    | bindingProfileDecl
     | priorityDecl
     | selectSubjectWhereDecl
     | useElementDecl
-    | variantDecl
+    | usePartDecl
+    | implementationRoleDecl
+    | bindingVariantDecl
+    | placeholderValuesDecl
     ;
 
 bindingProfileDecl
     : PROFILE ident
+    ;
+
+bindingIdDecl
+    : BINDING_ID STRING
+    ;
+
+bindingProjectionDecl
+    : PROJECTION ident
     ;
 
 priorityDecl
@@ -508,8 +661,80 @@ useElementDecl
     : USE ELEMENT STRING VERSION STRING
     ;
 
-variantDecl
+usePartDecl
+    : USE PART STRING VERSION STRING
+    ;
+
+implementationRoleDecl
+    : ROLE ident
+    ;
+
+bindingVariantDecl
     : VARIANT STRING
+    ;
+
+placeholderValuesDecl
+    : PLACEHOLDERS LBRACE propertyAssignment* RBRACE
+    ;
+
+macroDecl
+    : MACRO ident LBRACE macroMember* RBRACE
+    ;
+
+macroMember
+    : identityDecl
+    | versionDecl
+    | macroChildDecl
+    ;
+
+macroChildDecl
+    : CHILD ident LBRACE macroChildMember* RBRACE
+    ;
+
+macroChildMember
+    : macroElementRefDecl
+    | translateDecl
+    | rotateDecl
+    | macroFunctionSlotDecl
+    | implementationRoleDecl
+    ;
+
+macroElementRefDecl
+    : ELEMENT STRING
+    ;
+
+macroFunctionSlotDecl
+    : FUNCTION ident
+    ;
+
+variantDecl
+    : VARIANT ident LBRACE variantMember* RBRACE
+    ;
+
+variantMember
+    : identityDecl
+    | versionDecl
+    | macroElementRefDecl
+    | resourceDecl
+    ;
+
+placeholderDecl
+    : PLACEHOLDER ident LBRACE placeholderMember* RBRACE
+    ;
+
+placeholderMember
+    : identityDecl
+    | versionDecl
+    | placeholderTargetDecl
+    | placeholderTypeDecl
+    ;
+
+placeholderTargetDecl
+    : TARGET STRING
+    ;
+
+placeholderTypeDecl
+    : TYPE ident
     ;
 
 elementDecl
@@ -735,6 +960,7 @@ scalarValue
  */
 ident
     : IDENT
+    | CONNECT
     | SYSTEM
     | ENTITY
     | PORT
@@ -824,6 +1050,9 @@ ident
     | WHERE
     | USE
     | VARIANT
+    | MACRO
+    | PLACEHOLDER
+    | TYPE
     | CHILD
     | TRANSLATE
     | ROTATE
@@ -861,9 +1090,46 @@ ident
     | IN
     | OUT
     | BIDIRECTIONAL
+    | DOMAIN
+    | CONCEPT
+    | PART
+    | CAPABILITY
+    | PROVIDES
+    | REQUIRES
+    | RELATIONSHIP
+    | LEVEL
+    | CONNECTIVITY
+    | FLOW
+    | SOURCE
+    | SINK
+    | PASS
+    | NET
+    | CONNECTION_SPEC
+    | PROJECT
+    | POTENTIAL
+    | MEDIUM
+    | DIMENSION
+    | BASES
+    | UNIT
+    | SCALE
+    | OFFSET
+    | FORMULA
+    | CONSTRAINT
+    | ALL
+    | ANY
+    | MINIMUM
+    | MAXIMUM
+    | ROUND_UP
     ;
 
 SYSTEM : 'system' ;
+CONNECT : 'connect' ;
+CONNECTION : 'connection' ;
+CONNECTION_SPEC : 'connection-spec' ;
+NET : 'net' ;
+PROJECT : 'project' ;
+POTENTIAL : 'potential' ;
+PASS : 'pass' ;
 ENTITY : 'entity' ;
 PORT : 'port' ;
 FUNCTION : 'function' ;
@@ -941,6 +1207,7 @@ DEG270 : 'deg270' ;
 SYMBOL : 'symbol' ;
 ELEMENT : 'element' ;
 PROFILE : 'profile' ;
+BINDING_ID : 'id' ;
 BINDING : 'binding' ;
 PROJECTION : 'projection' ;
 STANDARD : 'standard' ;
@@ -951,6 +1218,10 @@ SELECT : 'select' ;
 WHERE : 'where' ;
 USE : 'use' ;
 VARIANT : 'variant' ;
+PLACEHOLDERS : 'placeholders' ;
+MACRO : 'macro' ;
+PLACEHOLDER : 'placeholder' ;
+TYPE : 'type' ;
 CHILD : 'child' ;
 TRANSLATE : 'translate' ;
 ROTATE : 'rotate' ;
@@ -992,6 +1263,39 @@ REF : 'ref' ;
 IN : 'in' ;
 OUT : 'out' ;
 BIDIRECTIONAL : 'bidirectional' ;
+DOMAIN : 'domain' ;
+CONCEPT : 'concept' ;
+PART : 'part' ;
+CAPABILITY : 'capability' ;
+PROVIDES : 'provides' ;
+REQUIRES : 'requires' ;
+RELATIONSHIP : 'relationship' ;
+LEVEL : 'level' ;
+CONNECTIVITY : 'connectivity' ;
+FLOW : 'flow' ;
+SOURCE : 'source' ;
+SINK : 'sink' ;
+MEDIUM : 'medium' ;
+DIMENSION : 'dimension' ;
+BASES : 'bases' ;
+UNIT : 'unit' ;
+OFFSET : 'offset' ;
+FORMULA : 'formula' ;
+CONSTRAINT : 'constraint' ;
+ALL : 'all' ;
+ANY : 'any' ;
+MINIMUM : 'min' ;
+MAXIMUM : 'max' ;
+ROUND_UP : 'round-up' ;
+PLUS : '+' ;
+MULTIPLY : '*' ;
+DIVIDE : '/' ;
+EQUAL : '=' ;
+NOT_EQUAL : '!=' ;
+GREATER_EQUAL : '>=' ;
+LESS_EQUAL : '<=' ;
+GREATER : '>' ;
+LESS : '<' ;
 TRUE : 'true' ;
 FALSE : 'false' ;
 REFERENCE_MARK : '@' ;

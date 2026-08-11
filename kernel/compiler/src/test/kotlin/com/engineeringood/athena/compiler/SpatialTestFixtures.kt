@@ -16,8 +16,8 @@ import com.engineeringood.athena.spatial.SpatialRegionId
 import com.engineeringood.athena.spatial.SpatialLane
 import com.engineeringood.athena.spatial.SpatialLaneId
 import com.engineeringood.athena.spatial.SpatialLaneOrientation
-import com.engineeringood.athena.spatial.SpatialRoute
-import com.engineeringood.athena.spatial.SpatialRouteId
+import com.engineeringood.athena.spatial.ConnectionRoutePlan
+import com.engineeringood.athena.spatial.ConnectionRoutePlanId
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 import com.engineeringood.athena.spatial.SpatialAlignment
 import com.engineeringood.athena.spatial.SpatialConstructGeometry
@@ -83,10 +83,10 @@ internal fun testSpatialAnchor(
     )
 }
 
-internal fun testSpatialRouteId(
-    projectionConnectionId: String,
+internal fun testConnectionRoutePlanId(
+    projectionRouteId: String,
     sheetId: String = TEST_SPATIAL_SHEET_ID,
-): SpatialRouteId = SpatialRouteId(sheetId, projectionConnectionId)
+): ConnectionRoutePlanId = ConnectionRoutePlanId(sheetId, projectionRouteId)
 
 internal fun testSpatialLaneId(
     orientation: SpatialLaneOrientation = SpatialLaneOrientation.HORIZONTAL,
@@ -106,13 +106,14 @@ internal fun testSpatialLane(
         sheetId = sheetId,
         orientation = orientation,
         coordinate = coordinate,
-        routeIds = routeIds.map { routeId -> testSpatialRouteId(routeId, sheetId) },
+        routeIds = routeIds.map { routeId -> testConnectionRoutePlanId(routeId, sheetId) },
     )
 }
 
-internal fun testSpatialRoute(
+internal fun testConnectionRoutePlan(
     routeId: String,
     connectionId: String,
+    projectionConnectionId: String = routeId,
     sourceAnchorId: SpatialAnchorId,
     targetAnchorId: SpatialAnchorId,
     points: List<SpatialPoint>,
@@ -122,6 +123,7 @@ internal fun testSpatialRoute(
         projectionIds = listOf(
             sheetId,
             routeId,
+            projectionConnectionId,
             sourceAnchorId.occurrenceId.projectionId,
             sourceAnchorId.portId.value,
             targetAnchorId.occurrenceId.projectionId,
@@ -129,10 +131,11 @@ internal fun testSpatialRoute(
         ),
         geometryElementIds = listOf(GeometryElementId("geometry:$routeId")),
     ),
-): SpatialRoute = SpatialRoute(
-    routeId = testSpatialRouteId(routeId, sheetId),
+): ConnectionRoutePlan = ConnectionRoutePlan(
+    routeId = testConnectionRoutePlanId(routeId, sheetId),
     sheetId = sheetId,
     connectionId = StableSemanticIdentity(connectionId),
+    projectionConnectionId = projectionConnectionId,
     sourceAnchorId = sourceAnchorId,
     targetAnchorId = targetAnchorId,
     laneId = laneId,
@@ -162,7 +165,7 @@ internal fun testSpatialSheet(
     alignments: List<SpatialAlignment> = emptyList(),
     anchors: List<SpatialAnchorPosition> = emptyList(),
     lanes: List<SpatialLane> = emptyList(),
-    routes: List<SpatialRoute> = emptyList(),
+    routes: List<ConnectionRoutePlan> = emptyList(),
     gridReferences: List<SpatialGridReference> = emptyList(),
     qualityMetrics: SpatialQualityMetrics = zeroSpatialQualityMetrics(),
 ): SpatialSheet {
@@ -201,7 +204,7 @@ internal fun testSpatialSheet(
                     constructs.map(SpatialConstructGeometry::sourceTrace) +
                     alignments.map(SpatialAlignment::sourceTrace) +
                     anchors.map(SpatialAnchorPosition::sourceTrace) +
-                    routes.map(SpatialRoute::sourceTrace) +
+                    routes.map(ConnectionRoutePlan::sourceTrace) +
                     gridReferences.map(SpatialGridReference::sourceTrace),
             ),
         ),

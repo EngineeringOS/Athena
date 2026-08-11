@@ -7,7 +7,6 @@
 ## 模块
 
 - `:integrations:scm-git` -> [`scm-git/`](scm-git/README.zh-CN.md)
-- `node: graph-glsp` -> [`graph-glsp/`](graph-glsp/README.zh-CN.md)
 
 ## 边界
 

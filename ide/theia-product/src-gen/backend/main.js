@@ -59,6 +59,10 @@ globalThis.extensionInfo = [
         "version": "1.73.1"
     },
     {
+        "name": "@engineeringood/athena-theia-frontend",
+        "version": "0.0.1"
+    },
+    {
         "name": "@theia/ai-core",
         "version": "1.73.1"
     },
@@ -133,10 +137,6 @@ globalThis.extensionInfo = [
     {
         "name": "@theia/ai-ide",
         "version": "1.73.1"
-    },
-    {
-        "name": "@engineeringood/athena-theia-frontend",
-        "version": "0.0.1"
     },
     {
         "name": "@theia/ai-ollama",

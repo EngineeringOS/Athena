@@ -3,7 +3,7 @@ package com.engineeringood.athena.spatial
 internal fun spatialRoutingDiagnostics(sheet: SpatialSheet): List<SpatialDiagnostic> {
     val occurrencesById = sheet.occurrences.groupBy(SpatialOccurrenceGeometry::occurrenceId)
     val anchorsById = sheet.anchors.groupBy(SpatialAnchorPosition::anchorId)
-    val routesById = sheet.routes.groupBy(SpatialRoute::routeId)
+    val routesById = sheet.routes.groupBy(ConnectionRoutePlan::routeId)
     val lanesById = sheet.lanes.groupBy(SpatialLane::laneId)
     return buildList {
         anchorsById.filterValues { matches -> matches.size > 1 }.forEach { (anchorId, matches) ->
@@ -22,7 +22,7 @@ internal fun spatialRoutingDiagnostics(sheet: SpatialSheet): List<SpatialDiagnos
                     subject = "Route ${routeId.value}",
                     problem = "has ${matches.size} facts with the same identity",
                     correction = "Publish exactly one Route for each visible Projection Connection.",
-                    traces = matches.map(SpatialRoute::sourceTrace),
+                    traces = matches.map(ConnectionRoutePlan::sourceTrace),
                 ),
             )
         }
@@ -84,7 +84,8 @@ internal fun spatialRoutingDiagnostics(sheet: SpatialSheet): List<SpatialDiagnos
             }
             val requiredTrace = listOf(
                 route.sheetId,
-                route.routeId.projectionConnectionId,
+                route.routeId.projectionRouteId,
+                route.projectionConnectionId,
                 route.sourceAnchorId.occurrenceId.projectionId,
                 route.sourceAnchorId.portId.value,
                 route.targetAnchorId.occurrenceId.projectionId,
@@ -94,8 +95,8 @@ internal fun spatialRoutingDiagnostics(sheet: SpatialSheet): List<SpatialDiagnos
                 add(
                     SpatialDiagnostic(
                         subject = "Route ${route.routeId.value}",
-                        problem = "Source Trace does not retain Sheet, Connection, and endpoint occurrence-port order",
-                        correction = "Publish the six required Route trace positions in source-to-target order, including repeats.",
+                        problem = "Source Trace does not retain Sheet, Route, Connection, and endpoint occurrence-port order",
+                        correction = "Publish the seven required Route trace positions in source-to-target order, including repeats.",
                         sourceTrace = route.sourceTrace,
                     ),
                 )
@@ -241,7 +242,7 @@ private fun SpatialAnchorPosition.matchesBoundary(rectangle: SpatialRect): Boole
 
 private fun SpatialRect.contains(point: SpatialPoint): Boolean = point.x in x..right && point.y in y..bottom
 
-private fun SpatialRouteSegment.entersInterior(rectangle: SpatialRect): Boolean = when {
+private fun ConnectionRouteSegment.entersInterior(rectangle: SpatialRect): Boolean = when {
     start.y == end.y -> start.y > rectangle.y && start.y < rectangle.bottom &&
         maxOf(start.x, end.x) > rectangle.x && minOf(start.x, end.x) < rectangle.right
     start.x == end.x -> start.x > rectangle.x && start.x < rectangle.right &&
@@ -254,7 +255,7 @@ private fun SpatialLane.isInside(drawingArea: SpatialRect): Boolean = when (orie
     SpatialLaneOrientation.VERTICAL -> coordinate in drawingArea.x..drawingArea.right
 }
 
-private fun SpatialRoute.uses(lane: SpatialLane): Boolean = segments.any { segment ->
+private fun ConnectionRoutePlan.uses(lane: SpatialLane): Boolean = segments.any { segment ->
     segment.isPositiveOrthogonal && when (lane.orientation) {
         SpatialLaneOrientation.HORIZONTAL -> segment.start.y == segment.end.y && segment.start.y == lane.coordinate
         SpatialLaneOrientation.VERTICAL -> segment.start.x == segment.end.x && segment.start.x == lane.coordinate

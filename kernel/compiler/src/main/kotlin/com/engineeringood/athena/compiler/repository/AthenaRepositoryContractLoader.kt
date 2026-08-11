@@ -101,13 +101,7 @@ class AthenaRepositoryContractLoader {
         } else {
             null
         }
-        val representationPackageRoots = if (manifestPresent && Files.isRegularFile(manifestPath)) {
-            readRepresentationPackageRoots(readManifestLines(manifestPath))
-                .map { relativeRoot -> normalizeRoot(normalizedRepositoryRoot.resolve(relativeRoot)) }
-                .toSet()
-        } else {
-            emptySet()
-        }
+        val localPackageCatalog = discoverLocalPackageCatalog(normalizedRepositoryRoot, diagnostics)
 
         if (manifest == null) {
             return AthenaRepositoryContractValidationResult(
@@ -134,14 +128,8 @@ class AthenaRepositoryContractLoader {
         diagnostics += validateSourceRootLayout(
             repositoryRoot = normalizedRepositoryRoot,
             sourceRoot = manifest.primaryPackage.sourceRoot,
-            excludedGovernedRoots = excludedGovernedRoots + representationPackageRoots,
+            excludedGovernedRoots = excludedGovernedRoots,
         )
-        representationPackageRoots.forEach { representationPackageRoot ->
-            diagnostics += validateGovernedSourcePackageHierarchy(
-                repositoryRoot = normalizedRepositoryRoot,
-                governedRoot = representationPackageRoot,
-            )
-        }
 
         return AthenaRepositoryContractValidationResult(
             repositoryRoot = normalizedRepositoryRoot,
@@ -153,7 +141,7 @@ class AthenaRepositoryContractLoader {
                 manifest = manifest,
                 lock = null,
             ),
-            representationPackageRoots = representationPackageRoots,
+            localPackageCatalog = localPackageCatalog,
             diagnostics = diagnostics,
         )
     }
@@ -255,27 +243,90 @@ class AthenaRepositoryContractLoader {
         return primaryPackageEntries.ifEmpty { null }
     }
 
-    private fun readRepresentationPackageRoots(manifestLines: List<ManifestLine>): List<String> {
-        val roots = mutableListOf<String>()
-        var insideRepresentationPackageRoots = false
-        manifestLines.forEach { line ->
-            if (line.indent == 0) {
-                insideRepresentationPackageRoots = line.trimmed == "representationPackageRoots:"
-                return@forEach
-            }
-            if (!insideRepresentationPackageRoots || line.indent < 2 || !line.trimmed.startsWith("-")) {
-                return@forEach
-            }
-            val root = line.trimmed.removePrefix("-").trim().unquote()
-            if (root.isNotBlank() &&
-                !root.startsWith("/") &&
-                !root.contains('\\') &&
-                !root.split('/').any { segment -> segment.isBlank() || segment == ".." }
-            ) {
-                roots += root
-            }
+    private fun discoverLocalPackageCatalog(
+        repositoryRoot: Path,
+        diagnostics: MutableList<RepositoryDiagnostic>,
+    ): List<LocalPackageCatalogEntry> {
+        val packagesRoot = repositoryRoot.resolve("packages")
+        if (Files.isSymbolicLink(packagesRoot)) {
+            diagnostics += diagnostic(
+                "repository.catalog.root.symlink-forbidden",
+                "Package catalog `packages` must be a real directory inside the repository; replace the symbolic link with a project-local directory.",
+            )
+            return emptyList()
         }
-        return roots.distinct().sorted()
+        if (!Files.isDirectory(packagesRoot)) return emptyList()
+        val entries = mutableListOf<LocalPackageCatalogEntry>()
+        Files.list(packagesRoot).use { children ->
+            children.filter(Files::isDirectory)
+                .sorted(compareBy { it.fileName.toString() })
+                .forEach { packageRoot ->
+                    if (Files.isSymbolicLink(packageRoot)) {
+                        diagnostics += diagnostic(
+                            "repository.catalog.package-root.symlink-forbidden",
+                            "Package `${packageRoot.fileName}` must be a real direct child of `packages`; replace the symbolic link with project-local package files.",
+                        )
+                        return@forEach
+                    }
+                    val packageManifest = packageRoot.resolve("package.yaml")
+                    if (!Files.isRegularFile(packageManifest, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+                        diagnostics += diagnostic(
+                            "repository.catalog.package-manifest.missing",
+                            "Package directory `${repositoryRoot.relativize(packageRoot).toDisplayPath()}` must contain `package.yaml`.",
+                        )
+                        return@forEach
+                    }
+                    val parsedManifest = LocalPackageManifestParser.parse(packageManifest)
+                    if (parsedManifest is LocalPackageManifestParseResult.Failure) {
+                        diagnostics += diagnostic(
+                            "repository.catalog.package-manifest.malformed",
+                            "Package manifest `${repositoryRoot.relativize(packageManifest).toDisplayPath()}` is invalid: ${parsedManifest.problem} Correct its YAML and `packageId` mapping.",
+                        )
+                        return@forEach
+                    }
+                    val packageId = (parsedManifest as LocalPackageManifestParseResult.Success).packageId
+                    val name = packageId.name
+                    val version = packageId.version
+                    val directoryName = packageRoot.fileName.toString()
+                    if (!PACKAGE_NAME_PATTERN.matches(name)) {
+                        diagnostics += diagnostic(
+                            "repository.catalog.package-id.invalid",
+                            "Package manifest `${repositoryRoot.relativize(packageManifest).toDisplayPath()}` must declare valid `packageId.name`.",
+                        )
+                        return@forEach
+                    }
+                    if (name != directoryName) {
+                        diagnostics += diagnostic(
+                            "repository.catalog.package-id.directory-mismatch",
+                            "Package directory `$directoryName` must match manifest package id `$name`.",
+                        )
+                        return@forEach
+                    }
+                    if (version.isNullOrBlank()) {
+                        diagnostics += diagnostic(
+                            "repository.catalog.package-version.missing",
+                            "Package `$name` must declare `packageId.version`.",
+                        )
+                        return@forEach
+                    }
+                    Files.walk(packageRoot).use { files ->
+                        files.filter { Files.isRegularFile(it) && it.fileName.toString() == "package.yaml" }
+                            .filter { it != packageManifest }
+                            .findFirst().ifPresent {
+                                diagnostics += diagnostic(
+                                    "repository.catalog.package-manifest.nested-forbidden",
+                                    "Package `${repositoryRoot.relativize(packageRoot).toDisplayPath()}` may contain only direct `package.yaml` manifest.",
+                                )
+                            }
+                    }
+                    entries += LocalPackageCatalogEntry(
+                        packageId = packageId,
+                        packageRoot = packageRoot,
+                        manifestPath = packageManifest,
+                    )
+                }
+        }
+        return entries.sortedWith(compareBy({ it.packageId.name }, { it.packageId.version.orEmpty() }))
     }
 
     private fun parseDependencies(
@@ -577,11 +628,13 @@ class AthenaRepositoryContractLoader {
         sourceRootPath: Path,
         excludedGovernedRoots: Set<Path>,
     ): List<RepositoryDiagnostic> {
+        val packageSourceRoots = localPackageSourceRoots(repositoryRoot)
         Files.walk(repositoryRoot).use { candidates ->
             return candidates
                 .filter { candidate -> candidate.isRegularFile() }
                 .filter { candidate -> candidate.extension.equals("athena", ignoreCase = true) }
                 .filter { candidate -> !candidate.startsWith(sourceRootPath) }
+                .filter { candidate -> packageSourceRoots.none { root -> candidate.startsWith(root) } }
                 .filter { candidate -> !candidate.isDerivedRepositoryState(repositoryRoot) }
                 .filter { candidate -> !candidate.isWithinAny(excludedGovernedRoots) }
                 .sorted(compareBy(::stablePathKey))
@@ -591,6 +644,20 @@ class AthenaRepositoryContractLoader {
                         message = "Authored `.athena` source must live under `${sourceRootPath.fileName}/`: ${repositoryRoot.relativize(candidate).toDisplayPath()}",
                     )
                 }
+                .collect(Collectors.toList())
+        }
+    }
+
+    /** Direct local packages own their own governed source root; all other source stays under root src. */
+    private fun localPackageSourceRoots(repositoryRoot: Path): List<Path> {
+        val packagesRoot = repositoryRoot.resolve("packages")
+        if (!Files.isDirectory(packagesRoot) || Files.isSymbolicLink(packagesRoot)) return emptyList()
+        Files.list(packagesRoot).use { children ->
+            return children
+                .filter { candidate -> Files.isDirectory(candidate) && !Files.isSymbolicLink(candidate) }
+                .map { candidate -> candidate.resolve("src") }
+                .filter { candidate -> Files.isDirectory(candidate) && !Files.isSymbolicLink(candidate) }
+                .map { candidate -> candidate.toAbsolutePath().normalize() }
                 .collect(Collectors.toList())
         }
     }

@@ -30,6 +30,10 @@ data class EngineeringDocument(
     val externalEvidence: List<EngineeringExternalEvidenceMapping> = emptyList(),
     val projectionPolicies: List<EngineeringProjectionPolicy> = emptyList(),
     val projectionViews: List<EngineeringProjectionView> = emptyList(),
+    /** Source-owned binary connectivity facts. Multi-endpoint Nets arrive in the next contract. */
+    val connections: List<EngineeringConnection> = emptyList(),
+    val nets: List<EngineeringNet> = emptyList(),
+    val connectionSpecifications: List<EngineeringConnectionSpecification> = emptyList(),
 )
 
 /** Canonical semantic representation of the authored system root. */

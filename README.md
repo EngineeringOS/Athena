@@ -50,7 +50,6 @@ The implemented scope currently includes:
 - deterministic semantic commit-intent generation that keeps adapter-ready commit preparation semantic-first, inspectable, and free of Git-specific staging nouns
 - package-aware semantic history and release-relevance contracts anchored to stable package identity and version meaning
 - runtime/LSP/Theia semantic SCM projection that exposes baseline-driven review, commit-preparation, package evolution, and release-relevance state through the existing Athena workbench without moving semantic authority into the frontend
-- the first `integrations/graph-glsp` translation-only graph adapter boundary that consumes Athena-owned projection-session payloads without adding a second semantic transport
 - a unified M8 mutation model where source and graph now share runtime-owned mutation categories, graph semantic mutation proof, graph projection mutation proof, shared semantic review facts, and canonical reveal across source, graph, and semantic SCM
 
 This is not the final UX phase yet.
@@ -65,7 +64,6 @@ Athena now groups implementation assets by architectural role. The current JVM/G
 | `ide` | `node: theia-frontend` | [`ide/theia-frontend/`](ide/theia-frontend/README.md) | Theia frontend contributions, workbench composition, panels, and commands |
 | `ide` | `node: theia-backend` | [`ide/theia-backend/`](ide/theia-backend/README.md) | Theia backend contributions, startup, path handling, and process orchestration |
 | `ide` | `gradle: :ide:lsp` | [`ide/lsp/`](ide/lsp/README.md) | Athena LSP host and JVM semantic-service boundary for the IDE path |
-| `integrations` | `node: graph-glsp` | [`integrations/graph-glsp/`](integrations/graph-glsp/README.md) | Translation-only graph adapter that keeps GLSP-class protocol and rendering vocabulary downstream of Athena-owned projection sessions |
 | `integrations` | `:integrations:scm-git` | [`integrations/scm-git/`](integrations/scm-git/README.md) | First vendor substrate adapter for semantic baseline loading |
 | `kernel` | `:kernel:language` | [`kernel/language/`](kernel/language/README.md) | Syntax layer and parser for authored DSL text |
 | `kernel` | `:kernel:repository-model` | [`kernel/repository-model/`](kernel/repository-model/README.md) | Canonical M5 repository/package contract boundary for manifest, lock, package identity, and package graph reports |

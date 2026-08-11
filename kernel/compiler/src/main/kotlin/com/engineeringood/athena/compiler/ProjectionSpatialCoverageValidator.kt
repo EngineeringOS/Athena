@@ -8,7 +8,7 @@ import com.engineeringood.athena.spatial.SpatialDocument
 import com.engineeringood.athena.spatial.SpatialGridReference
 import com.engineeringood.athena.spatial.SpatialOccurrenceGeometry
 import com.engineeringood.athena.spatial.SpatialRegionGeometry
-import com.engineeringood.athena.spatial.SpatialRoute
+import com.engineeringood.athena.spatial.ConnectionRoutePlan
 
 internal class ProjectionSpatialCoverageValidator(
     planner: ProjectionPlacementPlanner = ProjectionPlacementPlanner(),
@@ -121,9 +121,9 @@ internal class ProjectionSpatialCoverageValidator(
                     exactCoverage(
                         expectations = routeExpectations,
                         actual = routes,
-                        actualKey = SpatialRoute::routeId,
+                        actualKey = ConnectionRoutePlan::routeId,
                         actualSubject = { route -> "Route ${route.routeId.value}" },
-                        actualTrace = SpatialRoute::sourceTrace,
+                        actualTrace = ConnectionRoutePlan::sourceTrace,
                         factName = "Route",
                         expectedCorrection =
                             "Publish exactly one Sheet-qualified Route for every visible Projection Connection.",

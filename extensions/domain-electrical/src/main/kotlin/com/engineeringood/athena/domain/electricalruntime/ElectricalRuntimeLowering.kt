@@ -1,6 +1,7 @@
 package com.engineeringood.athena.domain.electricalruntime
 
 import com.engineeringood.athena.language.EntityDeclaration
+import com.engineeringood.athena.language.ConnectionDeclaration
 import com.engineeringood.athena.language.ExternalEvidenceDeclaration
 import com.engineeringood.athena.language.GridDeclaration
 import com.engineeringood.athena.language.InstallationDeclaration
@@ -34,6 +35,9 @@ internal fun lowerElectricalRuntime(context: AthenaDomainLoweringContext): Athen
                 portDeclarations += declaration.nestedFunctions.flatMap { function -> function.nestedPorts }
             }
             is PortDeclaration -> portDeclarations += declaration
+            is ConnectionDeclaration -> Unit
+            is com.engineeringood.athena.language.NetDeclaration -> Unit
+            is com.engineeringood.athena.language.ConnectionSpecificationDeclaration -> Unit
             is RelationDeclaration -> Unit
             is ExternalEvidenceDeclaration -> Unit
             is ProjectionPolicyDeclaration -> Unit

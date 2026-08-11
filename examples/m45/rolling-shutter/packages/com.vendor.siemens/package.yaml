@@ -1,0 +1,12 @@
+packageId:
+  name: com.vendor.siemens
+  version: 1.0.0
+provenance:
+  source: curated-vendor
+  license: vendor-reference
+exports:
+  symbols: [siemens_contactor]
+  elements: [siemens_contactor_element]
+  parts: [siemens_3rt2026, siemens_3ru2116]
+  variants: [contactor_main, contactor_coil, contactor_auxiliary]
+  placeholders: [label]

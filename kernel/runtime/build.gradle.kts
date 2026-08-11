@@ -10,15 +10,16 @@ dependencies {
     implementation(project(":kernel:semantic-scm"))
     implementation(project(":kernel:spatial-model"))
     implementation(project(":kernel:engineering-model"))
+    implementation(project(":kernel:connection-model"))
     implementation(project(":kernel:geometry-model"))
     implementation(project(":kernel:language"))
     implementation(project(":kernel:layout-model"))
     implementation(project(":kernel:physical-model"))
     implementation(project(":kernel:projection-model"))
     implementation(project(":kernel:validation"))
+    implementation(project(":kernel:knowledge-model"))
 
     testImplementation(project(":integrations:scm-git"))
     testImplementation(project(":extensions:domain-dummy"))
     testImplementation(project(":extensions:domain-electrical"))
 }
-

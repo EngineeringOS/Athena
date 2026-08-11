@@ -3,7 +3,6 @@ package com.engineeringood.athena.ide.lsp
 import com.engineeringood.athena.compiler.AthenaCompiler
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DocumentSymbolParams
-import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.SymbolKind
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.eclipse.lsp4j.TextDocumentItem
@@ -13,7 +12,6 @@ import kotlin.test.assertEquals
 
 class AthenaPackageAwareSymbolsTest {
     @Test
-    @Suppress("DEPRECATION")
     fun `document symbols expose package root for package aware source units`() {
         val consumerText = """
             package com.root
@@ -46,11 +44,7 @@ class AthenaPackageAwareSymbolsTest {
 
         val server = AthenaLanguageServer()
         try {
-            server.initialize(
-                InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
+            server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
             val consumerUri = consumerPath.toUri().toString()
             server.textDocumentService.didOpen(

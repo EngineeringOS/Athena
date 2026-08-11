@@ -1,0 +1,1 @@
+{"sceneId": "scene:sha256:1111111111111111111111111111111111111111111111111111111111111111", "viewport": {"width": 1600, "height": 1000}, "cssDpr": 1, "waitFor": ["READY", "assets", "document.fonts.ready", "two-animation-frames"]}

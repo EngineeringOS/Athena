@@ -1,5 +1,0 @@
-system MachineNo000 {
-  layout schematic-sheet {
-    align HMI1 aligned-with PLC1 axis diagonal
-  }
-}

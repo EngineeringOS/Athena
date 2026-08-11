@@ -102,6 +102,7 @@ module.exports = (async () => {
         await load(container, import('@theia/outline-view/lib/browser/outline-view-frontend-module'));
         await load(container, import('@theia/monaco/lib/browser/monaco-frontend-module'));
         await load(container, import('@theia/output/lib/browser/output-frontend-module'));
+        await load(container, import('@engineeringood/athena-theia-frontend/lib/browser/athena-frontend-module'));
         await load(container, import('@theia/ai-core/lib/browser/ai-core-frontend-module'));
         await load(container, import('@theia/process/lib/common/process-common-module'));
         await load(container, import('@theia/file-search/lib/browser/file-search-frontend-module'));
@@ -122,7 +123,6 @@ module.exports = (async () => {
         await load(container, import('@theia/scm/lib/browser/scm-frontend-module'));
         await load(container, import('@theia/search-in-workspace/lib/browser/search-in-workspace-frontend-module'));
         await load(container, import('@theia/ai-ide/lib/browser/frontend-module'));
-        await load(container, import('@engineeringood/athena-theia-frontend/lib/browser/athena-frontend-module'));
         await load(container, import('@theia/ai-ollama/lib/browser/ollama-frontend-module'));
         await load(container, import('@theia/ai-openai/lib/browser/openai-frontend-module'));
         await load(container, import('@theia/keymaps/lib/browser/keymaps-frontend-module'));

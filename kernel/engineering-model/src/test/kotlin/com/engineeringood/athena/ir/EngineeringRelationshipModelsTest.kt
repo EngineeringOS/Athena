@@ -51,4 +51,29 @@ class EngineeringRelationshipModelsTest {
         assertEquals("relationship:supplies:KM1:M1", flow.relationship.resolvedIdentity?.value)
         assertEquals("consumer", flow.sinkRole)
     }
+
+    @Test
+    fun unresolvedSubjectRemainsExplicitlyUnresolved() {
+        val reference = EngineeringReference(listOf("Q1"), null, provenance)
+        val subject = EngineeringSubjectReference.Unresolved(reference)
+
+        assertEquals(listOf("Q1"), subject.reference.authoredPath)
+        val relationship = EngineeringRelationship(
+                id = StableSemanticIdentity("relationship:protects:Q1:M1"),
+                definitionReference = EngineeringDefinitionReference(listOf("protects"), null, provenance),
+                participants = listOf(
+                    EngineeringParticipant("protector", subject, provenance),
+                    EngineeringParticipant(
+                        "protected",
+                        EngineeringSubjectReference.Entity(
+                            EngineeringEntityReference(EngineeringReference(listOf("M1"), StableSemanticIdentity("entity:M1"), provenance)),
+                        ),
+                        provenance,
+                    ),
+                ),
+                properties = emptyList(),
+                provenance = provenance,
+            )
+        assertEquals(true, relationship.participants.first().subject is EngineeringSubjectReference.Unresolved)
+    }
 }

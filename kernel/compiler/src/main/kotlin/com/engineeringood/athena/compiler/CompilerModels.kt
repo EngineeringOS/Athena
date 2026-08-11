@@ -1,10 +1,8 @@
 package com.engineeringood.athena.compiler
 
-import com.engineeringood.athena.compiler.boundary.AthenaBoundaryValidationReport
-import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeArtifactKind
-import com.engineeringood.athena.compiler.knowledge.AthenaCompilationKnowledgeContext
-import com.engineeringood.athena.compiler.knowledge.AthenaKnowledgeProvenance
+import com.engineeringood.athena.connection.ConnectionDocument
 import com.engineeringood.athena.ir.EngineeringDocument
+import com.engineeringood.athena.language.SheetCompanionSource
 import com.engineeringood.athena.language.SourceFileAst
 import com.engineeringood.athena.plugin.AthenaDomainValidationAttribution
 import com.engineeringood.athena.projection.ProjectionDocument
@@ -66,32 +64,9 @@ data class CompilerSyntaxDiagnostic(
 /** Unified compiler entry-path result that carries parse, lowering, and validation outcomes. */
 sealed interface CompilerCompilationResult
 
-/** Stable metadata reference for one governed knowledge artifact that may be attributed to a compiler-facing result. */
-data class CompilerKnowledgeArtifactReference(
-    val artifactId: String,
-    val artifactKind: AthenaKnowledgeArtifactKind,
-    val artifactVersion: String,
-    val provenance: AthenaKnowledgeProvenance,
-)
-
-/** Compiler-facing result targets that may carry governed knowledge attribution metadata. */
-enum class CompilerKnowledgeAttributionTarget {
-    KNOWLEDGE_CONTEXT,
-    SEMANTIC_RESULT,
-}
-
-/** Explicit governed knowledge attribution metadata for one compiler-facing result target. */
-data class CompilerKnowledgeAttribution(
-    val target: CompilerKnowledgeAttributionTarget,
-    val responsibleArtifacts: List<CompilerKnowledgeArtifactReference>,
-    val rationale: String,
-)
-
 /** Unified compiler failure when source parsing did not complete successfully. */
 data class CompilerCompilationParseFailure(
     val diagnostics: List<CompilerSyntaxDiagnostic>,
-    val knowledgeContext: AthenaCompilationKnowledgeContext,
-    val boundaryValidation: AthenaBoundaryValidationReport,
     val pipeline: CompilerPipelineReport,
 ) : CompilerCompilationResult
 
@@ -131,15 +106,15 @@ data class CompilerCompilationSuccess(
     val source: CompilerSourceDocument,
     val document: EngineeringDocument,
     val semanticResult: SemanticValidationResult,
+    val sheetCompanion: SheetCompanionSource? = null,
     val validationBreakdown: CompilerValidationBreakdown = CompilerValidationBreakdown(),
     val projections: List<ProjectionDocument> = emptyList(),
     val projectionDiagnostics: List<String> = emptyList(),
     val spatialDocuments: CompilerSpatialDocuments = CompilerSpatialDocuments.empty(),
     val realityTransformationDiagnostics: List<RealityTransformationDiagnostic> = emptyList(),
-    val knowledgeContext: AthenaCompilationKnowledgeContext,
-    val boundaryValidation: AthenaBoundaryValidationReport,
-    val knowledgeAttributions: List<CompilerKnowledgeAttribution>,
     val pipeline: CompilerPipelineReport,
+    val connectionIr: ConnectionDocument? = null,
+    val connectionIrDiagnostics: List<String> = emptyList(),
 ) : CompilerCompilationResult
 
 /**

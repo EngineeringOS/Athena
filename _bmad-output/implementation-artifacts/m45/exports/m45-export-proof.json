@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "source": "examples/m45/rolling-shutter",
+  "svg": {
+    "path": "_bmad-output/implementation-artifacts/m45/exports/m45-rolling-shutter.svg",
+    "digest": "sha256:e3b7c61995e4cacec4e8c46d21180413319b3e5ad43dece61e924263ecc60ff1",
+    "bytes": 9122,
+    "viewBox": "0 0 99 70"
+  },
+  "png": {
+    "path": "_bmad-output/implementation-artifacts/m45/exports/m45-rolling-shutter.png",
+    "digest": "sha256:9ed0d24fa002a21355e9b0cc6751f7d8afab2d235879f9b912c844220db24f04",
+    "bytes": 24208,
+    "width": 1700,
+    "height": 1600,
+    "repeatedBytesIdentical": true
+  },
+  "visualFacts": {
+    "admittedOccurrenceImages": 13,
+    "technicalRoutes": 10,
+    "nonScalingTechnicalRoutes": 10,
+    "onePixelFrameSegments": 4,
+    "cleanWhitePageBackgrounds": 1,
+    "compactLabels": 13,
+    "placeholderLabel": "KM1-MAIN",
+    "bottomTitleTableElements": 0,
+    "visiblePortHitTargets": 0,
+    "constructionGridPatterns": 0
+  }
+}

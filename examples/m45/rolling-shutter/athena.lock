@@ -1,0 +1,332 @@
+# Derived resolution state for the Athena package graph.
+# Generated from compiler-owned repository resolution. Manifest intent remains authoritative.
+version: 3
+schema: athena-lock-v3
+compilerSchema: athena-lock-v3-c14n-v1
+validatedLockStateDigest: lock-state:0e4101813c300db6e8655b07434b8f67d4e8645cb4cf53b93ef2835e717134a2
+primaryPackage:
+  name: com.engineeringood.m45.rollingshutter
+  version: 0.1.0
+packages:
+  - name: com.engineeringood.m45.rollingshutter
+    version: 0.1.0
+    sourceRoot: src
+    manifestDigest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+    items: []
+    assetProfile: svg-safe-1
+    sourceHashes:
+      - path: com/engineeringood/m45/rollingshutter/rolling-shutter.athena
+        hash: sha256:3c3a34dacf1b09386ce3c193147cd54e556d8da10c017f247f4614baebd79b61
+    resourceHashes: []
+    dependencies:
+      - name: com.athena.iec
+        version: 1.0.0
+      - name: com.community.elements
+        version: 1.0.0
+      - name: com.vendor.siemens
+        version: 1.0.0
+  - name: com.athena.iec
+    version: 1.0.0
+    sourceRoot: packages/com.athena.iec
+    manifestDigest: sha256:55899e001a2bdb5bc95867dda8264294c46cf968434859b89dceb2b6c6c5f12b
+    items:
+      - itemId: breaker_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:4c8901380bbae2965cdf44e19cad03cedcb08ad11ff22fa398f46645b62daf8e
+        sourcePath: src/breaker.athena
+        resourceRefs: [resources/breaker.svg]
+        attributes: [interfaceFingerprint=73ea79fdb8e51c190895a4ee3daa78263965fc82b1c67ff72421c11b13f111ca]
+      - itemId: contactor_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:ae95b5144d4ae65af184228b5f45741929f1b6c634e32cc70bf0c92d20eb1ca3
+        sourcePath: src/contactor.athena
+        resourceRefs: [resources/contactor.svg]
+        attributes: [interfaceFingerprint=fe6942b6fe05e0c7b4c2c2c35288a65a0010c978dca3cc53e7c317385364eb96]
+      - itemId: motor_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:a43a3dde37ecb29e45b3ee93cdd86520b58595626dc08516ddd43d9ea7700c54
+        sourcePath: src/motor.athena
+        resourceRefs: [resources/motor.svg]
+        attributes: [interfaceFingerprint=a6492d9ed99d06a6454de4cc82fdd528c11999cc2b49c383879504449932f1bf]
+      - itemId: overload_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:67973db945adbf1d37128e6171895668ee2127df33a2f18790161cbac0dd5972
+        sourcePath: src/overload.athena
+        resourceRefs: [resources/overload.svg]
+        attributes: [interfaceFingerprint=67cd5652bd7cf69b3ee33f8bbea315eda95a5f55c1c3daeab155c10f2014cb13]
+      - itemId: starter_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:a53e667da172e5d2720e229f4860909da52b5596fa2a66e6a2f1fc37e9eaf01c
+        sourcePath: src/reuse.athena
+        resourceRefs: [resources/breaker.svg, resources/contactor.svg]
+        attributes: [interfaceFingerprint=bc10ab3c582d85ebd4825b07785ee7a492a82d6003d1ed799f73deb2db143c31]
+      - itemId: supply_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:43f08f5e4b47820caa2875bfd43dc5d4187b399412e601f63734e421c7c96cfd
+        sourcePath: src/supply.athena
+        resourceRefs: [resources/supply.svg]
+        attributes: [interfaceFingerprint=efe84f46df3d94e652af0a0329eab6678955f40323ca37e01b1ed0c783f591a5]
+      - itemId: rolling_shutter_starter
+        itemVersion: 1.0.0
+        kind: MACRO
+        digest: sha256:038987c94981f2a6c03b4d74513b26138cfba77fe530ae68131fda7ce0c71976
+        sourcePath: src/reuse.athena
+        resourceRefs: []
+        attributes: [child.000.bindingRole=primary, child.000.element=contactor_element, child.000.functionSlot=switching, child.000.rotation=0, child.000.x=0, child.000.y=0, child.001.bindingRole=primary, child.001.element=motor_element, child.001.functionSlot=load, child.001.rotation=0, child.001.x=30, child.001.y=0]
+      - itemId: generic_breaker
+        itemVersion: 1.0.0
+        kind: PART
+        digest: sha256:06c3a7544884db45937d6bcbb3e619e09aee7bf688474490987581e8c7a9b144
+        sourcePath: src/parts.athena
+        resourceRefs: []
+        attributes: []
+      - itemId: generic_contactor
+        itemVersion: 1.0.0
+        kind: PART
+        digest: sha256:4db02c0a3d73d7fb6623cbba729c06014f4fda557d672016734279f495273097
+        sourcePath: src/parts.athena
+        resourceRefs: []
+        attributes: []
+      - itemId: generic_overload
+        itemVersion: 1.0.0
+        kind: PART
+        digest: sha256:1d235706309c2e2c48a96789ca45c98fedd3401851f579a0c3425343dea203a1
+        sourcePath: src/parts.athena
+        resourceRefs: []
+        attributes: []
+      - itemId: breaker
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:e02aa3d261c8dd4271819b4453bf33c77ef96cda9636a96f75c514f59f601efa
+        sourcePath: src/breaker.athena
+        resourceRefs: [resources/breaker.svg]
+        attributes: []
+      - itemId: contactor
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:b6298f6b6decb73ebd2a1d327dc3770d20511234772ff4c98fad3be4a24ff47c
+        sourcePath: src/contactor.athena
+        resourceRefs: [resources/contactor.svg]
+        attributes: []
+      - itemId: motor
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:d18ada47a84886315d15ab14181e077868fcdbc568552238bf10e38f62319d58
+        sourcePath: src/motor.athena
+        resourceRefs: [resources/motor.svg]
+        attributes: []
+      - itemId: overload
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:dad6d229df988e949ede6c4a550375ddfe39843d7b35df8a763e07888ce4bd70
+        sourcePath: src/overload.athena
+        resourceRefs: [resources/overload.svg]
+        attributes: []
+      - itemId: supply
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:0debf8911860a089a4f0e96533228ebc6381922e1b0b6e34ad8649d1934e672d
+        sourcePath: src/supply.athena
+        resourceRefs: [resources/supply.svg]
+        attributes: []
+    assetProfile: svg-safe-1
+    sourceHashes:
+      - path: src/breaker.athena
+        hash: sha256:6ae0da78c87e6c6144b0e10ae563cfe43363bc68f1394b7178f6d6d5a128597c
+      - path: src/contactor.athena
+        hash: sha256:b1071ae57289d3124d861a75fd631a04e002302895a404c06612c48bcece9956
+      - path: src/motor.athena
+        hash: sha256:be1e95cfa58f7fb4a1186cf4b818bbcff4c6ca672f3e692c9a7aad7f9abdedde
+      - path: src/overload.athena
+        hash: sha256:84f9ba33e62d5fc193b6f9339befc3630a213327752d968f98161db304b6dc8b
+      - path: src/parts.athena
+        hash: sha256:0ea9fd7a6b0c6fdcd24433703af3095c5c0ffac6c7001e309530961d7fd4aa40
+      - path: src/reuse.athena
+        hash: sha256:8d5966ae90b7714a83ecb154438289c10a7450f9de08daf4c1b93fbd17d619ed
+      - path: src/supply.athena
+        hash: sha256:7c72ef3dd6cf7864d5887156881cd7ca83277a57102886fb23c7ff936ae5fd9e
+    resourceHashes:
+      - key: resources/breaker.svg
+        path: resources/breaker.svg
+        hash: sha256:ab0631378d28a282879929f66fe51b45bb268368cd80a6be30f076df395ae0fb
+      - key: resources/contactor.svg
+        path: resources/contactor.svg
+        hash: sha256:2f30f8c8f431b825184b4cedccc276a79ab7fa356a8988df3123c18662566440
+      - key: resources/motor.svg
+        path: resources/motor.svg
+        hash: sha256:77a82784bedbf9f3712c33bb6a2fbc97378b53a2d64d88f5f67764a65dde9eeb
+      - key: resources/overload.svg
+        path: resources/overload.svg
+        hash: sha256:545d71128f9951b134532cf16fb233550a2c70f4280eba3a1bd40ff4e6c57103
+      - key: resources/supply.svg
+        path: resources/supply.svg
+        hash: sha256:af569265e0c3f574e0ae11c62efccfa9890a8dd2cb274e75a24b2de1bf8bc256
+    dependencies: []
+  - name: com.community.elements
+    version: 1.0.0
+    sourceRoot: packages/com.community.elements
+    manifestDigest: sha256:a63ecc773e858bfb0fca0e6dd49604fd00c0a1b686f369b823262d76d78f8496
+    items:
+      - itemId: lamp_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:24727936b35105fdee6c2ba91b3dea5538509bff24637d6cfcc1796877593a6f
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/lamp.svg]
+        attributes: [interfaceFingerprint=856aaea8d3775c84d2aa628f055e1128070eab702472b8f01b69724d83ace965]
+      - itemId: plc_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:6b3be0339ace13f5d506ebb3644090e3819411d9c9f2a07865e55b16e74acb85
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/plc.svg]
+        attributes: [interfaceFingerprint=a4fa1ef4bca3b4cd5de1a7c866bdee798745f08836e2082147ea0c814d29c213]
+      - itemId: sensor_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:f38a5999ff1889e0dbe9bd5538c11feb75e46cc37e6820532eaf3e720b429036
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/sensor.svg]
+        attributes: [interfaceFingerprint=13996592f5f621d95fd5335d8ddbd65039a8b28554cb90acd8fed099176c6799]
+      - itemId: terminal_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:2dd18f508f9a3058feac9590c3b037ca06c4a7fcddece68756d4256c9608b36d
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/terminal.svg]
+        attributes: [interfaceFingerprint=db37096e789a8641ee7bbb604445b980512e2b7186816e17dcc11b8b69428d49]
+      - itemId: sensor_proximity
+        itemVersion: 1.0.0
+        kind: PART
+        digest: sha256:00758bbcbcf9a03ca2d0cd9c0a5d71b8bec61f0ba80bd5d2f3cac804a7f8c223
+        sourcePath: src/parts.athena
+        resourceRefs: []
+        attributes: []
+      - itemId: lamp
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:5d1cabc9040c2f1384b68ba196937c3f69226d2d173e93d258a816eba42db1ad
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/lamp.svg]
+        attributes: []
+      - itemId: plc
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:369cd6d625dea4c38b296204589051f4a97e7cd360c5947a7c8733183371cd60
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/plc.svg]
+        attributes: []
+      - itemId: sensor
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:dc1ff72bd3271c88edecfb62a279ffbafec1f91db9cac801de8daf14dccc9eb5
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/sensor.svg]
+        attributes: []
+      - itemId: terminal
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:2b1aa482f638ece6e537e081066d79c1d0d4deb219d8931c76f27476e10c1e5d
+        sourcePath: src/controls.athena
+        resourceRefs: [resources/terminal.svg]
+        attributes: []
+    assetProfile: svg-safe-1
+    sourceHashes:
+      - path: src/controls.athena
+        hash: sha256:158959dad394903049e55e45e5121870d51c2f71eb23e1368bb304c2b941a359
+      - path: src/parts.athena
+        hash: sha256:afb9393990c43f3303143c9613e4cb7b243353a5f07e5215c1d70c44437d84fd
+    resourceHashes:
+      - key: resources/lamp.svg
+        path: resources/lamp.svg
+        hash: sha256:6571c82f47e7e57578874f51903fd4e14e01ac6d7ad52b7c084d77021164ee90
+      - key: resources/plc.svg
+        path: resources/plc.svg
+        hash: sha256:e4ea8449b82129fee1bde69106c3a03e8a46cbec7d7d7a71dd8174c76ef5ae58
+      - key: resources/sensor.svg
+        path: resources/sensor.svg
+        hash: sha256:98ad9b4ae9de042670ebaeaa3f5f0eea58808d9293954a0074bd9c269c607554
+      - key: resources/terminal.svg
+        path: resources/terminal.svg
+        hash: sha256:66a19374cc33699decc5fdb6c153c09cf138deda6fa774d95e52e268ba5a6f8a
+    dependencies: []
+  - name: com.vendor.siemens
+    version: 1.0.0
+    sourceRoot: packages/com.vendor.siemens
+    manifestDigest: sha256:46700138cedf2b53bd5744dfaf6f59188c2ae7809f42108723b9635757bf0f58
+    items:
+      - itemId: siemens_contactor_element
+        itemVersion: 1.0.0
+        kind: ELEMENT
+        digest: sha256:f1f59f4b5eab98e2447fabd49daa28ec1e36c312be8d082d3404681452c56be7
+        sourcePath: src/siemens.athena
+        resourceRefs: [resources/siemens-contactor.svg]
+        attributes: [interfaceFingerprint=c519e40494470699bf6959286830bea757cf72fe091d4a64963df86cf90eea11]
+      - itemId: siemens_3rt2026
+        itemVersion: 1.0.0
+        kind: PART
+        digest: sha256:fb12a8c922a5ec06d0ddf2a2de25196324c608977d8cef5fd1f203bb729f2098
+        sourcePath: src/parts.athena
+        resourceRefs: []
+        attributes: []
+      - itemId: siemens_3ru2116
+        itemVersion: 1.0.0
+        kind: PART
+        digest: sha256:e6c623b901fb2588b52cd801e0d211818f0499261506ceab1376b1fce48e2e7d
+        sourcePath: src/parts.athena
+        resourceRefs: []
+        attributes: []
+      - itemId: label
+        itemVersion: 1.0.0
+        kind: PLACEHOLDER
+        digest: sha256:a17f691e7bd19b1777aaffd04bd13e92d1b46229de69dbe4393c626d731aa876
+        sourcePath: src/variants.athena
+        resourceRefs: []
+        attributes: [target=label.text, type=TEXT]
+      - itemId: siemens_contactor
+        itemVersion: 1.0.0
+        kind: SYMBOL
+        digest: sha256:9040736a321bb6f37a2af875b8aa15b50fccf2ad8f0338127070275461afb188
+        sourcePath: src/siemens.athena
+        resourceRefs: [resources/siemens-contactor.svg]
+        attributes: []
+      - itemId: contactor_auxiliary
+        itemVersion: 1.0.0
+        kind: VARIANT
+        digest: sha256:f21ef30a95f1876893f48cdeda51e74a657a14798b162f0af873691fb9b97a4e
+        sourcePath: src/variants.athena
+        resourceRefs: [resources/siemens-contactor.svg]
+        attributes: [element=siemens_contactor_element, interfaceFingerprint=c519e40494470699bf6959286830bea757cf72fe091d4a64963df86cf90eea11]
+      - itemId: contactor_coil
+        itemVersion: 1.0.0
+        kind: VARIANT
+        digest: sha256:fbe85a79d7804304691c64ec9f920271426f7967a49df1f3224ef7e38d71bff8
+        sourcePath: src/variants.athena
+        resourceRefs: [resources/siemens-contactor.svg]
+        attributes: [element=siemens_contactor_element, interfaceFingerprint=c519e40494470699bf6959286830bea757cf72fe091d4a64963df86cf90eea11]
+      - itemId: contactor_main
+        itemVersion: 1.0.0
+        kind: VARIANT
+        digest: sha256:bf67b12d3c6798b2b2be638d9c40456dc2a6fe986d5d505b965f8f455a0509b1
+        sourcePath: src/variants.athena
+        resourceRefs: [resources/siemens-contactor.svg]
+        attributes: [element=siemens_contactor_element, interfaceFingerprint=c519e40494470699bf6959286830bea757cf72fe091d4a64963df86cf90eea11]
+    assetProfile: svg-safe-1
+    sourceHashes:
+      - path: src/parts.athena
+        hash: sha256:4d2910bed2c162f159262bd894cf67d897fc2f06de01b59c64f3828b1ada36c7
+      - path: src/siemens.athena
+        hash: sha256:2e378a0b07ec11a2f6c2df8d98b6c986f65e9bb1aeacac39e7e5a9d78d05d5f3
+      - path: src/variants.athena
+        hash: sha256:33d852612fd02d8a888de294856a9b1f47d0cc28a7ea813518733b46ac023876
+    resourceHashes:
+      - key: resources/siemens-contactor.svg
+        path: resources/siemens-contactor.svg
+        hash: sha256:512054610afbf7fcd6182c313f9ccc5d008023380dcb75325e14447b87722f6e
+    dependencies: []

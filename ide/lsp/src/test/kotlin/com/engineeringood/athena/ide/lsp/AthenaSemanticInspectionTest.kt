@@ -2,7 +2,6 @@ package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
-import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent
 import org.eclipse.lsp4j.TextDocumentItem
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier
@@ -17,7 +16,6 @@ import org.eclipse.lsp4j.Range
  */
 class AthenaSemanticInspectionTest {
     @Test
-    @Suppress("DEPRECATION")
     fun `semantic inspection follows latest tracked document state`() {
         val repository = createGovernedTestRepository("athena-lsp-inspection-")
         val repositoryRoot = repository.repositoryRoot
@@ -54,11 +52,7 @@ class AthenaSemanticInspectionTest {
 
         val server = AthenaLanguageServer()
         try {
-            server.initialize(
-                InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
+            server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
             val documentUri = sourcePath.toUri().toString()
             server.textDocumentService.didOpen(
@@ -107,7 +101,7 @@ class AthenaSemanticInspectionTest {
             assertTrue(validInspection.ports.any { port -> port.path == "Motor1.out" })
             assertEquals("control", validInspection.relationships.single().definition)
             assertEquals(
-                listOf("source" to "Motor1.out", "target" to "Missing.in"),
+                listOf("participant-1" to "Motor1.out", "participant-2" to "Missing.in"),
                 validInspection.relationships.single().participants.map { participant ->
                     participant.role to participant.subjectPath
                 },
@@ -140,7 +134,6 @@ class AthenaSemanticInspectionTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `semantic inspection resolves source ranges for grouped interface ports`() {
         val repository = createGovernedTestRepository("athena-lsp-interface-port-inspection-")
         val repositoryRoot = repository.repositoryRoot
@@ -167,11 +160,7 @@ class AthenaSemanticInspectionTest {
 
         val server = AthenaLanguageServer()
         try {
-            server.initialize(
-                InitializeParams().apply {
-                    rootUri = repositoryRoot.toUri().toString()
-                },
-            ).get()
+            server.initialize(workspaceInitializeParams(repositoryRoot)).get()
 
             val documentUri = sourcePath.toUri().toString()
             server.textDocumentService.didOpen(

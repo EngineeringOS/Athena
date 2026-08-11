@@ -70,6 +70,12 @@ data class SourceFileAst(
 
     val representationDeclarations: List<RepresentationDeclaration>
         get() = (unit as? RepresentationSourceUnit)?.declarations.orEmpty()
+
+    val knowledgeDeclarations: List<KnowledgeDeclaration>
+        get() = (unit as? KnowledgeSourceUnit)?.declarations.orEmpty()
+
+    val knowledgeDomain: String?
+        get() = (unit as? KnowledgeSourceUnit)?.domain
 }
 
 sealed interface AthenaSourceUnit
@@ -86,6 +92,122 @@ data class RepresentationSourceUnit(
         require(declarations.isNotEmpty()) { "Representation source requires at least one declaration." }
     }
 }
+
+/** Package-local governed knowledge source. Syntax only; compilation owns resolution and validation. */
+data class KnowledgeSourceUnit(
+    val domain: String,
+    val declarations: List<KnowledgeDeclaration>,
+) : AthenaSourceUnit
+
+sealed interface KnowledgeDeclaration {
+    val name: String
+    val span: SourceSpan
+}
+
+data class KnowledgeConceptDeclaration(
+    override val name: String,
+    val properties: List<PropertyAssignment>,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+data class KnowledgePartDeclaration(
+    override val name: String,
+    val concept: QualifiedName,
+    val properties: List<PropertyAssignment>,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+enum class KnowledgeCapabilityDirection { PROVIDES, REQUIRES }
+
+data class KnowledgeCapabilityDeclaration(
+    override val name: String,
+    val direction: KnowledgeCapabilityDirection,
+    val properties: List<PropertyAssignment>,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+enum class KnowledgeSubjectLevel { ENTITY, FUNCTION, PORT }
+
+data class KnowledgeParticipantRoleDeclaration(
+    val name: String,
+    val level: KnowledgeSubjectLevel,
+    val requiredCapability: QualifiedName?,
+    val span: SourceSpan,
+)
+
+data class KnowledgeRelationshipDeclaration(
+    override val name: String,
+    val roles: List<KnowledgeParticipantRoleDeclaration>,
+    val connectivity: Boolean,
+    val properties: List<PropertyAssignment>,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+data class KnowledgeFlowDeclaration(
+    override val name: String,
+    val relationship: QualifiedName,
+    val sourceRole: String,
+    val sinkRole: String,
+    val medium: QualifiedName?,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+data class KnowledgeDimensionDeclaration(
+    override val name: String,
+    val bases: List<QualifiedName>,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+data class KnowledgeUnitDeclaration(
+    override val name: String,
+    val dimension: QualifiedName,
+    val scale: ScalarValue,
+    val offset: ScalarValue?,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+sealed interface KnowledgeExpression {
+    val span: SourceSpan
+
+    data class Number(val value: String, override val span: SourceSpan) : KnowledgeExpression
+    data class Reference(val name: QualifiedName, override val span: SourceSpan) : KnowledgeExpression
+    data class Binary(val operator: KnowledgeBinaryOperator, val left: KnowledgeExpression, val right: KnowledgeExpression, override val span: SourceSpan) : KnowledgeExpression
+    data class Call(val function: KnowledgeFunction, val arguments: List<KnowledgeExpression>, override val span: SourceSpan) : KnowledgeExpression
+}
+
+enum class KnowledgeBinaryOperator { ADD, SUBTRACT, MULTIPLY, DIVIDE }
+enum class KnowledgeFunction { MIN, MAX, ROUND_UP }
+
+enum class KnowledgeComparisonOperator { GREATER, GREATER_OR_EQUAL, LESS, LESS_OR_EQUAL, EQUAL, NOT_EQUAL }
+
+data class KnowledgeInterval(
+    val lower: KnowledgeExpression,
+    val upper: KnowledgeExpression,
+    val lowerInclusive: Boolean,
+    val upperInclusive: Boolean,
+    val span: SourceSpan,
+)
+
+sealed interface KnowledgePredicate {
+    val span: SourceSpan
+
+    data class Comparison(val operator: KnowledgeComparisonOperator, val left: KnowledgeExpression, val right: KnowledgeExpression, override val span: SourceSpan) : KnowledgePredicate
+    data class Membership(val value: KnowledgeExpression, val interval: KnowledgeInterval, override val span: SourceSpan) : KnowledgePredicate
+    data class All(val predicates: List<KnowledgePredicate>, override val span: SourceSpan) : KnowledgePredicate
+    data class Any(val predicates: List<KnowledgePredicate>, override val span: SourceSpan) : KnowledgePredicate
+}
+
+data class KnowledgeFormulaDeclaration(
+    override val name: String,
+    val expression: KnowledgeExpression,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
+
+data class KnowledgeConstraintDeclaration(
+    override val name: String,
+    val predicate: KnowledgePredicate,
+    override val span: SourceSpan,
+) : KnowledgeDeclaration
 
 /**
  * Declares one file-level qualified target for later semantic graph resolution.
@@ -323,6 +445,42 @@ data class ElementLabelExportDeclaration(
     val span: SourceSpan,
 )
 
+data class MacroDeclaration(
+    override val name: String,
+    val identity: SymbolStringField?,
+    val version: SymbolStringField?,
+    val children: List<MacroChildDeclaration>,
+    override val span: SourceSpan,
+) : RepresentationDeclaration
+
+data class MacroChildDeclaration(
+    val id: String,
+    val elementIdentity: SymbolStringField?,
+    val translate: SymbolPoint?,
+    val rotate: ElementNumberField?,
+    val functionSlot: SymbolIdentifierField?,
+    val bindingRole: SymbolIdentifierField?,
+    val span: SourceSpan,
+)
+
+data class VariantDeclaration(
+    override val name: String,
+    val identity: SymbolStringField?,
+    val version: SymbolStringField?,
+    val elementIdentity: SymbolStringField?,
+    val resources: List<RepresentationResourceDeclaration>,
+    override val span: SourceSpan,
+) : RepresentationDeclaration
+
+data class PlaceholderDeclaration(
+    override val name: String,
+    val identity: SymbolStringField?,
+    val version: SymbolStringField?,
+    val targetPath: SymbolStringField?,
+    val valueType: SymbolIdentifierField?,
+    override val span: SourceSpan,
+) : RepresentationDeclaration
+
 enum class BindingSelectorKind {
     Entity,
     Function,
@@ -339,15 +497,26 @@ data class ProfileDeclaration(
 
 data class BindingDeclaration(
     override val name: String,
+    val bindingId: SymbolStringField?,
+    val projection: SymbolIdentifierField?,
     val profile: SymbolIdentifierField?,
     val priority: ElementNumberField?,
     val selectorKind: BindingSelectorKind?,
     val selectorFacts: List<PropertyAssignment>,
     val useElement: SymbolStringField?,
     val useVersion: SymbolStringField?,
+    val usePart: SymbolStringField?,
+    val partVersion: SymbolStringField?,
+    val implementationRole: SymbolIdentifierField?,
     val variant: SymbolStringField?,
+    val placeholderValues: BindingPlaceholderValues?,
     override val span: SourceSpan,
 ) : RepresentationDeclaration
+
+data class BindingPlaceholderValues(
+    val values: List<PropertyAssignment>,
+    val span: SourceSpan,
+)
 
 /**
  * Syntax node for an `entity` declaration and its authored anatomy.
@@ -419,6 +588,37 @@ data class RelationDeclaration(
         require(targets.isNotEmpty()) { "Relation declaration requires at least one target." }
     }
 }
+
+/** Syntax node for an explicit typed binary connection such as `connect wire A.out to B.in`. */
+data class ConnectionDeclaration(
+    val kind: SymbolIdentifierField,
+    val source: QualifiedName,
+    val target: QualifiedName,
+    val properties: List<PropertyAssignment>,
+    override val span: SourceSpan,
+) : Declaration
+
+enum class NetEndpointRole { SOURCE, SINK, PASS }
+
+data class NetEndpointDeclaration(val role: NetEndpointRole, val port: QualifiedName, val span: SourceSpan)
+
+data class NetDeclaration(
+    val name: String,
+    val kind: SymbolIdentifierField,
+    val endpoints: List<NetEndpointDeclaration>,
+    val potentialOrSignal: QualifiedName?,
+    val properties: List<PropertyAssignment>,
+    override val span: SourceSpan,
+) : Declaration
+
+enum class ConnectionSpecificationScope { PROJECT, POTENTIAL, SIGNAL, NET, CONNECTION }
+
+data class ConnectionSpecificationDeclaration(
+    val scope: ConnectionSpecificationScope,
+    val subject: QualifiedName?,
+    val properties: List<PropertyAssignment>,
+    override val span: SourceSpan,
+) : Declaration
 
 /** Syntax-only external evidence attached to Athena-owned connectivity subjects. */
 data class ExternalEvidenceDeclaration(

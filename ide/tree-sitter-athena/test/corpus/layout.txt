@@ -70,9 +70,9 @@ system MachineNo000 {
   (ERROR
     (identifier)
     (identifier)
-    (UNEXPECTED 's')
-    (identifier)
-    (identifier)
+    (ERROR
+      (identifier)
+      (identifier))
     (identifier))
   (system_declaration
     name: (name)))

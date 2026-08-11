@@ -151,3 +151,39 @@ Final status must be backed by real verification, not assumptions.
 - If Electron or Theia shows stale behavior after code changes, suspect a stale frontend bundle before changing assertions.
 - Product rendering work must produce screenshots under the milestone implementation artifacts folder.
 - Final E2E evidence must include the active example project, visible product surface, occurrence/trace proof where relevant, and the screenshot paths.
+
+## Theia Workspace Proof Rule
+
+Treat an unopened workspace as an immediate E2E failure, not a rendering or LSP failure.
+
+- Electron/Theia proof launch must open the repository root as the workspace before opening any source file or product widget.
+- Never mix a source-file path into workspace CLI arguments and never rewrite `process.argv` in a proof main unless the active Theia launcher contract explicitly requires it.
+- Before any Projection/Spatial/Presentation assertion, verify all three signals: Explorer shows the repository folder, Athena repository state is `READY`, and the LSP repository root equals the requested example root.
+- If the UI says `NO FOLDER OPENED`, stop immediately and fix workspace activation. Do not wait on render selectors, rebuild the compiler, or diagnose Projection/Spatial Reality.
+- Open source files only after workspace activation, through the Theia opener/editor command path.
+
+## Engineering Document Visual Golden Rule
+
+`draft/screenshort/equipement_d'un_volet_roulant.png` is Athena's canonical visual reference. Match its
+visual grammar exactly; circuit content may differ, but a rendered document must look like the same class
+of professional IEC engineering sheet.
+
+- Use a square, one-pixel page frame. No rounded, heavy, or decorative canvas border.
+- Rulers are edge chrome, not drawing content: one narrow horizontal ruler is flush to the top edge and
+  spans the full drawing width (`1, 2, 3, ...`); one narrow vertical ruler is flush to the left edge and
+  spans the full drawing height (`A, B, C, ...`). Keep the top ruler height and left ruler width small,
+  equal on every viewport, and align their corner cell exactly.
+- The default drawing area is clean white with no visible cell lines, micro-grid, or bottom title/table
+  block. Grid geometry exists only for interaction, snapping, and source coordinates; show it only when
+  the user explicitly enables a construction overlay.
+- Use thin, technical, orthogonal linework (about one screen pixel), tiny connection points, IEC-style
+  symbol proportions, compact labels, disciplined spacing, and generous white space. Never use thick
+  black routes, oversized arrows, or persistent port rings.
+- `ScenePort.hitRadius` is interaction geometry only. Keep the generous hit target invisible and render
+  only the tiny professional connection point defined by the representation asset.
+- Scene/stage zoom must not multiply route width, arrowhead size, label stroke, or connection-marker size.
+  The visual weight stays constant in screen space.
+- The semantic layer does not invent symbol geometry. SVG/element assets supply geometry and port anchors;
+  Athena source supplies engineering meaning and identity.
+- Rendering completion requires rebuilt-product screenshots under the active milestone artifacts and a
+  visual comparison against the canonical reference at desktop and narrow editor sizes.

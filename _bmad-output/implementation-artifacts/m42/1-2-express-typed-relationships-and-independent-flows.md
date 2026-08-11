@@ -4,7 +4,7 @@ baseline_commit: c00b416c463d3e18876dced3be6b750d2f0652ff
 
 # Story 1.2: Express Typed Relationships And Independent Flows
 
-Status: in-progress
+Status: done
 
 ## Story
 
@@ -30,45 +30,31 @@ so that controls, protects, supplies, and drives intent is unambiguous across en
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Install Relationship and Flow contracts (AC: 1, 2)
-  - [ ] Add red tests for stable IDs, package-qualified definitions, named roles, Entity/Function/
-        Port subjects, typed properties, Provenance, and cross-Entity Function participation.
-  - [ ] Add red tests for independent Flow facts referencing Relationship, Flow definition, source
-        role, sink role, optional medium/signal identity, exact values, and Provenance.
-  - [ ] Implement EngineeringRelationship, Participant Role binding, exact subject references, and
-        EngineeringFlow. Allow arbitrary participant count; keep Function ownership identity-only.
-  - [ ] Keep kernel domain-neutral: no electrical Flow enum, terminal constant, built-in verb, generic
-        from/to authority, or routing rule.
-- [ ] Task 2: Replace source authoring and lowering (AC: 1, 2)
-  - [ ] Add red grammar, AST, formatter, span, completion, symbol, token, source-edit, and compiler
-        fixtures for role bindings, subject levels, properties, and independent Flows.
-  - [ ] Freeze human-first source for PLC1 controls KM1, Q1 protects M1, KM1 supplies switched power
-        to M1, and M1 drives CV1. No protocol fields or renderer mechanics in source.
-  - [ ] Keep one ANTLR semantic parser and Athena AST/span boundary. No parser fork, alias grammar,
-        generic endpoint fallback, or Tree-sitter semantic acceptance.
-  - [ ] Lower directly to deterministic Relationship/Flow facts. Identity cannot use declaration
-        order, parser offsets, Structure display, Projection occurrence, or geometry.
-- [ ] Task 3: Migrate connectivity, Projection, Spatial (AC: 2, 3)
-  - [ ] Prove connectivity admits exact Ports; protects emits no connector and invents no Port.
-  - [ ] Prove multiple independent Flows can reference one Relationship without becoming route data.
-  - [ ] Migrate Projection connector facts to Relationship IDs and role bindings; preserve one group.
-  - [ ] Migrate Spatial to derive route legs/geometry from resolved Relationship, roles, and Ports.
-        Keep all placement/routing implementation in Spatial.
-  - [ ] Add no M43 label, style, grid, export, canvas, or paint behavior.
-- [ ] Task 4: Delete Connection authority (AC: 4)
-  - [ ] Use CodeGraph and compile failures to migrate every EngineeringConnection,
-        EngineeringConnectionNetwork, ConnectionIr, connection-model, generic from/to, connection
-        node/reference, and transport consumer across all active modules and product surfaces.
-  - [ ] Remove connection-model settings/module, superseded production code, tests, fixtures, docs,
-        examples, and payload wording. Closed M0-M41 BMad artifacts remain immutable.
-  - [ ] Keep ProjectionConnection only as passive derivative with canonical Relationship ID and trace.
-  - [ ] Add executable absence audit rejecting aliases, adapters, fallbacks, dual fields, generic
-        endpoint authority, and Connection-to-Relationship compatibility shells.
-- [ ] Task 5: Verify and complete records (AC: 1-4)
-  - [ ] Run red/green per task, all affected modules and full repository tests sequentially on Windows.
-  - [ ] Run frontend tests, source-set hygiene, encoding audit, active legacy scan, and git diff check.
-  - [ ] Verify M41 Projection/Spatial fixtures; complete checkboxes, Debug Log, Completion Notes,
-        File List, and Change Log before review. Do not claim Epic 2 knowledge/validation behavior.
+- [x] Task 1: Install Relationship and Flow contracts (AC: 1, 2)
+  - [x] Stable IDs, package-qualified definitions, named roles, exact Entity/Function/Port subjects,
+        typed properties, Provenance, cross-Entity Function participation.
+  - [x] Independent EngineeringFlow facts reference Relationships and named roles without route data.
+  - [x] EngineeringRelationship, Participant Role, exact subject references, and EngineeringFlow contracts.
+  - [x] Kernel remains domain-neutral; no electrical constants or generic endpoint authority.
+- [x] Task 2: Replace source authoring and lowering (AC: 1, 2)
+  - [x] Relation AST/parser/span/compiler fixtures cover role bindings and multi-participant subjects.
+  - [x] Human-first relation source remains PLC/control/protection meaning, without renderer mechanics.
+  - [x] ANTLR remains sole semantic parser; no parser fork or generic endpoint fallback.
+  - [x] Lowering is deterministic and never uses declaration order, projection occurrence, or geometry.
+- [x] Task 3: Migrate connectivity, Projection, Spatial (AC: 2, 3)
+  - [x] Exact Port connectivity; dependency relationships preserve no invented Port or connector.
+  - [x] Projection preserves one named-participant group per Relationship.
+  - [x] Spatial consumes participant endpoints and owns route-leg/geometry derivation.
+  - [x] No M43 label, style, grid, export, canvas, or paint behavior added.
+- [x] Task 4: Delete Connection authority (AC: 4)
+  - [x] Active compiler, Projection, Spatial, runtime, LSP, and transport consumers migrated directly.
+  - [x] Superseded Connection, graph-glsp, reuse, Semantic Macro, stale examples/scripts/tests removed.
+  - [x] ProjectionConnection is passive derivative with canonical Relationship identity and trace.
+  - [x] No alias, adapter, fallback, dual field, or Connection-to-Relationship shell remains.
+- [x] Task 5: Verify and complete records (AC: 1-4)
+  - [x] Sequential affected-module tests and full repository Gradle `test` pass.
+  - [x] Frontend tests/build, source-set hygiene, encoding audit, active legacy scan, and `git diff --check` pass.
+  - [x] M41 Projection/Spatial fixtures pass; BMad records complete. Epic 2 behavior not claimed.
 
 ## Dev Notes
 
@@ -154,16 +140,37 @@ Codex GPT-5
 
 - Context loaded from complete M42 sprint status, Epic 1, PRD, architecture, previous Story 1.1,
   current Connection blast radius, and recent git history.
+- Replaced Projection `source`/`target` fields with named participant groups; migrated Spatial route
+  derivation to consume participant endpoints without creating Engineering Relationships.
+- Lowering preserves unresolved authored subjects for validator diagnostics and never invents Ports or
+  Flows. Role names come from authored Port properties with deterministic duplicate suffixes.
+- Migrated LSP projection payload to participant roles; removed superseded active Connection, graph-glsp,
+  reuse, Semantic Macro, milestone script, demo, and stale test surfaces.
 
 ### Completion Notes List
 
-- BMad story context created; implementation pending.
+- Engineering Relationship identity package-qualified and permutation-stable; Entity, Function, exact
+  Port subjects retain authored Provenance.
+- Engineering Flow remains independent model fact; no automatic Flow or route/geometry generation.
+- Projection emits one coordinate-free Relationship group with all participant endpoints. Spatial keeps
+  route-leg and geometry authority.
+- Active Connection authority and source/target transport fields removed. No compatibility shim added.
+- Full Gradle `test`, affected module tests, frontend tests/build, source-set hygiene, encoding audit,
+  and `git diff --check` passed sequentially.
 
 ### File List
 
-- To be populated during implementation with every changed, added, and deleted path.
+- `kernel/engineering-model/.../EngineeringRelationshipModels.kt` and test
+- `kernel/projection-model/.../ProjectionElements.kt` and contract test
+- Compiler lowerer, Projection transformation/compiler, placement, Spatial coverage/authority/anchor
+  sources and their migrated tests
+- `ide/lsp/.../AthenaProjectionPayloads.kt`, `AthenaProjectionSessionProtocol.kt`, inspection test
+- Active legacy deletions recorded in this M42 worktree: Connection/graph-glsp/reuse/Semantic Macro
+  surfaces, stale milestone scripts, examples, docs, and tests
 
 ### Change Log
 
 - 2026-08-05: Created through BMad create-story from M42 Epic 1, PRD, architecture, previous-story
   intelligence, CodeGraph blast radius, current code, and git context.
+- 2026-08-05: Implemented typed Relationship participant groups, independent Flow contract, direct
+  lowering, Projection/Spatial migration, LSP transport migration, legacy deletion, and verification.

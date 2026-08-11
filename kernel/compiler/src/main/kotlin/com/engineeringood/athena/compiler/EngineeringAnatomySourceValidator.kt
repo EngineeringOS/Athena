@@ -3,6 +3,9 @@ package com.engineeringood.athena.compiler
 import com.engineeringood.athena.ir.SourceProvenance
 import com.engineeringood.athena.ir.StableSemanticIdentity
 import com.engineeringood.athena.language.EntityDeclaration
+import com.engineeringood.athena.language.ConnectionDeclaration
+import com.engineeringood.athena.language.NetDeclaration
+import com.engineeringood.athena.language.ConnectionSpecificationDeclaration
 import com.engineeringood.athena.language.PortDeclaration
 import com.engineeringood.athena.language.PropertyAssignment
 import com.engineeringood.athena.language.ScalarValue
@@ -11,6 +14,7 @@ import com.engineeringood.athena.semantics.core.SemanticDiagnostic
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticCategory
 import com.engineeringood.athena.semantics.core.SemanticDiagnosticSeverity
 import com.engineeringood.athena.semantics.core.SemanticRuleId
+import com.engineeringood.athena.ir.ConnectionKind
 
 /** Rejects malformed authored anatomy before invalid facts can enter Engineering Reality. */
 internal object EngineeringAnatomySourceValidator {
@@ -29,6 +33,7 @@ internal object EngineeringAnatomySourceValidator {
                 entity.nestedFunctions.forEach { function -> add(listOf(entity.name, function.name)) }
             }
         }
+        val portPaths = ports.map { it.qualifiedName.parts }.toSet()
         return buildList {
             entities.forEach { entity -> addAll(validateEntity(source.file, entity)) }
             ports.forEach { port ->
@@ -46,7 +51,114 @@ internal object EngineeringAnatomySourceValidator {
                     )
                 }
             }
+            source.ast.declarations.filterIsInstance<ConnectionDeclaration>().forEach { connection ->
+                listOf(connection.source, connection.target).forEach { endpoint ->
+                    if (endpoint.parts !in portPaths) {
+                        val path = endpoint.parts.joinToString(".")
+                        add(
+                            diagnostic(
+                                code = "reference.connection-endpoint.unresolved",
+                                subject = StableSemanticIdentity("connection-endpoint:$path"),
+                                provenance = source.file.provenance(endpoint.span),
+                                message = "Connection endpoint `$path` does not resolve to an Engineering Port. Declare Port `$path` or correct this connection path.",
+                            ),
+                        )
+                    }
+                }
+                addAll(validateConnectionFacts(source.file, connection, connection.kind.value))
+            }
+            source.ast.declarations.filterIsInstance<NetDeclaration>().forEach { net ->
+                val kind = runCatching { ConnectionKind.valueOf(net.kind.value.uppercase().replace('-', '_')) }.getOrNull()
+                if (kind == null) {
+                    add(diagnostic(
+                        code = "connectivity.kind.unsupported",
+                        subject = StableSemanticIdentity("net:${net.name}"),
+                        provenance = source.file.provenance(net.kind.span),
+                        message = "Net `${net.name}` uses unsupported Connection Kind `${net.kind.value}`. Use conductor, wire, cable-core, jumper, busbar, or signal.",
+                    ))
+                } else {
+                    addAll(validateNet(source.file, net, portPaths))
+                    addAll(validateConnectionFacts(source.file, net.properties, kind, "Net `${net.name}`"))
+                }
+            }
+            addAll(validateSpecificationContradictions(source.file, source.ast.declarations.filterIsInstance<ConnectionSpecificationDeclaration>()))
         }
+    }
+
+    private fun validateNet(file: String, net: NetDeclaration, portPaths: Set<List<String>>): List<SemanticDiagnostic> = buildList {
+        val paths = net.endpoints.map { it.port.parts }
+        if (net.endpoints.size < 2) add(diagnostic(
+            "connectivity.net.endpoint-count", StableSemanticIdentity("net:${net.name}"), file.provenance(net.span),
+            "Net `${net.name}` requires at least two Port endpoints. Add another distinct Port.",
+        ))
+        paths.groupingBy { it }.eachCount().filterValues { it > 1 }.keys.forEach { path ->
+            add(diagnostic(
+                "connectivity.net.endpoint-duplicate", StableSemanticIdentity("net:${net.name}"), file.provenance(net.span),
+                "Net `${net.name}` repeats Port `${path.joinToString(".")}`. Keep each Port endpoint once.",
+            ))
+        }
+        net.endpoints.filter { it.port.parts !in portPaths }.forEach { endpoint ->
+            val path = endpoint.port.parts.joinToString(".")
+            add(diagnostic(
+                "reference.net-endpoint.unresolved", StableSemanticIdentity("net:${net.name}"), file.provenance(endpoint.span),
+                "Net `${net.name}` endpoint `$path` does not resolve to an Engineering Port. Declare Port `$path` or correct this Net path.",
+            ))
+        }
+        if (net.endpoints.count { it.role == com.engineeringood.athena.language.NetEndpointRole.SOURCE } > 1) add(diagnostic(
+            "connectivity.net.source-cardinality", StableSemanticIdentity("net:${net.name}"), file.provenance(net.span),
+            "Net `${net.name}` may declare at most one SOURCE endpoint. Keep one source and use PASS for continuations.",
+        ))
+    }
+
+    private fun validateConnectionFacts(file: String, connection: ConnectionDeclaration, kindText: String): List<SemanticDiagnostic> {
+        val kind = runCatching { ConnectionKind.valueOf(kindText.uppercase().replace('-', '_')) }.getOrNull() ?: return emptyList()
+        return validateConnectionFacts(file, connection.properties, kind, "Connection `${connection.source.parts.joinToString(".")} -> ${connection.target.parts.joinToString(".")}`")
+    }
+
+    private fun validateConnectionFacts(file: String, properties: List<PropertyAssignment>, kind: ConnectionKind, subjectText: String): List<SemanticDiagnostic> = buildList {
+        EngineeringConnectionFactRules.violations(kind, properties).forEach { violation ->
+            val (category, name) = violation.split(":", limit = 2)
+            val property = properties.firstOrNull { it.name == name }
+            val provenance = file.provenance(property?.span ?: SourceSpan(
+                start = com.engineeringood.athena.language.SourcePosition(0, 0, 0),
+                end = com.engineeringood.athena.language.SourcePosition(0, 0, 0),
+            ))
+            val message = when (category) {
+                "unknown" -> "$subjectText uses unknown connection fact `$name`. Use crossSection, colorCode, conductorType, shielding, sourceTermination, targetTermination, or requiredLength."
+                "required" -> "$subjectText requires connection fact `$name`. Add typed engineering fact `$name`."
+                "type" -> "$subjectText fact `$name` has wrong type. Use the typed value required for this fact."
+                else -> "$subjectText has invalid connection fact `$name`. Correct the typed value."
+            }
+            val ruleId = when {
+                category == "required" && kind == ConnectionKind.WIRE && name == "crossSection" ->
+                    "connectivity.wire.cross-section.missing"
+                category == "required" && kind == ConnectionKind.CABLE_CORE && name == "crossSection" ->
+                    "connectivity.cable-core.cross-section.missing"
+                category == "required" && kind == ConnectionKind.CABLE_CORE && name == "conductorType" ->
+                    "connectivity.cable-core.conductor-type.missing"
+                else -> "connectivity.fact.$category"
+            }
+            add(diagnostic(ruleId, StableSemanticIdentity("connection-fact:${name}"), provenance, message))
+        }
+    }
+
+    private fun validateSpecificationContradictions(file: String, specifications: List<ConnectionSpecificationDeclaration>): List<SemanticDiagnostic> = buildList {
+        specifications.groupBy { it.scope to it.subject?.parts }
+            .values
+            .forEach { group ->
+                group.flatMap { specification -> specification.properties.map { property -> specification to property } }
+                    .groupBy { it.second.name }
+                    .values
+                    .filter { values -> values.map { it.second.value.toString() }.distinct().size > 1 }
+                    .forEach { values -> values.forEach { (specification, property) ->
+                        add(diagnostic(
+                            "connectivity.specification.contradictory",
+                            StableSemanticIdentity("connection-spec:${specification.scope}:${property.name}"),
+                            file.provenance(property.span),
+                            "Connection specification `${property.name}` has contradictory values at the same scope. Keep one value or move the override to a more specific scope.",
+                        ))
+                    } }
+            }
     }
 
     private fun validateEntity(file: String, entity: EntityDeclaration): List<SemanticDiagnostic> {

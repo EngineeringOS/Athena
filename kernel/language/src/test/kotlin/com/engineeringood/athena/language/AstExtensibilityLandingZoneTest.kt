@@ -28,6 +28,13 @@ class AstExtensibilityLandingZoneTest {
                 targets = listOf(QualifiedName(listOf("M1", "in"), span)),
                 span = span,
             ),
+            ConnectionDeclaration(
+                kind = SymbolIdentifierField("wire", span),
+                source = QualifiedName(listOf("PLC1", "out"), span),
+                target = QualifiedName(listOf("M1", "in"), span),
+                properties = emptyList(),
+                span = span,
+            ),
             ExternalEvidenceDeclaration(
                 name = "DriveEvidence",
                 namespace = SymbolIdentifierField("iec", span),
@@ -71,7 +78,7 @@ class AstExtensibilityLandingZoneTest {
         )
 
         assertEquals(
-            listOf("entity", "port", "relation", "evidence", "projection", "layout", "installation"),
+            listOf("entity", "port", "relation", "connection", "evidence", "projection", "layout", "installation"),
             declarations.map { declaration -> classifyDeclaration(declaration) },
         )
     }
@@ -104,6 +111,9 @@ class AstExtensibilityLandingZoneTest {
             is EntityDeclaration -> "entity"
             is PortDeclaration -> "port"
             is RelationDeclaration -> "relation"
+            is ConnectionDeclaration -> "connection"
+            is NetDeclaration -> "net"
+            is ConnectionSpecificationDeclaration -> "connection-spec"
             is ExternalEvidenceDeclaration -> "evidence"
             is ProjectionPolicyDeclaration -> "projection"
             is LayoutDeclaration -> "layout"

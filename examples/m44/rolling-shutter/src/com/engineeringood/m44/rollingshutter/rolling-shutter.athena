@@ -1,0 +1,23 @@
+package com.engineeringood.m44.rollingshutter
+system rolling_shutter {
+  entity Supply { concept Generic port L1 { direction out signal Power role line } }
+  entity Q1 { concept Breaker port inlet { direction in signal Power role line } port line { direction out signal Power role line } }
+  entity KM1 { concept Contactor port power { direction in signal Power role line } port load { direction out signal Power role line } port control { direction in signal Control role line } }
+  entity M1 { concept Motor port power { direction in signal Power role line } }
+  entity OL1 { concept Overload port inlet { direction in signal Power role line } port line { direction out signal Power role line } }
+  entity PLC1 { concept Controller port input { direction in signal Control role line } port output { direction out signal Control role line } }
+  entity S1 { concept Sensor port output { direction out signal Control role line } }
+  entity S2 { concept Sensor port output { direction out signal Control role line } }
+  power Supply.L1 to Q1.inlet
+  power Q1.line to KM1.power
+  power KM1.load to OL1.inlet
+  power OL1.line to M1.power
+  control PLC1.output to KM1.control
+  control S1.output to PLC1.input
+  control S2.output to PLC1.input
+  view schematic {
+    sheet rolling_shutter
+    region "Power" { occurrences [Supply, Q1, KM1, OL1, M1] }
+    region "Control" { occurrences [PLC1, S1, S2] }
+  }
+}
