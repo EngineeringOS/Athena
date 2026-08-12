@@ -5,6 +5,6 @@ provenance:
   source: curated-community
   license: CC-BY-4.0
 exports:
-  symbols: [plc, sensor, terminal, lamp]
-  elements: [plc_element, sensor_element, terminal_element, lamp_element]
+  symbols: [plc, limit_no, limit_nc, contact_no, contact_nc, terminal, lamp]
+  elements: [plc_element, limit_no_element, limit_nc_element, contact_no_element, contact_nc_element, terminal_element, lamp_element]
   parts: [sensor_proximity]

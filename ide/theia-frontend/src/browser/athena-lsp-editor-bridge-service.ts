@@ -19,8 +19,12 @@ import { OutputChannelManager } from '@theia/output/lib/browser/output-channel';
 import { MonacoThemeRegistry } from '@theia/monaco/lib/browser/textmate/monaco-theme-registry';
 import {
     ATHENA_LANGUAGE_ID,
+    ATHENA_REPRESENTATION_BINDING_LANGUAGE_ID,
+    ATHENA_SHEET_STYLE_LANGUAGE_ID,
     athenaLanguageConfiguration,
-    athenaMonarchLanguage
+    athenaMonarchLanguage,
+    athenaRepresentationBindingMonarchLanguage,
+    athenaSheetStyleMonarchLanguage
 } from './athena-language-definition';
 import { AthenaTreeSitterHighlightingService } from './athena-tree-sitter-highlighting-service';
 import { toAthenaBackendUrl } from './athena-backend-endpoint';
@@ -457,7 +461,11 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
                 aliases: ['Athena', 'athena']
             });
         }
+        this.registerCompanionLanguage(ATHENA_SHEET_STYLE_LANGUAGE_ID, 'Athena Sheet Style');
+        this.registerCompanionLanguage(ATHENA_REPRESENTATION_BINDING_LANGUAGE_ID, 'Athena Representation Binding');
         monaco.languages.setLanguageConfiguration(ATHENA_LANGUAGE_ID, athenaLanguageConfiguration);
+        monaco.languages.setLanguageConfiguration(ATHENA_SHEET_STYLE_LANGUAGE_ID, athenaLanguageConfiguration);
+        monaco.languages.setLanguageConfiguration(ATHENA_REPRESENTATION_BINDING_LANGUAGE_ID, athenaLanguageConfiguration);
         this.registerAthenaTokenThemeRules();
         this.languageProviderListeners.push(monaco.editor.onDidCreateModel(model => {
             this.ensureAthenaModelLanguage(model);
@@ -466,6 +474,12 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
             this.ensureAthenaModelLanguage(model);
         });
         this.registerAthenaLanguageProviders();
+    }
+
+    protected registerCompanionLanguage(id: string, alias: string): void {
+        if (!monaco.languages.getLanguages().some(language => language.id === id)) {
+            monaco.languages.register({ id, aliases: [alias, id] });
+        }
     }
 
     protected registerAthenaTokenThemeRules(): void {
@@ -530,6 +544,15 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
 
         this.languageProviderListeners.push(
             monaco.languages.setMonarchTokensProvider(ATHENA_LANGUAGE_ID, athenaMonarchLanguage)
+        );
+        this.languageProviderListeners.push(
+            monaco.languages.setMonarchTokensProvider(ATHENA_SHEET_STYLE_LANGUAGE_ID, athenaSheetStyleMonarchLanguage)
+        );
+        this.languageProviderListeners.push(
+            monaco.languages.setMonarchTokensProvider(
+                ATHENA_REPRESENTATION_BINDING_LANGUAGE_ID,
+                athenaRepresentationBindingMonarchLanguage
+            )
         );
 
         // Tree-sitter-backed syntax highlighting (Story 3.2, AD-107): layers on top of the
@@ -759,6 +782,14 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         return uri.toLowerCase().endsWith('.athena');
     }
 
+    protected isAthenaStyleCompanionUri(uri: string): boolean {
+        return uri.toLowerCase().endsWith('.sheet.style.athena');
+    }
+
+    protected isAthenaRepresentationBindingCompanionUri(uri: string): boolean {
+        return uri.toLowerCase().endsWith('.binding.athena');
+    }
+
     protected currentAthenaEditorModel(): monaco.editor.ITextModel | undefined {
         const widget = this.isAthenaEditor(this.editorManager.currentEditor)
             ? this.editorManager.currentEditor
@@ -772,9 +803,28 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
     }
 
     protected ensureAthenaModelLanguage(model: monaco.editor.ITextModel | undefined): void {
-        if (!model || !this.isAthenaDocumentUri(model.uri.toString()) || model.getLanguageId() === ATHENA_LANGUAGE_ID) {
+        if (!model || !this.isAthenaDocumentUri(model.uri.toString())) {
             return;
         }
+
+        if (this.isAthenaStyleCompanionUri(model.uri.toString())) {
+            if (model.getLanguageId() !== ATHENA_SHEET_STYLE_LANGUAGE_ID) {
+                monaco.editor.setModelLanguage(model, ATHENA_SHEET_STYLE_LANGUAGE_ID);
+            }
+            return;
+        }
+
+        if (this.isAthenaRepresentationBindingCompanionUri(model.uri.toString())) {
+            if (model.getLanguageId() !== ATHENA_REPRESENTATION_BINDING_LANGUAGE_ID) {
+                monaco.editor.setModelLanguage(model, ATHENA_REPRESENTATION_BINDING_LANGUAGE_ID);
+            }
+            return;
+        }
+
+        if (model.getLanguageId() === ATHENA_LANGUAGE_ID) {
+            return;
+        }
+
         monaco.editor.setModelLanguage(model, ATHENA_LANGUAGE_ID);
         this.notifyDocumentSymbolProviderChanged();
     }
@@ -829,8 +879,16 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         );
     }
 
-    async requestDiagramScene(): Promise<AthenaScenePublication | undefined> {
-        return this.sendLanguageRequest<AthenaScenePublication>('athena/diagramScene', {});
+    async requestDiagramScene(sheetId?: string): Promise<AthenaScenePublication | undefined> {
+        return this.sendLanguageRequest<AthenaScenePublication>('athena/diagramScene', { sheetId });
+    }
+
+    async requestFolioPages(): Promise<string[]> {
+        return this.sendLanguageRequest<string[]>('athena/folioPages', {}) ?? [];
+    }
+
+    async switchFolioPage(sheetId: string): Promise<AthenaScenePublication | undefined> {
+        return this.sendLanguageRequest<AthenaScenePublication>('athena/switchFolioPage', { sheetId });
     }
 
     async requestConnectionReadModel(widget: EditorWidget | undefined = this.editorManager.currentEditor): Promise<AthenaConnectionReadModelPublication | undefined> {
@@ -851,8 +909,8 @@ export class AthenaLspEditorBridgeService implements FrontendApplicationContribu
         return this.sendLanguageRequest<EditOperationResult>('athena/applyEditOperation', operation);
     }
 
-    async requestPresentationEditContext(): Promise<{ schemaVersion: 1; state: 'READY' | 'UNAVAILABLE'; sceneId?: string; sourceRevision: SourceRevision; sheetId?: string; engineeringWritableFiles: string[]; routeWritableFiles: string[]; placementWritableFiles: string[]; styleWritableFiles: string[]; diagnostics: Array<{ subject: string; problem: string; correction: string; code: string }> } | undefined> {
-        return this.sendLanguageRequest('athena/presentationEditContext', {});
+    async requestPresentationEditContext(sheetId?: string): Promise<{ schemaVersion: 1; state: 'READY' | 'UNAVAILABLE'; sceneId?: string; sourceRevision: SourceRevision; sheetId?: string; engineeringWritableFiles: string[]; routeWritableFiles: string[]; placementWritableFiles: string[]; styleWritableFiles: string[]; diagnostics: Array<{ subject: string; problem: string; correction: string; code: string }> } | undefined> {
+        return this.sendLanguageRequest('athena/presentationEditContext', { sheetId });
     }
 
     protected async sendLanguageRequest<T>(

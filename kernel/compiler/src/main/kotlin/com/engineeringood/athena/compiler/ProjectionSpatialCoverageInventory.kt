@@ -93,7 +93,16 @@ internal class ProjectionSpatialCoverageInventory(
             connection.participants.map { participant -> participant.endpoint.occurrencePortId }
                 .map { endpoint -> endpoint to connection }
         }.groupBy(keySelector = { (endpoint, _) -> endpoint }, valueTransform = { (_, connection) -> connection })
-        return incidents.map { (endpoint, connections) ->
+        val placedOccurrences = sheet.subjects.flatMap { subject ->
+            if (subject.nodeIds.isNotEmpty()) subject.nodeIds else projection.nodes
+                .filter { node -> node.semanticId == subject.semanticId }
+                .map { node -> node.projectionId }
+        }.toSet()
+        return projection.occurrencePorts
+            .filter { port -> port.occurrencePortId.occurrenceId in placedOccurrences }
+            .map { port ->
+            val endpoint = port.occurrencePortId
+            val connections = incidents[endpoint].orEmpty()
             val node = projection.nodes.first { candidate -> candidate.projectionId == endpoint.occurrenceId }
             val key = SpatialAnchorId(
                 sheetId = sheet.sheetId.value,

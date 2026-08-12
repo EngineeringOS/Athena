@@ -50,6 +50,18 @@ class ConnectionRouteTopologyPlannerTest {
     }
 
     @Test
+    fun `routes on different Folio Pages never create shared topology`() {
+        val power = route("net:n1", "A", listOf(SpatialPoint(10, 50), SpatialPoint(90, 50)), "sheet:power")
+        val control = route("net:n2", "B", listOf(SpatialPoint(50, 10), SpatialPoint(50, 90)), "sheet:control_cpu")
+
+        val topology = ConnectionRouteTopologyPlanner().plan(null, emptyProjection, listOf(power, control))
+
+        assertTrue(topology.junctions.isEmpty())
+        assertTrue(topology.crossings.isEmpty())
+        assertTrue(topology.sharedSegments.isEmpty())
+    }
+
+    @Test
     fun `shared net segment is canonicalized once and interruption is paired`() {
         val first = route("net:n1", "A", listOf(SpatialPoint(10, 40), SpatialPoint(80, 40)))
         val second = route("net:n1", "B", listOf(SpatialPoint(10, 40), SpatialPoint(80, 40)))
@@ -59,6 +71,22 @@ class ConnectionRouteTopologyPlannerTest {
         assertEquals(1, topology.interruptions.size)
         assertEquals(listOf("continuation:A", "continuation:B"), topology.interruptions.single().continuationIds)
         assertFalse(topology.junctions.any { it.point == SpatialPoint(10, 40) })
+    }
+
+    @Test
+    fun `shared net route overlap emits only common subsegment`() {
+        val first = route("net:n1", "A", listOf(SpatialPoint(10, 40), SpatialPoint(40, 40)))
+        val second = route("net:n1", "B", listOf(SpatialPoint(10, 40), SpatialPoint(80, 40)))
+
+        val topology = ConnectionRouteTopologyPlanner().plan(
+            connectionDocument(TopologyOperatorKind.BRANCH, "net:n1"),
+            emptyProjection,
+            listOf(first, second),
+        )
+
+        assertEquals(1, topology.sharedSegments.size)
+        assertEquals(SpatialPoint(10, 40), topology.sharedSegments.single().segment.start)
+        assertEquals(SpatialPoint(40, 40), topology.sharedSegments.single().segment.end)
     }
 
     private fun connectionDocument(kind: TopologyOperatorKind, netId: String): ConnectionDocument {
@@ -78,21 +106,21 @@ class ConnectionRouteTopologyPlannerTest {
         )
     }
 
-    private fun route(semanticId: String, suffix: String, points: List<SpatialPoint>): ConnectionRoutePlan {
-        val sourceOccurrence = SpatialOccurrenceId("sheet:main", "occurrence:${suffix}Source")
-        val targetOccurrence = SpatialOccurrenceId("sheet:main", "occurrence:${suffix}Target")
+    private fun route(semanticId: String, suffix: String, points: List<SpatialPoint>, sheetId: String = "sheet:main"): ConnectionRoutePlan {
+        val sourceOccurrence = SpatialOccurrenceId(sheetId, "occurrence:${suffix}Source")
+        val targetOccurrence = SpatialOccurrenceId(sheetId, "occurrence:${suffix}Target")
         val sourcePort = StableSemanticIdentity("port:${suffix}.out")
         val targetPort = StableSemanticIdentity("port:${suffix}.in")
         return ConnectionRoutePlan(
-            routeId = ConnectionRoutePlanId("sheet:main", "projection:$suffix"),
-            sheetId = "sheet:main",
+            routeId = ConnectionRoutePlanId(sheetId, "projection:$suffix"),
+            sheetId = sheetId,
             connectionId = StableSemanticIdentity(semanticId),
             projectionConnectionId = "projection:$suffix",
-            sourceAnchorId = SpatialAnchorId("sheet:main", sourceOccurrence, sourcePort),
-            targetAnchorId = SpatialAnchorId("sheet:main", targetOccurrence, targetPort),
+            sourceAnchorId = SpatialAnchorId(sheetId, sourceOccurrence, sourcePort),
+            targetAnchorId = SpatialAnchorId(sheetId, targetOccurrence, targetPort),
             points = points,
             sourceTrace = trace,
-            laneId = SpatialLaneId("sheet:main", if (points.first().y == points.last().y) SpatialLaneOrientation.HORIZONTAL else SpatialLaneOrientation.VERTICAL, if (points.first().y == points.last().y) points.first().y else points.first().x),
+            laneId = SpatialLaneId(sheetId, if (points.first().y == points.last().y) SpatialLaneOrientation.HORIZONTAL else SpatialLaneOrientation.VERTICAL, if (points.first().y == points.last().y) points.first().y else points.first().x),
         )
     }
 }

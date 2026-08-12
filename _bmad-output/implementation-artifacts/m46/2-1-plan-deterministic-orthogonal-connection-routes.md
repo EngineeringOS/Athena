@@ -2,14 +2,14 @@
 story: 2.1
 epic: 2
 title: Plan Deterministic Orthogonal Connection Routes
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 2.1: Plan Deterministic Orthogonal Connection Routes
 
-Status: review
+Status: done
 
 ## Story
 

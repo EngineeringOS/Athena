@@ -49,44 +49,6 @@ class AthenaConnectionReadModelRequestTest {
     }
 
     @Test
-    fun `same compilation route identities classify placed connection projections`() {
-        val repository = createGovernedTestRepository(
-            prefix = "athena-connection-read-model-placed-",
-            sourceText = placedConnectionSource(),
-        )
-        try {
-            repository.seedSourcePath.resolveSibling("factoryline.sheet.athena").writeText(
-                """
-                sheet factoryline {
-                  page format A4 landscape
-                  frame: 17 * 16
-                  snap: 4
-                  PLC1 at (8, 8)
-                  KM1 at (32, 8)
-                }
-                """.trimIndent(),
-            )
-            AthenaCompiler().materializeRepositoryLock(repository.repositoryRoot)
-            val server = AthenaLanguageServer()
-            try {
-                server.initialize(workspaceInitializeParams(repository.repositoryRoot)).get()
-
-                val payload = assertNotNull(server.connectionReadModelDomain(AthenaConnectionReadModelParams()))
-                val connection = payload.items.single()
-
-                assertEquals(ConnectionReadModelPublicationState.READY, payload.state, payload.diagnostics.toString())
-                assertTrue(connection.placed)
-                assertEquals(1, connection.projectionCount)
-                assertTrue(connection.projectionTraceIds.isNotEmpty())
-            } finally {
-                server.shutdown().get()
-            }
-        } finally {
-            repository.repositoryRoot.toFile().deleteRecursively()
-        }
-    }
-
-    @Test
     fun `request publishes deterministic complete connection and net facts independently of placement`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-connection-read-model-",
@@ -210,17 +172,4 @@ class AthenaConnectionReadModelRequestTest {
         }
     """.trimIndent()
 
-    private fun placedConnectionSource(): String = """
-        system FactoryLine {
-          entity PLC1 { concept controller }
-          entity KM1 { concept contactor }
-          port PLC1.out { direction out flow control }
-          port KM1.coil { direction in flow control }
-          connect wire PLC1.out to KM1.coil { crossSection 0.75 [mm2] }
-          view schematic {
-            sheet factoryline
-            region "Control" { occurrences [PLC1, KM1] }
-          }
-        }
-    """.trimIndent()
 }

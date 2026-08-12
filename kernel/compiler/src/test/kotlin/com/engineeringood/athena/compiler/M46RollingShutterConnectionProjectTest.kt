@@ -12,6 +12,21 @@ import kotlin.test.assertTrue
 
 class M46RollingShutterConnectionProjectTest {
     @Test
+    fun `M46 package symbols use normalized IEC SVG viewports without source-tool guides`() {
+        val repository = repositoryRoot().resolve("examples/m46/rolling-shutter")
+        val assets = listOf(
+            repository.resolve("packages/com.community.elements/resources/plc.svg"),
+            repository.resolve("packages/com.athena.iec/resources/motor.svg"),
+        )
+
+        assets.forEach { asset ->
+            val svg = Files.readString(asset)
+            assertTrue(svg.contains("viewBox=\"0 0 64 48\""), "$asset must declare the normalized 64x48 viewport.")
+            assertTrue(!svg.contains("#0000FF") && !svg.contains("#FF0000") && !svg.contains("#00FF00"), "$asset must not retain source-tool terminal guides.")
+        }
+    }
+
+    @Test
     fun `independent rolling shutter project compiles all semantic connection kinds`() {
         val repository = repositoryRoot().resolve("examples/m46/rolling-shutter")
         assertTrue(Files.isDirectory(repository), "M46 rolling-shutter repository must exist independently.")
@@ -46,6 +61,12 @@ class M46RollingShutterConnectionProjectTest {
         assertTrue(connectionIr.topologyOperators.any { it.kind == TopologyOperatorKind.BRANCH })
         assertTrue(connectionIr.topologyOperators.any { it.kind == TopologyOperatorKind.INTERRUPTION })
         assertTrue(first.projections.isNotEmpty(), first.projectionDiagnostics.joinToString("\n"))
+        val sparePort = "port:X2.powerTerminal.spare"
+        assertTrue(
+            first.projections.flatMap { projection -> projection.occurrencePorts }
+                .any { port -> port.occurrencePortId.portId.value == sparePort },
+            "An unconnected package-backed Port must remain a projected semantic Port.",
+        )
     }
 
     private fun repositoryRoot(): Path {

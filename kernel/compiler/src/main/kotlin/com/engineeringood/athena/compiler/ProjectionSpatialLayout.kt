@@ -4,6 +4,7 @@ import com.engineeringood.athena.layout.engine.RuleBasedLayoutEngine
 import com.engineeringood.athena.layout.engine.RuleBasedLayoutItem
 import com.engineeringood.athena.layout.engine.RuleBasedLayoutPoint
 import com.engineeringood.athena.layout.engine.RuleBasedLayoutSize
+import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionNode
 import com.engineeringood.athena.projection.ProjectionSheet
@@ -24,10 +25,13 @@ class ProjectionSpatialLayout {
     private val planner = ProjectionPlacementPlanner()
     private val validator = ProjectionSpatialValidator(planner)
 
-    fun place(projection: ProjectionDocument): SpatialLayoutResult {
+    fun place(
+        projection: ProjectionDocument,
+        explicitlyPlacedOccurrences: Set<LayoutOccurrenceId> = emptySet(),
+    ): SpatialLayoutResult {
         val sheets = projection.sheets
             .sortedWith(compareBy({ sheet -> sheet.order }, { sheet -> sheet.sheetId.value }))
-        val diagnostics = validator.validate(projection, sheets)
+        val diagnostics = validator.validate(projection, sheets, explicitlyPlacedOccurrences)
         if (diagnostics.isNotEmpty()) {
             return SpatialLayoutResult(
                 occurrences = emptyList(),

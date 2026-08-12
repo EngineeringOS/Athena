@@ -4,8 +4,8 @@ symbol breaker {
   version "1.0.0"
   resource geometry { kind svg path "resources/breaker.svg" }
   graphic svg resource geometry
-  anchor inlet { port Breaker.inlet direction in signal Power point (-1, 0) }
-  anchor line { port Breaker.line direction out signal Power point (1, 0) }
+  anchor inlet { port Breaker.inlet direction in signal Power point (0, -1) }
+  anchor line { port Breaker.line direction out signal Power point (0, 1) }
 }
 element breaker_element {
   identity "breaker_element"

@@ -22,12 +22,14 @@ private const val MAX_PNG_DECODED_BYTES = 64L * 1024L * 1024L
 private const val MAX_WOFF2_BYTES = 4 * 1024 * 1024
 private const val SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 
-private val allowedSvgElements = setOf("svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "defs", "clipPath", "title", "desc")
-private val forbiddenSvgElements = setOf("script", "style", "animate", "animateTransform", "filter", "foreignObject", "text", "use", "image")
+private val allowedSvgElements = setOf("svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "defs", "clipPath", "title", "desc", "text", "tspan", "use")
+private val forbiddenSvgElements = setOf("script", "style", "animate", "animateTransform", "filter", "foreignObject", "image")
 private val allowedSvgAttributes = setOf(
     "viewBox", "transform", "d", "x", "y", "x1", "y1", "x2", "y2", "width", "height", "cx", "cy", "r", "rx", "ry",
     "points", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-dasharray", "fill-rule", "clip-path", "id",
+    "font-family", "font-size", "font-weight", "text-anchor", "href", "xlink:href",
 )
+private const val XLINK_NAMESPACE = "http://www.w3.org/1999/xlink"
 
 data class AssetAdmissionInput(
     val relativePath: String,
@@ -148,8 +150,11 @@ object PresentationAssetCompiler {
             for (index in 0 until element.attributes.length) {
                 val attribute = element.attributes.item(index)
                 val attributeName = attribute.nodeName
-                if (attributeName == "xmlns" || attribute.prefix == "xmlns") {
+                if (attributeName == "xmlns") {
                     require(attribute.nodeValue == SVG_NAMESPACE) { "SVG foreign namespaces are prohibited." }
+                    add(attributeName to attribute.nodeValue)
+                } else if (attributeName == "xmlns:xlink") {
+                    require(attribute.nodeValue == XLINK_NAMESPACE) { "SVG foreign namespaces are prohibited." }
                     add(attributeName to attribute.nodeValue)
                 } else {
                     require(!attributeName.lowercase().startsWith("on")) { "SVG event attributes are prohibited." }
@@ -167,8 +172,10 @@ object PresentationAssetCompiler {
                     Node.TEXT_NODE, Node.CDATA_SECTION_NODE -> {
                         val text = child.nodeValue.orEmpty()
                         if (text.isNotBlank()) {
-                            require(name in setOf("title", "desc")) { "SVG text content is admitted only in title or desc." }
-                            add(escapeText(text))
+                            if (!(name == "svg" && text.trim() == "Your Browser does not support inline SVG!")) {
+                                require(name in setOf("title", "desc", "text", "tspan")) { "SVG text content is admitted only in text-bearing elements." }
+                                add(escapeText(text))
+                            }
                         }
                     }
                     Node.COMMENT_NODE -> Unit
@@ -182,6 +189,10 @@ object PresentationAssetCompiler {
 
     private fun validateAttributeValue(name: String, value: String) {
         val lower = value.lowercase()
+        if (name == "href" || name == "xlink:href") {
+            require(value.matches(Regex("#[A-Za-z_][A-Za-z0-9_.:-]*"))) { "SVG reuse references must target a local fragment id." }
+            return
+        }
         if (name == "style" || lower.contains("url(") && !(name == "clip-path" && value.matches(Regex("url\\(#[A-Za-z_][A-Za-z0-9_.:-]*\\)")))) {
             error("SVG external or non-local URL values are prohibited.")
         }
@@ -189,10 +200,22 @@ object PresentationAssetCompiler {
     }
 
     private fun viewBoxBounds(root: Element): SceneBounds {
-        val parts = root.getAttribute("viewBox").trim().split(Regex("\\s+"))
-        require(parts.size == 4) { "SVG requires an integer viewBox." }
-        val values = parts.map { it.toIntOrNull() ?: error("SVG viewBox must use integer logical units.") }
-        return SceneBounds(values[0], values[1], values[2], values[3])
+        val viewBox = root.getAttribute("viewBox").trim()
+        if (viewBox.isNotEmpty()) {
+            val parts = viewBox.split(Regex("\\s+"))
+            require(parts.size == 4) { "SVG viewBox must contain four integer logical units." }
+            val values = parts.map { it.toIntOrNull() ?: error("SVG viewBox must use integer logical units.") }
+            return SceneBounds(values[0], values[1], values[2], values[3])
+        }
+        return SceneBounds(0, 0, integerDimension(root, "width"), integerDimension(root, "height"))
+    }
+
+    private fun integerDimension(root: Element, name: String): Int {
+        val value = root.getAttribute(name).trim().toDoubleOrNull()
+        require(value != null && value.isFinite() && value > 0 && value == value.toInt().toDouble()) {
+            "SVG without a viewBox requires an integer `$name` dimension."
+        }
+        return value.toInt()
     }
 
     private fun strictUtf8(bytes: ByteArray): String = try {

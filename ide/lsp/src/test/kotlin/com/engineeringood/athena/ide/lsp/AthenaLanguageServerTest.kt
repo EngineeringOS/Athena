@@ -2,8 +2,11 @@ package com.engineeringood.athena.ide.lsp
 
 import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DocumentSymbolParams
+import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.eclipse.lsp4j.TextDocumentItem
+import org.eclipse.lsp4j.services.LanguageClient
+import java.lang.reflect.Proxy
 import java.util.concurrent.ExecutionException
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
@@ -19,15 +22,103 @@ import kotlin.test.assertTrue
  */
 class AthenaLanguageServerTest {
     @Test
-    fun `sheet companion has outline and no project parser diagnostic`() {
+    fun `representation binding companion publishes only dedicated binding diagnostics`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-representation-binding-lsp-",
+            sourceFileName = "rolling-shutter.athena",
+            sourceText = "system RollingShutter { }",
+        )
+        val bindingPath = repository.sourceRoot.resolve("com/engineeringood/factoryline/rolling-shutter.binding.athena")
+        val bindingText = """
+            package com.engineeringood.factoryline
+
+            binding supply_main {
+              id "binding-supply-main"
+              projection electrical
+              role primary
+              select function where { subject "function:Supply.main" }
+              use element "com.athena.iec/supply_element" version "1.0.0"
+            }
+        """.trimIndent()
+        bindingPath.writeText(bindingText)
+        val published = mutableListOf<PublishDiagnosticsParams>()
+        val client = Proxy.newProxyInstance(
+            javaClass.classLoader,
+            arrayOf(LanguageClient::class.java),
+        ) { _, method, arguments ->
+            if (method.name == "publishDiagnostics") {
+                published += arguments.single() as PublishDiagnosticsParams
+            }
+            null
+        } as LanguageClient
+        val server = AthenaLanguageServer()
+        try {
+            server.connect(client)
+            server.initialize(workspaceInitializeParams(repository.repositoryRoot)).get()
+            val uri = bindingPath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(TextDocumentItem(uri, "athena-representation-binding", 1, bindingText)),
+            )
+            assertEquals(emptyList(), published.single().diagnostics)
+        } finally {
+            server.shutdown().get()
+            repository.repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `sheet style companion publishes only dedicated style diagnostics`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-sheet-style-lsp-",
+            sourceFileName = "rolling-shutter.athena",
+            sourceText = "system RollingShutter { }",
+        )
+        val stylePath = repository.sourceRoot.resolve("com/engineeringood/factoryline/rolling-shutter.sheet.style.athena")
+        val styleText = """
+            style "default" {
+              stroke: #000000ff
+              width: 1
+              dash: []
+              route-marker: none
+              port-display: hidden
+            }
+        """.trimIndent()
+        stylePath.writeText(styleText)
+        val published = mutableListOf<PublishDiagnosticsParams>()
+        val client = Proxy.newProxyInstance(
+            javaClass.classLoader,
+            arrayOf(LanguageClient::class.java),
+        ) { _, method, arguments ->
+            if (method.name == "publishDiagnostics") {
+                published += arguments.single() as PublishDiagnosticsParams
+            }
+            null
+        } as LanguageClient
+        val server = AthenaLanguageServer()
+        try {
+            server.connect(client)
+            server.initialize(workspaceInitializeParams(repository.repositoryRoot)).get()
+            val uri = stylePath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(TextDocumentItem(uri, "athena-sheet-style", 1, styleText)),
+            )
+            assertEquals(emptyList(), published.single().diagnostics)
+        } finally {
+            server.shutdown().get()
+            repository.repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `page companion has outline and no project parser diagnostic`() {
         val repository = createGovernedTestRepository(
             prefix = "athena-sheet-lsp-",
             sourceFileName = "rolling-shutter.athena",
             sourceText = "system RollingShutter { }",
         )
-        val sheetPath = repository.sourceRoot.resolve("com/engineeringood/factoryline/rolling-shutter.sheet.athena")
+        val sheetPath = repository.sourceRoot.resolve("com/engineeringood/factoryline/rolling-shutter.power.sheet.athena")
         val sheetText = """
-            sheet rolling-shutter {
+            sheet power {
               page format A3 landscape
               frame: 17 * 16
               snap: 1
@@ -46,9 +137,56 @@ class AthenaLanguageServerTest {
             val symbols = server.textDocumentService.documentSymbol(
                 DocumentSymbolParams(TextDocumentIdentifier(uri)),
             ).get()
-            assertEquals("sheet rolling-shutter", symbols.single().right.name)
+            assertEquals("sheet power", symbols.single().right.name)
             assertEquals(5, symbols.single().right.children.size)
             assertTrue(server.trackedDocument(uri)?.sheetCompanion is com.engineeringood.athena.language.SheetCompanionParseSuccess)
+        } finally {
+            server.shutdown().get()
+            repository.repositoryRoot.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `folio companion has ordered page outline and no project parser diagnostic`() {
+        val repository = createGovernedTestRepository(
+            prefix = "athena-folio-lsp-",
+            sourceFileName = "rolling-shutter.athena",
+            sourceText = "system RollingShutter { }",
+        )
+        val folioPath = repository.sourceRoot.resolve("com/engineeringood/factoryline/rolling-shutter.folio.athena")
+        val folioText = """
+            folio rolling_shutter {
+              page power
+              page control_cpu
+            }
+        """.trimIndent()
+        folioPath.writeText(folioText)
+        val published = mutableListOf<PublishDiagnosticsParams>()
+        val client = Proxy.newProxyInstance(
+            LanguageClient::class.java.classLoader,
+            arrayOf(LanguageClient::class.java),
+        ) { _, method, arguments ->
+            if (method.name == "publishDiagnostics") {
+                published += arguments.single() as PublishDiagnosticsParams
+            }
+            null
+        } as LanguageClient
+        val server = AthenaLanguageServer()
+        try {
+            server.connect(client)
+            server.initialize(workspaceInitializeParams(repository.repositoryRoot)).get()
+            val uri = folioPath.toUri().toString()
+            server.textDocumentService.didOpen(
+                DidOpenTextDocumentParams(TextDocumentItem(uri, "athena-folio", 1, folioText)),
+            )
+            val symbols = server.textDocumentService.documentSymbol(
+                DocumentSymbolParams(TextDocumentIdentifier(uri)),
+            ).get()
+            val root = symbols.single().right
+            assertEquals("folio rolling_shutter", root.name)
+            assertEquals(listOf("page power", "page control_cpu"), root.children.map { child -> child.name })
+            assertEquals(emptyList(), published.single().diagnostics)
+            assertTrue(server.trackedDocument(uri)?.folioCompanion is com.engineeringood.athena.language.FolioCompanionParseSuccess)
         } finally {
             server.shutdown().get()
             repository.repositoryRoot.toFile().deleteRecursively()

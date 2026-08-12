@@ -2,14 +2,14 @@
 story: 4.2
 epic: 4
 title: Prove Incremental Connection Performance
-status: ready-for-dev
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 4.2: Prove Incremental Connection Performance
 
-Status: review
+Status: done
 
 ## Story
 

@@ -15,6 +15,9 @@ async function main() {
     const entryScript = path.resolve(__dirname, 'athena-electron-main.js');
     const workingDirectory = path.resolve(__dirname, '..');
 
+    verifyLauncherPreservesWorkspaceArguments(entryScript);
+    verifyCleanLauncherPassesWorkspaceDirectly();
+
     const child = spawn(
         electronBinary,
         [entryScript],
@@ -88,6 +91,23 @@ async function main() {
 
     await verifyRepositorySession();
     console.log(`Athena desktop smoke start passed. ready=${sawReady} javaHome=${resolvedJavaHome || 'n/a'}`);
+}
+
+function verifyLauncherPreservesWorkspaceArguments(entryScript) {
+    const source = require('node:fs').readFileSync(entryScript, 'utf8');
+    if (/process\.argv\s*=/.test(source)) {
+        throw new Error(
+            'Athena Electron launcher must preserve process.argv so Theia opens the requested workspace root.'
+        );
+    }
+}
+
+function verifyCleanLauncherPassesWorkspaceDirectly() {
+    const launcher = path.resolve(__dirname, '..', '..', '..', 'tools', 'start-athena-clean.ps1');
+    const source = require('node:fs').readFileSync(launcher, 'utf8');
+    if (source.includes(' start -- ')) {
+        throw new Error('Athena clean launcher must pass its workspace argument directly to Yarn.');
+    }
 }
 
 async function verifyRepositorySession() {

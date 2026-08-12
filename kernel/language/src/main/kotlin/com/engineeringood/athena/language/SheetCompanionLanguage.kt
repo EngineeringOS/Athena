@@ -69,6 +69,144 @@ data class SheetCompanionSource(
     val span: SourceSpan,
 )
 
+/** Ordered presentation index for one engineering project. It owns no package or engineering fact. */
+data class FolioCompanionSource(
+    val name: String,
+    val pages: List<FolioPageIntent>,
+    val span: SourceSpan,
+)
+
+data class FolioPageIntent(
+    val name: String,
+    val span: SourceSpan,
+)
+
+sealed interface FolioCompanionParseResult
+
+data class FolioCompanionParseSuccess(val source: FolioCompanionSource) : FolioCompanionParseResult
+
+data class FolioCompanionParseFailure(val diagnostics: List<SyntaxDiagnostic>) : FolioCompanionParseResult
+
+sealed interface FolioCompanionLocation {
+    val expectedPath: Path
+}
+
+data class FolioCompanionFound(override val expectedPath: Path, val path: Path) : FolioCompanionLocation
+
+data class FolioCompanionMissing(override val expectedPath: Path) : FolioCompanionLocation
+
+data class FolioCompanionAmbiguous(override val expectedPath: Path, val candidates: List<Path>) : FolioCompanionLocation
+
+sealed interface PageCompanionLocation {
+    val expectedPath: Path
+}
+
+data class PageCompanionFound(override val expectedPath: Path, val path: Path) : PageCompanionLocation
+
+data class PageCompanionMissing(override val expectedPath: Path) : PageCompanionLocation
+
+data class PageCompanionAmbiguous(override val expectedPath: Path, val candidates: List<Path>) : PageCompanionLocation
+
+object FolioCompanionLocator {
+    fun locate(projectSource: Path): FolioCompanionLocation {
+        val sourceName = projectSource.fileName?.toString().orEmpty()
+        require(sourceName.endsWith(".athena") && !sourceName.endsWith(".folio.athena") && !sourceName.endsWith(".sheet.athena")) {
+            "Folio Companion discovery requires one project .athena source."
+        }
+        val expected = projectSource.resolveSibling(sourceName.removeSuffix(".athena") + ".folio.athena")
+        return PageCompanionLocator.Support.locateExact(expected, { path ->
+            when (path) {
+                null -> FolioCompanionMissing(expected)
+                else -> FolioCompanionFound(expected, path)
+            }
+        }, { candidates -> FolioCompanionAmbiguous(expected, candidates) })
+    }
+}
+
+object PageCompanionLocator {
+    fun locate(projectSource: Path, pageName: String): PageCompanionLocation {
+        require(Support.PAGE_NAME.matches(pageName)) { "Page Companion name must be a stable page identifier." }
+        val sourceName = projectSource.fileName?.toString().orEmpty()
+        require(sourceName.endsWith(".athena") && !sourceName.endsWith(".folio.athena") && !sourceName.endsWith(".sheet.athena")) {
+            "Page Companion discovery requires one project .athena source."
+        }
+        val expected = projectSource.resolveSibling(sourceName.removeSuffix(".athena") + ".${pageName}.sheet.athena")
+        return Support.locateExact(expected, { path ->
+            when (path) {
+                null -> PageCompanionMissing(expected)
+                else -> PageCompanionFound(expected, path)
+            }
+        }, { candidates -> PageCompanionAmbiguous(expected, candidates) })
+    }
+
+    internal object Support {
+        val PAGE_NAME = Regex("[A-Za-z][A-Za-z0-9_]*")
+
+        fun <T> locateExact(expected: Path, found: (Path?) -> T, ambiguous: (List<Path>) -> T): T {
+            val parent = expected.parent ?: return found(null)
+            val candidates = Files.list(parent).use { paths ->
+                paths.filter { candidate -> candidate.fileName.toString().equals(expected.fileName.toString(), ignoreCase = true) }
+                    .sorted()
+                    .toList()
+            }
+            return when {
+                candidates.isEmpty() -> found(null)
+                candidates.size == 1 && candidates.single().fileName.toString() == expected.fileName.toString() -> found(candidates.single())
+                else -> ambiguous(candidates)
+            }
+        }
+    }
+}
+
+/** Small, human-authored index over independently stored page companions. */
+class AthenaFolioCompanionParser {
+    fun parse(file: String, source: String): FolioCompanionParseResult {
+        val lines = source.lines()
+        val meaningful = lines.withIndex().filter { (_, line) -> line.trim().isNotEmpty() }
+        if (meaningful.isEmpty()) return FolioCompanionParseFailure(listOf(diagnostic(file, lines, 1, "Folio Companion is empty.")))
+        val header = FOLIO_HEADER.matchEntire(meaningful.first().value.trim())
+            ?: return FolioCompanionParseFailure(listOf(diagnostic(file, lines, meaningful.first().index + 1, "Expected `folio <name> {`.")))
+        if (meaningful.last().value.trim() != "}") {
+            return FolioCompanionParseFailure(listOf(diagnostic(file, lines, meaningful.last().index + 1, "Expected closing `}` for Folio Companion.")))
+        }
+        val diagnostics = mutableListOf<SyntaxDiagnostic>()
+        val pages = mutableListOf<FolioPageIntent>()
+        val names = mutableSetOf<String>()
+        meaningful.drop(1).dropLast(1).forEach { indexed ->
+            val page = PAGE.matchEntire(indexed.value.trim())
+            if (page == null) {
+                diagnostics += diagnostic(file, lines, indexed.index + 1, "Unknown Folio Companion statement: `${indexed.value.trim()}`.")
+            } else {
+                val name = page.groupValues[1]
+                if (!names.add(name)) diagnostics += diagnostic(file, lines, indexed.index + 1, "Folio page `$name` is declared more than once.")
+                else pages += FolioPageIntent(name, lineSpan(lines, indexed.index + 1))
+            }
+        }
+        if (pages.isEmpty()) diagnostics += diagnostic(file, lines, meaningful.first().index + 1, "Folio Companion requires at least one page declaration.")
+        if (diagnostics.isNotEmpty()) return FolioCompanionParseFailure(diagnostics.sortedBy { it.span.start.offset })
+        val name = header.groupValues[1].ifBlank { header.groupValues[2] }
+        return FolioCompanionParseSuccess(FolioCompanionSource(name, pages, SourceSpan(
+            SourcePosition(0, meaningful.first().index + 1, 1),
+            SourcePosition(source.length, lines.size.coerceAtLeast(1), lines.lastOrNull()?.length?.plus(1) ?: 1),
+        )))
+    }
+
+    private fun diagnostic(file: String, lines: List<String>, line: Int, message: String) =
+        SyntaxDiagnostic(file, line, 1, message, lineSpan(lines, line))
+
+    private fun lineSpan(lines: List<String>, line: Int): SourceSpan {
+        val safeLine = line.coerceAtLeast(1)
+        val offset = if (lines.isEmpty()) 0 else lines.take(safeLine - 1).sumOf { it.length + 1 }
+        val length = lines.getOrNull(safeLine - 1)?.length ?: 0
+        return SourceSpan(SourcePosition(offset, safeLine, 1), SourcePosition(offset + length, safeLine, length + 1))
+    }
+
+    private companion object {
+        val FOLIO_HEADER = Regex("folio\\s+(?:\\\"([^\\\"]+)\\\"|([A-Za-z][A-Za-z0-9_-]*))\\s*\\{")
+        val PAGE = Regex("page\\s+([A-Za-z][A-Za-z0-9_]*)")
+    }
+}
+
 data class SheetStyleIntent(
     val name: String,
     val strokeRgba: String? = null,
@@ -108,63 +246,19 @@ data class SheetCompanionParseSuccess(val source: SheetCompanionSource) : SheetC
 
 data class SheetCompanionParseFailure(val diagnostics: List<SyntaxDiagnostic>) : SheetCompanionParseResult
 
-sealed interface SheetCompanionLocation {
-    val expectedPath: Path
-}
-
-data class SheetCompanionFound(
-    override val expectedPath: Path,
-    val path: Path,
-) : SheetCompanionLocation
-
-data class SheetCompanionMissing(override val expectedPath: Path) : SheetCompanionLocation
-
-data class SheetCompanionAmbiguous(
-    override val expectedPath: Path,
-    val candidates: List<Path>,
-) : SheetCompanionLocation
-
-object SheetCompanionLocator {
-    fun locate(projectSource: Path): SheetCompanionLocation {
-        val sourceName = projectSource.fileName?.toString().orEmpty()
-        require(sourceName.endsWith(".athena") && !sourceName.endsWith(".sheet.athena")) {
-            "Sheet Companion discovery requires one project .athena source."
-        }
-        val expected = projectSource.resolveSibling(sourceName.removeSuffix(".athena") + ".sheet.athena")
-        val parent = projectSource.parent ?: return SheetCompanionMissing(expected)
-        val candidates = Files.list(parent).use { paths ->
-            paths.filter { candidate -> candidate.fileName.toString().equals(expected.fileName.toString(), ignoreCase = true) }
-                .sorted()
-                .toList()
-        }
-        return when {
-            candidates.isEmpty() -> SheetCompanionMissing(expected)
-            candidates.size == 1 && candidates.single().fileName.toString() == expected.fileName.toString() ->
-                SheetCompanionFound(expected, candidates.single())
-            else -> SheetCompanionAmbiguous(expected, candidates)
-        }
-    }
-}
-
-object SheetStyleCompanionLocator {
-    fun locate(sheetCompanion: Path): SheetCompanionLocation {
+object PageStyleCompanionLocator {
+    fun locate(sheetCompanion: Path): PageCompanionLocation {
         val sheetName = sheetCompanion.fileName?.toString().orEmpty()
         require(sheetName.endsWith(".sheet.athena")) {
             "Style Companion discovery requires one .sheet.athena companion."
         }
         val expected = sheetCompanion.resolveSibling(sheetName.removeSuffix(".sheet.athena") + ".sheet.style.athena")
-        val parent = sheetCompanion.parent ?: return SheetCompanionMissing(expected)
-        val candidates = Files.list(parent).use { paths ->
-            paths.filter { candidate -> candidate.fileName.toString().equals(expected.fileName.toString(), ignoreCase = true) }
-                .sorted()
-                .toList()
-        }
-        return when {
-            candidates.isEmpty() -> SheetCompanionMissing(expected)
-            candidates.size == 1 && candidates.single().fileName.toString() == expected.fileName.toString() ->
-                SheetCompanionFound(expected, candidates.single())
-            else -> SheetCompanionAmbiguous(expected, candidates)
-        }
+        return PageCompanionLocator.Support.locateExact(expected, { path ->
+            when (path) {
+                null -> PageCompanionMissing(expected)
+                else -> PageCompanionFound(expected, path)
+            }
+        }, { candidates -> PageCompanionAmbiguous(expected, candidates) })
     }
 }
 

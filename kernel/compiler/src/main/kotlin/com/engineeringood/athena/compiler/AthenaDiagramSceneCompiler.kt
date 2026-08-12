@@ -65,7 +65,9 @@ class AthenaDiagramSceneCompiler {
     fun compile(
         compilation: CompilerCompilationSuccess,
         inputRevision: InputRevision,
+        activeSheetId: String? = null,
         styleCompanion: SheetStyleCompanionSource? = null,
+        pageCompanionPath: String? = null,
     ): AthenaDiagramSceneCompilationResult {
         val semanticError = compilation.semanticResult.diagnostics.firstOrNull { diagnostic ->
             diagnostic.severity == SemanticDiagnosticSeverity.ERROR
@@ -103,14 +105,40 @@ class AthenaDiagramSceneCompiler {
                 correction = "Publish exactly one canonical Spatial document for the active Sheet.",
                 problem = "Expected one Spatial document but found ${compilation.spatialDocuments.size}.",
             )
+        val sheet = when {
+            activeSheetId != null -> {
+                val canonicalSheetId = projection.sheets.singleOrNull { candidate ->
+                    candidate.sheetId.value == activeSheetId || candidate.displayName == activeSheetId
+                }?.sheetId?.value ?: activeSheetId
+                spatial.sheets.singleOrNull { it.sheetId == canonicalSheetId }
+            }
+            spatial.sheets.size == 1 -> spatial.sheets.single()
+            else -> null
+        } ?: return failure(
+            subject = "Folio Page",
+            correction = "Select one published Folio Page before opening the engineering document.",
+            problem = "No unique active Spatial Sheet is available.",
+        )
+        val projectionSheet = projection.sheets.singleOrNull { it.sheetId.value == sheet.sheetId }
+            ?: return failure(
+                subject = "Folio Page",
+                correction = "Publish one Projection Sheet for active Spatial Sheet `${sheet.sheetId}`.",
+                problem = "Active Spatial Sheet `${sheet.sheetId}` has no Projection Sheet.",
+            )
+        val companion = compilation.sheetCompanions.singleOrNull { it.name == projectionSheet.displayName }
+            ?: return failure(
+                subject = "Folio Page",
+                correction = "Publish one Page Companion for active Sheet `${sheet.sheetId}`.",
+                problem = "Active Spatial Sheet `${sheet.sheetId}` has no Page Companion.",
+            )
         return compile(
             projection = projection,
-            spatial = spatial,
+            spatial = SpatialDocument(listOf(sheet)),
             inputRevision = inputRevision,
-            sourcePaths = SceneTraceSourcePaths.from(compilation.source.file),
+            sourcePaths = SceneTraceSourcePaths.from(compilation.source.file, pageCompanionPath),
             portDirections = compilation.document.ports.associate { port -> port.id.value to port.direction.toScenePortDirection() },
             styleCompanion = styleCompanion,
-            sheetCompanion = compilation.sheetCompanion,
+            sheetCompanion = companion,
         )
     }
 
@@ -150,7 +178,7 @@ class AthenaDiagramSceneCompiler {
                 rows = sheetCompanion?.frame?.rows ?: sheet.grid.rows,
             )
             val snapGrid = SceneSnapGrid(
-                sheetId = sheet.sheetId,
+                sheetId = sheetCompanion?.name ?: sheet.sheetId,
                 step = sheetCompanion?.snap?.step ?: sheet.grid.subdivisions,
                 drawingOrigin = ScenePoint(sheet.drawingArea.x, sheet.drawingArea.y),
             )
@@ -519,20 +547,19 @@ private data class SceneTraceSourcePaths(
     }
 
     companion object {
-        fun from(sourceFile: String): SceneTraceSourcePaths {
+        fun from(sourceFile: String, pageCompanionFile: String? = null): SceneTraceSourcePaths {
             val sourcePath = runCatching { Path.of(sourceFile).normalize() }.getOrNull()
             if (sourcePath == null || sourcePath.fileName == null) {
                 val fallback = sourceFile.ifBlank { "source.athena" }.replace('\\', '/')
                 return SceneTraceSourcePaths(
                     sourcePath = fallback,
-                    sheetCompanionPath = fallback.removeSuffix(".athena") + ".sheet.athena",
+                    sheetCompanionPath = pageCompanionFile ?: fallback.removeSuffix(".athena") + ".page.sheet.athena",
                 )
             }
             return SceneTraceSourcePaths(
                 sourcePath = sourcePath.portableSourcePath(),
-                sheetCompanionPath = sourcePath.resolveSibling(
-                    sourcePath.fileName.toString().removeSuffix(".athena") + ".sheet.athena",
-                ).portableSourcePath(),
+                sheetCompanionPath = pageCompanionFile?.let { Path.of(it).portableSourcePath() }
+                    ?: sourcePath.resolveSibling(sourcePath.fileName.toString().removeSuffix(".athena") + ".page.sheet.athena").portableSourcePath(),
             )
         }
     }

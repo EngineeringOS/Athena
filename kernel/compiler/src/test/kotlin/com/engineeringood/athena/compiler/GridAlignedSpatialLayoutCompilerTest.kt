@@ -106,6 +106,58 @@ class GridAlignedSpatialLayoutCompilerTest {
         assertEquals(forward, reversed)
     }
 
+    @Test
+    fun `explicit Sheet placement admits a region beyond automatic vertical capacity`() {
+        val nodes = (1..12).map { index -> node("Control$index") }
+        val sheetId = ProjectionSheetId("view/test/sheet/1")
+        val projection = ProjectionDocument(
+            view = ViewDefinition("view:test", "Test"),
+            nodes = nodes,
+            connections = emptyList(),
+            sheets = listOf(
+                ProjectionSheet(
+                    sheetId = sheetId,
+                    displayName = "Test",
+                    order = 0,
+                    subjects = nodes.map { node -> ProjectionSheetSubject(node.semanticId, listOf(node.projectionId)) },
+                    regions = listOf(
+                        com.engineeringood.athena.projection.ProjectionRegion(
+                            regionId = "view/test/control",
+                            name = "Control",
+                            occurrenceNames = nodes.map(ProjectionNode::label),
+                        ),
+                    ),
+                    grid = ProjectionSheetGrid("grid:test", rows = 16, columns = 17),
+                ),
+            ),
+        )
+        val constraints = nodes.mapIndexed { index, node ->
+            SheetPlacementConstraint(
+                sheetId = sheetId.value,
+                occurrenceName = node.label,
+                occurrenceId = LayoutOccurrenceId(node.projectionId.value),
+                point = SheetPlacementPoint(8 + (index % 4) * 16, 8 + (index / 4) * 20),
+                snapStep = 4,
+                locked = false,
+                sourceSpan = LayoutSourceSpan("test.sheet.athena", index + 1, 1, index + 1, 20),
+            )
+        }
+
+        val result = GridAlignedSpatialLayoutCompiler().compile(
+            projection = projection,
+            constraints = constraints,
+            pageGeometries = mapOf(
+                sheetId.value to SpatialPageGeometryProfiles.logical(
+                    grid = requireNotNull(projection.sheets.single().grid),
+                    pageSize = projection.sheets.single().publication.pageSize,
+                ),
+            ),
+        )
+
+        assertTrue(result.diagnostics.isEmpty())
+        assertEquals(nodes.size, result.occurrences.size)
+    }
+
     private fun constraint(
         occurrence: String,
         x: Int,

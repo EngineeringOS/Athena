@@ -54,7 +54,11 @@ export default new ContainerModule(bind => {
     })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaPresentationWidget.ID,
-        createWidget: () => context.container.get<AthenaPresentationWidget>(AthenaPresentationWidget)
+        createWidget: (options?: { sheetId?: string; sourceUri?: string }) => {
+            const widget = context.container.get<AthenaPresentationWidget>(AthenaPresentationWidget);
+            widget.configureSheet(options?.sheetId, options?.sourceUri);
+            return widget;
+        }
     })).inSingletonScope();
     bind(WidgetFactory).toDynamicValue(context => ({
         id: AthenaConnectionNavigatorWidget.ID,

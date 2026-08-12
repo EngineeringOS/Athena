@@ -2,14 +2,14 @@
 story: 4.3
 epic: 4
 title: Prove Edit Reopen And Deterministic Export
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 4.3: Prove Edit Reopen And Deterministic Export
 
-Status: review
+Status: done
 
 ## Story
 

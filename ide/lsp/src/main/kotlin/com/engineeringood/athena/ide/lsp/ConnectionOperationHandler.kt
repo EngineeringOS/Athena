@@ -29,7 +29,7 @@ import com.engineeringood.athena.language.ConnectionSourceReconnect
 import com.engineeringood.athena.language.ConnectionSourceValue
 import com.engineeringood.athena.language.ParseSuccess
 import com.engineeringood.athena.language.SheetCompanionEditor
-import com.engineeringood.athena.language.SheetCompanionFound
+import com.engineeringood.athena.language.PageCompanionFound
 import com.engineeringood.athena.language.SheetCompanionParseSuccess
 import com.engineeringood.athena.language.SheetPoint
 import com.engineeringood.athena.language.SheetRouteConstraintWrite
@@ -96,7 +96,7 @@ internal class ConnectionOperationHandler(
         }.getOrElse { failure ->
             return reject(operation, currentRevision, "${sourceEndpoint.portId} -> ${sinkEndpoint.portId}", failure.message ?: "Connection intent cannot be authored.", "Correct the Connection endpoints and requirements.", "connection.edit.source-invalid")
         }
-        return applyEngineeringPatch(operation, body, before, edited, currentRevision) { compiled ->
+        return applyEngineeringPatch(operation, body, before, edited, currentRevision, scene.snapGrid.sheetId) { compiled ->
             val endpoints = setOf(sourceEndpoint.portId, sinkEndpoint.portId)
             val created = compiled.document.connections.singleOrNull { connection ->
                 connection.kind.name == body.connectionKind.name && connection.endpoints.mapNotNull { it.port.resolvedIdentity?.value }.toSet() == endpoints
@@ -150,7 +150,7 @@ internal class ConnectionOperationHandler(
         }.getOrElse { failure ->
             return reject(operation, currentRevision, body.connectionId, failure.message ?: "Connection endpoint cannot be changed.", "Choose a distinct compatible current Port.", "connection.edit.source-invalid")
         }
-        return applyEngineeringPatch(operation, body, before, edited, currentRevision) { next ->
+        return applyEngineeringPatch(operation, body, before, edited, currentRevision, scene.snapGrid.sheetId) { next ->
             val expectedPaths = setOf(
                 if (body.endpointRole == ConnectionEditEndpointRole.SOURCE) body.replacementPortId else "port:${sourcePath.joinToString(".")}",
                 if (body.endpointRole == ConnectionEditEndpointRole.SINK) body.replacementPortId else "port:${sinkPath.joinToString(".")}",
@@ -179,8 +179,8 @@ internal class ConnectionOperationHandler(
         val projection = current.projections.flatMap { it.connections }.singleOrNull {
             it.projectionId.value == body.projectionId && it.semanticId.value == body.connectionId
         } ?: return reject(operation, currentRevision, body.projectionId, "Connection Projection is not present in current Projection Reality.", "Refresh the current route and retry.", "route.edit.projection-missing")
-        val sheet = host.sheetCompanionLocation() as? SheetCompanionFound
-            ?: return reject(operation, currentRevision, body.sheetId, "Sheet Companion is unavailable.", "Restore the same-basename Sheet Companion.", "sheet.companion.unavailable")
+        val sheet = host.activePageCompanionLocation() as? PageCompanionFound
+            ?: return reject(operation, currentRevision, body.sheetId, "Page Companion is unavailable.", "Restore the active Folio Page Companion.", "page.companion.unavailable")
         val before = Files.readString(sheet.path)
         val targetId = "${body.target.kind.name.lowercase()}:${body.target.ordinal}"
         val edited = runCatching {
@@ -206,7 +206,7 @@ internal class ConnectionOperationHandler(
             if (nextProjection.semanticId != projection.semanticId || nextProjection.logicalRouteConstraints.none { it.targetId.value == targetId }) {
                 stagedFailure(body.connectionId, "Route adjustment changed engineering identity or was not admitted.", "Change presentation route intent only.", "route.edit.authority-violation")
             }
-            val raw = AthenaDiagramSceneCompiler().compile(compiled, staged.sceneInputRevision).scene
+            val raw = AthenaDiagramSceneCompiler().compile(compiled, staged.sceneInputRevision, scene.snapGrid.sheetId).scene
                 ?: stagedFailure(body.connectionId, "Route adjustment does not produce a complete Canonical Scene.", "Choose a route point compatible with current layout.", "route.edit.scene-invalid")
             host.packageBackedScene(raw)
                 ?: stagedFailure(body.connectionId, "Route adjustment does not preserve PACKAGE_READY representations.", "Restore current package-backed symbols.", "route.edit.representation-invalid")
@@ -219,6 +219,7 @@ internal class ConnectionOperationHandler(
         before: String,
         edited: ConnectionSourceEditResult,
         currentRevision: com.engineeringood.athena.interaction.SourceRevision,
+        activeSheetId: String,
         validateIntent: (CompilerCompilationSuccess) -> String,
     ): EditOperationResult {
         if (!edited.changed) {
@@ -230,8 +231,14 @@ internal class ConnectionOperationHandler(
             val compiled = host.executionContext.compiler().compile(host.sourcePath, edited.updatedSource) as? CompilerCompilationSuccess
                 ?: stagedFailure(body.kind.name, "Connection edit does not parse and compile.", "Correct Connection endpoints and requirements.", "connection.edit.compilation-failed")
             validateIntent(compiled)
-            val raw = AthenaDiagramSceneCompiler().compile(compiled, staged.sceneInputRevision).scene
-                ?: stagedFailure(body.kind.name, "Connection edit does not produce a complete Canonical Scene.", "Correct Port compatibility and Connection requirements.", "connection.edit.scene-invalid")
+            val sceneResult = AthenaDiagramSceneCompiler().compile(compiled, staged.sceneInputRevision, activeSheetId)
+            val raw = sceneResult.scene
+                ?: stagedFailure(
+                    body.kind.name,
+                    "Connection edit does not produce a complete Canonical Scene: ${sceneResult.diagnostics.joinToString { diagnostic -> diagnostic.problem }}",
+                    "Correct Port compatibility and Connection requirements.",
+                    "connection.edit.scene-invalid",
+                )
             host.packageBackedScene(raw)
                 ?: stagedFailure(body.kind.name, "Connection edit does not preserve PACKAGE_READY representations.", "Use package-backed compatible Port anchors.", "connection.edit.representation-invalid")
         }

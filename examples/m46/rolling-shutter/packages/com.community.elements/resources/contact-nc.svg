@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="30.000000" height="100.000000">
+  <defs>
+    <g id="terminal" stroke-width="1" stroke-linecap="square">
+      <line x1="0" y1="0" x2="0" y2="4" stroke="#0000FF" />
+      <line x1="0" y1="1" x2="0" y2="4" stroke="#FF0000" />
+    </g>
+  </defs>
+  <g transform="translate(11,50)" stroke-linecap="square">
+    <polyline points="10,-20 0,20 0,40" stroke-width="1" fill="none" stroke="#000000" />
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(0,-18)" >
+      <line x1="0" y1="0" x2="12" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(0,-40) rotate(90)" >
+      <line x1="0" y1="0" x2="22" y2="0" />
+      </g>
+    <text transform="translate(17.3, 10.9)" font-family="Sans Serif,MS Sans Serif" font-size="18pt" fill="#000000"></text>
+    <use xlink:href="#terminal" x="0" y="-40" />
+    <use xlink:href="#terminal" x="0" y="40" transform="rotate(180 0 40)" />
+  </g>
+  Your Browser does not support inline SVG!
+</svg>

@@ -96,7 +96,10 @@ internal class SheetCompanionProjectionPlacementMapper {
         }
         return SheetRouteConstraintMappingResult(
             connections = projection.connections.map { connection ->
-                connection.copy(logicalRouteConstraints = constraintsByProjection[connection.projectionId.value].orEmpty())
+                connection.copy(
+                    logicalRouteConstraints = constraintsByProjection[connection.projectionId.value]
+                        ?: connection.logicalRouteConstraints,
+                )
             },
             diagnostics = diagnostics.sortedBy { diagnostic -> diagnostic.sourceSpan.startLine },
         )

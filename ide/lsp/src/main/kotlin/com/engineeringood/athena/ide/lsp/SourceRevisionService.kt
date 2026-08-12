@@ -3,9 +3,8 @@ package com.engineeringood.athena.ide.lsp
 import com.engineeringood.athena.interaction.PackageItemDigest
 import com.engineeringood.athena.interaction.RevisionDigest
 import com.engineeringood.athena.interaction.SourceRevision
-import com.engineeringood.athena.language.SheetCompanionFound
-import com.engineeringood.athena.language.SheetCompanionLocator
-import com.engineeringood.athena.language.SheetStyleCompanionLocator
+import com.engineeringood.athena.language.PageCompanionFound
+import com.engineeringood.athena.language.PageStyleCompanionLocator
 import com.engineeringood.athena.presentation.AthenaDiagramScene
 import com.engineeringood.athena.presentation.InputRevision
 import java.nio.charset.StandardCharsets
@@ -42,15 +41,15 @@ class SourceRevisionService(private val host: AthenaLspSessionHostReady) {
         requireValidLock: Boolean,
     ): SourceRevision {
         val sourceDigest = engineeringAuthorityDigest(representationBindingBytesOverride, engineeringSourceBytesOverride)
-        val sheetLocation = SheetCompanionLocator.locate(host.sourcePath)
+        val sheetLocation = host.activePageCompanionLocation()
         val sheetDigest = when (sheetLocation) {
-            is SheetCompanionFound -> (sheetCompanionBytesOverride ?: Files.readAllBytes(sheetLocation.path)).sha256Hex()
+            is PageCompanionFound -> (sheetCompanionBytesOverride ?: Files.readAllBytes(sheetLocation.path)).sha256Hex()
             else -> sheetLocation::class.simpleName.orEmpty().toByteArray(StandardCharsets.UTF_8).sha256Hex()
         }
         val styleDigest = when {
             styleCompanionBytesOverride != null -> RevisionDigest.present(styleCompanionBytesOverride.sha256Hex())
-            sheetLocation is SheetCompanionFound -> when (val style = SheetStyleCompanionLocator.locate(sheetLocation.path)) {
-                is SheetCompanionFound -> RevisionDigest.present(Files.readAllBytes(style.path).sha256Hex())
+            sheetLocation is PageCompanionFound -> when (val style = PageStyleCompanionLocator.locate(sheetLocation.path)) {
+                is PageCompanionFound -> RevisionDigest.present(Files.readAllBytes(style.path).sha256Hex())
                 else -> RevisionDigest.absent()
             }
             else -> RevisionDigest.absent()

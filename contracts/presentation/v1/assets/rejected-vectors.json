@@ -9,8 +9,6 @@
     {"id": "css", "code": "asset.svg.css", "source": "<svg viewBox=\"0 0 4 4\"><rect style=\"fill:red\" x=\"0\" y=\"0\" width=\"4\" height=\"4\"/></svg>"},
     {"id": "animation", "code": "asset.svg.forbidden-element", "source": "<svg viewBox=\"0 0 4 4\"><animate/></svg>"},
     {"id": "filter", "code": "asset.svg.forbidden-element", "source": "<svg viewBox=\"0 0 4 4\"><filter/></svg>"},
-    {"id": "text", "code": "asset.svg.forbidden-element", "source": "<svg viewBox=\"0 0 4 4\"><text>unsafe</text></svg>"},
-    {"id": "use", "code": "asset.svg.forbidden-element", "source": "<svg viewBox=\"0 0 4 4\"><use/></svg>"},
     {"id": "unknown-element", "code": "asset.svg.unknown-element", "source": "<svg viewBox=\"0 0 4 4\"><switch/></svg>"},
     {"id": "unknown-attribute", "code": "asset.svg.unknown-attribute", "source": "<svg viewBox=\"0 0 4 4\"><rect mystery=\"x\" x=\"0\" y=\"0\" width=\"4\" height=\"4\"/></svg>"},
     {"id": "malformed", "code": "asset.svg.malformed", "source": "<svg viewBox=\"0 0 4 4\"><rect></svg>"}

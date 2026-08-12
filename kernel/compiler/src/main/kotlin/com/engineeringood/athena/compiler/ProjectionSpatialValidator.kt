@@ -2,6 +2,7 @@ package com.engineeringood.athena.compiler
 
 import com.engineeringood.athena.projection.ProjectionDocument
 import com.engineeringood.athena.projection.ProjectionSheet
+import com.engineeringood.athena.layout.LayoutOccurrenceId
 import com.engineeringood.athena.spatial.SpatialDiagnostic
 import com.engineeringood.athena.spatial.SpatialSourceTrace
 
@@ -11,6 +12,7 @@ internal class ProjectionSpatialValidator(
     fun validate(
         projection: ProjectionDocument,
         sheets: List<ProjectionSheet>,
+        explicitlyPlacedOccurrences: Set<LayoutOccurrenceId> = emptySet(),
     ): List<SpatialDiagnostic> {
         val preflightDiagnostics = (
             duplicateSheetIdentityDiagnostics(sheets) +
@@ -26,7 +28,7 @@ internal class ProjectionSpatialValidator(
             invalidRegionMembershipDiagnostics(projection, sheets) +
             duplicateRegionMembershipDiagnostics(projection, sheets) +
             horizontalCapacityDiagnostics(projection, sheets) +
-            verticalCapacityDiagnostics(projection, sheets)
+            verticalCapacityDiagnostics(projection, sheets, explicitlyPlacedOccurrences)
             ).canonical()
     }
 
@@ -271,6 +273,7 @@ internal class ProjectionSpatialValidator(
     private fun verticalCapacityDiagnostics(
         projection: ProjectionDocument,
         sheets: List<ProjectionSheet>,
+        explicitlyPlacedOccurrences: Set<LayoutOccurrenceId>,
     ): List<SpatialDiagnostic> {
         val availableTopRange = ProjectionSpatialLayout.DRAWING_AREA.height -
             ProjectionSpatialLayout.GROUPING_PADDING * 2 -
@@ -278,18 +281,23 @@ internal class ProjectionSpatialValidator(
         val requiredTopStep = ProjectionSpatialLayout.NODE_HEIGHT + ProjectionSpatialLayout.OCCURRENCE_SEPARATION
         return sheets.flatMap { sheet ->
             planner.placementGroups(sheet, projection).mapNotNull { group ->
-                if (group.nodes.size <= 1 || availableTopRange / (group.nodes.size - 1) >= requiredTopStep) {
+                val automaticallyPlacedNodes = group.nodes.filterNot { node ->
+                    LayoutOccurrenceId(node.projectionId.value) in explicitlyPlacedOccurrences
+                }
+                if (automaticallyPlacedNodes.size <= 1 ||
+                    availableTopRange / (automaticallyPlacedNodes.size - 1) >= requiredTopStep
+                ) {
                     return@mapNotNull null
                 }
                 SpatialDiagnostic(
                     subject = "Region ${group.regionName}",
-                    problem = "cannot place ${group.nodes.size} Occurrences with " +
+                    problem = "cannot place ${automaticallyPlacedNodes.size} Occurrences with " +
                         "${ProjectionSpatialLayout.OCCURRENCE_SEPARATION}-unit vertical separation " +
                         "inside the Drawing Area",
                     correction = "Split Region ${group.regionName} or reduce its Occurrence count.",
                     sourceTrace = SpatialSourceTrace(
-                        projectionIds = listOf(group.regionId) + group.nodes.map { node -> node.projectionId.value },
-                        geometryElementIds = group.nodes.map { node -> node.originGeometryElementId },
+                        projectionIds = listOf(group.regionId) + automaticallyPlacedNodes.map { node -> node.projectionId.value },
+                        geometryElementIds = automaticallyPlacedNodes.map { node -> node.originGeometryElementId },
                     ),
                 )
             }

@@ -127,6 +127,10 @@ test('viewport transforms suspend invisible connection hit geometry until select
     assert.match(benchmark, /this\.beginViewportTransform\(\);[\s\S]*kind: 'PAN_ZOOM'[\s\S]*this\.endViewportTransform\(\);[\s\S]*kind: 'SELECTION'/);
     assert.match(source, /this\.routeHitGroup\.visible\(false\);/);
     assert.match(source, /this\.routeHitGroup\.visible\(true\);/);
+    assert.match(source, /this\.sceneLayer\.listening\(false\);/);
+    assert.match(source, /this\.sceneLayer\.listening\(true\);/);
+    assert.match(source, /this\.sceneLayer\.cache\(\{ x: 0, y: 0, width: this\.stage\.width\(\), height: this\.stage\.height\(\), pixelRatio: 1 \}\);/);
+    assert.match(source, /this\.sceneLayer\.clearCache\(\);/);
 });
 
 test('viewport motion defers visible-content rebuilding until the transform settles', () => {

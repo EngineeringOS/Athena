@@ -11,6 +11,12 @@ import com.engineeringood.athena.compiler.semantic.SourceUnitId
 import com.engineeringood.athena.language.SourceSpan
 import com.engineeringood.athena.language.SheetCompanionParseFailure
 import com.engineeringood.athena.language.SheetCompanionParseResult
+import com.engineeringood.athena.language.AthenaSheetStyleCompanionParser
+import com.engineeringood.athena.language.FolioCompanionParseResult
+import com.engineeringood.athena.language.FolioCompanionParseFailure
+import com.engineeringood.athena.language.ParseFailure
+import com.engineeringood.athena.language.SheetStyleCompanionParseFailure
+import com.engineeringood.athena.language.SheetStyleCompanionParseResult
 import com.engineeringood.athena.language.SyntaxDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnostic
 import com.engineeringood.athena.repository.RepositoryDiagnosticSeverity
@@ -356,16 +362,26 @@ class AthenaLanguageServer(
     /** Returns one closed M43 scene publication. */
     @JsonRequest("athena/diagramScene")
     fun diagramScene(params: AthenaDiagramSceneParams): CompletableFuture<Map<String, Any?>?> {
+        return CompletableFuture.completedFuture(activeSession?.diagramScenePublication(params.sheetId)?.toDiagramScenePayload())
+    }
+
+    @JsonRequest("athena/folioPages")
+    fun folioPages(params: AthenaDiagramSceneParams): CompletableFuture<List<String>> {
         @Suppress("UnusedParameter")
         val ignored = params
-        return CompletableFuture.completedFuture(diagramPublicationService?.current()?.toDiagramScenePayload())
+        return CompletableFuture.completedFuture(activeSession?.folioPageNames().orEmpty())
+    }
+
+    @JsonRequest("athena/switchFolioPage")
+    fun switchFolioPage(params: AthenaFolioPageParams): CompletableFuture<Map<String, Any?>?> {
+        val session = activeSession ?: return CompletableFuture.completedFuture(null)
+        if (params.sheetId.isBlank()) return CompletableFuture.completedFuture(null)
+        return CompletableFuture.completedFuture(session.diagramScenePublication(params.sheetId).toDiagramScenePayload())
     }
 
     @JsonRequest("athena/presentationEditContext")
     fun presentationEditContext(params: AthenaDiagramSceneParams): CompletableFuture<Map<String, Any?>?> {
-        @Suppress("UnusedParameter")
-        val ignored = params
-        return CompletableFuture.completedFuture(activeSession?.presentationEditContext()?.toWirePayload())
+        return CompletableFuture.completedFuture(activeSession?.presentationEditContext(params.sheetId)?.toWirePayload())
     }
 
     internal fun presentationEditContextDomain(): AthenaPresentationEditContextPayload? = activeSession?.presentationEditContext()
@@ -448,6 +464,47 @@ class AthenaLanguageServer(
         val activation = activeSession ?: return
         val features = languageFeatures ?: return
         val documentPath = documentUri.toDocumentPath() ?: activation.sourcePath
+        val styleCompanion = documentPath.takeIf(Path::isSheetStyleCompanion)
+            ?.let { AthenaSheetStyleCompanionParser().parse(documentPath.toString(), documentText) }
+        if (styleCompanion != null) {
+            languageClient?.publishDiagnostics(
+                PublishDiagnosticsParams().apply {
+                    uri = documentUri
+                    this.version = version
+                    diagnostics = styleCompanion.toLspDiagnostics()
+                },
+            )
+            return
+        }
+        if (documentPath.isFolioCompanion()) {
+            val trackedDocument = features.trackDocument(
+                uri = documentUri,
+                path = documentPath,
+                version = version,
+                text = documentText,
+            )
+            languageClient?.publishDiagnostics(
+                PublishDiagnosticsParams().apply {
+                    uri = documentUri
+                    this.version = trackedDocument.version
+                    diagnostics = trackedDocument.folioCompanion?.toLspDiagnostics().orEmpty()
+                },
+            )
+            return
+        }
+        if (documentPath.isRepresentationBindingCompanion()) {
+            val diagnostics = RepresentationBindingCompanionEditor()
+                .parseFailure(documentPath, documentText)
+                .toLspDiagnostics()
+            languageClient?.publishDiagnostics(
+                PublishDiagnosticsParams().apply {
+                    uri = documentUri
+                    this.version = version
+                    this.diagnostics = diagnostics
+                },
+            )
+            return
+        }
         val trackedDocument = features.trackDocument(
             uri = documentUri,
             path = documentPath,
@@ -455,7 +512,7 @@ class AthenaLanguageServer(
             text = documentText,
         )
         val diagnostics = trackedDocument.sheetCompanion?.toLspDiagnostics()
-            ?: (trackedDocument.compilation.toLspDiagnostics() +
+            ?: (trackedDocument.compilation?.toLspDiagnostics().orEmpty() +
                 trackedDocument.projectSemanticDiagnostics.toLspDiagnostics(
                     documentUri = documentUri,
                     currentSourceUnitId = trackedDocument.projectSemanticSourceUnitId,
@@ -645,11 +702,66 @@ private fun SheetCompanionParseResult.toLspDiagnostics(): List<Diagnostic> = whe
     else -> emptyList()
 }
 
+private fun FolioCompanionParseResult.toLspDiagnostics(): List<Diagnostic> = when (this) {
+    is FolioCompanionParseFailure -> diagnostics.map(SyntaxDiagnostic::toLspFolioDiagnostic)
+    else -> emptyList()
+}
+
+private fun SheetStyleCompanionParseResult.toLspDiagnostics(): List<Diagnostic> = when (this) {
+    is SheetStyleCompanionParseFailure -> diagnostics.map(SyntaxDiagnostic::toLspStyleCompanionDiagnostic)
+    else -> emptyList()
+}
+
+private fun Path.isSheetStyleCompanion(): Boolean =
+    fileName.toString().endsWith(".sheet.style.athena", ignoreCase = true)
+
+private fun Path.isFolioCompanion(): Boolean =
+    fileName.toString().endsWith(".folio.athena", ignoreCase = true)
+
+private fun Path.isRepresentationBindingCompanion(): Boolean =
+    fileName.toString().endsWith(".binding.athena", ignoreCase = true)
+
 private fun SyntaxDiagnostic.toLspDiagnostic(): Diagnostic = Diagnostic().apply {
     severity = DiagnosticSeverity.Error
-    source = "Athena Sheet Companion"
-    code = Either.forLeft("sheet-companion")
+    source = "Athena Page Companion"
+    code = Either.forLeft("page-companion")
     message = this@toLspDiagnostic.message
+    range = Range(
+        Position((span.start.line - 1).coerceAtLeast(0), (span.start.column - 1).coerceAtLeast(0)),
+        Position((span.end.line - 1).coerceAtLeast(0), (span.end.column - 1).coerceAtLeast(0)),
+    )
+}
+
+private fun SyntaxDiagnostic.toLspFolioDiagnostic(): Diagnostic = Diagnostic().apply {
+    severity = DiagnosticSeverity.Error
+    source = "Athena Folio Companion"
+    code = Either.forLeft("folio-companion")
+    message = this@toLspFolioDiagnostic.message
+    range = Range(
+        Position((span.start.line - 1).coerceAtLeast(0), (span.start.column - 1).coerceAtLeast(0)),
+        Position((span.end.line - 1).coerceAtLeast(0), (span.end.column - 1).coerceAtLeast(0)),
+    )
+}
+
+private fun SyntaxDiagnostic.toLspStyleCompanionDiagnostic(): Diagnostic = Diagnostic().apply {
+    severity = DiagnosticSeverity.Error
+    source = "Athena Sheet Style Companion"
+    code = Either.forLeft("sheet-style-companion")
+    message = this@toLspStyleCompanionDiagnostic.message
+    range = Range(
+        Position((span.start.line - 1).coerceAtLeast(0), (span.start.column - 1).coerceAtLeast(0)),
+        Position((span.end.line - 1).coerceAtLeast(0), (span.end.column - 1).coerceAtLeast(0)),
+    )
+}
+
+private fun ParseFailure?.toLspDiagnostics(): List<Diagnostic> =
+    this?.diagnostics?.map(SyntaxDiagnostic::toLspRepresentationBindingDiagnostic).orEmpty()
+
+private fun SyntaxDiagnostic.toLspRepresentationBindingDiagnostic(): Diagnostic = Diagnostic().apply {
+    severity = DiagnosticSeverity.Error
+    source = "Athena Representation Binding Companion"
+    code = Either.forLeft("representation-binding-companion")
+    message = this@toLspRepresentationBindingDiagnostic.message
     range = Range(
         Position((span.start.line - 1).coerceAtLeast(0), (span.start.column - 1).coerceAtLeast(0)),
         Position((span.end.line - 1).coerceAtLeast(0), (span.end.column - 1).coerceAtLeast(0)),

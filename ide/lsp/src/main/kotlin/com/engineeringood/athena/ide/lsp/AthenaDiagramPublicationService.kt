@@ -28,10 +28,14 @@ class AthenaDiagramPublicationService(private val host: AthenaLspSessionHostRead
 
     private fun AthenaScenePublication.requiresUnavailable(): Boolean = diagnostics.any { diagnostic ->
         diagnostic.code in setOf(
-            "sheet.companion.missing",
-            "sheet.companion.ambiguous",
-            "sheet.style.companion.ambiguous",
-            "sheet.style.companion.invalid",
+            "folio.companion.missing",
+            "folio.companion.ambiguous",
+            "folio.companion.invalid",
+            "page.companion.missing",
+            "page.companion.ambiguous",
+            "page.companion.invalid",
+            "page.style.companion.ambiguous",
+            "page.style.companion.invalid",
             "repository.lock.unavailable",
             "asset.resource.root-invalid",
             "asset.resource.missing",

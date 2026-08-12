@@ -173,6 +173,19 @@ yarn test
 .\gradlew.bat --no-daemon --console=plain :kernel:compiler:test :ide:lsp:test
 ```
 
+### Task 12.5: Story 4.4 - M46 Folio And Independent Page Companions
+
+**Files:** add the Folio Companion language/model, page-companion discovery and compilation, deterministic
+page switching in Theia, M46 power/CPU-control Page Companions, and compiler/LSP/frontend acceptance tests.
+
+**Verify:**
+```powershell
+.\gradlew.bat --no-daemon --console=plain :kernel:language:test :kernel:compiler:test :ide:lsp:test
+Set-Location ide\theia-frontend
+yarn test
+yarn build
+```
+
 ### Task 13: Story 4.2 - Incremental Performance Proof
 
 **Files:** frontend benchmark model/tests; product benchmark launcher/verifier; M46 evidence JSON.

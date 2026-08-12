@@ -57,6 +57,9 @@ import com.engineeringood.athena.language.AthenaSheetCompanionParser
 import com.engineeringood.athena.language.SheetCompanionParseFailure
 import com.engineeringood.athena.language.SheetCompanionParseResult
 import com.engineeringood.athena.language.SheetCompanionParseSuccess
+import com.engineeringood.athena.language.AthenaFolioCompanionParser
+import com.engineeringood.athena.language.FolioCompanionParseResult
+import com.engineeringood.athena.language.FolioCompanionParseSuccess
 import com.engineeringood.athena.ir.EngineeringValue
 import com.engineeringood.athena.repository.PackageIdentifier
 import java.io.File
@@ -84,7 +87,7 @@ data class AthenaTrackedDocument(
     val path: Path,
     val version: Int,
     val text: String,
-    val compilation: CompilerCompilationResult,
+    val compilation: CompilerCompilationResult?,
     val navigationIndex: AthenaNavigationIndex?,
     val projectSemanticGraphId: String? = null,
     val projectSemanticSourceUnitId: SourceUnitId? = null,
@@ -92,6 +95,7 @@ data class AthenaTrackedDocument(
     val projectSemanticDiagnostics: List<ProjectSemanticDiagnostic> = emptyList(),
     val projectSemanticNavigation: AthenaProjectSemanticNavigationSnapshot? = null,
     val sheetCompanion: SheetCompanionParseResult? = null,
+    val folioCompanion: FolioCompanionParseResult? = null,
 )
 
 data class AthenaProjectSemanticDiagnosticsSnapshot(
@@ -232,7 +236,12 @@ class AthenaLanguageFeatures(
         } else {
             null
         }
-        val compilation = compiler.compile(path, text)
+        val folioCompanion = if (path.fileName.toString().endsWith(".folio.athena")) {
+            AthenaFolioCompanionParser().parse(path.toString(), text)
+        } else {
+            null
+        }
+        val compilation = if (sheetCompanion != null || folioCompanion != null) null else compiler.compile(path, text)
         val success = compilation as? CompilerCompilationSuccess
         val projectSemanticSnapshot = success?.let {
             projectSemanticDiagnostics(path, text, it)
@@ -252,6 +261,7 @@ class AthenaLanguageFeatures(
             projectSemanticDiagnostics = projectSemanticSnapshot?.diagnostics.orEmpty(),
             projectSemanticNavigation = projectSemanticSnapshot?.navigation,
             sheetCompanion = sheetCompanion,
+            folioCompanion = folioCompanion,
         )
         documentsByUri[uri] = tracked
         return tracked
@@ -598,6 +608,9 @@ class AthenaLanguageFeatures(
         tracked.sheetCompanion?.let { result ->
             return result.toDocumentSymbols()
         }
+        tracked.folioCompanion?.let { result ->
+            return result.toDocumentSymbols()
+        }
         val success = tracked.compilation as? CompilerCompilationSuccess ?: return emptyList()
         val ast = success.source.ast
         val children = ast.declarations.map { declaration -> declaration.toDocumentSymbol() }
@@ -781,6 +794,8 @@ class AthenaLanguageFeatures(
                         },
                 )
             }
+
+            null -> null
         }
     }
 
@@ -2289,7 +2304,24 @@ private fun SheetCompanionParseResult.toDocumentSymbols(): List<Either<org.eclip
             add(symbol("${placement.occurrence} at (${placement.point.x}, ${placement.point.y})", "placement", placement.span, SymbolKind.Field))
         }
     }
-    val root = symbol("sheet ${source.name}", "Sheet Companion", source.span, SymbolKind.File).apply {
+    val root = symbol("sheet ${source.name}", "Page Companion", source.span, SymbolKind.File).apply {
+        this.children = children
+    }
+    return listOf(Either.forRight(root))
+}
+
+private fun FolioCompanionParseResult.toDocumentSymbols(): List<Either<org.eclipse.lsp4j.SymbolInformation, DocumentSymbol>> {
+    val source = (this as? FolioCompanionParseSuccess)?.source ?: return emptyList()
+    fun symbol(name: String, detail: String, span: SourceSpan, kind: SymbolKind): DocumentSymbol =
+        DocumentSymbol().apply {
+            this.name = name
+            this.detail = detail
+            this.kind = kind
+            this.range = span.toLspRange()
+            this.selectionRange = span.toLspRange()
+        }
+    val children = source.pages.map { page -> symbol("page ${page.name}", "Folio Page", page.span, SymbolKind.Namespace) }
+    val root = symbol("folio ${source.name}", "Folio Companion", source.span, SymbolKind.File).apply {
         this.children = children
     }
     return listOf(Either.forRight(root))

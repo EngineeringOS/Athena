@@ -78,6 +78,35 @@ class PresentationAssetCompilerTest {
     }
 
     @Test
+    fun `svg safe one admits static package symbols with local reuse labels and integer dimensions`() {
+        val source = """
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="100">
+              <defs><g id="terminal"><line x1="0" y1="0" x2="0" y2="4" stroke="#000000"/></g></defs>
+              <g transform="translate(20,10)"><use xlink:href="#terminal"/><rect x="-8" y="10" width="16" height="32" fill="none" stroke="#000000"/><text x="0" y="6" font-family="sans-serif" font-size="8" text-anchor="middle">KM1</text></g>
+              Your Browser does not support inline SVG!
+            </svg>
+        """.trimIndent()
+
+        val admitted = assertIs<AssetAdmissionResult.Admitted>(
+            PresentationAssetCompiler.admit(AssetAdmissionInput("assets/contactor-coil.svg", AssetMediaKind.SVG, source.toByteArray())),
+        ).asset
+
+        assertEquals(SceneBounds(0, 0, 40, 100), admitted.asset.intrinsicBounds)
+        assertTrue(admitted.entry.utf8().contains("xlink:href=\"#terminal\""))
+        assertTrue(admitted.entry.utf8().contains(">KM1</text>"))
+        assertTrue(!admitted.entry.utf8().contains("Your Browser"))
+        assertIs<AssetAdmissionResult.Rejected>(
+            PresentationAssetCompiler.admit(
+                AssetAdmissionInput(
+                    "assets/external-use.svg",
+                    AssetMediaKind.SVG,
+                    source.replace("#terminal", "https://example.invalid/terminal").toByteArray(),
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `generic svg profile treats anchor-like metadata as non-authoritative`() {
         val source = "<svg viewBox=\"0 0 4 4\"><g id=\"port-line\" data-athena-direction=\"OUT\"><circle cx=\"2\" cy=\"2\" r=\"1\"/></g></svg>"
         val result = assertIs<AssetAdmissionResult.Rejected>(

@@ -95,6 +95,24 @@ class ConnectionAnnotationPlannerTest {
     }
 
     @Test
+    fun `annotation falls back from a blocked route midpoint to an open route quarter`() {
+        val result = ConnectionAnnotationPlanner().plan(
+            sheetId = "sheet:main",
+            drawingArea = SpatialRect(4, 4, 68, 64),
+            connectionIr = connectionIr(),
+            selections = listOf(ConnectionAnnotationSelection("sheet:main", StableSemanticIdentity("connection:C1"), ConnectionAnnotationDisplayRole.KIND, spatialTrace)),
+            routes = listOf(route().copy(points = listOf(SpatialPoint(12, 36), SpatialPoint(64, 36)))),
+            occurrences = listOf(
+                occurrence("midpoint-upper", SpatialRect(28, 32, 16, 3)),
+                occurrence("midpoint-lower", SpatialRect(28, 37, 16, 3)),
+            ),
+        )
+
+        val success = assertIs<ConnectionAnnotationPlanning.Success>(result)
+        assertTrue(success.plan.annotations.single().bounds.x !in 28 until 44)
+    }
+
+    @Test
     fun `impossible placement fails closed with correction`() {
         val result = ConnectionAnnotationPlanner().plan(
             sheetId = "sheet:main",
@@ -138,6 +156,16 @@ class ConnectionAnnotationPlannerTest {
         authoredPath = listOf(id),
         role = role,
         trace = ConnectionSourceTrace(SourceProvenance("source.athena", 1, 1, 1, 1)),
+    )
+
+    private fun occurrence(id: String, bounds: SpatialRect): SpatialOccurrenceGeometry = SpatialOccurrenceGeometry(
+        occurrenceId = SpatialOccurrenceId("sheet:main", "occurrence:$id"),
+        subjectId = StableSemanticIdentity("entity:$id"),
+        sheetId = "sheet:main",
+        regionId = "region:main",
+        rectangle = bounds,
+        placementReason = SpatialPlacementReason(listOf("test")),
+        sourceTrace = spatialTrace,
     )
 
     private fun route(): ConnectionRoutePlan {

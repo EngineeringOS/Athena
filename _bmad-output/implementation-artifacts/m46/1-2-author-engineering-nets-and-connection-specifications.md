@@ -2,14 +2,14 @@
 story: 1.2
 epic: 1
 title: Author Engineering Nets And Connection Specifications
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-10
 ---
 
 # Story 1.2: Author Engineering Nets And Connection Specifications
 
-Status: review
+Status: done
 
 ## Story
 

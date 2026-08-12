@@ -126,6 +126,7 @@ export class KonvaDiagramAdapter {
     private routePreview: { connectionId: string; target: { kind: 'SEGMENT' | 'BEND'; ordinal: number }; delta: { x: number; y: number } } | undefined;
     private activeRouteDrag: { connection: SceneConnection; target: { kind: 'SEGMENT' | 'BEND'; ordinal: number }; origin: { x: number; y: number }; node: Konva.Node } | undefined;
     private viewportTransformEndTimer: number | undefined;
+    private sceneLayerViewportCacheActive = false;
 
     constructor(private readonly host: HTMLDivElement, options: DiagramAdapterOptions = {}) {
         this.onSelection = options.onSelection;
@@ -1129,6 +1130,13 @@ export class KonvaDiagramAdapter {
             this.viewportTransformEndTimer = undefined;
         }
         this.viewportTransformActive = true;
+        // A moving viewport cannot select scene content. Avoid repainting the complete
+        // scene hit canvas for every pan/zoom frame; restore it when the transform settles.
+        this.sceneLayer.listening(false);
+        if (!this.sceneLayerViewportCacheActive) {
+            this.sceneLayer.cache({ x: 0, y: 0, width: this.stage.width(), height: this.stage.height(), pixelRatio: 1 });
+            this.sceneLayerViewportCacheActive = true;
+        }
         this.routeHitGroup.listening(false);
         this.routeHitGroup.visible(false);
     }
@@ -1147,6 +1155,11 @@ export class KonvaDiagramAdapter {
             this.viewportTransformEndTimer = undefined;
         }
         this.viewportTransformActive = false;
+        if (this.sceneLayerViewportCacheActive) {
+            this.sceneLayer.clearCache();
+            this.sceneLayerViewportCacheActive = false;
+        }
+        this.sceneLayer.listening(true);
         this.routeHitGroup.listening(true);
         this.routeHitGroup.visible(true);
         this.maybeRedrawVisibleContent();

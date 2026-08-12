@@ -74,7 +74,8 @@ class AthenaRepositoryResolver(
                 .filter { candidate -> candidate.extension.equals("athena", ignoreCase = true) }
                 .filter { candidate ->
                     val fileName = candidate.fileName.toString()
-                    !fileName.endsWith(".sheet.athena", ignoreCase = true) &&
+                    !fileName.endsWith(".folio.athena", ignoreCase = true) &&
+                        !fileName.endsWith(".sheet.athena", ignoreCase = true) &&
                         !fileName.endsWith(".sheet.style.athena", ignoreCase = true) &&
                         !fileName.endsWith(".binding.athena", ignoreCase = true)
                 }

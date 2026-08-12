@@ -19,12 +19,12 @@ import com.engineeringood.athena.interaction.InsertElementOccurrence
 import com.engineeringood.athena.interaction.InsertMacroOccurrences
 import com.engineeringood.athena.interaction.SnapOccurrenceToGrid
 import com.engineeringood.athena.interaction.Undo
-import com.engineeringood.athena.language.SheetCompanionFound
+import com.engineeringood.athena.language.PageCompanionFound
 import com.engineeringood.athena.language.AthenaSheetCompanionParser
 import com.engineeringood.athena.language.SheetCompanionParseSuccess
 import com.engineeringood.athena.compiler.AthenaDiagramSceneCompiler
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
-import com.engineeringood.athena.language.SheetStyleCompanionLocator
+import com.engineeringood.athena.language.PageStyleCompanionLocator
 import com.engineeringood.athena.presentation.PublicationState
 import java.nio.file.Path
 
@@ -173,13 +173,18 @@ class EditOperationService(
             AthenaSheetCompanionParser().parse(sheetPatch.relativePath, text) as? SheetCompanionParseSuccess
                 ?: throw StagedOperationFailure(
                     OperationRejectionReason.COMPILATION_FAILURE,
-                    diagnostic(sheetPatch.relativePath, "Undo or Redo leaves Sheet Companion invalid.", "Restore a transaction with valid Sheet placement source.", "edit.journal.sheet-invalid"),
+                    diagnostic(sheetPatch.relativePath, "Undo or Redo leaves Page Companion invalid.", "Restore a transaction with valid Page placement source.", "edit.journal.page-invalid"),
                 )
         }
         val sceneCompilation = if (sheetSource != null) {
             val withSheet = host.executionContext.compiler().compile(host.sourcePath, sheetSource.source)
             (withSheet as? CompilerCompilationSuccess)?.let { compiled ->
-                AthenaDiagramSceneCompiler().compile(compiled, revision.sceneInputRevision, styleCompanion = host.styleCompanionSource())
+                AthenaDiagramSceneCompiler().compile(
+                    compiled,
+                    revision.sceneInputRevision,
+                    activeSheetId = sheetSource.source.name,
+                    styleCompanion = host.styleCompanionSource(sheetSource.source.name),
+                )
             }
         } else {
             AthenaDiagramSceneCompiler().compile(compilation, revision.sceneInputRevision, styleCompanion = host.styleCompanionSource())
@@ -195,22 +200,22 @@ class EditOperationService(
 
     private fun deriveWritableFiles(body: EditOperationBody): List<String>? = when (body) {
         is MoveOccurrence, is AlignOccurrences, is DistributeOccurrences, is SnapOccurrenceToGrid ->
-            (host.sheetCompanionLocation() as? SheetCompanionFound)?.let { listOf(relative(it.path)) }
-        is SetStyle -> (host.sheetCompanionLocation() as? SheetCompanionFound)?.let { sheet ->
-            listOf(relative(SheetStyleCompanionLocator.locate(sheet.path).expectedPath))
+            (host.activePageCompanionLocation() as? PageCompanionFound)?.let { listOf(relative(it.path)) }
+        is SetStyle -> (host.activePageCompanionLocation() as? PageCompanionFound)?.let { sheet ->
+            listOf(relative(PageStyleCompanionLocator.locate(sheet.path).expectedPath))
         }
         is ChangeSymbol -> listOf(relative(host.representationBindingCompanionPath()))
         is ConnectPorts, is ReconnectConnectionEndpoint -> listOf(relative(host.sourcePath))
-        is AdjustConnectionRoute -> (host.sheetCompanionLocation() as? SheetCompanionFound)?.let { listOf(relative(it.path)) }
+        is AdjustConnectionRoute -> (host.activePageCompanionLocation() as? PageCompanionFound)?.let { listOf(relative(it.path)) }
         is BindPart -> listOf(relative(host.functionPartBindingCompanionPath()))
         is AddPackageDependency -> listOf(relative(host.manifestPath))
         is InsertElementOccurrence -> listOf(
             relative(host.representationBindingCompanionPath()),
-            (host.sheetCompanionLocation() as? SheetCompanionFound)?.let { relative(it.path) },
+            (host.activePageCompanionLocation() as? PageCompanionFound)?.let { relative(it.path) },
         ).filterNotNull().sorted()
         is InsertMacroOccurrences -> listOf(
             relative(host.representationBindingCompanionPath()),
-            (host.sheetCompanionLocation() as? SheetCompanionFound)?.let { relative(it.path) },
+            (host.activePageCompanionLocation() as? PageCompanionFound)?.let { relative(it.path) },
         ).filterNotNull().sorted()
         is Undo, is Redo -> null
     }

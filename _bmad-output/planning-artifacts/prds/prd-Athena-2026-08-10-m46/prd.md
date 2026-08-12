@@ -263,11 +263,19 @@ shutter example. Realizes UJ-4.
 #### FR-16: Publish professional rolling-shutter connection proof
 
 `examples/m46/rolling-shutter` must use M45-style direct local packages and render a complete connected
-IEC-style page.
+IEC-style Folio. The Folio contains a rolling-shutter power page and a CPU/control connection page. Both
+pages project one engineering source and one Connection IR, while their symbols/elements/parts may resolve
+from different project-imported packages.
 
 **Consequences:**
-- Page contains power and control connections, at least one multi-endpoint Net, jumper or shared trunk,
-  unconnected crossing, junction, potential/signal, and typed physical requirement.
+- The Folio contains a power page and a CPU/control page. Each Page Companion owns its own logical frame,
+  ruler, placement, route plan, and Scene page; neither duplicates engineering Connections or Nets.
+- Packages are project dependencies, never Folio or Page owners. One page may render occurrences bound to
+  different vendor, IEC, or community packages through the project's resolved bindings.
+- Page content together covers power and control connections, at least one multi-endpoint Net, jumper or
+  shared trunk, unconnected crossing, junction, potential/signal, and typed physical requirement.
+- A connection projected on more than one page retains one Connection IR identity. M46 renders the stable
+  interruption/reference fact; cross-page smart-connect authoring remains later scope.
 - Canvas matches repository Golden Rule: one-pixel square frame, narrow flush rulers, blank white interior,
   thin screen-space linework, tiny points, compact labels, no bottom table, no default grid.
 - Reopen preserves connection/net/operator identities and deterministic SVG/PNG digests.
@@ -312,7 +320,8 @@ IEC-style page.
 ### 7.2 Out of Scope
 
 - Later manufacturing, cable, terminal, and 3D projections.
-- Cross-page smart-connect interruption UX beyond the single-project identity and operator contract.
+- Cross-page smart-connect authoring UX beyond the stable multi-page projection identity and interruption
+  reference contract.
 - Automatic engineering solution selection or standards certification.
 
 ## 8. Success Metrics

@@ -21,11 +21,7 @@ binding km1_main {
   projection electrical
   role primary
   select function where { subject "function:KM1.mainContact" }
-  use element "com.vendor.siemens/siemens_contactor_element" version "1.0.0"
-  variant "com.vendor.siemens/contactor_main@1.0.0"
-  placeholders {
-    label "KM1-MAIN"
-  }
+  use element "com.athena.iec/contactor_element" version "1.0.0"
 }
 
 binding ol1_protection {
@@ -34,6 +30,30 @@ binding ol1_protection {
   role primary
   select function where { subject "function:OL1.protection" }
   use element "com.athena.iec/overload_element" version "1.0.0"
+}
+
+binding t1_primary {
+  id "binding-t1-primary"
+  projection electrical
+  role primary
+  select function where { subject "function:T1.primary" }
+  use element "com.athena.iec/transformer_element" version "1.0.0"
+}
+
+binding t1_secondary {
+  id "binding-t1-secondary"
+  projection electrical
+  role primary
+  select function where { subject "function:T1.secondary" }
+  use element "com.athena.iec/transformer_element" version "1.0.0"
+}
+
+binding km2_main {
+  id "binding-km2-main"
+  projection electrical
+  role primary
+  select function where { subject "function:KM2.mainContact" }
+  use element "com.athena.iec/contactor_element" version "1.0.0"
 }
 
 binding x1_terminal {
@@ -73,7 +93,7 @@ binding s1_limit {
   projection electrical
   role primary
   select function where { subject "function:S1.limitOpen" }
-  use element "com.community.elements/sensor_element" version "1.0.0"
+  use element "com.community.elements/limit_no_element" version "1.0.0"
 }
 
 binding s2_limit {
@@ -81,15 +101,19 @@ binding s2_limit {
   projection electrical
   role primary
   select function where { subject "function:S2.limitClosed" }
-  use element "com.community.elements/sensor_element" version "1.0.0"
+  use element "com.community.elements/limit_nc_element" version "1.0.0"
 }
+
+binding s3_limit { id "binding-s3-limit" projection electrical role primary select function where { subject "function:S3.limitOpen" } use element "com.community.elements/limit_no_element" version "1.0.0" }
+binding s4_stop { id "binding-s4-stop" projection electrical role primary select function where { subject "function:S4.stop" } use element "com.community.elements/limit_nc_element" version "1.0.0" }
+binding s5_close { id "binding-s5-close" projection electrical role primary select function where { subject "function:S5.close" } use element "com.community.elements/limit_no_element" version "1.0.0" }
 
 binding km1_coil {
   id "binding-km1-coil"
   projection electrical
   role primary
   select function where { subject "function:KM1.coil" }
-  use element "com.athena.iec/contactor_element" version "1.0.0"
+  use element "com.athena.iec/coil_element" version "1.0.0"
 }
 
 binding km1_auxiliary {
@@ -97,8 +121,11 @@ binding km1_auxiliary {
   projection electrical
   role primary
   select function where { subject "function:KM1.auxiliary" }
-  use element "com.athena.iec/contactor_element" version "1.0.0"
+  use element "com.community.elements/contact_no_element" version "1.0.0"
 }
+
+binding km2_coil { id "binding-km2-coil" projection electrical role primary select function where { subject "function:KM2.coil" } use element "com.athena.iec/coil_element" version "1.0.0" }
+binding km2_auxiliary { id "binding-km2-auxiliary" projection electrical role primary select function where { subject "function:KM2.auxiliary" } use element "com.community.elements/contact_no_element" version "1.0.0" }
 
 binding h1_lamp {
   id "binding-h1-lamp"

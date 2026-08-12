@@ -11,6 +11,34 @@ class SheetCompanionLanguageTest {
     private val styleParser = AthenaSheetStyleCompanionParser()
 
     @Test
+    fun `parses ordered Folio and locates independent Page Companions`() {
+        val folio = AthenaFolioCompanionParser().parse(
+            "rolling-shutter.folio.athena",
+            "folio rolling_shutter {\n  page power\n  page control_cpu\n}",
+        )
+        val source = assertIs<FolioCompanionParseSuccess>(folio).source
+        assertEquals(listOf("power", "control_cpu"), source.pages.map(FolioPageIntent::name))
+
+        val directory = Files.createTempDirectory("athena-folio-locator")
+        try {
+            val project = directory.resolve("rolling-shutter.athena")
+            Files.writeString(project, "system rolling_shutter { }")
+            val missing = assertIs<FolioCompanionMissing>(FolioCompanionLocator.locate(project))
+            assertEquals("rolling-shutter.folio.athena", missing.expectedPath.fileName.toString())
+
+            val folioPath = directory.resolve("rolling-shutter.folio.athena")
+            Files.writeString(folioPath, "folio rolling_shutter { page power }")
+            val found = assertIs<FolioCompanionFound>(FolioCompanionLocator.locate(project))
+            assertEquals(folioPath, found.path)
+
+            val page = PageCompanionLocator.locate(project, "control_cpu")
+            assertEquals("rolling-shutter.control_cpu.sheet.athena", page.expectedPath.fileName.toString())
+        } finally {
+            Files.walk(directory).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
+        }
+    }
+
+    @Test
     fun `parses page frame snap title and canonical occurrence points`() {
         val result = parser.parse(
             "rolling-shutter.sheet.athena",
@@ -113,39 +141,22 @@ class SheetCompanionLanguageTest {
     }
 
     @Test
-    fun `locates exact same basename companion and reports missing`() {
-        val directory = Files.createTempDirectory("athena-sheet-locator")
-        try {
-            val source = directory.resolve("rolling-shutter.athena")
-            Files.writeString(source, "system rolling_shutter { }")
-            val missing = assertIs<SheetCompanionMissing>(SheetCompanionLocator.locate(source))
-            assertEquals("rolling-shutter.sheet.athena", missing.expectedPath.fileName.toString())
-
-            val companion = directory.resolve("rolling-shutter.sheet.athena")
-            Files.writeString(companion, "sheet demo { }")
-            assertEquals(companion, assertIs<SheetCompanionFound>(SheetCompanionLocator.locate(source)).path)
-        } finally {
-            Files.walk(directory).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }
-        }
-    }
-
-    @Test
-    fun `locates optional same basename style companion and ambiguity`() {
+    fun `locates page-local style companion and ambiguity`() {
         val directory = Files.createTempDirectory("athena-sheet-style-locator")
         try {
             val sheet = directory.resolve("rolling-shutter.sheet.athena")
             Files.writeString(sheet, "sheet demo { }")
-            val missing = assertIs<SheetCompanionMissing>(SheetStyleCompanionLocator.locate(sheet))
+            val missing = assertIs<PageCompanionMissing>(PageStyleCompanionLocator.locate(sheet))
             assertEquals("rolling-shutter.sheet.style.athena", missing.expectedPath.fileName.toString())
 
             val style = directory.resolve("rolling-shutter.sheet.style.athena")
             Files.writeString(style, "style default { }")
-            assertEquals(style, assertIs<SheetCompanionFound>(SheetStyleCompanionLocator.locate(sheet)).path)
+            assertEquals(style, assertIs<PageCompanionFound>(PageStyleCompanionLocator.locate(sheet)).path)
 
             Files.delete(style)
             val casingVariant = directory.resolve("ROLLING-SHUTTER.SHEET.STYLE.ATHENA")
             Files.writeString(casingVariant, "style default { }")
-            assertIs<SheetCompanionAmbiguous>(SheetStyleCompanionLocator.locate(sheet))
+            assertIs<PageCompanionAmbiguous>(PageStyleCompanionLocator.locate(sheet))
 
         } finally {
             Files.walk(directory).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) }

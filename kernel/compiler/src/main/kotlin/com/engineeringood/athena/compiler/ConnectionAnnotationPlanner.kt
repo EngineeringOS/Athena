@@ -123,21 +123,33 @@ class ConnectionAnnotationPlanner {
         val height = 3
         return when (segment.orientation) {
             com.engineeringood.athena.spatial.SpatialLaneOrientation.HORIZONTAL -> {
-                val center = (segment.start.x + segment.end.x) / 2
-                listOf(
-                    SpatialRect(center - width / 2, segment.start.y - height - 1, width, height),
-                    SpatialRect(center - width / 2, segment.start.y + 1, width, height),
-                )
+                routeOffsets(segment.start.x, segment.end.x).flatMap { center ->
+                    listOf(
+                        SpatialRect(center - width / 2, segment.start.y - height - 1, width, height),
+                        SpatialRect(center - width / 2, segment.start.y + 1, width, height),
+                    )
+                }
             }
             com.engineeringood.athena.spatial.SpatialLaneOrientation.VERTICAL -> {
-                val center = (segment.start.y + segment.end.y) / 2
-                listOf(
-                    SpatialRect(segment.start.x - width - 1, center - height / 2, width, height),
-                    SpatialRect(segment.start.x + 1, center - height / 2, width, height),
-                )
+                routeOffsets(segment.start.y, segment.end.y).flatMap { center ->
+                    listOf(
+                        SpatialRect(segment.start.x - width - 1, center - height / 2, width, height),
+                        SpatialRect(segment.start.x + 1, center - height / 2, width, height),
+                    )
+                }
             }
             null -> emptyList()
         }
+    }
+
+    private fun routeOffsets(start: Int, end: Int): List<Int> {
+        val low = minOf(start, end)
+        val span = kotlin.math.abs(end - start)
+        return listOf(
+            low + span / 4,
+            low + span / 2,
+            low + (span * 3) / 4,
+        ).distinct()
     }
 
     private fun topologyPoints(topology: ConnectionRouteTopologyPlan): List<SpatialPoint> =

@@ -3,7 +3,7 @@ import { Emitter } from '@theia/core/lib/common';
 import { injectable } from '@theia/core/shared/inversify';
 import { FileStatNode } from '@theia/filesystem/lib/browser';
 
-/** Marks source/form pairs in navigator while preserving normal file nodes and open behavior. */
+/** Marks Folio/Page companions in navigator while preserving normal file nodes and open behavior. */
 @injectable()
 export class AthenaCompanionTreeDecorator implements TreeDecorator {
     readonly id = 'athena.companion-tree-decorator';
@@ -19,19 +19,25 @@ export class AthenaCompanionTreeDecorator implements TreeDecorator {
             const uri = FileStatNode.getUri(node);
             if (!uri) continue;
             const lower = uri.toLowerCase();
-            if (lower.endsWith('.sheet.athena')) {
+            if (lower.endsWith('.folio.athena')) {
                 result.set(node.id, {
                     priority: 10,
-                    captionSuffixes: [{ data: '  [designer]' }],
-                    tooltip: 'Sheet Companion designer file'
+                    captionSuffixes: [{ data: '  [folio]' }],
+                    tooltip: 'Athena engineering Folio'
+                });
+            } else if (lower.endsWith('.sheet.athena')) {
+                result.set(node.id, {
+                    priority: 10,
+                    captionSuffixes: [{ data: '  [page]' }],
+                    tooltip: 'Athena engineering Page'
                 });
             } else if (lower.endsWith('.athena')) {
-                const companion = `${lower.slice(0, -'.athena'.length)}.sheet.athena`;
-                if (paths.has(companion)) {
+                const folio = `${lower.slice(0, -'.athena'.length)}.folio.athena`;
+                if (paths.has(folio)) {
                     result.set(node.id, {
                         priority: 10,
-                        captionSuffixes: [{ data: '  [source + sheet]' }],
-                        tooltip: 'Athena source with colocated Sheet Companion'
+                        captionSuffixes: [{ data: '  [source + folio]' }],
+                        tooltip: 'Athena source with colocated Folio'
                     });
                 }
             }

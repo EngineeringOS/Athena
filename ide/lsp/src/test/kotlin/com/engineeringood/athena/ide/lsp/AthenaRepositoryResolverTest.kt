@@ -84,7 +84,7 @@ class AthenaRepositoryResolverTest {
     }
 
     @Test
-    fun `resolve never uses a Sheet Companion as the engineering source seed`() {
+    fun `resolve never uses Folio or Page Companion as engineering source seed`() {
         val repositoryRoot = kotlin.io.path.createTempDirectory("athena-repository-")
         try {
             repositoryRoot.resolve("athena.yaml").writeText(
@@ -97,6 +97,9 @@ class AthenaRepositoryResolverTest {
             )
             val packageRoot = repositoryRoot.resolve("src/com/engineeringood/factoryline").createDirectories()
             val sourcePath = packageRoot.resolve("z-control.athena")
+            packageRoot.resolve("a-control.folio.athena").writeText(
+                "folio control { page power }",
+            )
             packageRoot.resolve("a-control.sheet.athena").writeText(
                 """
                     sheet "control" {

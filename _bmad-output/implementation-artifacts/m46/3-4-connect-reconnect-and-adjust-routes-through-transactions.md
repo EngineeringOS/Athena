@@ -2,14 +2,14 @@
 story: 3.4
 epic: 3
 title: Connect Reconnect And Adjust Routes Through Transactions
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 3.4: Connect Reconnect And Adjust Routes Through Transactions
 
-Status: review
+Status: done
 
 ## Story
 

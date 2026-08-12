@@ -11,7 +11,7 @@ const screenshotsRoot = path.join(artifactsRoot, 'screenshots');
 const transcriptRoot = path.join(artifactsRoot, 'operation-transcripts');
 const proofPath = path.join(transcriptRoot, '4-3-author-reopen-product-proof.json');
 const relativeSource = path.join('src', 'com', 'engineeringood', 'm46', 'rollingshutter', 'rolling-shutter.athena');
-const relativeSheet = path.join('src', 'com', 'engineeringood', 'm46', 'rollingshutter', 'rolling-shutter.sheet.athena');
+const relativeSheet = path.join('src', 'com', 'engineeringood', 'm46', 'rollingshutter', 'rolling-shutter.power.sheet.athena');
 
 main().catch(error => {
     console.error(error.stack || String(error));
@@ -144,7 +144,6 @@ function acceptedFacts(state) {
         readModelRevision: state.connectionReadModel.acceptedInputRevision,
         connectionIrDigest: state.connectionReadModel.connectionIrDigest,
         readModelItems: state.connectionReadModel.items,
-        canvasDigest: state.canvas.canvasDigest,
     };
 }
 

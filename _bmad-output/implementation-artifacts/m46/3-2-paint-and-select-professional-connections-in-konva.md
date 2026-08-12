@@ -2,14 +2,14 @@
 story: 3.2
 epic: 3
 title: Paint And Select Professional Connections In Konva
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 3.2: Paint And Select Professional Connections In Konva
 
-Status: review
+Status: done
 
 ## Story
 

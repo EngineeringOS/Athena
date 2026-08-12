@@ -5,10 +5,17 @@ import com.engineeringood.athena.compiler.CompilerCompilationParseFailure
 import com.engineeringood.athena.compiler.CompilerCompilationSuccess
 import com.engineeringood.athena.interaction.SourceRevision
 import com.engineeringood.athena.interaction.EditOperationResult
-import com.engineeringood.athena.language.SheetCompanionFound
-import com.engineeringood.athena.language.SheetCompanionLocator
-import com.engineeringood.athena.language.SheetCompanionAmbiguous
-import com.engineeringood.athena.language.SheetStyleCompanionLocator
+import com.engineeringood.athena.language.PageCompanionFound
+import com.engineeringood.athena.language.PageCompanionLocator
+import com.engineeringood.athena.language.PageCompanionLocation
+import com.engineeringood.athena.language.PageCompanionMissing
+import com.engineeringood.athena.language.PageCompanionAmbiguous
+import com.engineeringood.athena.language.PageStyleCompanionLocator
+import com.engineeringood.athena.language.FolioCompanionFound
+import com.engineeringood.athena.language.FolioCompanionLocator
+import com.engineeringood.athena.language.AthenaFolioCompanionParser
+import com.engineeringood.athena.language.FolioCompanionParseSuccess
+import com.engineeringood.athena.runtime.AthenaRuntimeProjectionReadySnapshot
 import com.engineeringood.athena.language.AthenaSheetStyleCompanionParser
 import com.engineeringood.athena.language.SheetStyleCompanionParseFailure
 import com.engineeringood.athena.language.SheetStyleCompanionParseSuccess
@@ -34,7 +41,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Base64
 
-class AthenaDiagramSceneParams
+data class AthenaDiagramSceneParams(val sheetId: String? = null)
+
+data class AthenaFolioPageParams(val sheetId: String)
 
 data class AthenaPresentationEditContextPayload(
     val schemaVersion: Int = 1,
@@ -192,19 +201,25 @@ internal fun AthenaLspSessionHostReady.currentInputRevision(styleCompanionBytesO
 }
 
 /** Publishes only a complete canonical scene compiled through runtime-owned Athena authority. */
-internal fun AthenaLspSessionHostReady.diagramScenePublication(): AthenaScenePublication {
+internal fun AthenaLspSessionHostReady.diagramScenePublication(requestedSheetId: String? = null): AthenaScenePublication {
+    if (!requestedSheetId.isNullOrBlank()) {
+        executionContext.switchActiveProjectionView(requestedSheetId)
+    }
     val lock = executionContext.compiler().validateRepositoryLock(repositoryRoot)
     val revision = currentInputRevision()
-    companionDiagnostic()?.let { diagnostic ->
+        companionDiagnostic(requestedSheetId)?.let { diagnostic ->
         return AthenaScenePublication.unavailable(revision, diagnostic)
     }
     return runCatching {
         when (val compilation = executionContext.compiler().compile(sourcePath)) {
             is CompilerCompilationSuccess -> {
+                val page = activePageCompanion(requestedSheetId)
                 val sceneResult = AthenaDiagramSceneCompiler().compile(
                     compilation,
                     revision,
-                    styleCompanion = styleCompanionSource(),
+                    activeSheetId = page?.sheetId,
+                    styleCompanion = styleCompanionSource(requestedSheetId),
+                    pageCompanionPath = page?.path?.toString(),
                 )
                 sceneResult.scene?.let { scene ->
                     val lockError = lock.diagnostics.firstOrNull { it.severity == com.engineeringood.athena.repository.RepositoryDiagnosticSeverity.ERROR }
@@ -415,68 +430,104 @@ private fun com.engineeringood.athena.compiler.CompilerSyntaxDiagnostic.toSceneD
 private fun unavailableSceneDiagnostic(projectName: String): SceneDiagnostic = SceneDiagnostic(
     subject = projectName,
     problem = "No canonical diagram scene is available.",
-    correction = "Correct the authored source and Sheet Companion before opening the engineering document.",
+    correction = "Correct the authored source and active Page Companion before opening the engineering document.",
     code = "diagram.scene.unavailable",
 )
 
-internal fun AthenaLspSessionHostReady.companionDiagnostic(): SceneDiagnostic? {
-    return when (val location = SheetCompanionLocator.locate(sourcePath)) {
-        is com.engineeringood.athena.language.SheetCompanionMissing -> SceneDiagnostic(
+internal fun AthenaLspSessionHostReady.companionDiagnostic(requestedSheetId: String? = null): SceneDiagnostic? {
+    val folio = when (val location = FolioCompanionLocator.locate(sourcePath)) {
+        is com.engineeringood.athena.language.FolioCompanionMissing -> return SceneDiagnostic(
             subject = location.expectedPath.fileName.toString(),
-            problem = "Required same-basename Sheet Companion is missing.",
+            problem = "Required Folio Companion is missing.",
             correction = "Add `${location.expectedPath.fileName}` beside `${sourcePath.fileName}`.",
-            code = "sheet.companion.missing",
+            code = "folio.companion.missing",
         )
-        is com.engineeringood.athena.language.SheetCompanionAmbiguous -> SceneDiagnostic(
+        is com.engineeringood.athena.language.FolioCompanionAmbiguous -> return SceneDiagnostic(
             subject = location.expectedPath.fileName.toString(),
-            problem = "Same-basename Sheet Companion is ambiguous or uses different filename casing.",
+            problem = "Folio Companion is ambiguous or uses different filename casing.",
             correction = "Keep exactly one companion named `${location.expectedPath.fileName}`.",
-            code = "sheet.companion.ambiguous",
+            code = "folio.companion.ambiguous",
         )
-        is com.engineeringood.athena.language.SheetCompanionFound -> {
-            when (val style = SheetStyleCompanionLocator.locate(location.path)) {
-                is SheetCompanionAmbiguous -> SceneDiagnostic(
-                    subject = style.expectedPath.fileName.toString(),
-                    problem = "Same-basename Style Companion is ambiguous or uses different filename casing.",
-                    correction = "Keep zero or one companion named `${style.expectedPath.fileName}`.",
-                    code = "sheet.style.companion.ambiguous",
-                )
-                is SheetCompanionFound -> {
-                    when (val parsed = AthenaSheetStyleCompanionParser().parse(style.path.toString(), Files.readString(style.path))) {
-                        is SheetStyleCompanionParseFailure -> {
-                            val diagnostic = parsed.diagnostics.first()
-                            SceneDiagnostic(
-                                subject = style.path.fileName.toString(),
-                                problem = diagnostic.message,
-                                correction = "Correct the Style Companion before opening the engineering document.",
-                                code = "sheet.style.companion.invalid",
-                            )
-                        }
-                        else -> null
-                    }
-                }
-                else -> null
+        is FolioCompanionFound -> when (val parsed = AthenaFolioCompanionParser().parse(location.path.toString(), Files.readString(location.path))) {
+            is FolioCompanionParseSuccess -> parsed.source
+            is com.engineeringood.athena.language.FolioCompanionParseFailure -> return parsed.diagnostics.firstOrNull()?.let { diagnostic ->
+                SceneDiagnostic(location.path.fileName.toString(), diagnostic.message, "Correct the Folio Companion before opening the engineering document.", "folio.companion.invalid")
             }
+        }
+    }
+    val pageName = pageNameForSheetId(requestedSheetId) ?: activePageName() ?: folio.pages.first().name
+    val page = PageCompanionLocator.locate(sourcePath, pageName)
+    if (page !is PageCompanionFound) return pageUnavailableDiagnostic(page)
+    return when (val style = PageStyleCompanionLocator.locate(page.path)) {
+        is PageCompanionAmbiguous -> SceneDiagnostic(style.expectedPath.fileName.toString(), "Page Style Companion is ambiguous or uses different filename casing.", "Keep exactly one Page Style Companion named `${style.expectedPath.fileName}`.", "page.style.companion.ambiguous")
+        is PageCompanionMissing -> SceneDiagnostic(style.expectedPath.fileName.toString(), "Required Page Style Companion is missing.", "Add `${style.expectedPath.fileName}` beside `${page.path.fileName}`.", "page.style.companion.missing")
+        is PageCompanionFound -> when (val parsed = AthenaSheetStyleCompanionParser().parse(style.path.toString(), Files.readString(style.path))) {
+            is SheetStyleCompanionParseFailure -> parsed.diagnostics.firstOrNull()?.let { diagnostic ->
+                SceneDiagnostic(style.path.fileName.toString(), diagnostic.message, "Correct the Page Style Companion before opening the engineering document.", "page.style.companion.invalid")
+            }
+            else -> null
         }
     }
 }
 
-internal fun AthenaLspSessionHostReady.styleCompanionSource(): SheetStyleCompanionSource? {
-    val location = SheetCompanionLocator.locate(sourcePath)
-    val sheet = location as? SheetCompanionFound ?: return null
-    val style = SheetStyleCompanionLocator.locate(sheet.path) as? SheetCompanionFound ?: return null
+internal fun AthenaLspSessionHostReady.styleCompanionSource(requestedSheetId: String? = null): SheetStyleCompanionSource? {
+    val sheet = pageCompanionLocation(requestedSheetId) as? PageCompanionFound ?: return null
+    val style = PageStyleCompanionLocator.locate(sheet.path) as? PageCompanionFound ?: return null
     return when (val parsed = AthenaSheetStyleCompanionParser().parse(style.path.toString(), Files.readString(style.path))) {
         is SheetStyleCompanionParseSuccess -> parsed.source
         is SheetStyleCompanionParseFailure -> null
     }
 }
 
-internal fun AthenaLspSessionHostReady.sheetCompanionLocation() =
-    com.engineeringood.athena.language.SheetCompanionLocator.locate(sourcePath)
+internal fun AthenaLspSessionHostReady.activePageCompanionLocation(): PageCompanionLocation = pageCompanionLocation(null)
 
-internal fun AthenaLspSessionHostReady.presentationEditContext(): AthenaPresentationEditContextPayload {
+internal fun AthenaLspSessionHostReady.pageCompanionLocation(requestedSheetId: String?): PageCompanionLocation {
+    val folio = (FolioCompanionLocator.locate(sourcePath) as? FolioCompanionFound)?.let { location ->
+        (AthenaFolioCompanionParser().parse(location.path.toString(), Files.readString(location.path)) as? FolioCompanionParseSuccess)?.source
+    } ?: return PageCompanionLocator.locate(sourcePath, "unavailable")
+    return PageCompanionLocator.locate(sourcePath, requestedSheetId?.takeIf { it.isNotBlank() } ?: activePageName() ?: folio.pages.first().name)
+}
+
+internal fun AthenaLspSessionHostReady.folioPageNames(): List<String> {
+    val location = FolioCompanionLocator.locate(sourcePath) as? FolioCompanionFound ?: return emptyList()
+    return (AthenaFolioCompanionParser().parse(location.path.toString(), Files.readString(location.path)) as? FolioCompanionParseSuccess)
+        ?.source?.pages?.map { page -> page.name }.orEmpty()
+}
+
+internal fun AthenaLspSessionHostReady.activePageCompanion(requestedSheetId: String? = null): AthenaActivePageCompanion? {
+    val page = pageCompanionLocation(requestedSheetId) as? PageCompanionFound ?: return null
+    return AthenaActivePageCompanion(activeSheetId() ?: requestedSheetId ?: return null, page.path)
+}
+
+internal fun AthenaLspSessionHostReady.activeSheetId(): String? =
+    (executionContext.projectProjectionSession().activeProjection as? AthenaRuntimeProjectionReadySnapshot)?.activeSheetId
+
+private fun AthenaLspSessionHostReady.activePageName(): String? {
+    val projection = (executionContext.projectProjectionSession().activeProjection as? AthenaRuntimeProjectionReadySnapshot)
+        ?: return null
+    return projection.activeSheetId?.let { activeSheetId ->
+        projection.projection.sheets.singleOrNull { sheet -> sheet.sheetId.value == activeSheetId }?.displayName
+    }
+}
+
+private fun AthenaLspSessionHostReady.pageNameForSheetId(requestedSheetId: String?): String? {
+    if (requestedSheetId.isNullOrBlank()) return null
+    val projection = (executionContext.projectProjectionSession().activeProjection as? AthenaRuntimeProjectionReadySnapshot)
+        ?: return null
+    return projection.projection.sheets.singleOrNull { sheet -> sheet.sheetId.value == requestedSheetId }?.displayName
+}
+
+private fun pageUnavailableDiagnostic(location: PageCompanionLocation): SceneDiagnostic = when (location) {
+    is PageCompanionMissing -> SceneDiagnostic(location.expectedPath.fileName.toString(), "Required Page Companion is missing.", "Add `${location.expectedPath.fileName}` beside engineering source.", "page.companion.missing")
+    is PageCompanionAmbiguous -> SceneDiagnostic(location.expectedPath.fileName.toString(), "Page Companion is ambiguous or uses different filename casing.", "Keep exactly one Page Companion named `${location.expectedPath.fileName}`.", "page.companion.ambiguous")
+    is PageCompanionFound -> error("Found Page Companion has no unavailable diagnostic.")
+}
+
+internal data class AthenaActivePageCompanion(val sheetId: String, val path: Path)
+
+internal fun AthenaLspSessionHostReady.presentationEditContext(requestedSheetId: String? = null): AthenaPresentationEditContextPayload {
     val revision = SourceRevisionService(this).current()
-    val publication = diagramScenePublication()
+    val publication = diagramScenePublication(requestedSheetId)
     val scene = publication.scene
     if (publication.state != com.engineeringood.athena.presentation.PublicationState.READY || scene == null) {
         return AthenaPresentationEditContextPayload(
@@ -485,19 +536,19 @@ internal fun AthenaLspSessionHostReady.presentationEditContext(): AthenaPresenta
             diagnostics = publication.diagnostics,
         )
     }
-    val sheet = SheetCompanionLocator.locate(sourcePath) as? SheetCompanionFound
+    val sheet = pageCompanionLocation(requestedSheetId) as? PageCompanionFound
         ?: return AthenaPresentationEditContextPayload(
             state = "UNAVAILABLE",
             sourceRevision = revision,
             diagnostics = listOf(unavailableSceneDiagnostic(projectName)),
         )
-    return when (val style = SheetStyleCompanionLocator.locate(sheet.path)) {
-        is SheetCompanionAmbiguous -> AthenaPresentationEditContextPayload(
+    return when (val style = PageStyleCompanionLocator.locate(sheet.path)) {
+        is PageCompanionAmbiguous -> AthenaPresentationEditContextPayload(
             state = "UNAVAILABLE",
             sourceRevision = revision,
-            diagnostics = listOf(requireNotNull(companionDiagnostic())),
+            diagnostics = listOf(requireNotNull(companionDiagnostic(requestedSheetId))),
         )
-        is SheetCompanionFound -> {
+        is PageCompanionFound -> {
             AthenaPresentationEditContextPayload(
                 state = "READY",
                 sceneId = scene.sceneId,

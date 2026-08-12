@@ -38,25 +38,54 @@ async function runAuthoring(window) {
     await setWindowSize(window, 1440, 960);
     const ready = await waitForReady(window);
     await execute(window, 'clearEvidence');
+    await execute(window, 'switchFolioPage', 'power');
+    await waitForPage(window, 'power');
+    await execute(window, 'refresh');
     const before = await waitForStableScene(window);
-    const validReplacement = requiredPort(before.presentation, 'S2.limitClosed.output');
-    const invalidReplacement = requiredPort(before.presentation, 'PLC1.control.input');
     const sourcePortForAnchor = new Map(before.presentation.ports.map(port => [port.anchorId, port]));
-    const connection = before.presentation.connections.find(candidate => sourcePortForAnchor.get(candidate.sourceAnchorId)?.direction === 'OUT');
+    // Route topology may order visual endpoints differently from semantic SOURCE/SINK.
+    // Select a canonical Connection; edit validation resolves endpoint roles from IR.
+    let connection = before.presentation.connections.find(candidate => candidate.connectionId.includes(':signal:S1.limitOpen.output->PLC1.control.input'))
+        ?? before.presentation.connections.find(candidate => candidate.connectionId.startsWith('connection:'));
     if (!connection) {
-        throw new Error('Placed Scene has no Connection with an OUT source Port.');
+        throw new Error(`Placed Scene has no Connection with an OUT source Port: ${JSON.stringify(before.presentation.connections.map(candidate => ({
+            id: candidate.connectionId,
+            source: candidate.sourceAnchorId,
+            sourceDirection: sourcePortForAnchor.get(candidate.sourceAnchorId)?.direction,
+        })))}`);
     }
 
     const operations = [];
-    const validReconnect = await execute(window, 'executeReconnect', connection.connectionId, 'SOURCE', validReplacement.semanticPortId);
+    let validReplacement;
+    let validReconnect;
+    let validEndpointRole;
+    const reconnectConnection = before.presentation.connections.find(candidate => candidate.connectionId.includes(':wire:Q1.protection.line->KM1.mainContact.power'))
+        ?? connection;
+    const replacementPort = before.presentation.ports.find(port => port.semanticPortId === 'port:X2.powerTerminal.spare');
+    if (!reconnectConnection || !replacementPort) {
+        throw new Error(`Deterministic M46 reconnect fixture is unavailable on the active Power page: ${JSON.stringify({
+            sheetId: before.presentation.sheetId,
+            connectionIds: before.presentation.connections.map(candidate => candidate.connectionId),
+            portIds: before.presentation.ports.map(candidate => candidate.semanticPortId),
+        })}`);
+    }
+    connection = reconnectConnection;
+    validEndpointRole = 'SINK';
+    validReplacement = replacementPort;
+    validReconnect = await execute(window, 'executeReconnect', connection.connectionId, validEndpointRole, validReplacement.semanticPortId);
+    if (!validReconnect || !validReplacement) {
+        throw new Error('No deterministic package-backed endpoint produced an accepted reconnect.');
+    }
     requireStatus(validReconnect, 'ACCEPTED', 'valid reconnect');
+    const invalidReplacement = before.presentation.ports.find(port => port.direction === (validEndpointRole === 'SOURCE' ? 'IN' : 'OUT'));
+    if (!invalidReplacement) throw new Error('No package-backed IN Port available for invalid reconnect proof.');
     const afterReconnect = await waitForRevision(window, before.presentation.acceptedInputRevision);
-    const reconnectedConnection = connectionForSourcePort(afterReconnect.presentation, validReplacement.semanticPortId);
+    const reconnectedConnection = connectionForPort(afterReconnect.presentation, validReplacement.semanticPortId);
     if (!reconnectedConnection) throw new Error(`Accepted reconnect did not publish a placed Connection for ${validReplacement.semanticPortId}.`);
     const activeConnectionId = reconnectedConnection.connectionId;
     operations.push({ name: 'validReconnect', result: validReconnect, state: afterReconnect });
 
-    const invalidReconnect = await execute(window, 'executeReconnect', activeConnectionId, 'SOURCE', invalidReplacement.semanticPortId);
+    const invalidReconnect = await execute(window, 'executeReconnect', activeConnectionId, validEndpointRole, invalidReplacement.semanticPortId);
     requireStatus(invalidReconnect, 'REJECTED', 'direction-invalid reconnect');
     const afterInvalid = await acceptedState(window);
     operations.push({ name: 'invalidReconnect', result: invalidReconnect, state: afterInvalid });
@@ -90,6 +119,8 @@ async function runAuthoring(window) {
     const finalState = await acceptedState(window);
     operations.push({ name: 'staleRedo', result: staleRedo, state: finalState });
 
+    await execute(window, 'switchFolioPage', 'control_cpu');
+    await waitForStableScene(window);
     await execute(window, 'clearEvidence');
     await dismissTransientNotifications(window);
     const desktop = await capture(window, 'desktop');
@@ -161,6 +192,12 @@ function readinessPhase(state) {
         connectionState: state?.connectionReadModel?.state,
         canvasState: state?.canvas?.publicationState,
         nonWhiteSamples: state?.canvas?.nonWhiteSamples,
+        canvasWidth: state?.canvas?.width,
+        canvasHeight: state?.canvas?.height,
+        canvasHostWidth: state?.canvas?.hostWidth,
+        canvasHostHeight: state?.canvas?.hostHeight,
+        loadedAssetCount: state?.canvas?.loadedAssetCount,
+        expectedAssetCount: state?.canvas?.expectedAssetCount,
         dpr: state?.canvas?.dpr,
     };
 }
@@ -215,6 +252,17 @@ async function waitForStableScene(window) {
     throw new Error(`Accepted Scene did not stabilize: ${JSON.stringify(previous?.presentation)}`);
 }
 
+async function waitForPage(window, pageId) {
+    const started = Date.now();
+    let state;
+    while (Date.now() - started < 12000) {
+        state = await acceptedState(window);
+        if (state.presentation?.sheetId === pageId) return state;
+        await delay(100);
+    }
+    throw new Error(`Folio page did not switch to ${pageId}: ${JSON.stringify(state?.presentation?.sheetId)}`);
+}
+
 async function acceptedState(window) {
     const workbench = await window.webContents.executeJavaScript(`(${workbenchState.toString()})(${JSON.stringify(path.basename(repositoryRoot))})`, true);
     const presentation = await window.webContents.executeJavaScript(`window.__athenaPresentationAutomation?.getState?.()`, true);
@@ -254,11 +302,20 @@ function requiredPort(presentation, suffix) {
     return port;
 }
 
-function connectionForSourcePort(presentation, semanticPortId) {
-    const sourceAnchorIds = new Set(presentation.ports
+function requiredPortAny(presentation, suffixes) {
+    for (const suffix of suffixes) {
+        const port = presentation.ports.find(candidate => candidate.semanticPortId === `port:${suffix}` || candidate.semanticPortId === suffix);
+        if (port) return port;
+    }
+    throw new Error(`Required semantic Port unavailable: ${suffixes.join(', ')}`);
+}
+
+function connectionForPort(presentation, semanticPortId) {
+    const anchorIds = new Set(presentation.ports
         .filter(port => port.semanticPortId === semanticPortId)
         .map(port => port.anchorId));
-    return presentation.connections.find(connection => sourceAnchorIds.has(connection.sourceAnchorId));
+    return presentation.connections.find(connection =>
+        anchorIds.has(connection.sourceAnchorId) || anchorIds.has(connection.targetAnchorId));
 }
 
 function requireStatus(evidence, expected, name) {
@@ -340,6 +397,10 @@ async function canvasState(window) {
             sceneId: shell.dataset.sceneId || '',
             sceneDigest: shell.dataset.sceneDigest || '',
             nonWhiteSamples: sample,
+            hostWidth: hostRect.width,
+            hostHeight: hostRect.height,
+            loadedAssetCount: host.dataset.loadedAssetCount || '0',
+            expectedAssetCount: host.dataset.expectedAssetCount || '0',
             width: canvases[0].width,
             height: canvases[0].height,
             dpr: window.devicePixelRatio || 1,

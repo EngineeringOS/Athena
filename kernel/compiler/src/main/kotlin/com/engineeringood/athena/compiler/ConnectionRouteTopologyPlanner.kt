@@ -41,6 +41,7 @@ internal class ConnectionRouteTopologyPlanner {
 
         routes.sortedBy { it.routeId.value }.forEachIndexed { firstIndex, first ->
             routes.drop(firstIndex + 1).sortedBy { it.routeId.value }.forEach { second ->
+                if (first.routeId.sheetId != second.routeId.sheetId) return@forEach
                 val sameSemantic = first.connectionId == second.connectionId
                 val sharedRoute = sameSemantic && first.connectionId.value in sharedNetIds
                 val junctionEligible = sharedRoute && first.connectionId.value in junctionNetIds
@@ -68,7 +69,11 @@ internal class ConnectionRouteTopologyPlanner {
                     }
                 }
                 if (sharedRoute) {
-                    first.segments.intersect(second.segments.toSet()).sortedWith(compareBy(ConnectionRouteSegment::geometryKey)).forEach { segment ->
+                    first.segments.flatMap { left ->
+                        second.segments.mapNotNull { right -> collinearOverlap(left, right) }
+                    }.distinctBy(ConnectionRouteSegment::geometryKey)
+                        .sortedWith(compareBy(ConnectionRouteSegment::geometryKey))
+                        .forEach { segment ->
                         sharedSegments += ConnectionSharedSegment(
                             id = ConnectionSharedSegmentId(first.routeId.sheetId, first.connectionId.value, segment),
                             netId = first.connectionId,
@@ -117,6 +122,40 @@ internal class ConnectionRouteTopologyPlanner {
         val v = horizontal.second
         val point = SpatialPoint(v.start.x, h.start.y)
         return point.takeIf { point.x in minOf(h.start.x, h.end.x)..maxOf(h.start.x, h.end.x) && point.y in minOf(v.start.y, v.end.y)..maxOf(v.start.y, v.end.y) }
+    }
+
+    private fun collinearOverlap(
+        first: ConnectionRouteSegment,
+        second: ConnectionRouteSegment,
+    ): ConnectionRouteSegment? {
+        if (!first.isPositiveOrthogonal || !second.isPositiveOrthogonal || first.orientation != second.orientation) return null
+        return when (first.orientation) {
+            com.engineeringood.athena.spatial.SpatialLaneOrientation.HORIZONTAL -> {
+                if (first.start.y != second.start.y) return null
+                val low = maxOf(minOf(first.start.x, first.end.x), minOf(second.start.x, second.end.x))
+                val high = minOf(maxOf(first.start.x, first.end.x), maxOf(second.start.x, second.end.x))
+                if (low >= high) null else first.withAxisOverlap(low, high, horizontal = true)
+            }
+            com.engineeringood.athena.spatial.SpatialLaneOrientation.VERTICAL -> {
+                if (first.start.x != second.start.x) return null
+                val low = maxOf(minOf(first.start.y, first.end.y), minOf(second.start.y, second.end.y))
+                val high = minOf(maxOf(first.start.y, first.end.y), maxOf(second.start.y, second.end.y))
+                if (low >= high) null else first.withAxisOverlap(low, high, horizontal = false)
+            }
+            null -> null
+        }
+    }
+
+    private fun ConnectionRouteSegment.withAxisOverlap(
+        low: Int,
+        high: Int,
+        horizontal: Boolean,
+    ): ConnectionRouteSegment = if (horizontal) {
+        if (start.x <= end.x) copy(start = SpatialPoint(low, start.y), end = SpatialPoint(high, end.y))
+        else copy(start = SpatialPoint(high, start.y), end = SpatialPoint(low, end.y))
+    } else {
+        if (start.y <= end.y) copy(start = SpatialPoint(start.x, low), end = SpatialPoint(end.x, high))
+        else copy(start = SpatialPoint(start.x, high), end = SpatialPoint(end.x, low))
     }
 }
 

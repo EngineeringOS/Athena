@@ -2,14 +2,14 @@
 story: 3.3
 epic: 3
 title: Navigate Placed And Unplaced Connectivity
-status: ready-for-dev
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 3.3: Navigate Placed And Unplaced Connectivity
 
-Status: review
+Status: done
 
 ## Story
 

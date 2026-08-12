@@ -71,13 +71,19 @@ class SourceTransactionEngine(
         } catch (failure: StagedOperationFailure) {
             return rejected(operation, previousRevision, failure.reason, failure.diagnostic)
         } catch (failure: Exception) {
+            val cause = generateSequence<Throwable>(failure) { it.cause }.lastOrNull() ?: failure
+            val context = listOfNotNull(
+                failure::class.simpleName,
+                cause::class.simpleName?.takeIf { it != failure::class.simpleName },
+                cause.message?.takeIf(String::isNotBlank),
+            ).joinToString(": ")
             return rejected(
                 operation,
                 previousRevision,
                 OperationRejectionReason.COMPILATION_FAILURE,
                 diagnostic(
                     operation.kind.name,
-                    failure.message ?: "Staged source validation failed.",
+                    context.ifBlank { "Staged source validation failed." },
                     "Correct authored intent and retry from current source.",
                     "edit.operation.staging-failed",
                 ),

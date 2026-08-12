@@ -19,9 +19,6 @@ class GridAlignedSpatialLayoutCompiler(
         constraints: List<SheetPlacementConstraint> = emptyList(),
         pageGeometries: Map<String, SpatialPageGeometryProfile> = emptyMap(),
     ): SpatialLayoutResult {
-        val baselineResult = baseline.place(projection)
-        if (baselineResult.diagnostics.isNotEmpty()) return baselineResult
-
         val orderedConstraints = constraints.sortedWith(
             compareBy<SheetPlacementConstraint>({ it.sheetId }, { it.occurrenceId.value }, { it.sourceSpan.startLine }),
         )
@@ -29,6 +26,11 @@ class GridAlignedSpatialLayoutCompiler(
         if (constraintDiagnostics.isNotEmpty()) {
             return SpatialLayoutResult(occurrences = emptyList(), diagnostics = constraintDiagnostics)
         }
+        val baselineResult = baseline.place(
+            projection = projection,
+            explicitlyPlacedOccurrences = orderedConstraints.map(SheetPlacementConstraint::occurrenceId).toSet(),
+        )
+        if (baselineResult.diagnostics.isNotEmpty()) return baselineResult
 
         val derived = if (pageGeometries.isEmpty()) {
             deriveLegacyGeometry(baselineResult.occurrences, orderedConstraints)

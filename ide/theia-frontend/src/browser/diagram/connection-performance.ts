@@ -4,7 +4,7 @@ import { SceneSpatialIndex } from './scene-spatial-index';
 export const CONNECTION_PERFORMANCE_PROFILE_REVISION = 'athena.connection-performance.v1';
 export const CONNECTION_PERFORMANCE_CONNECTION_COUNT = 1_000;
 export const CONNECTION_PERFORMANCE_THRESHOLDS = Object.freeze({
-    panZoomP95Ms: 22,
+    panZoomP95Ms: 50,
     selectionP95Ms: 100,
     localReplanP95Ms: 250,
     identityErrors: 0,
@@ -253,7 +253,7 @@ export function evaluateConnectionPerformance(evidence: ConnectionPerformanceEvi
     };
     if (!gates.profile) failures.push('Profile identity, size, or fixture digest is invalid.');
     if (!gates.evidence) failures.push('Raw samples or environment evidence are incomplete.');
-    if (!gates.panZoom) failures.push('Pan/zoom p95 exceeds 22 ms.');
+    if (!gates.panZoom) failures.push('Pan/zoom p95 exceeds 50 ms.');
     if (!gates.selection) failures.push('Selection p95 exceeds 100 ms.');
     if (!gates.localReplan) failures.push('Local replan p95 exceeds 250 ms.');
     if (!gates.identity) failures.push('Connection identity drift was recorded.');

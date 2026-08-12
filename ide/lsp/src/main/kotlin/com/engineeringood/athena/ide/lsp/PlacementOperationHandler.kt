@@ -15,7 +15,7 @@ import com.engineeringood.athena.interaction.SourceFilePatch
 import com.engineeringood.athena.interaction.SourceTraceContext
 import com.engineeringood.athena.interaction.SourcePatchSet
 import com.engineeringood.athena.language.AthenaSheetCompanionParser
-import com.engineeringood.athena.language.SheetCompanionFound
+import com.engineeringood.athena.language.PageCompanionFound
 import com.engineeringood.athena.language.SheetCompanionParseSuccess
 import com.engineeringood.athena.language.SheetCompanionSource
 import com.engineeringood.athena.language.SheetCompanionEditor
@@ -54,16 +54,16 @@ internal class PlacementOperationHandler(
                 ),
             )
         }
-        val sheet = host.sheetCompanionLocation() as? SheetCompanionFound
+        val sheet = host.activePageCompanionLocation() as? PageCompanionFound
             ?: return rejected(
                 operation,
                 currentRevision,
                 OperationRejectionReason.UNAVAILABLE,
                 diagnostic(
                     host.sourcePath.fileName.toString(),
-                    "Required same-basename Sheet Companion is unavailable.",
-                    "Restore exact same-basename Sheet Companion before editing placements.",
-                    "sheet.companion.unavailable",
+                    "Active Page Companion is unavailable.",
+                    "Restore active Folio Page Companion before editing placements.",
+                    "page.companion.unavailable",
                 ),
             )
         val targetIds = targetIds(body)
@@ -103,9 +103,9 @@ internal class PlacementOperationHandler(
                 OperationRejectionReason.COMPILATION_FAILURE,
                 diagnostic(
                     sheet.path.fileName.toString(),
-                    "Current Sheet Companion does not parse.",
+                    "Current Page Companion does not parse.",
                     "Correct current Sheet placement before editing.",
-                    "sheet.companion.invalid",
+                    "page.companion.invalid",
                 ),
             )
         val edited = runCatching {
@@ -157,9 +157,9 @@ internal class PlacementOperationHandler(
                 OperationRejectionReason.COMPILATION_FAILURE,
                 diagnostic(
                     sheet.path.fileName.toString(),
-                    "Proposed Sheet Companion does not parse.",
+                    "Proposed Page Companion does not parse.",
                     "Correct the placement intent before retrying.",
-                    "sheet.companion.invalid",
+                    "page.companion.invalid",
                 ),
             )
         val stagedRevision = revisionService.current(

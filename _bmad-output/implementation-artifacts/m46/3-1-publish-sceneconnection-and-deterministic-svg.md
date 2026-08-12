@@ -2,14 +2,14 @@
 story: 3.1
 epic: 3
 title: Publish SceneConnection And Deterministic SVG
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 3.1: Publish SceneConnection And Deterministic SVG
 
-Status: review
+Status: done
 
 ## Story
 

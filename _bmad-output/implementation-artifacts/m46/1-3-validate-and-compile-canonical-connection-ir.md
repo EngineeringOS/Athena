@@ -2,14 +2,14 @@
 story: 1.3
 epic: 1
 title: Validate And Compile Canonical Connection IR
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-10
 ---
 
 # Story 1.3: Validate And Compile Canonical Connection IR
 
-Status: review
+Status: done
 
 ## Story
 

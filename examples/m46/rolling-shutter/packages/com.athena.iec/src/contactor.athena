@@ -2,10 +2,10 @@ package com.athena.iec
 symbol contactor {
   identity "contactor"
   version "1.0.0"
-  resource geometry { kind svg path "resources/contactor.svg" }
+  resource geometry { kind svg path "resources/contactor-power.svg" }
   graphic svg resource geometry
-  anchor power { port Contactor.power direction in signal Power point (-1, 0) }
-  anchor load { port Contactor.load direction out signal Power point (1, 0) }
+  anchor power { port Contactor.power direction in signal Power point (0, -1) }
+  anchor load { port Contactor.load direction out signal Power point (0, 1) }
 }
 element contactor_element {
   identity "contactor_element"

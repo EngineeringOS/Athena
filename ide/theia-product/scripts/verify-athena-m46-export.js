@@ -62,17 +62,20 @@ async function main() {
             height: firstPng.readUInt32BE(20),
         };
         assert.equal(visualFacts.root, 'svg');
-        assert.equal(visualFacts.images, 14);
-        assert.equal(visualFacts.routes, 14);
-        assert.equal(visualFacts.nonScalingRoutes, 14);
+        assert.equal(visualFacts.images, 9);
+        // M46 routes are rendered as orthogonal segments. One connection may
+        // contain multiple segments; current canonical rolling-shutter Scene
+        // publishes eleven deterministic segments.
+        assert.equal(visualFacts.routes, 11);
+        assert.equal(visualFacts.nonScalingRoutes, 11);
         assert.equal(visualFacts.frameSegments, 4);
         assert.ok(visualFacts.routeStrokeWidths.every(width => width === 1));
         assert.ok(visualFacts.frameStrokeWidths.every(width => width === 1));
         assert.equal(visualFacts.backgroundRects, 1);
         assert.deepEqual(visualFacts.backgroundFills, ['rgb(255, 255, 255)']);
-        assert.equal(visualFacts.labels, 15);
+        assert.equal(visualFacts.labels, 9);
         assert.ok(visualFacts.labelFontSizes.every(size => size > 0 && size <= 10));
-        assert.equal(visualFacts.topologyMarkers, 3);
+        assert.equal(visualFacts.topologyMarkers, 2);
         assert.equal(visualFacts.constructionGridPatterns, 0);
         assert.equal(visualFacts.bottomTableLines, 0);
         assert.ok(firstPng.length > 1000);

@@ -105,9 +105,14 @@ private fun resolveProjectionSheetSwitchTarget(
     val success = compilation as? CompilerCompilationSuccess ?: return null
     return success.projections.asSequence().flatMap { projection ->
         projection.sheets.asSequence().map { sheet ->
-            ProjectionSheetSwitchTarget(projection.view.id, sheet.sheetId.value)
+            Triple(
+                ProjectionSheetSwitchTarget(projection.view.id, sheet.sheetId.value),
+                sheet.sheetId.value,
+                sheet.displayName,
+            )
         }
-    }.firstOrNull { target -> target.sheetId == requestedId }
+    }.firstOrNull { (_, sheetId, displayName) -> requestedId == sheetId || requestedId == displayName }
+        ?.first
 }
 
 private fun CompilerSyntaxDiagnostic.toRuntimeProjectionDiagnostic(): AthenaRuntimeProjectionDiagnostic =

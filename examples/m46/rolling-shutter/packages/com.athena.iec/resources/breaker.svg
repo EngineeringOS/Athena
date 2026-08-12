@@ -1,1 +1,52 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32"><path d="M4 16h18m20 0h18M22 8l20 16" fill="none" stroke="#111" stroke-width="1"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="140.000000" height="100.000000">
+  <defs>
+    <g id="terminal" stroke-width="1" stroke-linecap="square">
+      <line x1="0" y1="0" x2="0" y2="4" stroke="#0000FF" />
+      <line x1="0" y1="1" x2="0" y2="4" stroke="#FF0000" />
+    </g>
+  </defs>
+  <g transform="translate(92,50)" stroke-linecap="square">
+    <polyline points="-10,-20 0,20 0,40" stroke-width="1" fill="none" stroke="#000000" />
+    <ellipse cx="-80" cy="24" rx="4" ry="4" stroke-width="1" fill="none" stroke="#000000" />
+    <ellipse cx="40" cy="-20" rx="4" ry="4" stroke-width="1" fill="none" stroke="#000000" />
+    <ellipse cx="-40" cy="-20" rx="4" ry="4" stroke-width="1" fill="none" stroke="#000000" />
+    <ellipse cx="0" cy="-20" rx="4" ry="4" stroke-width="1" fill="none" stroke="#000000" />
+    <polyline points="-10,-20 0,20 0,40" stroke-width="1" fill="none" stroke="#000000" />
+    <polyline points="30,-20 40,20 40,40" stroke-width="1" fill="none" stroke="#000000" />
+    <polyline points="-50,-20 -40,20 -40,40" stroke-width="1" fill="none" stroke="#000000" />
+    <text transform="translate(51.3, 10.9)" font-family="Sans Serif,MS Sans Serif" font-size="18pt" fill="#000000"></text>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(0,-40) rotate(90)" >
+      <line x1="0" y1="0" x2="16" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(4,-24) rotate(180)" >
+      <line x1="0" y1="0" x2="8" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(-40,-40) rotate(90)" >
+      <line x1="0" y1="0" x2="16" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(-36,-24) rotate(180)" >
+      <line x1="0" y1="0" x2="8" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(40,-40) rotate(90)" >
+      <line x1="0" y1="0" x2="16" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(44,-24) rotate(180)" >
+      <line x1="0" y1="0" x2="8" y2="0" />
+      </g>
+    <g stroke-dasharray="4,2" stroke-width="1" fill="none" stroke="#000000" transform="translate(30,0) rotate(180)" >
+      <line x1="0" y1="0" x2="110" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(-80,20) rotate(-104)" >
+      <line x1="0" y1="0" x2="41.23" y2="0" />
+      </g>
+    <use xlink:href="#terminal" x="0" y="-40" />
+    <use xlink:href="#terminal" x="0" y="40" transform="rotate(180 0 40)" />
+    <use xlink:href="#terminal" x="40" y="-40" />
+    <use xlink:href="#terminal" x="40" y="40" transform="rotate(180 40 40)" />
+    <use xlink:href="#terminal" x="-40" y="-40" />
+    <use xlink:href="#terminal" x="-40" y="40" transform="rotate(180 -40 40)" />
+  </g>
+  Your Browser does not support inline SVG!
+</svg>

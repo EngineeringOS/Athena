@@ -7,6 +7,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const css = fs.readFileSync(path.join(root, 'src/browser/style/index.css'), 'utf8');
 const adapter = fs.readFileSync(path.join(root, 'src/browser/diagram/konva-diagram-adapter.ts'), 'utf8');
 const widget = fs.readFileSync(path.join(root, 'src/browser/athena-presentation-widget.tsx'), 'utf8');
+const opener = fs.readFileSync(path.join(root, 'src/browser/athena-sheet-companion-opener.ts'), 'utf8');
 
 test('engineering document keeps compact style controls beside the canvas', () => {
     assert.match(widget, /athena-presentation__style-bar/);
@@ -15,8 +16,23 @@ test('engineering document keeps compact style controls beside the canvas', () =
     assert.doesNotMatch(widget, /MARKER_AND_LABEL/);
 });
 
+test('Folio sheet companions open as independent editor widgets', () => {
+    assert.match(widget, /configureSheet/);
+    assert.match(widget, /onActivateRequest/);
+    assert.match(widget, /this\.bridge\.requestDiagramScene\(sheetId\)/);
+    assert.match(opener, /getOrCreateWidget/);
+    assert.match(opener, /sheetId/);
+    assert.match(widget, /requestFolioPages/);
+    assert.match(widget, /athena-presentation__folio-bar/);
+});
+
 test('canvas selection does not switch style authority or recolor the document', () => {
     assert.doesNotMatch(widget, /this\.styleTarget = 'occurrence'/);
+});
+
+test('canvas click selects semantic subject without opening source editor', () => {
+    assert.match(widget, /this\.selectionService\.selectSemanticId\(selection\.semanticId\)/);
+    assert.doesNotMatch(widget, /this\.selectionService\.selectSceneTrace\(trace, selection\.semanticId\)/);
 });
 
 test('connection selection preserves style target and annotation visibility', () => {

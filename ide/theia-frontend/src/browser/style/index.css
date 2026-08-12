@@ -81,6 +81,42 @@
     white-space: nowrap;
 }
 
+.athena-presentation__folio-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 2px 6px;
+    border-bottom: 1px solid var(--theia-editorWidget-border, #c8c8c8);
+    background: var(--theia-editor-background, #fff);
+}
+
+.athena-presentation__folio-bar button {
+    height: 24px;
+    min-width: 96px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-bottom-color: #c8cdd2;
+    background: transparent;
+    color: #4a525a;
+    font: 11px var(--theia-ui-font-family);
+    cursor: pointer;
+}
+
+.athena-presentation__folio-bar button:hover,
+.athena-presentation__folio-bar button:focus-visible {
+    background: #f1f3f5;
+    outline: none;
+}
+
+.athena-presentation__folio-bar button.is-active {
+    border-color: #c8cdd2;
+    border-bottom-color: #fff;
+    background: #fff;
+    color: #1f252b;
+    font-weight: 600;
+}
+
 .athena-presentation__style-bar select,
 .athena-presentation__style-bar input,
 .athena-presentation__style-bar button {
@@ -129,6 +165,21 @@
     overflow: hidden;
     color: #9b2c2c;
     font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.athena-presentation__status-bar {
+    box-sizing: border-box;
+    flex: 0 0 22px;
+    min-height: 22px;
+    padding: 3px 8px;
+    overflow: hidden;
+    border-top: 1px solid #d3d7db;
+    background: #f7f8f9;
+    color: #66707a;
+    font-size: 11px;
+    line-height: 15px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }

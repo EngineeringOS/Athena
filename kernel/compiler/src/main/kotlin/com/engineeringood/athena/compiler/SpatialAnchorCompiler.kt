@@ -77,7 +77,7 @@ class SpatialAnchorCompiler internal constructor(
                 participant.endpoint.occurrencePortId to (connection to EndpointRole.PARTICIPANT)
             }
         }.groupBy(keySelector = { (endpoint, _) -> endpoint }, valueTransform = { (_, incident) -> incident })
-        return incidents.flatMap { (endpoint, endpointIncidents) ->
+        val connected = incidents.flatMap { (endpoint, endpointIncidents) ->
             val node = projection.nodes.single { candidate -> candidate.projectionId == endpoint.occurrenceId }
             val owningSheetIds = projection.sheets.filter { sheet ->
                 sheet.subjects.any { subject ->
@@ -120,6 +120,43 @@ class SpatialAnchorCompiler internal constructor(
                 )
             }
         }
+        // Every package-backed semantic Port remains an interaction fact, even before it is
+        // connected. This publishes a selectable anchor without creating a connection or route.
+        val unconnected = projection.occurrencePorts
+            .filterNot { port -> port.occurrencePortId in incidents }
+            .flatMap { portFact ->
+                val endpoint = portFact.occurrencePortId
+                val node = projection.nodes.single { candidate -> candidate.projectionId == endpoint.occurrenceId }
+                val owningSheetIds = projection.sheets.filter { sheet ->
+                    sheet.subjects.any { subject ->
+                        if (subject.nodeIds.isNotEmpty()) node.projectionId in subject.nodeIds else subject.semanticId == node.semanticId
+                    }
+                }.map { sheet -> sheet.sheetId.value }
+                owningSheetIds.map { sheetId ->
+                    val geometry = occurrences.single { occurrence ->
+                        occurrence.sheetId == sheetId && occurrence.occurrenceId.projectionId == endpoint.occurrenceId.value
+                    }
+                    SpatialAnchorRequest(
+                        endpoint = endpoint,
+                        geometry = geometry,
+                        portFact = portFact,
+                        side = unconnectedSide(endpoint),
+                        incidentConnections = emptyList(),
+                        sheetOrigin = projection.sheets.single { sheet -> sheet.sheetId.value == sheetId }.originGeometryElementId,
+                        occurrenceOrigin = node.originGeometryElementId,
+                    )
+                }
+            }
+        return connected + unconnected
+    }
+
+    private fun unconnectedSide(endpoint: ProjectionOccurrencePortId): SpatialBoundarySide = when (
+        (endpoint.portId.value.hashCode() and Int.MAX_VALUE) % 4
+    ) {
+        0 -> SpatialBoundarySide.TOP
+        1 -> SpatialBoundarySide.RIGHT
+        2 -> SpatialBoundarySide.BOTTOM
+        else -> SpatialBoundarySide.LEFT
     }
 
     private fun preferredSide(

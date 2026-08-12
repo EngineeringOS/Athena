@@ -106,7 +106,7 @@ data class CompilerCompilationSuccess(
     val source: CompilerSourceDocument,
     val document: EngineeringDocument,
     val semanticResult: SemanticValidationResult,
-    val sheetCompanion: SheetCompanionSource? = null,
+    val sheetCompanions: List<SheetCompanionSource> = emptyList(),
     val validationBreakdown: CompilerValidationBreakdown = CompilerValidationBreakdown(),
     val projections: List<ProjectionDocument> = emptyList(),
     val projectionDiagnostics: List<String> = emptyList(),

@@ -8,8 +8,6 @@ const ATHENA_JAVA_UNRESOLVED_SENTINEL = 'ATHENA_JAVA_HOME_UNRESOLVED';
 const SHOULD_EXIT_ON_READY = process.env.ATHENA_ELECTRON_SMOKE_EXIT_ON_READY === '1';
 
 function main() {
-    // Electron places wrapper script before user workspace arguments; Theia must parse user args.
-    process.argv = process.argv.filter(argument => !argument.toLowerCase().endsWith('athena-electron-main.js'));
     const runtimeResolution = configureJvmRuntime();
     if (runtimeResolution.status === 'ready') {
         console.log(`${ATHENA_JAVA_SENTINEL}=${runtimeResolution.javaHome}`);

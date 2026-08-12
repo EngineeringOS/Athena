@@ -25,7 +25,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import com.engineeringood.athena.language.AthenaSheetCompanionParser
 import com.engineeringood.athena.language.SheetCompanionEditor
-import com.engineeringood.athena.language.SheetCompanionFound
+import com.engineeringood.athena.language.PageCompanionFound
 import com.engineeringood.athena.language.SheetPlacementWrite
 import com.engineeringood.athena.language.SheetPoint
 import com.engineeringood.athena.packageplatform.FunctionPartBinding
@@ -158,8 +158,8 @@ internal class RepresentationAndEngineeringOperationHandler(
                 else -> bindingEditor.changeSymbol(bindingPath, bindingAfter, functionId, elementRef)
             }
         }
-        val sheet = host.sheetCompanionLocation() as? SheetCompanionFound
-            ?: return reject(operation, currentRevision, body.sheetId, "Sheet Companion is unavailable.", "Restore the same-basename Sheet Companion.", "sheet.companion.unavailable")
+        val sheet = host.activePageCompanionLocation() as? PageCompanionFound
+            ?: return reject(operation, currentRevision, body.sheetId, "Page Companion is unavailable.", "Restore the active Folio Page Companion.", "page.companion.unavailable")
         val sheetBefore = Files.readString(sheet.path)
         val placementWrites = occurrences.map { occurrence ->
             val functionId = requireNotNull(occurrence.functionId).removePrefix("function:")
@@ -245,8 +245,8 @@ internal class RepresentationAndEngineeringOperationHandler(
         val bindingAfter = runCatching { bindingEditor.insertElement(bindingPath, bindingBefore, host.primaryPackageName, body.functionId, body.elementRef) }.getOrElse { failure ->
             return reject(operation, currentRevision, body.functionId, failure.message ?: "Element binding is invalid.", "Choose an unbound Function and admitted Element.", "insert.binding.invalid")
         }
-        val sheet = host.sheetCompanionLocation() as? SheetCompanionFound
-            ?: return reject(operation, currentRevision, body.sheetId, "Sheet Companion is unavailable.", "Restore the same-basename Sheet Companion.", "sheet.companion.unavailable")
+        val sheet = host.activePageCompanionLocation() as? PageCompanionFound
+            ?: return reject(operation, currentRevision, body.sheetId, "Page Companion is unavailable.", "Restore the active Folio Page Companion.", "page.companion.unavailable")
         val sheetBefore = Files.readString(sheet.path)
         val sheetEdited = runCatching {
             SheetCompanionEditor(AthenaSheetCompanionParser()).writePlacements(

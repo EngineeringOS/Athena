@@ -10,10 +10,10 @@ import com.engineeringood.athena.interaction.SourceFilePatch
 import com.engineeringood.athena.interaction.SourcePatchSet
 import com.engineeringood.athena.interaction.StyleTargetKind
 import com.engineeringood.athena.language.AthenaSheetStyleCompanionParser
-import com.engineeringood.athena.language.SheetCompanionAmbiguous
-import com.engineeringood.athena.language.SheetCompanionFound
+import com.engineeringood.athena.language.PageCompanionAmbiguous
+import com.engineeringood.athena.language.PageCompanionFound
 import com.engineeringood.athena.language.SheetStyleCompanionEditor
-import com.engineeringood.athena.language.SheetStyleCompanionLocator
+import com.engineeringood.athena.language.PageStyleCompanionLocator
 import com.engineeringood.athena.language.SheetStyleCompanionParseSuccess
 import com.engineeringood.athena.language.SheetStyleFields
 import com.engineeringood.athena.presentation.PublicationState
@@ -47,24 +47,24 @@ class SetStyleOperationHandler(
                 "edit.operation.style.target-unknown",
             ))
         }
-        val sheet = host.sheetCompanionLocation() as? SheetCompanionFound
+        val sheet = host.activePageCompanionLocation() as? PageCompanionFound
             ?: return rejected(operation, currentRevision, OperationRejectionReason.UNAVAILABLE, diagnostic(
                 host.sourcePath.fileName.toString(),
-                "Required same-basename Sheet Companion is unavailable.",
-                "Restore exact same-basename Sheet Companion before editing style.",
-                "sheet.companion.unavailable",
+                "Required Page Companion is unavailable.",
+                "Restore active Folio Page Companion before editing style.",
+                "page.companion.unavailable",
             ))
-        val styleLocation = SheetStyleCompanionLocator.locate(sheet.path)
-        if (styleLocation is SheetCompanionAmbiguous) {
+        val styleLocation = PageStyleCompanionLocator.locate(sheet.path)
+        if (styleLocation is PageCompanionAmbiguous) {
             return rejected(operation, currentRevision, OperationRejectionReason.UNAVAILABLE, diagnostic(
                 styleLocation.expectedPath.fileName.toString(),
                 "Style Companion is ambiguous or uses different filename casing.",
-                "Keep zero or one exact same-basename Style Companion.",
-                "sheet.style.companion.ambiguous",
+                "Keep zero or one exact Page Style Companion.",
+                "page.style.companion.ambiguous",
             ))
         }
         val stylePath = styleLocation.expectedPath
-        val existingText = (styleLocation as? SheetCompanionFound)?.let { Files.readString(it.path) }
+        val existingText = (styleLocation as? PageCompanionFound)?.let { Files.readString(it.path) }
         val targetName = when (setStyle.target.kind) {
             StyleTargetKind.ROLE -> setStyle.target.id
             StyleTargetKind.OCCURRENCE -> "occurrence:${setStyle.target.id}"
@@ -85,7 +85,7 @@ class SetStyleOperationHandler(
                 stylePath.fileName.toString(),
                 "Proposed Style Companion does not parse.",
                 "Correct style fields before solidifying.",
-                "sheet.style.companion.invalid",
+                "page.style.companion.invalid",
             ))
         val stagedRevision = revisionService.current(styleCompanionBytesOverride = proposedText.toByteArray(Charsets.UTF_8))
         val patchSet = SourcePatchSet(listOf(SourceFilePatch(relative(stylePath), existingText, proposedText)))

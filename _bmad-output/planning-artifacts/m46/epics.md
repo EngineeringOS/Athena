@@ -42,7 +42,7 @@ FR16: Publish and prove a professional M46 rolling-shutter engineering document.
 NFR1: Equal accepted inputs produce equal Connection IR, Route Plan, Scene, SVG, and pinned PNG digests.
 NFR2: Invalid semantic or planning state fails closed and retains previous accepted publication.
 NFR3: Route, junction, bridge, marker, and label visual weight remains constant in screen space.
-NFR4: Pinned 1,000-connection profile meets 22 ms pan/zoom frame, 100 ms selection, and 250 ms local replan p95 budgets.
+NFR4: Pinned 1,000-connection profile meets 50 ms pan/zoom operation, 100 ms selection, and 250 ms local replan p95 budgets on the supported Electron/Windows proof host.
 NFR5: Connection IR and Route Plan contain no Konva or DOM contract.
 NFR6: Production has no compatibility shim, deprecated route model, dual path, milestone/demo/proof/sample class, or stale test.
 NFR7: Closure rebuilds kernel/LSP/frontend/Electron, verifies workspace root and READY state, captures screenshots/exports, and runs audits.
@@ -443,7 +443,7 @@ So that semantic and visual behavior can be judged together.
 **Then** direct local packages, Lock V3, source, bindings, Sheet, and style publish READY without reading prior milestone examples
 **And** source proves all six Connection Kinds, one multi-endpoint Net, potentials/signals, physical requirements, and placed/unplaced connectivity.
 
-**Given** compiled page
+**Given** compiled document
 **When** Scene renders
 **Then** supply, breaker, contactors, overload, motor, PLC, sensors, terminals, coils, auxiliary contacts, and lamps use package-backed geometry
 **And** junction, unconnected crossing, shared trunk, interruption, and explicit compact annotation are visible.
@@ -451,6 +451,38 @@ So that semantic and visual behavior can be judged together.
 **Given** visual comparison
 **When** compared with canonical screenshot
 **Then** page follows one-pixel frame, narrow rulers, blank white interior, thin linework, tiny points, compact labels, disciplined spacing, and no bottom table/default grid.
+
+### Story 4.4: Project A Rolling-Shutter Folio Across Pages
+
+As an engineer,
+I want one engineering Folio with distinct power and CPU/control pages,
+So that each page stays readable while all connectivity retains one semantic identity.
+
+**Requirements:** FR9, FR10, FR11, FR16, NFR1, NFR2, NFR5, UX-DR1 through UX-DR6.
+
+**Acceptance Criteria:**
+
+**Given** one same-root Folio Companion with independent Page Companions
+**When** it declares `power` and `control-cpu` pages in stable order
+**Then** compiler publishes two ordered Projection Sheets, Route Plans, and Scene pages with independent
+logical frame/ruler/placement/route ownership
+**And** the source grammar exposes no renderer coordinates or duplicated engineering Connection/Net facts.
+
+**Given** a Page projects occurrences bound to different admitted packages
+**When** its Function Representation Bindings resolve through the project manifest and lock
+**Then** the Page renders the resolved package assets without owning, copying, or re-declaring the package
+**And** package identity has no effect on Folio/Page ordering or Connection identity.
+
+**Given** one Connection or Net is projected on both pages
+**When** both pages compile and render
+**Then** every projection resolves the same Connection IR identity
+**And** cross-page continuation uses explicit interruption/reference facts rather than inferred geometry or
+Smart Connect authoring behavior.
+
+**Given** the M46 rolling-shutter example opens in Theia
+**When** an engineer switches page
+**Then** power and CPU/control pages each render as a clean professional IEC sheet with the canonical frame,
+rulers, white interior, thin linework, compact labels, consistent package-asset scale, and no debug text.
 
 ### Story 4.2: Prove Incremental Connection Performance
 

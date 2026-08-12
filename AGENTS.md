@@ -162,6 +162,23 @@ Treat an unopened workspace as an immediate E2E failure, not a rendering or LSP 
 - If the UI says `NO FOLDER OPENED`, stop immediately and fix workspace activation. Do not wait on render selectors, rebuild the compiler, or diagnose Projection/Spatial Reality.
 - Open source files only after workspace activation, through the Theia opener/editor command path.
 
+## Clean Athena Start Rule
+
+Never diagnose stale Theia, frontend, LSP, or Electron behavior by manually invoking Electron launchers.
+
+- Use this one command from repository root before visual product verification or interactive IDE work:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\start-athena-clean.ps1
+```
+
+- It rebuilds the current LSP distribution, cleans and rebuilds all Theia packages, terminates only repository-owned
+  Athena Electron launchers, then opens Athena in a separate visible PowerShell with `examples/m46/rolling-shutter`
+  as its workspace.
+- To open another governed repository, pass `-Workspace <absolute-or-relative-path>`.
+- Read `.athena/logs/clean-start.log` before guessing about LSP, workspace, or render failures.
+- Do not run a proof launcher or direct Electron command as a substitute for this workflow.
+
 ## Engineering Document Visual Golden Rule
 
 `draft/screenshort/equipement_d'un_volet_roulant.png` is Athena's canonical visual reference. Match its

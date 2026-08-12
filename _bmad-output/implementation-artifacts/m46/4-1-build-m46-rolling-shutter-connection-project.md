@@ -2,14 +2,14 @@
 story: 4.1
 epic: 4
 title: Build M46 Rolling-Shutter Connection Project
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-11
 ---
 
 # Story 4.1: Build M46 Rolling-Shutter Connection Project
 
-Status: review
+Status: done
 
 ## Story
 
@@ -40,7 +40,7 @@ so that semantic and visual behavior can be judged together.
 
 - [x] Build independent direct-package M46 repository (AC: 1, 3)
   - [x] Create `examples/m46/rolling-shutter/` with own manifest, compiler-owned Lock V3, source root, same-basename companions, and direct local package modules.
-  - [x] Copy valid package source/SVG assets into M46 package modules with separate geometry/anchor and Engineering Port facts.
+  - [ ] Copy admitted professional SVG assets from `reference/elements` and `reference/elements_contrib` into M46 package modules with separate geometry/anchor and Engineering Port facts.
   - [x] Materialize Lock V3 through repository resolver authority; no fallback or retired-shape compatibility.
   - [x] Keep proof-only helpers in tests/examples/artifacts; no milestone-named production classes.
 - [x] Author one complete semantic connection system (AC: 1-3)
@@ -48,16 +48,21 @@ so that semantic and visual behavior can be judged together.
   - [x] Prove all six connection kinds, typed specifications, endpoint roles, precedence, and placed/unplaced facts.
   - [x] Author multi-endpoint `Control24V` Net with explicit signal and physical requirements.
   - [x] Preserve human-first syntax; source contains no topology, route, Scene, viewport, renderer, digest, or other IR fields.
-- [x] Bind package-backed IEC occurrences and logical Sheet placement (AC: 1, 2, 4)
-  - [x] Bind required occurrences to admitted local package Elements/Variants with semantic-Port-to-SVG-anchor mappings.
-  - [x] Author logical Sheet placement/style; compiler plans topology and compact annotation facts.
+- [ ] Bind package-backed IEC occurrences and logical Sheet placement (AC: 1, 2, 4)
+  - [ ] Bind required occurrences to admitted local package Elements/Variants with semantic-Port-to-SVG-anchor mappings.
+  - [ ] Author logical Sheet placement/style; compiler plans topology and compact annotation facts.
   - [x] Keep route/annotation intent minimal and free of screenshot pixel geometry.
-  - [x] Verify every visible route traces to accepted Connection/Net IR and every occurrence resolves admitted geometry.
-- [x] Add compiler and LSP golden acceptance tests (AC: 1-4)
+  - [ ] Verify every visible route traces to accepted Connection/Net IR and every occurrence resolves admitted geometry.
+- [ ] Replace toy geometry with professional static SVG package assets (AC: 2, 4)
+  - [ ] Add an asset-admission test for inert SVG text and internal reusable geometry; reject external links, scripts, foreign markup, and event attributes.
+  - [ ] Copy selected professional source SVGs into the local M46 packages, normalizing only static document metadata required by `svg-safe-1`; preserve asset provenance and never depend on `reference/` at runtime.
+  - [ ] Represent breaker, contactor coil, NO/NC contact, transformer, terminal, lamp, pushbutton, and three-phase motor as package symbols/elements with exact semantic Port anchors.
+  - [ ] Re-author the rolling-shutter source, bindings, and Sheet as a complete left-power/center-control-supply/right-ladder page matching the canonical engineering-document grammar.
+- [ ] Add compiler and LSP golden acceptance tests (AC: 1-4)
   - [x] Compiler test covers independent package resolution, six kinds, Net identity, specifications, topology, placement, and deterministic identities/digests.
   - [x] LSP test opens M46 repository root and asserts READY publication, Connection Read Model, zero blocking diagnostics, and no prior-example reads.
-  - [x] Assertions cover junction/crossing, shared segment, interruption, annotation, hidden debug labels, frame/rulers, blank interior, and no table/grid.
-  - [x] Focused and full compiler/LSP regressions, encoding audit, source-set hygiene audit, and `git diff --check` pass sequentially.
+  - [ ] Assertions cover junction/crossing, shared segment, interruption, annotation, hidden debug labels, frame/rulers, blank interior, and no table/grid.
+  - [ ] Focused and full compiler/LSP regressions, encoding audit, source-set hygiene audit, and `git diff --check` pass sequentially.
 
 ## Dev Notes
 
@@ -148,6 +153,8 @@ Codex
 - Style edits preserve explicit `annotation:` intents.
 - Connection transaction regression fixture now uses independent M46 source and current direct connection syntax; no M45 example dependency remains.
 - Verification passed: compiler full test, LSP full test, language companion tests, encoding audit, source-set hygiene audit, and `git diff --check`.
+- Fixed Style Companion editor routing: `.sheet.style.athena` stays an Athena LSP document but no longer receives the incompatible engineering Monarch/Tree-sitter grammar; valid style source therefore has dedicated style diagnostics only.
+- Binding Companions now publish dedicated parse diagnostics instead of entering M42 engineering compilation; Style and Binding Companions have separate Monaco syntax grammars while Tree-sitter remains main engineering-source only.
 
 ### File List
 
@@ -159,8 +166,16 @@ Codex
 - `kernel/language/src/test/kotlin/com/engineeringood/athena/language/SheetCompanionLanguageTest.kt`
 - `ide/lsp/src/test/kotlin/com/engineeringood/athena/ide/lsp/ConnectionOperationHandlerTest.kt`
 - `ide/lsp/src/test/kotlin/com/engineeringood/athena/ide/lsp/M46RollingShutterConnectionProjectTest.kt`
+- `ide/lsp/src/main/kotlin/com/engineeringood/athena/ide/lsp/AthenaLanguageServer.kt`
+- `ide/lsp/src/test/kotlin/com/engineeringood/athena/ide/lsp/AthenaLanguageServerTest.kt`
+- `ide/theia-frontend/src/browser/athena-lsp-editor-bridge-service.ts`
+- `ide/theia-frontend/src/browser/athena-language-definition.ts`
+- `ide/theia-frontend/scripts/athena-language-highlighting-definition.test.mjs`
 
 ### Change Log
 
 - 2026-08-11: Created Story 4.1 through BMad create-story workflow; status `ready-for-dev`.
 - 2026-08-11: Implemented M46 connection project, compact logical annotation sizing, style annotation preservation, and current-contract transaction coverage; status `review`.
+- 2026-08-11: Visual acceptance failed: the page still used toy geometry. Returned to `in-progress` for professional static SVG package assets and rebuilt product evidence.
+- 2026-08-11: Routed Sheet Style Companions away from main engineering Tree-sitter/Monarch while retaining dedicated JVM LSP diagnostics; rebuilt frontend and LSP distribution.
+- 2026-08-11: Added companion-aware Monaco grammars and stopped Binding Companions from invoking the M42 engineering compiler, eliminating the false representation-source contract diagnostic.

@@ -3,6 +3,8 @@ import { ReactWidget } from '@theia/core/lib/browser/widgets/react-widget';
 import { inject, injectable, postConstruct } from '@theia/core/shared/inversify';
 import { Disposable, DisposableCollection } from '@theia/core/lib/common/disposable';
 import { EditorManager, EditorWidget } from '@theia/editor/lib/browser';
+import { OpenerService, open as openUri } from '@theia/core/lib/browser/opener-service';
+import URI from '@theia/core/lib/common/uri';
 import { AthenaConnectionReadModelPublication, AthenaLspEditorBridgeService } from './athena-lsp-editor-bridge-service';
 import { AthenaRepositorySessionService } from './athena-repository-session-service';
 import { AthenaSemanticSelectionService } from './athena-semantic-selection-service';
@@ -22,12 +24,14 @@ type AthenaPresentationAutomation = {
     evidence(): AthenaPresentationOperationEvidence[];
     getState(): unknown;
     getConnectionReadModel(): Promise<AthenaConnectionReadModelPublication | undefined>;
+    refresh(): Promise<void>;
     executeMove(occurrenceId: string, point: { x: number; y: number }, lockAction?: 'PRESERVE' | 'LOCK' | 'UNLOCK'): Promise<AthenaPresentationOperationEvidence | undefined>;
     executeSnap(occurrenceId: string): Promise<AthenaPresentationOperationEvidence | undefined>;
     executeAlign(occurrenceIds: string[], axis: 'LEFT' | 'CENTER_X' | 'RIGHT' | 'TOP' | 'CENTER_Y' | 'BOTTOM'): Promise<AthenaPresentationOperationEvidence | undefined>;
     executeDistribute(occurrenceIds: string[], axis: 'HORIZONTAL' | 'VERTICAL'): Promise<AthenaPresentationOperationEvidence | undefined>;
     executeReconnect(connectionId: string, endpointRole: 'SOURCE' | 'SINK', replacementPortId: string): Promise<AthenaPresentationOperationEvidence | undefined>;
     executeRouteAdjust(connectionId: string, target: { kind: 'SEGMENT' | 'BEND'; ordinal: number }, point: { column: number; row: number }): Promise<AthenaPresentationOperationEvidence | undefined>;
+    switchFolioPage(sheetId: string): Promise<void>;
     executeUndo(journalEntryId: string): Promise<AthenaPresentationOperationEvidence | undefined>;
     executeRedo(journalEntryId: string): Promise<AthenaPresentationOperationEvidence | undefined>;
 };
@@ -39,7 +43,7 @@ type AthenaPresentationWindow = Window & {
 @injectable()
 export class AthenaPresentationWidget extends ReactWidget {
     static readonly ID = 'athena.presentation';
-    static readonly LABEL = 'Engineering Document';
+    static readonly LABEL = 'Presentation';
 
     @inject(AthenaLspEditorBridgeService)
     protected readonly bridge: AthenaLspEditorBridgeService;
@@ -47,6 +51,8 @@ export class AthenaPresentationWidget extends ReactWidget {
     protected readonly repositorySession: AthenaRepositorySessionService;
     @inject(EditorManager)
     protected readonly editorManager: EditorManager;
+    @inject(OpenerService)
+    protected readonly openerService: OpenerService;
     @inject(AthenaSemanticSelectionService)
     protected readonly selectionService: AthenaSemanticSelectionService;
 
@@ -69,6 +75,14 @@ export class AthenaPresentationWidget extends ReactWidget {
     protected portDisplay: 'HIDDEN' | 'MARKER' = 'MARKER';
     protected operationError: string | undefined;
     protected readonly operationEvidence: AthenaPresentationOperationEvidence[] = [];
+    protected sheetId: string | undefined;
+    protected sourceUri: string | undefined;
+    protected folioPages: string[] = [];
+
+    protected openSource = (): void => {
+        if (!this.sourceUri) return;
+        void openUri(this.openerService, new URI(this.sourceUri).withQuery('athenaSource=1'));
+    };
 
     @postConstruct()
     protected init(): void {
@@ -94,6 +108,8 @@ export class AthenaPresentationWidget extends ReactWidget {
             evidence: () => [...this.operationEvidence],
             getState: () => this.automationState(),
             getConnectionReadModel: () => this.bridge.requestConnectionReadModel(),
+            refresh: () => this.refresh(),
+            switchFolioPage: sheetId => this.switchFolioPage(sheetId),
             executeMove: async (occurrenceId, point, lockAction = 'PRESERVE') => {
                 await this.moveOccurrence({ occurrenceId, point, lockAction });
                 return this.latestOperationEvidence();
@@ -178,6 +194,27 @@ export class AthenaPresentationWidget extends ReactWidget {
         void this.refresh();
     }
 
+    configureSheet(sheetId: string | undefined, sourceUri?: string): void {
+        this.sheetId = sheetId;
+        this.sourceUri = sourceUri ?? this.sourceUri;
+        if (sheetId) {
+            this.id = `${AthenaPresentationWidget.ID}:${sheetId}`;
+            const label = this.sourceUri
+                ? new URI(this.sourceUri).path.toString().split(/[\\/]/).pop() || sheetId
+                : sheetId.replace(/_/g, ' ');
+            this.title.label = label;
+            this.title.caption = label;
+        }
+        if (sheetId && this.repositorySession.state.lifecycle === 'ready') {
+            void this.switchFolioPage(sheetId);
+        }
+    }
+
+    override onActivateRequest(msg: any): void {
+        super.onActivateRequest(msg);
+        if (this.sheetId) void this.switchFolioPage(this.sheetId);
+    }
+
     protected bindEditor(widget: EditorWidget | undefined): void {
         this.editorListeners.dispose();
         this.editorListeners = new DisposableCollection();
@@ -199,7 +236,8 @@ export class AthenaPresentationWidget extends ReactWidget {
             return;
         }
         try {
-            const next = await this.bridge.requestDiagramScene();
+            this.folioPages = await this.bridge.requestFolioPages();
+            const next = await this.bridge.requestDiagramScene(this.sheetId);
             if (sequence !== this.refreshSequence) return;
             this.publication = next;
             this.error = undefined;
@@ -211,6 +249,16 @@ export class AthenaPresentationWidget extends ReactWidget {
             this.error = error instanceof Error ? error.message : String(error);
             this.selection = undefined;
         }
+        this.update();
+    }
+
+    protected async switchFolioPage(sheetId: string): Promise<void> {
+        const next = await this.bridge.requestDiagramScene(sheetId);
+        if (!next) return;
+        this.publication = next;
+        this.selection = undefined;
+        this.selectedOccurrenceIds.clear();
+        this.adapter?.setPublication(next);
         this.update();
     }
 
@@ -268,12 +316,7 @@ export class AthenaPresentationWidget extends ReactWidget {
                         this.selectedOccurrenceIds.clear();
                     }
                     if (selection) {
-                        const trace = this.publication && this.publication.state !== 'UNAVAILABLE'
-                            ? this.publication.scene.traces.find(candidate => candidate.traceId === selection.traceId)
-                            : undefined;
-                        void (trace
-                            ? this.selectionService.selectSceneTrace(trace, selection.semanticId)
-                            : this.selectionService.selectSemanticId(selection.semanticId));
+                        void this.selectionService.selectSemanticId(selection.semanticId);
                     }
                     this.update();
                 },
@@ -289,7 +332,7 @@ export class AthenaPresentationWidget extends ReactWidget {
     protected async commitConnectionIntent(intent: DiagramConnectionIntent): Promise<boolean> {
         if (intent.kind !== 'CONNECT_PORTS' && intent.kind !== 'RECONNECT_CONNECTION_ENDPOINT') return false;
         if (!this.publication || this.publication.state !== 'READY') return false;
-        const context = await this.bridge.requestPresentationEditContext();
+        const context = await this.bridge.requestPresentationEditContext(this.sheetId);
         if (!context || context.state !== 'READY' || !context.sceneId || context.engineeringWritableFiles.length === 0) {
             this.operationError = 'Engineering connection authoring context is unavailable.';
             this.update();
@@ -322,7 +365,7 @@ export class AthenaPresentationWidget extends ReactWidget {
     protected async commitRouteIntent(intent: DiagramRouteIntent): Promise<boolean> {
         if (intent.body.kind !== 'ADJUST_CONNECTION_ROUTE') return false;
         if (!this.publication || this.publication.state !== 'READY') return false;
-        const context = await this.bridge.requestPresentationEditContext();
+        const context = await this.bridge.requestPresentationEditContext(this.sheetId);
         if (!context || context.state !== 'READY' || !context.sceneId || context.routeWritableFiles.length === 0) {
             this.operationError = 'Connection route authoring context is unavailable.';
             this.update();
@@ -383,7 +426,7 @@ export class AthenaPresentationWidget extends ReactWidget {
             this.update();
             return;
         }
-        const context = await this.bridge.requestPresentationEditContext();
+        const context = await this.bridge.requestPresentationEditContext(this.sheetId);
         if (!context || context.state !== 'READY' || !context.sheetId || !context.sceneId || context.styleWritableFiles.length === 0) {
             const diagnostic = context?.diagnostics[0];
             this.operationError = diagnostic ? `${diagnostic.problem} ${diagnostic.correction}` : 'Style authoring context is unavailable.';
@@ -434,7 +477,7 @@ export class AthenaPresentationWidget extends ReactWidget {
             this.update();
             return;
         }
-        const context = await this.bridge.requestPresentationEditContext();
+        const context = await this.bridge.requestPresentationEditContext(this.sheetId);
         if (!context || context.state !== 'READY' || !context.sheetId || !context.sceneId || context.placementWritableFiles.length === 0) {
             const diagnostic = context?.diagnostics[0];
             this.operationError = diagnostic ? `${diagnostic.problem} ${diagnostic.correction}` : 'Placement authoring context is unavailable.';
@@ -545,7 +588,7 @@ export class AthenaPresentationWidget extends ReactWidget {
             this.update();
             return;
         }
-        const context = await this.bridge.requestPresentationEditContext();
+        const context = await this.bridge.requestPresentationEditContext(this.sheetId);
         if (!context || context.state !== 'READY' || !context.sheetId || !context.sceneId || context.placementWritableFiles.length === 0) {
             const diagnostic = context?.diagnostics[0];
             this.operationError = diagnostic ? `${diagnostic.problem} ${diagnostic.correction}` : 'Placement authoring context is unavailable.';
@@ -588,7 +631,7 @@ export class AthenaPresentationWidget extends ReactWidget {
             const result = evidence.result as EditOperationResult | undefined;
             return result?.status === 'ACCEPTED' && result.acceptance.journalEntryId === body.journalEntryId;
         });
-        const context = await this.bridge.requestPresentationEditContext();
+        const context = await this.bridge.requestPresentationEditContext(this.sheetId);
         if (!previous || !context || context.state !== 'READY' || !context.sceneId) return undefined;
         const accepted = previous.result as Extract<EditOperationResult, { status: 'ACCEPTED' }>;
         const operation: EditOperationEnvelope = {
@@ -651,6 +694,7 @@ export class AthenaPresentationWidget extends ReactWidget {
             sceneDigest: scene.sceneDigest,
             inputRevision: scene.inputRevision,
             acceptedInputRevision: this.publication.acceptedInputRevision,
+            sheetId: scene.snapGrid.sheetId,
             occurrences: scene.occurrences.map(occurrence => ({
                 occurrenceId: occurrence.occurrenceId,
                 subjectId: occurrence.subjectId,
@@ -716,15 +760,20 @@ export class AthenaPresentationWidget extends ReactWidget {
     }
 
     protected render(): React.ReactNode {
-        if (this.error) return <section className='athena-presentation__empty'><h2>Engineering Document</h2><p>{this.error}</p></section>;
-        if (!this.publication) return <section className='athena-presentation__empty'><h2>Engineering Document</h2><p>Waiting for a canonical scene publication.</p></section>;
+        const documentTitle = this.title.label || AthenaPresentationWidget.LABEL;
+        if (this.error) return <section className='athena-presentation__empty'><h2>{documentTitle}</h2><p>{this.error}</p></section>;
+        if (!this.publication) return <section className='athena-presentation__empty'><h2>{documentTitle}</h2><p>Waiting for a canonical scene publication.</p></section>;
         if (this.publication.state === 'UNAVAILABLE') {
-            return <section className='athena-presentation__empty'><h2>Engineering Document</h2>{this.publication.diagnostics.map(d => <p key={`${d.code}:${d.subject}`}>{d.problem} {d.correction}</p>)}</section>;
+            return <section className='athena-presentation__empty'><h2>{documentTitle}</h2>{this.publication.diagnostics.map(d => <p key={`${d.code}:${d.subject}`}>{d.problem} {d.correction}</p>)}</section>;
         }
         const scene = this.publication.scene;
         const rulerLabels = editorRulerLabels(scene.plotFrame.rows, scene.plotFrame.columns);
         return <section className='athena-presentation__canvas-shell' data-publication-state={this.publication.state} data-scene-id={scene.sceneId} data-scene-digest={scene.sceneDigest} data-frame-rows={scene.plotFrame.rows} data-frame-columns={scene.plotFrame.columns} data-occurrence-count={scene.occurrences.length} data-connection-count={scene.connections.length}>
+            <nav className='athena-presentation__folio-bar' aria-label='Folio pages'>
+                {this.folioPages.map(page => <button type='button' className={page === this.sheetId ? 'is-active' : ''} key={page} onClick={() => void this.switchFolioPage(page)}>{page}</button>)}
+            </nav>
             <div className='athena-presentation__style-bar' aria-label='Presentation commands'>
+                <button type='button' title='Open raw source' aria-label='Open raw source' onClick={this.openSource}><span className='codicon codicon-code' /></button>
                 <select aria-label='Style target' title='Style target' value={this.styleTarget} onChange={event => { this.discardStyle(); this.styleTarget = event.currentTarget.value as typeof this.styleTarget; this.update(); }}>
                     <option value='connection'>Connection</option><option value='symbol'>Symbol</option><option value='label'>Label</option><option value='port'>Port</option><option value='default'>Sheet</option>
                     <option value='occurrence' disabled={!this.selection?.occurrenceId}>Selected</option>
@@ -751,7 +800,6 @@ export class AthenaPresentationWidget extends ReactWidget {
                 <button type='button' title='Distribute horizontally' aria-label='Distribute horizontally' onClick={() => this.distributeOccurrences('HORIZONTAL')}><span className='codicon codicon-split-horizontal' /></button>
                 <button type='button' title='Distribute vertically' aria-label='Distribute vertically' onClick={() => this.distributeOccurrences('VERTICAL')}><span className='codicon codicon-split-vertical' /></button>
                 <button type='button' title='Undo accepted edit' aria-label='Undo accepted edit' onClick={this.undoLatest}><span className='codicon codicon-history' /></button>
-                {this.operationError && <span className='athena-presentation__style-error'>{this.operationError}</span>}
             </div>
             <div className='athena-presentation__canvas-viewport'>
                 <div className='athena-presentation__document-frame'>
@@ -765,6 +813,9 @@ export class AthenaPresentationWidget extends ReactWidget {
                     <div ref={this.setCanvasHost} className='athena-presentation__canvas-host' aria-label='Engineering document canvas' />
                 </div>
             </div>
+            <footer className='athena-presentation__status-bar' aria-live='polite'>
+                {this.operationError || `${scene.snapGrid.sheetId.replace(/_/g, ' ')} page | ${scene.occurrences.length} symbols | ${scene.connections.length} connections`}
+            </footer>
         </section>;
     }
 }

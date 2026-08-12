@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="80.000000" height="120.000000">
+  <defs>
+    <g id="terminal" stroke-width="1" stroke-linecap="square">
+      <line x1="0" y1="0" x2="0" y2="4" stroke="#0000FF" />
+      <line x1="0" y1="1" x2="0" y2="4" stroke="#FF0000" />
+    </g>
+  </defs>
+  <g transform="translate(26,60)" stroke-linecap="square">
+    <text transform="translate(44.8, 33.7)" font-family="Sans Serif,MS Sans Serif" font-size="10pt" fill="#000000">___V</text>
+    <ellipse cx="10" cy="10" rx="20" ry="20" stroke-width="1" fill="none" stroke="#000000" />
+    <text transform="translate(44.8, -20.3)" font-family="Sans Serif,MS Sans Serif" font-size="10pt" fill="#000000">___V</text>
+    <ellipse cx="10" cy="-10" rx="20" ry="20" stroke-width="1" fill="none" stroke="#000000" />
+    <text transform="translate(41.8, 10.9)" font-family="Sans Serif,MS Sans Serif" font-size="18pt" fill="#000000"></text>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(0,-50) rotate(90)" >
+      <line x1="0" y1="0" x2="22" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(0,28) rotate(90)" >
+      <line x1="0" y1="0" x2="22" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(20,-50) rotate(90)" >
+      <line x1="0" y1="0" x2="22" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(20,28) rotate(90)" >
+      <line x1="0" y1="0" x2="22" y2="0" />
+      </g>
+    <g stroke-width="1" fill="none" stroke="#000000" transform="translate(-18,0)" >
+      <line x1="0" y1="0" x2="10" y2="0" />
+      </g>
+    <use xlink:href="#terminal" x="0" y="-52" />
+    <use xlink:href="#terminal" x="20" y="52" transform="rotate(180 20 52)" />
+    <use xlink:href="#terminal" x="0" y="52" transform="rotate(180 0 52)" />
+    <use xlink:href="#terminal" x="20" y="-52" />
+    <use xlink:href="#terminal" x="-18" y="0" transform="rotate(270 -18 0)" />
+  </g>
+  Your Browser does not support inline SVG!
+</svg>

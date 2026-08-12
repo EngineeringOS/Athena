@@ -1,0 +1,18 @@
+package com.athena.iec
+
+symbol transformer {
+  identity "transformer"
+  version "1.0.0"
+  resource geometry { kind svg path "resources/transformer.svg" }
+  graphic svg resource geometry
+  anchor primary { port Transformer.primary direction in signal Power point (0, -1) }
+  anchor secondary { port Transformer.secondary direction out signal Control point (0, 1) }
+}
+
+element transformer_element {
+  identity "transformer_element"
+  version "1.0.0"
+  child transformer { symbol "transformer" translate (0, 0) }
+  export anchor primary from transformer.primary
+  export anchor secondary from transformer.secondary
+}

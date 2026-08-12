@@ -233,6 +233,19 @@ flowchart TD
   from production paths as their replacements land. No deprecated aliases, fallback parsing, compatibility
   adapters, dual writes, or stale M45 fixture assumptions remain.
 
+### AD-20 - Folio Projects Engineering Reality Through Independent Pages [ADOPTED]
+
+- **Binds:** FR-9, FR-10, FR-16, NFR-1, UX-DR1 through UX-DR6
+- **Prevents:** one overloaded page, duplicated engineering truth per page, and package ownership leaking
+  into document organization.
+- **Rule:** a same-root Folio Companion owns ordered Documents and Pages. Each Page Companion owns format,
+  frame, snap, logical placements, route constraints, and an independently compiled Route Plan/Scene page.
+  The project imports any number of packages; resolved Function Representation Bindings select their assets,
+  so one Page may use occurrences from different packages without importing packages itself. Engineering
+  Connections and Nets remain project facts; a cross-page projection preserves the one Connection IR identity
+  and emits the existing explicit interruption/reference fact. The M46 surface does not implement cross-page
+  Smart Connect authoring or infer semantic connectivity from continuation geometry.
+
 ### AD-19 - Golden Closure Is Product Evidence [ADOPTED]
 
 - **Binds:** FR-16, all Success Metrics, NFR-7
@@ -319,8 +332,8 @@ _bmad-output/implementation-artifacts/m46/
 
 ## Deferred
 
-- Cross-page Smart Connect UX: M46 fixes interruption identity/operator contract; later milestone owns full
-  cut/paste and cross-reference experience.
+- Cross-page Smart Connect UX: M46 owns named page projection and interruption/reference identity; later
+  milestone owns cut/paste and interactive cross-reference authoring experience.
 - Cable/harness fabrication, terminal diagrams, numbering, reports, and 3D physical routing: require
   manufacturing/physical projections beyond M46 schematic connection scope.
 - Fluid/process kind implementations: kernel stays implementation-neutral; domain packages add later

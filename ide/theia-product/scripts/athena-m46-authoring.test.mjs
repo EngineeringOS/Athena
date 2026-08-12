@@ -38,6 +38,13 @@ test('M46 launcher uses typed connection route and journal automation only', () 
     assert.match(launcher, /executeUndo/);
     assert.match(launcher, /executeRedo/);
     assert.doesNotMatch(launcher, /writeFileSync\(sourcePath|writeFileSync\(repositoryRoot/);
+    assert.match(launcher, /port:X2\.powerTerminal\.spare/);
+    assert.doesNotMatch(launcher, /port:X2\.powerTerminal\.inlet/);
+});
+
+test('M46 authoring proof finds an accepted replacement at either connection endpoint', () => {
+    const helper = launcher.slice(launcher.indexOf('function connectionForPort'), launcher.indexOf('\nfunction requireStatus'));
+    assert.match(helper, /anchorIds\.has\(connection\.sourceAnchorId\) \|\| anchorIds\.has\(connection\.targetAnchorId\)/);
 });
 
 test('M46 verifier isolates active example and enforces authority-owned writes', () => {
@@ -47,7 +54,7 @@ test('M46 verifier isolates active example and enforces authority-owned writes',
     assert.match(verifier, /activeExampleUnchanged/);
     assert.match(verifier, /changedPaths/);
     assert.match(verifier, /rolling-shutter\.athena/);
-    assert.match(verifier, /rolling-shutter\.sheet\.athena/);
+    assert.match(verifier, /rolling-shutter\.power\.sheet\.athena/);
     assert.match(verifier, /terminateProcessTree/);
 });
 
@@ -63,4 +70,14 @@ test('M46 screenshot proof dismisses transient operation diagnostics before capt
     assert.match(launcher, /operations\.push\(\{ name: 'staleRedo',[\s\S]*await execute\(window, 'clearEvidence'\);/);
     assert.match(launcher, /await dismissTransientNotifications\(window\);[\s\S]*capture\(window, 'desktop'\)/);
     assert.match(launcher, /function dismissTransientNotifications\(window\)/);
+});
+
+test('M46 reopen equality compares accepted engineering facts, not viewport pixels', () => {
+    const acceptedFacts = verifier.slice(
+        verifier.indexOf('function acceptedFacts'),
+        verifier.indexOf('\nfunction connectionIdentity'),
+    );
+    assert.doesNotMatch(acceptedFacts, /canvasDigest/);
+    assert.match(verifier, /verifyVisualState\(reopened, 'reopened desktop'\)/);
+    assert.match(verifier, /verifyVisualState\(reopen\.narrowState, 'reopened narrow'\)/);
 });

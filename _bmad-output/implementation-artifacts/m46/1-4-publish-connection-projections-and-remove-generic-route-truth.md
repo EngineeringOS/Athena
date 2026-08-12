@@ -2,14 +2,14 @@
 story: 1.4
 epic: 1
 title: Publish Connection Projections And Remove Generic Route Truth
-status: review
+status: done
 baseline_commit: 9ca7c80239d38d9e2a4880886e71e27e2923c41b
 created: 2026-08-10
 ---
 
 # Story 1.4: Publish Connection Projections And Remove Generic Route Truth
 
-Status: review
+Status: done
 
 ## Story
 
