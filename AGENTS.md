@@ -14,6 +14,11 @@
 
 ## Target Architecture
 
+- This is a greenfield project. At implementation time, select the latest
+  stable Rust toolchain and latest compatible stable releases of GPUI,
+  `gpui-component`, and supporting crates. Do not copy stale versions or lock
+  files from the reference checkouts without checking their current release and
+  compatibility status.
 - Build a Rust workspace with a platform-neutral core compiled for native and
   `wasm32-unknown-unknown` targets.
 - The core owns the domain model, validation, geometry, deterministic commands,
