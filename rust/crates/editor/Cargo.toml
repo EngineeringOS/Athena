@@ -1,0 +1,17 @@
+[package]
+name = "athena-editor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+athena-domain = { path = "../domain" }
+athena-format = { path = "../format" }
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+athena-library = { path = "../library" }
+athena-render = { path = "../render" }

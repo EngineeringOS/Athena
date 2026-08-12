@@ -46,19 +46,19 @@ needed.
 - Create: `rust/crates/desktop/Cargo.toml`, `rust/crates/desktop/src/main.rs`
 - Create: `rust/crates/web-core/Cargo.toml`, `rust/crates/web-core/src/lib.rs`
 
-- [ ] **Step 1: Write the workspace manifest**
+- [x] **Step 1: Write the workspace manifest**
 
 Define all crates as members and centralize versions for `serde`, `serde_json`,
 `uuid`, `thiserror`, `wasm-bindgen`, and GPUI. Keep desktop dependencies
 optional from core crates.
 
-- [ ] **Step 2: Add compile smoke tests**
+- [x] **Step 2: Add compile smoke tests**
 
 Add one `#[test] fn workspace_crates_compile_contract()` in each core crate that
 constructs its public marker type. Run `cargo test --workspace` from `rust/`.
 Expected: all tests pass with no UI or filesystem dependency in core crates.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```text
 git add rust
@@ -76,14 +76,14 @@ git commit -m "feat: scaffold rust schematic workspace"
 - Create: `rust/crates/domain/src/electrical.rs`
 - Create: `rust/crates/domain/tests/domain_invariants.rs`
 
-- [ ] **Step 1: Write failing domain invariant tests**
+- [x] **Step 1: Write failing domain invariant tests**
 
 Cover: a new project has one sheet; every entity ID is unique; a symbol
 instance references an existing definition; terminal ownership is stable; a
 wire endpoint is either a terminal or an explicit junction; and deleting a
 sheet cannot leave entities reachable from the project index.
 
-- [ ] **Step 2: Implement typed IDs and state**
+- [x] **Step 2: Implement typed IDs and state**
 
 Use newtypes around `Uuid`: `ProjectId`, `SheetId`, `SymbolDefinitionId`,
 `SymbolInstanceId`, `TerminalId`, `WireId`, `JunctionId`, `AnnotationId`.
@@ -92,13 +92,13 @@ Implement `Project`, `Sheet`, `SymbolDefinition`, `SymbolInstance`, `Terminal`,
 `Deserialize`, `Clone`, `Debug`, and equality derives. Store entity collections
 in deterministic `BTreeMap`s and preserve an explicit sheet order vector.
 
-- [ ] **Step 3: Add constructors and invariant validation**
+- [x] **Step 3: Add constructors and invariant validation**
 
 Implement `Project::new(name)`, `Project::add_sheet`,
 `Project::validate() -> Result<(), DomainError>`, and sheet/entity lookup APIs.
 Validation must return structured errors identifying the offending ID.
 
-- [ ] **Step 4: Run tests and commit**
+- [x] **Step 4: Run tests and commit**
 
 ```text
 cargo test -p athena-domain
@@ -116,26 +116,26 @@ git commit -m "feat: define electrical schematic domain model"
 - Create: `rust/crates/geometry/src/routing.rs`
 - Create: `rust/crates/geometry/tests/geometry_contracts.rs`
 
-- [ ] **Step 1: Write failing geometry tests**
+- [x] **Step 1: Write failing geometry tests**
 
 Test integer-grid snapping, terminal-priority snapping within a tolerance,
 rotation/mirroring round trips, deterministic orthogonal paths, and rejection
 of a route containing a zero-length segment.
 
-- [ ] **Step 2: Implement geometry primitives**
+- [x] **Step 2: Implement geometry primitives**
 
 Use a fixed-point-friendly `WorldPoint { x: f64, y: f64 }`, `Rect`, `Transform`
 with quarter-turn rotation and mirror flags, `SnapSettings`, and
 `ConnectionAnchor`. Keep all methods pure and deterministic.
 
-- [ ] **Step 3: Implement routing and hit geometry**
+- [x] **Step 3: Implement routing and hit geometry**
 
 Implement `orthogonal_route(start, end, obstacles, settings)` with a stable
 horizontal-then-vertical default and a deterministic one-bend fallback. Return
 `RouteError::NoValidPath` when blocked. Implement distance-to-segment and point-
 within-tolerance helpers for later selection.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```text
 cargo test -p athena-geometry
@@ -152,26 +152,26 @@ git commit -m "feat: add schematic geometry and routing"
 - Create: `rust/crates/format/src/snapshot.rs`
 - Create: `rust/crates/format/tests/format_contracts.rs`
 
-- [ ] **Step 1: Write failing format tests**
+- [x] **Step 1: Write failing format tests**
 
 Assert that a project round-trips through JSON, serialized output is stable for
 identical input, unknown future fields are ignored, unsupported schema versions
 produce a typed error, and migration from schema version `1` to the current
 version preserves all entity IDs.
 
-- [ ] **Step 2: Implement the envelope**
+- [x] **Step 2: Implement the envelope**
 
 Define `DocumentEnvelope { format: String, schema_version: u32, project: Project }`
 with format value `athena-electrical-project`. Expose `encode_json`,
 `decode_json`, and `migrate`. Use `serde(deny_unknown_fields)` only on the
 outer envelope; permit forward-compatible fields inside domain records.
 
-- [ ] **Step 3: Implement snapshot bytes**
+- [x] **Step 3: Implement snapshot bytes**
 
 Expose `SnapshotStore` as a pure byte codec with `encode_snapshot` and
 `decode_snapshot`; leave actual filesystem/IndexedDB writes to adapters.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```text
 cargo test -p athena-format
@@ -188,14 +188,14 @@ git commit -m "feat: add versioned project format"
 - Create: `rust/crates/editor/src/validation.rs`
 - Create: `rust/crates/editor/tests/command_contracts.rs`
 
-- [ ] **Step 1: Write failing command tests**
+- [x] **Step 1: Write failing command tests**
 
 Cover placing/moving/deleting a symbol, creating/splitting/deleting a wire,
 setting a field, rejecting a wire with an unknown terminal, one-command
 multi-selection moves, undo restoring the exact previous snapshot, redo
 reapplying the exact command, and serializing/deserializing a command envelope.
 
-- [ ] **Step 2: Define command types**
+- [x] **Step 2: Define command types**
 
 Implement `EditorCommand` variants `PlaceSymbol`, `MoveItems`, `RotateItems`,
 `MirrorItems`, `DeleteItems`, `CreateWire`, `SplitWire`, `DeleteWire`,
@@ -203,20 +203,20 @@ Implement `EditorCommand` variants `PlaceSymbol`, `MoveItems`, `RotateItems`,
 operation ID, project/sheet IDs, base revision, author/session IDs, command
 version, and payload.
 
-- [ ] **Step 3: Implement atomic application**
+- [x] **Step 3: Implement atomic application**
 
 Implement `EditorState::apply(command) -> Result<AppliedCommand, ApplyError>`.
 Validate all IDs and endpoints before mutating. `AppliedCommand` stores the
 inverse command and a before/after revision. A failed command leaves the project
 byte-for-byte unchanged.
 
-- [ ] **Step 4: Implement history**
+- [x] **Step 4: Implement history**
 
 Implement bounded `History` with `undo`, `redo`, and redo invalidation after a
 new edit. History stores commands/inverses, not UI state. Add snapshot equality
 helpers for exact test assertions.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```text
 cargo test -p athena-editor
@@ -232,20 +232,20 @@ git commit -m "feat: add deterministic editor commands"
 - Create: `rust/crates/library/src/search.rs`
 - Create: `rust/crates/library/tests/library_contracts.rs`
 
-- [ ] **Step 1: Write failing library tests**
+- [x] **Step 1: Write failing library tests**
 
 Test registering a definition with terminals and primitives, duplicate-ID
 rejection, case-insensitive name/tag search, deterministic result ordering, and
 placement preview data containing all terminal anchors.
 
-- [ ] **Step 2: Implement catalog and search**
+- [x] **Step 2: Implement catalog and search**
 
 Implement `SymbolCatalog`, `SymbolDefinitionRecord`, `Primitive`, and
 `SearchQuery`. Keep the MVP catalog in memory and load a small built-in set of
 electrical symbols (resistor, switch, lamp, motor, connector, power terminal)
 from Rust constants.
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 ```text
 cargo test -p athena-library
@@ -261,26 +261,26 @@ git commit -m "feat: add electrical symbol catalog"
 - Create: `rust/crates/render/src/hit_test.rs`
 - Create: `rust/crates/render/tests/scene_contracts.rs`
 
-- [ ] **Step 1: Write failing scene tests**
+- [x] **Step 1: Write failing scene tests**
 
 Assert deterministic layer ordering, symbol terminals producing connection
 handles, wires producing segment hit regions, selection overlays never entering
 the saved project, and identical project snapshots producing identical scenes.
 
-- [ ] **Step 2: Implement scene types and projection**
+- [x] **Step 2: Implement scene types and projection**
 
 Define `Scene`, `SceneLayer`, `DrawPrimitive`, `HitRegion`, `Viewport`, and
 `Overlay`. Implement `project_sheet(project, sheet_id, editor_presentation)`;
 it must emit page/grid, wires/junctions, symbols, fields/annotations, then
 selection/guides/validation overlays.
 
-- [ ] **Step 3: Implement hit testing**
+- [x] **Step 3: Implement hit testing**
 
 Implement `hit_test(scene, viewport_point, tolerance)` returning deterministic
 topmost hits with terminal priority over symbol body and wire vertex priority
 over wire segment.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```text
 cargo test -p athena-render
@@ -296,29 +296,29 @@ git commit -m "feat: project schematic scenes"
 - Create: `rust/crates/desktop/src/storage.rs`
 - Modify: `rust/crates/web-core/src/lib.rs`
 
-- [ ] **Step 1: Write failing persistence tests**
+- [x] **Step 1: Write failing persistence tests**
 
 Test that a snapshot writes to a temporary path and reopens, a failed replacement
 keeps the previous bytes, and an outbox retains unsynced command envelopes in
 order.
 
-- [ ] **Step 2: Implement platform-neutral persistence contracts**
+- [x] **Step 2: Implement platform-neutral persistence contracts**
 
 Define `SnapshotSink`, `SnapshotSource`, and `OutboxStore` traits returning
 structured `PersistenceError`s. Implement an in-memory adapter for core tests.
 
-- [ ] **Step 3: Implement desktop file adapter**
+- [x] **Step 3: Implement desktop file adapter**
 
 Use an explicit temporary sibling file followed by rename for atomic replacement.
 Do not put path or filesystem types in the core domain crates.
 
-- [ ] **Step 4: Implement browser bridge stubs**
+- [x] **Step 4: Implement browser bridge stubs**
 
 Expose WASM methods accepting/returning `Uint8Array` snapshot bytes. Browser
 JavaScript owns IndexedDB/localStorage integration; Rust owns encoding and
 validation.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```text
 cargo test -p athena-editor -p athena-web-core
@@ -342,19 +342,19 @@ Add an ignored integration test or manual command that launches the app with a
 new project and exits cleanly after the window initializes. Keep CI-safe core
 tests separate from display-dependent tests.
 
-- [ ] **Step 2: Implement the shell layout**
+- [x] **Step 2: Implement the shell layout**
 
 Create project tabs/menu, left symbol library panel, central canvas, right
 inspector, and status bar. Use GPUI primitives and `gpui-component` controls for
 buttons, inputs, lists, and panels. The shell owns only presentation state.
 
-- [ ] **Step 3: Wire canvas input to commands**
+- [x] **Step 3: Wire canvas input to commands**
 
 Map pointer/keyboard events to select, place-symbol, wire, pan, zoom, and
 undo/redo tools. Render the shared scene projection. Commit exactly one command
 on symbol drop and wire completion.
 
-- [ ] **Step 4: Verify manually and commit**
+- [x] **Step 4: Verify manually and commit**
 
 ```text
 cargo check -p athena-desktop
@@ -373,25 +373,25 @@ git commit -m "feat: add gpui desktop authoring shell"
 - Create: `web/styles.css`
 - Create: `web/README.md`
 
-- [ ] **Step 1: Add WASM API tests**
+- [x] **Step 1: Add WASM API tests**
 
 Test in Rust that `create_project`, `apply_command`, `render_active_sheet`,
 `encode_snapshot`, and `load_snapshot` expose stable JSON/byte contracts.
 
-- [ ] **Step 2: Implement the WASM bridge**
+- [x] **Step 2: Implement the WASM bridge**
 
 Expose a small `WebEditor` handle with methods for project creation, command
 application, scene projection, snapshot encoding/loading, and pointer events.
 Return serialized scene data; do not expose mutable domain internals.
 
-- [ ] **Step 3: Implement the HTML host**
+- [x] **Step 3: Implement the HTML host**
 
 Load the generated WASM module, create a canvas and minimal toolbar, forward
 pointer/keyboard events, draw the returned scene primitives with Canvas 2D, and
 use browser download APIs for snapshot export. Keep all tool and document state
 inside the WASM handle.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```text
 wasm-pack test --headless --chrome -p athena-web-core
@@ -408,7 +408,7 @@ git commit -m "feat: add thin wasm browser shell"
 - Create: `web/tests/authoring-mvp.test.js`
 - Create: `docs/superpowers/verification/2026-08-13-authoring-mvp.md`
 
-- [ ] **Step 1: Write the shared scenario test**
+- [x] **Step 1: Write the shared scenario test**
 
 Exercise: create project, add sheet, register/place a resistor and power
 terminal, connect terminals with a wire, move the resistor, undo/redo, encode,
@@ -420,7 +420,7 @@ Use Playwright or the existing browser runner to load `web/index.html`, place a
 symbol, draw a wire, trigger undo/redo, and assert the canvas is nonblank and a
 downloadable snapshot is produced.
 
-- [ ] **Step 3: Run the full verification matrix**
+- [x] **Step 3: Run the full verification matrix**
 
 ```text
 cargo fmt --all -- --check
@@ -432,7 +432,7 @@ wasm-pack test --headless --chrome -p athena-web-core
 Record exact commands, platform/tool versions, and any display-dependent tests
 that were skipped in `docs/superpowers/verification/2026-08-13-authoring-mvp.md`.
 
-- [ ] **Step 4: Commit verification artifacts**
+- [x] **Step 4: Commit verification artifacts**
 
 ```text
 git add rust/tests web/tests docs/superpowers/verification

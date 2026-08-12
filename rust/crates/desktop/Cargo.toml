@@ -1,0 +1,19 @@
+[package]
+name = "athena-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+athena-editor = { path = "../editor" }
+athena-format = { path = "../format" }
+athena-library = { path = "../library" }
+athena-render = { path = "../render" }
+athena-domain = { path = "../domain" }
+athena-geometry = { path = "../geometry" }
+gpui.workspace = true
+gpui-component.workspace = true
+
+[dev-dependencies]
+athena-domain = { path = "../domain" }
+uuid.workspace = true

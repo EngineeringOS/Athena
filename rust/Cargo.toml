@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/domain",
+    "crates/geometry",
+    "crates/format",
+    "crates/editor",
+    "crates/render",
+    "crates/library",
+    "crates/desktop",
+    "crates/web-core",
+]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+version = "0.1.0"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.18", features = ["v4", "serde", "js"] }
+thiserror = "2.0"
+wasm-bindgen = "0.2"
+gpui = "0.2"
+gpui-component = "0.5"

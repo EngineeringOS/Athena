@@ -1,0 +1,19 @@
+[package]
+name = "athena-web-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+athena-domain = { path = "../domain" }
+athena-editor = { path = "../editor" }
+athena-format = { path = "../format" }
+athena-library = { path = "../library" }
+athena-geometry = { path = "../geometry" }
+athena-render = { path = "../render" }
+serde.workspace = true
+serde_json.workspace = true
+wasm-bindgen.workspace = true

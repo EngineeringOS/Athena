@@ -1,0 +1,12 @@
+[package]
+name = "athena-library"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+athena-domain = { path = "../domain" }
+athena-geometry = { path = "../geometry" }
+serde.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
