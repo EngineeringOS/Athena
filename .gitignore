@@ -42,3 +42,4 @@ reference/
 
 .tools/
 .worktrees/
+rust/target/
