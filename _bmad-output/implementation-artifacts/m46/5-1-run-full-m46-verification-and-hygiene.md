@@ -170,6 +170,11 @@ Codex
 - `verify:m46-performance`, `verify:m46-authoring`, and `verify:m46-export` passed from rebuilt outputs.
 - Export proof initially exposed stale M45 expectation (`10` routes); generated M46 Scene has 11 orthogonal segments.
   Updated only M46 verifier to assert 11; renderer unchanged. Export rerun passed.
+- A stale `examples/m46/rolling-shutter/athena.lock` caused LSP `Presentation Internal error` because current
+  compiler-owned resolver validation could not calculate the source revision. Rematerialized through the compiler
+  authority path, rebuilt `:ide:lsp:installDist`, and reran focused compiler/LSP plus product evidence.
+- Concrete `.sheet.athena` files incorrectly rendered a folio child-page bar. The presentation widget now renders that
+  bar only for `.folio.athena`; `athena-presentation-layout.test.mjs` covers the editor contract.
 - Encoding audit, source-set hygiene audit, and `git diff --check` passed.
 
 ### Completion Notes List
@@ -179,6 +184,7 @@ Codex
 - Deterministic export evidence: SVG 23,837 bytes, PNG 27,104 bytes, pinned 1700x1600 viewport, repeated bytes identical.
 - Visual evidence includes desktop/narrow and reopened desktop/narrow screenshots; frame/rulers/white canvas/thin routes/
   markers/no grid/no bottom table checks passed.
+- The rebuilt M46 author/reopen proof passed after the lock materialization and concrete-sheet editor correction.
 
 ### File List
 
@@ -187,6 +193,9 @@ Codex
 - `_bmad-output/implementation-artifacts/m46/acceptance-inventory.json`
 - `_bmad-output/implementation-artifacts/m46/verification-log.md`
 - `ide/theia-product/scripts/verify-athena-m46-export.js`
+- `examples/m46/rolling-shutter/athena.lock`
+- `ide/theia-frontend/src/browser/athena-presentation-widget.tsx`
+- `ide/theia-frontend/scripts/athena-presentation-layout.test.mjs`
 
 ### Change Log
 

@@ -216,6 +216,7 @@ system rolling_shutter {
   connect signal S5.close.output to H2.closedLamp.inlet
   connect signal SpareSource.io.output to SpareLoad.io.input
 
+  connect conductor KM1.mainContact.load to X1.powerTerminal.inlet
   view schematic {
     sheet power
     region "Power" {

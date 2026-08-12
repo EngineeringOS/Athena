@@ -16,7 +16,7 @@ packages:
     assetProfile: svg-safe-1
     sourceHashes:
       - path: com/engineeringood/m46/rollingshutter/rolling-shutter.athena
-        hash: sha256:83a3f728b45a3eef5367acb9ffdab75d7c6ac08d5d6015fb50f284c11742584f
+        hash: sha256:f6cbc7985edaa7afbda3052245565e97ea1debf3819edc4c082bf7123e69e2ab
       - path: com/engineeringood/m46/rollingshutter/rolling-shutter.folio.athena
         hash: sha256:83cabaf5689a99725cfa8d7c67944eae6f1b33c2500f76565fc1d0f49c63da91
     resourceHashes: []
@@ -189,10 +189,10 @@ packages:
         hash: sha256:87a74bed916e2b5b9cf9eab9c4c8787578de6ada3b9e4ae303452dbf24888fac
       - key: resources/contactor-coil.svg
         path: resources/contactor-coil.svg
-        hash: sha256:328ae3c90291f61ca0b77d0437ae204379cb1ce689abb324a855646748750a0e
+        hash: sha256:a970cc1b4b0ddd8179509bb57545c7564497f095438faa9643fac00aa4904bec
       - key: resources/contactor-power.svg
         path: resources/contactor-power.svg
-        hash: sha256:f5096c94b67d62841e8d920c18b5e991c97ddc24949df8ec0b4d131e633b913b
+        hash: sha256:2bd8bc3efe96c43fb163de067c72a2302a305582aed9cbebcd6e8ce63cfd19dc
       - key: resources/contactor.svg
         path: resources/contactor.svg
         hash: sha256:2f30f8c8f431b825184b4cedccc276a79ab7fa356a8988df3123c18662566440
@@ -207,7 +207,7 @@ packages:
         hash: sha256:36bd9acfa7b6bd2dae0938c7acfd0d1f5570a5a069f6237b2257e33b3edcd2c5
       - key: resources/transformer.svg
         path: resources/transformer.svg
-        hash: sha256:2129717575e0e19c345e0235804977f76f1df4af659dc4c572f9ad12517d92db
+        hash: sha256:c29245a047c6165aef563bd4b91e7320cc684398d30c47071e6fa883e9cd9c37
     dependencies: []
   - name: com.community.elements
     version: 1.0.0
@@ -328,19 +328,19 @@ packages:
     resourceHashes:
       - key: resources/contact-nc.svg
         path: resources/contact-nc.svg
-        hash: sha256:69face276b332158d0262f4053e0d11dc0bf96688881efa10660a0df825bc9c4
+        hash: sha256:2c4811673bde7f313ab7b4fd64974f3a3a423a4c6b99e202a51ba7a2177a4e44
       - key: resources/contact-no.svg
         path: resources/contact-no.svg
-        hash: sha256:70d3c39f47286ea8fcce636741814ec6e3a9769141da6d14b17391e22f8d5fc8
+        hash: sha256:3c6b92e5ef0d3928c80c5608fe0195cdf2449730b131976ecfa8106a5e797e88
       - key: resources/lamp.svg
         path: resources/lamp.svg
         hash: sha256:b716a0e6aa58c7b1b06d8712580e8969e94e6e35e83e941cf3858fe371b38863
       - key: resources/limit-nc.svg
         path: resources/limit-nc.svg
-        hash: sha256:4ed13538cb672b5a375c5822c95fccf98ba636ec6b112774573b91971ed5bdb3
+        hash: sha256:67cfc29b7c89227358511009a1ae1c62f1f888e7b951346a3cc12029d21ce817
       - key: resources/limit-no.svg
         path: resources/limit-no.svg
-        hash: sha256:7729b2940e1013a890fb5d414da8b09db242b508ee70684cef8cd3c6b7ec3e23
+        hash: sha256:0169cab79edbd927bd456dd4cf7e82b565e59e1be8cc31f2f1b916c5ab595df9
       - key: resources/plc.svg
         path: resources/plc.svg
         hash: sha256:7c602ad09c7a3e177b4832289683d0e93b5111b8f2f4ba5d9e2069c24a1b5f7d

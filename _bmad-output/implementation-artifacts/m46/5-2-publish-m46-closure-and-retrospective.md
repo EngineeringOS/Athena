@@ -85,6 +85,8 @@ Codex
   source-set hygiene, encoding, and diff checks are recorded.
 - No unresolved critical/high implementation finding remains. Clean-start log warnings are recorded as non-blocking
   residual risk rather than ignored.
+- Closure includes current resolver-owned `athena.lock` materialization and the concrete sheet editor regression:
+  `.sheet.athena` renders one canvas; only `.folio.athena` may render folio controls.
 
 ### File List
 

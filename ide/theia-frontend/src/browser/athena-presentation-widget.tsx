@@ -224,6 +224,10 @@ export class AthenaPresentationWidget extends ReactWidget {
         }
     }
 
+    protected get showFolioBar(): boolean {
+        return !!this.sourceUri && new URI(this.sourceUri).path.toString().toLowerCase().endsWith('.folio.athena');
+    }
+
     protected async refresh(): Promise<void> {
         const sequence = ++this.refreshSequence;
         if (this.repositorySession.state.lifecycle !== 'ready') {
@@ -236,7 +240,7 @@ export class AthenaPresentationWidget extends ReactWidget {
             return;
         }
         try {
-            this.folioPages = await this.bridge.requestFolioPages();
+            this.folioPages = this.showFolioBar ? await this.bridge.requestFolioPages() : [];
             const next = await this.bridge.requestDiagramScene(this.sheetId);
             if (sequence !== this.refreshSequence) return;
             this.publication = next;
@@ -769,9 +773,9 @@ export class AthenaPresentationWidget extends ReactWidget {
         const scene = this.publication.scene;
         const rulerLabels = editorRulerLabels(scene.plotFrame.rows, scene.plotFrame.columns);
         return <section className='athena-presentation__canvas-shell' data-publication-state={this.publication.state} data-scene-id={scene.sceneId} data-scene-digest={scene.sceneDigest} data-frame-rows={scene.plotFrame.rows} data-frame-columns={scene.plotFrame.columns} data-occurrence-count={scene.occurrences.length} data-connection-count={scene.connections.length}>
-            <nav className='athena-presentation__folio-bar' aria-label='Folio pages'>
+            {this.showFolioBar ? <nav className='athena-presentation__folio-bar' aria-label='Folio pages'>
                 {this.folioPages.map(page => <button type='button' className={page === this.sheetId ? 'is-active' : ''} key={page} onClick={() => void this.switchFolioPage(page)}>{page}</button>)}
-            </nav>
+            </nav> : undefined}
             <div className='athena-presentation__style-bar' aria-label='Presentation commands'>
                 <button type='button' title='Open raw source' aria-label='Open raw source' onClick={this.openSource}><span className='codicon codicon-code' /></button>
                 <select aria-label='Style target' title='Style target' value={this.styleTarget} onChange={event => { this.discardStyle(); this.styleTarget = event.currentTarget.value as typeof this.styleTarget; this.update(); }}>

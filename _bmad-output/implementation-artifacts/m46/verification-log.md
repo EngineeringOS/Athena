@@ -13,6 +13,15 @@ Product proofs passed from rebuilt output:
 - `verify:m46-authoring`
 - `verify:m46-export`
 
+Final closure rerun:
+
+- `tools/start-athena-clean.ps1`: rebuilt LSP distribution and all Theia packages, then opened
+  `examples/m46/rolling-shutter`.
+- `ide/theia-frontend` `node --test scripts/athena-presentation-layout.test.mjs`: 8 passed, 0 failed.
+- `ide/theia-product` `node --test scripts/athena-m46-authoring.test.mjs`: 8 passed, 0 failed.
+- `verify:m46-authoring`: passed, regenerating
+  `operation-transcripts/4-3-author-reopen-product-proof.json` and desktop/narrow/reopen screenshots.
+
 Export evidence:
 
 - SVG: 23,837 bytes, `sha256:879dea71487695aae4f3cedf44d4ce2e01e9de467e780b7dd6c53adf043e09d7`
@@ -32,3 +41,10 @@ Correction recorded:
 M46 export first failed because verifier inherited stale M45 `routes == 10` expectation. Generated M46
 Canonical Scene publishes 11 route segments due to orthogonal bends. M46 verifier now asserts 11;
 renderer and scene authority unchanged. Rerun passed.
+
+Resolver and editor corrections recorded:
+
+- Stale `examples/m46/rolling-shutter/athena.lock` blocked LSP source revision validation. The lock was
+  rematerialized by compiler authority, never hand-edited.
+- Concrete `.sheet.athena` pages no longer render folio child-page controls. The widget requests Folio pages and
+  renders the folio bar only for `.folio.athena`; frontend regression coverage passed.

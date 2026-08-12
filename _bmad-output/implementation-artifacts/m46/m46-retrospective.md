@@ -30,12 +30,18 @@ one accepted source transaction.
   segments. Correction: inspect generated SVG before changing proof; update M46-only expected segment count.
 - Stale Theia layout generated a preview-widget warning; clean workspace product proof still passed. Startup/session
   noise remains recorded rather than declared resolved.
+- A stale compiler-owned `athena.lock` created `Presentation Internal error` in the LSP because source revision
+  validation rejected resolver output. Correction: materialize lock through compiler authority; never hand-edit it.
+- Concrete Sheet editors displayed a nested Folio bar. Correction: page controls are a `.folio.athena` concern only;
+  `.sheet.athena` opens one standalone canvas editor. Regression test added at the widget boundary.
 
 ## Architectural Laws Kept
 
 - Source owns engineering meaning; packages own admitted geometry and anchor references only.
 - `ConnectionProjection` and Route Plan are disposable derived facts. `SceneConnection` is sole paint contract.
 - Folio orders Page projections. Each Page opens as its own normal editor canvas tab; no nested canvas page authority.
+- `athena.lock` is resolver output. Generated lock state is verified before diagnosing LSP, grammar, Tree-sitter, or
+  paint failures.
 - Reconnect is Engineering edit; route adjustment is Presentation edit. Both use full source revision transactions.
 - Renderer, Konva, DOM, SVG, viewport, and mouse state never validate or create connectivity.
 - No compatibility aliases, deprecated route paths, or old generic relationship lowering.
@@ -43,6 +49,9 @@ one accepted source transaction.
 ## M47 Carry-Forward
 
 - Resolve clean-start RPC notification/layout-restore warning before expanding editor workflows.
+- Add product automation that can inspect the exact active concrete editor widget, not only the generic Presentation
+  automation seam. Current frontend widget regression test proves the nested-tab rule; generic proof cannot inspect an
+  inactive widget safely.
 - Reduce editor chrome into a small purposeful command set; preserve style controls that work and remove only proven
   redundant controls.
 - Continue visual comparison against engineering reference before declaring document quality. Use realistic multi-page

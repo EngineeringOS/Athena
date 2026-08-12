@@ -22,6 +22,9 @@ test('Folio sheet companions open as independent editor widgets', () => {
     assert.match(widget, /this\.bridge\.requestDiagramScene\(sheetId\)/);
     assert.match(opener, /getOrCreateWidget/);
     assert.match(opener, /sheetId/);
+    assert.match(widget, /showFolioBar/);
+    assert.match(widget, /showFolioBar \? <nav className='athena-presentation__folio-bar'/);
+    assert.match(widget, /new URI\(this\.sourceUri\)\.path\.toString\(\)\.toLowerCase\(\)\.endsWith\('\.folio\.athena'\)/);
     assert.match(widget, /requestFolioPages/);
     assert.match(widget, /athena-presentation__folio-bar/);
 });

@@ -14,6 +14,10 @@ Example: `examples/m46/rolling-shutter`
 - Theia accepts typed connect/reconnect/route intent through server transactions, validates, journals, recompiles,
   supports Undo/Redo, and reopens accepted state.
 - Folio orders independent Power and CPU/Control Page Companions. Each Page publishes one independent Scene editor.
+- Opening `rolling-shutter.power.sheet.athena` or `rolling-shutter.control_cpu.sheet.athena` is one normal canvas
+  editor tab. Only a `.folio.athena` source may render page-navigation controls.
+- `athena.lock` is compiler-owned resolver output. A stale lock is rematerialized through compiler authority, never
+  hand-edited.
 
 ## Requirement Evidence
 
@@ -52,11 +56,15 @@ All passed on 2026-08-12:
 - Frontend contracts and tests: 88 passed.
 - Full Theia/Electron product rebuild.
 - `verify:m46-performance`, `verify:m46-authoring`, `verify:m46-export`.
+- `ide/theia-frontend` `node --test scripts/athena-presentation-layout.test.mjs` and
+  `ide/theia-product` `node --test scripts/athena-m46-authoring.test.mjs`.
 - Encoding audit, source-set hygiene audit, and `git diff --check`.
 
 ## Residual Risks
 
 - Clean Theia start produced a non-blocking RPC notification/layout-restore warning while product workspace activation,
   LSP `READY`, zero source diagnostics, and M46 product automation completed. Keep it visible for M47 startup cleanup.
+- The visible PowerShell host records runtime warnings as `NativeCommandError`; this is host stderr forwarding, not an
+  M46 compiler or LSP failure. The RPC `TypeError: this.target[method] is not a function` remains an M47 cleanup item.
 - M46 proves IEC-like visual grammar and deterministic rendering. Pixel-perfect vendor drawing parity, cross-page
   Smart Connect authoring, harness fabrication, and 3D routing remain outside scope.
