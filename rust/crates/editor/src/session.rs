@@ -141,8 +141,8 @@ impl EditorSession {
                 self.selection.clear();
             }
             self.interaction = InteractionState::MarqueeSelecting(MarqueeState {
-                start: canvas_point,
-                current: canvas_point,
+                start: canvas_pointer,
+                current: canvas_pointer,
                 mode: MarqueeSelectionMode::Enclosed,
                 shift: modifiers.shift,
             });
@@ -160,12 +160,12 @@ impl EditorSession {
         self.interaction = match self.interaction {
             InteractionState::MarqueeSelecting(state) => {
                 InteractionState::MarqueeSelecting(MarqueeState {
-                    mode: if canvas_point.x >= state.start.x {
+                    mode: if canvas_point.x >= state.start.position().x {
                         MarqueeSelectionMode::Enclosed
                     } else {
                         MarqueeSelectionMode::Touched
                     },
-                    current: canvas_point,
+                    current: canvas_pointer,
                     ..state
                 })
             }
@@ -274,8 +274,8 @@ impl EditorSession {
 
 fn marquee_selection(scene: &Scene, marquee: MarqueeState) -> Vec<PresentationItemId> {
     let bounds = Rect::from_corners(
-        scene.viewport.viewport_to_world(marquee.start),
-        scene.viewport.viewport_to_world(marquee.current),
+        scene.viewport.viewport_to_world(marquee.start.position()),
+        scene.viewport.viewport_to_world(marquee.current.position()),
     );
 
     // Enclosed selection requires every region of an item to be inside the box.

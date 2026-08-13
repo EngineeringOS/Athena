@@ -2,7 +2,8 @@ use athena_domain::{
     ElectricalKind, Point, Project, SymbolDefinition, SymbolInstance, Terminal, Wire, WireEndpoint,
 };
 use athena_editor::{
-    EditorCommand, EditorSession, MarqueeSelectionMode, PointerModifiers, PresentationPointer,
+    EditorCommand, EditorSession, InteractionState, MarqueeSelectionMode, PointerModifiers,
+    PresentationPointer,
 };
 use athena_geometry::WorldPoint;
 use athena_render::{PresentationItemId, Viewport};
@@ -170,6 +171,12 @@ fn marquee_direction_changes_selection_rule() {
     session
         .pointer_move(canvas(80, 40), PointerModifiers::default())
         .expect("marquee updates");
+    assert!(matches!(
+        session.interaction(),
+        InteractionState::MarqueeSelecting(state)
+            if state.start == PresentationPointer::new(0.0, 0.0)
+                && state.current == PresentationPointer::new(80.0, 40.0)
+    ));
     assert_eq!(
         session.marquee_selection_mode(),
         Some(MarqueeSelectionMode::Enclosed)

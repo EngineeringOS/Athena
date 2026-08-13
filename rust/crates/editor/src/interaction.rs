@@ -45,8 +45,10 @@ impl PresentationPointer {
 /// Current marquee drag geometry and directional rule.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MarqueeState {
-    pub start: WorldPoint,
-    pub current: WorldPoint,
+    /// Canvas-space location at which the shell began the marquee gesture.
+    pub start: PresentationPointer,
+    /// Current canvas-space pointer location for marquee rendering and selection.
+    pub current: PresentationPointer,
     pub mode: MarqueeSelectionMode,
     /// Preserves additive/toggle intent across a multi-event marquee gesture.
     pub shift: bool,
