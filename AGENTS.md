@@ -56,3 +56,28 @@
 - Deliver the core schematic-authoring loop: projects and sheets, symbol library
   placement, connections, selection and transforms, pan/zoom/snap,
   undo/redo, local save/reopen, and proof through both desktop and WASM shells.
+
+## Execution Discipline
+
+- Use a strict development flow for all non-trivial work:
+  \`spec -> plan -> implementation -> verification\`.
+- Do not jump straight into implementation for new milestones, parity slices,
+  or architectural changes. First write/update a spec in
+  \`docs/superpowers/specs/\`, then write/update a plan in
+  \`docs/superpowers/plans/\`, then implement, then record verification evidence
+  in \`docs/superpowers/verification/\` when the slice warrants it.
+- When a task is only partially completed, update the relevant plan checkboxes
+  precisely. Do not mark work done unless the repository state and verification
+  output prove it.
+- Before claiming a milestone or slice is complete, run fresh verification in
+  the current workspace and record any intentionally skipped items explicitly.
+
+## Milestone Naming
+
+- All spec and plan documents must use sortable milestone-prefixed names:
+  \`YYYY-MM-DD-mNNN-slug.md\`.
+- \`mNNN\` is a zero-padded milestone identifier such as \`m001\`, \`m002\`, \`m010\`.
+- The same milestone prefix should be reused across related spec, plan, and
+  verification artifacts for the same slice whenever practical.
+- Prefer creating a new milestone document over overloading an old one when the
+  scope changes materially.
