@@ -199,7 +199,7 @@ git commit -m "feat: add shared editor session state"
 - Modify: `rust/crates/editor/tests/command_contracts.rs`
 - Modify: `rust/crates/editor/tests/authoring_mvp.rs`
 
-- [ ] **Step 1: Write the failing wire-edit command tests**
+- [x] **Step 1: Write the failing wire-edit command tests**
 
 Extend `rust/crates/editor/tests/command_contracts.rs` with:
 
@@ -270,7 +270,7 @@ fn reconnect_wire_endpoint_retargets_terminal_and_updates_route_endpoint() {
 }
 ```
 
-- [ ] **Step 2: Run the targeted tests to verify they fail**
+- [x] **Step 2: Run the targeted tests to verify they fail**
 
 Run:
 
@@ -281,7 +281,7 @@ cargo test -p athena-editor command_contracts -- --nocapture
 Expected: compile errors for missing `InsertWireVertex`, `MoveWireVertex`,
 `DeleteWireVertex`, `ReconnectWireEndpoint`, and `WireSide`.
 
-- [ ] **Step 3: Implement the new wire-edit commands**
+- [x] **Step 3: Implement the new wire-edit commands**
 
 Add the command surface and normalization helpers:
 
@@ -332,7 +332,7 @@ Validation must reject:
 - deleting so many vertices that the route loses its endpoint pair
 - reconnecting to a terminal not on the active sheet
 
-- [ ] **Step 4: Re-run the editor command tests**
+- [x] **Step 4: Re-run the editor command tests**
 
 Run:
 
@@ -342,7 +342,7 @@ cargo test -p athena-editor command_contracts authoring_mvp -- --nocapture
 
 Expected: PASS, including undo/redo for all new wire-edit commands.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add rust/crates/domain/src/electrical.rs rust/crates/editor/src/command.rs rust/crates/editor/src/validation.rs rust/crates/editor/tests
