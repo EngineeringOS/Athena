@@ -70,30 +70,36 @@ impl Project {
         project
     }
 
+    /// Returns sheets keyed by their stable IDs in deterministic order.
     #[must_use]
     pub fn sheets(&self) -> &BTreeMap<SheetId, Sheet> {
         &self.sheets
     }
 
+    /// Returns the user-facing sheet order independently of map-key order.
     #[must_use]
     pub fn sheet_order(&self) -> &[SheetId] {
         &self.sheet_order
     }
 
+    /// Returns reusable symbol definitions keyed by stable IDs.
     #[must_use]
     pub fn symbol_definitions(&self) -> &BTreeMap<SymbolDefinitionId, SymbolDefinition> {
         &self.symbol_definitions
     }
 
+    /// Looks up a sheet by its stable ID.
     #[must_use]
     pub fn sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
         self.sheets.get(&sheet_id)
     }
 
+    /// Returns mutable access to one sheet for aggregate-scoped mutation.
     pub fn sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
         self.sheets.get_mut(&sheet_id)
     }
 
+    /// Looks up a reusable symbol definition by its stable ID.
     #[must_use]
     pub fn symbol_definition(
         &self,
@@ -102,6 +108,7 @@ impl Project {
         self.symbol_definitions.get(&definition_id)
     }
 
+    /// Looks up a symbol instance within one sheet.
     #[must_use]
     pub fn symbol_instance(
         &self,
@@ -111,6 +118,7 @@ impl Project {
         self.sheet(sheet_id)?.instance(instance_id)
     }
 
+    /// Looks up a terminal within one sheet's symbol instances.
     #[must_use]
     pub fn terminal(&self, sheet_id: SheetId, terminal_id: TerminalId) -> Option<&Terminal> {
         self.sheet(sheet_id)?
@@ -119,16 +127,19 @@ impl Project {
             .find_map(|instance| instance.terminals.get(&terminal_id))
     }
 
+    /// Looks up a wire within one sheet.
     #[must_use]
     pub fn wire(&self, sheet_id: SheetId, wire_id: WireId) -> Option<&Wire> {
         self.sheet(sheet_id)?.wire(wire_id)
     }
 
+    /// Looks up a junction within one sheet.
     #[must_use]
     pub fn junction(&self, sheet_id: SheetId, junction_id: JunctionId) -> Option<&Junction> {
         self.sheet(sheet_id)?.junction(junction_id)
     }
 
+    /// Looks up an annotation within one sheet.
     #[must_use]
     pub fn annotation(
         &self,
@@ -138,6 +149,7 @@ impl Project {
         self.sheet(sheet_id)?.annotation(annotation_id)
     }
 
+    /// Appends a new sheet and returns its stable ID.
     pub fn add_sheet(&mut self, name: impl Into<String>) -> SheetId {
         let sheet = Sheet::new(name);
         let sheet_id = sheet.id;
@@ -146,6 +158,7 @@ impl Project {
         sheet_id
     }
 
+    /// Removes a sheet unless it is the sole remaining sheet.
     pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
         if self.sheets.len() <= 1 {
             return None;
@@ -155,6 +168,7 @@ impl Project {
         Some(removed)
     }
 
+    /// Adds a reusable symbol definition when its ID is not already present.
     pub fn add_symbol_definition(
         &mut self,
         definition: SymbolDefinition,
