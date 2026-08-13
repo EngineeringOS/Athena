@@ -357,7 +357,7 @@ git commit -m "feat: add orthogonal wire editing commands"
 - Modify: `rust/crates/render/src/hit_test.rs`
 - Modify: `rust/crates/render/tests/scene_contracts.rs`
 
-- [ ] **Step 1: Write the failing render and hit-test tests**
+- [x] **Step 1: Write the failing render and hit-test tests**
 
 Extend `rust/crates/render/tests/scene_contracts.rs` with:
 
@@ -401,7 +401,7 @@ fn marquee_overlay_projects_translucent_rectangle() {
 }
 ```
 
-- [ ] **Step 2: Run the targeted render tests to verify they fail**
+- [x] **Step 2: Run the targeted render tests to verify they fail**
 
 Run:
 
@@ -412,7 +412,7 @@ cargo test -p athena-render scene_contracts -- --nocapture
 Expected: compile errors for missing `WireEndpointHandle`, `WireVertexHandle`,
 `MarqueeRect`, and expanded `EditorPresentation` helpers.
 
-- [ ] **Step 3: Implement the overlay and hit-region expansion**
+- [x] **Step 3: Implement the overlay and hit-region expansion**
 
 Add the new shared render types:
 
@@ -451,7 +451,7 @@ Project selected wires with highlighted full-path overlays plus visible interior
 vertices and endpoint handles. Project hover/snap terminal feedback separately
 from the saved scene.
 
-- [ ] **Step 4: Re-run the render tests**
+- [x] **Step 4: Re-run the render tests**
 
 Run:
 
@@ -461,7 +461,7 @@ cargo test -p athena-render scene_contracts -- --nocapture
 
 Expected: PASS for the new overlay and hit-order coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add rust/crates/render
@@ -477,7 +477,7 @@ git commit -m "feat: project wire editing overlays"
 - Modify: `rust/crates/desktop/src/panels.rs`
 - Modify: `rust/crates/desktop/tests/desktop_authoring.rs`
 
-- [ ] **Step 1: Write the failing desktop integration tests**
+- [x] **Step 1: Write the failing desktop integration tests**
 
 Extend `rust/crates/desktop/tests/desktop_authoring.rs` with:
 
@@ -530,7 +530,7 @@ fn inspector_updates_selected_symbol_reference() {
 }
 ```
 
-- [ ] **Step 2: Run the targeted desktop tests to verify they fail**
+- [x] **Step 2: Run the targeted desktop tests to verify they fail**
 
 Run:
 
@@ -540,7 +540,7 @@ cargo test -p athena-desktop desktop_authoring -- --nocapture
 
 Expected: compile errors for missing pointer-drag and inspector APIs.
 
-- [ ] **Step 3: Replace desktop-owned editing logic with the shared session**
+- [x] **Step 3: Replace desktop-owned editing logic with the shared session**
 
 Refactor `DesktopEditor` to wrap `EditorSession`:
 
@@ -577,7 +577,7 @@ In `panels.rs`, replace the placeholder inspector copy with live controls for:
 Keep the native UI minimal; the important part is that every control calls the
 shared session, not desktop-only mutation code.
 
-- [ ] **Step 4: Re-run the desktop tests**
+- [x] **Step 4: Re-run the desktop tests**
 
 Run:
 
@@ -588,7 +588,7 @@ cargo test -p athena-desktop desktop_authoring -- --nocapture
 Expected: PASS for directional selection, wire vertex drag, and inspector edit
 coverage.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add rust/crates/desktop
@@ -604,7 +604,7 @@ git commit -m "feat: wire desktop shell to shared session"
 - Modify: `web/bootstrap.js`
 - Modify: `web/tests/authoring-mvp.test.js`
 
-- [ ] **Step 1: Write the failing web-core and browser tests**
+- [x] **Step 1: Write the failing web-core and browser tests**
 
 Extend `rust/crates/web-core/tests/web_editor_contracts.rs` with:
 
@@ -668,7 +668,7 @@ test("directional marquee and wire vertex drag work in the browser shell", async
 });
 ```
 
-- [ ] **Step 2: Run the targeted tests to verify they fail**
+- [x] **Step 2: Run the targeted tests to verify they fail**
 
 Run:
 
@@ -679,7 +679,7 @@ node --test web/tests/authoring-mvp.test.js
 
 Expected: compile/runtime failures for missing drag-aware web APIs.
 
-- [ ] **Step 3: Replace web-core shell logic with the shared session**
+- [x] **Step 3: Replace web-core shell logic with the shared session**
 
 Refactor `WebEditorCore` to wrap `EditorSession` and expose explicit pointer
 and property APIs:
@@ -709,7 +709,7 @@ Update `web/bootstrap.js` to:
 - map keyboard shortcuts for Delete, Esc, `R`, `M`, `Ctrl/Cmd+Z`, and
   `Ctrl/Cmd+Shift+Z`
 
-- [ ] **Step 4: Re-run web-core and browser tests**
+- [x] **Step 4: Re-run web-core and browser tests**
 
 Run:
 
@@ -722,20 +722,72 @@ Then run the browser smoke test with the local static host used by the repo.
 Expected: the Rust tests pass, `web/bootstrap.js` parses cleanly, and the
 browser smoke test passes once the host is running.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add rust/crates/web-core web/index.html web/bootstrap.js web/tests/authoring-mvp.test.js
 git commit -m "feat: wire browser shell to shared session"
 ```
 
-### Task 6: Full verification pass and milestone closeout
+### Task 6: Expose insert, delete, and reconnect wire edits in both shells
+
+**Files:**
+- Modify: `rust/crates/editor/src/session.rs`
+- Modify: `rust/crates/editor/tests/interaction_contracts.rs`
+- Modify: `rust/crates/desktop/src/app.rs`
+- Modify: `rust/crates/desktop/src/panels.rs`
+- Modify: `rust/crates/desktop/tests/desktop_authoring.rs`
+- Modify: `rust/crates/web-core/src/lib.rs`
+- Modify: `rust/crates/web-core/tests/web_editor_contracts.rs`
+- Modify: `web/index.html`
+- Modify: `web/bootstrap.js`
+- Modify: `web/tests/authoring-mvp.test.js`
+
+- [x] **Step 1: Add failing shared-session and shell contracts**
+
+Cover the remaining M002 acceptance paths:
+
+- insert an interior vertex on the selected wire segment
+- delete an interior vertex from the selected wire
+- reconnect a selected wire endpoint to a target terminal
+- undo and redo each operation through the shared history
+- invoke each operation through both desktop and browser shell adapters
+
+- [x] **Step 2: Run the focused tests to verify they fail**
+
+Run:
+
+```bash
+cargo test -p athena-editor interaction_contracts -- --nocapture
+cargo test -p athena-desktop desktop_authoring -- --nocapture
+cargo test -p athena-web-core web_editor_contracts -- --nocapture
+```
+
+- [x] **Step 3: Add session-owned wire-edit intents and shell controls**
+
+Keep hit testing, route normalization, validation, and history in Rust. Native
+and browser controls must only select a shared intent and forward canvas
+coordinates; they must not calculate wire routes or mutate document records.
+
+- [x] **Step 4: Re-run focused core, desktop, web, and browser smoke checks**
+
+Run the commands from Step 2, `node --check web/bootstrap.js`, and the
+Playwright browser smoke against a local static host.
+
+- [x] **Step 5: Commit the completed wire-edit parity slice**
+
+```bash
+git add rust/crates/editor rust/crates/desktop rust/crates/web-core web
+git commit -m "feat: expose wire editing in shared shells"
+```
+
+### Task 7: Full verification pass and milestone closeout
 
 **Files:**
 - Modify: `docs/superpowers/plans/2026-08-13-m002-single-sheet-editing-parity.md`
 - Create: `docs/superpowers/verification/2026-08-13-m002-single-sheet-editing-parity.md`
 
-- [ ] **Step 1: Run the Rust verification suite**
+- [x] **Step 1: Run the Rust verification suite**
 
 Run:
 
@@ -747,7 +799,7 @@ cargo test --workspace
 
 Expected: all commands exit `0`.
 
-- [ ] **Step 2: Run the WASM/browser build checks**
+- [x] **Step 2: Run the WASM/browser build checks**
 
 Run:
 
@@ -759,7 +811,7 @@ node --check web/bootstrap.js
 
 Expected: all commands exit `0`.
 
-- [ ] **Step 3: Run the desktop and browser smoke checks**
+- [x] **Step 3: Run the desktop and browser smoke checks**
 
 Run:
 
@@ -772,7 +824,7 @@ If a local browser host is running on the agreed port, also run the Playwright
 smoke test for `web/tests/authoring-mvp.test.js`. Record the exact URL used in
 the verification note.
 
-- [ ] **Step 4: Write the verification note**
+- [x] **Step 4: Write the verification note**
 
 Create `docs/superpowers/verification/2026-08-13-m002-single-sheet-editing-parity.md`
 with:
@@ -781,7 +833,7 @@ with:
 - any residual risk
 - explicit note on whether desktop native launch and browser smoke were both run
 
-- [ ] **Step 5: Mark completed plan items and commit**
+- [x] **Step 5: Mark completed plan items and commit**
 
 Update only the completed checkboxes in this plan after the verification note
 exists and the commands above have been run successfully.
