@@ -1,3 +1,9 @@
+//! Project aggregate ownership and validation for electrical schematics.
+//!
+//! This module is the durable admission boundary for persisted projects: it
+//! verifies entity references, identifier integrity, and canonical wire routes
+//! before a project can be saved, replayed, rendered, or shared between shells.
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};

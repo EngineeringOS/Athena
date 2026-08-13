@@ -184,6 +184,11 @@ impl EditorState {
     /// The real project is only replaced after command validation, candidate
     /// mutation, and full domain validation all succeed.
     pub fn apply(&mut self, command: EditorCommand) -> Result<AppliedCommand, ApplyError> {
+        // Persisted projects can enter the session through external adapters;
+        // reject an invalid aggregate before route-repair helpers inspect it.
+        self.project
+            .validate()
+            .map_err(ApplyError::InvalidProject)?;
         validation::validate_command(&self.project, &command)?;
 
         let before_revision = self.revision;

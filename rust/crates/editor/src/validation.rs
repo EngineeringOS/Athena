@@ -178,7 +178,7 @@ pub(crate) fn validate_command(
             vertex_index,
         } => {
             let wire = validate_wire(project, *sheet_id, *wire_id)?;
-            if *vertex_index == 0 || *vertex_index + 1 >= wire.route.len() {
+            if *vertex_index == 0 || *vertex_index >= wire.route.len().saturating_sub(1) {
                 return Err(ApplyError::InvalidWireVertexIndex {
                     wire_id: *wire_id,
                     vertex_index: *vertex_index,

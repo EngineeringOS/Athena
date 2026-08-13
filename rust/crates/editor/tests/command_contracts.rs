@@ -976,10 +976,73 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
             })
             .is_err()
     );
+    assert!(
+        state
+            .apply(EditorCommand::MoveWireVertex {
+                sheet_id,
+                wire_id,
+                vertex_index: usize::MAX,
+                position: Point::new(10, 10),
+            })
+            .is_err()
+    );
+    assert!(
+        state
+            .apply(EditorCommand::DeleteWireVertex {
+                sheet_id,
+                wire_id,
+                vertex_index: usize::MAX,
+            })
+            .is_err()
+    );
     assert_eq!(
         snapshot_bytes(state.project()).expect("snapshot is valid"),
         before
     );
+}
+
+#[test]
+fn commands_reject_an_invalid_initial_project_before_route_repair() {
+    let mut project = Project::new("Invalid initial project");
+    let definition = SymbolDefinition::new("Resistor");
+    let definition_id = definition.id;
+    project
+        .add_symbol_definition(definition)
+        .expect("definition IDs are unique");
+    let sheet_id = project.sheet_order()[0];
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_id = start.id;
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let end = symbol(definition_id, Point::new(20, 0));
+    let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
+    let malformed_wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0)],
+    );
+    let sheet = project.sheet_mut(sheet_id).expect("default sheet exists");
+    sheet.add_symbol(start).expect("symbol ID is unique");
+    sheet.add_symbol(end).expect("symbol ID is unique");
+    sheet
+        .add_wire(malformed_wire)
+        .expect("wire ID is unique despite its invalid route");
+
+    let mut state = EditorState::new(project);
+    let before = state.project().clone();
+
+    assert!(matches!(
+        state.apply(EditorCommand::MoveItems {
+            sheet_id,
+            items: vec![ItemId::Symbol(start_id)],
+            delta: Point::new(10, 0),
+        }),
+        Err(athena_editor::ApplyError::InvalidProject(_))
+    ));
+    assert_eq!(state.project(), &before);
 }
 
 #[test]
