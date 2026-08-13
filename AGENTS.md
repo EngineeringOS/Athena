@@ -50,6 +50,11 @@
 - Use Graphite as an editor-shell reference: keep document state, tools,
   viewport/canvas, commands, rendering, and platform wrappers as separate
   layers. Graphite is an architectural reference, not a product dependency.
+- Every core Rust file touched in a milestone must be self-documenting: include
+  a module-level `//!` summary, document public types/functions that define a
+  cross-crate contract, and add short comments before non-obvious state,
+  geometry, validation, persistence, or platform-boundary logic. Do not add
+  comments that merely restate the code.
 
 ## Current First Milestone
 
