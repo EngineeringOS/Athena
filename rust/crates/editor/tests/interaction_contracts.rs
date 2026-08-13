@@ -96,9 +96,9 @@ fn empty_click_clears_selection() {
         .sheet(session.active_sheet_id())
         .expect("sheet exists")
         .symbol_instances
-        .keys()
-        .next()
-        .copied()
+        .values()
+        .find(|symbol| symbol.position == Point::new(100, 80))
+        .map(|symbol| symbol.id)
         .expect("first symbol exists");
 
     session
@@ -184,5 +184,42 @@ fn marquee_direction_changes_selection_rule() {
     assert_eq!(
         session.debug_marquee_mode(),
         Some(athena_editor::DebugMarqueeMode::Touched)
+    );
+}
+
+#[test]
+fn marquee_selects_only_enclosed_items_left_to_right_and_touched_items_right_to_left() {
+    let mut session = fixture_session_with_two_symbols();
+    let partially_covered = session
+        .state()
+        .project()
+        .sheet(session.active_sheet_id())
+        .expect("sheet exists")
+        .symbol_instances
+        .values()
+        .find(|symbol| symbol.position == Point::new(100, 80))
+        .map(|symbol| symbol.id)
+        .expect("partially covered symbol exists");
+
+    session
+        .pointer_down(world(80, 60), PointerModifiers::default())
+        .expect("enclosed marquee starts on empty sheet");
+    session
+        .pointer_up(world(105, 85), PointerModifiers::default())
+        .expect("enclosed marquee completes");
+    assert!(
+        !session.is_symbol_selected(partially_covered),
+        "a partially covered symbol is not enclosed"
+    );
+
+    session
+        .pointer_down(world(110, 60), PointerModifiers::default())
+        .expect("touched marquee starts on empty sheet");
+    session
+        .pointer_up(world(90, 90), PointerModifiers::default())
+        .expect("touched marquee completes");
+    assert!(
+        session.is_symbol_selected(partially_covered),
+        "a partially covered symbol is touched"
     );
 }

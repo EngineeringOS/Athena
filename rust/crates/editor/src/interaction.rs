@@ -1,6 +1,7 @@
 //! Pointer interaction state shared by desktop and browser shells.
 
 use athena_geometry::WorldPoint;
+use athena_render::PresentationItemId;
 
 /// Modifier keys needed to disambiguate selection gestures.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -47,6 +48,18 @@ pub struct WireEndpointReconnectState {
     pub start: bool,
 }
 
+/// Tracks the item whose typed properties are being drafted before commit.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PropertyEditingState {
+    pub target: PresentationItemId,
+}
+
+/// Holds placement-preview geometry without creating a persistent item.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ToolPlacementTransientState {
+    pub preview_position: WorldPoint,
+}
+
 /// Explicit transient interaction modes shared by all shells.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InteractionState {
@@ -55,6 +68,8 @@ pub enum InteractionState {
     DraggingSelection(DragSelectionState),
     EditingWireVertex(WireVertexDragState),
     ReconnectingWireEndpoint(WireEndpointReconnectState),
+    EditingProperties(PropertyEditingState),
+    ToolPlacementTransient(ToolPlacementTransientState),
 }
 
 impl Default for InteractionState {

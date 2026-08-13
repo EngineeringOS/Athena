@@ -28,6 +28,12 @@ impl SelectionState {
         self.items.insert(item);
     }
 
+    /// Replaces the selection with the supplied presentation items.
+    pub fn replace_all(&mut self, items: impl IntoIterator<Item = PresentationItemId>) {
+        self.items.clear();
+        self.items.extend(items);
+    }
+
     /// Toggles one item while preserving the rest of the selection.
     pub fn toggle(&mut self, item: PresentationItemId) {
         if !self.items.insert(item) {

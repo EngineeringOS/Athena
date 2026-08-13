@@ -2,7 +2,7 @@
 //! selection, and transient pointer interaction into one shared API.
 
 use athena_domain::{Project, SheetId, SymbolInstanceId};
-use athena_geometry::WorldPoint;
+use athena_geometry::{Rect, WorldPoint};
 use athena_render::{
     EditorPresentation, HitRegion, PresentationItemId, Scene, hit_test, project_sheet,
 };
@@ -13,6 +13,7 @@ use crate::{
     InteractionState, MarqueeState, PointerModifiers, SelectionState,
 };
 
+/// Errors produced by the shell-facing editor-session contract.
 #[derive(Debug, Error)]
 pub enum SessionError {
     #[error("active sheet does not exist")]
@@ -21,6 +22,10 @@ pub enum SessionError {
     History(#[from] HistoryError),
 }
 
+/// The shared controller through which desktop and browser shells edit a sheet.
+///
+/// It owns persistent state and history alongside non-persistent selection,
+/// presentation, and interaction state so shells do not duplicate editor logic.
 pub struct EditorSession {
     state: EditorState,
     history: History,
@@ -180,6 +185,11 @@ impl EditorSession {
         _modifiers: PointerModifiers,
     ) -> Result<(), SessionError> {
         self.pointer_move(point, PointerModifiers::default())?;
+        if let InteractionState::MarqueeSelecting(marquee) = self.interaction {
+            let scene = self.scene()?;
+            self.selection
+                .replace_all(marquee_selection(&scene, marquee));
+        }
         self.interaction = InteractionState::Idle;
         self.refresh_scene()
     }
@@ -254,6 +264,91 @@ impl EditorSession {
         self.refresh_scene()?;
         Ok(changed)
     }
+}
+
+fn marquee_selection(scene: &Scene, marquee: MarqueeState) -> Vec<PresentationItemId> {
+    let bounds = Rect::from_corners(
+        scene.viewport.viewport_to_world(marquee.start),
+        scene.viewport.viewport_to_world(marquee.current),
+    );
+
+    // Enclosed selection requires every region of an item to be inside the box.
+    // Touched selection accepts any region intersection, matching directional tools.
+    let mut item_regions = std::collections::BTreeMap::<PresentationItemId, Vec<Rect>>::new();
+    for region in &scene.hit_regions {
+        if let Some((item, region_bounds)) = selection_region(region) {
+            item_regions.entry(item).or_default().push(region_bounds);
+        }
+    }
+
+    item_regions
+        .into_iter()
+        .filter_map(|(item, regions)| {
+            let selected = match marquee.mode {
+                DebugMarqueeMode::Enclosed => {
+                    regions.iter().all(|region| rect_contains(bounds, *region))
+                }
+                DebugMarqueeMode::Touched => regions
+                    .iter()
+                    .any(|region| rect_intersects(bounds, *region)),
+            };
+            selected.then_some(item)
+        })
+        .collect()
+}
+
+fn selection_region(region: &HitRegion) -> Option<(PresentationItemId, Rect)> {
+    match region {
+        HitRegion::SymbolBody { symbol_id, bounds } => {
+            Some((PresentationItemId::Symbol(*symbol_id), *bounds))
+        }
+        HitRegion::WireVertex {
+            wire_id, position, ..
+        } => Some((
+            PresentationItemId::Wire(*wire_id),
+            Rect::from_corners(*position, *position),
+        )),
+        HitRegion::WireSegment {
+            wire_id,
+            start,
+            end,
+            ..
+        } => Some((
+            PresentationItemId::Wire(*wire_id),
+            Rect::from_corners(*start, *end),
+        )),
+        HitRegion::Junction {
+            junction_id,
+            position,
+            radius,
+        } => Some((
+            PresentationItemId::Junction(*junction_id),
+            circle_bounds(*position, *radius),
+        )),
+        HitRegion::Annotation {
+            annotation_id,
+            bounds,
+        } => Some((PresentationItemId::Annotation(*annotation_id), *bounds)),
+        HitRegion::Terminal { .. } => None,
+    }
+}
+
+fn circle_bounds(center: WorldPoint, radius: f64) -> Rect {
+    Rect::from_corners(
+        WorldPoint::new(center.x - radius, center.y - radius),
+        WorldPoint::new(center.x + radius, center.y + radius),
+    )
+}
+
+fn rect_contains(outer: Rect, inner: Rect) -> bool {
+    outer.contains(inner.min) && outer.contains(inner.max)
+}
+
+fn rect_intersects(first: Rect, second: Rect) -> bool {
+    first.min.x <= second.max.x
+        && first.max.x >= second.min.x
+        && first.min.y <= second.max.y
+        && first.max.y >= second.min.y
 }
 
 fn item_from_hit(hit: HitRegion) -> Option<PresentationItemId> {
