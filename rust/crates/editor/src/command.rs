@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use athena_domain::{
     Annotation, AnnotationId, DomainError, FieldValue, Junction, JunctionId, Point, Project,
     ProjectId, SheetId, SheetSettings, SymbolInstance, SymbolInstanceId, TerminalId, Wire,
-    WireEndpoint, WireId,
+    WireEndpoint, WireId, canonical_wire_route,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -629,26 +629,6 @@ fn normalize_wire_route(route: &mut Vec<Point>) {
 /// Returns the canonical form without assuming that an external command has
 /// already supplied a valid endpoint pair. Validation checks the result before
 /// the route can enter persistent project state.
-pub(crate) fn canonical_wire_route(route: &[Point]) -> Vec<Point> {
-    let without_duplicates = route.iter().copied().fold(Vec::new(), |mut points, point| {
-        if points.last().copied() != Some(point) {
-            points.push(point);
-        }
-        points
-    });
-    let mut normalized: Vec<Point> = Vec::with_capacity(without_duplicates.len());
-    for point in without_duplicates {
-        if let [.., previous, current] = normalized.as_slice()
-            && (previous.x == current.x && current.x == point.x
-                || previous.y == current.y && current.y == point.y)
-        {
-            normalized.pop();
-        }
-        normalized.push(point);
-    }
-    normalized
-}
-
 fn stored_item_if_present(sheet: &athena_domain::Sheet, item: ItemId) -> Option<StoredItem> {
     match item {
         ItemId::Symbol(id) => sheet

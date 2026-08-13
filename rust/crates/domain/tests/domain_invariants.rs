@@ -240,6 +240,44 @@ fn wire_endpoints_must_resolve_to_terminals_or_junctions() {
 }
 
 #[test]
+fn validation_rejects_a_directly_inserted_wire_with_a_noncanonical_route() {
+    let mut project = Project::new("Route validation");
+    let definition = SymbolDefinition::new("Lamp");
+    let definition_id = definition.id;
+    project.add_symbol_definition(definition).unwrap();
+    let sheet_id = project.sheet_order()[0];
+    let mut start = SymbolInstance::new(definition_id);
+    let start_terminal = start.add_terminal(Terminal::new(
+        start.id,
+        "A",
+        ElectricalKind::Passive,
+        Point::new(0, 0),
+    ));
+    let mut end = SymbolInstance::new(definition_id);
+    let end_terminal = end.add_terminal(Terminal::new(
+        end.id,
+        "B",
+        ElectricalKind::Passive,
+        Point::new(20, 0),
+    ));
+    let sheet = project.sheet_mut(sheet_id).unwrap();
+    sheet.add_symbol(start).unwrap();
+    sheet.add_symbol(end).unwrap();
+    sheet
+        .add_wire(Wire::new(
+            WireEndpoint::Terminal(start_terminal),
+            WireEndpoint::Terminal(end_terminal),
+            vec![Point::new(0, 0), Point::new(10, 0), Point::new(20, 0)],
+        ))
+        .unwrap();
+
+    assert!(matches!(
+        project.validate(),
+        Err(athena_domain::DomainError::NonCanonicalWireRoute { .. })
+    ));
+}
+
+#[test]
 fn removing_sheet_removes_all_entities_reachable_only_from_that_sheet() {
     let mut project = Project::new("Removal");
     let definition = SymbolDefinition::new("Connector");

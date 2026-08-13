@@ -278,6 +278,110 @@ fn moving_a_symbol_moves_attached_wire_endpoint_vertices() {
 }
 
 #[test]
+fn moving_a_wire_without_its_owners_is_rejected_atomically() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let first = symbol(definition_id, Point::new(0, 0));
+    let first_terminal = *first.terminals.keys().next().unwrap();
+    let second = symbol(definition_id, Point::new(20, 0));
+    let second_terminal = *second.terminals.keys().next().unwrap();
+    place(&mut state, sheet_id, first);
+    place(&mut state, sheet_id, second);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(first_terminal),
+        WireEndpoint::Terminal(second_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .unwrap();
+    let before = snapshot_bytes(state.project()).unwrap();
+    assert!(
+        state
+            .apply(EditorCommand::MoveItems {
+                sheet_id,
+                items: vec![ItemId::Wire(wire_id)],
+                delta: Point::new(5, 0)
+            })
+            .is_err()
+    );
+    assert_eq!(snapshot_bytes(state.project()).unwrap(), before);
+}
+
+#[test]
+fn moving_a_junction_without_its_wires_is_rejected_atomically() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let first = symbol(definition_id, Point::new(0, 0));
+    let first_terminal = *first.terminals.keys().next().unwrap();
+    place(&mut state, sheet_id, first);
+    let junction = Junction::new(Point::new(10, 0));
+    let junction_id = junction.id;
+    state
+        .apply(EditorCommand::RestoreItems {
+            sheet_id,
+            remove: vec![],
+            restore: vec![athena_editor::StoredItem::Junction(junction.clone())],
+        })
+        .unwrap();
+    let wire = Wire::new(
+        WireEndpoint::Terminal(first_terminal),
+        WireEndpoint::Junction(junction_id),
+        vec![Point::new(0, 0), Point::new(10, 0)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .unwrap();
+    let before = snapshot_bytes(state.project()).unwrap();
+    assert!(
+        state
+            .apply(EditorCommand::MoveItems {
+                sheet_id,
+                items: vec![ItemId::Junction(junction_id)],
+                delta: Point::new(0, 5)
+            })
+            .is_err()
+    );
+    assert_eq!(snapshot_bytes(state.project()).unwrap(), before);
+    assert_eq!(
+        state.project().wire(sheet_id, wire_id).unwrap().route,
+        vec![Point::new(0, 0), Point::new(10, 0)]
+    );
+}
+
+#[test]
+fn moving_a_wire_with_only_one_terminal_owner_is_rejected() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let first = symbol(definition_id, Point::new(0, 0));
+    let first_id = first.id;
+    let first_terminal = *first.terminals.keys().next().unwrap();
+    let second = symbol(definition_id, Point::new(20, 0));
+    let second_terminal = *second.terminals.keys().next().unwrap();
+    place(&mut state, sheet_id, first);
+    place(&mut state, sheet_id, second);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(first_terminal),
+        WireEndpoint::Terminal(second_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .unwrap();
+    let before = snapshot_bytes(state.project()).unwrap();
+    assert!(
+        state
+            .apply(EditorCommand::MoveItems {
+                sheet_id,
+                items: vec![ItemId::Wire(wire_id), ItemId::Symbol(first_id)],
+                delta: Point::new(5, 0)
+            })
+            .is_err()
+    );
+    assert_eq!(snapshot_bytes(state.project()).unwrap(), before);
+}
+
+#[test]
 fn rotates_and_mirrors_a_selected_symbol() {
     let (mut state, sheet_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(0, 0));
@@ -717,6 +821,69 @@ fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
             .end,
         WireEndpoint::Terminal(original_end_terminal)
     );
+}
+
+#[test]
+fn reconnecting_to_the_other_endpoint_terminal_is_rejected_atomically() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start.terminals.keys().next().unwrap();
+    let end = symbol(definition_id, Point::new(20, 0));
+    let end_terminal = *end.terminals.keys().next().unwrap();
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .unwrap();
+    let before = snapshot_bytes(state.project()).unwrap();
+    assert!(
+        state
+            .apply(EditorCommand::ReconnectWireEndpoint {
+                sheet_id,
+                wire_id,
+                endpoint: WireSide::End,
+                terminal_id: start_terminal
+            })
+            .is_err()
+    );
+    assert_eq!(snapshot_bytes(state.project()).unwrap(), before);
+}
+
+#[test]
+fn restoring_a_malformed_wire_is_rejected_atomically() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start.terminals.keys().next().unwrap();
+    let end = symbol(definition_id, Point::new(20, 0));
+    let end_terminal = *end.terminals.keys().next().unwrap();
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let malformed = Wire {
+        route: vec![Point::new(1, 1)],
+        ..wire
+    };
+    let before = snapshot_bytes(state.project()).unwrap();
+    assert!(
+        state
+            .apply(EditorCommand::RestoreItems {
+                sheet_id,
+                remove: vec![],
+                restore: vec![athena_editor::StoredItem::Wire(malformed)]
+            })
+            .is_err()
+    );
+    assert_eq!(snapshot_bytes(state.project()).unwrap(), before);
 }
 
 #[test]

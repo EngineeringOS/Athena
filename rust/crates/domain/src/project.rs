@@ -5,15 +5,19 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    Annotation, AnnotationId, Junction, JunctionId, ProjectId, Sheet, SheetId, SymbolDefinition,
-    SymbolDefinitionId, SymbolInstance, SymbolInstanceId, Terminal, TerminalId, Wire, WireEndpoint,
-    WireId,
+    Annotation, AnnotationId, Junction, JunctionId, Point, ProjectId, Sheet, SheetId,
+    SymbolDefinition, SymbolDefinitionId, SymbolInstance, SymbolInstanceId, Terminal, TerminalId,
+    Wire, WireEndpoint, WireId, canonical_wire_route,
 };
 
+/// Project-wide defaults persisted alongside schematic sheets.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ProjectSettings {
+    /// Default document-space grid spacing.
     pub grid_spacing: i64,
+    /// Whether the default grid snaps pointer-derived coordinates.
     pub snap_enabled: bool,
+    /// Display unit label for project-facing values.
     pub units: String,
 }
 
@@ -27,9 +31,12 @@ impl Default for ProjectSettings {
     }
 }
 
+/// The complete platform-neutral persisted schematic project.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Project {
+    /// Stable project identity used by persistence and synchronization.
     pub id: ProjectId,
+    /// Human-facing project name.
     pub name: String,
     #[serde(default)]
     pub settings: ProjectSettings,
@@ -42,6 +49,7 @@ pub struct Project {
 }
 
 impl Project {
+    /// Creates a named project with one default sheet.
     #[must_use]
     pub fn new(name: impl Into<String>) -> Self {
         let mut project = Self {
@@ -154,6 +162,7 @@ impl Project {
         Ok(())
     }
 
+    /// Validates every persisted cross-entity and electrical-route invariant.
     pub fn validate(&self) -> Result<(), DomainError> {
         if self.name.trim().is_empty() {
             return Err(DomainError::EmptyProjectName {
@@ -277,6 +286,7 @@ impl Project {
                 self.ensure_unique_uuid(wire.id.as_uuid(), &mut all_ids)?;
                 self.validate_wire_endpoint(wire.id, &wire.start, &terminal_ids, sheet)?;
                 self.validate_wire_endpoint(wire.id, &wire.end, &terminal_ids, sheet)?;
+                self.validate_wire_route(wire, sheet, &terminal_ids)?;
             }
         }
 
@@ -317,6 +327,85 @@ impl Project {
             }
             _ => Ok(()),
         }
+    }
+
+    /// Checks the route held in persistence, after endpoint references have
+    /// been resolved. This is shared validation so replay and direct domain
+    /// construction cannot admit geometry that editor commands would reject.
+    fn validate_wire_route(
+        &self,
+        wire: &Wire,
+        sheet: &Sheet,
+        terminal_ids: &BTreeSet<TerminalId>,
+    ) -> Result<(), DomainError> {
+        if wire.route.len() < 2 {
+            return Err(DomainError::WireRouteTooShort { wire_id: wire.id });
+        }
+        let start = endpoint_position(&wire.start, sheet, terminal_ids)
+            .expect("validated wire start endpoint resolves");
+        let end = endpoint_position(&wire.end, sheet, terminal_ids)
+            .expect("validated wire end endpoint resolves");
+        if wire.route[0] != start {
+            return Err(DomainError::WireRouteEndpointMismatch {
+                wire_id: wire.id,
+                endpoint: WireRouteEndpoint::Start,
+            });
+        }
+        if wire.route.last().copied() != Some(end) {
+            return Err(DomainError::WireRouteEndpointMismatch {
+                wire_id: wire.id,
+                endpoint: WireRouteEndpoint::End,
+            });
+        }
+        for (segment_index, segment) in wire.route.windows(2).enumerate() {
+            if segment[0] == segment[1] {
+                return Err(DomainError::ZeroLengthWireSegment {
+                    wire_id: wire.id,
+                    segment_index,
+                });
+            }
+            if segment[0].x != segment[1].x && segment[0].y != segment[1].y {
+                return Err(DomainError::NonOrthogonalWireSegment {
+                    wire_id: wire.id,
+                    segment_index,
+                });
+            }
+        }
+        if canonical_wire_route(&wire.route) != wire.route {
+            return Err(DomainError::NonCanonicalWireRoute { wire_id: wire.id });
+        }
+        Ok(())
+    }
+}
+
+/// The endpoint position whose stored route point failed validation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WireRouteEndpoint {
+    /// The first route point.
+    Start,
+    /// The final route point.
+    End,
+}
+
+fn endpoint_position(
+    endpoint: &WireEndpoint,
+    sheet: &Sheet,
+    terminal_ids: &BTreeSet<TerminalId>,
+) -> Option<Point> {
+    match endpoint {
+        WireEndpoint::Terminal(terminal_id) if terminal_ids.contains(terminal_id) => {
+            sheet.symbol_instances.values().find_map(|symbol| {
+                symbol
+                    .terminals
+                    .get(terminal_id)
+                    .map(|terminal| terminal.position)
+            })
+        }
+        WireEndpoint::Junction(junction_id) => sheet
+            .junctions
+            .get(junction_id)
+            .map(|junction| junction.position),
+        _ => None,
     }
 }
 
@@ -413,4 +502,23 @@ pub enum DomainError {
         wire_id: WireId,
         junction_id: JunctionId,
     },
+    #[error("wire {wire_id} route must contain at least a start and end point")]
+    WireRouteTooShort { wire_id: WireId },
+    #[error("wire {wire_id} route {endpoint:?} point does not match its owner")]
+    WireRouteEndpointMismatch {
+        wire_id: WireId,
+        endpoint: WireRouteEndpoint,
+    },
+    #[error("wire {wire_id} route segment {segment_index} has zero length")]
+    ZeroLengthWireSegment {
+        wire_id: WireId,
+        segment_index: usize,
+    },
+    #[error("wire {wire_id} route segment {segment_index} is not orthogonal")]
+    NonOrthogonalWireSegment {
+        wire_id: WireId,
+        segment_index: usize,
+    },
+    #[error("wire {wire_id} route contains redundant bends or points")]
+    NonCanonicalWireRoute { wire_id: WireId },
 }

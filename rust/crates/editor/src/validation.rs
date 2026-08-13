@@ -5,11 +5,11 @@
 
 use std::collections::BTreeSet;
 
-use athena_domain::{Junction, Point, Project, SheetId, Wire, WireEndpoint};
+use athena_domain::{Junction, Point, Project, SheetId, Wire, WireEndpoint, canonical_wire_route};
 
 use crate::{
     ApplyError, EditorCommand, FieldTarget, ItemId, StoredItem, WireSide,
-    command::{canonical_wire_route, sheet_contains_item},
+    command::sheet_contains_item,
 };
 
 /// Performs all identifier and endpoint checks before an editor-state mutation
