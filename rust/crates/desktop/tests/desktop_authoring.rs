@@ -210,3 +210,15 @@ fn inspector_updates_symbol_description_wire_label_and_sheet_grid() {
             .any(|primitive| matches!(primitive, DrawPrimitive::Grid { .. }))
     );
 }
+
+#[test]
+fn desktop_shell_exposes_selected_wire_vertex_insert_and_delete() {
+    let mut editor = desktop_fixture_with_selected_wire();
+    editor
+        .insert_selected_wire_vertex_for_test(0, Point::new(140, 80))
+        .expect("selected wire segment accepts an interior vertex");
+    editor
+        .delete_selected_wire_vertex_for_test(1)
+        .expect("selected wire interior vertex deletes");
+    assert_eq!(editor.history_lengths(), (5, 0));
+}

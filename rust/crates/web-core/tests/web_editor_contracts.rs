@@ -161,3 +161,20 @@ fn web_controller_exposes_shared_transform_delete_and_cancel_commands() {
         .expect("delete reaches the shared session");
     assert_eq!(editor.selection_count(), 0);
 }
+
+#[test]
+fn web_controller_exposes_selected_wire_vertex_insert_and_delete() {
+    let mut editor = fixture_web_editor_with_selected_wire();
+    editor
+        .insert_selected_wire_vertex(0, athena_domain::Point::new(140, 80))
+        .expect("selected wire segment accepts an interior vertex");
+    editor
+        .delete_selected_wire_vertex(1)
+        .expect("selected wire interior vertex deletes");
+    assert!(
+        editor
+            .render_active_sheet()
+            .expect("scene serializes")
+            .contains("WirePathHighlight")
+    );
+}

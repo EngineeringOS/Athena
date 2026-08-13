@@ -71,7 +71,7 @@ fn fixture_session_with_offset_wire_and_symbol() -> EditorSession {
     session
 }
 
-fn fixture_session_with_symbols(positions: [(i64, i64); 2]) -> EditorSession {
+fn fixture_session_with_symbols<const N: usize>(positions: [(i64, i64); N]) -> EditorSession {
     let mut project = Project::new("Interaction contracts");
     let definition = SymbolDefinition::new("Resistor");
     let definition_id = definition.id;
@@ -429,4 +429,111 @@ fn dragging_a_selected_wire_vertex_commits_the_shared_vertex_command_on_release(
         .expect("wire remains in the active sheet");
     assert!(wire.route.contains(&Point::new(160, 120)));
     assert_eq!(session.history_lengths(), (2, 0));
+}
+
+#[test]
+fn dragging_a_selected_wire_endpoint_reconnects_it_to_the_terminal_under_release() {
+    let mut session = fixture_session_with_symbols([(100, 80), (220, 120), (240, 120)]);
+    let sheet_id = session.active_sheet_id();
+    let sheet = session
+        .state()
+        .project()
+        .sheet(sheet_id)
+        .expect("sheet exists");
+    let start = sheet
+        .symbol_instances
+        .values()
+        .find(|symbol| symbol.position == Point::new(100, 80))
+        .and_then(|symbol| symbol.terminals.values().next())
+        .expect("start terminal exists")
+        .clone();
+    let original_end = sheet
+        .symbol_instances
+        .values()
+        .find(|symbol| symbol.position == Point::new(220, 120))
+        .and_then(|symbol| symbol.terminals.values().next())
+        .expect("original end terminal exists")
+        .clone();
+    let replacement = sheet
+        .symbol_instances
+        .values()
+        .find(|symbol| symbol.position == Point::new(240, 120))
+        .and_then(|symbol| symbol.terminals.values().next())
+        .expect("replacement terminal exists")
+        .clone();
+    let replacement_id = replacement.id;
+    session
+        .apply_command(EditorCommand::CreateWire {
+            sheet_id,
+            wire: Wire::new(
+                WireEndpoint::Terminal(start.id),
+                WireEndpoint::Terminal(original_end.id),
+                vec![
+                    start.position,
+                    Point::new(original_end.position.x, start.position.y),
+                    original_end.position,
+                ],
+            ),
+        })
+        .expect("wire creates");
+    let wire_id = *session
+        .state()
+        .project()
+        .sheet(sheet_id)
+        .expect("sheet exists")
+        .wires
+        .keys()
+        .next()
+        .expect("wire exists");
+    session
+        .select_only(PresentationItemId::Wire(wire_id))
+        .expect("wire selects");
+    session
+        .pointer_down(
+            canvas(original_end.position.x, original_end.position.y),
+            PointerModifiers::default(),
+        )
+        .expect("endpoint drag starts");
+    assert!(matches!(
+        session.interaction(),
+        InteractionState::ReconnectingWireEndpoint(state) if state.wire_id == wire_id && !state.start
+    ));
+    session
+        .pointer_up(
+            canvas(replacement.position.x, replacement.position.y),
+            PointerModifiers::default(),
+        )
+        .expect("endpoint drag reconnects");
+    assert_eq!(
+        session
+            .state()
+            .project()
+            .wire(sheet_id, wire_id)
+            .expect("wire exists")
+            .end,
+        WireEndpoint::Terminal(replacement_id)
+    );
+}
+
+#[test]
+fn session_exposes_insert_and_delete_vertex_commands_through_shared_history() {
+    let mut session = fixture_session_with_offset_wire_and_symbol();
+    let sheet_id = session.active_sheet_id();
+    let wire_id = *session
+        .state()
+        .project()
+        .sheet(sheet_id)
+        .expect("sheet exists")
+        .wires
+        .keys()
+        .next()
+        .expect("wire exists");
+    session
+        .insert_wire_vertex(wire_id, 0, Point::new(120, 100))
+        .expect("segment insert reaches history");
+    session
+        .delete_wire_vertex(wire_id, 1)
+        .expect("vertex delete reaches history");
+    assert!(session.undo().expect("delete undo succeeds"));
+    assert!(session.undo().expect("insert undo succeeds"));
 }

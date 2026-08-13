@@ -322,6 +322,29 @@ impl DesktopEditor {
             .map_err(|error| error.to_string())
     }
 
+    /// Inserts an interior vertex on the selected wire through shared history.
+    pub fn insert_selected_wire_vertex_for_test(
+        &mut self,
+        segment_index: usize,
+        position: Point,
+    ) -> Result<(), String> {
+        let wire_id = self.selected_wire_id()?;
+        self.session
+            .insert_wire_vertex(wire_id, segment_index, position)
+            .map_err(|error| error.to_string())
+    }
+
+    /// Deletes an interior vertex on the selected wire through shared history.
+    pub fn delete_selected_wire_vertex_for_test(
+        &mut self,
+        vertex_index: usize,
+    ) -> Result<(), String> {
+        let wire_id = self.selected_wire_id()?;
+        self.session
+            .delete_wire_vertex(wire_id, vertex_index)
+            .map_err(|error| error.to_string())
+    }
+
     /// Test adapter for the inspector's selected-symbol reference field.
     pub fn set_selected_symbol_reference_for_test(&mut self, value: &str) -> Result<(), String> {
         let symbol_id = self

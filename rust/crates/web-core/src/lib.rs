@@ -162,6 +162,26 @@ impl WebEditorCore {
             .map_err(|error| error.to_string())
     }
 
+    /// Inserts an interior vertex on the selected wire through shared history.
+    pub fn insert_selected_wire_vertex(
+        &mut self,
+        segment_index: usize,
+        position: Point,
+    ) -> Result<(), String> {
+        let wire_id = self.selected_wire_id()?;
+        self.session
+            .insert_wire_vertex(wire_id, segment_index, position)
+            .map_err(|error| error.to_string())
+    }
+
+    /// Deletes an interior vertex on the selected wire through shared history.
+    pub fn delete_selected_wire_vertex(&mut self, vertex_index: usize) -> Result<(), String> {
+        let wire_id = self.selected_wire_id()?;
+        self.session
+            .delete_wire_vertex(wire_id, vertex_index)
+            .map_err(|error| error.to_string())
+    }
+
     /// Starts a shared selection, marquee, or selected-wire handle gesture.
     pub fn pointer_down(
         &mut self,
@@ -588,6 +608,23 @@ impl WebEditor {
 
     pub fn delete_selection(&mut self) -> Result<(), JsValue> {
         self.core.delete_selection().map_err(js_error)
+    }
+
+    pub fn insert_selected_wire_vertex(
+        &mut self,
+        segment_index: usize,
+        x: i64,
+        y: i64,
+    ) -> Result<(), JsValue> {
+        self.core
+            .insert_selected_wire_vertex(segment_index, Point::new(x, y))
+            .map_err(js_error)
+    }
+
+    pub fn delete_selected_wire_vertex(&mut self, vertex_index: usize) -> Result<(), JsValue> {
+        self.core
+            .delete_selected_wire_vertex(vertex_index)
+            .map_err(js_error)
     }
 
     pub fn apply_command(&mut self, command_json: String) -> Result<(), JsValue> {

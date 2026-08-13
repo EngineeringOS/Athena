@@ -1,7 +1,9 @@
 //! Shell-facing controller combining document state, history, presentation,
 //! selection, and transient pointer interaction into one shared API.
 
-use athena_domain::{FieldValue, Point, Project, SheetId, SheetSettings, SymbolInstanceId, WireId};
+use athena_domain::{
+    FieldValue, Point, Project, SheetId, SheetSettings, SymbolInstanceId, TerminalId, WireId,
+};
 use athena_geometry::{Rect, WorldPoint};
 use athena_render::{
     EditorPresentation, HitRegion, Marquee, PresentationItemId, Scene, hit_test, project_sheet,
@@ -11,7 +13,7 @@ use thiserror::Error;
 use crate::{
     DragSelectionState, EditorCommand, EditorState, History, HistoryError, InteractionState,
     MarqueeSelectionMode, MarqueeState, PointerModifiers, PresentationPointer, SelectionState,
-    WireVertexDragState,
+    WireEndpointReconnectState, WireSide, WireVertexDragState,
 };
 
 /// Errors produced by the shell-facing editor-session contract.
@@ -165,6 +167,49 @@ impl EditorSession {
         })
     }
 
+    /// Inserts a snapped interior route vertex through command history.
+    pub fn insert_wire_vertex(
+        &mut self,
+        wire_id: WireId,
+        segment_index: usize,
+        position: Point,
+    ) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::InsertWireVertex {
+            sheet_id: self.active_sheet_id,
+            wire_id,
+            segment_index,
+            position,
+        })
+    }
+
+    /// Deletes an interior route vertex through command history.
+    pub fn delete_wire_vertex(
+        &mut self,
+        wire_id: WireId,
+        vertex_index: usize,
+    ) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::DeleteWireVertex {
+            sheet_id: self.active_sheet_id,
+            wire_id,
+            vertex_index,
+        })
+    }
+
+    /// Reconnects one wire endpoint to a terminal through command history.
+    pub fn reconnect_wire_endpoint(
+        &mut self,
+        wire_id: WireId,
+        endpoint: WireSide,
+        terminal_id: TerminalId,
+    ) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::ReconnectWireEndpoint {
+            sheet_id: self.active_sheet_id,
+            wire_id,
+            endpoint,
+            terminal_id,
+        })
+    }
+
     /// Updates a typed field through the same command and history boundary.
     pub fn set_field_value(
         &mut self,
@@ -217,7 +262,17 @@ impl EditorSession {
         let scene = self.scene()?;
         let canvas_point = canvas_pointer.position();
         let hit = hit_test(&scene, canvas_point, 6.0);
-        if let Some(HitRegion::WireVertex {
+        if let Some(HitRegion::WireEndpointHandle {
+            wire_id, is_start, ..
+        }) = hit.as_ref()
+        {
+            self.selection.replace(PresentationItemId::Wire(*wire_id));
+            self.interaction =
+                InteractionState::ReconnectingWireEndpoint(WireEndpointReconnectState {
+                    wire_id: *wire_id,
+                    start: *is_start,
+                });
+        } else if let Some(HitRegion::WireVertex {
             wire_id,
             vertex_index,
             ..
@@ -323,6 +378,23 @@ impl EditorSession {
                 vertex_drag.vertex_index,
                 Point::new(world.x.round() as i64, world.y.round() as i64),
             )?;
+        }
+        if let InteractionState::ReconnectingWireEndpoint(reconnect) = self.interaction {
+            let scene = self.scene()?;
+            let canvas_point = canvas_pointer.position();
+            if let Some(HitRegion::Terminal { terminal_id, .. }) =
+                hit_test(&scene, canvas_point, 6.0)
+            {
+                self.reconnect_wire_endpoint(
+                    reconnect.wire_id,
+                    if reconnect.start {
+                        WireSide::Start
+                    } else {
+                        WireSide::End
+                    },
+                    terminal_id,
+                )?;
+            }
         }
         if let InteractionState::MarqueeSelecting(marquee) = self.interaction {
             let scene = self.scene()?;
