@@ -1,3 +1,8 @@
+//! Deterministic projection from a saved schematic and transient editor state.
+//!
+//! Platform adapters consume this module's scene data to paint and hit-test
+//! identical schematic interactions without allowing UI state into persistence.
+
 use std::collections::BTreeSet;
 
 use athena_domain::{
@@ -10,6 +15,7 @@ use serde::{Deserialize, Serialize};
 const SYMBOL_HALF_WIDTH: f64 = 8.0;
 const SYMBOL_HALF_HEIGHT: f64 = 6.0;
 const CONNECTION_HANDLE_RADIUS: f64 = 3.0;
+const WIRE_HANDLE_RADIUS: f64 = 3.0;
 const JUNCTION_RADIUS: f64 = 2.5;
 const TRANSFORM_HANDLE_RADIUS: f64 = 2.5;
 const ANNOTATION_HEIGHT: f64 = 8.0;
@@ -102,6 +108,38 @@ pub struct EditorPresentation {
     pub guides: Vec<Guide>,
     #[serde(default)]
     pub validation_messages: Vec<ValidationMessage>,
+    /// Active marquee bounds, derived from the current pointer gesture.
+    #[serde(default)]
+    pub marquee: Option<Marquee>,
+}
+
+impl EditorPresentation {
+    /// Creates presentation state with one wire selected for editing.
+    #[must_use]
+    pub fn with_selected_wire(wire_id: WireId) -> Self {
+        Self {
+            selected: BTreeSet::from([PresentationItemId::Wire(wire_id)]),
+            ..Self::default()
+        }
+    }
+
+    /// Creates presentation state containing a directional marquee preview.
+    #[must_use]
+    pub fn with_marquee(start: WorldPoint, end: WorldPoint) -> Self {
+        Self {
+            marquee: Some(Marquee { start, end }),
+            ..Self::default()
+        }
+    }
+}
+
+/// A pointer-derived rectangle that remains outside the persisted project.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+pub struct Marquee {
+    /// Pointer-down position in world coordinates.
+    pub start: WorldPoint,
+    /// Current pointer position in world coordinates.
+    pub end: WorldPoint,
 }
 
 /// A scene ready for a platform renderer to turn into pixels.
@@ -177,6 +215,31 @@ pub enum Overlay {
         position: WorldPoint,
         radius: f64,
     },
+    /// Full selected route drawn above ordinary wire geometry.
+    WirePathHighlight {
+        wire_id: WireId,
+        points: Vec<WorldPoint>,
+    },
+    /// An editable interior route point on a selected wire.
+    WireVertexHandle {
+        wire_id: WireId,
+        vertex_index: usize,
+        position: WorldPoint,
+        radius: f64,
+    },
+    /// An editable endpoint binding on a selected wire.
+    WireEndpointHandle {
+        wire_id: WireId,
+        is_start: bool,
+        position: WorldPoint,
+        radius: f64,
+    },
+    /// A selection gesture rectangle, rendered by platform adapters as translucent.
+    MarqueeRect {
+        start: WorldPoint,
+        end: WorldPoint,
+        enclosed: bool,
+    },
     GuideLine {
         start: WorldPoint,
         end: WorldPoint,
@@ -190,6 +253,13 @@ pub enum Overlay {
 /// Stable, world-space interaction geometry emitted with a scene.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum HitRegion {
+    /// The endpoint binding affordance of a selected wire.
+    WireEndpointHandle {
+        wire_id: WireId,
+        is_start: bool,
+        position: WorldPoint,
+        radius: f64,
+    },
     Terminal {
         terminal_id: TerminalId,
         symbol_id: SymbolInstanceId,
@@ -260,12 +330,11 @@ pub fn project_sheet(
         wires_and_junctions.push(DrawPrimitive::Polyline {
             points: points.clone(),
         });
-        for (vertex_index, position) in points.iter().copied().enumerate() {
-            hit_regions.push(HitRegion::WireVertex {
-                wire_id: *wire_id,
-                vertex_index,
-                position,
-            });
+        if editor_presentation
+            .selected
+            .contains(&PresentationItemId::Wire(*wire_id))
+        {
+            project_selected_wire_overlays(*wire_id, &points, &mut hit_regions);
         }
         for (segment_index, segment) in points.windows(2).enumerate() {
             hit_regions.push(HitRegion::WireSegment {
@@ -408,6 +477,20 @@ fn overlay_primitives(
                 });
             }
         }
+        if let PresentationItemId::Wire(wire_id) = item
+            && let Some(wire) = sheet.wires.get(wire_id)
+        {
+            project_selected_wire_overlay_primitives(*wire_id, &wire.route, &mut overlays);
+        }
+    }
+    if let Some(marquee) = presentation.marquee {
+        overlays.push(DrawPrimitive::Overlay {
+            overlay: Overlay::MarqueeRect {
+                start: marquee.start,
+                end: marquee.end,
+                enclosed: marquee.end.x >= marquee.start.x,
+            },
+        });
     }
     overlays.extend(
         presentation
@@ -429,6 +512,94 @@ fn overlay_primitives(
         }
     }));
     overlays
+}
+
+/// Projects wire highlighting and drag affordances without changing saved routes.
+fn project_selected_wire_overlay_primitives(
+    wire_id: WireId,
+    route: &[Point],
+    overlays: &mut Vec<DrawPrimitive>,
+) {
+    let points = route.iter().copied().map(world_point).collect::<Vec<_>>();
+    let Some((first, last)) = points
+        .first()
+        .zip(points.last())
+        .map(|(first, last)| (*first, *last))
+    else {
+        return;
+    };
+    overlays.push(DrawPrimitive::Overlay {
+        overlay: Overlay::WirePathHighlight {
+            wire_id,
+            points: points.clone(),
+        },
+    });
+    for (vertex_index, position) in points
+        .iter()
+        .copied()
+        .enumerate()
+        .skip(1)
+        .take(points.len().saturating_sub(2))
+    {
+        overlays.push(DrawPrimitive::Overlay {
+            overlay: Overlay::WireVertexHandle {
+                wire_id,
+                vertex_index,
+                position,
+                radius: WIRE_HANDLE_RADIUS,
+            },
+        });
+    }
+    for (is_start, position) in [(true, first), (false, last)] {
+        overlays.push(DrawPrimitive::Overlay {
+            overlay: Overlay::WireEndpointHandle {
+                wire_id,
+                is_start,
+                position,
+                radius: WIRE_HANDLE_RADIUS,
+            },
+        });
+    }
+}
+
+/// Projects selected-wire affordances as transient geometry and hit targets.
+fn project_selected_wire_overlays(
+    wire_id: WireId,
+    points: &[WorldPoint],
+    hit_regions: &mut Vec<HitRegion>,
+) {
+    let Some((first, last)) = points
+        .first()
+        .zip(points.last())
+        .map(|(first, last)| (*first, *last))
+    else {
+        return;
+    };
+    hit_regions.push(HitRegion::WireEndpointHandle {
+        wire_id,
+        is_start: true,
+        position: first,
+        radius: WIRE_HANDLE_RADIUS,
+    });
+    hit_regions.push(HitRegion::WireEndpointHandle {
+        wire_id,
+        is_start: false,
+        position: last,
+        radius: WIRE_HANDLE_RADIUS,
+    });
+    for (vertex_index, position) in points
+        .iter()
+        .copied()
+        .enumerate()
+        .skip(1)
+        .take(points.len().saturating_sub(2))
+    {
+        hit_regions.push(HitRegion::WireVertex {
+            wire_id,
+            vertex_index,
+            position,
+        });
+    }
 }
 
 fn item_bounds(sheet: &athena_domain::Sheet, item: PresentationItemId) -> Option<Rect> {

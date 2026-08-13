@@ -6,8 +6,8 @@ use athena_domain::{
 };
 use athena_geometry::WorldPoint;
 use athena_render::{
-    DrawPrimitive, EditorPresentation, HitRegion, PresentationItemId, SceneLayerKind, Viewport,
-    hit_test, project_sheet,
+    DrawPrimitive, EditorPresentation, HitRegion, Overlay, PresentationItemId, Scene,
+    SceneLayerKind, Viewport, hit_test, project_sheet,
 };
 
 fn project_with_symbol_and_wire() -> (Project, athena_domain::SheetId) {
@@ -53,6 +53,23 @@ fn project_with_symbol_and_wire() -> (Project, athena_domain::SheetId) {
 
     assert!(sheet.symbol_instances.contains_key(&first_id));
     (project, sheet_id)
+}
+
+fn selected_wire_scene_fixture() -> Scene {
+    let (project, sheet_id) = project_with_symbol_and_wire();
+    let wire_id = *project
+        .sheet(sheet_id)
+        .expect("sheet exists")
+        .wires
+        .keys()
+        .next()
+        .expect("fixture contains a wire");
+    project_sheet(
+        &project,
+        sheet_id,
+        &EditorPresentation::with_selected_wire(wire_id),
+    )
+    .expect("sheet exists")
 }
 
 #[test]
@@ -181,8 +198,19 @@ fn terminals_win_over_symbol_bodies_when_regions_overlap() {
 #[test]
 fn wire_vertices_win_over_wire_segments_when_regions_overlap() {
     let (project, sheet_id) = project_with_symbol_and_wire();
-    let scene =
-        project_sheet(&project, sheet_id, &EditorPresentation::default()).expect("sheet exists");
+    let wire_id = *project
+        .sheet(sheet_id)
+        .expect("sheet exists")
+        .wires
+        .keys()
+        .next()
+        .expect("fixture contains a wire");
+    let scene = project_sheet(
+        &project,
+        sheet_id,
+        &EditorPresentation::with_selected_wire(wire_id),
+    )
+    .expect("sheet exists");
 
     assert!(matches!(
         hit_test(&scene, WorldPoint::new(20.0, 0.0), 1.0),
@@ -191,6 +219,73 @@ fn wire_vertices_win_over_wire_segments_when_regions_overlap() {
             ..
         })
     ));
+}
+
+#[test]
+fn selected_wire_projects_highlight_and_vertex_overlays() {
+    let scene = selected_wire_scene_fixture();
+
+    assert!(
+        scene
+            .layers
+            .iter()
+            .flat_map(|layer| &layer.primitives)
+            .any(|primitive| matches!(
+                primitive,
+                DrawPrimitive::Overlay {
+                    overlay: Overlay::WirePathHighlight { .. }
+                }
+            ))
+    );
+    assert!(
+        scene
+            .layers
+            .iter()
+            .flat_map(|layer| &layer.primitives)
+            .any(|primitive| matches!(
+                primitive,
+                DrawPrimitive::Overlay {
+                    overlay: Overlay::WireVertexHandle {
+                        vertex_index: 1,
+                        ..
+                    }
+                }
+            ))
+    );
+}
+
+#[test]
+fn endpoint_handles_win_over_vertices_terminals_and_segments() {
+    let scene = selected_wire_scene_fixture();
+
+    assert!(matches!(
+        hit_test(&scene, WorldPoint::new(0.0, 0.0), 1.0),
+        Some(HitRegion::WireEndpointHandle { .. })
+    ));
+}
+
+#[test]
+fn marquee_overlay_projects_translucent_rectangle() {
+    let (project, sheet_id) = project_with_symbol_and_wire();
+    let scene = project_sheet(
+        &project,
+        sheet_id,
+        &EditorPresentation::with_marquee(WorldPoint::new(0.0, 0.0), WorldPoint::new(80.0, 40.0)),
+    )
+    .expect("sheet exists");
+
+    assert!(
+        scene
+            .layers
+            .iter()
+            .flat_map(|layer| &layer.primitives)
+            .any(|primitive| matches!(
+                primitive,
+                DrawPrimitive::Overlay {
+                    overlay: Overlay::MarqueeRect { .. }
+                }
+            ))
+    );
 }
 
 #[test]

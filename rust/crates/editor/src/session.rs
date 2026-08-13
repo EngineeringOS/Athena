@@ -4,7 +4,7 @@
 use athena_domain::{Project, SheetId, SymbolInstanceId};
 use athena_geometry::{Rect, WorldPoint};
 use athena_render::{
-    EditorPresentation, HitRegion, PresentationItemId, Scene, hit_test, project_sheet,
+    EditorPresentation, HitRegion, Marquee, PresentationItemId, Scene, hit_test, project_sheet,
 };
 use thiserror::Error;
 
@@ -146,6 +146,11 @@ impl EditorSession {
                 mode: MarqueeSelectionMode::Enclosed,
                 shift: modifiers.shift,
             });
+            let world_point = self.presentation.viewport.viewport_to_world(canvas_point);
+            self.presentation.marquee = Some(Marquee {
+                start: world_point,
+                end: world_point,
+            });
         }
         self.refresh_scene()
     }
@@ -159,6 +164,13 @@ impl EditorSession {
         let canvas_point = canvas_pointer.position();
         self.interaction = match self.interaction {
             InteractionState::MarqueeSelecting(state) => {
+                self.presentation.marquee = Some(Marquee {
+                    start: self
+                        .presentation
+                        .viewport
+                        .viewport_to_world(state.start.position()),
+                    end: self.presentation.viewport.viewport_to_world(canvas_point),
+                });
                 InteractionState::MarqueeSelecting(MarqueeState {
                     mode: if canvas_point.x >= state.start.position().x {
                         MarqueeSelectionMode::Enclosed
@@ -197,6 +209,7 @@ impl EditorSession {
             }
         }
         self.interaction = InteractionState::Idle;
+        self.presentation.marquee = None;
         self.refresh_scene()
     }
 
@@ -305,6 +318,12 @@ fn marquee_selection(scene: &Scene, marquee: MarqueeState) -> Vec<PresentationIt
 
 fn selection_region(region: &HitRegion) -> Option<(PresentationItemId, Rect)> {
     match region {
+        HitRegion::WireEndpointHandle {
+            wire_id, position, ..
+        } => Some((
+            PresentationItemId::Wire(*wire_id),
+            Rect::from_corners(*position, *position),
+        )),
         HitRegion::SymbolBody { symbol_id, bounds } => {
             Some((PresentationItemId::Symbol(*symbol_id), *bounds))
         }
@@ -359,6 +378,7 @@ fn rect_intersects(first: Rect, second: Rect) -> bool {
 
 fn item_from_hit(hit: HitRegion) -> Option<PresentationItemId> {
     match hit {
+        HitRegion::WireEndpointHandle { wire_id, .. } => Some(PresentationItemId::Wire(wire_id)),
         HitRegion::SymbolBody { symbol_id, .. } => Some(PresentationItemId::Symbol(symbol_id)),
         HitRegion::WireSegment { wire_id, .. } | HitRegion::WireVertex { wire_id, .. } => {
             Some(PresentationItemId::Wire(wire_id))

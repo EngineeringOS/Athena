@@ -1,3 +1,5 @@
+//! Desktop input adapters that translate canvas-space hits into shared items.
+
 use athena_domain::{Point, SymbolDefinitionId, TerminalId};
 use athena_geometry::WorldPoint;
 use athena_render::{HitRegion, PresentationItemId, Scene, hit_test};
@@ -29,9 +31,9 @@ impl CanvasInput {
             HitRegion::SymbolBody { symbol_id, .. } | HitRegion::Terminal { symbol_id, .. } => {
                 Some(PresentationItemId::Symbol(symbol_id))
             }
-            HitRegion::WireVertex { wire_id, .. } | HitRegion::WireSegment { wire_id, .. } => {
-                Some(PresentationItemId::Wire(wire_id))
-            }
+            HitRegion::WireEndpointHandle { wire_id, .. }
+            | HitRegion::WireVertex { wire_id, .. }
+            | HitRegion::WireSegment { wire_id, .. } => Some(PresentationItemId::Wire(wire_id)),
             HitRegion::Junction { junction_id, .. } => {
                 Some(PresentationItemId::Junction(junction_id))
             }

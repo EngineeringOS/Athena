@@ -3,8 +3,8 @@
 use athena_geometry::{Rect, WorldPoint};
 use athena_render::{DrawPrimitive, Overlay, Scene, Viewport};
 use gpui::{
-    Bounds, IntoElement, PathBuilder, Pixels, Styled, Window, canvas, point, px, quad, rgb, size,
-    transparent_black,
+    Bounds, IntoElement, PathBuilder, Pixels, Styled, Window, canvas, point, px, quad, rgb, rgba,
+    size, transparent_black,
 };
 
 /// Returns a native canvas that paints only shared scene primitives. It does
@@ -153,6 +153,32 @@ fn paint_overlay(
             ),
             viewport,
             rgb(0x2563eb),
+            window,
+        ),
+        Overlay::WirePathHighlight { points, .. } => {
+            paint_polyline(bounds, points, viewport, rgb(0x0ea5e9), window);
+        }
+        Overlay::WireVertexHandle {
+            position, radius, ..
+        }
+        | Overlay::WireEndpointHandle {
+            position, radius, ..
+        } => paint_rect(
+            bounds,
+            Rect::from_corners(
+                WorldPoint::new(position.x - radius, position.y - radius),
+                WorldPoint::new(position.x + radius, position.y + radius),
+            ),
+            viewport,
+            rgb(0x0ea5e9),
+            window,
+        ),
+        // Keep the live selection gesture visible without obscuring the schematic.
+        Overlay::MarqueeRect { start, end, .. } => paint_rect(
+            bounds,
+            Rect::from_corners(*start, *end),
+            viewport,
+            rgba(0x93c5fd55),
             window,
         ),
         Overlay::GuideLine { start, end } => {

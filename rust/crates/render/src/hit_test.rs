@@ -1,12 +1,14 @@
+//! Viewport-aware prioritization of the interactive regions projected by scenes.
+
 use athena_geometry::{WorldPoint, distance_to_segment, point_within_tolerance};
 
 use crate::{HitRegion, Scene};
 
 /// Returns the deterministically topmost region at a viewport-space point.
 ///
-/// Hit priority follows schematic editing semantics: terminals win over a
-/// symbol body, and wire vertices win over wire segments. Equal-priority ties
-/// keep the first region emitted by the deterministic scene projection.
+/// Hit priority follows schematic editing semantics: selected wire endpoint
+/// handles and vertices win over terminals and ordinary wire segments.
+/// Equal-priority ties keep the first region emitted by deterministic projection.
 #[must_use]
 pub fn hit_test(scene: &Scene, viewport_point: WorldPoint, tolerance: f64) -> Option<HitRegion> {
     let world_point = scene.viewport.viewport_to_world(viewport_point);
@@ -31,18 +33,22 @@ pub fn hit_test(scene: &Scene, viewport_point: WorldPoint, tolerance: f64) -> Op
 
 fn hit_priority(region: &HitRegion) -> u8 {
     match region {
-        HitRegion::Terminal { .. } => 6,
-        HitRegion::WireVertex { .. } => 5,
-        HitRegion::Junction { .. } => 4,
-        HitRegion::Annotation { .. } => 3,
-        HitRegion::SymbolBody { .. } => 2,
-        HitRegion::WireSegment { .. } => 1,
+        HitRegion::WireEndpointHandle { .. } => 7,
+        HitRegion::WireVertex { .. } => 6,
+        HitRegion::Terminal { .. } => 5,
+        HitRegion::WireSegment { .. } => 4,
+        HitRegion::SymbolBody { .. } => 3,
+        HitRegion::Annotation { .. } => 2,
+        HitRegion::Junction { .. } => 1,
     }
 }
 
 fn hit_distance(region: &HitRegion, point: WorldPoint, tolerance: f64) -> Option<f64> {
     match region {
-        HitRegion::Terminal {
+        HitRegion::WireEndpointHandle {
+            position, radius, ..
+        }
+        | HitRegion::Terminal {
             position, radius, ..
         }
         | HitRegion::Junction {
