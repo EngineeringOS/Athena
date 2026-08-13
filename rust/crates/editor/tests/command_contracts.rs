@@ -841,7 +841,7 @@ fn split_wire_rejects_an_invalid_product_route_atomically() {
             wire: original,
         })
         .expect("valid original wire");
-    let junction = Junction::new(Point::new(10, 0));
+    let junction = Junction::new(Point::new(0, 0));
     let first = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Junction(junction.id),
@@ -947,4 +947,87 @@ fn each_wire_edit_command_has_exact_snapshot_undo_and_redo() {
             after
         );
     }
+}
+
+#[test]
+fn create_wire_rejects_a_route_that_collapses_during_canonicalization() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let symbol = symbol(definition_id, Point::new(0, 0));
+    let terminal = *symbol
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    place(&mut state, sheet_id, symbol);
+    let before = snapshot_bytes(state.project()).expect("snapshot is valid");
+    let wire = Wire::new(
+        WireEndpoint::Terminal(terminal),
+        WireEndpoint::Terminal(terminal),
+        vec![Point::new(0, 0), Point::new(10, 0), Point::new(0, 0)],
+    );
+
+    assert!(
+        state
+            .apply(EditorCommand::CreateWire { sheet_id, wire })
+            .is_err()
+    );
+    assert_eq!(
+        snapshot_bytes(state.project()).expect("snapshot is valid"),
+        before
+    );
+}
+
+#[test]
+fn split_wire_rejects_a_product_that_collapses_during_canonicalization() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let end = symbol(definition_id, Point::new(20, 0));
+    let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let original = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let wire_id = original.id;
+    state
+        .apply(EditorCommand::CreateWire {
+            sheet_id,
+            wire: original,
+        })
+        .expect("valid source wire");
+    let junction = Junction::new(Point::new(10, 0));
+    let collapsing = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Junction(junction.id),
+        vec![Point::new(0, 0), Point::new(10, 0), Point::new(0, 0)],
+    );
+    let valid = Wire::new(
+        WireEndpoint::Junction(junction.id),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let before = snapshot_bytes(state.project()).expect("snapshot is valid");
+
+    assert!(
+        state
+            .apply(EditorCommand::SplitWire {
+                sheet_id,
+                wire_id,
+                junction,
+                first_wire: collapsing,
+                second_wire: valid,
+            })
+            .is_err()
+    );
+    assert_eq!(
+        snapshot_bytes(state.project()).expect("snapshot is valid"),
+        before
+    );
 }

@@ -369,7 +369,7 @@ pub(crate) fn apply_to_project(
         }
         EditorCommand::CreateWire { sheet_id, wire } => {
             let mut canonical_wire = wire.clone();
-            normalize_wire_route(&mut canonical_wire.route);
+            canonical_wire.route = canonical_wire_route(&canonical_wire.route);
             project
                 .sheet_mut(*sheet_id)
                 .expect("validated sheet")
@@ -395,8 +395,8 @@ pub(crate) fn apply_to_project(
                 .clone();
             let mut canonical_first_wire = first_wire.clone();
             let mut canonical_second_wire = second_wire.clone();
-            normalize_wire_route(&mut canonical_first_wire.route);
-            normalize_wire_route(&mut canonical_second_wire.route);
+            canonical_first_wire.route = canonical_wire_route(&canonical_first_wire.route);
+            canonical_second_wire.route = canonical_wire_route(&canonical_second_wire.route);
             let sheet = project.sheet_mut(*sheet_id).expect("validated sheet");
             sheet.wires.remove(wire_id);
             sheet.junctions.insert(junction.id, junction.clone());
@@ -623,10 +623,13 @@ fn orthogonal_join(start: Point, end: Point) -> Vec<Point> {
 
 /// Removes redundant bends while retaining the endpoint pair and axis alignment.
 fn normalize_wire_route(route: &mut Vec<Point>) {
-    let endpoints = (
-        route[0],
-        *route.last().expect("validated route endpoint pair"),
-    );
+    *route = canonical_wire_route(route);
+}
+
+/// Returns the canonical form without assuming that an external command has
+/// already supplied a valid endpoint pair. Validation checks the result before
+/// the route can enter persistent project state.
+pub(crate) fn canonical_wire_route(route: &[Point]) -> Vec<Point> {
     let without_duplicates = route.iter().copied().fold(Vec::new(), |mut points, point| {
         if points.last().copied() != Some(point) {
             points.push(point);
@@ -643,13 +646,7 @@ fn normalize_wire_route(route: &mut Vec<Point>) {
         }
         normalized.push(point);
     }
-    if normalized.first().copied() != Some(endpoints.0) {
-        normalized.insert(0, endpoints.0);
-    }
-    if normalized.last().copied() != Some(endpoints.1) {
-        normalized.push(endpoints.1);
-    }
-    *route = normalized;
+    normalized
 }
 
 fn stored_item_if_present(sheet: &athena_domain::Sheet, item: ItemId) -> Option<StoredItem> {

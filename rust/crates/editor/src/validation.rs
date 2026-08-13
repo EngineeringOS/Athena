@@ -9,7 +9,7 @@ use athena_domain::{Junction, Point, Project, SheetId, Wire, WireEndpoint};
 
 use crate::{
     ApplyError, EditorCommand, FieldTarget, ItemId, StoredItem, WireSide,
-    command::sheet_contains_item,
+    command::{canonical_wire_route, sheet_contains_item},
 };
 
 /// Performs all identifier and endpoint checks before an editor-state mutation
@@ -257,33 +257,67 @@ fn validate_wire_route(
     wire: &Wire,
     pending_junction: Option<&Junction>,
 ) -> Result<(), ApplyError> {
-    if wire.route.len() < 2 {
-        return Err(ApplyError::WireRouteTooShort { wire_id: wire.id });
+    validate_canonical_wire_route(
+        project,
+        sheet_id,
+        wire.id,
+        &wire.start,
+        &wire.end,
+        &wire.route,
+        pending_junction,
+    )?;
+
+    // CreateWire and SplitWire persist the canonical route, so validate that
+    // exact representation as well. A U-turn can be valid before folding but
+    // collapse to an invalid endpoint pair after redundant bends are removed.
+    let canonical = canonical_wire_route(&wire.route);
+    validate_canonical_wire_route(
+        project,
+        sheet_id,
+        wire.id,
+        &wire.start,
+        &wire.end,
+        &canonical,
+        pending_junction,
+    )
+}
+
+fn validate_canonical_wire_route(
+    project: &Project,
+    sheet_id: SheetId,
+    wire_id: athena_domain::WireId,
+    start_endpoint: &WireEndpoint,
+    end_endpoint: &WireEndpoint,
+    route: &[Point],
+    pending_junction: Option<&Junction>,
+) -> Result<(), ApplyError> {
+    if route.len() < 2 {
+        return Err(ApplyError::WireRouteTooShort { wire_id });
     }
-    let start = endpoint_position(project, sheet_id, &wire.start, pending_junction)?;
-    let end = endpoint_position(project, sheet_id, &wire.end, pending_junction)?;
-    if wire.route[0] != start {
+    let start = endpoint_position(project, sheet_id, start_endpoint, pending_junction)?;
+    let end = endpoint_position(project, sheet_id, end_endpoint, pending_junction)?;
+    if route[0] != start {
         return Err(ApplyError::WireRouteEndpointMismatch {
-            wire_id: wire.id,
+            wire_id,
             endpoint: WireSide::Start,
         });
     }
-    if wire.route.last().copied() != Some(end) {
+    if route.last().copied() != Some(end) {
         return Err(ApplyError::WireRouteEndpointMismatch {
-            wire_id: wire.id,
+            wire_id,
             endpoint: WireSide::End,
         });
     }
-    for (segment_index, segment) in wire.route.windows(2).enumerate() {
+    for (segment_index, segment) in route.windows(2).enumerate() {
         if segment[0] == segment[1] {
             return Err(ApplyError::ZeroLengthWireSegment {
-                wire_id: wire.id,
+                wire_id,
                 segment_index,
             });
         }
         if segment[0].x != segment[1].x && segment[0].y != segment[1].y {
             return Err(ApplyError::NonOrthogonalWireSegment {
-                wire_id: wire.id,
+                wire_id,
                 segment_index,
             });
         }

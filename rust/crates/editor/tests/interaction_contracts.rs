@@ -19,30 +19,26 @@ fn fixture_session_with_two_symbols() -> EditorSession {
 fn fixture_session_with_offset_wire_and_symbol() -> EditorSession {
     let mut session = fixture_session_with_symbols([(100, 80), (220, 120)]);
     let sheet_id = session.active_sheet_id();
-    let symbol_ids = session
-        .state()
-        .project()
-        .sheet(sheet_id)
-        .expect("sheet exists")
-        .symbol_instances
-        .keys()
-        .copied()
-        .collect::<Vec<_>>();
     let sheet = session
         .state()
         .project()
         .sheet(sheet_id)
         .expect("sheet exists");
+    // BTreeMap iteration is UUID order, not placement order. Choose the left
+    // and right symbols by their actual document positions so the fixture wire
+    // consistently crosses the marquee rectangle.
     let first_terminal = *sheet
         .symbol_instances
-        .get(&symbol_ids[0])
+        .values()
+        .find(|symbol| symbol.position == Point::new(100, 80))
         .and_then(|symbol| symbol.terminals.keys().next())
-        .expect("first terminal exists");
+        .expect("left terminal exists");
     let second_terminal = *sheet
         .symbol_instances
-        .get(&symbol_ids[1])
+        .values()
+        .find(|symbol| symbol.position == Point::new(220, 120))
         .and_then(|symbol| symbol.terminals.keys().next())
-        .expect("second terminal exists");
+        .expect("right terminal exists");
     let first_position = sheet
         .symbol_instances
         .values()
