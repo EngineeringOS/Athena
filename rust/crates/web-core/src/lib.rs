@@ -552,42 +552,46 @@ impl WebEditor {
             .map_err(js_error)
     }
 
-    pub fn pointer_click(&mut self, x: i64, y: i64) -> Result<(), JsValue> {
-        self.core.pointer_click(x, y).map_err(js_error)
+    pub fn pointer_click(&mut self, x: i32, y: i32) -> Result<(), JsValue> {
+        self.core
+            .pointer_click(i64::from(x), i64::from(y))
+            .map_err(js_error)
     }
 
     pub fn pointer_down(
         &mut self,
-        x: i64,
-        y: i64,
+        x: i32,
+        y: i32,
         shift: bool,
         command: bool,
     ) -> Result<bool, JsValue> {
         self.core
-            .pointer_down(x, y, shift, command)
+            .pointer_down(i64::from(x), i64::from(y), shift, command)
             .map_err(js_error)
     }
 
     pub fn pointer_move(
         &mut self,
-        x: i64,
-        y: i64,
+        x: i32,
+        y: i32,
         shift: bool,
         command: bool,
     ) -> Result<(), JsValue> {
         self.core
-            .pointer_move(x, y, shift, command)
+            .pointer_move(i64::from(x), i64::from(y), shift, command)
             .map_err(js_error)
     }
 
     pub fn pointer_up(
         &mut self,
-        x: i64,
-        y: i64,
+        x: i32,
+        y: i32,
         shift: bool,
         command: bool,
     ) -> Result<(), JsValue> {
-        self.core.pointer_up(x, y, shift, command).map_err(js_error)
+        self.core
+            .pointer_up(i64::from(x), i64::from(y), shift, command)
+            .map_err(js_error)
     }
 
     pub fn begin_wire(&mut self) {
@@ -613,11 +617,11 @@ impl WebEditor {
     pub fn insert_selected_wire_vertex(
         &mut self,
         segment_index: usize,
-        x: i64,
-        y: i64,
+        x: i32,
+        y: i32,
     ) -> Result<(), JsValue> {
         self.core
-            .insert_selected_wire_vertex(segment_index, Point::new(x, y))
+            .insert_selected_wire_vertex(segment_index, Point::new(i64::from(x), i64::from(y)))
             .map_err(js_error)
     }
 
@@ -663,9 +667,9 @@ impl WebEditor {
         self.core.update_sheet_name(value).map_err(js_error)
     }
 
-    pub fn update_sheet_grid(&mut self, enabled: bool, spacing: i64) -> Result<(), JsValue> {
+    pub fn update_sheet_grid(&mut self, enabled: bool, spacing: i32) -> Result<(), JsValue> {
         self.core
-            .update_sheet_grid(enabled, spacing)
+            .update_sheet_grid(enabled, i64::from(spacing))
             .map_err(js_error)
     }
 

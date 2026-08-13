@@ -108,10 +108,11 @@ impl NativeShell {
     }
 
     fn canvas_point(position: gpui::Point<gpui::Pixels>) -> athena_domain::Point {
-        // GPUI pointer positions are window-relative. This workbench has fixed
-        // chrome widths, while the 24px scene inset belongs to the renderer.
-        const CANVAS_LEFT: f32 = 208.0 + 12.0 + 24.0;
-        const CANVAS_TOP: f32 = 40.0 + 12.0 + 24.0;
+        // GPUI pointer positions are window-relative. The canvas host starts
+        // after the fixed 208px library and 40px toolbar; its 1px border and
+        // the renderer's 24px scene inset are the only local offsets.
+        const CANVAS_LEFT: f32 = 208.0 + 1.0 + 24.0;
+        const CANVAS_TOP: f32 = 40.0 + 1.0 + 24.0;
         athena_domain::Point::new(
             (position.x.as_f32() - CANVAS_LEFT).round() as i64,
             (position.y.as_f32() - CANVAS_TOP).round() as i64,
@@ -407,7 +408,6 @@ impl Render for NativeShell {
                             .bg(rgb(0xf8fafc))
                             .border_1()
                             .border_color(rgb(0xcbd5e1))
-                            .p_4()
                             .text_color(rgb(0x334155))
                             .on_mouse_down(MouseButton::Left, cx.listener(Self::canvas_mouse_down))
                             .on_mouse_move(cx.listener(Self::canvas_mouse_move))
