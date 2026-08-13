@@ -1,11 +1,14 @@
 use athena_domain::{
     ElectricalKind, Point, Project, SymbolDefinition, SymbolInstance, Terminal, Wire, WireEndpoint,
 };
-use athena_editor::{EditorCommand, EditorSession, PointerModifiers};
+use athena_editor::{
+    EditorCommand, EditorSession, MarqueeSelectionMode, PointerModifiers, PresentationPointer,
+};
 use athena_geometry::WorldPoint;
+use athena_render::{PresentationItemId, Viewport};
 
-fn world(x: i64, y: i64) -> WorldPoint {
-    WorldPoint::new(x as f64, y as f64)
+fn canvas(x: i64, y: i64) -> PresentationPointer {
+    PresentationPointer::new(x as f64, y as f64)
 }
 
 fn fixture_session_with_two_symbols() -> EditorSession {
@@ -105,10 +108,10 @@ fn empty_click_clears_selection() {
         .select_only_symbol(first)
         .expect("symbol can be selected");
     session
-        .pointer_down(world(300, 300), PointerModifiers::default())
+        .pointer_down(canvas(300, 300), PointerModifiers::default())
         .expect("pointer down succeeds");
     session
-        .pointer_up(world(300, 300), PointerModifiers::default())
+        .pointer_up(canvas(300, 300), PointerModifiers::default())
         .expect("pointer up succeeds");
 
     assert!(session.presentation().selected.is_empty());
@@ -128,14 +131,14 @@ fn shift_click_toggles_symbol_selection() {
         .collect::<Vec<_>>();
 
     session
-        .pointer_down(world(100, 80), PointerModifiers::default())
+        .pointer_down(canvas(100, 80), PointerModifiers::default())
         .expect("first symbol hit");
     session
-        .pointer_up(world(100, 80), PointerModifiers::default())
+        .pointer_up(canvas(100, 80), PointerModifiers::default())
         .expect("first symbol release");
     session
         .pointer_down(
-            world(200, 80),
+            canvas(200, 80),
             PointerModifiers {
                 shift: true,
                 ..PointerModifiers::default()
@@ -144,7 +147,7 @@ fn shift_click_toggles_symbol_selection() {
         .expect("second symbol hit");
     session
         .pointer_up(
-            world(200, 80),
+            canvas(200, 80),
             PointerModifiers {
                 shift: true,
                 ..PointerModifiers::default()
@@ -162,28 +165,28 @@ fn marquee_direction_changes_selection_rule() {
     let mut session = fixture_session_with_offset_wire_and_symbol();
 
     session
-        .pointer_down(world(0, 0), PointerModifiers::default())
+        .pointer_down(canvas(0, 0), PointerModifiers::default())
         .expect("marquee starts");
     session
-        .pointer_move(world(80, 40), PointerModifiers::default())
+        .pointer_move(canvas(80, 40), PointerModifiers::default())
         .expect("marquee updates");
     assert_eq!(
-        session.debug_marquee_mode(),
-        Some(athena_editor::DebugMarqueeMode::Enclosed)
+        session.marquee_selection_mode(),
+        Some(MarqueeSelectionMode::Enclosed)
     );
     session
-        .pointer_up(world(80, 40), PointerModifiers::default())
+        .pointer_up(canvas(80, 40), PointerModifiers::default())
         .expect("marquee completes");
 
     session
-        .pointer_down(world(80, 40), PointerModifiers::default())
+        .pointer_down(canvas(80, 40), PointerModifiers::default())
         .expect("reverse marquee starts");
     session
-        .pointer_move(world(0, 0), PointerModifiers::default())
+        .pointer_move(canvas(0, 0), PointerModifiers::default())
         .expect("reverse marquee updates");
     assert_eq!(
-        session.debug_marquee_mode(),
-        Some(athena_editor::DebugMarqueeMode::Touched)
+        session.marquee_selection_mode(),
+        Some(MarqueeSelectionMode::Touched)
     );
 }
 
@@ -202,10 +205,10 @@ fn marquee_selects_only_enclosed_items_left_to_right_and_touched_items_right_to_
         .expect("partially covered symbol exists");
 
     session
-        .pointer_down(world(80, 60), PointerModifiers::default())
+        .pointer_down(canvas(80, 60), PointerModifiers::default())
         .expect("enclosed marquee starts on empty sheet");
     session
-        .pointer_up(world(105, 85), PointerModifiers::default())
+        .pointer_up(canvas(105, 85), PointerModifiers::default())
         .expect("enclosed marquee completes");
     assert!(
         !session.is_symbol_selected(partially_covered),
@@ -213,13 +216,154 @@ fn marquee_selects_only_enclosed_items_left_to_right_and_touched_items_right_to_
     );
 
     session
-        .pointer_down(world(110, 60), PointerModifiers::default())
+        .pointer_down(canvas(110, 60), PointerModifiers::default())
         .expect("touched marquee starts on empty sheet");
     session
-        .pointer_up(world(90, 90), PointerModifiers::default())
+        .pointer_up(canvas(90, 90), PointerModifiers::default())
         .expect("touched marquee completes");
     assert!(
         session.is_symbol_selected(partially_covered),
         "a partially covered symbol is touched"
     );
+}
+
+#[test]
+fn shift_marquee_extends_and_toggles_the_existing_selection() {
+    let mut session = fixture_session_with_two_symbols();
+    let sheet = session
+        .state()
+        .project()
+        .sheet(session.active_sheet_id())
+        .expect("sheet exists");
+    let first = sheet
+        .symbol_instances
+        .values()
+        .find(|symbol| symbol.position == Point::new(100, 80))
+        .map(|symbol| symbol.id)
+        .expect("first symbol exists");
+    let second = sheet
+        .symbol_instances
+        .values()
+        .find(|symbol| symbol.position == Point::new(200, 80))
+        .map(|symbol| symbol.id)
+        .expect("second symbol exists");
+    let shift = PointerModifiers {
+        shift: true,
+        ..PointerModifiers::default()
+    };
+
+    session
+        .select_only_symbol(first)
+        .expect("first symbol selects");
+    session
+        .pointer_down(canvas(190, 60), shift)
+        .expect("shift marquee starts");
+    session
+        .pointer_up(canvas(210, 90), shift)
+        .expect("shift marquee completes");
+    assert_eq!(session.presentation().selected.len(), 2);
+    assert!(session.is_symbol_selected(first));
+    assert!(session.is_symbol_selected(second));
+
+    session
+        .pointer_down(canvas(190, 60), shift)
+        .expect("toggle marquee starts");
+    session
+        .pointer_up(canvas(210, 90), shift)
+        .expect("toggle marquee completes");
+    assert_eq!(session.presentation().selected.len(), 1);
+    assert!(session.is_symbol_selected(first));
+    assert!(!session.is_symbol_selected(second));
+}
+
+#[test]
+fn partial_wire_marquee_is_enclosed_only_right_to_left() {
+    let mut session = fixture_session_with_offset_wire_and_symbol();
+    let wire_id = *session
+        .state()
+        .project()
+        .sheet(session.active_sheet_id())
+        .expect("sheet exists")
+        .wires
+        .keys()
+        .next()
+        .expect("wire exists");
+
+    session
+        .pointer_down(canvas(100, 90), PointerModifiers::default())
+        .expect("enclosed starts");
+    session
+        .pointer_up(canvas(130, 110), PointerModifiers::default())
+        .expect("enclosed completes");
+    assert!(
+        !session
+            .presentation()
+            .selected
+            .contains(&PresentationItemId::Wire(wire_id))
+    );
+
+    session
+        .pointer_down(canvas(130, 90), PointerModifiers::default())
+        .expect("touched starts");
+    session
+        .pointer_up(canvas(100, 110), PointerModifiers::default())
+        .expect("touched completes");
+    assert!(
+        session
+            .presentation()
+            .selected
+            .contains(&PresentationItemId::Wire(wire_id))
+    );
+}
+
+#[test]
+fn viewport_pointer_selects_and_marquees_using_the_scene_viewport() {
+    let mut session = fixture_session_with_two_symbols();
+    session.set_viewport(Viewport {
+        origin: WorldPoint::new(50.0, 25.0),
+        zoom: 2.0,
+    });
+    let viewport = session.presentation().viewport;
+    let first_world = WorldPoint::new(100.0, 80.0);
+    let first_canvas = viewport.world_to_viewport(first_world);
+    let first = session
+        .state()
+        .project()
+        .sheet(session.active_sheet_id())
+        .expect("sheet exists")
+        .symbol_instances
+        .values()
+        .find(|symbol| symbol.position == Point::new(100, 80))
+        .map(|symbol| symbol.id)
+        .expect("first symbol exists");
+
+    session
+        .pointer_down(
+            PresentationPointer::new(first_canvas.x, first_canvas.y),
+            PointerModifiers::default(),
+        )
+        .expect("viewport hit selects");
+    session
+        .pointer_up(
+            PresentationPointer::new(first_canvas.x, first_canvas.y),
+            PointerModifiers::default(),
+        )
+        .expect("viewport hit releases");
+    assert!(session.is_symbol_selected(first));
+
+    let start = viewport.world_to_viewport(WorldPoint::new(110.0, 60.0));
+    let end = viewport.world_to_viewport(WorldPoint::new(90.0, 90.0));
+    session
+        .pointer_down(
+            PresentationPointer::new(start.x, start.y),
+            PointerModifiers::default(),
+        )
+        .expect("viewport marquee starts");
+    session
+        .pointer_up(
+            PresentationPointer::new(end.x, end.y),
+            PointerModifiers::default(),
+        )
+        .expect("viewport marquee completes");
+    assert!(session.is_symbol_selected(first));
 }

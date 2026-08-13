@@ -9,8 +9,8 @@ use athena_render::{
 use thiserror::Error;
 
 use crate::{
-    DebugMarqueeMode, DragSelectionState, EditorCommand, EditorState, History, HistoryError,
-    InteractionState, MarqueeState, PointerModifiers, SelectionState,
+    DragSelectionState, EditorCommand, EditorState, History, HistoryError, InteractionState,
+    MarqueeSelectionMode, MarqueeState, PointerModifiers, PresentationPointer, SelectionState,
 };
 
 /// Errors produced by the shell-facing editor-session contract.
@@ -64,6 +64,10 @@ impl EditorSession {
     pub fn presentation(&self) -> &EditorPresentation {
         &self.presentation
     }
+    /// Replaces the non-persistent canvas viewport used for scene projection.
+    pub fn set_viewport(&mut self, viewport: athena_render::Viewport) {
+        self.presentation.viewport = viewport;
+    }
     /// Returns the current transient interaction mode.
     #[must_use]
     pub fn interaction(&self) -> InteractionState {
@@ -80,7 +84,7 @@ impl EditorSession {
     /// Synchronizes presentation selection with the current transient state.
     pub fn refresh_scene(&mut self) -> Result<(), SessionError> {
         if project_sheet(
-            &self.state.project(),
+            self.state.project(),
             self.active_sheet_id,
             &self.presentation,
         )
@@ -92,15 +96,10 @@ impl EditorSession {
         Ok(())
     }
 
-    /// Test-facing alias for refreshing the projected scene.
-    pub fn refresh_scene_for_test(&mut self) -> Result<(), SessionError> {
-        self.refresh_scene()
-    }
-
     /// Projects the active sheet into a deterministic render scene.
     pub fn scene(&self) -> Result<Scene, SessionError> {
         project_sheet(
-            &self.state.project(),
+            self.state.project(),
             self.active_sheet_id,
             &self.presentation,
         )
@@ -122,28 +121,30 @@ impl EditorSession {
     /// Starts a pointer gesture and resolves the topmost hit target.
     pub fn pointer_down(
         &mut self,
-        point: WorldPoint,
+        canvas_pointer: PresentationPointer,
         modifiers: PointerModifiers,
     ) -> Result<(), SessionError> {
         let scene = self.scene()?;
-        if let Some(item) = hit_test(&scene, point, 6.0).and_then(item_from_hit) {
+        let canvas_point = canvas_pointer.position();
+        if let Some(item) = hit_test(&scene, canvas_point, 6.0).and_then(item_from_hit) {
             if modifiers.shift {
                 self.selection.toggle(item);
             } else {
                 self.selection.replace(item);
             }
             self.interaction = InteractionState::DraggingSelection(DragSelectionState {
-                start: point,
-                current: point,
+                start: canvas_point,
+                current: canvas_point,
             });
         } else {
             if !modifiers.shift {
                 self.selection.clear();
             }
             self.interaction = InteractionState::MarqueeSelecting(MarqueeState {
-                start: point,
-                current: point,
-                mode: DebugMarqueeMode::Enclosed,
+                start: canvas_point,
+                current: canvas_point,
+                mode: MarqueeSelectionMode::Enclosed,
+                shift: modifiers.shift,
             });
         }
         self.refresh_scene()
@@ -152,24 +153,25 @@ impl EditorSession {
     /// Updates the active pointer gesture.
     pub fn pointer_move(
         &mut self,
-        point: WorldPoint,
+        canvas_pointer: PresentationPointer,
         _modifiers: PointerModifiers,
     ) -> Result<(), SessionError> {
+        let canvas_point = canvas_pointer.position();
         self.interaction = match self.interaction {
             InteractionState::MarqueeSelecting(state) => {
                 InteractionState::MarqueeSelecting(MarqueeState {
-                    mode: if point.x >= state.start.x {
-                        DebugMarqueeMode::Enclosed
+                    mode: if canvas_point.x >= state.start.x {
+                        MarqueeSelectionMode::Enclosed
                     } else {
-                        DebugMarqueeMode::Touched
+                        MarqueeSelectionMode::Touched
                     },
-                    current: point,
+                    current: canvas_point,
                     ..state
                 })
             }
             InteractionState::DraggingSelection(state) => {
                 InteractionState::DraggingSelection(DragSelectionState {
-                    current: point,
+                    current: canvas_point,
                     ..state
                 })
             }
@@ -181,14 +183,18 @@ impl EditorSession {
     /// Completes the active pointer gesture.
     pub fn pointer_up(
         &mut self,
-        point: WorldPoint,
+        canvas_pointer: PresentationPointer,
         _modifiers: PointerModifiers,
     ) -> Result<(), SessionError> {
-        self.pointer_move(point, PointerModifiers::default())?;
+        self.pointer_move(canvas_pointer, PointerModifiers::default())?;
         if let InteractionState::MarqueeSelecting(marquee) = self.interaction {
             let scene = self.scene()?;
-            self.selection
-                .replace_all(marquee_selection(&scene, marquee));
+            let items = marquee_selection(&scene, marquee);
+            if marquee.shift {
+                self.selection.toggle_all(items);
+            } else {
+                self.selection.replace_all(items);
+            }
         }
         self.interaction = InteractionState::Idle;
         self.refresh_scene()
@@ -196,7 +202,7 @@ impl EditorSession {
 
     #[must_use]
     /// Exposes the current directional marquee rule for focused contracts.
-    pub fn debug_marquee_mode(&self) -> Option<DebugMarqueeMode> {
+    pub fn marquee_selection_mode(&self) -> Option<MarqueeSelectionMode> {
         match self.interaction {
             InteractionState::MarqueeSelecting(state) => Some(state.mode),
             _ => None,
@@ -285,10 +291,10 @@ fn marquee_selection(scene: &Scene, marquee: MarqueeState) -> Vec<PresentationIt
         .into_iter()
         .filter_map(|(item, regions)| {
             let selected = match marquee.mode {
-                DebugMarqueeMode::Enclosed => {
+                MarqueeSelectionMode::Enclosed => {
                     regions.iter().all(|region| rect_contains(bounds, *region))
                 }
-                DebugMarqueeMode::Touched => regions
+                MarqueeSelectionMode::Touched => regions
                     .iter()
                     .any(|region| rect_intersects(bounds, *region)),
             };

@@ -14,9 +14,9 @@ pub use command::{
 };
 pub use history::{History, HistoryError, snapshot_bytes, snapshots_equal};
 pub use interaction::{
-    DebugMarqueeMode, DragSelectionState, InteractionState, MarqueeState, PointerModifiers,
-    PropertyEditingState, ToolPlacementTransientState, WireEndpointReconnectState,
-    WireVertexDragState,
+    DragSelectionState, InteractionState, MarqueeSelectionMode, MarqueeState, PointerModifiers,
+    PresentationPointer, PropertyEditingState, ToolPlacementTransientState,
+    WireEndpointReconnectState, WireVertexDragState,
 };
 pub use persistence::{
     InMemoryPersistence, OutboxStore, PersistenceError, SnapshotSink, SnapshotSource,

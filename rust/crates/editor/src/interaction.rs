@@ -14,9 +14,32 @@ pub struct PointerModifiers {
 
 /// Directional marquee semantics, matching the editor reference behavior.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum DebugMarqueeMode {
+pub enum MarqueeSelectionMode {
     Enclosed,
     Touched,
+}
+
+/// A pointer position in viewport/canvas coordinates supplied by a shell.
+///
+/// World coordinates remain reserved for persisted schematic geometry and scene
+/// projection. The session converts this type only at render interaction edges.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PresentationPointer {
+    position: WorldPoint,
+}
+
+impl PresentationPointer {
+    /// Creates a canvas-space pointer position.
+    #[must_use]
+    pub const fn new(x: f64, y: f64) -> Self {
+        Self {
+            position: WorldPoint::new(x, y),
+        }
+    }
+
+    pub(crate) const fn position(self) -> WorldPoint {
+        self.position
+    }
 }
 
 /// Current marquee drag geometry and directional rule.
@@ -24,7 +47,9 @@ pub enum DebugMarqueeMode {
 pub struct MarqueeState {
     pub start: WorldPoint,
     pub current: WorldPoint,
-    pub mode: DebugMarqueeMode,
+    pub mode: MarqueeSelectionMode,
+    /// Preserves additive/toggle intent across a multi-event marquee gesture.
+    pub shift: bool,
 }
 
 /// Current selection drag geometry.
@@ -61,8 +86,9 @@ pub struct ToolPlacementTransientState {
 }
 
 /// Explicit transient interaction modes shared by all shells.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum InteractionState {
+    #[default]
     Idle,
     MarqueeSelecting(MarqueeState),
     DraggingSelection(DragSelectionState),
@@ -70,10 +96,4 @@ pub enum InteractionState {
     ReconnectingWireEndpoint(WireEndpointReconnectState),
     EditingProperties(PropertyEditingState),
     ToolPlacementTransient(ToolPlacementTransientState),
-}
-
-impl Default for InteractionState {
-    fn default() -> Self {
-        Self::Idle
-    }
 }

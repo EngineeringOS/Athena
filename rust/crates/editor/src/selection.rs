@@ -34,6 +34,13 @@ impl SelectionState {
         self.items.extend(items);
     }
 
+    /// Toggles every supplied item while preserving unrelated selection items.
+    pub fn toggle_all(&mut self, items: impl IntoIterator<Item = PresentationItemId>) {
+        for item in items {
+            self.toggle(item);
+        }
+    }
+
     /// Toggles one item while preserving the rest of the selection.
     pub fn toggle(&mut self, item: PresentationItemId) {
         if !self.items.insert(item) {
