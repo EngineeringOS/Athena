@@ -384,3 +384,49 @@ fn viewport_pointer_selects_and_marquees_using_the_scene_viewport() {
         .expect("viewport marquee completes");
     assert!(session.is_symbol_selected(first));
 }
+
+#[test]
+fn dragging_a_selected_wire_vertex_commits_the_shared_vertex_command_on_release() {
+    let mut session = fixture_session_with_offset_wire_and_symbol();
+    let sheet_id = session.active_sheet_id();
+    let (wire_id, original_vertex) = session
+        .state()
+        .project()
+        .sheet(sheet_id)
+        .expect("sheet exists")
+        .wires
+        .iter()
+        .next()
+        .map(|(id, wire)| (*id, wire.route[1]))
+        .expect("fixture wire has an interior vertex");
+
+    session
+        .select_only(PresentationItemId::Wire(wire_id))
+        .expect("wire selects before its handle is dragged");
+    session
+        .pointer_down(
+            canvas(original_vertex.x, original_vertex.y),
+            PointerModifiers::default(),
+        )
+        .expect("vertex handle starts a drag");
+    assert!(matches!(
+        session.interaction(),
+        InteractionState::EditingWireVertex(state)
+            if state.wire_id == wire_id && state.vertex_index == 1
+    ));
+
+    session
+        .pointer_move(canvas(160, 120), PointerModifiers::default())
+        .expect("vertex drag updates");
+    session
+        .pointer_up(canvas(160, 120), PointerModifiers::default())
+        .expect("vertex drag commits");
+
+    let wire = session
+        .state()
+        .project()
+        .wire(sheet_id, wire_id)
+        .expect("wire remains in the active sheet");
+    assert!(wire.route.contains(&Point::new(160, 120)));
+    assert_eq!(session.history_lengths(), (2, 0));
+}

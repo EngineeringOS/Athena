@@ -62,9 +62,15 @@ pub struct DragSelectionState {
 }
 
 /// Minimal wire-vertex edit state reserved for the wire-editing task.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WireVertexDragState {
+    /// Canvas position at which the handle was grabbed.
+    pub start: WorldPoint,
+    /// Latest canvas position supplied by the active shell.
+    pub current: WorldPoint,
+    /// Stable identity of the wire currently being edited.
     pub wire_id: athena_domain::WireId,
+    /// Index of the interior route vertex being edited.
     pub vertex_index: usize,
 }
 

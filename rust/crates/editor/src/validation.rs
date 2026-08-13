@@ -207,6 +207,12 @@ pub(crate) fn validate_command(
                 return Err(ApplyError::InvalidSheetSettings);
             }
         }
+        EditorCommand::RenameSheet { sheet_id, name } => {
+            let _ = sheet(project, *sheet_id)?;
+            if name.trim().is_empty() {
+                return Err(ApplyError::InvalidSheetName);
+            }
+        }
         EditorCommand::RestoreItems {
             sheet_id,
             remove,

@@ -1,46 +1,240 @@
+//! GPUI workbench composition for the electrical schematic desktop shell.
+//!
+//! Rendering and controls here delegate all schematic behavior to `DesktopEditor`
+//! and its shared editor session.
+
 use gpui::{
-    App, Application, Context, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
-    Render, Window, WindowOptions, div, prelude::*, px, rgb,
+    App, Application, Context, Entity, InteractiveElement, IntoElement, MouseButton,
+    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Render, Subscription, Window, WindowOptions, div,
+    prelude::*, px, rgb,
 };
-use gpui_component::{PixelsExt, Root, Sizable, button::Button, scroll::ScrollableElement};
+use gpui_component::{
+    PixelsExt, Root, Sizable,
+    button::Button,
+    input::{Input, InputEvent, InputState},
+    scroll::ScrollableElement,
+};
 
 use crate::{app::DesktopEditor, canvas::render_scene};
 
 pub struct NativeShell {
     editor: DesktopEditor,
+    reference_input: Entity<InputState>,
+    description_input: Entity<InputState>,
+    wire_label_input: Entity<InputState>,
+    sheet_name_input: Entity<InputState>,
+    grid_spacing_input: Entity<InputState>,
+    grid_visible: bool,
+    canvas_gesture_active: bool,
+    synchronizing_inspector: bool,
+    _reference_subscription: Subscription,
+    _description_subscription: Subscription,
+    _wire_label_subscription: Subscription,
+    _sheet_name_subscription: Subscription,
+    _grid_spacing_subscription: Subscription,
 }
 
 impl NativeShell {
-    fn new() -> Self {
+    fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let reference_input = cx.new(|cx| InputState::new(window, cx).placeholder("Reference"));
+        let reference_subscription = cx.subscribe(&reference_input, |this, input, event, cx| {
+            if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
+                let _ = this
+                    .editor
+                    .set_selected_symbol_reference(&input.read(cx).value());
+                cx.notify();
+            }
+        });
+        let description_input = cx.new(|cx| InputState::new(window, cx).placeholder("Description"));
+        let description_subscription =
+            cx.subscribe(&description_input, |this, input, event, cx| {
+                if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
+                    let _ = this
+                        .editor
+                        .set_selected_symbol_description(&input.read(cx).value());
+                    cx.notify();
+                }
+            });
+        let wire_label_input = cx.new(|cx| InputState::new(window, cx).placeholder("Wire label"));
+        let wire_label_subscription = cx.subscribe(&wire_label_input, |this, input, event, cx| {
+            if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
+                let _ = this.editor.set_selected_wire_label(&input.read(cx).value());
+                cx.notify();
+            }
+        });
+        let sheet_name_input = cx.new(|cx| InputState::new(window, cx).default_value("Sheet 1"));
+        let sheet_name_subscription = cx.subscribe(&sheet_name_input, |this, input, event, cx| {
+            if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
+                let (_, spacing) = this.editor.sheet_grid_for_test();
+                let _ = this.editor.set_sheet_properties(
+                    &input.read(cx).value(),
+                    this.grid_visible,
+                    spacing,
+                );
+                cx.notify();
+            }
+        });
+        let grid_spacing_input = cx.new(|cx| InputState::new(window, cx).default_value("10"));
+        let grid_spacing_subscription =
+            cx.subscribe(&grid_spacing_input, |this, input, event, cx| {
+                if !this.synchronizing_inspector
+                    && matches!(event, InputEvent::Change)
+                    && let Ok(spacing) = input.read(cx).value().parse::<i64>()
+                {
+                    let _ = this.editor.set_sheet_properties(
+                        &this.editor.sheet_name_for_test(),
+                        this.grid_visible,
+                        spacing,
+                    );
+                    cx.notify();
+                }
+            });
         Self {
             editor: DesktopEditor::new("Untitled electrical project"),
+            reference_input,
+            description_input,
+            wire_label_input,
+            sheet_name_input,
+            grid_spacing_input,
+            grid_visible: true,
+            canvas_gesture_active: false,
+            synchronizing_inspector: false,
+            _reference_subscription: reference_subscription,
+            _description_subscription: description_subscription,
+            _wire_label_subscription: wire_label_subscription,
+            _sheet_name_subscription: sheet_name_subscription,
+            _grid_spacing_subscription: grid_spacing_subscription,
         }
     }
 
-    fn canvas_click(
+    fn canvas_point(position: gpui::Point<gpui::Pixels>) -> athena_domain::Point {
+        // GPUI pointer positions are window-relative. This workbench has fixed
+        // chrome widths, while the 24px scene inset belongs to the renderer.
+        const CANVAS_LEFT: f32 = 208.0 + 12.0 + 24.0;
+        const CANVAS_TOP: f32 = 40.0 + 12.0 + 24.0;
+        athena_domain::Point::new(
+            (position.x.as_f32() - CANVAS_LEFT).round() as i64,
+            (position.y.as_f32() - CANVAS_TOP).round() as i64,
+        )
+    }
+
+    fn modifiers(modifiers: gpui::Modifiers) -> crate::app::DesktopModifiers {
+        crate::app::DesktopModifiers {
+            shift: modifiers.shift,
+            command: modifiers.secondary(),
+        }
+    }
+
+    fn canvas_mouse_down(
         &mut self,
         event: &MouseDownEvent,
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        // GPUI reports window coordinates. The canvas starts after the top bar,
-        // library panel, and its 12px padding; convert back through the scene
-        // renderer's world transform before handing the point to the editor.
-        const CANVAS_LEFT: f32 = 208.0 + 12.0;
-        const CANVAS_TOP: f32 = 40.0 + 12.0;
-        let point = athena_domain::Point::new(
-            (event.position.x.as_f32() - CANVAS_LEFT - 24.0).round() as i64,
-            (event.position.y.as_f32() - CANVAS_TOP - 24.0).round() as i64,
-        );
-        let _ = self
-            .editor
-            .canvas_click(self.editor.canvas_point_to_world(point));
+        let point = Self::canvas_point(event.position);
+        match self.editor.active_tool() {
+            crate::input::ActiveTool::Select | crate::input::ActiveTool::Pan => {
+                self.canvas_gesture_active = self
+                    .editor
+                    .pointer_down(point, Self::modifiers(event.modifiers))
+                    .is_ok();
+            }
+            crate::input::ActiveTool::PlaceSymbol(_) | crate::input::ActiveTool::Wire { .. } => {
+                let world = self.editor.canvas_point_to_world(point);
+                let _ = self.editor.canvas_click(world);
+            }
+        }
         cx.notify();
+    }
+
+    fn canvas_mouse_move(
+        &mut self,
+        event: &MouseMoveEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.canvas_gesture_active && event.dragging() {
+            let _ = self.editor.pointer_move(
+                Self::canvas_point(event.position),
+                Self::modifiers(event.modifiers),
+            );
+            cx.notify();
+        }
+    }
+
+    fn canvas_mouse_up(
+        &mut self,
+        event: &MouseUpEvent,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.canvas_gesture_active {
+            let _ = self.editor.pointer_up(
+                Self::canvas_point(event.position),
+                Self::modifiers(event.modifiers),
+            );
+            self.canvas_gesture_active = false;
+        }
+        cx.notify();
+    }
+
+    fn synchronize_input(
+        input: &Entity<InputState>,
+        value: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if input.read(cx).value().as_ref() != value {
+            input.update(cx, |input, cx| {
+                input.set_value(value.to_owned(), window, cx)
+            });
+        }
+    }
+
+    fn synchronize_inspector(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.synchronizing_inspector = true;
+        Self::synchronize_input(
+            &self.reference_input,
+            self.editor
+                .selected_symbol_reference_for_test()
+                .as_deref()
+                .unwrap_or_default(),
+            window,
+            cx,
+        );
+        Self::synchronize_input(
+            &self.description_input,
+            self.editor
+                .selected_symbol_description_for_test()
+                .as_deref()
+                .unwrap_or_default(),
+            window,
+            cx,
+        );
+        Self::synchronize_input(
+            &self.wire_label_input,
+            self.editor
+                .selected_wire_label_for_test()
+                .as_deref()
+                .unwrap_or_default(),
+            window,
+            cx,
+        );
+        Self::synchronize_input(
+            &self.sheet_name_input,
+            &self.editor.sheet_name_for_test(),
+            window,
+            cx,
+        );
+        let (_, spacing) = self.editor.sheet_grid_for_test();
+        Self::synchronize_input(&self.grid_spacing_input, &spacing.to_string(), window, cx);
+        self.synchronizing_inspector = false;
     }
 }
 
 impl Render for NativeShell {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.synchronize_inspector(window, cx);
         let symbol_buttons = self
             .editor
             .catalog_symbols()
@@ -58,12 +252,21 @@ impl Render for NativeShell {
             .collect::<Vec<_>>();
         let scene = self.editor.scene();
         let status = format!(
-            "{}   |   symbols: {}   |   undo: {} redo: {}",
+            "{}   |   symbols: {}   |   wires: {}   |   selected: {}   |   undo: {} redo: {}",
             self.editor.project_name(),
             self.editor.symbol_count(),
+            self.editor.wire_count(),
+            self.editor.selected_count(),
             self.editor.history_lengths().0,
             self.editor.history_lengths().1
         );
+        let selected_reference = self.editor.selected_symbol_reference_for_test();
+        let inspector_summary = match selected_reference {
+            Some(reference) => format!("Selected symbol: {reference}"),
+            None => "Select a symbol to edit its reference".to_owned(),
+        };
+        let (grid_visible, _) = self.editor.sheet_grid_for_test();
+        self.grid_visible = grid_visible;
 
         div()
             .size_full()
@@ -81,9 +284,7 @@ impl Render for NativeShell {
                     .bg(rgb(0x0f172a))
                     .text_color(rgb(0xf8fafc))
                     .child("Athena Electrical")
-                    .child("File")
-                    .child("Edit")
-                    .child("View")
+                    .child("Project")
                     .child("Sheet 1")
                     .child(
                         Button::new("wire-tool")
@@ -194,6 +395,7 @@ impl Render for NativeShell {
                             .border_r_1()
                             .border_color(rgb(0xcbd5e1))
                             .child("Symbols")
+                            .child("Library")
                             .children(symbol_buttons),
                     )
                     .child(
@@ -207,7 +409,10 @@ impl Render for NativeShell {
                             .border_color(rgb(0xcbd5e1))
                             .p_4()
                             .text_color(rgb(0x334155))
-                            .on_mouse_down(MouseButton::Left, cx.listener(Self::canvas_click))
+                            .on_mouse_down(MouseButton::Left, cx.listener(Self::canvas_mouse_down))
+                            .on_mouse_move(cx.listener(Self::canvas_mouse_move))
+                            .on_mouse_up(MouseButton::Left, cx.listener(Self::canvas_mouse_up))
+                            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::canvas_mouse_up))
                             .child(render_scene(scene)),
                     )
                     .child(
@@ -222,7 +427,37 @@ impl Render for NativeShell {
                             .border_l_1()
                             .border_color(rgb(0xcbd5e1))
                             .child("Inspector")
-                            .child("Select an item to inspect its electrical properties."),
+                            .child("Electrical properties")
+                            .child(inspector_summary)
+                            .child("Reference")
+                            .child(Input::new(&self.reference_input).w_full().small())
+                            .child("Description")
+                            .child(Input::new(&self.description_input).w_full().small())
+                            .child("Wire label")
+                            .child(Input::new(&self.wire_label_input).w_full().small())
+                            .child("Sheet")
+                            .child(Input::new(&self.sheet_name_input).w_full().small())
+                            .child("Grid spacing")
+                            .child(Input::new(&self.grid_spacing_input).w_full().small())
+                            .child(
+                                Button::new("toggle-grid")
+                                    .small()
+                                    .label(if grid_visible {
+                                        "Hide grid"
+                                    } else {
+                                        "Show grid"
+                                    })
+                                    .on_click(cx.listener(|this, _, _, cx| {
+                                        let (_, spacing) = this.editor.sheet_grid_for_test();
+                                        this.grid_visible = !this.grid_visible;
+                                        let _ = this.editor.set_sheet_properties(
+                                            &this.editor.sheet_name_for_test(),
+                                            this.grid_visible,
+                                            spacing,
+                                        );
+                                        cx.notify();
+                                    })),
+                            ),
                     ),
             )
             .child(
@@ -242,7 +477,7 @@ pub fn run_native_shell() {
     Application::new().run(|cx: &mut App| {
         gpui_component::init(cx);
         let _ = cx.open_window(WindowOptions::default(), |window, cx| {
-            let view = cx.new(|_| NativeShell::new());
+            let view = cx.new(|cx| NativeShell::new(window, cx));
             cx.new(|cx| Root::new(view, window, cx))
         });
         cx.activate(true);

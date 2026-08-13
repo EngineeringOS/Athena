@@ -122,6 +122,11 @@ pub enum EditorCommand {
         sheet_id: SheetId,
         settings: SheetSettings,
     },
+    /// Renames one sheet through deterministic command history.
+    RenameSheet {
+        sheet_id: SheetId,
+        name: String,
+    },
     /// Internal, serializable inverse used by deterministic undo/redo.
     #[doc(hidden)]
     RestoreItems {
@@ -308,6 +313,8 @@ pub enum ApplyError {
     },
     #[error("sheet settings must have positive page dimensions and grid spacing")]
     InvalidSheetSettings,
+    #[error("sheet name must not be empty")]
+    InvalidSheetName,
     #[error("coordinate arithmetic overflowed")]
     CoordinateOverflow,
     #[error("editor revision cannot advance beyond u64::MAX")]
@@ -562,6 +569,14 @@ pub(crate) fn apply_to_project(
             Ok(EditorCommand::ApplySheetSettings {
                 sheet_id: *sheet_id,
                 settings: old_settings,
+            })
+        }
+        EditorCommand::RenameSheet { sheet_id, name } => {
+            let sheet = project.sheet_mut(*sheet_id).expect("validated sheet");
+            let old_name = std::mem::replace(&mut sheet.name, name.clone());
+            Ok(EditorCommand::RenameSheet {
+                sheet_id: *sheet_id,
+                name: old_name,
             })
         }
         EditorCommand::RestoreItems {

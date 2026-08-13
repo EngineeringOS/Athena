@@ -165,6 +165,7 @@ fn sets_symbol_field_values_and_sheet_settings() {
         page_width: 594,
         page_height: 420,
         grid_spacing: 5,
+        grid_visible: true,
         snap_enabled: false,
     };
     state

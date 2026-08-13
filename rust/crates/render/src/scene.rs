@@ -311,7 +311,7 @@ pub fn project_sheet(
     let mut page_and_grid = vec![DrawPrimitive::Page {
         bounds: page_bounds,
     }];
-    if sheet.settings.grid_spacing > 0 {
+    if sheet.settings.grid_visible && sheet.settings.grid_spacing > 0 {
         page_and_grid.push(DrawPrimitive::Grid {
             bounds: page_bounds,
             spacing: sheet.settings.grid_spacing as f64,

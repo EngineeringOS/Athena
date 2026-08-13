@@ -1,3 +1,8 @@
+//! Persisted sheet structure, page settings, and owned schematic entities.
+//!
+//! A sheet groups symbols, wires, junctions, and annotations under stable IDs.
+//! Its settings are durable document data shared by every platform shell.
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
@@ -9,10 +14,21 @@ use crate::{
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct SheetSettings {
+    /// Persisted page width in document-space units.
     pub page_width: i64,
+    /// Persisted page height in document-space units.
     pub page_height: i64,
+    /// Grid interval in document-space units.
     pub grid_spacing: i64,
+    /// Whether platform renderers show the editor grid for this sheet.
+    #[serde(default = "default_grid_visible")]
+    pub grid_visible: bool,
+    /// Whether pointer-derived positions snap to the document grid.
     pub snap_enabled: bool,
+}
+
+const fn default_grid_visible() -> bool {
+    true
 }
 
 impl Default for SheetSettings {
@@ -21,6 +37,7 @@ impl Default for SheetSettings {
             page_width: 420,
             page_height: 297,
             grid_spacing: 10,
+            grid_visible: true,
             snap_enabled: true,
         }
     }
@@ -28,9 +45,12 @@ impl Default for SheetSettings {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Sheet {
+    /// Stable identity used by commands and persisted references.
     pub id: SheetId,
+    /// User-facing sheet name.
     pub name: String,
     #[serde(default)]
+    /// Page and grid settings for this sheet.
     pub settings: SheetSettings,
     #[serde(default)]
     pub symbol_instances: BTreeMap<SymbolInstanceId, SymbolInstance>,

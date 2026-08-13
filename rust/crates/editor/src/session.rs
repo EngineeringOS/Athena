@@ -1,7 +1,7 @@
 //! Shell-facing controller combining document state, history, presentation,
 //! selection, and transient pointer interaction into one shared API.
 
-use athena_domain::{Project, SheetId, SymbolInstanceId};
+use athena_domain::{FieldValue, Point, Project, SheetId, SheetSettings, SymbolInstanceId, WireId};
 use athena_geometry::{Rect, WorldPoint};
 use athena_render::{
     EditorPresentation, HitRegion, Marquee, PresentationItemId, Scene, hit_test, project_sheet,
@@ -11,6 +11,7 @@ use thiserror::Error;
 use crate::{
     DragSelectionState, EditorCommand, EditorState, History, HistoryError, InteractionState,
     MarqueeSelectionMode, MarqueeState, PointerModifiers, PresentationPointer, SelectionState,
+    WireVertexDragState,
 };
 
 /// Errors produced by the shell-facing editor-session contract.
@@ -68,6 +69,18 @@ impl EditorSession {
     pub fn set_viewport(&mut self, viewport: athena_render::Viewport) {
         self.presentation.viewport = viewport;
     }
+
+    /// Translates the canvas viewport without modifying the saved schematic.
+    pub fn pan_viewport(&mut self, delta: WorldPoint) {
+        self.presentation.viewport.origin.x += delta.x;
+        self.presentation.viewport.origin.y += delta.y;
+    }
+
+    /// Scales the canvas viewport within ergonomic editor bounds.
+    pub fn zoom_viewport(&mut self, factor: f64) {
+        self.presentation.viewport.zoom =
+            (self.presentation.viewport.zoom * factor).clamp(0.25, 4.0);
+    }
     /// Returns the current transient interaction mode.
     #[must_use]
     pub fn interaction(&self) -> InteractionState {
@@ -79,6 +92,18 @@ impl EditorSession {
         self.selection
             .items()
             .contains(&PresentationItemId::Symbol(id))
+    }
+
+    /// Returns the number of items in the transient selection.
+    #[must_use]
+    pub fn selected_count(&self) -> usize {
+        self.selection.items().len()
+    }
+
+    /// Selects exactly one persistent presentation item.
+    pub fn select_only(&mut self, item: PresentationItemId) -> Result<(), SessionError> {
+        self.selection.replace(item);
+        self.refresh_scene()
     }
 
     /// Synchronizes presentation selection with the current transient state.
@@ -112,6 +137,71 @@ impl EditorSession {
         self.refresh_scene()
     }
 
+    /// Moves every selected saved item by a document-space delta.
+    pub fn move_selection(&mut self, delta: Point) -> Result<(), SessionError> {
+        let items = self.command_selection();
+        if !items.is_empty() {
+            self.apply_command(EditorCommand::MoveItems {
+                sheet_id: self.active_sheet_id,
+                items,
+                delta,
+            })?;
+        }
+        Ok(())
+    }
+
+    /// Moves an interior vertex of a selected wire through command history.
+    pub fn move_wire_vertex(
+        &mut self,
+        wire_id: WireId,
+        vertex_index: usize,
+        position: Point,
+    ) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::MoveWireVertex {
+            sheet_id: self.active_sheet_id,
+            wire_id,
+            vertex_index,
+            position,
+        })
+    }
+
+    /// Updates a typed field through the same command and history boundary.
+    pub fn set_field_value(
+        &mut self,
+        target: crate::FieldTarget,
+        field: impl Into<String>,
+        value: Option<FieldValue>,
+    ) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::SetFieldValue {
+            sheet_id: self.active_sheet_id,
+            target,
+            field: field.into(),
+            value,
+        })
+    }
+
+    /// Replaces active sheet settings through command history.
+    pub fn apply_sheet_settings(&mut self, settings: SheetSettings) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::ApplySheetSettings {
+            sheet_id: self.active_sheet_id,
+            settings,
+        })
+    }
+
+    /// Renames the active sheet through command history.
+    pub fn rename_active_sheet(&mut self, name: impl Into<String>) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::RenameSheet {
+            sheet_id: self.active_sheet_id,
+            name: name.into(),
+        })
+    }
+
+    /// Returns the undo and redo depths owned by this shared session.
+    #[must_use]
+    pub fn history_lengths(&self) -> (usize, usize) {
+        (self.history.undo_len(), self.history.redo_len())
+    }
+
     /// Selects exactly one symbol.
     pub fn select_only_symbol(&mut self, id: SymbolInstanceId) -> Result<(), SessionError> {
         self.selection.replace(PresentationItemId::Symbol(id));
@@ -126,7 +216,21 @@ impl EditorSession {
     ) -> Result<(), SessionError> {
         let scene = self.scene()?;
         let canvas_point = canvas_pointer.position();
-        if let Some(item) = hit_test(&scene, canvas_point, 6.0).and_then(item_from_hit) {
+        let hit = hit_test(&scene, canvas_point, 6.0);
+        if let Some(HitRegion::WireVertex {
+            wire_id,
+            vertex_index,
+            ..
+        }) = hit.as_ref()
+        {
+            self.selection.replace(PresentationItemId::Wire(*wire_id));
+            self.interaction = InteractionState::EditingWireVertex(WireVertexDragState {
+                start: canvas_point,
+                current: canvas_point,
+                wire_id: *wire_id,
+                vertex_index: *vertex_index,
+            });
+        } else if let Some(item) = hit.and_then(item_from_hit) {
             if modifiers.shift {
                 self.selection.toggle(item);
             } else {
@@ -187,6 +291,12 @@ impl EditorSession {
                     ..state
                 })
             }
+            InteractionState::EditingWireVertex(state) => {
+                InteractionState::EditingWireVertex(WireVertexDragState {
+                    current: canvas_point,
+                    ..state
+                })
+            }
             other => other,
         };
         Ok(())
@@ -199,6 +309,21 @@ impl EditorSession {
         _modifiers: PointerModifiers,
     ) -> Result<(), SessionError> {
         self.pointer_move(canvas_pointer, PointerModifiers::default())?;
+        if let InteractionState::EditingWireVertex(vertex_drag) = self.interaction
+            && vertex_drag.current != vertex_drag.start
+        {
+            // Pointer input is canvas-space; persisted wire geometry remains
+            // snapped document-space integer coordinates.
+            let world = self
+                .presentation
+                .viewport
+                .viewport_to_world(vertex_drag.current);
+            self.move_wire_vertex(
+                vertex_drag.wire_id,
+                vertex_drag.vertex_index,
+                Point::new(world.x.round() as i64, world.y.round() as i64),
+            )?;
+        }
         if let InteractionState::MarqueeSelecting(marquee) = self.interaction {
             let scene = self.scene()?;
             let items = marquee_selection(&scene, marquee);
