@@ -112,7 +112,7 @@ impl NativeShell {
         // after the fixed 208px library and 40px toolbar; its 1px border and
         // the renderer's 24px scene inset are the only local offsets.
         const CANVAS_LEFT: f32 = 208.0 + 1.0 + 24.0;
-        const CANVAS_TOP: f32 = 40.0 + 1.0 + 24.0;
+        const CANVAS_TOP: f32 = 40.0 + 36.0 + 1.0 + 24.0;
         athena_domain::Point::new(
             (position.x.as_f32() - CANVAS_LEFT).round() as i64,
             (position.y.as_f32() - CANVAS_TOP).round() as i64,
@@ -284,9 +284,9 @@ impl Render for NativeShell {
                     .px_3()
                     .bg(rgb(0x0f172a))
                     .text_color(rgb(0xf8fafc))
-                    .child("Athena Electrical")
-                    .child("Project")
-                    .child("Sheet 1")
+                    .child("A  Athena Electrical")
+                    .child("Untitled electrical project")
+                    .child("Sheet 1  /  Main control")
                     .child(
                         Button::new("wire-tool")
                             .small()
@@ -380,6 +380,43 @@ impl Render for NativeShell {
             )
             .child(
                 div()
+                    .h(px(36.0))
+                    .flex()
+                    .items_center()
+                    .gap_2()
+                    .px_3()
+                    .bg(rgb(0xf7f9fb))
+                    .border_b_1()
+                    .border_color(rgb(0xcbd5e1))
+                    .text_color(rgb(0x526277))
+                    .child("TOOLS")
+                    .child(Button::new("select-tool").small().label("Select").on_click(
+                        cx.listener(|this, _, _, cx| {
+                            this.editor.cancel_active_tool();
+                            cx.notify();
+                        }),
+                    ))
+                    .child(
+                        Button::new("place-tool")
+                            .small()
+                            .label("Place")
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                if let Some(symbol) = this.editor.catalog_symbols().first() {
+                                    this.editor.begin_placement(symbol.definition_id);
+                                }
+                                cx.notify();
+                            })),
+                    )
+                    .child("EDIT")
+                    .child(Button::new("fit-page").small().label("Fit page").on_click(
+                        cx.listener(|this, _, _, cx| {
+                            this.editor.zoom(1.0);
+                            cx.notify();
+                        }),
+                    )),
+            )
+            .child(
+                div()
                     .flex_1()
                     .min_h(px(0.0))
                     .flex()
@@ -395,8 +432,9 @@ impl Render for NativeShell {
                             .bg(rgb(0xffffff))
                             .border_r_1()
                             .border_color(rgb(0xcbd5e1))
+                            .child("CATALOG")
                             .child("Symbols")
-                            .child("Library")
+                            .child("Search symbols")
                             .children(symbol_buttons),
                     )
                     .child(
@@ -426,6 +464,7 @@ impl Render for NativeShell {
                             .bg(rgb(0xffffff))
                             .border_l_1()
                             .border_color(rgb(0xcbd5e1))
+                            .child("PROPERTIES")
                             .child("Inspector")
                             .child("Electrical properties")
                             .child(inspector_summary)

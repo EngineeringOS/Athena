@@ -16,6 +16,12 @@
   boundaries, editor-shell composition, component behavior, interaction
   semantics, rendering/presentation separation, and desktop-first UX. Never
   let the old-world implementation dictate the new-world architecture or UI.
+- Prefer learning from and reproducing proven reference patterns when that is
+  the fastest path: inspect the reference code and behavior, record the
+  evidence, then implement the applicable architecture and interaction in
+  Athena's own Rust modules. Copying a proven design pattern is encouraged;
+  copying source files, implementation code, dependencies, or unrelated
+  product assumptions is not.
 - Legacy Theia/Electron code under `ide/` is out of scope. Do not extend,
   integrate with, or use it as an architectural constraint for the rewrite.
 
@@ -60,6 +66,10 @@
   separate layers, with explicit state ownership and composable interactions.
   Use `gpui-component` for native component patterns where it fits. These are
   architectural and UX references, not product dependencies or source to copy.
+- For shell work, mirror Graphite's proven separation of document state,
+  message/tool routing, viewport/canvas, overlays, panels, and platform
+  wrappers first. Then fill those boundaries with Athena's electrical
+  schematic kernel and QElectroTech-derived feature outcomes.
 - Every core Rust file touched in a milestone must be self-documenting: include
   a module-level `//!` summary, document public types/functions that define a
   cross-crate contract, and add short comments before non-obvious state,

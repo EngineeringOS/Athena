@@ -8,38 +8,34 @@
   </head>
   <body>
     <main class="workbench">
-      <header class="topbar">
-        <strong>Athena Electrical</strong>
-        <div class="toolstrip" aria-label="Editor commands">
-          <button type="button" data-command="undo" title="Undo">Undo</button>
-          <button type="button" data-command="redo" title="Redo">Redo</button>
-          <button type="button" data-command="export" title="Export project">Export</button>
-          <button type="button" data-command="save" title="Save locally">Save</button>
-          <button type="button" data-command="reload" title="Reload local project">Reload</button>
-          <button type="button" data-command="wire" title="Draw wire">Wire</button>
-          <button type="button" data-command="rotate" title="Rotate selection">Rotate</button>
-          <button type="button" data-command="mirror" title="Mirror selection">Mirror</button>
-          <button type="button" data-command="delete" title="Delete selection">Delete</button>
-        </div>
+      <header class="app-bar" data-region="app-bar">
+        <div class="brand"><span class="brand-mark">A</span><div><strong>Athena Electrical</strong><span>Engineering workbench</span></div></div>
+        <div class="document-context"><strong>Untitled electrical project</strong><span>Sheet 1 · Main control</span></div>
+        <div class="app-actions"><span class="save-state" id="save-state">Local</span><button type="button" data-command="save" title="Save locally">Save</button><button type="button" data-command="export" title="Export project">Export</button></div>
       </header>
-      <aside class="library" aria-label="Electrical symbol library">
-        <h1>Symbols</h1>
+      <nav class="tool-bar" data-region="tool-bar" aria-label="Editor tools">
+        <div class="tool-group"><span class="group-label">Tools</span><button type="button" class="tool-button is-active" data-tool="select" data-command="select" title="Select and move">Select</button><button type="button" class="tool-button" data-command="wire" data-tool="wire" title="Draw wire">Wire</button></div>
+        <div class="tool-group"><span class="group-label">Edit</span><button type="button" class="tool-button" data-command="undo" title="Undo">Undo</button><button type="button" class="tool-button" data-command="redo" title="Redo">Redo</button><button type="button" class="tool-button" data-command="rotate" title="Rotate selection">Rotate</button><button type="button" class="tool-button" data-command="mirror" title="Mirror selection">Mirror</button><button type="button" class="tool-button" data-command="delete" title="Delete selection">Delete</button></div>
+        <div class="tool-group tool-group-right"><span class="group-label">View</span><button type="button" class="tool-button" data-command="zoom-out" title="Zoom out">−</button><span id="zoom-readout">100%</span><button type="button" class="tool-button" data-command="zoom-in" title="Zoom in">+</button><button type="button" class="tool-button" data-command="reload" title="Reload local project">Reload</button></div>
+      </nav>
+      <aside class="library rail" data-region="library-rail" aria-label="Electrical symbol library">
+        <div class="rail-heading"><div><span class="eyebrow">CATALOG</span><h1>Symbols</h1></div><button type="button" class="rail-toggle" data-toggle-rail="library" aria-expanded="true" title="Collapse symbol library">‹</button></div>
+        <label class="search-field"><span>Search symbols</span><input id="symbol-search" type="search" placeholder="Filter catalog" autocomplete="off"></label>
+        <div class="library-meta"><span id="library-count">Built-in catalog</span><span>Drag or click to place</span></div>
         <div id="symbol-list"></div>
       </aside>
-      <section class="editor" aria-label="Schematic editor">
-        <canvas id="schematic-canvas" aria-label="Electrical schematic canvas"></canvas>
+      <section class="editor" data-region="canvas-stage" aria-label="Schematic editor">
+        <div class="canvas-header"><div><span class="eyebrow">SCHEMATIC</span><strong>Main control</strong></div><div class="canvas-tools"><span id="cursor-readout">Cursor 0, 0</span><button type="button" data-command="fit" title="Fit page">Fit page</button></div></div>
+        <div class="canvas-frame"><canvas id="schematic-canvas" aria-label="Electrical schematic canvas"></canvas></div>
+        <div class="canvas-footer"><span>Grid <strong id="canvas-grid-state">On</strong></span><span>Snap 10 px</span><span>Click a symbol in the catalog to place</span></div>
       </section>
-      <aside class="inspector" aria-label="Inspector">
-        <h2>Inspector</h2>
+      <aside class="inspector rail" data-region="inspector-rail" aria-label="Inspector">
+        <div class="rail-heading"><div><span class="eyebrow">PROPERTIES</span><h2>Inspector</h2></div><button type="button" class="rail-toggle" data-toggle-rail="inspector" aria-expanded="true" title="Collapse inspector">›</button></div>
         <p id="status">Loading shared editor core...</p>
-        <label>Reference <input id="symbol-reference" type="text" autocomplete="off"></label>
-        <label>Description <input id="symbol-description" type="text" autocomplete="off"></label>
-        <label>Wire label <input id="wire-label" type="text" autocomplete="off"></label>
-        <label>Sheet <input id="sheet-name" type="text" autocomplete="off"></label>
-        <label class="checkbox"><input id="grid-visible" type="checkbox"> Show grid</label>
-        <label>Grid spacing <input id="grid-spacing" type="number" min="1" step="1"></label>
+        <section class="property-section"><h3>Selection</h3><label>Reference <input id="symbol-reference" type="text" autocomplete="off"></label><label>Description <input id="symbol-description" type="text" autocomplete="off"></label><label>Wire label <input id="wire-label" type="text" autocomplete="off"></label></section>
+        <section class="property-section"><h3>Sheet</h3><label>Sheet name <input id="sheet-name" type="text" autocomplete="off"></label><label class="checkbox"><input id="grid-visible" type="checkbox"> Show grid</label><label>Grid spacing <input id="grid-spacing" type="number" min="1" step="1"></label></section>
       </aside>
-      <footer id="footer-status">Local-first browser editor</footer>
+      <footer id="footer-status" class="status-bar" data-region="status-bar"><span><i class="status-dot"></i><span id="canvas-interactive-status">Ready</span></span><span>Local-first browser editor</span><span id="selection-status">0 selected</span><span class="status-spacer"></span><span>Undo 0 · Redo 0</span></footer>
     </main>
     <script type="module" src="./bootstrap.js"></script>
   </body>

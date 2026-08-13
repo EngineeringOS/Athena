@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("shared browser shell places, selects, edits, and undoes schematic content", async ({ page }) => {
-  await page.goto("http://127.0.0.1:8080/");
+  await page.goto("/");
   await page.getByRole("button", { name: "Resistor" }).click();
   await page.locator("#schematic-canvas").click({ position: { x: 140, y: 120 } });
   await page.getByRole("button", { name: "Resistor" }).click();
@@ -28,7 +28,7 @@ test("browser shell boots the library and placement changes the scene", async ({
   const errors = [];
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   page.on("pageerror", error => errors.push(error.message));
-  await page.goto("http://127.0.0.1:8080/");
+  await page.goto("/");
   await expect(page.getByRole("button", { name: "Resistor" })).toBeVisible();
   await expect(page.locator("#status")).toContainText("Ready");
   const before = await page.locator("#footer-status").textContent();
@@ -36,4 +36,23 @@ test("browser shell boots the library and placement changes the scene", async ({
   await page.locator("#schematic-canvas").click({ position: { x: 140, y: 120 } });
   await expect(page.locator("#footer-status")).not.toHaveText(before);
   expect(errors).toEqual([]);
+});
+
+test("professional workbench exposes dense regions and presentation controls", async ({ page }) => {
+  await page.goto("/");
+  for (const region of ["app-bar", "tool-bar", "library-rail", "canvas-stage", "inspector-rail", "status-bar"]) {
+    await expect(page.locator(`[data-region='${region}']`)).toBeVisible();
+  }
+  expect(await page.locator("#schematic-canvas").evaluate((canvas) => canvas.width)).toBeGreaterThan(0);
+  await page.locator("#symbol-search").fill("res");
+  await expect(page.locator("#symbol-list button:visible")).toHaveCount(1);
+  await page.locator("#symbol-search").fill("");
+  await expect(page.locator("#symbol-list button:visible")).toHaveCount(6);
+  await page.locator("[data-toggle-rail='library']").click();
+  await expect(page.locator(".workbench")).toHaveClass(/library-collapsed/);
+  await page.locator("[data-toggle-rail='library']").click();
+  await page.locator("[data-command='wire']").click();
+  await expect(page.locator("[data-tool='wire']")).toHaveClass(/is-active/);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("[data-tool='select']")).toHaveClass(/is-active/);
 });

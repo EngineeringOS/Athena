@@ -9,6 +9,7 @@ let currentScene;
 let canvasGestureActive = false;
 let ignoreNextCanvasClick = false;
 let syncingInspector = false;
+let activeTool = "select";
 const SNAPSHOT_KEY = "athena.electrical.snapshot.v1";
 const inspector = {
   reference: document.querySelector("#symbol-reference"),
@@ -67,7 +68,10 @@ function drawScene(scene) {
       }
     }
   }
-  footer.textContent = `${scene.hit_regions.length} interactive regions | Local-first browser editor`;
+  document.querySelector("#canvas-interactive-status").textContent = `${scene.hit_regions.length} interactive regions`;
+  const state = JSON.parse(editor.inspector_state_json());
+  document.querySelector("#selection-status").textContent = state.symbol_reference || state.wire_label ? "1 selected" : "0 selected";
+  document.querySelector("#canvas-grid-state").textContent = state.grid_visible ? "On" : "Off";
 }
 
 function line(start, end) { context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(end.x, end.y); context.stroke(); }
@@ -102,6 +106,22 @@ function refresh() {
   currentScene = JSON.parse(editor.render_active_sheet());
   drawScene(currentScene);
   syncInspector();
+}
+
+function setActiveTool(tool) {
+  activeTool = tool;
+  document.querySelectorAll("[data-tool]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.tool === tool);
+  });
+}
+
+function toggleRail(name) {
+  const className = `${name}-collapsed`;
+  const collapsed = document.querySelector(".workbench").classList.toggle(className);
+  const button = document.querySelector(`[data-toggle-rail='${name}']`);
+  button.setAttribute("aria-expanded", String(!collapsed));
+  button.title = `${collapsed ? "Expand" : "Collapse"} ${name} rail`;
+  refresh();
 }
 
 function canvasPointToWorld(event) {
@@ -157,9 +177,21 @@ async function start() {
   for (const { name } of names) {
     const button = document.createElement("button");
     button.textContent = name;
+    button.dataset.symbolName = name.toLowerCase();
     button.addEventListener("click", () => { editor.begin_placement(name); status.textContent = `Place ${name} on the canvas`; });
     symbolList.append(button);
   }
+  document.querySelector("#symbol-search").addEventListener("input", (event) => {
+    const query = event.target.value.trim().toLowerCase();
+    let visible = 0;
+    symbolList.querySelectorAll("button").forEach((button) => {
+      const matches = !query || button.dataset.symbolName.includes(query);
+      button.hidden = !matches;
+      if (matches) visible += 1;
+    });
+    document.querySelector("#library-count").textContent = query ? `${visible} matches` : "Built-in catalog";
+  });
+  document.querySelectorAll("[data-toggle-rail]").forEach((button) => button.addEventListener("click", () => toggleRail(button.dataset.toggleRail)));
   canvas.addEventListener("pointerdown", (event) => {
     const point = canvasPointToWorld(event);
     const modifiers = eventModifiers(event);
@@ -199,7 +231,8 @@ async function start() {
   document.querySelector("[data-command=export]").addEventListener("click", exportSnapshot);
   document.querySelector("[data-command=save]").addEventListener("click", saveLocal);
   document.querySelector("[data-command=reload]").addEventListener("click", reloadLocal);
-  document.querySelector("[data-command=wire]").addEventListener("click", () => { editor.begin_wire(); status.textContent = "Click two terminals to connect them"; });
+  document.querySelector("[data-command=select]").addEventListener("click", () => { editor.cancel_active_tool(); setActiveTool("select"); status.textContent = "Select symbols, wires, or drag a marquee"; refresh(); });
+  document.querySelector("[data-command=wire]").addEventListener("click", () => { editor.begin_wire(); setActiveTool("wire"); status.textContent = "Click two terminals to connect them"; });
   document.querySelector("[data-command=rotate]").addEventListener("click", () => { editor.rotate_selection_90(); refresh(); });
   document.querySelector("[data-command=mirror]").addEventListener("click", () => { editor.mirror_selection(); refresh(); });
   document.querySelector("[data-command=delete]").addEventListener("click", () => { editor.delete_selection(); refresh(); });
@@ -242,7 +275,7 @@ async function start() {
     } else if (event.key.toLowerCase() === "m") {
       editor.mirror_selection(); refresh();
     } else if (event.key === "Escape") {
-      canvasGestureActive = false; editor.cancel_active_tool(); status.textContent = "Gesture cancelled"; refresh();
+      canvasGestureActive = false; editor.cancel_active_tool(); setActiveTool("select"); status.textContent = "Gesture cancelled"; refresh();
     }
   });
   window.addEventListener("resize", refresh);

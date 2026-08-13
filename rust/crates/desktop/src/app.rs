@@ -106,6 +106,11 @@ impl DesktopEditor {
         self.active_tool = ActiveTool::Wire { start: None };
     }
 
+    /// Returns the native tool state to selection without mutating the sheet.
+    pub fn cancel_active_tool(&mut self) {
+        self.active_tool = ActiveTool::Select;
+    }
+
     /// Replaces shared selection when a native adapter resolves an item hit.
     pub fn select(&mut self, item: Option<PresentationItemId>) {
         if let Some(item) = item {
