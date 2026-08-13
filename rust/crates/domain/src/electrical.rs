@@ -1,3 +1,5 @@
+//! Electrical-schematic domain entities stored in a platform-neutral document.
+
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};

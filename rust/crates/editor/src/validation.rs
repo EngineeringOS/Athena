@@ -1,3 +1,8 @@
+//! Preflight validation for persistent editor commands.
+//!
+//! Validation happens before cloning and mutating the document, so rejected
+//! commands leave the state and command history unchanged.
+
 use std::collections::BTreeSet;
 
 use athena_domain::{Project, SheetId, WireEndpoint};
@@ -114,6 +119,54 @@ pub(crate) fn validate_command(
                 });
             }
         }
+        EditorCommand::ReconnectWireEndpoint {
+            sheet_id,
+            wire_id,
+            terminal_id,
+            ..
+        } => {
+            validate_wire(project, *sheet_id, *wire_id)?;
+            validate_endpoint(project, *sheet_id, &WireEndpoint::Terminal(*terminal_id))?;
+        }
+        EditorCommand::InsertWireVertex {
+            sheet_id,
+            wire_id,
+            segment_index,
+            position,
+        } => {
+            let wire = validate_wire(project, *sheet_id, *wire_id)?;
+            let Some(segment) = wire.route.windows(2).nth(*segment_index) else {
+                return Err(ApplyError::InvalidWireSegmentIndex {
+                    wire_id: *wire_id,
+                    segment_index: *segment_index,
+                });
+            };
+            if !point_is_strictly_on_segment(*position, segment[0], segment[1]) {
+                return Err(ApplyError::WireVertexNotOnSegment {
+                    wire_id: *wire_id,
+                    segment_index: *segment_index,
+                });
+            }
+        }
+        EditorCommand::MoveWireVertex {
+            sheet_id,
+            wire_id,
+            vertex_index,
+            ..
+        }
+        | EditorCommand::DeleteWireVertex {
+            sheet_id,
+            wire_id,
+            vertex_index,
+        } => {
+            let wire = validate_wire(project, *sheet_id, *wire_id)?;
+            if *vertex_index == 0 || *vertex_index + 1 >= wire.route.len() {
+                return Err(ApplyError::InvalidWireVertexIndex {
+                    wire_id: *wire_id,
+                    vertex_index: *vertex_index,
+                });
+            }
+        }
         EditorCommand::SetFieldValue {
             sheet_id, target, ..
         } => {
@@ -176,6 +229,36 @@ pub(crate) fn validate_command(
     }
 
     Ok(())
+}
+
+fn validate_wire(
+    project: &Project,
+    sheet_id: SheetId,
+    wire_id: athena_domain::WireId,
+) -> Result<&athena_domain::Wire, ApplyError> {
+    project
+        .wire(sheet_id, wire_id)
+        .ok_or(ApplyError::UnknownItem {
+            sheet_id,
+            item: ItemId::Wire(wire_id),
+        })
+}
+
+fn point_is_strictly_on_segment(
+    point: athena_domain::Point,
+    start: athena_domain::Point,
+    end: athena_domain::Point,
+) -> bool {
+    if point == start || point == end {
+        return false;
+    }
+    if start.x == end.x {
+        point.x == start.x && point.y > start.y.min(end.y) && point.y < start.y.max(end.y)
+    } else if start.y == end.y {
+        point.y == start.y && point.x > start.x.min(end.x) && point.x < start.x.max(end.x)
+    } else {
+        false
+    }
 }
 
 fn sheet(project: &Project, sheet_id: SheetId) -> Result<&athena_domain::Sheet, ApplyError> {

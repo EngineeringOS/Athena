@@ -10,7 +10,7 @@ mod validation;
 
 pub use command::{
     AppliedCommand, ApplyError, CommandEnvelope, EditorCommand, EditorState, FieldTarget, ItemId,
-    StoredItem,
+    StoredItem, WireSide,
 };
 pub use history::{History, HistoryError, snapshot_bytes, snapshots_equal};
 pub use interaction::{

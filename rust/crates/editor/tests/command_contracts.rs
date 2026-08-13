@@ -3,7 +3,8 @@ use athena_domain::{
     SymbolInstance, Terminal, Wire, WireEndpoint,
 };
 use athena_editor::{
-    CommandEnvelope, EditorCommand, EditorState, FieldTarget, History, ItemId, snapshot_bytes,
+    CommandEnvelope, EditorCommand, EditorState, FieldTarget, History, ItemId, WireSide,
+    snapshot_bytes,
 };
 use uuid::Uuid;
 
@@ -560,4 +561,218 @@ fn command_envelope_round_trips_through_serde() {
         serde_json::from_str(&encoded).expect("envelope should deserialize");
 
     assert_eq!(decoded, envelope);
+}
+
+#[test]
+fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let end = symbol(definition_id, Point::new(20, 20));
+    let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0), Point::new(20, 20)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .expect("wire endpoints exist");
+    let before = snapshot_bytes(state.project()).expect("snapshot is valid");
+    let mut history = History::new(8);
+
+    history
+        .apply(
+            &mut state,
+            EditorCommand::InsertWireVertex {
+                sheet_id,
+                wire_id,
+                segment_index: 0,
+                position: Point::new(10, 0),
+            },
+        )
+        .expect("an on-segment vertex can be inserted");
+    assert_eq!(
+        state
+            .project()
+            .wire(sheet_id, wire_id)
+            .expect("wire exists")
+            .route,
+        vec![Point::new(0, 0), Point::new(20, 0), Point::new(20, 20)],
+        "route normalization removes the redundant colinear vertex"
+    );
+
+    history
+        .apply(
+            &mut state,
+            EditorCommand::MoveWireVertex {
+                sheet_id,
+                wire_id,
+                vertex_index: 1,
+                position: Point::new(10, 10),
+            },
+        )
+        .expect("moving a bend preserves an orthogonal path");
+    let moved_route = &state
+        .project()
+        .wire(sheet_id, wire_id)
+        .expect("wire exists")
+        .route;
+    assert!(
+        moved_route
+            .windows(2)
+            .all(|segment| { segment[0].x == segment[1].x || segment[0].y == segment[1].y })
+    );
+
+    history
+        .apply(
+            &mut state,
+            EditorCommand::DeleteWireVertex {
+                sheet_id,
+                wire_id,
+                vertex_index: 1,
+            },
+        )
+        .expect("an interior wire vertex can be deleted");
+
+    assert!(history.undo(&mut state).expect("delete can be undone"));
+    assert!(history.undo(&mut state).expect("move can be undone"));
+    assert!(history.undo(&mut state).expect("insert can be undone"));
+    assert_eq!(
+        snapshot_bytes(state.project()).expect("snapshot is valid"),
+        before
+    );
+}
+
+#[test]
+fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let original_end = symbol(definition_id, Point::new(20, 0));
+    let original_end_terminal = *original_end
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let replacement_end = symbol(definition_id, Point::new(30, 10));
+    let replacement_terminal = *replacement_end
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, original_end);
+    place(&mut state, sheet_id, replacement_end);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(original_end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .expect("wire endpoints exist");
+
+    let mut history = History::new(8);
+    history
+        .apply(
+            &mut state,
+            EditorCommand::ReconnectWireEndpoint {
+                sheet_id,
+                wire_id,
+                endpoint: WireSide::End,
+                terminal_id: replacement_terminal,
+            },
+        )
+        .expect("endpoint can be reconnected on the active sheet");
+
+    let wire = state
+        .project()
+        .wire(sheet_id, wire_id)
+        .expect("wire exists");
+    assert_eq!(wire.end, WireEndpoint::Terminal(replacement_terminal));
+    assert_eq!(
+        wire.route,
+        vec![Point::new(0, 0), Point::new(30, 0), Point::new(30, 10)]
+    );
+    assert!(history.undo(&mut state).expect("reconnect can be undone"));
+    assert_eq!(
+        state
+            .project()
+            .wire(sheet_id, wire_id)
+            .expect("wire exists")
+            .end,
+        WireEndpoint::Terminal(original_end_terminal)
+    );
+}
+
+#[test]
+fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let end = symbol(definition_id, Point::new(20, 0));
+    let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .expect("wire endpoints exist");
+    let before = snapshot_bytes(state.project()).expect("snapshot is valid");
+
+    assert!(
+        state
+            .apply(EditorCommand::InsertWireVertex {
+                sheet_id,
+                wire_id,
+                segment_index: 1,
+                position: Point::new(10, 0),
+            })
+            .is_err()
+    );
+    assert!(
+        state
+            .apply(EditorCommand::MoveWireVertex {
+                sheet_id,
+                wire_id,
+                vertex_index: 0,
+                position: Point::new(0, 10),
+            })
+            .is_err()
+    );
+    assert!(
+        state
+            .apply(EditorCommand::DeleteWireVertex {
+                sheet_id,
+                wire_id,
+                vertex_index: 1,
+            })
+            .is_err()
+    );
+    assert_eq!(
+        snapshot_bytes(state.project()).expect("snapshot is valid"),
+        before
+    );
 }

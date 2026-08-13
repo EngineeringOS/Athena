@@ -1,3 +1,8 @@
+//! Persistent, deterministic mutations for schematic documents.
+//!
+//! Commands are deliberately UI-agnostic: shells create commands, this module
+//! applies them atomically, and [`crate::History`] stores their exact inverses.
+
 use std::collections::BTreeMap;
 
 use athena_domain::{
@@ -26,6 +31,18 @@ pub enum FieldTarget {
     Symbol(SymbolInstanceId),
     Wire(WireId),
     Annotation(AnnotationId),
+}
+
+/// Identifies which endpoint of a wire a reconnect command changes.
+///
+/// The type is serialized as part of a command envelope, so desktop and WASM
+/// sessions use identical endpoint semantics.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum WireSide {
+    /// The first route point and `Wire::start` endpoint.
+    Start,
+    /// The last route point and `Wire::end` endpoint.
+    End,
 }
 
 /// Deterministic mutations supported by the schematic editor.
@@ -67,6 +84,33 @@ pub enum EditorCommand {
     DeleteWire {
         sheet_id: SheetId,
         wire_id: WireId,
+    },
+    /// Rebinds one wire endpoint to a terminal on the same sheet.
+    ReconnectWireEndpoint {
+        sheet_id: SheetId,
+        wire_id: WireId,
+        endpoint: WireSide,
+        terminal_id: TerminalId,
+    },
+    /// Adds a route vertex on an existing wire segment.
+    InsertWireVertex {
+        sheet_id: SheetId,
+        wire_id: WireId,
+        segment_index: usize,
+        position: Point,
+    },
+    /// Moves an interior route vertex while retaining an orthogonal route.
+    MoveWireVertex {
+        sheet_id: SheetId,
+        wire_id: WireId,
+        vertex_index: usize,
+        position: Point,
+    },
+    /// Removes an interior route vertex and normalizes adjacent bends.
+    DeleteWireVertex {
+        sheet_id: SheetId,
+        wire_id: WireId,
+        vertex_index: usize,
     },
     SetFieldValue {
         sheet_id: SheetId,
@@ -222,6 +266,21 @@ pub enum ApplyError {
     },
     #[error("split wire {wire_id} must produce two distinct wires joined at its new junction")]
     InvalidWireSplit { wire_id: WireId },
+    #[error("wire {wire_id} does not contain segment {segment_index}")]
+    InvalidWireSegmentIndex {
+        wire_id: WireId,
+        segment_index: usize,
+    },
+    #[error("wire {wire_id} does not contain an editable interior vertex at index {vertex_index}")]
+    InvalidWireVertexIndex {
+        wire_id: WireId,
+        vertex_index: usize,
+    },
+    #[error("wire {wire_id} vertex position must lie strictly on segment {segment_index}")]
+    WireVertexNotOnSegment {
+        wire_id: WireId,
+        segment_index: usize,
+    },
     #[error("sheet settings must have positive page dimensions and grid spacing")]
     InvalidSheetSettings,
     #[error("coordinate arithmetic overflowed")]
@@ -346,6 +405,103 @@ pub(crate) fn apply_to_project(
                 wire,
             })
         }
+        EditorCommand::ReconnectWireEndpoint {
+            sheet_id,
+            wire_id,
+            endpoint,
+            terminal_id,
+        } => {
+            let original = project
+                .wire(*sheet_id, *wire_id)
+                .expect("validated wire")
+                .clone();
+            let position = project
+                .terminal(*sheet_id, *terminal_id)
+                .expect("validated terminal")
+                .position;
+            let wire = project
+                .sheet_mut(*sheet_id)
+                .expect("validated sheet")
+                .wires
+                .get_mut(wire_id)
+                .expect("validated wire");
+            match endpoint {
+                WireSide::Start => {
+                    wire.start = WireEndpoint::Terminal(*terminal_id);
+                    replace_route_endpoint(&mut wire.route, true, position);
+                }
+                WireSide::End => {
+                    wire.end = WireEndpoint::Terminal(*terminal_id);
+                    replace_route_endpoint(&mut wire.route, false, position);
+                }
+            }
+            normalize_wire_route(&mut wire.route);
+            Ok(restore_wire_command(*sheet_id, original))
+        }
+        EditorCommand::InsertWireVertex {
+            sheet_id,
+            wire_id,
+            segment_index,
+            position,
+        } => {
+            let original = project
+                .wire(*sheet_id, *wire_id)
+                .expect("validated wire")
+                .clone();
+            let wire = project
+                .sheet_mut(*sheet_id)
+                .expect("validated sheet")
+                .wires
+                .get_mut(wire_id)
+                .expect("validated wire");
+            wire.route.insert(*segment_index + 1, *position);
+            normalize_wire_route(&mut wire.route);
+            Ok(restore_wire_command(*sheet_id, original))
+        }
+        EditorCommand::MoveWireVertex {
+            sheet_id,
+            wire_id,
+            vertex_index,
+            position,
+        } => {
+            let original = project
+                .wire(*sheet_id, *wire_id)
+                .expect("validated wire")
+                .clone();
+            let wire = project
+                .sheet_mut(*sheet_id)
+                .expect("validated sheet")
+                .wires
+                .get_mut(wire_id)
+                .expect("validated wire");
+            replace_route_vertex_with_elbows(&mut wire.route, *vertex_index, *position);
+            normalize_wire_route(&mut wire.route);
+            Ok(restore_wire_command(*sheet_id, original))
+        }
+        EditorCommand::DeleteWireVertex {
+            sheet_id,
+            wire_id,
+            vertex_index,
+        } => {
+            let original = project
+                .wire(*sheet_id, *wire_id)
+                .expect("validated wire")
+                .clone();
+            let wire = project
+                .sheet_mut(*sheet_id)
+                .expect("validated sheet")
+                .wires
+                .get_mut(wire_id)
+                .expect("validated wire");
+            let previous = wire.route[*vertex_index - 1];
+            let next = wire.route[*vertex_index + 1];
+            wire.route.splice(
+                *vertex_index - 1..=*vertex_index + 1,
+                orthogonal_join(previous, next),
+            );
+            normalize_wire_route(&mut wire.route);
+            Ok(restore_wire_command(*sheet_id, original))
+        }
         EditorCommand::SetFieldValue {
             sheet_id,
             target,
@@ -396,6 +552,80 @@ pub(crate) fn apply_to_project(
             })
         }
     }
+}
+
+fn restore_wire_command(sheet_id: SheetId, original: Wire) -> EditorCommand {
+    restore_command(
+        sheet_id,
+        vec![ItemId::Wire(original.id)],
+        vec![StoredItem::Wire(original)],
+    )
+}
+
+/// Replaces one endpoint while preserving a valid route to its former neighbor.
+fn replace_route_endpoint(route: &mut Vec<Point>, replace_start: bool, position: Point) {
+    let neighbor = if replace_start {
+        route[1]
+    } else {
+        route[route.len() - 2]
+    };
+    if replace_start {
+        route.splice(0..=1, orthogonal_join(position, neighbor));
+    } else {
+        let last = route.len() - 1;
+        route.splice(last - 1..=last, orthogonal_join(neighbor, position));
+    }
+}
+
+/// Rebuilds only the two adjacent segments around a moved interior vertex.
+fn replace_route_vertex_with_elbows(route: &mut Vec<Point>, index: usize, position: Point) {
+    let previous = route[index - 1];
+    let next = route[index + 1];
+    let mut replacement = orthogonal_join(previous, position);
+    let mut tail = orthogonal_join(position, next);
+    tail.remove(0);
+    replacement.extend(tail);
+    route.splice(index - 1..=index + 1, replacement);
+}
+
+/// Creates the fewest points needed for a deterministic horizontal-first bend.
+fn orthogonal_join(start: Point, end: Point) -> Vec<Point> {
+    if start.x == end.x || start.y == end.y {
+        vec![start, end]
+    } else {
+        vec![start, Point::new(end.x, start.y), end]
+    }
+}
+
+/// Removes redundant bends while retaining the endpoint pair and axis alignment.
+fn normalize_wire_route(route: &mut Vec<Point>) {
+    let endpoints = (
+        route[0],
+        *route.last().expect("validated route endpoint pair"),
+    );
+    let without_duplicates = route.iter().copied().fold(Vec::new(), |mut points, point| {
+        if points.last().copied() != Some(point) {
+            points.push(point);
+        }
+        points
+    });
+    let mut normalized: Vec<Point> = Vec::with_capacity(without_duplicates.len());
+    for point in without_duplicates {
+        if let [.., previous, current] = normalized.as_slice()
+            && (previous.x == current.x && current.x == point.x
+                || previous.y == current.y && current.y == point.y)
+        {
+            normalized.pop();
+        }
+        normalized.push(point);
+    }
+    if normalized.first().copied() != Some(endpoints.0) {
+        normalized.insert(0, endpoints.0);
+    }
+    if normalized.last().copied() != Some(endpoints.1) {
+        normalized.push(endpoints.1);
+    }
+    *route = normalized;
 }
 
 fn stored_item_if_present(sheet: &athena_domain::Sheet, item: ItemId) -> Option<StoredItem> {
