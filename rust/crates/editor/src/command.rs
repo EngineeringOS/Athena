@@ -248,6 +248,12 @@ pub enum ApplyError {
         sheet_id: SheetId,
         junction_id: JunctionId,
     },
+    /// A reconnect would bind both endpoints of one wire to the same terminal.
+    #[error("wire {wire_id} cannot use terminal {terminal_id} for both endpoints")]
+    WireEndpointsShareTerminal {
+        wire_id: WireId,
+        terminal_id: TerminalId,
+    },
     #[error("command repeats item {item:?}")]
     DuplicateItem { item: ItemId },
     #[error("command must target at least one item")]

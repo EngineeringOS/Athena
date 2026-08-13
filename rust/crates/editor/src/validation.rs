@@ -127,10 +127,24 @@ pub(crate) fn validate_command(
             sheet_id,
             wire_id,
             terminal_id,
-            ..
+            endpoint,
         } => {
-            validate_wire(project, *sheet_id, *wire_id)?;
+            let wire = validate_wire(project, *sheet_id, *wire_id)?;
             validate_endpoint(project, *sheet_id, &WireEndpoint::Terminal(*terminal_id))?;
+            // A wire represents a connection between distinct endpoint owners.
+            // Check semantics before mutation because a multi-bend route could
+            // otherwise remain geometrically valid after the reconnect.
+            let opposite = match endpoint {
+                WireSide::Start => &wire.end,
+                WireSide::End => &wire.start,
+            };
+            if matches!(opposite, WireEndpoint::Terminal(opposite_id) if *opposite_id == *terminal_id)
+            {
+                return Err(ApplyError::WireEndpointsShareTerminal {
+                    wire_id: *wire_id,
+                    terminal_id: *terminal_id,
+                });
+            }
         }
         EditorCommand::InsertWireVertex {
             sheet_id,

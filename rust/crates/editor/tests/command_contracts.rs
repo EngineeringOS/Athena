@@ -856,6 +856,43 @@ fn reconnecting_to_the_other_endpoint_terminal_is_rejected_atomically() {
 }
 
 #[test]
+fn reconnecting_to_the_other_endpoint_terminal_rejects_a_noncollapsing_route() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start.terminals.keys().next().unwrap();
+    let end = symbol(definition_id, Point::new(20, 0));
+    let end_terminal = *end.terminals.keys().next().unwrap();
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![
+            Point::new(0, 0),
+            Point::new(0, 20),
+            Point::new(20, 20),
+            Point::new(20, 0),
+        ],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .unwrap();
+    let before = snapshot_bytes(state.project()).unwrap();
+
+    assert!(matches!(
+        state.apply(EditorCommand::ReconnectWireEndpoint {
+            sheet_id,
+            wire_id,
+            endpoint: WireSide::End,
+            terminal_id: start_terminal,
+        }),
+        Err(athena_editor::ApplyError::WireEndpointsShareTerminal { .. })
+    ));
+    assert_eq!(snapshot_bytes(state.project()).unwrap(), before);
+}
+
+#[test]
 fn restoring_a_malformed_wire_is_rejected_atomically() {
     let (mut state, sheet_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
