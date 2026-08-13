@@ -1,10 +1,16 @@
-//! Thin wasm-bindgen bridge over the shared authoring core.
+//! Thin wasm-bindgen bridge over Athena's shared editor session.
+//!
+//! Browser storage and DOM plumbing live outside this crate. This bridge owns
+//! only browser tool selection and forwards every schematic edit to the same
+//! platform-neutral controller used by the native workbench.
 
-use athena_domain::{Point, Project, SymbolInstance, Terminal};
-use athena_editor::{EditorCommand, EditorState, History};
+use athena_domain::{FieldValue, Point, Project, SymbolInstance, Terminal};
+use athena_editor::{
+    EditorCommand, EditorSession, FieldTarget, PointerModifiers, PresentationPointer,
+};
 use athena_format::SnapshotStore;
 use athena_library::{SearchQuery, SymbolCatalog};
-use athena_render::{EditorPresentation, HitRegion, PresentationItemId, hit_test, project_sheet};
+use athena_render::{HitRegion, PresentationItemId, hit_test};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -25,15 +31,12 @@ pub fn validate_snapshot_bytes(bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
 
 /// A browser-neutral authoring controller. It is also directly testable on the
 /// native target, which keeps the WASM export intentionally thin.
-#[derive(Clone, Debug)]
 pub struct WebEditorCore {
     catalog: SymbolCatalog,
-    state: EditorState,
-    history: History,
-    active_sheet_id: athena_domain::SheetId,
-    presentation: EditorPresentation,
+    session: EditorSession,
     placement_definition: Option<athena_domain::SymbolDefinitionId>,
     wire_start: Option<athena_domain::TerminalId>,
+    wire_mode: bool,
 }
 
 impl WebEditorCore {
@@ -49,12 +52,10 @@ impl WebEditorCore {
         let active_sheet_id = project.sheet_order()[0];
         Self {
             catalog,
-            state: EditorState::new(project),
-            history: History::new(200),
-            active_sheet_id,
-            presentation: EditorPresentation::default(),
+            session: EditorSession::new(project, active_sheet_id),
             placement_definition: None,
             wire_start: None,
+            wire_mode: false,
         }
     }
 
@@ -71,14 +72,15 @@ impl WebEditorCore {
 
     #[must_use]
     pub const fn active_sheet_id(&self) -> athena_domain::SheetId {
-        self.active_sheet_id
+        self.session.active_sheet_id()
     }
 
     #[must_use]
     pub fn terminal_ids(&self) -> Vec<athena_domain::TerminalId> {
-        self.state
+        self.session
+            .state()
             .project()
-            .sheet(self.active_sheet_id)
+            .sheet(self.active_sheet_id())
             .into_iter()
             .flat_map(|sheet| sheet.symbol_instances.values())
             .flat_map(|symbol| symbol.terminals.keys().copied())
@@ -86,49 +88,14 @@ impl WebEditorCore {
     }
 
     pub fn pointer_click(&mut self, x: i64, y: i64) -> Result<(), String> {
-        if let Some(start) = self.wire_start {
-            let end = self
-                .terminal_at(x, y)
-                .ok_or_else(|| "wire endpoints must be terminals".to_owned())?;
-            if start == end {
-                return Ok(());
-            }
-            let start_point = self
-                .state
-                .project()
-                .terminal(self.active_sheet_id, start)
-                .ok_or_else(|| "wire start terminal missing".to_owned())?
-                .position;
-            let end_point = self
-                .state
-                .project()
-                .terminal(self.active_sheet_id, end)
-                .ok_or_else(|| "wire end terminal missing".to_owned())?
-                .position;
-            self.history
-                .apply(
-                    &mut self.state,
-                    EditorCommand::CreateWire {
-                        sheet_id: self.active_sheet_id,
-                        wire: athena_domain::Wire::new(
-                            athena_domain::WireEndpoint::Terminal(start),
-                            athena_domain::WireEndpoint::Terminal(end),
-                            vec![start_point, end_point],
-                        ),
-                    },
-                )
-                .map_err(|error| error.to_string())?;
-            self.wire_start = None;
-            return Ok(());
-        }
-        if self.placement_definition.is_none() {
-            self.wire_start = self.terminal_at(x, y);
-            return Ok(());
+        if self.wire_mode {
+            return self.handle_wire_click(x, y);
         }
         let Some(definition_id) = self.placement_definition else {
-            return Ok(());
+            let _ = self.pointer_down(x, y, false, false)?;
+            return self.pointer_up(x, y, false, false);
         };
-        let point = Point::new(x, y);
+        let point = self.world_point(x, y);
         let record = self
             .catalog
             .get(definition_id)
@@ -147,19 +114,15 @@ impl WebEditorCore {
             ));
         }
         let symbol_id = symbol.id;
-        self.history
-            .apply(
-                &mut self.state,
-                EditorCommand::PlaceSymbol {
-                    sheet_id: self.active_sheet_id,
-                    symbol,
-                },
-            )
+        self.session
+            .apply_command(EditorCommand::PlaceSymbol {
+                sheet_id: self.active_sheet_id(),
+                symbol,
+            })
             .map_err(|error| error.to_string())?;
-        self.presentation.selected.clear();
-        self.presentation
-            .selected
-            .insert(PresentationItemId::Symbol(symbol_id));
+        self.session
+            .select_only(PresentationItemId::Symbol(symbol_id))
+            .map_err(|error| error.to_string())?;
         self.placement_definition = None;
         Ok(())
     }
@@ -167,14 +130,226 @@ impl WebEditorCore {
     pub fn begin_wire(&mut self) {
         self.wire_start = None;
         self.placement_definition = None;
+        self.wire_mode = true;
+    }
+
+    /// Cancels browser-owned placement or wiring without mutating the project.
+    pub fn cancel_active_tool(&mut self) -> Result<(), String> {
+        self.placement_definition = None;
+        self.wire_start = None;
+        self.wire_mode = false;
+        Ok(())
+    }
+
+    /// Rotates the shared selection by one quarter turn.
+    pub fn rotate_selection_90(&mut self) -> Result<(), String> {
+        self.session
+            .rotate_selection_90()
+            .map_err(|error| error.to_string())
+    }
+
+    /// Mirrors the shared selection.
+    pub fn mirror_selection(&mut self) -> Result<(), String> {
+        self.session
+            .mirror_selection()
+            .map_err(|error| error.to_string())
+    }
+
+    /// Deletes the shared selection.
+    pub fn delete_selection(&mut self) -> Result<(), String> {
+        self.session
+            .delete_selection()
+            .map_err(|error| error.to_string())
+    }
+
+    /// Starts a shared selection, marquee, or selected-wire handle gesture.
+    pub fn pointer_down(
+        &mut self,
+        x: i64,
+        y: i64,
+        shift: bool,
+        command: bool,
+    ) -> Result<bool, String> {
+        if self.placement_definition.is_some() || self.wire_mode {
+            return Ok(false);
+        }
+        self.session
+            .pointer_down(
+                PresentationPointer::new(x as f64, y as f64),
+                pointer_modifiers(shift, command),
+            )
+            .map_err(|error| error.to_string())?;
+        Ok(true)
+    }
+
+    /// Updates the current shared pointer gesture.
+    pub fn pointer_move(
+        &mut self,
+        x: i64,
+        y: i64,
+        shift: bool,
+        command: bool,
+    ) -> Result<(), String> {
+        self.session
+            .pointer_move(
+                PresentationPointer::new(x as f64, y as f64),
+                pointer_modifiers(shift, command),
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    /// Completes the current shared pointer gesture.
+    pub fn pointer_up(&mut self, x: i64, y: i64, shift: bool, command: bool) -> Result<(), String> {
+        self.session
+            .pointer_up(
+                PresentationPointer::new(x as f64, y as f64),
+                pointer_modifiers(shift, command),
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    /// Returns the shared selection size for browser status and tests.
+    #[must_use]
+    pub fn selection_count(&self) -> usize {
+        self.session.selected_count()
+    }
+
+    /// Updates the selected symbol reference through shared command history.
+    pub fn update_selected_symbol_reference(&mut self, value: String) -> Result<(), String> {
+        let symbol_id = self.selected_symbol_id()?;
+        self.session
+            .set_field_value(
+                FieldTarget::Symbol(symbol_id),
+                "reference",
+                Some(FieldValue::Text(value)),
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    /// Updates the selected symbol description through shared command history.
+    pub fn update_selected_symbol_description(&mut self, value: String) -> Result<(), String> {
+        let symbol_id = self.selected_symbol_id()?;
+        self.session
+            .set_field_value(
+                FieldTarget::Symbol(symbol_id),
+                "description",
+                Some(FieldValue::Text(value)),
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    /// Updates the selected wire label through shared command history.
+    pub fn update_selected_wire_label(&mut self, value: String) -> Result<(), String> {
+        let wire_id = self.selected_wire_id()?;
+        self.session
+            .set_field_value(
+                FieldTarget::Wire(wire_id),
+                "label",
+                Some(FieldValue::Text(value)),
+            )
+            .map_err(|error| error.to_string())
+    }
+
+    /// Replaces active-sheet grid settings through shared command history.
+    pub fn update_sheet_grid(&mut self, enabled: bool, spacing: i64) -> Result<(), String> {
+        let mut settings = self
+            .session
+            .state()
+            .project()
+            .sheet(self.active_sheet_id())
+            .ok_or_else(|| "active sheet is unavailable".to_owned())?
+            .settings
+            .clone();
+        settings.grid_visible = enabled;
+        settings.grid_spacing = spacing;
+        self.session
+            .apply_sheet_settings(settings)
+            .map_err(|error| error.to_string())
+    }
+
+    /// Renames the active sheet through shared command history.
+    pub fn update_sheet_name(&mut self, name: String) -> Result<(), String> {
+        self.session
+            .rename_active_sheet(name)
+            .map_err(|error| error.to_string())
+    }
+
+    /// Returns the selected symbol reference when one is selected.
+    #[must_use]
+    pub fn selected_symbol_reference(&self) -> Option<String> {
+        self.selected_symbol_field("reference")
+    }
+
+    /// Returns the selected symbol description when one is selected.
+    #[must_use]
+    pub fn selected_symbol_description(&self) -> Option<String> {
+        self.selected_symbol_field("description")
+    }
+
+    /// Returns the selected wire label when one is selected.
+    #[must_use]
+    pub fn selected_wire_label(&self) -> Option<String> {
+        let wire_id = self.selected_wire_id().ok()?;
+        field_text(
+            self.session
+                .state()
+                .project()
+                .wire(self.active_sheet_id(), wire_id)?
+                .fields
+                .get("label")?,
+        )
+    }
+
+    /// Serializes the active property values needed by the thin browser inspector.
+    pub fn inspector_state_json(&self) -> Result<String, String> {
+        let sheet = self
+            .session
+            .state()
+            .project()
+            .sheet(self.active_sheet_id())
+            .ok_or_else(|| "active sheet is unavailable".to_owned())?;
+        serde_json::to_string(&InspectorState {
+            selected_count: self.selection_count(),
+            symbol_reference: self.selected_symbol_reference(),
+            symbol_description: self.selected_symbol_description(),
+            wire_label: self.selected_wire_label(),
+            sheet_name: sheet.name.clone(),
+            grid_visible: sheet.settings.grid_visible,
+            grid_spacing: sheet.settings.grid_spacing,
+        })
+        .map_err(|error| format!("inspector encoding failed: {error}"))
+    }
+
+    /// Selects a stable sorted wire for browser-only controller contracts.
+    pub fn select_wire_for_test(&mut self, index: usize) -> Result<(), String> {
+        let wire_id = self
+            .session
+            .state()
+            .project()
+            .sheet(self.active_sheet_id())
+            .and_then(|sheet| sheet.wires.keys().nth(index).copied())
+            .ok_or_else(|| "wire fixture index is unavailable".to_owned())?;
+        self.session
+            .select_only(PresentationItemId::Wire(wire_id))
+            .map_err(|error| error.to_string())
+    }
+
+    /// Selects a stable sorted symbol for browser-only controller contracts.
+    pub fn select_symbol_for_test(&mut self, index: usize) -> Result<(), String> {
+        let symbol_id = self
+            .session
+            .state()
+            .project()
+            .sheet(self.active_sheet_id())
+            .and_then(|sheet| sheet.symbol_instances.keys().nth(index).copied())
+            .ok_or_else(|| "symbol fixture index is unavailable".to_owned())?;
+        self.session
+            .select_only(PresentationItemId::Symbol(symbol_id))
+            .map_err(|error| error.to_string())
     }
 
     fn terminal_at(&self, x: i64, y: i64) -> Option<athena_domain::TerminalId> {
-        let scene = project_sheet(
-            self.state.project(),
-            self.active_sheet_id,
-            &self.presentation,
-        )?;
+        let scene = self.session.scene().ok()?;
         match hit_test(
             &scene,
             athena_geometry::WorldPoint::new(x as f64, y as f64),
@@ -188,35 +363,26 @@ impl WebEditorCore {
     pub fn apply_command_json(&mut self, command_json: &str) -> Result<(), String> {
         let command = serde_json::from_str(command_json)
             .map_err(|error| format!("invalid editor command: {error}"))?;
-        self.history
-            .apply(&mut self.state, command)
+        self.session
+            .apply_command(command)
             .map_err(|error| error.to_string())
     }
 
     pub fn undo(&mut self) -> Result<bool, String> {
-        self.history
-            .undo(&mut self.state)
-            .map_err(|error| error.to_string())
+        self.session.undo().map_err(|error| error.to_string())
     }
 
     pub fn redo(&mut self) -> Result<bool, String> {
-        self.history
-            .redo(&mut self.state)
-            .map_err(|error| error.to_string())
+        self.session.redo().map_err(|error| error.to_string())
     }
 
     pub fn render_active_sheet(&self) -> Result<String, String> {
-        let scene = project_sheet(
-            self.state.project(),
-            self.active_sheet_id,
-            &self.presentation,
-        )
-        .ok_or_else(|| "active sheet is unavailable".to_owned())?;
+        let scene = self.session.scene().map_err(|error| error.to_string())?;
         serde_json::to_string(&scene).map_err(|error| format!("scene encoding failed: {error}"))
     }
 
     pub fn encode_snapshot(&self) -> Result<Vec<u8>, String> {
-        SnapshotStore::encode_snapshot(self.state.project())
+        SnapshotStore::encode_snapshot(self.session.state().project())
             .map_err(|error| format!("snapshot encoding failed: {error}"))
     }
 
@@ -228,14 +394,121 @@ impl WebEditorCore {
             .first()
             .copied()
             .ok_or_else(|| "loaded project has no sheets".to_owned())?;
-        self.state = EditorState::new(project);
-        self.history = History::new(200);
-        self.active_sheet_id = active_sheet_id;
-        self.presentation = EditorPresentation::default();
+        self.session = EditorSession::new(project, active_sheet_id);
         self.placement_definition = None;
         self.wire_start = None;
+        self.wire_mode = false;
         Ok(())
     }
+
+    fn handle_wire_click(&mut self, x: i64, y: i64) -> Result<(), String> {
+        let terminal = self
+            .terminal_at(x, y)
+            .ok_or_else(|| "wire endpoints must be terminals".to_owned())?;
+        let Some(start) = self.wire_start else {
+            self.wire_start = Some(terminal);
+            return Ok(());
+        };
+        if start == terminal {
+            return Ok(());
+        }
+        let project = self.session.state().project();
+        let first = project
+            .terminal(self.active_sheet_id(), start)
+            .ok_or_else(|| "wire start terminal missing".to_owned())?
+            .position;
+        let second = project
+            .terminal(self.active_sheet_id(), terminal)
+            .ok_or_else(|| "wire end terminal missing".to_owned())?
+            .position;
+        // Keep the route canonical when terminals are not axis-aligned.
+        let route = if first.x == second.x || first.y == second.y {
+            vec![first, second]
+        } else {
+            vec![first, Point::new(second.x, first.y), second]
+        };
+        self.session
+            .apply_command(EditorCommand::CreateWire {
+                sheet_id: self.active_sheet_id(),
+                wire: athena_domain::Wire::new(
+                    athena_domain::WireEndpoint::Terminal(start),
+                    athena_domain::WireEndpoint::Terminal(terminal),
+                    route,
+                ),
+            })
+            .map_err(|error| error.to_string())?;
+        self.wire_start = None;
+        self.wire_mode = false;
+        Ok(())
+    }
+
+    fn world_point(&self, x: i64, y: i64) -> Point {
+        let world = self
+            .session
+            .presentation()
+            .viewport
+            .viewport_to_world(athena_geometry::WorldPoint::new(x as f64, y as f64));
+        Point::new(world.x.round() as i64, world.y.round() as i64)
+    }
+
+    fn selected_symbol_id(&self) -> Result<athena_domain::SymbolInstanceId, String> {
+        self.session
+            .presentation()
+            .selected
+            .iter()
+            .find_map(|item| match item {
+                PresentationItemId::Symbol(id) => Some(*id),
+                _ => None,
+            })
+            .ok_or_else(|| "a symbol must be selected before editing its properties".to_owned())
+    }
+
+    fn selected_wire_id(&self) -> Result<athena_domain::WireId, String> {
+        self.session
+            .presentation()
+            .selected
+            .iter()
+            .find_map(|item| match item {
+                PresentationItemId::Wire(id) => Some(*id),
+                _ => None,
+            })
+            .ok_or_else(|| "a wire must be selected before editing its properties".to_owned())
+    }
+
+    fn selected_symbol_field(&self, field: &str) -> Option<String> {
+        let symbol_id = self.selected_symbol_id().ok()?;
+        field_text(
+            self.session
+                .state()
+                .project()
+                .symbol_instance(self.active_sheet_id(), symbol_id)?
+                .fields
+                .get(field)?,
+        )
+    }
+}
+
+fn pointer_modifiers(shift: bool, command: bool) -> PointerModifiers {
+    PointerModifiers { shift, command }
+}
+
+fn field_text(value: &FieldValue) -> Option<String> {
+    match value {
+        FieldValue::Text(value) => Some(value.clone()),
+        FieldValue::Integer(value) => Some(value.to_string()),
+        FieldValue::Boolean(value) => Some(value.to_string()),
+    }
+}
+
+#[derive(Serialize)]
+struct InspectorState {
+    selected_count: usize,
+    symbol_reference: Option<String>,
+    symbol_description: Option<String>,
+    wire_label: Option<String>,
+    sheet_name: String,
+    grid_visible: bool,
+    grid_spacing: i64,
 }
 
 /// WASM handle. Its exports contain no mutable domain record references.
@@ -263,8 +536,58 @@ impl WebEditor {
         self.core.pointer_click(x, y).map_err(js_error)
     }
 
+    pub fn pointer_down(
+        &mut self,
+        x: i64,
+        y: i64,
+        shift: bool,
+        command: bool,
+    ) -> Result<bool, JsValue> {
+        self.core
+            .pointer_down(x, y, shift, command)
+            .map_err(js_error)
+    }
+
+    pub fn pointer_move(
+        &mut self,
+        x: i64,
+        y: i64,
+        shift: bool,
+        command: bool,
+    ) -> Result<(), JsValue> {
+        self.core
+            .pointer_move(x, y, shift, command)
+            .map_err(js_error)
+    }
+
+    pub fn pointer_up(
+        &mut self,
+        x: i64,
+        y: i64,
+        shift: bool,
+        command: bool,
+    ) -> Result<(), JsValue> {
+        self.core.pointer_up(x, y, shift, command).map_err(js_error)
+    }
+
     pub fn begin_wire(&mut self) {
         self.core.begin_wire();
+    }
+
+    pub fn cancel_active_tool(&mut self) -> Result<(), JsValue> {
+        self.core.cancel_active_tool().map_err(js_error)
+    }
+
+    pub fn rotate_selection_90(&mut self) -> Result<(), JsValue> {
+        self.core.rotate_selection_90().map_err(js_error)
+    }
+
+    pub fn mirror_selection(&mut self) -> Result<(), JsValue> {
+        self.core.mirror_selection().map_err(js_error)
+    }
+
+    pub fn delete_selection(&mut self) -> Result<(), JsValue> {
+        self.core.delete_selection().map_err(js_error)
     }
 
     pub fn apply_command(&mut self, command_json: String) -> Result<(), JsValue> {
@@ -279,6 +602,42 @@ impl WebEditor {
 
     pub fn redo(&mut self) -> Result<bool, JsValue> {
         self.core.redo().map_err(js_error)
+    }
+
+    pub fn update_selected_symbol_reference(&mut self, value: String) -> Result<(), JsValue> {
+        self.core
+            .update_selected_symbol_reference(value)
+            .map_err(js_error)
+    }
+
+    pub fn update_selected_symbol_description(&mut self, value: String) -> Result<(), JsValue> {
+        self.core
+            .update_selected_symbol_description(value)
+            .map_err(js_error)
+    }
+
+    pub fn update_selected_wire_label(&mut self, value: String) -> Result<(), JsValue> {
+        self.core
+            .update_selected_wire_label(value)
+            .map_err(js_error)
+    }
+
+    pub fn update_sheet_name(&mut self, value: String) -> Result<(), JsValue> {
+        self.core.update_sheet_name(value).map_err(js_error)
+    }
+
+    pub fn update_sheet_grid(&mut self, enabled: bool, spacing: i64) -> Result<(), JsValue> {
+        self.core
+            .update_sheet_grid(enabled, spacing)
+            .map_err(js_error)
+    }
+
+    pub fn selection_count(&self) -> usize {
+        self.core.selection_count()
+    }
+
+    pub fn inspector_state_json(&self) -> Result<String, JsValue> {
+        self.core.inspector_state_json().map_err(js_error)
     }
 
     pub fn render_active_sheet(&self) -> Result<String, JsValue> {

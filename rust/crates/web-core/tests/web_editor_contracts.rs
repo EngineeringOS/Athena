@@ -1,4 +1,3 @@
-use athena_domain::Point;
 use athena_web_core::WebEditorCore;
 
 #[test]
@@ -33,23 +32,132 @@ fn placement_and_wire_commands_stay_inside_the_wasm_controller() {
         .begin_placement_by_name("Resistor")
         .expect("resistor is available");
     editor.pointer_click(200, 80).expect("second symbol places");
+    editor.begin_wire();
     editor
-        .apply_command_json(
-            &serde_json::to_string(&athena_editor::EditorCommand::CreateWire {
-                sheet_id: editor.active_sheet_id(),
-                wire: athena_domain::Wire::new(
-                    athena_domain::WireEndpoint::Terminal(editor.terminal_ids()[0]),
-                    athena_domain::WireEndpoint::Terminal(editor.terminal_ids()[2]),
-                    vec![Point::new(120, 80), Point::new(180, 80)],
-                ),
-            })
-            .expect("wire command serializes"),
-        )
-        .expect("wire command applies");
+        .pointer_click(120, 80)
+        .expect("wire start terminal selects");
+    editor
+        .pointer_click(180, 80)
+        .expect("wire end terminal completes the shared command");
     assert!(
         editor
             .render_active_sheet()
             .expect("scene serializes")
             .contains("Polyline")
     );
+}
+
+fn fixture_place_two_symbols_and_wire(editor: &mut WebEditorCore) {
+    editor
+        .begin_placement_by_name("Resistor")
+        .expect("resistor is available");
+    editor.pointer_click(100, 80).expect("first symbol places");
+    editor
+        .begin_placement_by_name("Resistor")
+        .expect("resistor is available");
+    editor
+        .pointer_click(220, 120)
+        .expect("second symbol places");
+    editor.begin_wire();
+    editor
+        .pointer_click(120, 80)
+        .expect("wire start terminal selects");
+    editor
+        .pointer_click(200, 120)
+        .expect("wire end terminal completes the shared command");
+}
+
+fn fixture_web_editor_with_selected_wire() -> WebEditorCore {
+    let mut editor = WebEditorCore::new("Browser project");
+    fixture_place_two_symbols_and_wire(&mut editor);
+    editor
+        .select_wire_for_test(0)
+        .expect("fixture wire selects");
+    editor
+}
+
+#[test]
+fn web_controller_exposes_directional_marquee_and_property_editing() {
+    let mut editor = WebEditorCore::new("Browser project");
+    fixture_place_two_symbols_and_wire(&mut editor);
+
+    editor
+        .pointer_down(80, 60, false, false)
+        .expect("marquee starts");
+    editor
+        .pointer_move(260, 140, false, false)
+        .expect("marquee updates");
+    assert!(
+        editor
+            .render_active_sheet()
+            .expect("scene serializes")
+            .contains("MarqueeRect")
+    );
+    editor
+        .pointer_up(260, 140, false, false)
+        .expect("marquee completes");
+    assert_eq!(editor.selection_count(), 3);
+
+    editor
+        .select_symbol_for_test(0)
+        .expect("fixture symbol selects");
+    editor
+        .update_selected_symbol_reference("K1".to_owned())
+        .expect("reference updates through the shared session");
+    assert_eq!(editor.selected_symbol_reference(), Some("K1".to_owned()));
+}
+
+#[test]
+fn web_controller_drags_a_wire_vertex_through_the_shared_pointer_contract() {
+    let mut editor = fixture_web_editor_with_selected_wire();
+
+    editor
+        .pointer_down(160, 80, false, false)
+        .expect("vertex drag starts");
+    editor
+        .pointer_move(160, 100, false, false)
+        .expect("vertex drag updates");
+    editor
+        .pointer_up(160, 100, false, false)
+        .expect("vertex drag commits");
+
+    assert!(
+        editor
+            .render_active_sheet()
+            .expect("scene serializes")
+            .contains("WireVertexHandle")
+    );
+}
+
+#[test]
+fn web_controller_exposes_shared_transform_delete_and_cancel_commands() {
+    let mut editor = WebEditorCore::new("Browser project");
+    editor
+        .begin_placement_by_name("Resistor")
+        .expect("resistor is available");
+    editor
+        .cancel_active_tool()
+        .expect("escape clears placement mode");
+    editor
+        .pointer_click(100, 80)
+        .expect("empty click remains a selection gesture");
+    assert!(
+        !editor
+            .render_active_sheet()
+            .expect("scene serializes")
+            .contains("SymbolBody")
+    );
+
+    fixture_place_two_symbols_and_wire(&mut editor);
+    editor.select_symbol_for_test(0).expect("symbol selects");
+    editor
+        .rotate_selection_90()
+        .expect("rotate reaches the shared session");
+    editor
+        .mirror_selection()
+        .expect("mirror reaches the shared session");
+    editor
+        .delete_selection()
+        .expect("delete reaches the shared session");
+    assert_eq!(editor.selection_count(), 0);
 }

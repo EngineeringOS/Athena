@@ -6,7 +6,18 @@ const status = document.querySelector("#status");
 const footer = document.querySelector("#footer-status");
 let editor;
 let currentScene;
+let canvasGestureActive = false;
+let ignoreNextCanvasClick = false;
+let syncingInspector = false;
 const SNAPSHOT_KEY = "athena.electrical.snapshot.v1";
+const inspector = {
+  reference: document.querySelector("#symbol-reference"),
+  description: document.querySelector("#symbol-description"),
+  wireLabel: document.querySelector("#wire-label"),
+  sheetName: document.querySelector("#sheet-name"),
+  gridVisible: document.querySelector("#grid-visible"),
+  gridSpacing: document.querySelector("#grid-spacing"),
+};
 
 function fitCanvas() {
   const rect = canvas.getBoundingClientRect();
@@ -51,6 +62,8 @@ function drawScene(scene) {
       } else if (primitive.Circle) {
         const circle = primitive.Circle; const point = toCanvas(circle.center);
         context.fillStyle = "#0f172a"; context.beginPath(); context.arc(point.x, point.y, circle.radius * viewport.zoom, 0, Math.PI * 2); context.fill();
+      } else if (primitive.Overlay) {
+        drawOverlay(primitive.Overlay.overlay, toCanvas, viewport);
       }
     }
   }
@@ -60,9 +73,35 @@ function drawScene(scene) {
 function line(start, end) { context.beginPath(); context.moveTo(start.x, start.y); context.lineTo(end.x, end.y); context.stroke(); }
 function polyline(points) { if (points.length < 2) return; context.beginPath(); context.moveTo(points[0].x, points[0].y); for (const point of points.slice(1)) context.lineTo(point.x, point.y); context.stroke(); }
 
+function drawOverlay(overlay, toCanvas, viewport) {
+  if (overlay.SelectionBounds) {
+    const { min, max } = overlay.SelectionBounds.bounds;
+    const start = toCanvas(min); const end = toCanvas(max);
+    context.strokeStyle = "#2563eb"; context.lineWidth = 1.5;
+    context.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+  } else if (overlay.WirePathHighlight) {
+    context.strokeStyle = "#0ea5e9"; context.lineWidth = 3;
+    polyline(overlay.WirePathHighlight.points.map(toCanvas));
+  } else if (overlay.WireVertexHandle || overlay.WireEndpointHandle || overlay.TransformHandle) {
+    const handle = overlay.WireVertexHandle || overlay.WireEndpointHandle || overlay.TransformHandle;
+    const point = toCanvas(handle.position); const radius = handle.radius * viewport.zoom;
+    context.fillStyle = "#0ea5e9"; context.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+  } else if (overlay.MarqueeRect) {
+    const start = toCanvas(overlay.MarqueeRect.start); const end = toCanvas(overlay.MarqueeRect.end);
+    context.fillStyle = "rgba(147, 197, 253, 0.33)";
+    context.fillRect(start.x, start.y, end.x - start.x, end.y - start.y);
+    context.strokeStyle = "#2563eb"; context.lineWidth = 1;
+    context.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+  } else if (overlay.GuideLine) {
+    context.strokeStyle = "#f97316"; context.lineWidth = 1;
+    line(toCanvas(overlay.GuideLine.start), toCanvas(overlay.GuideLine.end));
+  }
+}
+
 function refresh() {
   currentScene = JSON.parse(editor.render_active_sheet());
   drawScene(currentScene);
+  syncInspector();
 }
 
 function canvasPointToWorld(event) {
@@ -70,6 +109,23 @@ function canvasPointToWorld(event) {
   const viewport = currentScene.viewport;
   const local = { x: event.clientX - rect.left - 24, y: event.clientY - rect.top - 24 };
   return { x: Math.round((local.x - viewport.origin.x) / viewport.zoom), y: Math.round((local.y - viewport.origin.y) / viewport.zoom) };
+}
+
+function eventModifiers(event) {
+  return { shift: event.shiftKey, command: event.ctrlKey || event.metaKey };
+}
+
+function syncInspector() {
+  if (!editor) return;
+  const state = JSON.parse(editor.inspector_state_json());
+  syncingInspector = true;
+  inspector.reference.value = state.symbol_reference ?? "";
+  inspector.description.value = state.symbol_description ?? "";
+  inspector.wireLabel.value = state.wire_label ?? "";
+  inspector.sheetName.value = state.sheet_name;
+  inspector.gridVisible.checked = state.grid_visible;
+  inspector.gridSpacing.value = String(state.grid_spacing);
+  syncingInspector = false;
 }
 
 function saveLocal() {
@@ -104,7 +160,35 @@ async function start() {
     button.addEventListener("click", () => { editor.begin_placement(name); status.textContent = `Place ${name} on the canvas`; });
     symbolList.append(button);
   }
+  canvas.addEventListener("pointerdown", (event) => {
+    const point = canvasPointToWorld(event);
+    const modifiers = eventModifiers(event);
+    if (event.button !== 0) return;
+    canvasGestureActive = editor.pointer_down(point.x, point.y, modifiers.shift, modifiers.command);
+    if (canvasGestureActive) {
+      canvas.setPointerCapture(event.pointerId);
+      status.textContent = "Shared Rust editor gesture started";
+      refresh();
+    }
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    if (!canvasGestureActive) return;
+    const point = canvasPointToWorld(event); const modifiers = eventModifiers(event);
+    editor.pointer_move(point.x, point.y, modifiers.shift, modifiers.command);
+    refresh();
+  });
+  canvas.addEventListener("pointerup", (event) => {
+    if (!canvasGestureActive) return;
+    const point = canvasPointToWorld(event); const modifiers = eventModifiers(event);
+    editor.pointer_up(point.x, point.y, modifiers.shift, modifiers.command);
+    canvasGestureActive = false;
+    ignoreNextCanvasClick = true;
+    canvas.releasePointerCapture(event.pointerId);
+    status.textContent = "Shared Rust editor updated";
+    refresh();
+  });
   canvas.addEventListener("click", (event) => {
+    if (canvasGestureActive || ignoreNextCanvasClick) { ignoreNextCanvasClick = false; return; }
     const point = canvasPointToWorld(event);
     editor.pointer_click(point.x, point.y);
     status.textContent = "Shared Rust editor updated";
@@ -116,6 +200,51 @@ async function start() {
   document.querySelector("[data-command=save]").addEventListener("click", saveLocal);
   document.querySelector("[data-command=reload]").addEventListener("click", reloadLocal);
   document.querySelector("[data-command=wire]").addEventListener("click", () => { editor.begin_wire(); status.textContent = "Click two terminals to connect them"; });
+  document.querySelector("[data-command=rotate]").addEventListener("click", () => { editor.rotate_selection_90(); refresh(); });
+  document.querySelector("[data-command=mirror]").addEventListener("click", () => { editor.mirror_selection(); refresh(); });
+  document.querySelector("[data-command=delete]").addEventListener("click", () => { editor.delete_selection(); refresh(); });
+  inspector.reference.addEventListener("change", () => {
+    if (syncingInspector) return;
+    editor.update_selected_symbol_reference(inspector.reference.value); refresh();
+  });
+  inspector.description.addEventListener("change", () => {
+    if (syncingInspector) return;
+    editor.update_selected_symbol_description(inspector.description.value); refresh();
+  });
+  inspector.wireLabel.addEventListener("change", () => {
+    if (syncingInspector) return;
+    editor.update_selected_wire_label(inspector.wireLabel.value); refresh();
+  });
+  inspector.sheetName.addEventListener("change", () => {
+    if (syncingInspector) return;
+    editor.update_sheet_name(inspector.sheetName.value); refresh();
+  });
+  function updateGrid() {
+    if (syncingInspector) return;
+    const spacing = Number.parseInt(inspector.gridSpacing.value, 10);
+    if (Number.isInteger(spacing) && spacing > 0) {
+      editor.update_sheet_grid(inspector.gridVisible.checked, spacing); refresh();
+    }
+  }
+  inspector.gridVisible.addEventListener("change", updateGrid);
+  inspector.gridSpacing.addEventListener("change", updateGrid);
+  window.addEventListener("keydown", (event) => {
+    const secondary = event.ctrlKey || event.metaKey;
+    if (secondary && event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      if (event.shiftKey) editor.redo(); else editor.undo();
+      refresh();
+    } else if (event.key === "Delete" || event.key === "Backspace") {
+      if (event.target instanceof HTMLInputElement) return;
+      event.preventDefault(); editor.delete_selection(); refresh();
+    } else if (event.key.toLowerCase() === "r") {
+      editor.rotate_selection_90(); refresh();
+    } else if (event.key.toLowerCase() === "m") {
+      editor.mirror_selection(); refresh();
+    } else if (event.key === "Escape") {
+      canvasGestureActive = false; editor.cancel_active_tool(); status.textContent = "Gesture cancelled"; refresh();
+    }
+  });
   window.addEventListener("resize", refresh);
   refresh();
   status.textContent = "Ready";

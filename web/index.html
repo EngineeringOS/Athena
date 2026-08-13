@@ -17,6 +17,9 @@
           <button type="button" data-command="save" title="Save locally">Save</button>
           <button type="button" data-command="reload" title="Reload local project">Reload</button>
           <button type="button" data-command="wire" title="Draw wire">Wire</button>
+          <button type="button" data-command="rotate" title="Rotate selection">Rotate</button>
+          <button type="button" data-command="mirror" title="Mirror selection">Mirror</button>
+          <button type="button" data-command="delete" title="Delete selection">Delete</button>
         </div>
       </header>
       <aside class="library" aria-label="Electrical symbol library">
@@ -29,6 +32,12 @@
       <aside class="inspector" aria-label="Inspector">
         <h2>Inspector</h2>
         <p id="status">Loading shared editor core...</p>
+        <label>Reference <input id="symbol-reference" type="text" autocomplete="off"></label>
+        <label>Description <input id="symbol-description" type="text" autocomplete="off"></label>
+        <label>Wire label <input id="wire-label" type="text" autocomplete="off"></label>
+        <label>Sheet <input id="sheet-name" type="text" autocomplete="off"></label>
+        <label class="checkbox"><input id="grid-visible" type="checkbox"> Show grid</label>
+        <label>Grid spacing <input id="grid-spacing" type="number" min="1" step="1"></label>
       </aside>
       <footer id="footer-status">Local-first browser editor</footer>
     </main>
