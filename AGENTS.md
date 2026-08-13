@@ -9,6 +9,13 @@
 - `reference/qelectrotech-source-mirror` and `reference/qelectrotech-doc` are
   behavior references only. Do not preserve or reuse their C++/Qt architecture,
   XML file formats, user interface, or implementation details.
+- Treat the reference set as two explicit eras. QElectroTech source and user
+  docs are the old-world electrical feature, workflow, and terminology
+  inventory. `reference/zed`, `reference/gpui-component`, and
+  `reference/Graphite` are the new-age foundation references for Rust module
+  boundaries, editor-shell composition, component behavior, interaction
+  semantics, rendering/presentation separation, and desktop-first UX. Never
+  let the old-world implementation dictate the new-world architecture or UI.
 - Legacy Theia/Electron code under `ide/` is out of scope. Do not extend,
   integrate with, or use it as an architectural constraint for the rewrite.
 
@@ -46,10 +53,13 @@
   and interaction semantics, with platform-specific UI and service adapters.
 - Use QElectroTech as the electrical-schematic feature inventory and behavior
   oracle, then redesign for ergonomic, composable, testable workflows rather
-  than cloning its UI.
-- Use Graphite as an editor-shell reference: keep document state, tools,
-  viewport/canvas, commands, rendering, and platform wrappers as separate
-  layers. Graphite is an architectural reference, not a product dependency.
+  than cloning its UI. When legacy behavior conflicts with modern interaction
+  quality, preserve the electrical outcome and redesign the interaction.
+- Use Zed and Graphite as the primary editor-shell references: keep document
+  state, tools, viewport/canvas, commands, rendering, and platform wrappers as
+  separate layers, with explicit state ownership and composable interactions.
+  Use `gpui-component` for native component patterns where it fits. These are
+  architectural and UX references, not product dependencies or source to copy.
 - Every core Rust file touched in a milestone must be self-documenting: include
   a module-level `//!` summary, document public types/functions that define a
   cross-crate contract, and add short comments before non-obvious state,
