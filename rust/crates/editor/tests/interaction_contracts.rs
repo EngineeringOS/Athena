@@ -43,6 +43,20 @@ fn fixture_session_with_offset_wire_and_symbol() -> EditorSession {
         .get(&symbol_ids[1])
         .and_then(|symbol| symbol.terminals.keys().next())
         .expect("second terminal exists");
+    let first_position = sheet
+        .symbol_instances
+        .values()
+        .flat_map(|symbol| symbol.terminals.values())
+        .find(|terminal| terminal.id == first_terminal)
+        .expect("first terminal position exists")
+        .position;
+    let second_position = sheet
+        .symbol_instances
+        .values()
+        .flat_map(|symbol| symbol.terminals.values())
+        .find(|terminal| terminal.id == second_terminal)
+        .expect("second terminal position exists")
+        .position;
     session
         .apply_command(EditorCommand::CreateWire {
             sheet_id,
@@ -50,9 +64,9 @@ fn fixture_session_with_offset_wire_and_symbol() -> EditorSession {
                 WireEndpoint::Terminal(first_terminal),
                 WireEndpoint::Terminal(second_terminal),
                 vec![
-                    Point::new(120, 80),
-                    Point::new(120, 120),
-                    Point::new(200, 120),
+                    first_position,
+                    Point::new(first_position.x, second_position.y),
+                    second_position,
                 ],
             ),
         })
