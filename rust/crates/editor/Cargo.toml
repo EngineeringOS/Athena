@@ -7,6 +7,8 @@ license.workspace = true
 [dependencies]
 athena-domain = { path = "../domain" }
 athena-format = { path = "../format" }
+athena-geometry = { path = "../geometry" }
+athena-render = { path = "../render" }
 serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true

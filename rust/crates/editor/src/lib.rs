@@ -2,7 +2,10 @@
 
 mod command;
 mod history;
+mod interaction;
 mod persistence;
+mod selection;
+mod session;
 mod validation;
 
 pub use command::{
@@ -10,9 +13,15 @@ pub use command::{
     StoredItem,
 };
 pub use history::{History, HistoryError, snapshot_bytes, snapshots_equal};
+pub use interaction::{
+    DebugMarqueeMode, DragSelectionState, InteractionState, MarqueeState, PointerModifiers,
+    WireEndpointReconnectState, WireVertexDragState,
+};
 pub use persistence::{
     InMemoryPersistence, OutboxStore, PersistenceError, SnapshotSink, SnapshotSource,
 };
+pub use selection::SelectionState;
+pub use session::{EditorSession, SessionError};
 
 /// Compile-time marker for the editor crate.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

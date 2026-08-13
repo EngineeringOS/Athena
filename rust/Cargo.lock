@@ -458,6 +458,7 @@ version = "0.1.0"
 dependencies = [
  "athena-domain",
  "athena-format",
+ "athena-geometry",
  "athena-library",
  "athena-render",
  "serde",
