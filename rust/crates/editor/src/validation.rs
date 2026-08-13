@@ -5,10 +5,11 @@
 
 use std::collections::BTreeSet;
 
-use athena_domain::{Project, SheetId, WireEndpoint};
+use athena_domain::{Junction, Point, Project, SheetId, Wire, WireEndpoint};
 
 use crate::{
-    ApplyError, EditorCommand, FieldTarget, ItemId, StoredItem, command::sheet_contains_item,
+    ApplyError, EditorCommand, FieldTarget, ItemId, StoredItem, WireSide,
+    command::sheet_contains_item,
 };
 
 /// Performs all identifier and endpoint checks before an editor-state mutation
@@ -64,6 +65,7 @@ pub(crate) fn validate_command(
             }
             validate_endpoint(project, *sheet_id, &wire.start)?;
             validate_endpoint(project, *sheet_id, &wire.end)?;
+            validate_wire_route(project, *sheet_id, wire, None)?;
         }
         EditorCommand::SplitWire {
             sheet_id,
@@ -101,6 +103,8 @@ pub(crate) fn validate_command(
                 &first_wire.start,
                 junction.id,
             )?;
+            validate_wire_route(project, *sheet_id, first_wire, Some(junction))?;
+            validate_wire_route(project, *sheet_id, second_wire, Some(junction))?;
             validate_endpoint_with_new_junction(project, *sheet_id, &first_wire.end, junction.id)?;
             validate_endpoint_with_new_junction(
                 project,
@@ -236,12 +240,86 @@ fn validate_wire(
     sheet_id: SheetId,
     wire_id: athena_domain::WireId,
 ) -> Result<&athena_domain::Wire, ApplyError> {
-    project
+    let wire = project
         .wire(sheet_id, wire_id)
         .ok_or(ApplyError::UnknownItem {
             sheet_id,
             item: ItemId::Wire(wire_id),
-        })
+        })?;
+    validate_wire_route(project, sheet_id, wire, None)?;
+    Ok(wire)
+}
+
+/// Checks the persisted route contract against positions owned by this sheet.
+fn validate_wire_route(
+    project: &Project,
+    sheet_id: SheetId,
+    wire: &Wire,
+    pending_junction: Option<&Junction>,
+) -> Result<(), ApplyError> {
+    if wire.route.len() < 2 {
+        return Err(ApplyError::WireRouteTooShort { wire_id: wire.id });
+    }
+    let start = endpoint_position(project, sheet_id, &wire.start, pending_junction)?;
+    let end = endpoint_position(project, sheet_id, &wire.end, pending_junction)?;
+    if wire.route[0] != start {
+        return Err(ApplyError::WireRouteEndpointMismatch {
+            wire_id: wire.id,
+            endpoint: WireSide::Start,
+        });
+    }
+    if wire.route.last().copied() != Some(end) {
+        return Err(ApplyError::WireRouteEndpointMismatch {
+            wire_id: wire.id,
+            endpoint: WireSide::End,
+        });
+    }
+    for (segment_index, segment) in wire.route.windows(2).enumerate() {
+        if segment[0] == segment[1] {
+            return Err(ApplyError::ZeroLengthWireSegment {
+                wire_id: wire.id,
+                segment_index,
+            });
+        }
+        if segment[0].x != segment[1].x && segment[0].y != segment[1].y {
+            return Err(ApplyError::NonOrthogonalWireSegment {
+                wire_id: wire.id,
+                segment_index,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn endpoint_position(
+    project: &Project,
+    sheet_id: SheetId,
+    endpoint: &WireEndpoint,
+    pending_junction: Option<&Junction>,
+) -> Result<Point, ApplyError> {
+    match endpoint {
+        WireEndpoint::Terminal(terminal_id) => project
+            .terminal(sheet_id, *terminal_id)
+            .map(|terminal| terminal.position)
+            .ok_or(ApplyError::UnknownTerminal {
+                sheet_id,
+                terminal_id: *terminal_id,
+            }),
+        WireEndpoint::Junction(junction_id)
+            if pending_junction.map(|junction| junction.id) == Some(*junction_id) =>
+        {
+            Ok(pending_junction
+                .expect("matching pending junction")
+                .position)
+        }
+        WireEndpoint::Junction(junction_id) => project
+            .junction(sheet_id, *junction_id)
+            .map(|junction| junction.position)
+            .ok_or(ApplyError::UnknownJunction {
+                sheet_id,
+                junction_id: *junction_id,
+            }),
+    }
 }
 
 fn point_is_strictly_on_segment(

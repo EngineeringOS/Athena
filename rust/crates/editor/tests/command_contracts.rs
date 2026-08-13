@@ -272,7 +272,8 @@ fn moving_a_symbol_moves_attached_wire_endpoint_vertices() {
     );
     assert_eq!(
         state.project().wire(sheet_id, wire_id).unwrap().route,
-        vec![Point::new(5, 5), Point::new(10, 0), Point::new(20, 0)]
+        vec![Point::new(5, 5), Point::new(20, 5), Point::new(20, 0)],
+        "moving an anchored endpoint introduces a deterministic elbow rather than persisting a diagonal segment"
     );
 }
 
@@ -775,4 +776,175 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
         snapshot_bytes(state.project()).expect("snapshot is valid"),
         before
     );
+}
+
+#[test]
+fn create_wire_rejects_routes_that_are_unanchored_or_non_orthogonal_atomically() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let end = symbol(definition_id, Point::new(20, 20));
+    let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let before = snapshot_bytes(state.project()).expect("snapshot is valid");
+
+    for route in [
+        vec![Point::new(0, 0)],
+        vec![Point::new(5, 0), Point::new(20, 0), Point::new(20, 20)],
+        vec![Point::new(0, 0), Point::new(20, 20)],
+    ] {
+        let wire = Wire::new(
+            WireEndpoint::Terminal(start_terminal),
+            WireEndpoint::Terminal(end_terminal),
+            route,
+        );
+        assert!(
+            state
+                .apply(EditorCommand::CreateWire { sheet_id, wire })
+                .is_err(),
+            "invalid route must be rejected before state changes"
+        );
+        assert_eq!(
+            snapshot_bytes(state.project()).expect("snapshot is valid"),
+            before
+        );
+    }
+}
+
+#[test]
+fn split_wire_rejects_an_invalid_product_route_atomically() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let end = symbol(definition_id, Point::new(20, 0));
+    let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, end);
+    let original = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0)],
+    );
+    let original_id = original.id;
+    state
+        .apply(EditorCommand::CreateWire {
+            sheet_id,
+            wire: original,
+        })
+        .expect("valid original wire");
+    let junction = Junction::new(Point::new(10, 0));
+    let first = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Junction(junction.id),
+        vec![Point::new(0, 0), Point::new(10, 10)],
+    );
+    let second = Wire::new(
+        WireEndpoint::Junction(junction.id),
+        WireEndpoint::Terminal(end_terminal),
+        vec![Point::new(10, 0), Point::new(20, 0)],
+    );
+    let before = snapshot_bytes(state.project()).expect("snapshot is valid");
+
+    assert!(
+        state
+            .apply(EditorCommand::SplitWire {
+                sheet_id,
+                wire_id: original_id,
+                junction,
+                first_wire: first,
+                second_wire: second,
+            })
+            .is_err()
+    );
+    assert_eq!(
+        snapshot_bytes(state.project()).expect("snapshot is valid"),
+        before
+    );
+}
+
+#[test]
+fn each_wire_edit_command_has_exact_snapshot_undo_and_redo() {
+    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let start = symbol(definition_id, Point::new(0, 0));
+    let start_terminal = *start
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let original_end = symbol(definition_id, Point::new(20, 20));
+    let original_end_terminal = *original_end
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    let replacement_end = symbol(definition_id, Point::new(30, 10));
+    let replacement_terminal = *replacement_end
+        .terminals
+        .keys()
+        .next()
+        .expect("symbol has a terminal");
+    place(&mut state, sheet_id, start);
+    place(&mut state, sheet_id, original_end);
+    place(&mut state, sheet_id, replacement_end);
+    let wire = Wire::new(
+        WireEndpoint::Terminal(start_terminal),
+        WireEndpoint::Terminal(original_end_terminal),
+        vec![Point::new(0, 0), Point::new(20, 0), Point::new(20, 20)],
+    );
+    let wire_id = wire.id;
+    state
+        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .expect("valid wire");
+
+    for command in [
+        EditorCommand::InsertWireVertex {
+            sheet_id,
+            wire_id,
+            segment_index: 0,
+            position: Point::new(10, 0),
+        },
+        EditorCommand::MoveWireVertex {
+            sheet_id,
+            wire_id,
+            vertex_index: 1,
+            position: Point::new(10, 10),
+        },
+        EditorCommand::DeleteWireVertex {
+            sheet_id,
+            wire_id,
+            vertex_index: 1,
+        },
+        EditorCommand::ReconnectWireEndpoint {
+            sheet_id,
+            wire_id,
+            endpoint: WireSide::End,
+            terminal_id: replacement_terminal,
+        },
+    ] {
+        let before = snapshot_bytes(state.project()).expect("snapshot is valid");
+        let mut history = History::new(1);
+        history
+            .apply(&mut state, command)
+            .expect("wire edit applies to the fixture");
+        let after = snapshot_bytes(state.project()).expect("snapshot is valid");
+        assert!(history.undo(&mut state).expect("undo applies"));
+        assert_eq!(
+            snapshot_bytes(state.project()).expect("snapshot is valid"),
+            before
+        );
+        assert!(history.redo(&mut state).expect("redo applies"));
+        assert_eq!(
+            snapshot_bytes(state.project()).expect("snapshot is valid"),
+            after
+        );
+    }
 }

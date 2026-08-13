@@ -63,15 +63,23 @@ pub enum WireEndpoint {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Wire {
+    /// Stable identity of this electrical connection.
     pub id: WireId,
+    /// Entity that owns the first route point.
     pub start: WireEndpoint,
+    /// Entity that owns the last route point.
     pub end: WireEndpoint,
+    /// Canonical, orthogonal route including both endpoint-owned points.
     pub route: Vec<Point>,
     #[serde(default)]
     pub fields: BTreeMap<String, FieldValue>,
 }
 
 impl Wire {
+    /// Creates a wire whose route is later admitted only when it is anchored to
+    /// `start` and `end`, contains at least two points, and has orthogonal,
+    /// non-zero-length segments. The editor canonicalizes redundant bends
+    /// before persistence; callers retain ownership of endpoint selection.
     #[must_use]
     pub fn new(start: WireEndpoint, end: WireEndpoint, route: Vec<Point>) -> Self {
         Self {

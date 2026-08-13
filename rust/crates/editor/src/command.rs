@@ -281,6 +281,20 @@ pub enum ApplyError {
         wire_id: WireId,
         segment_index: usize,
     },
+    #[error("wire {wire_id} must contain at least a start and end route point")]
+    WireRouteTooShort { wire_id: WireId },
+    #[error("wire {wire_id} route endpoint {endpoint:?} does not match its attached entity")]
+    WireRouteEndpointMismatch { wire_id: WireId, endpoint: WireSide },
+    #[error("wire {wire_id} route contains a zero-length segment at index {segment_index}")]
+    ZeroLengthWireSegment {
+        wire_id: WireId,
+        segment_index: usize,
+    },
+    #[error("wire {wire_id} route contains a non-orthogonal segment at index {segment_index}")]
+    NonOrthogonalWireSegment {
+        wire_id: WireId,
+        segment_index: usize,
+    },
     #[error("sheet settings must have positive page dimensions and grid spacing")]
     InvalidSheetSettings,
     #[error("coordinate arithmetic overflowed")]
@@ -354,11 +368,13 @@ pub(crate) fn apply_to_project(
             Ok(restore_command(*sheet_id, delete_ids, originals))
         }
         EditorCommand::CreateWire { sheet_id, wire } => {
+            let mut canonical_wire = wire.clone();
+            normalize_wire_route(&mut canonical_wire.route);
             project
                 .sheet_mut(*sheet_id)
                 .expect("validated sheet")
                 .wires
-                .insert(wire.id, wire.clone());
+                .insert(canonical_wire.id, canonical_wire);
             Ok(EditorCommand::DeleteWire {
                 sheet_id: *sheet_id,
                 wire_id: wire.id,
@@ -377,11 +393,19 @@ pub(crate) fn apply_to_project(
                 .wire(*wire_id)
                 .expect("validated wire")
                 .clone();
+            let mut canonical_first_wire = first_wire.clone();
+            let mut canonical_second_wire = second_wire.clone();
+            normalize_wire_route(&mut canonical_first_wire.route);
+            normalize_wire_route(&mut canonical_second_wire.route);
             let sheet = project.sheet_mut(*sheet_id).expect("validated sheet");
             sheet.wires.remove(wire_id);
             sheet.junctions.insert(junction.id, junction.clone());
-            sheet.wires.insert(first_wire.id, first_wire.clone());
-            sheet.wires.insert(second_wire.id, second_wire.clone());
+            sheet
+                .wires
+                .insert(canonical_first_wire.id, canonical_first_wire);
+            sheet
+                .wires
+                .insert(canonical_second_wire.id, canonical_second_wire);
 
             Ok(EditorCommand::RestoreItems {
                 sheet_id: *sheet_id,
@@ -841,16 +865,13 @@ fn move_attached_wire_endpoints(
     delta: Point,
 ) -> Result<(), ApplyError> {
     for wire in sheet.wires.values_mut() {
-        if let Some(position) = endpoint_terminal_position(&wire.start, moved_terminal_ids)
-            && let Some(first) = wire.route.first_mut()
-        {
-            *first = translate(position, delta)?;
+        if let Some(position) = endpoint_terminal_position(&wire.start, moved_terminal_ids) {
+            replace_route_endpoint(&mut wire.route, true, translate(position, delta)?);
         }
-        if let Some(position) = endpoint_terminal_position(&wire.end, moved_terminal_ids)
-            && let Some(last) = wire.route.last_mut()
-        {
-            *last = translate(position, delta)?;
+        if let Some(position) = endpoint_terminal_position(&wire.end, moved_terminal_ids) {
+            replace_route_endpoint(&mut wire.route, false, translate(position, delta)?);
         }
+        normalize_wire_route(&mut wire.route);
     }
     Ok(())
 }
