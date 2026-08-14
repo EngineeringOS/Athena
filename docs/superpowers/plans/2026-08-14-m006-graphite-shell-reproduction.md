@@ -462,31 +462,31 @@ document-priority behavior.
 
 **Traceability:** CAP-M006-006; narrow viewport contract.
 
-- [ ] **Step 1: Write failing 390x844 overlay tests**
+- [x] **Step 1: Write failing 390x844 overlay tests**
 
   Assert the document remains visible; explicit Project, Library, and
   Properties buttons open Rust-selected overlay groups; Escape/backdrop closes;
   trigger focus returns; keyboard and touch activation work; status/tool rows
   do not overlap; the folio fits or scrolls coherently.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
   Run `npm test -- web/tests/narrow-shell.spec.js --project=chromium`.
   Expected: overlay controls are absent.
 
-- [ ] **Step 3: Implement overlay presentation over the same tree**
+- [x] **Step 3: Implement overlay presentation over the same tree**
 
   Add the breakpoint shell controls and render the selected existing
   `PanelGroup` in `FloatingLayers`; do not construct a second mobile layout
   tree. Dispatch `OpenOverlay`/`CloseOverlay` to Rust and keep focus-return and
   pointer/touch capture in Svelte.
 
-- [ ] **Step 4: Run narrow and desktop regressions**
+- [x] **Step 4: Run narrow and desktop regressions**
 
   Run narrow, metric, and interaction Playwright tests. Expected: all pass at
   390x844 and 1440x900 with no unreachable groups or geometry regressions.
 
-- [ ] **Step 5: Commit narrow viewport support**
+- [x] **Step 5: Commit narrow viewport support**
 
   ```powershell
   git add web/src/shell/MainWindow.svelte web/src/shell/FloatingLayers.svelte web/src/shell/shell.css web/tests/narrow-shell.spec.js

@@ -122,6 +122,7 @@ button {
 }
 
 .workspace {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
@@ -129,6 +130,10 @@ button {
   padding: 4px;
   overflow: hidden;
   background: var(--color-2-mildblack);
+}
+
+.narrow-panel-controls {
+  display: none;
 }
 
 .panel-subdivision {
@@ -370,4 +375,132 @@ button {
   z-index: 20;
   inset: 0;
   pointer-events: none;
+}
+
+.floating-layers.has-overlay {
+  pointer-events: auto;
+}
+
+.overlay-backdrop {
+  position: absolute;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  z-index: 1;
+  inset: 28px 0 24px;
+  padding: 38px 8px 8px;
+}
+
+.overlay-scrim {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgb(0 0 0 / 48%);
+}
+
+.panel-overlay {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: min(86vw, 330px);
+  min-width: 0;
+  min-height: 0;
+  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 55%));
+}
+
+.overlay-close {
+  position: absolute;
+  z-index: 8;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  place-items: center;
+  color: var(--color-d-mutedwhite);
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .menu-bar,
+  .window-actions {
+    display: none;
+  }
+
+  .window-frame {
+    justify-content: flex-start;
+    padding: 0 8px;
+  }
+
+  .workspace {
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .narrow-panel-controls {
+    display: flex;
+    flex: 0 0 34px;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    padding: 3px 4px;
+    border-bottom: 1px solid var(--color-4-dimgray);
+    background: var(--color-2-mildblack);
+  }
+
+  .narrow-panel-controls button {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    height: 28px;
+    padding: 0 5px;
+    overflow: hidden;
+    border: 0;
+    border-radius: 2px;
+    color: var(--color-b-lightergray);
+    background: var(--color-3-darkgray);
+    white-space: nowrap;
+  }
+
+  .narrow-panel-controls button[aria-expanded="true"] {
+    color: var(--color-f-white);
+    background: var(--color-5-dullgray);
+  }
+
+  .workspace > .panel-subdivision {
+    flex: 1 1 auto;
+  }
+
+  [data-split-depth="0"] > .workspace-gutter,
+  [data-split-depth="0"] > .split-child:not([data-contains-document="true"]) {
+    display: none;
+  }
+
+  [data-split-depth="0"] > .split-child[data-contains-document="true"] {
+    flex-grow: 1 !important;
+    min-width: 0;
+  }
+
+  .panel-group:has([data-panel-role="FolioDocument"]) {
+    border-radius: 0;
+  }
+
+  .status-info {
+    gap: 6px;
+  }
+
+  .status-hints {
+    max-width: 72px;
+  }
+
+  .overlay-backdrop {
+    padding-top: 38px;
+  }
 }

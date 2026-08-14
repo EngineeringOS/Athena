@@ -10,6 +10,13 @@
   let { node, depth, dispatch, dockPreview } = $props();
   let split = $derived(node.type === "Split" ? node.data : null);
   let horizontal = $derived(split?.axis === "Horizontal");
+
+  function containsDocument(candidate) {
+    if (candidate.type === "PanelGroup") {
+      return candidate.data.tabs.some((tab) => tab.role === "FolioDocument");
+    }
+    return candidate.data.children.some((child) => containsDocument(child.node));
+  }
 </script>
 
 {#if node.type === "PanelGroup"}
@@ -31,7 +38,12 @@
           {dispatch}
         />
       {/if}
-      <div class="split-child" style:flex-grow={child.share} data-share={child.share}>
+      <div
+        class="split-child"
+        style:flex-grow={child.share}
+        data-share={child.share}
+        data-contains-document={containsDocument(child.node)}
+      >
         <PanelSubdivision
           node={child.node}
           depth={depth + 1}
