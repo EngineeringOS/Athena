@@ -39,21 +39,21 @@ and npm/Playwright commands from the repository root.
 GRA-MSG-001, GRA-FRONTEND-001; `AGENTS.md` target-architecture and latest-stable
 dependency guardrails.
 
-- [ ] Run `rustup update stable` and record `rustc --version --verbose`.
-- [ ] Run `cargo search gpui --limit 1`,
+- [x] Run `rustup update stable` and record `rustc --version --verbose`.
+- [x] Run `cargo search gpui --limit 1`,
   `cargo search gpui-component --limit 1`, and `cargo info` for every direct
   workspace dependency; record latest stable releases and compatibility.
-- [ ] Update only to compatible stable releases and keep workspace dependency
+- [x] Update only to compatible stable releases and keep workspace dependency
   declarations centralized in `rust/Cargo.toml`.
-- [ ] Add an empty `crates/application` workspace member named
+- [x] Add an empty `crates/application` workspace member named
   `athena-application` with dependencies only on `athena-domain`,
   `athena-editor`, `athena-format`, serde, serde_json, uuid, and thiserror.
-- [ ] Add a dependency-direction test or metadata audit proving domain, format,
+- [x] Add a dependency-direction test or metadata audit proving domain, format,
   editor, and application do not depend on desktop, web-core, GPUI,
   `wasm-bindgen`, filesystem APIs, or browser APIs.
-- [ ] Run `cargo metadata --format-version 1 --no-deps` from `rust/` and record
+- [x] Run `cargo metadata --format-version 1 --no-deps` from `rust/` and record
   the application/platform dependency edges.
-- [ ] Commit only this task with
+- [x] Commit only this task with
   `git commit -m "build: add application boundary"`.
 
 ### Task 2: Model Ordered Folios and Title-Block Variables

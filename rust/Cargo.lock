@@ -428,6 +428,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "athena-application"
+version = "0.1.0"
+dependencies = [
+ "athena-domain",
+ "athena-editor",
+ "athena-format",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.20",
+ "uuid",
+]
+
+[[package]]
 name = "athena-desktop"
 version = "0.1.0"
 dependencies = [
