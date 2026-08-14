@@ -1,35 +1,39 @@
-use crate::{CURRENT_SCHEMA_VERSION, DOCUMENT_FORMAT, DocumentEnvelope, FormatError};
+//! Explicit schema admission and migration entrypoint.
 
-/// Migrate an envelope to the latest schema without changing project identity.
-pub fn migrate(mut envelope: DocumentEnvelope) -> Result<DocumentEnvelope, FormatError> {
+use crate::{
+    CURRENT_SCHEMA_VERSION, DOCUMENT_FORMAT, DocumentEnvelope, FormatError,
+    MINIMUM_SUPPORTED_SCHEMA_VERSION,
+};
+
+/// Admits the current schema and rejects prototypes or unsupported versions.
+///
+/// Schema 3 is the clean folio-based baseline. Future migrations begin from
+/// this function without reinterpreting prototype sheet data.
+pub fn migrate(envelope: DocumentEnvelope) -> Result<DocumentEnvelope, FormatError> {
     if envelope.format != DOCUMENT_FORMAT {
         return Err(FormatError::UnsupportedFormat {
             actual: envelope.format,
             expected: DOCUMENT_FORMAT,
         });
     }
-
-    if envelope.schema_version > CURRENT_SCHEMA_VERSION || envelope.schema_version == 0 {
+    if envelope.schema_version < MINIMUM_SUPPORTED_SCHEMA_VERSION && envelope.schema_version > 0 {
+        return Err(FormatError::UnsupportedPrototypeSchema {
+            actual: envelope.schema_version,
+            minimum_supported: MINIMUM_SUPPORTED_SCHEMA_VERSION,
+        });
+    }
+    if envelope.schema_version == 0 || envelope.schema_version > CURRENT_SCHEMA_VERSION {
         return Err(FormatError::UnsupportedSchemaVersion {
             actual: envelope.schema_version,
             current: CURRENT_SCHEMA_VERSION,
         });
     }
 
-    while envelope.schema_version < CURRENT_SCHEMA_VERSION {
-        migrate_one_version(&mut envelope);
-    }
-
     envelope.project.validate()?;
-    Ok(envelope)
-}
-
-fn migrate_one_version(envelope: &mut DocumentEnvelope) {
-    match envelope.schema_version {
-        // Version 2 formalized the outer schema version. The nested domain
-        // records already deserialize using defaults, so their entity IDs and
-        // values pass through unchanged.
-        1 => envelope.schema_version = 2,
-        _ => unreachable!("versions are checked before migration"),
+    if envelope.project.folio(envelope.active_folio_id).is_none() {
+        return Err(FormatError::InvalidActiveFolio {
+            active_folio_id: envelope.active_folio_id,
+        });
     }
+    Ok(envelope)
 }

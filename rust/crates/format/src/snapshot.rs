@@ -1,18 +1,18 @@
-use athena_domain::Project;
+//! Stateless UTF-8 byte codec shared by native and browser adapters.
 
-use crate::{FormatError, decode_json, encode_json};
+use crate::{FormatError, PersistedProject, decode_json, encode_json};
 
-/// Stateless byte codec used by filesystem and browser persistence adapters.
+/// Pure byte codec with no filesystem, browser, or cloud dependencies.
 pub struct SnapshotStore;
 
 impl SnapshotStore {
-    /// Encode a project as UTF-8 JSON bytes without performing any I/O.
-    pub fn encode_snapshot(project: &Project) -> Result<Vec<u8>, FormatError> {
-        Ok(encode_json(project)?.into_bytes())
+    /// Encodes validated local document state as deterministic UTF-8 JSON.
+    pub fn encode_snapshot(document: &PersistedProject) -> Result<Vec<u8>, FormatError> {
+        Ok(encode_json(document)?.into_bytes())
     }
 
-    /// Decode UTF-8 JSON bytes without performing any I/O.
-    pub fn decode_snapshot(bytes: &[u8]) -> Result<Project, FormatError> {
+    /// Decodes UTF-8 JSON bytes into validated local document state.
+    pub fn decode_snapshot(bytes: &[u8]) -> Result<PersistedProject, FormatError> {
         let json = std::str::from_utf8(bytes).map_err(|error| {
             FormatError::InvalidJson(serde_json::Error::io(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,

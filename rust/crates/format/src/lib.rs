@@ -5,8 +5,8 @@ mod migrations;
 mod snapshot;
 
 pub use envelope::{
-    CURRENT_SCHEMA_VERSION, DOCUMENT_FORMAT, DocumentEnvelope, FormatError, decode_json,
-    encode_json,
+    CURRENT_SCHEMA_VERSION, DOCUMENT_FORMAT, DocumentEnvelope, FormatError,
+    MINIMUM_SUPPORTED_SCHEMA_VERSION, PersistedProject, decode_json, encode_json,
 };
 pub use migrations::migrate;
 pub use snapshot::SnapshotStore;

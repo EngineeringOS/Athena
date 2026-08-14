@@ -174,23 +174,23 @@ pub struct Folio {
 QET-FOLIO-001/002, QET-TITLE-002, QET-VAR-001, GRA-PORTFOLIO-001,
 GRA-DOC-001.
 
-- [ ] Write failing round-trip tests for project identity, folio order,
+- [x] Write failing round-trip tests for project identity, folio order,
   inherited and overridden title-block fields, project/folio variables, and
   derived display equality.
-- [ ] Define schema version `3` as a serde envelope containing the semantic
+- [x] Define schema version `3` as a serde envelope containing the semantic
   project document and locally restorable active folio identity. Serialize Page
   Num as title-block data; never infer folio order from it.
-- [ ] Make encoding deterministic for equal semantic state and decoding call
+- [x] Make encoding deterministic for equal semantic state and decoding call
   domain validation before returning a project.
-- [ ] Reject unsupported future versions, malformed UUIDs, empty project/folio
+- [x] Reject unsupported future versions, malformed UUIDs, empty project/folio
   labels, duplicate/missing folio order entries, and invalid active folio IDs
   with typed `FormatError` variants.
-- [ ] Replace the prototype v1 -> v2 migration with typed rejection of schema 1
+- [x] Replace the prototype v1 -> v2 migration with typed rejection of schema 1
   and 2 as `UnsupportedPrototypeSchema { actual, minimum_supported: 3 }`. Do not
   silently reinterpret old sheet data; migrations begin from schema 3 forward.
-- [ ] Run `cargo test -p athena-format` and confirm the canonical fixture
+- [x] Run `cargo test -p athena-format` and confirm the canonical fixture
   encodes byte-for-byte identically after decode/re-encode.
-- [ ] Commit with `git commit -m "feat: persist folio project documents"`.
+- [x] Commit with `git commit -m "feat: persist folio project documents"`.
 
 ### Task 4: Add Document Commands and Transactional History
 
