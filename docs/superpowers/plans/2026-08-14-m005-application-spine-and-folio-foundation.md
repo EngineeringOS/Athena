@@ -296,20 +296,20 @@ pub enum AthenaMessage {
 QET-PLATE-001, GRA-LAYOUT-001, GRA-PANEL-001, GRA-PROPS-001,
 GRA-UX-001.
 
-- [ ] Write failing tests for a workspace with document viewport, project
+- [x] Write failing tests for a workspace with document viewport, project
   outline, and contextual properties panels; active panel identity and split
   sizes must be Rust-owned.
-- [ ] Define stable `LayoutTarget`, `PanelId`, `WidgetId`, `WidgetValue`, and
+- [x] Define stable `LayoutTarget`, `PanelId`, `WidgetId`, `WidgetValue`, and
   `WidgetCallback` contracts. IDs must remain stable across value-only refreshes.
-- [ ] Build QET-evidenced project and folio/title-block plates only: project
+- [x] Build QET-evidenced project and folio/title-block plates only: project
   name/variables/defaults; folio label/template/placement/standard fields/custom
   variables and Page Num. Automatic Page Num patterns remain outside M005.
-- [ ] Emit structural replacement only when widget structure changes and
+- [x] Emit structural replacement only when widget structure changes and
   value diffs otherwise. Reject callbacks for unknown target/widget IDs.
-- [ ] Test panel close/reopen, active-folio change, invalid field diagnostics,
+- [x] Test panel close/reopen, active-folio change, invalid field diagnostics,
   and callback commit routing through `AthenaMessage`.
-- [ ] Run `cargo test -p athena-application --test layout_contracts`.
-- [ ] Commit with `git commit -m "feat: add electrical panel layouts"`.
+- [x] Run `cargo test -p athena-application --test layout_contracts`.
+- [x] Commit with `git commit -m "feat: add electrical panel layouts"`.
 
 ### Task 7: Replace the WASM Direct-Method Facade
 
