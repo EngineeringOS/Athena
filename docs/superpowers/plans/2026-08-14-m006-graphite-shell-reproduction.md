@@ -99,11 +99,12 @@ native/WASM architecture evidence with all CAD behavior excluded.
 - Modify: `rust/crates/application/src/lib.rs`
 - Create: `rust/crates/application/tests/shell_model_contracts.rs`
 - Modify: `rust/crates/application/Cargo.toml`
+- Modify: `rust/Cargo.lock`
 
 **Traceability:** CAP-M006-002/004; Graphite recursive subdivision and 80:20
 document-priority behavior.
 
-- [ ] **Step 1: Write failing default-tree and invariant tests**
+- [x] **Step 1: Write failing default-tree and invariant tests**
 
   Assert a default `WorkspaceShell` has stable groups/tabs, a horizontal root
   split with shares `20/64/16`, two equal vertical side splits, exactly one
@@ -111,13 +112,13 @@ document-priority behavior.
   in their groups. Add proptests for positive normalized shares and stable tab
   identity after serialization.
 
-- [ ] **Step 2: Run the tests and confirm RED**
+- [x] **Step 2: Run the tests and confirm RED**
 
   Run `cargo test -p athena-application --test shell_model_contracts`.
   Expected: compile failure because `WorkspaceShell`, `ShellNode`, and related
   contracts do not exist.
 
-- [ ] **Step 3: Implement the documented public shell vocabulary**
+- [x] **Step 3: Implement the documented public shell vocabulary**
 
   Define and document:
 
@@ -155,13 +156,13 @@ document-priority behavior.
   in this task; Task 3 moves it intact while deleting only its obsolete fixed
   three-column workspace state.
 
-- [ ] **Step 4: Run focused tests and refactor while green**
+- [x] **Step 4: Run focused tests and refactor while green**
 
   Run `cargo test -p athena-application --test shell_model_contracts` and
   `cargo fmt --all -- --check`. Expected: all focused tests pass and formatting
   is clean.
 
-- [ ] **Step 5: Commit the recursive model**
+- [x] **Step 5: Commit the recursive model**
 
   ```powershell
   git add rust/crates/application/Cargo.toml rust/crates/application/src/shell_model.rs rust/crates/application/src/lib.rs rust/crates/application/tests/shell_model_contracts.rs

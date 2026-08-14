@@ -11,6 +11,7 @@ mod frontend_message;
 mod layout;
 mod message;
 mod portfolio;
+mod shell_model;
 mod widget;
 
 pub use application::{AthenaEditor, EditorSnapshot};
@@ -22,6 +23,11 @@ pub use message::{
     AthenaMessage, DocumentMessage, LayoutMessage, OpenOutcome, PortfolioMessage, SaveOutcome,
 };
 pub use portfolio::SaveRequestId;
+pub use shell_model::{
+    DockPlacement, DockTarget, FloatingLayersState, GroupId, MIN_PANEL_PX, PanelGroup, PanelRole,
+    PanelTab, ShellFocus, ShellModelError, ShellNode, SplitAxis, SplitChild, SplitId, SplitNode,
+    StatusBarState, TabId, TitleBarState, WorkspaceShell,
+};
 pub use widget::{Widget, WidgetCallback, WidgetId, WidgetKind, WidgetValue};
 
 pub(crate) use document::{DocumentHandler, outline_effect};

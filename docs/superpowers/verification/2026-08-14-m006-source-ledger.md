@@ -47,7 +47,7 @@ Athena. `License treatment` is mandatory before a row can leave `PLANNED`.
 
 | Athena file | Authority and exact range | Status | Removed dependencies | License treatment |
 | --- | --- | --- | --- | --- |
-| `rust/crates/application/src/shell_model.rs` | Graphite `PanelSubdivision.svelte:201-251`; Graphite editor `utility_types.rs:376-428` | PLANNED clean-room Rust contract | Graphite portfolio/documents/stores; all platform APIs | Athena-authored; citations in module docs, no copied source |
+| `rust/crates/application/src/shell_model.rs` | Graphite `PanelSubdivision.svelte:201-251`; Graphite editor `utility_types.rs:376-428` | REIMPLEMENTED clean-room Rust contract; default tree and invariants covered by `shell_model_contracts.rs` | Graphite portfolio/documents/stores; all platform APIs | Athena-authored; citations in module docs, no copied source |
 | `rust/crates/application/src/shell.rs` | Graphite `PanelSubdivision.svelte:1-199`; `Panel.svelte:1-386` behavior oracle | PLANNED clean-room state machine | DOM events, Graphite messages, drawing state | Athena-authored; no copied source |
 | `rust/crates/application/src/plate.rs` | Existing Athena M005 plate logic; QET panel docs above | PLANNED move | obsolete fixed three-column workspace | Existing Athena source; no third-party copy |
 | `web/src/App.svelte` | Graphite `Editor.svelte:76`; `MainWindow.svelte:22-35` | PLANNED adapter | Graphite editor/product stores | Athena-authored composition; no copied source |
