@@ -415,37 +415,37 @@ document-priority behavior.
 
 **Traceability:** CAP-M006-004; QET panel and toolbar taxonomy.
 
-- [ ] **Step 1: Write failing electrical-surface tests**
+- [x] **Step 1: Write failing electrical-surface tests**
 
   Assert all nine panel roles and exact default tab grouping; assert the page
   contains only border, grid, and title-block frame; assert all electrical tool
   commands are disabled with accessible labels; reject `.wire`, `.symbol`,
   `.selection`, editable inputs, fake project data, and fake diagnostics.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
   Run `npm test -- web/tests/electrical-surfaces.spec.js`.
   Expected: missing electrical surface failures.
 
-- [ ] **Step 3: Add QET-evidenced inert content**
+- [x] **Step 3: Add QET-evidenced inert content**
 
   Render compact empty-state structures for Project/Folios, Elements/Title
   Blocks, Selection/Folio Properties, Diagnostics/History. Add disabled Lucide
   toolbar controls for selection, conductor, element, annotation, grid, zoom,
   and navigation; render status hints and document/zoom/grid information.
 
-- [ ] **Step 4: Render the empty folio without demonstration content**
+- [x] **Step 4: Render the empty folio without demonstration content**
 
   Use a stable page aspect ratio, restrained page border, deterministic grid,
   and an unfilled title-block frame. The canvas remains the dominant unframed
   center surface and does not become a decorative card.
 
-- [ ] **Step 5: Run focused and zero-error tests**
+- [x] **Step 5: Run focused and zero-error tests**
 
   Run the electrical surface test and the complete Playwright suite. Expected:
   all pass with zero page errors, console errors, overlaps, or clipped labels.
 
-- [ ] **Step 6: Commit inert electrical content**
+- [x] **Step 6: Commit inert electrical content**
 
   ```powershell
   git add web/src/electrical web/tests/electrical-surfaces.spec.js

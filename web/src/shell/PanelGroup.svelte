@@ -4,6 +4,7 @@
 -->
 <script>
   import { X } from "@lucide/svelte";
+  import PanelContent from "../electrical/PanelContent.svelte";
 
   let { group, dispatch, dockPreview } = $props();
   let activeTab = $derived(group.tabs.find((tab) => tab.id === group.active_tab));
@@ -148,7 +149,9 @@
       if (!event.currentTarget.contains(event.relatedTarget)) clearDockPreview();
     }}
     ondrop={bodyDrop}
-  ></div>
+  >
+    <PanelContent role={activeTab?.role} />
+  </div>
   {#if dockPreview?.group_id === group.id}
     <div class={`docking-ghost ${dockPreview.placement.toLowerCase()}`} aria-hidden="true"></div>
   {/if}
