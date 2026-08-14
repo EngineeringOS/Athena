@@ -307,18 +307,18 @@ document-priority behavior.
 
 **Traceability:** CAP-M006-001/005; browser is presentation-only.
 
-- [ ] **Step 1: Write a failing Playwright boundary test**
+- [x] **Step 1: Write a failing Playwright boundary test**
 
   Assert Vite serves one `[data-athena-shell]`, the page imports the generated
   WASM adapter, no legacy `.schematic-preview`, `.wire`, or `.symbol` nodes
   exist, and no JavaScript object contains project/folio/symbol/conductor state.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
   Run `npm test -- web/tests/shell-boundary.spec.js`.
   Expected: failure because the static shell and fake schematic still exist.
 
-- [ ] **Step 3: Build the minimal adapter scaffold**
+- [x] **Step 3: Build the minimal adapter scaffold**
 
   Run
   `wasm-pack build crates/web-core --target web --out-dir ../../web/pkg` before
@@ -327,20 +327,20 @@ document-priority behavior.
   effects. The reactive store reduces only serialized `ShellEffect` values;
   Svelte owns DOM focus, pointer capture, and viewport dimensions only.
 
-- [ ] **Step 4: Remove the legacy static shell**
+- [x] **Step 4: Remove the legacy static shell**
 
   Replace the old HTML bootstrap and delete `web/bootstrap.js`; remove all fake
   symbols, wires, selections, and editable M005 controls from the visible M006
   shell. Do not delete or weaken the Rust M005 behavior tests.
 
-- [ ] **Step 5: Build and run the boundary test**
+- [x] **Step 5: Build and run the boundary test**
 
   Run `wasm-pack build crates/web-core --target web --out-dir ../../web/pkg`,
   `npm run build`, and `npm test -- web/tests/shell-boundary.spec.js`.
   Expected: the WASM package and Vite build succeed and the boundary test passes
   with zero page or console errors.
 
-- [ ] **Step 6: Commit the web boundary**
+- [x] **Step 6: Commit the web boundary**
 
   ```powershell
   git add package.json package-lock.json vite.config.js playwright.config.js web/index.html web/src web/tests/shell-boundary.spec.js web/bootstrap.js

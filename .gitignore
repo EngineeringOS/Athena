@@ -26,6 +26,9 @@ src/ant/.ant-targets-upload-dist.xml
 node
 node_modules
 **/*.tsbuildinfo
+/playwright-report/
+/test-results/
+/web/dist/
 
 # Generated Theia and TypeScript build outputs
 ide/theia-backend/lib/

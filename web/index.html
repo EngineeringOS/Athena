@@ -1,100 +1,12 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Athena Electrical</title>
-    <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <main class="workbench" aria-label="Athena electrical schematic editor">
-      <header class="app-bar" data-region="app-bar">
-        <div class="app-menu">
-          <span class="brand-mark" aria-hidden="true">A</span>
-          <button type="button">File</button>
-          <button type="button">Edit</button>
-          <button type="button">View</button>
-        </div>
-        <div class="window-title"><span id="window-project-name">Athena</span><i id="dirty-marker"></i></div>
-        <div class="window-actions">
-          <button type="button" data-command="open" aria-label="Open" title="Open">Open</button>
-          <button type="button" data-command="reopen" aria-label="Reopen" title="Reopen recent project">Reopen</button>
-          <button type="button" data-command="save" aria-label="Save" title="Save">Save</button>
-          <button type="button" data-command="close" aria-label="Close" title="Close project">Close</button>
-        </div>
-      </header>
-
-      <nav class="tool-bar" data-region="tool-bar" aria-label="Document controls">
-        <div class="toolbar-group">
-          <button type="button" data-command="undo" aria-label="Undo" title="Undo">↶</button>
-          <button type="button" data-command="redo" aria-label="Redo" title="Redo">↷</button>
-          <span class="toolbar-separator"></span>
-          <button type="button" data-command="add-folio" aria-label="Add folio" title="Add folio">＋</button>
-          <button type="button" data-command="move-up" aria-label="Move folio up" title="Move folio up">↑</button>
-          <button type="button" data-command="move-down" aria-label="Move folio down" title="Move folio down">↓</button>
-        </div>
-        <div class="document-breadcrumb"><strong id="active-folio-name">Folio 1</strong><span>Electrical schematic</span></div>
-        <div class="toolbar-group toolbar-end">
-          <button type="button" data-toggle="ProjectOutline" aria-label="Collapse project" title="Toggle project panel">◧</button>
-          <button type="button" data-toggle="Properties" aria-label="Collapse properties" title="Toggle properties panel">◨</button>
-        </div>
-      </nav>
-
-      <section class="workspace">
-        <aside class="panel outline-panel" data-region="outline-rail" aria-label="Project outline">
-          <div class="panel-tabs"><button class="is-active" type="button">Project</button><button type="button">Library</button></div>
-          <div class="panel-body project-body">
-            <section class="panel-section">
-              <div class="section-title"><span>Project</span><span id="folio-count">1 folio</span></div>
-              <label class="field compact-field">Name<input id="project-name" type="text" autocomplete="off"></label>
-              <div id="folio-outline" class="folio-outline"></div>
-              <button class="wide-command" type="button" data-command="add-folio" aria-label="Add folio">＋ Add folio</button>
-            </section>
-            <section class="panel-section">
-              <div class="section-title"><span>Project variables</span></div>
-              <div id="project-variable-rows" class="variable-rows"></div>
-              <input class="variable-entry" data-widget="project.variables" type="text" placeholder="name=value" autocomplete="off">
-            </section>
-            <section id="project-defaults" class="panel-section"></section>
-          </div>
-        </aside>
-
-        <section class="document-panel" data-region="canvas-stage" aria-label="Folio viewport">
-          <div class="document-tabs"><button class="document-tab is-active" type="button"><span id="document-tab-name">Folio 1</span><i id="tab-dirty"></i></button><button class="new-tab" type="button" data-command="add-folio" aria-label="Add folio">＋</button></div>
-          <div class="document-workspace">
-            <nav class="tool-shelf" aria-label="Schematic tools">
-              <button class="is-active" type="button" aria-label="Select" title="Select">⌖</button>
-              <button type="button" aria-label="Wire" title="Wire">⌁</button>
-              <button type="button" aria-label="Symbol" title="Place symbol">◇</button>
-              <button type="button" aria-label="Text" title="Text">T</button>
-            </nav>
-            <div class="canvas-viewport">
-              <div class="ruler ruler-horizontal"></div>
-              <div class="ruler ruler-vertical"></div>
-              <article class="folio-page">
-                <div class="schematic-preview" aria-hidden="true">
-                  <span class="wire wire-a"></span><span class="wire wire-b"></span>
-                  <span class="symbol symbol-a">Q1</span><span class="symbol symbol-b">K1</span><span class="symbol symbol-c">M1</span>
-                </div>
-                <section id="resolved-title-block" class="title-block" aria-label="Resolved title block"></section>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <aside class="panel properties-panel" data-region="properties-rail" aria-label="Electrical properties">
-          <div class="panel-tabs"><button class="is-active" type="button">Properties</button><button type="button">Diagnostics</button></div>
-          <div class="properties-context"><span>Folio</span><strong id="properties-folio-name">Folio 1</strong></div>
-          <form id="folio-plate" class="panel-body properties-body"></form>
-        </aside>
-      </section>
-
-      <footer class="status-bar" data-region="status-bar">
-        <span id="status">Loading Rust editor core…</span>
-        <span class="status-info"><span id="active-context">No project</span><span id="save-state">Clean</span><span>100%</span></span>
-      </footer>
-      <input id="open-file" type="file" accept=".json,.athena.json,application/json" hidden>
-    </main>
-    <script type="module" src="./bootstrap.js"></script>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
