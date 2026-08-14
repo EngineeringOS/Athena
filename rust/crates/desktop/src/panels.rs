@@ -24,10 +24,10 @@ use gpui_component::{
 
 use crate::app::DesktopEditor;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum InputValueKind {
     Text,
-    Template,
+    TemplateWithSegments(TemplateText),
     VariableEdit,
 }
 
@@ -110,7 +110,9 @@ impl NativeShell {
         for (target, widget) in plate_widgets {
             let kind = match (&widget.kind, &widget.value) {
                 (WidgetKind::TextInput, WidgetValue::Text(_)) => Some(InputValueKind::Text),
-                (WidgetKind::TextInput, WidgetValue::Template(_)) => Some(InputValueKind::Template),
+                (WidgetKind::TextInput, WidgetValue::Template(template)) => {
+                    Some(InputValueKind::TemplateWithSegments(template.clone()))
+                }
                 (WidgetKind::VariableTable, _) => Some(InputValueKind::VariableEdit),
                 _ => None,
             };
@@ -118,7 +120,7 @@ impl NativeShell {
             let key = Self::control_key(target, &widget.id);
             if let std::collections::btree_map::Entry::Vacant(entry) = self.inputs.entry(key) {
                 let initial = input_text(&widget.value);
-                let placeholder = match kind {
+                let placeholder = match &kind {
                     InputValueKind::VariableEdit => "variable=value",
                     _ => "Enter value",
                 };
@@ -128,13 +130,14 @@ impl NativeShell {
                         .placeholder(placeholder)
                 });
                 let widget_id = widget.id.clone();
+                let callback_kind = kind.clone();
                 let subscription = cx.subscribe(&state, move |this, input, event, cx| {
                     let commit = matches!(event, InputEvent::PressEnter { .. } | InputEvent::Blur);
                     if !commit {
                         return;
                     }
                     let raw = input.read(cx).value().to_string();
-                    let Some(value) = committed_value(kind, &raw) else {
+                    let Some(value) = committed_value(callback_kind.clone(), &raw) else {
                         return;
                     };
                     this.dispatch(
@@ -866,23 +869,18 @@ fn panel_heading(label: &'static str) -> AnyElement {
 fn input_text(value: &WidgetValue) -> String {
     match value {
         WidgetValue::Text(value) | WidgetValue::Choice(value) => value.clone(),
-        WidgetValue::Template(value) => template_source(value),
+        WidgetValue::Template(value) => template_literal_text(value),
         WidgetValue::Variables(_) | WidgetValue::VariableEdit { .. } => String::new(),
     }
 }
 
-fn template_source(value: &TemplateText) -> String {
+fn template_literal_text(value: &TemplateText) -> String {
     value
         .0
         .iter()
-        .map(|segment| match segment {
-            TemplateSegment::Literal(value) => value.clone(),
-            TemplateSegment::Variable(athena_domain::VariableReference::Project(key)) => {
-                format!("{{project:{key}}}")
-            }
-            TemplateSegment::Variable(athena_domain::VariableReference::Folio(key)) => {
-                format!("{{folio:{key}}}")
-            }
+        .filter_map(|segment| match segment {
+            TemplateSegment::Literal(value) => Some(value.as_str()),
+            TemplateSegment::Variable(_) => None,
         })
         .collect()
 }
@@ -902,57 +900,32 @@ fn variables_from_widgets<'a>(
         .into_iter()
 }
 
-fn parse_template_text(raw: &str) -> TemplateText {
-    let mut segments = Vec::new();
-    let mut remaining = raw;
-    while let Some(start) = remaining.find('{') {
-        push_literal(&mut segments, &remaining[..start]);
-        let Some(relative_end) = remaining[start + 1..].find('}') else {
-            push_literal(&mut segments, &remaining[start..]);
-            remaining = "";
-            break;
-        };
-        let end = start + 1 + relative_end;
-        let token = &remaining[start + 1..end];
-        if let Some(reference) = parse_variable_reference(token) {
-            segments.push(TemplateSegment::Variable(reference));
-        } else {
-            push_literal(&mut segments, &remaining[start..=end]);
-        }
-        remaining = &remaining[end + 1..];
+fn replace_template_literals(previous: TemplateText, raw: &str) -> TemplateText {
+    let mut replaced_literal = false;
+    let mut segments = previous
+        .0
+        .into_iter()
+        .filter_map(|segment| match segment {
+            TemplateSegment::Literal(_) if replaced_literal => None,
+            TemplateSegment::Literal(_) => {
+                replaced_literal = true;
+                (!raw.is_empty()).then(|| TemplateSegment::Literal(raw.into()))
+            }
+            reference @ TemplateSegment::Variable(_) => Some(reference),
+        })
+        .collect::<Vec<_>>();
+    if !replaced_literal && !raw.is_empty() {
+        segments.insert(0, TemplateSegment::Literal(raw.into()));
     }
-    push_literal(&mut segments, remaining);
     TemplateText(segments)
-}
-
-fn parse_variable_reference(token: &str) -> Option<VariableReference> {
-    let (scope, key) = token.split_once(':')?;
-    let key = key.trim();
-    if key.is_empty() {
-        return None;
-    }
-    match scope {
-        "project" => Some(VariableReference::Project(key.into())),
-        "folio" => Some(VariableReference::Folio(key.into())),
-        _ => None,
-    }
-}
-
-fn push_literal(segments: &mut Vec<TemplateSegment>, value: &str) {
-    if value.is_empty() {
-        return;
-    }
-    if let Some(TemplateSegment::Literal(previous)) = segments.last_mut() {
-        previous.push_str(value);
-    } else {
-        segments.push(TemplateSegment::Literal(value.into()));
-    }
 }
 
 fn committed_value(kind: InputValueKind, raw: &str) -> Option<WidgetValue> {
     match kind {
         InputValueKind::Text => Some(WidgetValue::Text(raw.into())),
-        InputValueKind::Template => Some(WidgetValue::Template(parse_template_text(raw))),
+        InputValueKind::TemplateWithSegments(previous) => Some(WidgetValue::Template(
+            replace_template_literals(previous, raw),
+        )),
         InputValueKind::VariableEdit => {
             let (key, value) = raw.split_once('=')?;
             let key = key.trim();
@@ -985,7 +958,7 @@ mod tests {
     use std::{cell::RefCell, rc::Rc};
 
     use athena_application::WidgetValue;
-    use athena_domain::{TemplateSegment, VariableReference};
+    use athena_domain::{TemplateSegment, TemplateText, VariableReference};
     use gpui::{
         Action as _, AppContext as _, Keystroke, Modifiers, TestAppContext, VisualTestContext,
     };
@@ -1012,17 +985,28 @@ mod tests {
     }
 
     #[test]
-    fn template_input_parses_scoped_variable_references_into_typed_segments() {
+    fn template_input_keeps_references_structured_and_treats_typed_tokens_as_literal_text() {
         assert_eq!(
             committed_value(
-                InputValueKind::Template,
+                InputValueKind::TemplateWithSegments(TemplateText(Vec::new())),
                 "Feed {project:plant} / {folio:area}",
             ),
             Some(WidgetValue::Template(athena_domain::TemplateText(vec![
-                TemplateSegment::Literal("Feed ".into()),
+                TemplateSegment::Literal("Feed {project:plant} / {folio:area}".into()),
+            ])))
+        );
+
+        assert_eq!(
+            committed_value(
+                InputValueKind::TemplateWithSegments(TemplateText(vec![
+                    TemplateSegment::Literal("Feed ".into()),
+                    TemplateSegment::Variable(VariableReference::Project("plant".into())),
+                ])),
+                "Main feed",
+            ),
+            Some(WidgetValue::Template(TemplateText(vec![
+                TemplateSegment::Literal("Main feed".into()),
                 TemplateSegment::Variable(VariableReference::Project("plant".into())),
-                TemplateSegment::Literal(" / ".into()),
-                TemplateSegment::Variable(VariableReference::Folio("area".into())),
             ])))
         );
     }
@@ -1031,7 +1015,7 @@ mod tests {
     fn template_input_keeps_unknown_or_unclosed_tokens_literal() {
         assert_eq!(
             committed_value(
-                InputValueKind::Template,
+                InputValueKind::TemplateWithSegments(TemplateText(Vec::new())),
                 "{system:plant} / {project:} / {folio:area",
             ),
             Some(WidgetValue::Template(athena_domain::TemplateText(vec![
