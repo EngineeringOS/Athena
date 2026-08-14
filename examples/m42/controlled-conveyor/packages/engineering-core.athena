@@ -1,5 +1,0 @@
-package engineering.core
-domain engineering {
-  concept entity { kind governed }
-  capability engineeringSubject provides { medium engineeringMeaning }
-}

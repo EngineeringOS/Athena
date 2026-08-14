@@ -1,8 +1,0 @@
-package com.engineeringood.m44.rollingshutter
-binding supply {
-  id "binding-supply"
-  projection electrical
-  role primary
-  select function where { subject "function:Supply.main" }
-  use element "iec/supply" version "1"
-}

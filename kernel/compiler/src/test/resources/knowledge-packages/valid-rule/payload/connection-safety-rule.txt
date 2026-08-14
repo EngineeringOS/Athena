@@ -1,2 +1,0 @@
-rule connection.must-resolve-endpoints
-severity ERROR

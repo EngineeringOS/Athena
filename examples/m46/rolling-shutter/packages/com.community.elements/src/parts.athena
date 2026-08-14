@@ -1,4 +1,0 @@
-package com.community.elements
-domain controls {
-  part sensor_proximity concept Sensing { manufacturer "Community" article "proximity-1" capability "Sensing" }
-}

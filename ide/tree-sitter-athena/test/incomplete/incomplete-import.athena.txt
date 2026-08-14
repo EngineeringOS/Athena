@@ -1,5 +1,0 @@
-import com.controls.
-system Demo {
-  entity PLC1 {
-  }
-}

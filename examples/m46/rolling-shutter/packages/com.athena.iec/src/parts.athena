@@ -1,6 +1,0 @@
-package com.athena.iec
-domain electrical {
-  part generic_breaker concept Protection { manufacturer "Athena IEC" article "CB-16" capability "Protection" }
-  part generic_contactor concept Switching { manufacturer "Athena IEC" article "KM-12" capability "Switching" }
-  part generic_overload concept Protection { manufacturer "Athena IEC" article "OL-12" capability "Protection" }
-}

@@ -1,3 +1,0 @@
-package com.vendor.siemens
-symbol siemens_contactor { identity "siemens_contactor" version "1.0.0" resource geometry { kind svg path "resources/siemens-contactor.svg" } graphic svg resource geometry anchor power { port Contactor.power direction in signal Power point (-1, 0) } anchor load { port Contactor.load direction out signal Power point (1, 0) } }
-element siemens_contactor_element { identity "siemens_contactor_element" version "1.0.0" child contactor { symbol "siemens_contactor" translate (0, 0) } export anchor power from contactor.power export anchor load from contactor.load }

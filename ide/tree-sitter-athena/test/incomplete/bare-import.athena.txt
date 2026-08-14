@@ -1,5 +1,0 @@
-import
-system Demo {
-  entity PLC1 {
-  }
-}

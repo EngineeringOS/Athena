@@ -1,8 +1,0 @@
-{
-  "vectors": [
-    {"id": "unknown-field", "patch": {"renderer": "konva"}, "expected": "additionalProperties"},
-    {"id": "null-scene-id", "patch": {"sceneId": null}, "expected": "type"},
-    {"id": "bad-grid", "patch": {"snapGrid": {"subdivisions": 6}}, "expected": "multipleOf"},
-    {"id": "bad-id", "patch": {"sceneId": "scene:1"}, "expected": "pattern"}
-  ]
-}
