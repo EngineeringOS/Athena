@@ -1,16 +1,16 @@
 use athena_domain::{
-    Annotation, ElectricalKind, FieldValue, Junction, JunctionId, Point, Project, SheetId,
+    Annotation, ElectricalKind, FieldValue, FolioId, Junction, JunctionId, Point, Project,
     SymbolDefinition, SymbolDefinitionId, SymbolInstance, SymbolInstanceId, Terminal, TerminalId,
     Wire, WireEndpoint,
 };
 use uuid::Uuid;
 
 #[test]
-fn new_project_starts_with_one_ordered_sheet() {
+fn new_project_starts_with_one_ordered_folio() {
     let project = Project::new("Motor control");
 
-    assert_eq!(project.sheet_order().len(), 1);
-    assert_eq!(project.sheets().len(), 1);
+    assert_eq!(project.folio_order().len(), 1);
+    assert_eq!(project.folios().len(), 1);
     assert!(project.validate().is_ok());
 }
 
@@ -20,7 +20,7 @@ fn entity_storage_is_deterministic() {
     let definition = SymbolDefinition::new("Resistor");
     let definition_id = definition.id;
     project.add_symbol_definition(definition).unwrap();
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let mut instance = SymbolInstance::new(definition_id);
     let instance_id = instance.id;
     let terminal_id = instance.add_terminal(Terminal::new(
@@ -30,18 +30,18 @@ fn entity_storage_is_deterministic() {
         Point::new(0, 0),
     ));
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .add_symbol(instance)
         .unwrap();
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .add_junction(Point::new(10, 10));
 
-    assert_eq!(project.sheet_order()[0], sheet_id);
+    assert_eq!(project.folio_order()[0], folio_id);
     assert_eq!(
-        project.sheet(sheet_id).unwrap().symbol_instances()[&instance_id].terminals[&terminal_id]
+        project.folio(folio_id).unwrap().symbol_instances()[&instance_id].terminals[&terminal_id]
             .id,
         terminal_id
     );
@@ -55,12 +55,13 @@ fn validation_rejects_a_uuid_reused_by_different_entity_kinds() {
     let mut definition = SymbolDefinition::new("Resistor");
     definition.id = SymbolDefinitionId::from_uuid(duplicate_uuid);
     project.add_symbol_definition(definition).unwrap();
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let mut junction = Junction::new(Point::new(10, 10));
     junction.id = JunctionId::from_uuid(duplicate_uuid);
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
+        .schematic
         .junctions
         .insert(junction.id, junction);
 
@@ -75,25 +76,25 @@ fn validation_rejects_a_uuid_reused_by_different_entity_kinds() {
 #[test]
 fn validation_rejects_collection_keys_that_do_not_match_record_ids() {
     let mut project = Project::new("Collection keys");
-    let original_sheet_id = project.sheet_order()[0];
-    let mismatched_sheet_key = SheetId::new();
-    let sheet = project.sheets.remove(&original_sheet_id).unwrap();
-    project.sheets.insert(mismatched_sheet_key, sheet);
-    project.sheet_order[0] = mismatched_sheet_key;
+    let original_folio_id = project.folio_order()[0];
+    let mismatched_folio_key = FolioId::new();
+    let folio = project.folios.remove(&original_folio_id).unwrap();
+    project.folios.insert(mismatched_folio_key, folio);
+    project.folio_order[0] = mismatched_folio_key;
 
     assert!(matches!(
         project.validate(),
-        Err(athena_domain::DomainError::SheetKeyMismatch { .. })
+        Err(athena_domain::DomainError::FolioKeyMismatch { .. })
     ));
 }
 
 #[test]
-fn entity_lookup_paths_resolve_entities_within_a_sheet() {
+fn entity_lookup_paths_resolve_entities_within_a_folio() {
     let mut project = Project::new("Lookups");
     let definition = SymbolDefinition::new("Lamp");
     let definition_id = definition.id;
     project.add_symbol_definition(definition).unwrap();
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let mut instance = SymbolInstance::new(definition_id);
     let instance_id = instance.id;
     let terminal_id = instance.add_terminal(Terminal::new(
@@ -109,39 +110,42 @@ fn entity_lookup_paths_resolve_entities_within_a_sheet() {
     );
     let wire_id = wire.id;
     let junction_id = project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .add_junction(Point::new(5, 0));
     let annotation = Annotation::new("Lamp", Point::new(0, 10));
     let annotation_id = annotation.id;
-    let sheet = project.sheet_mut(sheet_id).unwrap();
-    sheet.add_symbol(instance).unwrap();
-    sheet.add_wire(wire).unwrap();
-    sheet.annotations.insert(annotation_id, annotation);
+    let folio = project.folio_mut(folio_id).unwrap();
+    folio.add_symbol(instance).unwrap();
+    folio.add_wire(wire).unwrap();
+    folio
+        .schematic
+        .annotations
+        .insert(annotation_id, annotation);
 
-    assert!(project.symbol_instance(sheet_id, instance_id).is_some());
-    assert!(project.terminal(sheet_id, terminal_id).is_some());
-    assert!(project.wire(sheet_id, wire_id).is_some());
-    assert!(project.junction(sheet_id, junction_id).is_some());
-    assert!(project.annotation(sheet_id, annotation_id).is_some());
+    assert!(project.symbol_instance(folio_id, instance_id).is_some());
+    assert!(project.terminal(folio_id, terminal_id).is_some());
+    assert!(project.wire(folio_id, wire_id).is_some());
+    assert!(project.junction(folio_id, junction_id).is_some());
+    assert!(project.annotation(folio_id, annotation_id).is_some());
     assert!(
         project
-            .sheet(sheet_id)
+            .folio(folio_id)
             .unwrap()
             .instance(instance_id)
             .is_some()
     );
-    assert!(project.sheet(sheet_id).unwrap().wire(wire_id).is_some());
+    assert!(project.folio(folio_id).unwrap().wire(wire_id).is_some());
     assert!(
         project
-            .sheet(sheet_id)
+            .folio(folio_id)
             .unwrap()
             .junction(junction_id)
             .is_some()
     );
     assert!(
         project
-            .sheet(sheet_id)
+            .folio(folio_id)
             .unwrap()
             .annotation(annotation_id)
             .is_some()
@@ -151,9 +155,9 @@ fn entity_lookup_paths_resolve_entities_within_a_sheet() {
 #[test]
 fn instance_must_reference_an_existing_definition() {
     let mut project = Project::new("References");
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .add_symbol(SymbolInstance::new(athena_domain::SymbolDefinitionId::new()))
         .unwrap();
@@ -170,12 +174,12 @@ fn terminal_ownership_is_stable() {
     let definition = SymbolDefinition::new("Switch");
     let definition_id = definition.id;
     project.add_symbol_definition(definition).unwrap();
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let instance_id = {
         let instance = SymbolInstance::new(definition_id);
         let id = instance.id;
         project
-            .sheet_mut(sheet_id)
+            .folio_mut(folio_id)
             .unwrap()
             .add_symbol(instance)
             .unwrap();
@@ -190,7 +194,7 @@ fn terminal_ownership_is_stable() {
     );
     terminal.id = terminal_id;
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .symbol_instances_mut()
         .get_mut(&instance_id)
@@ -210,7 +214,7 @@ fn wire_endpoints_must_resolve_to_terminals_or_junctions() {
     let definition = SymbolDefinition::new("Lamp");
     let definition_id = definition.id;
     project.add_symbol_definition(definition).unwrap();
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let mut instance = SymbolInstance::new(definition_id);
     let terminal_id = instance.add_terminal(Terminal::new(
         instance.id,
@@ -219,12 +223,12 @@ fn wire_endpoints_must_resolve_to_terminals_or_junctions() {
         Point::new(0, 0),
     ));
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .add_symbol(instance)
         .unwrap();
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .add_wire(Wire::new(
             WireEndpoint::Terminal(terminal_id),
@@ -245,7 +249,7 @@ fn validation_rejects_a_directly_inserted_wire_with_a_noncanonical_route() {
     let definition = SymbolDefinition::new("Lamp");
     let definition_id = definition.id;
     project.add_symbol_definition(definition).unwrap();
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let mut start = SymbolInstance::new(definition_id);
     let start_terminal = start.add_terminal(Terminal::new(
         start.id,
@@ -260,10 +264,10 @@ fn validation_rejects_a_directly_inserted_wire_with_a_noncanonical_route() {
         ElectricalKind::Passive,
         Point::new(20, 0),
     ));
-    let sheet = project.sheet_mut(sheet_id).unwrap();
-    sheet.add_symbol(start).unwrap();
-    sheet.add_symbol(end).unwrap();
-    sheet
+    let folio = project.folio_mut(folio_id).unwrap();
+    folio.add_symbol(start).unwrap();
+    folio.add_symbol(end).unwrap();
+    folio
         .add_wire(Wire::new(
             WireEndpoint::Terminal(start_terminal),
             WireEndpoint::Terminal(end_terminal),
@@ -278,27 +282,27 @@ fn validation_rejects_a_directly_inserted_wire_with_a_noncanonical_route() {
 }
 
 #[test]
-fn removing_sheet_removes_all_entities_reachable_only_from_that_sheet() {
+fn removing_folio_removes_all_entities_reachable_only_from_that_folio() {
     let mut project = Project::new("Removal");
     let definition = SymbolDefinition::new("Connector");
     let definition_id = definition.id;
     project.add_symbol_definition(definition).unwrap();
-    let sheet_id = project.add_sheet("Second");
+    let folio_id = project.add_folio("Second").unwrap();
     let instance = SymbolInstance::new(definition_id);
     let instance_id = instance.id;
     project
-        .sheet_mut(sheet_id)
+        .folio_mut(folio_id)
         .unwrap()
         .add_symbol(instance)
         .unwrap();
 
-    assert!(project.remove_sheet(sheet_id).is_some());
-    assert!(project.sheet(sheet_id).is_none());
+    assert!(project.remove_folio(folio_id).is_some());
+    assert!(project.folio(folio_id).is_none());
     assert!(
         project
-            .sheets()
+            .folios()
             .values()
-            .all(|sheet| !sheet.symbol_instances().contains_key(&instance_id))
+            .all(|folio| !folio.symbol_instances().contains_key(&instance_id))
     );
     assert!(project.validate().is_ok());
 }

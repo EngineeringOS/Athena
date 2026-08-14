@@ -11,12 +11,13 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::{
-    Annotation, AnnotationId, Junction, JunctionId, Point, ProjectId, Sheet, SheetId,
+    Annotation, AnnotationId, Folio, FolioId, Junction, JunctionId, Point, ProjectId,
     SymbolDefinition, SymbolDefinitionId, SymbolInstance, SymbolInstanceId, Terminal, TerminalId,
-    Wire, WireEndpoint, WireId, canonical_wire_route,
+    TitleBlockValues, Wire, WireEndpoint, WireId, canonical_wire_route,
+    variables::normalize_variable_key,
 };
 
-/// Project-wide defaults persisted alongside schematic sheets.
+/// Project-wide defaults persisted alongside schematic folios.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct ProjectSettings {
     /// Default document-space grid spacing.
@@ -37,6 +38,15 @@ impl Default for ProjectSettings {
     }
 }
 
+/// Values copied into each newly created folio.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ProjectFolioDefaults {
+    /// Title-block values copied into each newly created folio.
+    pub title_block: TitleBlockValues,
+    /// Folio-scoped variables copied into each newly created folio.
+    pub variables: BTreeMap<String, String>,
+}
+
 /// The complete platform-neutral persisted schematic project.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Project {
@@ -49,13 +59,17 @@ pub struct Project {
     #[serde(default)]
     pub symbol_definitions: BTreeMap<SymbolDefinitionId, SymbolDefinition>,
     #[serde(default)]
-    pub sheets: BTreeMap<SheetId, Sheet>,
+    pub folio_defaults: ProjectFolioDefaults,
     #[serde(default)]
-    pub sheet_order: Vec<SheetId>,
+    pub variables: BTreeMap<String, String>,
+    #[serde(default)]
+    pub folios: BTreeMap<FolioId, Folio>,
+    #[serde(default)]
+    pub folio_order: Vec<FolioId>,
 }
 
 impl Project {
-    /// Creates a named project with one default sheet.
+    /// Creates a named project with one default folio.
     #[must_use]
     pub fn new(name: impl Into<String>) -> Self {
         let mut project = Self {
@@ -63,23 +77,27 @@ impl Project {
             name: name.into(),
             settings: ProjectSettings::default(),
             symbol_definitions: BTreeMap::new(),
-            sheets: BTreeMap::new(),
-            sheet_order: Vec::new(),
+            folio_defaults: ProjectFolioDefaults::default(),
+            variables: BTreeMap::new(),
+            folios: BTreeMap::new(),
+            folio_order: Vec::new(),
         };
-        project.add_sheet("Sheet 1");
+        project
+            .add_folio("Folio 1")
+            .expect("built-in folio label is valid");
         project
     }
 
-    /// Returns sheets keyed by their stable IDs in deterministic order.
+    /// Returns folios keyed by their stable IDs in deterministic order.
     #[must_use]
-    pub fn sheets(&self) -> &BTreeMap<SheetId, Sheet> {
-        &self.sheets
+    pub fn folios(&self) -> &BTreeMap<FolioId, Folio> {
+        &self.folios
     }
 
-    /// Returns the user-facing sheet order independently of map-key order.
+    /// Returns the user-facing folio order independently of map-key order.
     #[must_use]
-    pub fn sheet_order(&self) -> &[SheetId] {
-        &self.sheet_order
+    pub fn folio_order(&self) -> &[FolioId] {
+        &self.folio_order
     }
 
     /// Returns reusable symbol definitions keyed by stable IDs.
@@ -88,15 +106,15 @@ impl Project {
         &self.symbol_definitions
     }
 
-    /// Looks up a sheet by its stable ID.
+    /// Looks up a folio by its stable ID.
     #[must_use]
-    pub fn sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        self.sheets.get(&sheet_id)
+    pub fn folio(&self, folio_id: FolioId) -> Option<&Folio> {
+        self.folios.get(&folio_id)
     }
 
-    /// Returns mutable access to one sheet for aggregate-scoped mutation.
-    pub fn sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
-        self.sheets.get_mut(&sheet_id)
+    /// Returns mutable access to one folio for aggregate-scoped mutation.
+    pub fn folio_mut(&mut self, folio_id: FolioId) -> Option<&mut Folio> {
+        self.folios.get_mut(&folio_id)
     }
 
     /// Looks up a reusable symbol definition by its stable ID.
@@ -108,64 +126,115 @@ impl Project {
         self.symbol_definitions.get(&definition_id)
     }
 
-    /// Looks up a symbol instance within one sheet.
+    /// Looks up a symbol instance within one folio.
     #[must_use]
     pub fn symbol_instance(
         &self,
-        sheet_id: SheetId,
+        folio_id: FolioId,
         instance_id: SymbolInstanceId,
     ) -> Option<&SymbolInstance> {
-        self.sheet(sheet_id)?.instance(instance_id)
+        self.folio(folio_id)?.instance(instance_id)
     }
 
-    /// Looks up a terminal within one sheet's symbol instances.
+    /// Looks up a terminal within one folio's symbol instances.
     #[must_use]
-    pub fn terminal(&self, sheet_id: SheetId, terminal_id: TerminalId) -> Option<&Terminal> {
-        self.sheet(sheet_id)?
+    pub fn terminal(&self, folio_id: FolioId, terminal_id: TerminalId) -> Option<&Terminal> {
+        self.folio(folio_id)?
             .symbol_instances()
             .values()
             .find_map(|instance| instance.terminals.get(&terminal_id))
     }
 
-    /// Looks up a wire within one sheet.
+    /// Looks up a wire within one folio.
     #[must_use]
-    pub fn wire(&self, sheet_id: SheetId, wire_id: WireId) -> Option<&Wire> {
-        self.sheet(sheet_id)?.wire(wire_id)
+    pub fn wire(&self, folio_id: FolioId, wire_id: WireId) -> Option<&Wire> {
+        self.folio(folio_id)?.wire(wire_id)
     }
 
-    /// Looks up a junction within one sheet.
+    /// Looks up a junction within one folio.
     #[must_use]
-    pub fn junction(&self, sheet_id: SheetId, junction_id: JunctionId) -> Option<&Junction> {
-        self.sheet(sheet_id)?.junction(junction_id)
+    pub fn junction(&self, folio_id: FolioId, junction_id: JunctionId) -> Option<&Junction> {
+        self.folio(folio_id)?.junction(junction_id)
     }
 
-    /// Looks up an annotation within one sheet.
+    /// Looks up an annotation within one folio.
     #[must_use]
     pub fn annotation(
         &self,
-        sheet_id: SheetId,
+        folio_id: FolioId,
         annotation_id: AnnotationId,
     ) -> Option<&Annotation> {
-        self.sheet(sheet_id)?.annotation(annotation_id)
+        self.folio(folio_id)?.annotation(annotation_id)
     }
 
-    /// Appends a new sheet and returns its stable ID.
-    pub fn add_sheet(&mut self, name: impl Into<String>) -> SheetId {
-        let sheet = Sheet::new(name);
-        let sheet_id = sheet.id;
-        self.sheets.insert(sheet_id, sheet);
-        self.sheet_order.push(sheet_id);
-        sheet_id
+    /// Appends a new folio by copying the current project folio defaults.
+    pub fn add_folio(&mut self, label: impl Into<String>) -> Result<FolioId, DomainError> {
+        let label = label.into();
+        if label.trim().is_empty() {
+            return Err(DomainError::EmptyFolioLabel);
+        }
+        let folio = Folio::new(
+            label,
+            self.folio_defaults.title_block.clone(),
+            self.folio_defaults.variables.clone(),
+        );
+        let folio_id = folio.id;
+        self.folios.insert(folio_id, folio);
+        self.folio_order.push(folio_id);
+        Ok(folio_id)
     }
 
-    /// Removes a sheet unless it is the sole remaining sheet.
-    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
-        if self.sheets.len() <= 1 {
+    /// Moves a folio to an explicit zero-based order position.
+    pub fn move_folio(&mut self, folio_id: FolioId, position: usize) -> Result<(), DomainError> {
+        if !self.folios.contains_key(&folio_id) {
+            return Err(DomainError::UnknownFolio { folio_id });
+        }
+        if position >= self.folio_order.len() {
+            return Err(DomainError::InvalidFolioPosition { position });
+        }
+        self.folio_order.retain(|id| *id != folio_id);
+        self.folio_order.insert(position, folio_id);
+        Ok(())
+    }
+
+    /// Removes a folio unless it is the sole remaining folio.
+    pub fn remove_folio(&mut self, folio_id: FolioId) -> Option<Folio> {
+        if self.folios.len() <= 1 {
             return None;
         }
-        let removed = self.sheets.remove(&sheet_id)?;
-        self.sheet_order.retain(|id| *id != sheet_id);
+        let removed = self.folios.remove(&folio_id)?;
+        self.folio_order.retain(|id| *id != folio_id);
         Some(removed)
+    }
+
+    /// Sets a project-scoped variable after canonical key validation.
+    pub fn set_project_variable(
+        &mut self,
+        key: &str,
+        value: impl Into<String>,
+    ) -> Result<(), DomainError> {
+        let key = normalize_variable_key(key).ok_or_else(|| DomainError::InvalidVariableKey {
+            key: key.to_owned(),
+        })?;
+        self.variables.insert(key, value.into());
+        Ok(())
+    }
+
+    /// Sets a folio-scoped variable after canonical key validation.
+    pub fn set_folio_variable(
+        &mut self,
+        folio_id: FolioId,
+        key: &str,
+        value: impl Into<String>,
+    ) -> Result<(), DomainError> {
+        let key = normalize_variable_key(key).ok_or_else(|| DomainError::InvalidVariableKey {
+            key: key.to_owned(),
+        })?;
+        let folio = self
+            .folio_mut(folio_id)
+            .ok_or(DomainError::UnknownFolio { folio_id })?;
+        folio.variables.insert(key, value.into());
+        Ok(())
     }
 
     /// Adds a reusable symbol definition when its ID is not already present.
@@ -189,8 +258,8 @@ impl Project {
                 project_id: self.id,
             });
         }
-        if self.sheets.is_empty() {
-            return Err(DomainError::ProjectHasNoSheets {
+        if self.folios.is_empty() {
+            return Err(DomainError::ProjectHasNoFolios {
                 project_id: self.id,
             });
         }
@@ -201,23 +270,26 @@ impl Project {
             });
         }
 
-        let mut seen_sheets = BTreeSet::new();
-        for sheet_id in &self.sheet_order {
-            if !seen_sheets.insert(*sheet_id) {
-                return Err(DomainError::DuplicateSheetOrder {
-                    sheet_id: *sheet_id,
+        validate_variable_keys(&self.variables)?;
+        validate_variable_keys(&self.folio_defaults.variables)?;
+
+        let mut seen_folios = BTreeSet::new();
+        for folio_id in &self.folio_order {
+            if !seen_folios.insert(*folio_id) {
+                return Err(DomainError::DuplicateFolioOrder {
+                    folio_id: *folio_id,
                 });
             }
-            if !self.sheets.contains_key(sheet_id) {
-                return Err(DomainError::OrderedSheetMissing {
-                    sheet_id: *sheet_id,
+            if !self.folios.contains_key(folio_id) {
+                return Err(DomainError::OrderedFolioMissing {
+                    folio_id: *folio_id,
                 });
             }
         }
-        for sheet_id in self.sheets.keys() {
-            if !seen_sheets.contains(sheet_id) {
-                return Err(DomainError::UnorderedSheet {
-                    sheet_id: *sheet_id,
+        for folio_id in self.folios.keys() {
+            if !seen_folios.contains(folio_id) {
+                return Err(DomainError::UnorderedFolio {
+                    folio_id: *folio_id,
                 });
             }
         }
@@ -234,16 +306,34 @@ impl Project {
             self.ensure_unique_uuid(definition.id.as_uuid(), &mut all_ids)?;
         }
 
-        for (sheet_id, sheet) in &self.sheets {
-            if sheet.id != *sheet_id {
-                return Err(DomainError::SheetKeyMismatch {
-                    sheet_id: *sheet_id,
-                    sheet_record_id: sheet.id,
+        for (folio_id, folio) in &self.folios {
+            if folio.id != *folio_id {
+                return Err(DomainError::FolioKeyMismatch {
+                    folio_id: *folio_id,
+                    folio_record_id: folio.id,
                 });
             }
-            self.ensure_unique_uuid(sheet.id.as_uuid(), &mut all_ids)?;
+            if folio.label.trim().is_empty() {
+                return Err(DomainError::EmptyFolioLabel);
+            }
+            if folio.schematic.settings.page_width <= 0 || folio.schematic.settings.page_height <= 0
+            {
+                return Err(DomainError::InvalidFolioPageSize {
+                    folio_id: folio.id,
+                    page_width: folio.schematic.settings.page_width,
+                    page_height: folio.schematic.settings.page_height,
+                });
+            }
+            if folio.schematic.settings.grid_spacing <= 0 {
+                return Err(DomainError::InvalidFolioGridSpacing {
+                    folio_id: folio.id,
+                    grid_spacing: folio.schematic.settings.grid_spacing,
+                });
+            }
+            validate_variable_keys(&folio.variables)?;
+            self.ensure_unique_uuid(folio.id.as_uuid(), &mut all_ids)?;
             let mut terminal_ids = BTreeSet::new();
-            for (instance_id, instance) in &sheet.symbol_instances {
+            for (instance_id, instance) in &folio.schematic.symbol_instances {
                 if instance.id != *instance_id {
                     return Err(DomainError::SymbolInstanceKeyMismatch {
                         symbol_instance_id: *instance_id,
@@ -278,7 +368,7 @@ impl Project {
                     terminal_ids.insert(*terminal_id);
                 }
             }
-            for (junction_id, junction) in &sheet.junctions {
+            for (junction_id, junction) in &folio.schematic.junctions {
                 if junction.id != *junction_id {
                     return Err(DomainError::JunctionKeyMismatch {
                         junction_id: *junction_id,
@@ -287,7 +377,7 @@ impl Project {
                 }
                 self.ensure_unique_uuid(junction.id.as_uuid(), &mut all_ids)?;
             }
-            for (annotation_id, annotation) in &sheet.annotations {
+            for (annotation_id, annotation) in &folio.schematic.annotations {
                 if annotation.id != *annotation_id {
                     return Err(DomainError::AnnotationKeyMismatch {
                         annotation_id: *annotation_id,
@@ -296,7 +386,7 @@ impl Project {
                 }
                 self.ensure_unique_uuid(annotation.id.as_uuid(), &mut all_ids)?;
             }
-            for (wire_id, wire) in &sheet.wires {
+            for (wire_id, wire) in &folio.schematic.wires {
                 if wire.id != *wire_id {
                     return Err(DomainError::WireKeyMismatch {
                         wire_id: *wire_id,
@@ -304,9 +394,9 @@ impl Project {
                     });
                 }
                 self.ensure_unique_uuid(wire.id.as_uuid(), &mut all_ids)?;
-                self.validate_wire_endpoint(wire.id, &wire.start, &terminal_ids, sheet)?;
-                self.validate_wire_endpoint(wire.id, &wire.end, &terminal_ids, sheet)?;
-                self.validate_wire_route(wire, sheet, &terminal_ids)?;
+                self.validate_wire_endpoint(wire.id, &wire.start, &terminal_ids, folio)?;
+                self.validate_wire_endpoint(wire.id, &wire.end, &terminal_ids, folio)?;
+                self.validate_wire_route(wire, folio, &terminal_ids)?;
             }
         }
 
@@ -330,7 +420,7 @@ impl Project {
         wire_id: WireId,
         endpoint: &WireEndpoint,
         terminal_ids: &BTreeSet<TerminalId>,
-        sheet: &Sheet,
+        folio: &Folio,
     ) -> Result<(), DomainError> {
         match endpoint {
             WireEndpoint::Terminal(terminal_id) if !terminal_ids.contains(terminal_id) => {
@@ -339,7 +429,9 @@ impl Project {
                     terminal_id: *terminal_id,
                 })
             }
-            WireEndpoint::Junction(junction_id) if !sheet.junctions.contains_key(junction_id) => {
+            WireEndpoint::Junction(junction_id)
+                if !folio.schematic.junctions.contains_key(junction_id) =>
+            {
                 Err(DomainError::MissingJunction {
                     wire_id,
                     junction_id: *junction_id,
@@ -355,15 +447,15 @@ impl Project {
     fn validate_wire_route(
         &self,
         wire: &Wire,
-        sheet: &Sheet,
+        folio: &Folio,
         terminal_ids: &BTreeSet<TerminalId>,
     ) -> Result<(), DomainError> {
         if wire.route.len() < 2 {
             return Err(DomainError::WireRouteTooShort { wire_id: wire.id });
         }
-        let start = endpoint_position(&wire.start, sheet, terminal_ids)
+        let start = endpoint_position(&wire.start, folio, terminal_ids)
             .expect("validated wire start endpoint resolves");
-        let end = endpoint_position(&wire.end, sheet, terminal_ids)
+        let end = endpoint_position(&wire.end, folio, terminal_ids)
             .expect("validated wire end endpoint resolves");
         if wire.route[0] != start {
             return Err(DomainError::WireRouteEndpointMismatch {
@@ -409,19 +501,22 @@ pub enum WireRouteEndpoint {
 
 fn endpoint_position(
     endpoint: &WireEndpoint,
-    sheet: &Sheet,
+    folio: &Folio,
     terminal_ids: &BTreeSet<TerminalId>,
 ) -> Option<Point> {
     match endpoint {
-        WireEndpoint::Terminal(terminal_id) if terminal_ids.contains(terminal_id) => {
-            sheet.symbol_instances.values().find_map(|symbol| {
+        WireEndpoint::Terminal(terminal_id) if terminal_ids.contains(terminal_id) => folio
+            .schematic
+            .symbol_instances
+            .values()
+            .find_map(|symbol| {
                 symbol
                     .terminals
                     .get(terminal_id)
                     .map(|terminal| terminal.position)
-            })
-        }
-        WireEndpoint::Junction(junction_id) => sheet
+            }),
+        WireEndpoint::Junction(junction_id) => folio
+            .schematic
             .junctions
             .get(junction_id)
             .map(|junction| junction.position),
@@ -429,23 +524,40 @@ fn endpoint_position(
     }
 }
 
+fn validate_variable_keys(variables: &BTreeMap<String, String>) -> Result<(), DomainError> {
+    for key in variables.keys() {
+        if normalize_variable_key(key).as_deref() != Some(key.as_str()) {
+            return Err(DomainError::InvalidVariableKey { key: key.clone() });
+        }
+    }
+    Ok(())
+}
+
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum DomainError {
     #[error("project {project_id} has an empty name")]
     EmptyProjectName { project_id: ProjectId },
-    #[error("project {project_id} does not contain a sheet")]
-    ProjectHasNoSheets { project_id: ProjectId },
+    #[error("project {project_id} does not contain a folio")]
+    ProjectHasNoFolios { project_id: ProjectId },
     #[error("project {project_id} has invalid grid spacing {grid_spacing}")]
     InvalidGridSpacing {
         project_id: ProjectId,
         grid_spacing: i64,
     },
-    #[error("sheet {sheet_id} appears more than once in project sheet order")]
-    DuplicateSheetOrder { sheet_id: SheetId },
-    #[error("sheet order refers to missing sheet {sheet_id}")]
-    OrderedSheetMissing { sheet_id: SheetId },
-    #[error("sheet {sheet_id} is not present in project sheet order")]
-    UnorderedSheet { sheet_id: SheetId },
+    #[error("folio label must not be empty")]
+    EmptyFolioLabel,
+    #[error("folio {folio_id} does not exist")]
+    UnknownFolio { folio_id: FolioId },
+    #[error("folio position {position} is outside the project order")]
+    InvalidFolioPosition { position: usize },
+    #[error("variable key {key:?} is empty, contains control characters, or is not canonical")]
+    InvalidVariableKey { key: String },
+    #[error("folio {folio_id} appears more than once in project folio order")]
+    DuplicateFolioOrder { folio_id: FolioId },
+    #[error("folio order refers to missing folio {folio_id}")]
+    OrderedFolioMissing { folio_id: FolioId },
+    #[error("folio {folio_id} is not present in project folio order")]
+    UnorderedFolio { folio_id: FolioId },
     #[error("entity UUID {entity_id} is used by multiple domain entities")]
     DuplicateEntityId { entity_id: Uuid },
     #[error(
@@ -455,10 +567,21 @@ pub enum DomainError {
         symbol_definition_id: SymbolDefinitionId,
         symbol_definition_record_id: SymbolDefinitionId,
     },
-    #[error("sheet key {sheet_id} does not match record {sheet_record_id}")]
-    SheetKeyMismatch {
-        sheet_id: SheetId,
-        sheet_record_id: SheetId,
+    #[error("folio key {folio_id} does not match record {folio_record_id}")]
+    FolioKeyMismatch {
+        folio_id: FolioId,
+        folio_record_id: FolioId,
+    },
+    #[error("folio {folio_id} has invalid page size {page_width}x{page_height}")]
+    InvalidFolioPageSize {
+        folio_id: FolioId,
+        page_width: i64,
+        page_height: i64,
+    },
+    #[error("folio {folio_id} has invalid grid spacing {grid_spacing}")]
+    InvalidFolioGridSpacing {
+        folio_id: FolioId,
+        grid_spacing: i64,
     },
     #[error(
         "symbol instance key {symbol_instance_id} does not match record {symbol_instance_record_id}"

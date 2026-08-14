@@ -71,11 +71,11 @@ dependency guardrails.
 **Traceability:** CAP-M005-002/003; QET-PROJ-001, QET-FOLIO-001/002,
 QET-TITLE-001/002, QET-VAR-001, QET-PLATE-001, GRA-DOC-001.
 
-- [ ] Write failing tests for project construction with one initial folio,
-  inherited defaults, stable folio IDs, add/activate/move behavior, explicit
+- [x] Write failing tests for project construction with one initial folio,
+  inherited defaults, stable folio IDs, add/move behavior, explicit
   order, user-configured Page Num, and validation of duplicate/missing order
   entries.
-- [ ] Define these public domain contracts, with module and API documentation:
+- [x] Define these public domain contracts, with module and API documentation:
 
 ```rust
 pub struct FolioId(Uuid);
@@ -136,30 +136,30 @@ pub struct Folio {
 }
 ```
 
-- [ ] Replace `SheetId`/`Sheet` with `FolioId`/`Folio` as the sole project-page
+- [x] Replace `SheetId`/`Sheet` with `FolioId`/`Folio` as the sole project-page
   identity. Extract the current symbol/wire/junction/annotation maps and sheet
   payload into `SchematicContent` owned by `Folio`; rename `SheetSettings` to
   `SchematicSettings` and preserve its page/grid fields without changing their
   M005 behavior. Then use
   `folio_order: Vec<FolioId>` and `folios: BTreeMap<FolioId, Folio>` as the sole
   page map/order authority.
-- [ ] Add project folio defaults containing title-block values and default folio
+- [x] Add project folio defaults containing title-block values and default folio
   variables, plus a separate project-scoped variable map. New folios clone the
   folio defaults at creation time; later default edits do not silently rewrite
   existing folios. `Folio.variables` is the sole folio-variable storage; title
   blocks only store typed references to it.
-- [ ] Validate variable keys as trimmed, non-empty, unique within scope, and
+- [x] Validate variable keys as trimmed, non-empty, unique within scope, and
   free of control characters. Values remain ordinary Unicode text.
-- [ ] Implement typed `TemplateText` resolution for project and folio custom
+- [x] Implement typed `TemplateText` resolution for project and folio custom
   references. Standard title-block fields do not recursively reference one
   another. The panel inserts references from a scoped picker; M005 defines no
   ad hoc textual formula grammar. Missing references return typed diagnostics
   and remain visible in resolved output.
-- [ ] Run `cargo test -p athena-domain --test folio_foundation` and verify all
+- [x] Run `cargo test -p athena-domain --test folio_foundation` and verify all
   domain cases pass.
-- [ ] Run all existing domain tests and update fixtures only where the new
+- [x] Run all existing domain tests and update fixtures only where the new
   folio ownership intentionally replaces sheet ownership.
-- [ ] Commit with `git commit -m "feat: model projects and ordered folios"`.
+- [x] Commit with `git commit -m "feat: model projects and ordered folios"`.
 
 ### Task 3: Define the Versioned Persistence Contract
 

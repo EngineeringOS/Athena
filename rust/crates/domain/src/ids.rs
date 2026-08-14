@@ -43,7 +43,7 @@ macro_rules! typed_id {
 }
 
 typed_id!(ProjectId);
-typed_id!(SheetId);
+typed_id!(FolioId);
 typed_id!(SymbolDefinitionId);
 typed_id!(SymbolInstanceId);
 typed_id!(TerminalId);
