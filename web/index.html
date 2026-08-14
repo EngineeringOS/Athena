@@ -7,35 +7,93 @@
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <main class="workbench">
+    <main class="workbench" aria-label="Athena electrical schematic editor">
       <header class="app-bar" data-region="app-bar">
-        <div class="brand"><span class="brand-mark">A</span><div><strong>Athena Electrical</strong><span>Engineering workbench</span></div></div>
-        <div class="document-context"><strong>Untitled electrical project</strong><span>Sheet 1 · Main control</span></div>
-        <div class="app-actions"><span class="save-state" id="save-state">Local</span><button type="button" data-command="save" title="Save locally">Save</button><button type="button" data-command="export" title="Export project">Export</button></div>
+        <div class="app-menu">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <button type="button">File</button>
+          <button type="button">Edit</button>
+          <button type="button">View</button>
+        </div>
+        <div class="window-title"><span id="window-project-name">Athena</span><i id="dirty-marker"></i></div>
+        <div class="window-actions">
+          <button type="button" data-command="open" aria-label="Open" title="Open">Open</button>
+          <button type="button" data-command="reopen" aria-label="Reopen" title="Reopen recent project">Reopen</button>
+          <button type="button" data-command="save" aria-label="Save" title="Save">Save</button>
+          <button type="button" data-command="close" aria-label="Close" title="Close project">Close</button>
+        </div>
       </header>
-      <nav class="tool-bar" data-region="tool-bar" aria-label="Editor tools">
-        <div class="tool-group"><span class="group-label">Tools</span><button type="button" class="tool-button is-active" data-tool="select" data-command="select" title="Select and move">Select</button><button type="button" class="tool-button" data-command="wire" data-tool="wire" title="Draw wire">Wire</button></div>
-        <div class="tool-group"><span class="group-label">Edit</span><button type="button" class="tool-button" data-command="undo" title="Undo">Undo</button><button type="button" class="tool-button" data-command="redo" title="Redo">Redo</button><button type="button" class="tool-button" data-command="rotate" title="Rotate selection">Rotate</button><button type="button" class="tool-button" data-command="mirror" title="Mirror selection">Mirror</button><button type="button" class="tool-button" data-command="delete" title="Delete selection">Delete</button></div>
-        <div class="tool-group tool-group-right"><span class="group-label">View</span><button type="button" class="tool-button" data-command="zoom-out" title="Zoom out">−</button><span id="zoom-readout">100%</span><button type="button" class="tool-button" data-command="zoom-in" title="Zoom in">+</button><button type="button" class="tool-button" data-command="reload" title="Reload local project">Reload</button></div>
+
+      <nav class="tool-bar" data-region="tool-bar" aria-label="Document controls">
+        <div class="toolbar-group">
+          <button type="button" data-command="undo" aria-label="Undo" title="Undo">↶</button>
+          <button type="button" data-command="redo" aria-label="Redo" title="Redo">↷</button>
+          <span class="toolbar-separator"></span>
+          <button type="button" data-command="add-folio" aria-label="Add folio" title="Add folio">＋</button>
+          <button type="button" data-command="move-up" aria-label="Move folio up" title="Move folio up">↑</button>
+          <button type="button" data-command="move-down" aria-label="Move folio down" title="Move folio down">↓</button>
+        </div>
+        <div class="document-breadcrumb"><strong id="active-folio-name">Folio 1</strong><span>Electrical schematic</span></div>
+        <div class="toolbar-group toolbar-end">
+          <button type="button" data-toggle="ProjectOutline" aria-label="Collapse project" title="Toggle project panel">◧</button>
+          <button type="button" data-toggle="Properties" aria-label="Collapse properties" title="Toggle properties panel">◨</button>
+        </div>
       </nav>
-      <aside class="library rail" data-region="library-rail" aria-label="Electrical symbol library">
-        <div class="rail-heading"><div><span class="eyebrow">CATALOG</span><h1>Symbols</h1></div><button type="button" class="rail-toggle" data-toggle-rail="library" aria-expanded="true" title="Collapse symbol library">‹</button></div>
-        <label class="search-field"><span>Search symbols</span><input id="symbol-search" type="search" placeholder="Filter catalog" autocomplete="off"></label>
-        <div class="library-meta"><span id="library-count">Built-in catalog</span><span>Drag or click to place</span></div>
-        <div id="symbol-list"></div>
-      </aside>
-      <section class="editor" data-region="canvas-stage" aria-label="Schematic editor">
-        <div class="canvas-header"><div><span class="eyebrow">SCHEMATIC</span><strong>Main control</strong></div><div class="canvas-tools"><span id="cursor-readout">Cursor 0, 0</span><button type="button" data-command="fit" title="Fit page">Fit page</button></div></div>
-        <div class="canvas-frame"><canvas id="schematic-canvas" aria-label="Electrical schematic canvas"></canvas></div>
-        <div class="canvas-footer"><span>Grid <strong id="canvas-grid-state">On</strong></span><span>Snap 10 px</span><span>Click a symbol in the catalog to place</span></div>
+
+      <section class="workspace">
+        <aside class="panel outline-panel" data-region="outline-rail" aria-label="Project outline">
+          <div class="panel-tabs"><button class="is-active" type="button">Project</button><button type="button">Library</button></div>
+          <div class="panel-body project-body">
+            <section class="panel-section">
+              <div class="section-title"><span>Project</span><span id="folio-count">1 folio</span></div>
+              <label class="field compact-field">Name<input id="project-name" type="text" autocomplete="off"></label>
+              <div id="folio-outline" class="folio-outline"></div>
+              <button class="wide-command" type="button" data-command="add-folio" aria-label="Add folio">＋ Add folio</button>
+            </section>
+            <section class="panel-section">
+              <div class="section-title"><span>Project variables</span></div>
+              <div id="project-variable-rows" class="variable-rows"></div>
+              <input class="variable-entry" data-widget="project.variables" type="text" placeholder="name=value" autocomplete="off">
+            </section>
+            <section id="project-defaults" class="panel-section"></section>
+          </div>
+        </aside>
+
+        <section class="document-panel" data-region="canvas-stage" aria-label="Folio viewport">
+          <div class="document-tabs"><button class="document-tab is-active" type="button"><span id="document-tab-name">Folio 1</span><i id="tab-dirty"></i></button><button class="new-tab" type="button" data-command="add-folio" aria-label="Add folio">＋</button></div>
+          <div class="document-workspace">
+            <nav class="tool-shelf" aria-label="Schematic tools">
+              <button class="is-active" type="button" aria-label="Select" title="Select">⌖</button>
+              <button type="button" aria-label="Wire" title="Wire">⌁</button>
+              <button type="button" aria-label="Symbol" title="Place symbol">◇</button>
+              <button type="button" aria-label="Text" title="Text">T</button>
+            </nav>
+            <div class="canvas-viewport">
+              <div class="ruler ruler-horizontal"></div>
+              <div class="ruler ruler-vertical"></div>
+              <article class="folio-page">
+                <div class="schematic-preview" aria-hidden="true">
+                  <span class="wire wire-a"></span><span class="wire wire-b"></span>
+                  <span class="symbol symbol-a">Q1</span><span class="symbol symbol-b">K1</span><span class="symbol symbol-c">M1</span>
+                </div>
+                <section id="resolved-title-block" class="title-block" aria-label="Resolved title block"></section>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel properties-panel" data-region="properties-rail" aria-label="Electrical properties">
+          <div class="panel-tabs"><button class="is-active" type="button">Properties</button><button type="button">Diagnostics</button></div>
+          <div class="properties-context"><span>Folio</span><strong id="properties-folio-name">Folio 1</strong></div>
+          <form id="folio-plate" class="panel-body properties-body"></form>
+        </aside>
       </section>
-      <aside class="inspector rail" data-region="inspector-rail" aria-label="Inspector">
-        <div class="rail-heading"><div><span class="eyebrow">PROPERTIES</span><h2>Inspector</h2></div><button type="button" class="rail-toggle" data-toggle-rail="inspector" aria-expanded="true" title="Collapse inspector">›</button></div>
-        <p id="status">Loading shared editor core...</p>
-        <section class="property-section"><h3>Selection</h3><label>Reference <input id="symbol-reference" type="text" autocomplete="off"></label><label>Description <input id="symbol-description" type="text" autocomplete="off"></label><label>Wire label <input id="wire-label" type="text" autocomplete="off"></label></section>
-        <section class="property-section"><h3>Sheet</h3><label>Sheet name <input id="sheet-name" type="text" autocomplete="off"></label><label class="checkbox"><input id="grid-visible" type="checkbox"> Show grid</label><label>Grid spacing <input id="grid-spacing" type="number" min="1" step="1"></label></section>
-      </aside>
-      <footer id="footer-status" class="status-bar" data-region="status-bar"><span><i class="status-dot"></i><span id="canvas-interactive-status">Ready</span></span><span>Local-first browser editor</span><span id="selection-status">0 selected</span><span class="status-spacer"></span><span>Undo 0 · Redo 0</span></footer>
+
+      <footer class="status-bar" data-region="status-bar">
+        <span id="status">Loading Rust editor core…</span>
+        <span class="status-info"><span id="active-context">No project</span><span id="save-state">Clean</span><span>100%</span></span>
+      </footer>
+      <input id="open-file" type="file" accept=".json,.athena.json,application/json" hidden>
     </main>
     <script type="module" src="./bootstrap.js"></script>
   </body>

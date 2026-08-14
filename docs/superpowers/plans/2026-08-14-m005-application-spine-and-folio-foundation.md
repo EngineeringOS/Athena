@@ -381,19 +381,19 @@ GRA-PLATFORM-001, GRA-UX-001.
 GRA-FRONTEND-001, GRA-LAYOUT-001, GRA-PANEL-001, GRA-PROPS-001,
 GRA-WASM-001, GRA-UX-001.
 
-- [ ] Replace direct editor method calls with typed message dispatch and a
+- [x] Replace direct editor method calls with typed message dispatch and a
   single frontend-effect router.
-- [ ] Keep browser-owned state limited to DOM references, focus, file handles,
+- [x] Keep browser-owned state limited to DOM references, focus, file handles,
   and rendering caches. Project, folio, dirty state, variables, field values,
   validation, and panel lifecycle remain Rust-owned.
-- [ ] Render the same shell hierarchy and project/folio plate groups as desktop,
+- [x] Render the same shell hierarchy and project/folio plate groups as desktop,
   using the Rust-provided workspace and widget models.
-- [ ] Implement browser open/save via file input/download or File System Access
+- [x] Implement browser open/save via file input/download or File System Access
   APIs, then return bytes/results through typed messages.
-- [ ] Add Playwright tests for the exact required workflow, invalid variables,
+- [x] Add Playwright tests for the exact required workflow, invalid variables,
   save/close/reopen, stable folio order, and no console/page errors.
-- [ ] Run `npm test` and record the exact passing test count.
-- [ ] Commit with `git commit -m "feat: adapt web shell to application effects"`.
+- [x] Run `npm test` and record the exact passing test count: 3 passed.
+- [x] Commit with `git commit -m "feat: adapt web shell to application effects"`.
 
 ### Task 10: Cross-Platform, Visual, and Adversarial Certification
 

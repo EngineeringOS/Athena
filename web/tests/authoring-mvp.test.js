@@ -1,58 +1,80 @@
 import { test, expect } from "@playwright/test";
 
-test("shared browser shell places, selects, edits, and undoes schematic content", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Resistor" }).click();
-  await page.locator("#schematic-canvas").click({ position: { x: 140, y: 120 } });
-  await page.getByRole("button", { name: "Resistor" }).click();
-  await page.locator("#schematic-canvas").click({ position: { x: 260, y: 160 } });
-  await page.getByRole("button", { name: "Wire" }).click();
-  await page.locator("#schematic-canvas").click({ position: { x: 160, y: 120 } });
-  await page.locator("#schematic-canvas").click({ position: { x: 280, y: 160 } });
-  await page.locator("#schematic-canvas").dragTo(page.locator("#schematic-canvas"), {
-    sourcePosition: { x: 90, y: 70 },
-    targetPosition: { x: 310, y: 190 },
-  });
-  await page.locator("#schematic-canvas").dragTo(page.locator("#schematic-canvas"), {
-    sourcePosition: { x: 280, y: 120 },
-    targetPosition: { x: 280, y: 140 },
-  });
-  await expect(page.locator("#footer-status")).toContainText("interactive regions");
-  await page.locator("#symbol-reference").fill("K1");
-  await page.locator("#symbol-reference").press("Enter");
-  await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.locator("canvas")).toBeVisible();
-});
-
-test("browser shell boots the library and placement changes the scene", async ({ page }) => {
+test("browser completes the typed project and folio authoring workflow", async ({ page }) => {
   const errors = [];
-  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  page.on("pageerror", error => errors.push(error.message));
+  page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  page.on("pageerror", (error) => errors.push(error.message));
+
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Resistor" })).toBeVisible();
-  await expect(page.locator("#status")).toContainText("Ready");
-  const before = await page.locator("#footer-status").textContent();
-  await page.getByRole("button", { name: "Resistor" }).click();
-  await page.locator("#schematic-canvas").click({ position: { x: 140, y: 120 } });
-  await expect(page.locator("#footer-status")).not.toHaveText(before);
+  await expect(page.locator("#project-name")).toHaveValue("Main Distribution");
+  await expect(page.locator("#folio-outline")).toContainText("Folio 1");
+
+  await page.locator(".outline-panel [data-command='add-folio']").click();
+  await page.locator(".outline-panel [data-command='add-folio']").click();
+  await expect(page.locator("#folio-outline button")).toHaveCount(3);
+  for (const label of ["Folio 1", "Folio 2", "Folio 3"]) {
+    await expect(page.locator("#folio-outline")).toContainText(label);
+  }
+
+  await page.locator("#folio-outline button").nth(1).click();
+  await page.locator("[data-widget='folio.label']").fill("Control");
+  await page.locator("[data-widget='folio.label']").press("Enter");
+  await page.locator("#folio-outline button").nth(2).click();
+  await page.locator("[data-widget='folio.label']").fill("I/O");
+  await page.locator("[data-widget='folio.label']").press("Enter");
+  await page.getByRole("button", { name: "Move folio up" }).click();
+  await expect(page.locator("#folio-outline")).toContainText("I/O");
+  const orderBeforeSave = await page.locator("#folio-outline .folio-row span:last-child").allTextContents();
+  expect(orderBeforeSave).toEqual(["Folio 1", "I/O", "Control"]);
+
+  await page.locator("[data-widget='project.variables']").fill("plant=PLANT-A");
+  await page.locator("[data-widget='project.variables']").press("Enter");
+  await page.locator("[data-widget='project.variables']").fill("designer=A. Engineer");
+  await page.locator("[data-widget='project.variables']").press("Enter");
+
+  await page.locator("[data-widget='folio.title']").fill("Main control");
+  await page.locator("[data-widget='folio.title']").press("Enter");
+  await page.locator(".property-row:has([data-widget='folio.author'])").getByRole("button", { name: "Insert designer" }).click();
+  await page.locator("[data-widget='folio.location']").fill("MCC-01");
+  await page.locator("[data-widget='folio.location']").press("Enter");
+  await page.locator("[data-widget='folio.revision']").fill("A");
+  await page.locator("[data-widget='folio.revision']").press("Enter");
+  await page.locator("[data-widget='folio.page_number']").fill("2");
+  await page.locator("[data-widget='folio.page_number']").press("Enter");
+  await page.locator("[data-widget='folio.variables']").fill("area=MCC-01");
+  await page.locator("[data-widget='folio.variables']").press("Enter");
+  await expect(page.locator("#resolved-title-block")).toContainText("A. Engineer");
+  await expect(page.locator("#resolved-title-block")).toContainText("MCC-01");
+  await expect(page.locator("#resolved-title-block")).toContainText("A");
+  await expect(page.locator("#resolved-title-block")).toContainText("2");
+
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.locator("#status")).toContainText("Saved");
+  await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: "Reopen" }).click();
+  await expect(page.locator("#project-name")).toHaveValue("Main Distribution");
+  await expect(page.locator("#status")).toContainText("Reopened");
+  await expect.poll(() => page.locator("#folio-outline .folio-row span:last-child").allTextContents()).toEqual(orderBeforeSave);
+  await expect(page.locator("#resolved-title-block")).toContainText("A. Engineer");
+  await expect(page.locator("#resolved-title-block")).toContainText("MCC-01");
   expect(errors).toEqual([]);
 });
 
-test("professional workbench exposes dense regions and presentation controls", async ({ page }) => {
+test("browser reports invalid variables through Rust diagnostics", async ({ page }) => {
   await page.goto("/");
-  for (const region of ["app-bar", "tool-bar", "library-rail", "canvas-stage", "inspector-rail", "status-bar"]) {
+  await page.locator("[data-widget='project.variables']").fill("=invalid");
+  await page.locator("[data-widget='project.variables']").press("Enter");
+  await expect(page.locator("#status")).toContainText("variable key");
+  await expect(page.locator("#project-variable-rows")).not.toContainText("invalid");
+});
+
+test("browser renders the Graphite shell and Rust-owned electrical plate", async ({ page }) => {
+  await page.goto("/");
+  for (const region of ["app-bar", "tool-bar", "outline-rail", "canvas-stage", "properties-rail", "status-bar"]) {
     await expect(page.locator(`[data-region='${region}']`)).toBeVisible();
   }
-  expect(await page.locator("#schematic-canvas").evaluate((canvas) => canvas.width)).toBeGreaterThan(0);
-  await page.locator("#symbol-search").fill("res");
-  await expect(page.locator("#symbol-list button:visible")).toHaveCount(1);
-  await page.locator("#symbol-search").fill("");
-  await expect(page.locator("#symbol-list button:visible")).toHaveCount(6);
-  await page.locator("[data-toggle-rail='library']").click();
-  await expect(page.locator(".workbench")).toHaveClass(/library-collapsed/);
-  await page.locator("[data-toggle-rail='library']").click();
-  await page.locator("[data-command='wire']").click();
-  await expect(page.locator("[data-tool='wire']")).toHaveClass(/is-active/);
-  await page.keyboard.press("Escape");
-  await expect(page.locator("[data-tool='select']")).toHaveClass(/is-active/);
+  await expect(page.locator("#folio-plate")).toBeVisible();
+  await expect(page.locator("#resolved-title-block")).toBeVisible();
+  await page.getByRole("button", { name: "Collapse properties" }).click();
+  await expect(page.locator(".workbench")).toHaveClass(/properties-collapsed/);
 });

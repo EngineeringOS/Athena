@@ -1,13 +1,19 @@
 # Athena Browser Shell
 
-This directory is deliberately a thin browser host. Build the Rust/WASM module
-first, then serve this directory over HTTP:
+The browser is a thin platform adapter over the Rust application protocol.
+Project, folio, title-block, variable, validation, history, panel, and dirty
+state are owned by `athena-application` inside WASM. JavaScript keeps only DOM
+references, effect-derived render caches, file bytes, and browser focus state.
+
+Build and run from the repository root:
 
 ```powershell
-wasm-pack build ../rust/crates/web-core --target web --out-dir ../../web/pkg
-python -m http.server 8080 --directory .
+Push-Location rust
+wasm-pack build crates/web-core --target web --out-dir ../../../web/pkg
+Pop-Location
+python -m http.server 8080 --directory web
 ```
 
-`bootstrap.js` owns DOM events, Canvas 2D pixels, and the browser download
-mechanism. The `WebEditor` handle in WASM owns schematic state, commands,
-history, serialization, and scene generation.
+The shell sends tagged `AthenaMessage` JSON and reduces only tagged
+`AthenaFrontendMessage` effects. Browser save/open adapters return bytes and
+typed outcomes to the same persistent `WasmAthenaEditor` instance.
