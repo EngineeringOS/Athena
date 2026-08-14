@@ -287,7 +287,7 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use athena_application::{LayoutTarget, PortfolioMessage, WidgetId, WidgetValue};
-    use athena_domain::ProjectId;
+    use athena_domain::{FolioId, ProjectId};
 
     use super::DesktopEditor;
 
@@ -296,6 +296,7 @@ mod tests {
         let mut desktop = DesktopEditor::default();
         desktop.dispatch(PortfolioMessage::CreateProject {
             project_id: ProjectId::new(),
+            initial_folio_id: FolioId::new(),
             name: "Initial".into(),
         });
         desktop.dispatch(athena_application::LayoutMessage::RequestProjectPlate);

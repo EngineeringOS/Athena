@@ -48,6 +48,7 @@ impl NativeShell {
         let mut editor = DesktopEditor::default();
         editor.dispatch(PortfolioMessage::CreateProject {
             project_id: ProjectId::new(),
+            initial_folio_id: FolioId::new(),
             name: "Untitled electrical project".into(),
         });
         editor.dispatch(LayoutMessage::RequestProjectPlate);

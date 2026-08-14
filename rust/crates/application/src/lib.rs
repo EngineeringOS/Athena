@@ -6,6 +6,7 @@
 mod application;
 mod dispatcher;
 mod document;
+mod fixture;
 mod frontend_message;
 mod layout;
 mod message;
@@ -14,6 +15,7 @@ mod widget;
 
 pub use application::{AthenaEditor, EditorSnapshot};
 pub use dispatcher::AthenaDispatcher;
+pub use fixture::canonical_m005_messages;
 pub use frontend_message::{AthenaFrontendMessage, ResolvedTitleBlockDisplay};
 pub use layout::{LayoutTarget, PanelId, PanelState, WorkspaceLayout};
 pub use message::{

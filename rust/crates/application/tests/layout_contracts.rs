@@ -2,7 +2,7 @@ use athena_application::{
     AthenaEditor, AthenaFrontendMessage, DocumentMessage, LayoutMessage, LayoutTarget, PanelId,
     PortfolioMessage, WidgetId, WidgetValue,
 };
-use athena_domain::ProjectId;
+use athena_domain::{FolioId, ProjectId};
 use athena_domain::{TemplateSegment, TemplateText, VariableReference};
 use athena_editor::{TitleBlockField, TitleBlockValue};
 use uuid::Uuid;
@@ -15,6 +15,7 @@ fn editor_and_effects() -> (AthenaEditor, Vec<AthenaFrontendMessage>) {
     let mut editor = AthenaEditor::default();
     let effects = editor.handle_message(PortfolioMessage::CreateProject {
         project_id: ProjectId::from_uuid(Uuid::from_u128(100)),
+        initial_folio_id: FolioId::from_uuid(Uuid::from_u128(101)),
         name: "Main Distribution".into(),
     });
     (editor, effects)

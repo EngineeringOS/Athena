@@ -92,8 +92,19 @@ impl Folio {
         title_block: TitleBlockValues,
         variables: BTreeMap<String, String>,
     ) -> Self {
+        Self::with_id(FolioId::new(), label, title_block, variables)
+    }
+
+    /// Creates a folio with an explicit identity for deterministic replay.
+    #[must_use]
+    pub fn with_id(
+        id: FolioId,
+        label: impl Into<String>,
+        title_block: TitleBlockValues,
+        variables: BTreeMap<String, String>,
+    ) -> Self {
         Self {
-            id: FolioId::new(),
+            id,
             label: label.into(),
             title_block,
             variables,

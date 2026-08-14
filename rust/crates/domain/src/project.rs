@@ -72,8 +72,18 @@ impl Project {
     /// Creates a named project with one default folio.
     #[must_use]
     pub fn new(name: impl Into<String>) -> Self {
+        Self::new_with_ids(ProjectId::new(), FolioId::new(), name)
+    }
+
+    /// Creates a named project with explicit identities for deterministic replay.
+    #[must_use]
+    pub fn new_with_ids(
+        project_id: ProjectId,
+        initial_folio_id: FolioId,
+        name: impl Into<String>,
+    ) -> Self {
         let mut project = Self {
-            id: ProjectId::new(),
+            id: project_id,
             name: name.into(),
             settings: ProjectSettings::default(),
             symbol_definitions: BTreeMap::new(),
@@ -82,9 +92,14 @@ impl Project {
             folios: BTreeMap::new(),
             folio_order: Vec::new(),
         };
-        project
-            .add_folio("Folio 1")
-            .expect("built-in folio label is valid");
+        let folio = Folio::with_id(
+            initial_folio_id,
+            "Folio 1",
+            project.folio_defaults.title_block.clone(),
+            project.folio_defaults.variables.clone(),
+        );
+        project.folios.insert(initial_folio_id, folio);
+        project.folio_order.push(initial_folio_id);
         project
     }
 

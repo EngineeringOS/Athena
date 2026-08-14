@@ -69,9 +69,12 @@ impl PortfolioHandler {
 
     pub(crate) fn handle(&mut self, message: PortfolioMessage) -> PortfolioOutput {
         match message {
-            PortfolioMessage::CreateProject { project_id, name } => {
-                let mut project = Project::new(name);
-                project.id = project_id;
+            PortfolioMessage::CreateProject {
+                project_id,
+                initial_folio_id,
+                name,
+            } => {
+                let project = Project::new_with_ids(project_id, initial_folio_id, name);
                 let active_folio_id = project.folio_order()[0];
                 self.document = Some(DocumentHandler::new(project, active_folio_id));
                 self.active_save = None;

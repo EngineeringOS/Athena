@@ -37,6 +37,7 @@ impl From<LayoutMessage> for AthenaMessage {
 pub enum PortfolioMessage {
     CreateProject {
         project_id: ProjectId,
+        initial_folio_id: FolioId,
         name: String,
     },
     RequestOpen,

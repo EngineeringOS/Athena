@@ -5,8 +5,10 @@
 > `superpowers:executing-plans` to execute this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** `APPROVED` for implementation on 2026-08-14. Runtime, visual, and
-user-acceptance gates remain open until fresh M005 evidence proves them.
+**Status:** `PARTIALLY VERIFIED` on 2026-08-14. The application/runtime gates
+passed. The old-shell visual and user-acceptance gates were not passed and are
+superseded by the approved M006 Graphite shell replacement; they remain
+unchecked rather than being reported as complete.
 
 **Goal:** Deliver project creation, ordered folios, inherited title-block
 variables, and save/reopen through a Graphite-derived typed application spine
@@ -405,9 +407,9 @@ GRA-WASM-001, GRA-UX-001.
 **Traceability:** CAP-M005-001/002/003/004/005; all 22 IDs in the M005
 Evidence Scope. Verification must report each gate separately.
 
-- [ ] Generate one canonical semantic message fixture and assert identical
+- [x] Generate one canonical semantic message fixture and assert identical
   state hashes and semantic effect traces through native and WASM adapters.
-- [ ] Run fresh:
+- [x] Run fresh:
 
 ```powershell
 Push-Location rust
@@ -430,6 +432,9 @@ npm test
   `reference/qelectrotech-doc/source/_external/_images/en/qet_folios/qet_folio_prop_title_block_main.png`.
   Check clipping, overlap, focus, hover, and text fit. Record that full
   professional visual fidelity is outside M005 unless separately accepted.
+
+  `SUPERSEDED BY M006`: the M005 shell is intentionally replaced rather than
+  visually accepted. No M005 desktop screenshot was certified.
 - [ ] Run adversarial checks for direct platform mutation, duplicated form
   state, unstable widget IDs, invalid folio order, unresolved callback IDs,
   malformed variables, future schema versions, empty-command paths, stale or
@@ -442,3 +447,7 @@ npm test
   Gate accepted.
 - [ ] After explicit acceptance, commit verification-only changes with
   `git commit -m "docs: verify m005 folio foundation"` and push `next-001`.
+
+  `SUPERSEDED BY M006`: these visual/user-gate steps are retained unchecked as
+  historical evidence. M006 owns the replacement shell's automated, visual,
+  desktop-runtime, and explicit user-acceptance gates.

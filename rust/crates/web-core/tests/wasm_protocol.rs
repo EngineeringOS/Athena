@@ -1,7 +1,7 @@
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     use athena_application::{AthenaMessage, PortfolioMessage};
-    use athena_domain::ProjectId;
+    use athena_domain::{FolioId, ProjectId};
     use athena_web_core::WasmAthenaEditor;
     use uuid::Uuid;
     use wasm_bindgen_test::*;
@@ -14,6 +14,7 @@ mod wasm {
         let create =
             serde_json::to_string(&AthenaMessage::Portfolio(PortfolioMessage::CreateProject {
                 project_id: ProjectId::from_uuid(Uuid::from_u128(1)),
+                initial_folio_id: FolioId::from_uuid(Uuid::from_u128(2)),
                 name: "Browser".into(),
             }))
             .unwrap();

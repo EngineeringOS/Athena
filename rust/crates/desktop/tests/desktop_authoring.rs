@@ -19,6 +19,7 @@ fn desktop_with_project() -> DesktopEditor {
     let mut desktop = DesktopEditor::default();
     desktop.dispatch(PortfolioMessage::CreateProject {
         project_id: project_id(1),
+        initial_folio_id: folio_id(100),
         name: "Main Distribution".into(),
     });
     desktop.dispatch(LayoutMessage::RequestProjectPlate);

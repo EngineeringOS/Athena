@@ -14,6 +14,7 @@ fn typed_messages_produce_ordered_effects_and_canonical_state() {
 
     let effects = editor.handle_message(PortfolioMessage::CreateProject {
         project_id,
+        initial_folio_id: FolioId::from_uuid(Uuid::from_u128(1001)),
         name: "Main Distribution".into(),
     });
     assert!(matches!(
@@ -52,6 +53,7 @@ fn save_results_are_bound_to_request_project_and_revision() {
     let mut editor = AthenaEditor::default();
     editor.handle_message(PortfolioMessage::CreateProject {
         project_id,
+        initial_folio_id: FolioId::from_uuid(Uuid::from_u128(1010)),
         name: "Main Distribution".into(),
     });
     editor.handle_message(DocumentMessage::RenameProject {
@@ -107,6 +109,7 @@ fn post_request_edits_remain_dirty_and_cancelled_or_failed_requests_can_retry() 
     let mut editor = AthenaEditor::default();
     editor.handle_message(PortfolioMessage::CreateProject {
         project_id,
+        initial_folio_id: FolioId::from_uuid(Uuid::from_u128(1020)),
         name: "Main Distribution".into(),
     });
     editor.handle_message(DocumentMessage::RenameProject {

@@ -416,7 +416,11 @@ async function start() {
   await init();
   editor = new WasmAthenaEditor();
   bindEvents();
-  send("Portfolio", "CreateProject", { project_id: crypto.randomUUID(), name: "Main Distribution" });
+  send("Portfolio", "CreateProject", {
+    project_id: crypto.randomUUID(),
+    initial_folio_id: crypto.randomUUID(),
+    name: "Main Distribution",
+  });
   send("Layout", "RequestProjectPlate");
   setStatus("Ready");
 }

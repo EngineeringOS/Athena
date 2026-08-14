@@ -12,6 +12,7 @@ fn web_core_routes_create_add_move_edit_save_and_open_through_messages() {
     core.dispatch_message(
         PortfolioMessage::CreateProject {
             project_id,
+            initial_folio_id: FolioId::from_uuid(Uuid::from_u128(1001)),
             name: "Main Distribution".into(),
         }
         .into(),
@@ -76,6 +77,7 @@ fn json_protocol_is_tagged_and_rejects_untyped_snapshots() {
     let message = serde_json::to_string(&athena_application::AthenaMessage::Portfolio(
         PortfolioMessage::CreateProject {
             project_id: ProjectId::from_uuid(Uuid::from_u128(10)),
+            initial_folio_id: FolioId::from_uuid(Uuid::from_u128(1010)),
             name: "Browser".into(),
         },
     ))
@@ -93,6 +95,7 @@ fn stale_save_result_does_not_release_the_active_request() {
     core.dispatch_message(
         PortfolioMessage::CreateProject {
             project_id,
+            initial_folio_id: FolioId::from_uuid(Uuid::from_u128(1020)),
             name: "Browser".into(),
         }
         .into(),
