@@ -2,7 +2,7 @@ use athena_domain::{Point, Wire, WireEndpoint};
 use athena_editor::{EditorCommand, EditorState, History, ItemId, snapshot_bytes, snapshots_equal};
 use athena_format::SnapshotStore;
 use athena_library::{SearchQuery, SymbolCatalog};
-use athena_render::{EditorPresentation, project_sheet};
+use athena_render::{EditorPresentation, project_folio};
 
 #[test]
 fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
@@ -28,7 +28,7 @@ fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
     project
         .add_symbol_definition(power)
         .expect("power definition registers");
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let mut state = EditorState::new(project);
     let mut history = History::new(32);
     let resistor_definition = state
@@ -65,7 +65,7 @@ fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
         .apply(
             &mut state,
             EditorCommand::PlaceSymbol {
-                sheet_id,
+                folio_id,
                 symbol: resistor_instance,
             },
         )
@@ -74,7 +74,7 @@ fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
         .apply(
             &mut state,
             EditorCommand::PlaceSymbol {
-                sheet_id,
+                folio_id,
                 symbol: power_instance,
             },
         )
@@ -83,7 +83,7 @@ fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
         .apply(
             &mut state,
             EditorCommand::CreateWire {
-                sheet_id,
+                folio_id,
                 wire: Wire::new(
                     WireEndpoint::Terminal(resistor_terminal_id),
                     WireEndpoint::Terminal(power_terminal_id),
@@ -95,8 +95,8 @@ fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
     let before_move = state.project().clone();
     let resistor_id = state
         .project()
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .symbol_instances
         .keys()
         .next()
@@ -106,7 +106,7 @@ fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
         .apply(
             &mut state,
             EditorCommand::MoveItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Symbol(resistor_id)],
                 delta: Point::new(10, 0),
             },
@@ -117,10 +117,10 @@ fn authoring_mvp_round_trips_project_history_snapshot_and_scene() {
     history.redo(&mut state).expect("move redo succeeds");
     let bytes = snapshot_bytes(state.project()).expect("snapshot encodes");
     let decoded = SnapshotStore::decode_snapshot(&bytes).expect("snapshot decodes");
-    assert!(snapshots_equal(state.project(), &decoded).expect("decoded snapshot matches"));
-    let scene_a = project_sheet(state.project(), sheet_id, &EditorPresentation::default())
+    assert!(snapshots_equal(state.project(), &decoded.project).expect("decoded snapshot matches"));
+    let scene_a = project_folio(state.project(), folio_id, &EditorPresentation::default())
         .expect("scene projects");
-    let scene_b = project_sheet(&decoded, sheet_id, &EditorPresentation::default())
+    let scene_b = project_folio(&decoded.project, folio_id, &EditorPresentation::default())
         .expect("decoded scene projects");
     assert_eq!(scene_a, scene_b);
 }

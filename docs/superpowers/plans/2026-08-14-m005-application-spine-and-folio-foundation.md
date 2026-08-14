@@ -203,17 +203,17 @@ GRA-DOC-001.
 **Traceability:** CAP-M005-002/003; QET-HISTORY-001, QET-FOLIO-001,
 QET-TITLE-002, QET-VAR-001, GRA-DOC-001, GRA-HISTORY-001.
 
-- [ ] Write failing command tests for add folio, activate folio, move folio,
+- [x] Write failing command tests for add folio, activate folio, move folio,
   rename project/folio, update defaults, update title-block field, and set or
   remove project/folio variables.
-- [ ] Add typed command variants carrying stable IDs and old/new values needed
+- [x] Add typed command variants carrying stable IDs and old/new values needed
   for deterministic undo/redo. Do not use generic string paths for domain
   mutation.
-- [ ] Ensure one committed property edit is one history transaction. Invalid
+- [x] Ensure one committed property edit is one history transaction. Invalid
   edits must leave state, undo stack, redo stack, and dirty state unchanged.
-- [ ] Add sequence tests proving add/move/edit -> undo all -> redo all restores
+- [x] Add sequence tests proving add/move/edit -> undo all -> redo all restores
   equal canonical snapshots.
-- [ ] Add `DocumentRevision(u64)` state identities allocated monotonically for
+- [x] Add `DocumentRevision(u64)` state identities allocated monotonically for
   each newly committed semantic state; undo/redo restores an existing revision
   identity rather than assigning equality by wall-clock time.
   Save-checkpoint tests must prove byte generation alone does not mutate history;
@@ -221,9 +221,9 @@ QET-TITLE-002, QET-VAR-001, GRA-DOC-001, GRA-HISTORY-001.
   clears its redo timeline; edits committed while save is pending remain in undo
   history and keep the document dirty. Cancellation, failure, and stale or
   mismatched success preserve history and dirty state.
-- [ ] Run `cargo test -p athena-editor --test folio_commands` followed by
+- [x] Run `cargo test -p athena-editor --test folio_commands` followed by
   `cargo test -p athena-editor`.
-- [ ] Commit with `git commit -m "feat: add folio editing commands"`.
+- [x] Commit with `git commit -m "feat: add folio editing commands"`.
 
 ### Task 5: Build `AthenaEditor`, Dispatcher, and Handler Ownership
 

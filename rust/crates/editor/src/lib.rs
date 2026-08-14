@@ -9,10 +9,10 @@ mod session;
 mod validation;
 
 pub use command::{
-    AppliedCommand, ApplyError, CommandEnvelope, EditorCommand, EditorState, FieldTarget, ItemId,
-    StoredItem, WireSide,
+    AppliedCommand, ApplyError, CommandEnvelope, DocumentRevision, EditorCommand, EditorState,
+    FieldTarget, ItemId, StoredItem, TitleBlockField, TitleBlockValue, WireSide,
 };
-pub use history::{History, HistoryError, snapshot_bytes, snapshots_equal};
+pub use history::{History, HistoryError, SaveSnapshot, snapshot_bytes, snapshots_equal};
 pub use interaction::{
     DragSelectionState, InteractionState, MarqueeSelectionMode, MarqueeState, PointerModifiers,
     PresentationPointer, PropertyEditingState, ToolPlacementTransientState,

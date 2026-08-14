@@ -5,7 +5,7 @@
 
 use std::collections::BTreeSet;
 
-use athena_domain::{Junction, Point, Project, SheetId, Wire, WireEndpoint, canonical_wire_route};
+use athena_domain::{FolioId, Junction, Point, Project, Wire, WireEndpoint, canonical_wire_route};
 
 use crate::{
     ApplyError, EditorCommand, FieldTarget, ItemId, StoredItem, WireSide,
@@ -19,16 +19,54 @@ pub(crate) fn validate_command(
     command: &EditorCommand,
 ) -> Result<(), ApplyError> {
     match command {
-        EditorCommand::PlaceSymbol { sheet_id, symbol } => {
-            let sheet = sheet(project, *sheet_id)?;
+        EditorCommand::AddFolio { folio, position } => {
+            if project.folios.contains_key(&folio.id) {
+                return Err(ApplyError::DuplicateFolio { folio_id: folio.id });
+            }
+            if *position > project.folio_order.len() {
+                return Err(ApplyError::InvalidFolioPosition {
+                    position: *position,
+                });
+            }
+            if folio.label.trim().is_empty() {
+                return Err(ApplyError::InvalidFolioLabel);
+            }
+        }
+        EditorCommand::RemoveFolio { folio_id } => {
+            let _ = folio(project, *folio_id)?;
+            if project.folios.len() <= 1 {
+                return Err(ApplyError::CannotRemoveLastFolio);
+            }
+        }
+        EditorCommand::MoveFolio { folio_id, from, to } => {
+            let _ = folio(project, *folio_id)?;
+            if *from >= project.folio_order.len() {
+                return Err(ApplyError::InvalidFolioPosition { position: *from });
+            }
+            if *to >= project.folio_order.len() {
+                return Err(ApplyError::InvalidFolioPosition { position: *to });
+            }
+        }
+        EditorCommand::RenameProject { new_name, .. } => {
+            if new_name.trim().is_empty() {
+                return Err(ApplyError::InvalidProjectName);
+            }
+        }
+        EditorCommand::UpdateFolioDefaults { .. } | EditorCommand::SetProjectVariable { .. } => {}
+        EditorCommand::SetFolioVariable { folio_id, .. }
+        | EditorCommand::SetTitleBlockValue { folio_id, .. } => {
+            let _ = folio(project, *folio_id)?;
+        }
+        EditorCommand::PlaceSymbol { folio_id, symbol } => {
+            let folio = folio(project, *folio_id)?;
             if project.symbol_definition(symbol.definition_id).is_none() {
                 return Err(ApplyError::UnknownSymbolDefinition {
                     definition_id: symbol.definition_id,
                 });
             }
-            if sheet.symbol_instances.contains_key(&symbol.id) {
+            if folio.symbol_instances.contains_key(&symbol.id) {
                 return Err(ApplyError::DuplicateSymbol {
-                    sheet_id: *sheet_id,
+                    folio_id: *folio_id,
                     symbol_id: symbol.id,
                 });
             }
@@ -45,53 +83,53 @@ pub(crate) fn validate_command(
             }
         }
         EditorCommand::MoveItems {
-            sheet_id, items, ..
+            folio_id, items, ..
         }
         | EditorCommand::RotateItems {
-            sheet_id, items, ..
+            folio_id, items, ..
         }
-        | EditorCommand::MirrorItems { sheet_id, items }
-        | EditorCommand::DeleteItems { sheet_id, items } => {
-            let sheet = sheet(project, *sheet_id)?;
-            validate_item_selection(sheet, items)?;
+        | EditorCommand::MirrorItems { folio_id, items }
+        | EditorCommand::DeleteItems { folio_id, items } => {
+            let folio = folio(project, *folio_id)?;
+            validate_item_selection(folio, items)?;
         }
-        EditorCommand::CreateWire { sheet_id, wire } => {
-            let sheet = sheet(project, *sheet_id)?;
-            if sheet.wires.contains_key(&wire.id) {
+        EditorCommand::CreateWire { folio_id, wire } => {
+            let folio = folio(project, *folio_id)?;
+            if folio.wires.contains_key(&wire.id) {
                 return Err(ApplyError::DuplicateWire {
-                    sheet_id: *sheet_id,
+                    folio_id: *folio_id,
                     wire_id: wire.id,
                 });
             }
-            validate_endpoint(project, *sheet_id, &wire.start)?;
-            validate_endpoint(project, *sheet_id, &wire.end)?;
-            validate_wire_route(project, *sheet_id, wire, None)?;
+            validate_endpoint(project, *folio_id, &wire.start)?;
+            validate_endpoint(project, *folio_id, &wire.end)?;
+            validate_wire_route(project, *folio_id, wire, None)?;
         }
         EditorCommand::SplitWire {
-            sheet_id,
+            folio_id,
             wire_id,
             junction,
             first_wire,
             second_wire,
         } => {
-            let sheet = sheet(project, *sheet_id)?;
-            if !sheet.wires.contains_key(wire_id) {
+            let folio = folio(project, *folio_id)?;
+            if !folio.wires.contains_key(wire_id) {
                 return Err(ApplyError::UnknownItem {
-                    sheet_id: *sheet_id,
+                    folio_id: *folio_id,
                     item: ItemId::Wire(*wire_id),
                 });
             }
-            if sheet.junctions.contains_key(&junction.id) {
+            if folio.junctions.contains_key(&junction.id) {
                 return Err(ApplyError::DuplicateJunction {
-                    sheet_id: *sheet_id,
+                    folio_id: *folio_id,
                     junction_id: junction.id,
                 });
             }
             if first_wire.id == second_wire.id
                 || first_wire.id == *wire_id
                 || second_wire.id == *wire_id
-                || sheet.wires.contains_key(&first_wire.id)
-                || sheet.wires.contains_key(&second_wire.id)
+                || folio.wires.contains_key(&first_wire.id)
+                || folio.wires.contains_key(&second_wire.id)
                 || !wire_uses_junction(first_wire, junction.id)
                 || !wire_uses_junction(second_wire, junction.id)
             {
@@ -99,38 +137,38 @@ pub(crate) fn validate_command(
             }
             validate_endpoint_with_new_junction(
                 project,
-                *sheet_id,
+                *folio_id,
                 &first_wire.start,
                 junction.id,
             )?;
-            validate_wire_route(project, *sheet_id, first_wire, Some(junction))?;
-            validate_wire_route(project, *sheet_id, second_wire, Some(junction))?;
-            validate_endpoint_with_new_junction(project, *sheet_id, &first_wire.end, junction.id)?;
+            validate_wire_route(project, *folio_id, first_wire, Some(junction))?;
+            validate_wire_route(project, *folio_id, second_wire, Some(junction))?;
+            validate_endpoint_with_new_junction(project, *folio_id, &first_wire.end, junction.id)?;
             validate_endpoint_with_new_junction(
                 project,
-                *sheet_id,
+                *folio_id,
                 &second_wire.start,
                 junction.id,
             )?;
-            validate_endpoint_with_new_junction(project, *sheet_id, &second_wire.end, junction.id)?;
+            validate_endpoint_with_new_junction(project, *folio_id, &second_wire.end, junction.id)?;
         }
-        EditorCommand::DeleteWire { sheet_id, wire_id } => {
-            let sheet = sheet(project, *sheet_id)?;
-            if !sheet.wires.contains_key(wire_id) {
+        EditorCommand::DeleteWire { folio_id, wire_id } => {
+            let folio = folio(project, *folio_id)?;
+            if !folio.wires.contains_key(wire_id) {
                 return Err(ApplyError::UnknownItem {
-                    sheet_id: *sheet_id,
+                    folio_id: *folio_id,
                     item: ItemId::Wire(*wire_id),
                 });
             }
         }
         EditorCommand::ReconnectWireEndpoint {
-            sheet_id,
+            folio_id,
             wire_id,
             terminal_id,
             endpoint,
         } => {
-            let wire = validate_wire(project, *sheet_id, *wire_id)?;
-            validate_endpoint(project, *sheet_id, &WireEndpoint::Terminal(*terminal_id))?;
+            let wire = validate_wire(project, *folio_id, *wire_id)?;
+            validate_endpoint(project, *folio_id, &WireEndpoint::Terminal(*terminal_id))?;
             // A wire represents a connection between distinct endpoint owners.
             // Check semantics before mutation because a multi-bend route could
             // otherwise remain geometrically valid after the reconnect.
@@ -147,12 +185,12 @@ pub(crate) fn validate_command(
             }
         }
         EditorCommand::InsertWireVertex {
-            sheet_id,
+            folio_id,
             wire_id,
             segment_index,
             position,
         } => {
-            let wire = validate_wire(project, *sheet_id, *wire_id)?;
+            let wire = validate_wire(project, *folio_id, *wire_id)?;
             let Some(segment) = wire.route.windows(2).nth(*segment_index) else {
                 return Err(ApplyError::InvalidWireSegmentIndex {
                     wire_id: *wire_id,
@@ -167,17 +205,17 @@ pub(crate) fn validate_command(
             }
         }
         EditorCommand::MoveWireVertex {
-            sheet_id,
+            folio_id,
             wire_id,
             vertex_index,
             ..
         }
         | EditorCommand::DeleteWireVertex {
-            sheet_id,
+            folio_id,
             wire_id,
             vertex_index,
         } => {
-            let wire = validate_wire(project, *sheet_id, *wire_id)?;
+            let wire = validate_wire(project, *folio_id, *wire_id)?;
             if *vertex_index == 0 || *vertex_index >= wire.route.len().saturating_sub(1) {
                 return Err(ApplyError::InvalidWireVertexIndex {
                     wire_id: *wire_id,
@@ -186,39 +224,43 @@ pub(crate) fn validate_command(
             }
         }
         EditorCommand::SetFieldValue {
-            sheet_id, target, ..
+            folio_id, target, ..
         } => {
-            let sheet = sheet(project, *sheet_id)?;
+            let folio = folio(project, *folio_id)?;
             let item = match target {
                 FieldTarget::Symbol(id) => ItemId::Symbol(*id),
                 FieldTarget::Wire(id) => ItemId::Wire(*id),
                 FieldTarget::Annotation(id) => ItemId::Annotation(*id),
             };
-            if !sheet_contains_item(sheet, item) {
+            if !sheet_contains_item(folio, item) {
                 return Err(ApplyError::UnknownItem {
-                    sheet_id: *sheet_id,
+                    folio_id: *folio_id,
                     item,
                 });
             }
         }
-        EditorCommand::ApplySheetSettings { sheet_id, settings } => {
-            let _ = sheet(project, *sheet_id)?;
+        EditorCommand::ApplySchematicSettings { folio_id, settings } => {
+            let _ = folio(project, *folio_id)?;
             if settings.page_width <= 0 || settings.page_height <= 0 || settings.grid_spacing <= 0 {
-                return Err(ApplyError::InvalidSheetSettings);
+                return Err(ApplyError::InvalidSchematicSettings);
             }
         }
-        EditorCommand::RenameSheet { sheet_id, name } => {
-            let _ = sheet(project, *sheet_id)?;
-            if name.trim().is_empty() {
-                return Err(ApplyError::InvalidSheetName);
+        EditorCommand::RenameFolio {
+            folio_id,
+            new_label,
+            ..
+        } => {
+            let _ = folio(project, *folio_id)?;
+            if new_label.trim().is_empty() {
+                return Err(ApplyError::InvalidFolioLabel);
             }
         }
         EditorCommand::RestoreItems {
-            sheet_id,
+            folio_id,
             remove,
             restore,
         } => {
-            let sheet = sheet(project, *sheet_id)?;
+            let folio = folio(project, *folio_id)?;
             validate_distinct_items(remove)?;
             let remove_ids = remove.iter().copied().collect::<BTreeSet<_>>();
             let mut restore_ids = BTreeSet::new();
@@ -227,18 +269,18 @@ pub(crate) fn validate_command(
                 if !restore_ids.insert(item) {
                     return Err(ApplyError::DuplicateItem { item });
                 }
-                if sheet_contains_item(sheet, item) && !remove_ids.contains(&item) {
+                if sheet_contains_item(folio, item) && !remove_ids.contains(&item) {
                     return Err(match stored {
                         StoredItem::Symbol(symbol) => ApplyError::DuplicateSymbol {
-                            sheet_id: *sheet_id,
+                            folio_id: *folio_id,
                             symbol_id: symbol.id,
                         },
                         StoredItem::Wire(wire) => ApplyError::DuplicateWire {
-                            sheet_id: *sheet_id,
+                            folio_id: *folio_id,
                             wire_id: wire.id,
                         },
                         StoredItem::Junction(junction) => ApplyError::DuplicateJunction {
-                            sheet_id: *sheet_id,
+                            folio_id: *folio_id,
                             junction_id: junction.id,
                         },
                         StoredItem::Annotation(annotation) => ApplyError::InvalidProject(
@@ -257,29 +299,29 @@ pub(crate) fn validate_command(
 
 fn validate_wire(
     project: &Project,
-    sheet_id: SheetId,
+    folio_id: FolioId,
     wire_id: athena_domain::WireId,
 ) -> Result<&athena_domain::Wire, ApplyError> {
     let wire = project
-        .wire(sheet_id, wire_id)
+        .wire(folio_id, wire_id)
         .ok_or(ApplyError::UnknownItem {
-            sheet_id,
+            folio_id,
             item: ItemId::Wire(wire_id),
         })?;
-    validate_wire_route(project, sheet_id, wire, None)?;
+    validate_wire_route(project, folio_id, wire, None)?;
     Ok(wire)
 }
 
-/// Checks the persisted route contract against positions owned by this sheet.
+/// Checks the persisted route contract against positions owned by this folio.
 fn validate_wire_route(
     project: &Project,
-    sheet_id: SheetId,
+    folio_id: FolioId,
     wire: &Wire,
     pending_junction: Option<&Junction>,
 ) -> Result<(), ApplyError> {
     validate_canonical_wire_route(
         project,
-        sheet_id,
+        folio_id,
         wire.id,
         &wire.start,
         &wire.end,
@@ -293,7 +335,7 @@ fn validate_wire_route(
     let canonical = canonical_wire_route(&wire.route);
     validate_canonical_wire_route(
         project,
-        sheet_id,
+        folio_id,
         wire.id,
         &wire.start,
         &wire.end,
@@ -304,7 +346,7 @@ fn validate_wire_route(
 
 fn validate_canonical_wire_route(
     project: &Project,
-    sheet_id: SheetId,
+    folio_id: FolioId,
     wire_id: athena_domain::WireId,
     start_endpoint: &WireEndpoint,
     end_endpoint: &WireEndpoint,
@@ -314,8 +356,8 @@ fn validate_canonical_wire_route(
     if route.len() < 2 {
         return Err(ApplyError::WireRouteTooShort { wire_id });
     }
-    let start = endpoint_position(project, sheet_id, start_endpoint, pending_junction)?;
-    let end = endpoint_position(project, sheet_id, end_endpoint, pending_junction)?;
+    let start = endpoint_position(project, folio_id, start_endpoint, pending_junction)?;
+    let end = endpoint_position(project, folio_id, end_endpoint, pending_junction)?;
     if route[0] != start {
         return Err(ApplyError::WireRouteEndpointMismatch {
             wire_id,
@@ -347,16 +389,16 @@ fn validate_canonical_wire_route(
 
 fn endpoint_position(
     project: &Project,
-    sheet_id: SheetId,
+    folio_id: FolioId,
     endpoint: &WireEndpoint,
     pending_junction: Option<&Junction>,
 ) -> Result<Point, ApplyError> {
     match endpoint {
         WireEndpoint::Terminal(terminal_id) => project
-            .terminal(sheet_id, *terminal_id)
+            .terminal(folio_id, *terminal_id)
             .map(|terminal| terminal.position)
             .ok_or(ApplyError::UnknownTerminal {
-                sheet_id,
+                folio_id,
                 terminal_id: *terminal_id,
             }),
         WireEndpoint::Junction(junction_id)
@@ -367,10 +409,10 @@ fn endpoint_position(
                 .position)
         }
         WireEndpoint::Junction(junction_id) => project
-            .junction(sheet_id, *junction_id)
+            .junction(folio_id, *junction_id)
             .map(|junction| junction.position)
             .ok_or(ApplyError::UnknownJunction {
-                sheet_id,
+                folio_id,
                 junction_id: *junction_id,
             }),
     }
@@ -393,14 +435,14 @@ fn point_is_strictly_on_segment(
     }
 }
 
-fn sheet(project: &Project, sheet_id: SheetId) -> Result<&athena_domain::Sheet, ApplyError> {
+fn folio(project: &Project, folio_id: FolioId) -> Result<&athena_domain::Folio, ApplyError> {
     project
-        .sheet(sheet_id)
-        .ok_or(ApplyError::UnknownSheet { sheet_id })
+        .folio(folio_id)
+        .ok_or(ApplyError::UnknownFolio { folio_id })
 }
 
 fn validate_item_selection(
-    sheet: &athena_domain::Sheet,
+    folio: &athena_domain::Folio,
     items: &[ItemId],
 ) -> Result<(), ApplyError> {
     if items.is_empty() {
@@ -408,9 +450,9 @@ fn validate_item_selection(
     }
     validate_distinct_items(items)?;
     for item in items {
-        if !sheet_contains_item(sheet, *item) {
+        if !sheet_contains_item(folio, *item) {
             return Err(ApplyError::UnknownItem {
-                sheet_id: sheet.id,
+                folio_id: folio.id,
                 item: *item,
             });
         }
@@ -430,23 +472,23 @@ fn validate_distinct_items(items: &[ItemId]) -> Result<(), ApplyError> {
 
 fn validate_endpoint(
     project: &Project,
-    sheet_id: SheetId,
+    folio_id: FolioId,
     endpoint: &WireEndpoint,
 ) -> Result<(), ApplyError> {
     match endpoint {
         WireEndpoint::Terminal(terminal_id)
-            if project.terminal(sheet_id, *terminal_id).is_none() =>
+            if project.terminal(folio_id, *terminal_id).is_none() =>
         {
             Err(ApplyError::UnknownTerminal {
-                sheet_id,
+                folio_id,
                 terminal_id: *terminal_id,
             })
         }
         WireEndpoint::Junction(junction_id)
-            if project.junction(sheet_id, *junction_id).is_none() =>
+            if project.junction(folio_id, *junction_id).is_none() =>
         {
             Err(ApplyError::UnknownJunction {
-                sheet_id,
+                folio_id,
                 junction_id: *junction_id,
             })
         }
@@ -456,14 +498,14 @@ fn validate_endpoint(
 
 fn validate_endpoint_with_new_junction(
     project: &Project,
-    sheet_id: SheetId,
+    folio_id: FolioId,
     endpoint: &WireEndpoint,
     new_junction_id: athena_domain::JunctionId,
 ) -> Result<(), ApplyError> {
     if matches!(endpoint, WireEndpoint::Junction(id) if *id == new_junction_id) {
         Ok(())
     } else {
-        validate_endpoint(project, sheet_id, endpoint)
+        validate_endpoint(project, folio_id, endpoint)
     }
 }
 

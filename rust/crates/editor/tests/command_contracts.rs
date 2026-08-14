@@ -1,5 +1,5 @@
 use athena_domain::{
-    ElectricalKind, FieldValue, Junction, Point, Project, SheetSettings, SymbolDefinition,
+    ElectricalKind, FieldValue, Junction, Point, Project, SchematicSettings, SymbolDefinition,
     SymbolInstance, Terminal, Wire, WireEndpoint,
 };
 use athena_editor::{
@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 fn state_with_definition() -> (
     EditorState,
-    athena_domain::SheetId,
+    athena_domain::FolioId,
     athena_domain::SymbolDefinitionId,
 ) {
     let mut project = Project::new("Motor control");
@@ -19,9 +19,9 @@ fn state_with_definition() -> (
     project
         .add_symbol_definition(definition)
         .expect("definition IDs are unique");
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
 
-    (EditorState::new(project), sheet_id, definition_id)
+    (EditorState::new(project), folio_id, definition_id)
 }
 
 fn symbol(definition_id: athena_domain::SymbolDefinitionId, position: Point) -> SymbolInstance {
@@ -36,22 +36,22 @@ fn symbol(definition_id: athena_domain::SymbolDefinitionId, position: Point) -> 
     symbol
 }
 
-fn place(state: &mut EditorState, sheet_id: athena_domain::SheetId, symbol: SymbolInstance) {
+fn place(state: &mut EditorState, folio_id: athena_domain::FolioId, symbol: SymbolInstance) {
     state
-        .apply(EditorCommand::PlaceSymbol { sheet_id, symbol })
+        .apply(EditorCommand::PlaceSymbol { folio_id, symbol })
         .expect("placement should be valid");
 }
 
 #[test]
 fn places_moves_and_deletes_a_symbol() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(10, 10));
     let symbol_id = symbol.id;
 
-    place(&mut state, sheet_id, symbol);
+    place(&mut state, folio_id, symbol);
     state
         .apply(EditorCommand::MoveItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(symbol_id)],
             delta: Point::new(5, -10),
         })
@@ -60,7 +60,7 @@ fn places_moves_and_deletes_a_symbol() {
     assert_eq!(
         state
             .project()
-            .symbol_instance(sheet_id, symbol_id)
+            .symbol_instance(folio_id, symbol_id)
             .unwrap()
             .position,
         Point::new(15, 0)
@@ -68,7 +68,7 @@ fn places_moves_and_deletes_a_symbol() {
 
     state
         .apply(EditorCommand::DeleteItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(symbol_id)],
         })
         .expect("delete should be valid");
@@ -76,20 +76,20 @@ fn places_moves_and_deletes_a_symbol() {
     assert!(
         state
             .project()
-            .symbol_instance(sheet_id, symbol_id)
+            .symbol_instance(folio_id, symbol_id)
             .is_none()
     );
 }
 
 #[test]
 fn creates_splits_and_deletes_a_wire() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first_symbol = symbol(definition_id, Point::new(0, 0));
     let first_terminal = *first_symbol.terminals.keys().next().unwrap();
     let second_symbol = symbol(definition_id, Point::new(20, 0));
     let second_terminal = *second_symbol.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, first_symbol);
-    place(&mut state, sheet_id, second_symbol);
+    place(&mut state, folio_id, first_symbol);
+    place(&mut state, folio_id, second_symbol);
 
     let wire = Wire::new(
         WireEndpoint::Terminal(first_terminal),
@@ -98,7 +98,7 @@ fn creates_splits_and_deletes_a_wire() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("wire endpoints exist");
 
     let junction = Junction::new(Point::new(10, 0));
@@ -116,7 +116,7 @@ fn creates_splits_and_deletes_a_wire() {
     let second_wire_id = second_wire.id;
     state
         .apply(EditorCommand::SplitWire {
-            sheet_id,
+            folio_id,
             wire_id,
             junction,
             first_wire,
@@ -124,29 +124,29 @@ fn creates_splits_and_deletes_a_wire() {
         })
         .expect("split should replace the original wire");
 
-    assert!(state.project().wire(sheet_id, wire_id).is_none());
-    assert!(state.project().wire(sheet_id, first_wire_id).is_some());
-    assert!(state.project().wire(sheet_id, second_wire_id).is_some());
+    assert!(state.project().wire(folio_id, wire_id).is_none());
+    assert!(state.project().wire(folio_id, first_wire_id).is_some());
+    assert!(state.project().wire(folio_id, second_wire_id).is_some());
 
     state
         .apply(EditorCommand::DeleteWire {
-            sheet_id,
+            folio_id,
             wire_id: first_wire_id,
         })
         .expect("wire exists");
-    assert!(state.project().wire(sheet_id, first_wire_id).is_none());
+    assert!(state.project().wire(folio_id, first_wire_id).is_none());
 }
 
 #[test]
 fn sets_symbol_field_values_and_sheet_settings() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(0, 0));
     let symbol_id = symbol.id;
-    place(&mut state, sheet_id, symbol);
+    place(&mut state, folio_id, symbol);
 
     state
         .apply(EditorCommand::SetFieldValue {
-            sheet_id,
+            folio_id,
             target: FieldTarget::Symbol(symbol_id),
             field: "reference".into(),
             value: Some(FieldValue::Text("R1".into())),
@@ -155,13 +155,13 @@ fn sets_symbol_field_values_and_sheet_settings() {
     assert_eq!(
         state
             .project()
-            .symbol_instance(sheet_id, symbol_id)
+            .symbol_instance(folio_id, symbol_id)
             .unwrap()
             .fields["reference"],
         FieldValue::Text("R1".into())
     );
 
-    let settings = SheetSettings {
+    let settings = SchematicSettings {
         page_width: 594,
         page_height: 420,
         grid_spacing: 5,
@@ -169,18 +169,18 @@ fn sets_symbol_field_values_and_sheet_settings() {
         snap_enabled: false,
     };
     state
-        .apply(EditorCommand::ApplySheetSettings {
-            sheet_id,
+        .apply(EditorCommand::ApplySchematicSettings {
+            folio_id,
             settings: settings.clone(),
         })
-        .expect("sheet settings can be applied");
+        .expect("folio settings can be applied");
 
-    assert_eq!(state.project().sheet(sheet_id).unwrap().settings, settings);
+    assert_eq!(state.project().folio(folio_id).unwrap().settings, settings);
 }
 
 #[test]
 fn rejects_unknown_terminal_wire_without_changing_the_snapshot() {
-    let (mut state, sheet_id, _) = state_with_definition();
+    let (mut state, folio_id, _) = state_with_definition();
     let before = snapshot_bytes(state.project()).expect("valid initial state");
     let wire = Wire::new(
         WireEndpoint::Terminal(athena_domain::TerminalId::new()),
@@ -190,7 +190,7 @@ fn rejects_unknown_terminal_wire_without_changing_the_snapshot() {
 
     assert!(
         state
-            .apply(EditorCommand::CreateWire { sheet_id, wire })
+            .apply(EditorCommand::CreateWire { folio_id, wire })
             .is_err()
     );
     assert_eq!(
@@ -201,17 +201,17 @@ fn rejects_unknown_terminal_wire_without_changing_the_snapshot() {
 
 #[test]
 fn moves_multiple_selected_symbols_in_one_command() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first = symbol(definition_id, Point::new(0, 0));
     let first_id = first.id;
     let second = symbol(definition_id, Point::new(20, 10));
     let second_id = second.id;
-    place(&mut state, sheet_id, first);
-    place(&mut state, sheet_id, second);
+    place(&mut state, folio_id, first);
+    place(&mut state, folio_id, second);
 
     state
         .apply(EditorCommand::MoveItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(first_id), ItemId::Symbol(second_id)],
             delta: Point::new(-5, 15),
         })
@@ -220,7 +220,7 @@ fn moves_multiple_selected_symbols_in_one_command() {
     assert_eq!(
         state
             .project()
-            .symbol_instance(sheet_id, first_id)
+            .symbol_instance(folio_id, first_id)
             .unwrap()
             .position,
         Point::new(-5, 15)
@@ -228,7 +228,7 @@ fn moves_multiple_selected_symbols_in_one_command() {
     assert_eq!(
         state
             .project()
-            .symbol_instance(sheet_id, second_id)
+            .symbol_instance(folio_id, second_id)
             .unwrap()
             .position,
         Point::new(15, 25)
@@ -237,14 +237,14 @@ fn moves_multiple_selected_symbols_in_one_command() {
 
 #[test]
 fn moving_a_symbol_moves_attached_wire_endpoint_vertices() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first = symbol(definition_id, Point::new(0, 0));
     let first_id = first.id;
     let first_terminal = *first.terminals.keys().next().unwrap();
     let second = symbol(definition_id, Point::new(20, 0));
     let second_terminal = *second.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, first.clone());
-    place(&mut state, sheet_id, second);
+    place(&mut state, folio_id, first.clone());
+    place(&mut state, folio_id, second);
     let wire = Wire::new(
         WireEndpoint::Terminal(first_terminal),
         WireEndpoint::Terminal(second_terminal),
@@ -252,12 +252,12 @@ fn moving_a_symbol_moves_attached_wire_endpoint_vertices() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("wire endpoints exist");
 
     state
         .apply(EditorCommand::MoveItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(first_id)],
             delta: Point::new(5, 5),
         })
@@ -266,13 +266,13 @@ fn moving_a_symbol_moves_attached_wire_endpoint_vertices() {
     assert_eq!(
         state
             .project()
-            .terminal(sheet_id, first_terminal)
+            .terminal(folio_id, first_terminal)
             .unwrap()
             .position,
         Point::new(5, 5)
     );
     assert_eq!(
-        state.project().wire(sheet_id, wire_id).unwrap().route,
+        state.project().wire(folio_id, wire_id).unwrap().route,
         vec![Point::new(5, 5), Point::new(20, 5), Point::new(20, 0)],
         "moving an anchored endpoint introduces a deterministic elbow rather than persisting a diagonal segment"
     );
@@ -280,13 +280,13 @@ fn moving_a_symbol_moves_attached_wire_endpoint_vertices() {
 
 #[test]
 fn moving_a_wire_without_its_owners_is_rejected_atomically() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first = symbol(definition_id, Point::new(0, 0));
     let first_terminal = *first.terminals.keys().next().unwrap();
     let second = symbol(definition_id, Point::new(20, 0));
     let second_terminal = *second.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, first);
-    place(&mut state, sheet_id, second);
+    place(&mut state, folio_id, first);
+    place(&mut state, folio_id, second);
     let wire = Wire::new(
         WireEndpoint::Terminal(first_terminal),
         WireEndpoint::Terminal(second_terminal),
@@ -294,13 +294,13 @@ fn moving_a_wire_without_its_owners_is_rejected_atomically() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .unwrap();
     let before = snapshot_bytes(state.project()).unwrap();
     assert!(
         state
             .apply(EditorCommand::MoveItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Wire(wire_id)],
                 delta: Point::new(5, 0)
             })
@@ -311,15 +311,15 @@ fn moving_a_wire_without_its_owners_is_rejected_atomically() {
 
 #[test]
 fn moving_a_junction_without_its_wires_is_rejected_atomically() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first = symbol(definition_id, Point::new(0, 0));
     let first_terminal = *first.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, first);
+    place(&mut state, folio_id, first);
     let junction = Junction::new(Point::new(10, 0));
     let junction_id = junction.id;
     state
         .apply(EditorCommand::RestoreItems {
-            sheet_id,
+            folio_id,
             remove: vec![],
             restore: vec![athena_editor::StoredItem::Junction(junction.clone())],
         })
@@ -331,13 +331,13 @@ fn moving_a_junction_without_its_wires_is_rejected_atomically() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .unwrap();
     let before = snapshot_bytes(state.project()).unwrap();
     assert!(
         state
             .apply(EditorCommand::MoveItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Junction(junction_id)],
                 delta: Point::new(0, 5)
             })
@@ -345,21 +345,21 @@ fn moving_a_junction_without_its_wires_is_rejected_atomically() {
     );
     assert_eq!(snapshot_bytes(state.project()).unwrap(), before);
     assert_eq!(
-        state.project().wire(sheet_id, wire_id).unwrap().route,
+        state.project().wire(folio_id, wire_id).unwrap().route,
         vec![Point::new(0, 0), Point::new(10, 0)]
     );
 }
 
 #[test]
 fn moving_a_wire_with_only_one_terminal_owner_is_rejected() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first = symbol(definition_id, Point::new(0, 0));
     let first_id = first.id;
     let first_terminal = *first.terminals.keys().next().unwrap();
     let second = symbol(definition_id, Point::new(20, 0));
     let second_terminal = *second.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, first);
-    place(&mut state, sheet_id, second);
+    place(&mut state, folio_id, first);
+    place(&mut state, folio_id, second);
     let wire = Wire::new(
         WireEndpoint::Terminal(first_terminal),
         WireEndpoint::Terminal(second_terminal),
@@ -367,13 +367,13 @@ fn moving_a_wire_with_only_one_terminal_owner_is_rejected() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .unwrap();
     let before = snapshot_bytes(state.project()).unwrap();
     assert!(
         state
             .apply(EditorCommand::MoveItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Wire(wire_id), ItemId::Symbol(first_id)],
                 delta: Point::new(5, 0)
             })
@@ -384,28 +384,28 @@ fn moving_a_wire_with_only_one_terminal_owner_is_rejected() {
 
 #[test]
 fn rotates_and_mirrors_a_selected_symbol() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(0, 0));
     let symbol_id = symbol.id;
-    place(&mut state, sheet_id, symbol);
+    place(&mut state, folio_id, symbol);
 
     state
         .apply(EditorCommand::RotateItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(symbol_id)],
             quarter_turns: 1,
         })
         .expect("rotation should be valid");
     state
         .apply(EditorCommand::MirrorItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(symbol_id)],
         })
         .expect("mirroring should be valid");
 
     let placed = state
         .project()
-        .symbol_instance(sheet_id, symbol_id)
+        .symbol_instance(folio_id, symbol_id)
         .unwrap();
     assert_eq!(placed.rotation_quarter_turns, 1);
     assert!(placed.mirrored);
@@ -413,14 +413,14 @@ fn rotates_and_mirrors_a_selected_symbol() {
 
 #[test]
 fn failed_undo_keeps_its_history_entry() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first = symbol(definition_id, Point::new(0, 0));
     let first_id = first.id;
     let first_terminal = *first.terminals.keys().next().unwrap();
     let second = symbol(definition_id, Point::new(20, 0));
     let second_terminal = *second.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, first.clone());
-    place(&mut state, sheet_id, second);
+    place(&mut state, folio_id, first.clone());
+    place(&mut state, folio_id, second);
     let wire = Wire::new(
         WireEndpoint::Terminal(first_terminal),
         WireEndpoint::Terminal(second_terminal),
@@ -428,15 +428,15 @@ fn failed_undo_keeps_its_history_entry() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("wire endpoints exist");
     let mut history = History::new(8);
     history
-        .apply(&mut state, EditorCommand::DeleteWire { sheet_id, wire_id })
+        .apply(&mut state, EditorCommand::DeleteWire { folio_id, wire_id })
         .expect("deleting the wire should apply");
     state
         .apply(EditorCommand::DeleteItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(first_id)],
         })
         .expect("independent deletion should diverge the current state");
@@ -445,7 +445,7 @@ fn failed_undo_keeps_its_history_entry() {
     assert_eq!(history.undo_len(), 1);
     assert_eq!(history.redo_len(), 0);
 
-    place(&mut state, sheet_id, first);
+    place(&mut state, folio_id, first);
     assert!(
         history
             .undo(&mut state)
@@ -457,14 +457,14 @@ fn failed_undo_keeps_its_history_entry() {
 
 #[test]
 fn failed_redo_keeps_its_history_entry() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first = symbol(definition_id, Point::new(0, 0));
     let first_id = first.id;
     let first_terminal = *first.terminals.keys().next().unwrap();
     let second = symbol(definition_id, Point::new(20, 0));
     let second_terminal = *second.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, first.clone());
-    place(&mut state, sheet_id, second);
+    place(&mut state, folio_id, first.clone());
+    place(&mut state, folio_id, second);
     let wire = Wire::new(
         WireEndpoint::Terminal(first_terminal),
         WireEndpoint::Terminal(second_terminal),
@@ -473,11 +473,11 @@ fn failed_redo_keeps_its_history_entry() {
     let wire_id = wire.id;
     let wire_for_restore = wire.clone();
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("wire endpoints exist");
     let mut history = History::new(8);
     history
-        .apply(&mut state, EditorCommand::DeleteWire { sheet_id, wire_id })
+        .apply(&mut state, EditorCommand::DeleteWire { folio_id, wire_id })
         .expect("deleting the wire should apply");
     assert!(
         history
@@ -486,7 +486,7 @@ fn failed_redo_keeps_its_history_entry() {
     );
     state
         .apply(EditorCommand::DeleteItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(first_id)],
         })
         .expect("independent deletion should remove the restored wire");
@@ -495,10 +495,10 @@ fn failed_redo_keeps_its_history_entry() {
     assert_eq!(history.undo_len(), 0);
     assert_eq!(history.redo_len(), 1);
 
-    place(&mut state, sheet_id, first);
+    place(&mut state, folio_id, first);
     state
         .apply(EditorCommand::CreateWire {
-            sheet_id,
+            folio_id,
             wire: wire_for_restore,
         })
         .expect("restoring the wire directly makes the retained redo valid");
@@ -513,12 +513,12 @@ fn failed_redo_keeps_its_history_entry() {
 
 #[test]
 fn undo_restores_the_exact_previous_snapshot() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(10, 10));
     let symbol_id = symbol.id;
     let mut history = History::new(8);
     history
-        .apply(&mut state, EditorCommand::PlaceSymbol { sheet_id, symbol })
+        .apply(&mut state, EditorCommand::PlaceSymbol { folio_id, symbol })
         .expect("place should apply");
     let before_move = snapshot_bytes(state.project()).expect("snapshot is valid");
 
@@ -526,7 +526,7 @@ fn undo_restores_the_exact_previous_snapshot() {
         .apply(
             &mut state,
             EditorCommand::MoveItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Symbol(symbol_id)],
                 delta: Point::new(10, 0),
             },
@@ -542,12 +542,12 @@ fn undo_restores_the_exact_previous_snapshot() {
 
 #[test]
 fn undoing_a_delete_restores_the_exact_previous_snapshot() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(10, 10));
     let symbol_id = symbol.id;
     let mut history = History::new(8);
     history
-        .apply(&mut state, EditorCommand::PlaceSymbol { sheet_id, symbol })
+        .apply(&mut state, EditorCommand::PlaceSymbol { folio_id, symbol })
         .expect("place should apply");
     let before_delete = snapshot_bytes(state.project()).expect("snapshot is valid");
 
@@ -555,7 +555,7 @@ fn undoing_a_delete_restores_the_exact_previous_snapshot() {
         .apply(
             &mut state,
             EditorCommand::DeleteItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Symbol(symbol_id)],
             },
         )
@@ -570,18 +570,18 @@ fn undoing_a_delete_restores_the_exact_previous_snapshot() {
 
 #[test]
 fn redo_reapplies_the_exact_command_result() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(10, 10));
     let symbol_id = symbol.id;
     let mut history = History::new(8);
     history
-        .apply(&mut state, EditorCommand::PlaceSymbol { sheet_id, symbol })
+        .apply(&mut state, EditorCommand::PlaceSymbol { folio_id, symbol })
         .expect("place should apply");
     history
         .apply(
             &mut state,
             EditorCommand::MoveItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Symbol(symbol_id)],
                 delta: Point::new(10, 0),
             },
@@ -600,7 +600,7 @@ fn redo_reapplies_the_exact_command_result() {
 
 #[test]
 fn history_is_bounded_and_a_new_edit_invalidates_redo() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let first_symbol = symbol(definition_id, Point::new(0, 0));
     let first_symbol_id = first_symbol.id;
     let second_symbol = symbol(definition_id, Point::new(20, 0));
@@ -610,7 +610,7 @@ fn history_is_bounded_and_a_new_edit_invalidates_redo() {
         .apply(
             &mut state,
             EditorCommand::PlaceSymbol {
-                sheet_id,
+                folio_id,
                 symbol: first_symbol,
             },
         )
@@ -619,7 +619,7 @@ fn history_is_bounded_and_a_new_edit_invalidates_redo() {
         .apply(
             &mut state,
             EditorCommand::MoveItems {
-                sheet_id,
+                folio_id,
                 items: vec![ItemId::Symbol(first_symbol_id)],
                 delta: Point::new(5, 0),
             },
@@ -634,7 +634,7 @@ fn history_is_bounded_and_a_new_edit_invalidates_redo() {
         .apply(
             &mut state,
             EditorCommand::PlaceSymbol {
-                sheet_id,
+                folio_id,
                 symbol: second_symbol,
             },
         )
@@ -646,15 +646,15 @@ fn history_is_bounded_and_a_new_edit_invalidates_redo() {
 
 #[test]
 fn command_envelope_round_trips_through_serde() {
-    let (state, sheet_id, definition_id) = state_with_definition();
+    let (state, folio_id, definition_id) = state_with_definition();
     let command = EditorCommand::PlaceSymbol {
-        sheet_id,
+        folio_id,
         symbol: symbol(definition_id, Point::new(10, 20)),
     };
     let envelope = CommandEnvelope {
         operation_id: Uuid::new_v4(),
         project_id: state.project().id,
-        sheet_id,
+        folio_id,
         base_revision: state.revision(),
         author_id: Uuid::new_v4(),
         session_id: Uuid::new_v4(),
@@ -671,7 +671,7 @@ fn command_envelope_round_trips_through_serde() {
 
 #[test]
 fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start
         .terminals
@@ -680,8 +680,8 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
         .expect("symbol has a terminal");
     let end = symbol(definition_id, Point::new(20, 20));
     let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let wire = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(end_terminal),
@@ -689,7 +689,7 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("wire endpoints exist");
     let before = snapshot_bytes(state.project()).expect("snapshot is valid");
     let mut history = History::new(8);
@@ -698,7 +698,7 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
         .apply(
             &mut state,
             EditorCommand::InsertWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 segment_index: 0,
                 position: Point::new(10, 0),
@@ -708,7 +708,7 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
     assert_eq!(
         state
             .project()
-            .wire(sheet_id, wire_id)
+            .wire(folio_id, wire_id)
             .expect("wire exists")
             .route,
         vec![Point::new(0, 0), Point::new(20, 0), Point::new(20, 20)],
@@ -719,7 +719,7 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
         .apply(
             &mut state,
             EditorCommand::MoveWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 vertex_index: 1,
                 position: Point::new(10, 10),
@@ -728,7 +728,7 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
         .expect("moving a bend preserves an orthogonal path");
     let moved_route = &state
         .project()
-        .wire(sheet_id, wire_id)
+        .wire(folio_id, wire_id)
         .expect("wire exists")
         .route;
     assert!(
@@ -741,7 +741,7 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
         .apply(
             &mut state,
             EditorCommand::DeleteWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 vertex_index: 1,
             },
@@ -759,7 +759,7 @@ fn wire_vertex_commands_normalize_routes_and_round_trip_through_history() {
 
 #[test]
 fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start
         .terminals
@@ -778,9 +778,9 @@ fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
         .keys()
         .next()
         .expect("symbol has a terminal");
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, original_end);
-    place(&mut state, sheet_id, replacement_end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, original_end);
+    place(&mut state, folio_id, replacement_end);
     let wire = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(original_end_terminal),
@@ -788,7 +788,7 @@ fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("wire endpoints exist");
 
     let mut history = History::new(8);
@@ -796,17 +796,17 @@ fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
         .apply(
             &mut state,
             EditorCommand::ReconnectWireEndpoint {
-                sheet_id,
+                folio_id,
                 wire_id,
                 endpoint: WireSide::End,
                 terminal_id: replacement_terminal,
             },
         )
-        .expect("endpoint can be reconnected on the active sheet");
+        .expect("endpoint can be reconnected on the active folio");
 
     let wire = state
         .project()
-        .wire(sheet_id, wire_id)
+        .wire(folio_id, wire_id)
         .expect("wire exists");
     assert_eq!(wire.end, WireEndpoint::Terminal(replacement_terminal));
     assert_eq!(
@@ -817,7 +817,7 @@ fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
     assert_eq!(
         state
             .project()
-            .wire(sheet_id, wire_id)
+            .wire(folio_id, wire_id)
             .expect("wire exists")
             .end,
         WireEndpoint::Terminal(original_end_terminal)
@@ -826,13 +826,13 @@ fn reconnect_wire_endpoint_retargets_terminal_and_adds_a_minimal_elbow() {
 
 #[test]
 fn reconnecting_to_the_other_endpoint_terminal_is_rejected_atomically() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start.terminals.keys().next().unwrap();
     let end = symbol(definition_id, Point::new(20, 0));
     let end_terminal = *end.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let wire = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(end_terminal),
@@ -840,13 +840,13 @@ fn reconnecting_to_the_other_endpoint_terminal_is_rejected_atomically() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .unwrap();
     let before = snapshot_bytes(state.project()).unwrap();
     assert!(
         state
             .apply(EditorCommand::ReconnectWireEndpoint {
-                sheet_id,
+                folio_id,
                 wire_id,
                 endpoint: WireSide::End,
                 terminal_id: start_terminal
@@ -858,13 +858,13 @@ fn reconnecting_to_the_other_endpoint_terminal_is_rejected_atomically() {
 
 #[test]
 fn reconnecting_to_the_other_endpoint_terminal_rejects_a_noncollapsing_route() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start.terminals.keys().next().unwrap();
     let end = symbol(definition_id, Point::new(20, 0));
     let end_terminal = *end.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let wire = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(end_terminal),
@@ -877,13 +877,13 @@ fn reconnecting_to_the_other_endpoint_terminal_rejects_a_noncollapsing_route() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .unwrap();
     let before = snapshot_bytes(state.project()).unwrap();
 
     assert!(matches!(
         state.apply(EditorCommand::ReconnectWireEndpoint {
-            sheet_id,
+            folio_id,
             wire_id,
             endpoint: WireSide::End,
             terminal_id: start_terminal,
@@ -895,13 +895,13 @@ fn reconnecting_to_the_other_endpoint_terminal_rejects_a_noncollapsing_route() {
 
 #[test]
 fn restoring_a_malformed_wire_is_rejected_atomically() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start.terminals.keys().next().unwrap();
     let end = symbol(definition_id, Point::new(20, 0));
     let end_terminal = *end.terminals.keys().next().unwrap();
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let wire = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(end_terminal),
@@ -915,7 +915,7 @@ fn restoring_a_malformed_wire_is_rejected_atomically() {
     assert!(
         state
             .apply(EditorCommand::RestoreItems {
-                sheet_id,
+                folio_id,
                 remove: vec![],
                 restore: vec![athena_editor::StoredItem::Wire(malformed)]
             })
@@ -926,7 +926,7 @@ fn restoring_a_malformed_wire_is_rejected_atomically() {
 
 #[test]
 fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start
         .terminals
@@ -935,8 +935,8 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
         .expect("symbol has a terminal");
     let end = symbol(definition_id, Point::new(20, 0));
     let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let wire = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(end_terminal),
@@ -944,14 +944,14 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("wire endpoints exist");
     let before = snapshot_bytes(state.project()).expect("snapshot is valid");
 
     assert!(
         state
             .apply(EditorCommand::InsertWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 segment_index: 1,
                 position: Point::new(10, 0),
@@ -961,7 +961,7 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
     assert!(
         state
             .apply(EditorCommand::MoveWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 vertex_index: 0,
                 position: Point::new(0, 10),
@@ -971,7 +971,7 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
     assert!(
         state
             .apply(EditorCommand::DeleteWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 vertex_index: 1,
             })
@@ -980,7 +980,7 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
     assert!(
         state
             .apply(EditorCommand::MoveWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 vertex_index: usize::MAX,
                 position: Point::new(10, 10),
@@ -990,7 +990,7 @@ fn wire_vertex_commands_reject_invalid_indices_without_mutating_state() {
     assert!(
         state
             .apply(EditorCommand::DeleteWireVertex {
-                sheet_id,
+                folio_id,
                 wire_id,
                 vertex_index: usize::MAX,
             })
@@ -1010,7 +1010,7 @@ fn commands_reject_an_invalid_initial_project_before_route_repair() {
     project
         .add_symbol_definition(definition)
         .expect("definition IDs are unique");
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let start = symbol(definition_id, Point::new(0, 0));
     let start_id = start.id;
     let start_terminal = *start
@@ -1025,10 +1025,10 @@ fn commands_reject_an_invalid_initial_project_before_route_repair() {
         WireEndpoint::Terminal(end_terminal),
         vec![Point::new(0, 0)],
     );
-    let sheet = project.sheet_mut(sheet_id).expect("default sheet exists");
-    sheet.add_symbol(start).expect("symbol ID is unique");
-    sheet.add_symbol(end).expect("symbol ID is unique");
-    sheet
+    let folio = project.folio_mut(folio_id).expect("default folio exists");
+    folio.add_symbol(start).expect("symbol ID is unique");
+    folio.add_symbol(end).expect("symbol ID is unique");
+    folio
         .add_wire(malformed_wire)
         .expect("wire ID is unique despite its invalid route");
 
@@ -1037,7 +1037,7 @@ fn commands_reject_an_invalid_initial_project_before_route_repair() {
 
     assert!(matches!(
         state.apply(EditorCommand::MoveItems {
-            sheet_id,
+            folio_id,
             items: vec![ItemId::Symbol(start_id)],
             delta: Point::new(10, 0),
         }),
@@ -1048,7 +1048,7 @@ fn commands_reject_an_invalid_initial_project_before_route_repair() {
 
 #[test]
 fn create_wire_rejects_routes_that_are_unanchored_or_non_orthogonal_atomically() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start
         .terminals
@@ -1057,8 +1057,8 @@ fn create_wire_rejects_routes_that_are_unanchored_or_non_orthogonal_atomically()
         .expect("symbol has a terminal");
     let end = symbol(definition_id, Point::new(20, 20));
     let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let before = snapshot_bytes(state.project()).expect("snapshot is valid");
 
     for route in [
@@ -1073,7 +1073,7 @@ fn create_wire_rejects_routes_that_are_unanchored_or_non_orthogonal_atomically()
         );
         assert!(
             state
-                .apply(EditorCommand::CreateWire { sheet_id, wire })
+                .apply(EditorCommand::CreateWire { folio_id, wire })
                 .is_err(),
             "invalid route must be rejected before state changes"
         );
@@ -1086,7 +1086,7 @@ fn create_wire_rejects_routes_that_are_unanchored_or_non_orthogonal_atomically()
 
 #[test]
 fn split_wire_rejects_an_invalid_product_route_atomically() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start
         .terminals
@@ -1095,8 +1095,8 @@ fn split_wire_rejects_an_invalid_product_route_atomically() {
         .expect("symbol has a terminal");
     let end = symbol(definition_id, Point::new(20, 0));
     let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let original = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(end_terminal),
@@ -1105,7 +1105,7 @@ fn split_wire_rejects_an_invalid_product_route_atomically() {
     let original_id = original.id;
     state
         .apply(EditorCommand::CreateWire {
-            sheet_id,
+            folio_id,
             wire: original,
         })
         .expect("valid original wire");
@@ -1125,7 +1125,7 @@ fn split_wire_rejects_an_invalid_product_route_atomically() {
     assert!(
         state
             .apply(EditorCommand::SplitWire {
-                sheet_id,
+                folio_id,
                 wire_id: original_id,
                 junction,
                 first_wire: first,
@@ -1141,7 +1141,7 @@ fn split_wire_rejects_an_invalid_product_route_atomically() {
 
 #[test]
 fn each_wire_edit_command_has_exact_snapshot_undo_and_redo() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start
         .terminals
@@ -1160,9 +1160,9 @@ fn each_wire_edit_command_has_exact_snapshot_undo_and_redo() {
         .keys()
         .next()
         .expect("symbol has a terminal");
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, original_end);
-    place(&mut state, sheet_id, replacement_end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, original_end);
+    place(&mut state, folio_id, replacement_end);
     let wire = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(original_end_terminal),
@@ -1170,29 +1170,29 @@ fn each_wire_edit_command_has_exact_snapshot_undo_and_redo() {
     );
     let wire_id = wire.id;
     state
-        .apply(EditorCommand::CreateWire { sheet_id, wire })
+        .apply(EditorCommand::CreateWire { folio_id, wire })
         .expect("valid wire");
 
     for command in [
         EditorCommand::InsertWireVertex {
-            sheet_id,
+            folio_id,
             wire_id,
             segment_index: 0,
             position: Point::new(10, 0),
         },
         EditorCommand::MoveWireVertex {
-            sheet_id,
+            folio_id,
             wire_id,
             vertex_index: 1,
             position: Point::new(10, 10),
         },
         EditorCommand::DeleteWireVertex {
-            sheet_id,
+            folio_id,
             wire_id,
             vertex_index: 1,
         },
         EditorCommand::ReconnectWireEndpoint {
-            sheet_id,
+            folio_id,
             wire_id,
             endpoint: WireSide::End,
             terminal_id: replacement_terminal,
@@ -1219,14 +1219,14 @@ fn each_wire_edit_command_has_exact_snapshot_undo_and_redo() {
 
 #[test]
 fn create_wire_rejects_a_route_that_collapses_during_canonicalization() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let symbol = symbol(definition_id, Point::new(0, 0));
     let terminal = *symbol
         .terminals
         .keys()
         .next()
         .expect("symbol has a terminal");
-    place(&mut state, sheet_id, symbol);
+    place(&mut state, folio_id, symbol);
     let before = snapshot_bytes(state.project()).expect("snapshot is valid");
     let wire = Wire::new(
         WireEndpoint::Terminal(terminal),
@@ -1236,7 +1236,7 @@ fn create_wire_rejects_a_route_that_collapses_during_canonicalization() {
 
     assert!(
         state
-            .apply(EditorCommand::CreateWire { sheet_id, wire })
+            .apply(EditorCommand::CreateWire { folio_id, wire })
             .is_err()
     );
     assert_eq!(
@@ -1247,7 +1247,7 @@ fn create_wire_rejects_a_route_that_collapses_during_canonicalization() {
 
 #[test]
 fn split_wire_rejects_a_product_that_collapses_during_canonicalization() {
-    let (mut state, sheet_id, definition_id) = state_with_definition();
+    let (mut state, folio_id, definition_id) = state_with_definition();
     let start = symbol(definition_id, Point::new(0, 0));
     let start_terminal = *start
         .terminals
@@ -1256,8 +1256,8 @@ fn split_wire_rejects_a_product_that_collapses_during_canonicalization() {
         .expect("symbol has a terminal");
     let end = symbol(definition_id, Point::new(20, 0));
     let end_terminal = *end.terminals.keys().next().expect("symbol has a terminal");
-    place(&mut state, sheet_id, start);
-    place(&mut state, sheet_id, end);
+    place(&mut state, folio_id, start);
+    place(&mut state, folio_id, end);
     let original = Wire::new(
         WireEndpoint::Terminal(start_terminal),
         WireEndpoint::Terminal(end_terminal),
@@ -1266,7 +1266,7 @@ fn split_wire_rejects_a_product_that_collapses_during_canonicalization() {
     let wire_id = original.id;
     state
         .apply(EditorCommand::CreateWire {
-            sheet_id,
+            folio_id,
             wire: original,
         })
         .expect("valid source wire");
@@ -1286,7 +1286,7 @@ fn split_wire_rejects_a_product_that_collapses_during_canonicalization() {
     assert!(
         state
             .apply(EditorCommand::SplitWire {
-                sheet_id,
+                folio_id,
                 wire_id,
                 junction,
                 first_wire: collapsing,

@@ -3,7 +3,10 @@
 //! A folio is the sole project-page identity. Its title-block data, custom
 //! variables, page settings, and electrical entities travel together.
 
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    ops::{Deref, DerefMut},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -172,5 +175,21 @@ impl Folio {
         let junction_id = junction.id;
         self.schematic.junctions.insert(junction_id, junction);
         junction_id
+    }
+}
+
+impl Deref for Folio {
+    type Target = SchematicContent;
+
+    /// Exposes the embedded schematic payload to geometry/editor algorithms.
+    fn deref(&self) -> &Self::Target {
+        &self.schematic
+    }
+}
+
+impl DerefMut for Folio {
+    /// Exposes the embedded schematic payload for aggregate-scoped mutation.
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.schematic
     }
 }

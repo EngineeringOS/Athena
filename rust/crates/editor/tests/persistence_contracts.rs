@@ -1,22 +1,23 @@
-use athena_domain::{Project, SheetSettings};
+use athena_domain::{Project, SchematicSettings};
 use athena_editor::{
-    CommandEnvelope, EditorCommand, InMemoryPersistence, OutboxStore, SnapshotSink, SnapshotSource,
+    CommandEnvelope, DocumentRevision, EditorCommand, InMemoryPersistence, OutboxStore,
+    SnapshotSink, SnapshotSource,
 };
 use uuid::Uuid;
 
 fn envelope(project: &Project, sequence: u64) -> CommandEnvelope {
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     CommandEnvelope {
         operation_id: Uuid::new_v4(),
         project_id: project.id,
-        sheet_id,
-        base_revision: sequence,
+        folio_id,
+        base_revision: DocumentRevision(sequence),
         author_id: Uuid::new_v4(),
         session_id: Uuid::new_v4(),
         command_version: 1,
-        payload: EditorCommand::ApplySheetSettings {
-            sheet_id,
-            settings: SheetSettings::default(),
+        payload: EditorCommand::ApplySchematicSettings {
+            folio_id,
+            settings: SchematicSettings::default(),
         },
     }
 }

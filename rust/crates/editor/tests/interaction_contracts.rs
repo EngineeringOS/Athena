@@ -18,35 +18,35 @@ fn fixture_session_with_two_symbols() -> EditorSession {
 
 fn fixture_session_with_offset_wire_and_symbol() -> EditorSession {
     let mut session = fixture_session_with_symbols([(100, 80), (220, 120)]);
-    let sheet_id = session.active_sheet_id();
-    let sheet = session
+    let folio_id = session.active_folio_id();
+    let folio = session
         .state()
         .project()
-        .sheet(sheet_id)
-        .expect("sheet exists");
+        .folio(folio_id)
+        .expect("folio exists");
     // BTreeMap iteration is UUID order, not placement order. Choose the left
     // and right symbols by their actual document positions so the fixture wire
     // consistently crosses the marquee rectangle.
-    let first_terminal = *sheet
+    let first_terminal = *folio
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(100, 80))
         .and_then(|symbol| symbol.terminals.keys().next())
         .expect("left terminal exists");
-    let second_terminal = *sheet
+    let second_terminal = *folio
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(220, 120))
         .and_then(|symbol| symbol.terminals.keys().next())
         .expect("right terminal exists");
-    let first_position = sheet
+    let first_position = folio
         .symbol_instances
         .values()
         .flat_map(|symbol| symbol.terminals.values())
         .find(|terminal| terminal.id == first_terminal)
         .expect("first terminal position exists")
         .position;
-    let second_position = sheet
+    let second_position = folio
         .symbol_instances
         .values()
         .flat_map(|symbol| symbol.terminals.values())
@@ -55,7 +55,7 @@ fn fixture_session_with_offset_wire_and_symbol() -> EditorSession {
         .position;
     session
         .apply_command(EditorCommand::CreateWire {
-            sheet_id,
+            folio_id,
             wire: Wire::new(
                 WireEndpoint::Terminal(first_terminal),
                 WireEndpoint::Terminal(second_terminal),
@@ -78,7 +78,7 @@ fn fixture_session_with_symbols<const N: usize>(positions: [(i64, i64); N]) -> E
     project
         .add_symbol_definition(definition)
         .expect("definition IDs are unique");
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
 
     for (x, y) in positions {
         let mut symbol = SymbolInstance::new(definition_id);
@@ -90,13 +90,13 @@ fn fixture_session_with_symbols<const N: usize>(positions: [(i64, i64); N]) -> E
             Point::new(x + 20, y),
         ));
         project
-            .sheet_mut(sheet_id)
-            .expect("sheet exists")
+            .folio_mut(folio_id)
+            .expect("folio exists")
             .add_symbol(symbol)
             .expect("symbol IDs are unique");
     }
 
-    let mut session = EditorSession::new(project, sheet_id);
+    let mut session = EditorSession::new(project, folio_id);
     session.refresh_scene().expect("scene refreshes");
     session
 }
@@ -107,8 +107,8 @@ fn empty_click_clears_selection() {
     let first = session
         .state()
         .project()
-        .sheet(session.active_sheet_id())
-        .expect("sheet exists")
+        .folio(session.active_folio_id())
+        .expect("folio exists")
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(100, 80))
@@ -134,8 +134,8 @@ fn shift_click_toggles_symbol_selection() {
     let ids = session
         .state()
         .project()
-        .sheet(session.active_sheet_id())
-        .expect("sheet exists")
+        .folio(session.active_folio_id())
+        .expect("folio exists")
         .symbol_instances
         .keys()
         .copied()
@@ -213,8 +213,8 @@ fn marquee_selects_only_enclosed_items_left_to_right_and_touched_items_right_to_
     let partially_covered = session
         .state()
         .project()
-        .sheet(session.active_sheet_id())
-        .expect("sheet exists")
+        .folio(session.active_folio_id())
+        .expect("folio exists")
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(100, 80))
@@ -223,7 +223,7 @@ fn marquee_selects_only_enclosed_items_left_to_right_and_touched_items_right_to_
 
     session
         .pointer_down(canvas(80, 60), PointerModifiers::default())
-        .expect("enclosed marquee starts on empty sheet");
+        .expect("enclosed marquee starts on empty folio");
     session
         .pointer_up(canvas(105, 85), PointerModifiers::default())
         .expect("enclosed marquee completes");
@@ -234,7 +234,7 @@ fn marquee_selects_only_enclosed_items_left_to_right_and_touched_items_right_to_
 
     session
         .pointer_down(canvas(110, 60), PointerModifiers::default())
-        .expect("touched marquee starts on empty sheet");
+        .expect("touched marquee starts on empty folio");
     session
         .pointer_up(canvas(90, 90), PointerModifiers::default())
         .expect("touched marquee completes");
@@ -247,18 +247,18 @@ fn marquee_selects_only_enclosed_items_left_to_right_and_touched_items_right_to_
 #[test]
 fn shift_marquee_extends_and_toggles_the_existing_selection() {
     let mut session = fixture_session_with_two_symbols();
-    let sheet = session
+    let folio = session
         .state()
         .project()
-        .sheet(session.active_sheet_id())
-        .expect("sheet exists");
-    let first = sheet
+        .folio(session.active_folio_id())
+        .expect("folio exists");
+    let first = folio
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(100, 80))
         .map(|symbol| symbol.id)
         .expect("first symbol exists");
-    let second = sheet
+    let second = folio
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(200, 80))
@@ -299,8 +299,8 @@ fn partial_wire_marquee_is_enclosed_only_right_to_left() {
     let wire_id = *session
         .state()
         .project()
-        .sheet(session.active_sheet_id())
-        .expect("sheet exists")
+        .folio(session.active_folio_id())
+        .expect("folio exists")
         .wires
         .keys()
         .next()
@@ -346,8 +346,8 @@ fn viewport_pointer_selects_and_marquees_using_the_scene_viewport() {
     let first = session
         .state()
         .project()
-        .sheet(session.active_sheet_id())
-        .expect("sheet exists")
+        .folio(session.active_folio_id())
+        .expect("folio exists")
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(100, 80))
@@ -388,12 +388,12 @@ fn viewport_pointer_selects_and_marquees_using_the_scene_viewport() {
 #[test]
 fn dragging_a_selected_wire_vertex_commits_the_shared_vertex_command_on_release() {
     let mut session = fixture_session_with_offset_wire_and_symbol();
-    let sheet_id = session.active_sheet_id();
+    let folio_id = session.active_folio_id();
     let (wire_id, original_vertex) = session
         .state()
         .project()
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .wires
         .iter()
         .next()
@@ -425,8 +425,8 @@ fn dragging_a_selected_wire_vertex_commits_the_shared_vertex_command_on_release(
     let wire = session
         .state()
         .project()
-        .wire(sheet_id, wire_id)
-        .expect("wire remains in the active sheet");
+        .wire(folio_id, wire_id)
+        .expect("wire remains in the active folio");
     assert!(wire.route.contains(&Point::new(160, 120)));
     assert_eq!(session.history_lengths(), (2, 0));
 }
@@ -434,27 +434,27 @@ fn dragging_a_selected_wire_vertex_commits_the_shared_vertex_command_on_release(
 #[test]
 fn dragging_a_selected_wire_endpoint_reconnects_it_to_the_terminal_under_release() {
     let mut session = fixture_session_with_symbols([(100, 80), (220, 120), (240, 120)]);
-    let sheet_id = session.active_sheet_id();
-    let sheet = session
+    let folio_id = session.active_folio_id();
+    let folio = session
         .state()
         .project()
-        .sheet(sheet_id)
-        .expect("sheet exists");
-    let start = sheet
+        .folio(folio_id)
+        .expect("folio exists");
+    let start = folio
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(100, 80))
         .and_then(|symbol| symbol.terminals.values().next())
         .expect("start terminal exists")
         .clone();
-    let original_end = sheet
+    let original_end = folio
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(220, 120))
         .and_then(|symbol| symbol.terminals.values().next())
         .expect("original end terminal exists")
         .clone();
-    let replacement = sheet
+    let replacement = folio
         .symbol_instances
         .values()
         .find(|symbol| symbol.position == Point::new(240, 120))
@@ -464,7 +464,7 @@ fn dragging_a_selected_wire_endpoint_reconnects_it_to_the_terminal_under_release
     let replacement_id = replacement.id;
     session
         .apply_command(EditorCommand::CreateWire {
-            sheet_id,
+            folio_id,
             wire: Wire::new(
                 WireEndpoint::Terminal(start.id),
                 WireEndpoint::Terminal(original_end.id),
@@ -479,8 +479,8 @@ fn dragging_a_selected_wire_endpoint_reconnects_it_to_the_terminal_under_release
     let wire_id = *session
         .state()
         .project()
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .wires
         .keys()
         .next()
@@ -508,7 +508,7 @@ fn dragging_a_selected_wire_endpoint_reconnects_it_to_the_terminal_under_release
         session
             .state()
             .project()
-            .wire(sheet_id, wire_id)
+            .wire(folio_id, wire_id)
             .expect("wire exists")
             .end,
         WireEndpoint::Terminal(replacement_id)
@@ -518,12 +518,12 @@ fn dragging_a_selected_wire_endpoint_reconnects_it_to_the_terminal_under_release
 #[test]
 fn session_exposes_insert_and_delete_vertex_commands_through_shared_history() {
     let mut session = fixture_session_with_offset_wire_and_symbol();
-    let sheet_id = session.active_sheet_id();
+    let folio_id = session.active_folio_id();
     let wire_id = *session
         .state()
         .project()
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .wires
         .keys()
         .next()

@@ -2,50 +2,50 @@
 //! selection, and transient pointer interaction into one shared API.
 
 use athena_domain::{
-    FieldValue, Point, Project, SheetId, SheetSettings, SymbolInstanceId, TerminalId, WireId,
+    FieldValue, FolioId, Point, Project, SchematicSettings, SymbolInstanceId, TerminalId, WireId,
 };
 use athena_geometry::{Rect, WorldPoint};
 use athena_render::{
-    EditorPresentation, HitRegion, Marquee, PresentationItemId, Scene, hit_test, project_sheet,
+    EditorPresentation, HitRegion, Marquee, PresentationItemId, Scene, hit_test, project_folio,
 };
 use thiserror::Error;
 
 use crate::{
-    DragSelectionState, EditorCommand, EditorState, History, HistoryError, InteractionState,
-    MarqueeSelectionMode, MarqueeState, PointerModifiers, PresentationPointer, SelectionState,
-    WireEndpointReconnectState, WireSide, WireVertexDragState,
+    DocumentRevision, DragSelectionState, EditorCommand, EditorState, History, HistoryError,
+    InteractionState, MarqueeSelectionMode, MarqueeState, PointerModifiers, PresentationPointer,
+    SaveSnapshot, SelectionState, WireEndpointReconnectState, WireSide, WireVertexDragState,
 };
 
 /// Errors produced by the shell-facing editor-session contract.
 #[derive(Debug, Error)]
 pub enum SessionError {
-    #[error("active sheet does not exist")]
-    UnknownSheet,
+    #[error("active folio does not exist")]
+    UnknownFolio,
     #[error(transparent)]
     History(#[from] HistoryError),
 }
 
-/// The shared controller through which desktop and browser shells edit a sheet.
+/// The shared controller through which desktop and browser shells edit a folio.
 ///
 /// It owns persistent state and history alongside non-persistent selection,
 /// presentation, and interaction state so shells do not duplicate editor logic.
 pub struct EditorSession {
     state: EditorState,
     history: History,
-    active_sheet_id: SheetId,
+    active_folio_id: FolioId,
     presentation: EditorPresentation,
     selection: SelectionState,
     interaction: InteractionState,
 }
 
 impl EditorSession {
-    /// Creates a session over a project and active sheet.
+    /// Creates a session over a project and active folio.
     #[must_use]
-    pub fn new(project: Project, active_sheet_id: SheetId) -> Self {
+    pub fn new(project: Project, active_folio_id: FolioId) -> Self {
         Self {
             state: EditorState::new(project),
             history: History::new(64),
-            active_sheet_id,
+            active_folio_id,
             presentation: EditorPresentation::default(),
             selection: SelectionState::default(),
             interaction: InteractionState::Idle,
@@ -57,10 +57,10 @@ impl EditorSession {
     pub fn state(&self) -> &EditorState {
         &self.state
     }
-    /// Returns the active sheet identity.
+    /// Returns the active folio identity.
     #[must_use]
-    pub const fn active_sheet_id(&self) -> SheetId {
-        self.active_sheet_id
+    pub const fn active_folio_id(&self) -> FolioId {
+        self.active_folio_id
     }
     /// Returns presentation-only scene inputs.
     #[must_use]
@@ -110,33 +110,83 @@ impl EditorSession {
 
     /// Synchronizes presentation selection with the current transient state.
     pub fn refresh_scene(&mut self) -> Result<(), SessionError> {
-        if project_sheet(
+        if project_folio(
             self.state.project(),
-            self.active_sheet_id,
+            self.active_folio_id,
             &self.presentation,
         )
         .is_none()
         {
-            return Err(SessionError::UnknownSheet);
+            return Err(SessionError::UnknownFolio);
         }
         self.presentation.selected = self.selection.items().clone();
         Ok(())
     }
 
-    /// Projects the active sheet into a deterministic render scene.
+    /// Projects the active folio into a deterministic render scene.
     pub fn scene(&self) -> Result<Scene, SessionError> {
-        project_sheet(
+        project_folio(
             self.state.project(),
-            self.active_sheet_id,
+            self.active_folio_id,
             &self.presentation,
         )
-        .ok_or(SessionError::UnknownSheet)
+        .ok_or(SessionError::UnknownFolio)
     }
 
     /// Applies one persistent command through the shared history boundary.
     pub fn apply_command(&mut self, command: EditorCommand) -> Result<(), SessionError> {
         self.history.apply(&mut self.state, command)?;
+        self.ensure_active_folio();
         self.refresh_scene()
+    }
+
+    /// Activates an existing folio without creating a document transaction.
+    pub fn activate_folio(&mut self, folio_id: FolioId) -> Result<(), SessionError> {
+        if self.state.project().folio(folio_id).is_none() {
+            return Err(SessionError::UnknownFolio);
+        }
+        self.active_folio_id = folio_id;
+        self.selection.clear();
+        self.interaction = InteractionState::Idle;
+        self.refresh_scene()
+    }
+
+    /// Returns the stable identity of the current semantic state.
+    #[must_use]
+    pub const fn document_revision(&self) -> DocumentRevision {
+        self.state.revision()
+    }
+
+    /// Returns whether the current revision differs from the saved checkpoint.
+    #[must_use]
+    pub fn is_dirty(&self) -> bool {
+        self.history.is_dirty(&self.state)
+    }
+
+    /// Generates immutable bytes for the current revision and active folio.
+    pub fn begin_save(&mut self) -> Result<SaveSnapshot, SessionError> {
+        Ok(self.history.begin_save(&self.state, self.active_folio_id)?)
+    }
+
+    /// Accepts a successful save only when it matches the pending revision.
+    pub fn complete_save(&mut self, revision: DocumentRevision) -> bool {
+        self.history.complete_save(revision)
+    }
+
+    /// Releases a matching cancelled save without changing document history.
+    pub fn cancel_save(&mut self, revision: DocumentRevision) -> bool {
+        self.history.cancel_save(revision)
+    }
+
+    /// Releases a matching failed save without changing document history.
+    pub fn fail_save(&mut self, revision: DocumentRevision) -> bool {
+        self.history.fail_save(revision)
+    }
+
+    /// Returns whether the session is waiting for a platform save result.
+    #[must_use]
+    pub const fn save_is_pending(&self) -> bool {
+        self.history.save_is_pending()
     }
 
     /// Moves every selected saved item by a document-space delta.
@@ -144,7 +194,7 @@ impl EditorSession {
         let items = self.command_selection();
         if !items.is_empty() {
             self.apply_command(EditorCommand::MoveItems {
-                sheet_id: self.active_sheet_id,
+                folio_id: self.active_folio_id,
                 items,
                 delta,
             })?;
@@ -160,7 +210,7 @@ impl EditorSession {
         position: Point,
     ) -> Result<(), SessionError> {
         self.apply_command(EditorCommand::MoveWireVertex {
-            sheet_id: self.active_sheet_id,
+            folio_id: self.active_folio_id,
             wire_id,
             vertex_index,
             position,
@@ -175,7 +225,7 @@ impl EditorSession {
         position: Point,
     ) -> Result<(), SessionError> {
         self.apply_command(EditorCommand::InsertWireVertex {
-            sheet_id: self.active_sheet_id,
+            folio_id: self.active_folio_id,
             wire_id,
             segment_index,
             position,
@@ -189,7 +239,7 @@ impl EditorSession {
         vertex_index: usize,
     ) -> Result<(), SessionError> {
         self.apply_command(EditorCommand::DeleteWireVertex {
-            sheet_id: self.active_sheet_id,
+            folio_id: self.active_folio_id,
             wire_id,
             vertex_index,
         })
@@ -203,7 +253,7 @@ impl EditorSession {
         terminal_id: TerminalId,
     ) -> Result<(), SessionError> {
         self.apply_command(EditorCommand::ReconnectWireEndpoint {
-            sheet_id: self.active_sheet_id,
+            folio_id: self.active_folio_id,
             wire_id,
             endpoint,
             terminal_id,
@@ -218,26 +268,37 @@ impl EditorSession {
         value: Option<FieldValue>,
     ) -> Result<(), SessionError> {
         self.apply_command(EditorCommand::SetFieldValue {
-            sheet_id: self.active_sheet_id,
+            folio_id: self.active_folio_id,
             target,
             field: field.into(),
             value,
         })
     }
 
-    /// Replaces active sheet settings through command history.
-    pub fn apply_sheet_settings(&mut self, settings: SheetSettings) -> Result<(), SessionError> {
-        self.apply_command(EditorCommand::ApplySheetSettings {
-            sheet_id: self.active_sheet_id,
+    /// Replaces active folio settings through command history.
+    pub fn apply_schematic_settings(
+        &mut self,
+        settings: SchematicSettings,
+    ) -> Result<(), SessionError> {
+        self.apply_command(EditorCommand::ApplySchematicSettings {
+            folio_id: self.active_folio_id,
             settings,
         })
     }
 
-    /// Renames the active sheet through command history.
-    pub fn rename_active_sheet(&mut self, name: impl Into<String>) -> Result<(), SessionError> {
-        self.apply_command(EditorCommand::RenameSheet {
-            sheet_id: self.active_sheet_id,
-            name: name.into(),
+    /// Renames the active folio through command history.
+    pub fn rename_active_folio(&mut self, label: impl Into<String>) -> Result<(), SessionError> {
+        let old_label = self
+            .state
+            .project()
+            .folio(self.active_folio_id)
+            .ok_or(SessionError::UnknownFolio)?
+            .label
+            .clone();
+        self.apply_command(EditorCommand::RenameFolio {
+            folio_id: self.active_folio_id,
+            old_label,
+            new_label: label.into(),
         })
     }
 
@@ -430,7 +491,7 @@ impl EditorSession {
             .collect::<Vec<_>>();
         if !items.is_empty() {
             self.apply_command(EditorCommand::DeleteItems {
-                sheet_id: self.active_sheet_id,
+                folio_id: self.active_folio_id,
                 items,
             })?;
             self.selection.clear();
@@ -442,7 +503,7 @@ impl EditorSession {
     /// Rotates the selected items by one quarter turn.
     pub fn rotate_selection_90(&mut self) -> Result<(), SessionError> {
         self.transform_selection(EditorCommand::RotateItems {
-            sheet_id: self.active_sheet_id,
+            folio_id: self.active_folio_id,
             items: self.command_selection(),
             quarter_turns: 1,
         })
@@ -450,7 +511,7 @@ impl EditorSession {
     /// Mirrors the selected items.
     pub fn mirror_selection(&mut self) -> Result<(), SessionError> {
         self.transform_selection(EditorCommand::MirrorItems {
-            sheet_id: self.active_sheet_id,
+            folio_id: self.active_folio_id,
             items: self.command_selection(),
         })
     }
@@ -471,14 +532,24 @@ impl EditorSession {
     /// Undoes the latest persistent command.
     pub fn undo(&mut self) -> Result<bool, SessionError> {
         let changed = self.history.undo(&mut self.state)?;
+        self.ensure_active_folio();
         self.refresh_scene()?;
         Ok(changed)
     }
     /// Redoes the latest undone persistent command.
     pub fn redo(&mut self) -> Result<bool, SessionError> {
         let changed = self.history.redo(&mut self.state)?;
+        self.ensure_active_folio();
         self.refresh_scene()?;
         Ok(changed)
+    }
+
+    fn ensure_active_folio(&mut self) {
+        if self.state.project().folio(self.active_folio_id).is_none() {
+            self.active_folio_id = self.state.project().folio_order()[0];
+            self.selection.clear();
+            self.interaction = InteractionState::Idle;
+        }
     }
 }
 

@@ -7,12 +7,12 @@ use athena_domain::{
 use athena_geometry::WorldPoint;
 use athena_render::{
     DrawPrimitive, EditorPresentation, HitRegion, Overlay, PresentationItemId, Scene,
-    SceneLayerKind, Viewport, hit_test, project_sheet,
+    SceneLayerKind, Viewport, hit_test, project_folio,
 };
 
-fn project_with_symbol_and_wire() -> (Project, athena_domain::SheetId) {
+fn project_with_symbol_and_wire() -> (Project, athena_domain::FolioId) {
     let mut project = Project::new("Motor control");
-    let sheet_id = project.sheet_order()[0];
+    let folio_id = project.folio_order()[0];
     let definition = SymbolDefinition::new("Resistor");
     let definition_id = definition.id;
     project
@@ -45,39 +45,39 @@ fn project_with_symbol_and_wire() -> (Project, athena_domain::SheetId) {
     );
     let annotation = Annotation::new("R1", Point::new(0, 20));
 
-    let sheet = project.sheet_mut(sheet_id).expect("initial sheet exists");
-    sheet.add_symbol(first).expect("first instance is unique");
-    sheet.add_symbol(second).expect("second instance is unique");
-    sheet.add_wire(wire).expect("wire ID is unique");
-    sheet.annotations.insert(annotation.id, annotation);
+    let folio = project.folio_mut(folio_id).expect("initial folio exists");
+    folio.add_symbol(first).expect("first instance is unique");
+    folio.add_symbol(second).expect("second instance is unique");
+    folio.add_wire(wire).expect("wire ID is unique");
+    folio.annotations.insert(annotation.id, annotation);
 
-    assert!(sheet.symbol_instances.contains_key(&first_id));
-    (project, sheet_id)
+    assert!(folio.symbol_instances.contains_key(&first_id));
+    (project, folio_id)
 }
 
 fn selected_wire_scene_fixture() -> Scene {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
     let wire_id = *project
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .wires
         .keys()
         .next()
         .expect("fixture contains a wire");
-    project_sheet(
+    project_folio(
         &project,
-        sheet_id,
+        folio_id,
         &EditorPresentation::with_selected_wire(wire_id),
     )
-    .expect("sheet exists")
+    .expect("folio exists")
 }
 
 #[test]
 fn projection_uses_a_deterministic_editor_layer_order() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
 
     let scene =
-        project_sheet(&project, sheet_id, &EditorPresentation::default()).expect("sheet exists");
+        project_folio(&project, folio_id, &EditorPresentation::default()).expect("folio exists");
 
     assert_eq!(
         scene
@@ -97,10 +97,10 @@ fn projection_uses_a_deterministic_editor_layer_order() {
 
 #[test]
 fn symbol_terminals_produce_connection_handles() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
 
     let scene =
-        project_sheet(&project, sheet_id, &EditorPresentation::default()).expect("sheet exists");
+        project_folio(&project, folio_id, &EditorPresentation::default()).expect("folio exists");
 
     let handle_count = scene
         .layers
@@ -109,8 +109,8 @@ fn symbol_terminals_produce_connection_handles() {
         .filter(|primitive| matches!(primitive, DrawPrimitive::ConnectionHandle { .. }))
         .count();
     let terminal_count = project
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .symbol_instances
         .values()
         .map(|symbol| symbol.terminals.len())
@@ -129,10 +129,10 @@ fn symbol_terminals_produce_connection_handles() {
 
 #[test]
 fn wire_routes_produce_a_hit_region_for_each_segment() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
 
     let scene =
-        project_sheet(&project, sheet_id, &EditorPresentation::default()).expect("sheet exists");
+        project_folio(&project, folio_id, &EditorPresentation::default()).expect("folio exists");
 
     assert_eq!(
         scene
@@ -146,11 +146,11 @@ fn wire_routes_produce_a_hit_region_for_each_segment() {
 
 #[test]
 fn selection_overlay_does_not_mutate_the_saved_project() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
     let before = project.clone();
     let selected_symbol = *project
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .symbol_instances
         .keys()
         .next()
@@ -160,7 +160,7 @@ fn selection_overlay_does_not_mutate_the_saved_project() {
         ..EditorPresentation::default()
     };
 
-    let scene = project_sheet(&project, sheet_id, &presentation).expect("sheet exists");
+    let scene = project_folio(&project, folio_id, &presentation).expect("folio exists");
 
     assert_eq!(project, before);
     assert!(scene.layers.iter().any(|layer| {
@@ -174,20 +174,20 @@ fn selection_overlay_does_not_mutate_the_saved_project() {
 
 #[test]
 fn equal_project_snapshots_project_to_equal_scenes() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
     let presentation = EditorPresentation::default();
 
-    let first = project_sheet(&project, sheet_id, &presentation).expect("sheet exists");
-    let second = project_sheet(&project.clone(), sheet_id, &presentation).expect("sheet exists");
+    let first = project_folio(&project, folio_id, &presentation).expect("folio exists");
+    let second = project_folio(&project.clone(), folio_id, &presentation).expect("folio exists");
 
     assert_eq!(first, second);
 }
 
 #[test]
 fn terminals_win_over_symbol_bodies_when_regions_overlap() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
     let scene =
-        project_sheet(&project, sheet_id, &EditorPresentation::default()).expect("sheet exists");
+        project_folio(&project, folio_id, &EditorPresentation::default()).expect("folio exists");
 
     assert!(matches!(
         hit_test(&scene, WorldPoint::new(0.0, 0.0), 1.0),
@@ -197,20 +197,20 @@ fn terminals_win_over_symbol_bodies_when_regions_overlap() {
 
 #[test]
 fn wire_vertices_win_over_wire_segments_when_regions_overlap() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
     let wire_id = *project
-        .sheet(sheet_id)
-        .expect("sheet exists")
+        .folio(folio_id)
+        .expect("folio exists")
         .wires
         .keys()
         .next()
         .expect("fixture contains a wire");
-    let scene = project_sheet(
+    let scene = project_folio(
         &project,
-        sheet_id,
+        folio_id,
         &EditorPresentation::with_selected_wire(wire_id),
     )
-    .expect("sheet exists");
+    .expect("folio exists");
 
     assert!(matches!(
         hit_test(&scene, WorldPoint::new(20.0, 0.0), 1.0),
@@ -266,13 +266,13 @@ fn endpoint_handles_win_over_vertices_terminals_and_segments() {
 
 #[test]
 fn marquee_overlay_projects_translucent_rectangle() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
-    let scene = project_sheet(
+    let (project, folio_id) = project_with_symbol_and_wire();
+    let scene = project_folio(
         &project,
-        sheet_id,
+        folio_id,
         &EditorPresentation::with_marquee(WorldPoint::new(0.0, 0.0), WorldPoint::new(80.0, 40.0)),
     )
-    .expect("sheet exists");
+    .expect("folio exists");
 
     assert!(
         scene
@@ -290,7 +290,7 @@ fn marquee_overlay_projects_translucent_rectangle() {
 
 #[test]
 fn hit_test_converts_viewport_points_using_the_scene_viewport() {
-    let (project, sheet_id) = project_with_symbol_and_wire();
+    let (project, folio_id) = project_with_symbol_and_wire();
     let presentation = EditorPresentation {
         viewport: Viewport {
             origin: WorldPoint::new(100.0, 50.0),
@@ -298,7 +298,7 @@ fn hit_test_converts_viewport_points_using_the_scene_viewport() {
         },
         ..EditorPresentation::default()
     };
-    let scene = project_sheet(&project, sheet_id, &presentation).expect("sheet exists");
+    let scene = project_folio(&project, folio_id, &presentation).expect("folio exists");
 
     assert!(matches!(
         hit_test(&scene, WorldPoint::new(100.0, 50.0), 1.0),

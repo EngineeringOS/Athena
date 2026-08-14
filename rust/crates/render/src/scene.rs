@@ -6,7 +6,7 @@
 use std::collections::BTreeSet;
 
 use athena_domain::{
-    AnnotationId, FieldValue, JunctionId, Point, Project, SheetId, SymbolInstance,
+    AnnotationId, FieldValue, FolioId, JunctionId, Point, Project, SymbolInstance,
     SymbolInstanceId, TerminalId, WireId,
 };
 use athena_geometry::{Rect, WorldPoint};
@@ -145,7 +145,7 @@ pub struct Marquee {
 /// A scene ready for a platform renderer to turn into pixels.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Scene {
-    pub sheet_id: SheetId,
+    pub folio_id: FolioId,
     pub viewport: Viewport,
     pub layers: Vec<SceneLayer>,
     pub hit_regions: Vec<HitRegion>,
@@ -292,35 +292,35 @@ pub enum HitRegion {
     },
 }
 
-/// Projects one saved sheet and presentation-only editor state into a layered,
+/// Projects one saved folio and presentation-only editor state into a layered,
 /// deterministic render scene.
 #[must_use]
-pub fn project_sheet(
+pub fn project_folio(
     project: &Project,
-    sheet_id: SheetId,
+    folio_id: FolioId,
     editor_presentation: &EditorPresentation,
 ) -> Option<Scene> {
-    let sheet = project.sheet(sheet_id)?;
+    let folio = project.folio(folio_id)?;
     let page_bounds = Rect::from_corners(
         WorldPoint::default(),
         WorldPoint::new(
-            sheet.settings.page_width as f64,
-            sheet.settings.page_height as f64,
+            folio.settings.page_width as f64,
+            folio.settings.page_height as f64,
         ),
     );
     let mut page_and_grid = vec![DrawPrimitive::Page {
         bounds: page_bounds,
     }];
-    if sheet.settings.grid_visible && sheet.settings.grid_spacing > 0 {
+    if folio.settings.grid_visible && folio.settings.grid_spacing > 0 {
         page_and_grid.push(DrawPrimitive::Grid {
             bounds: page_bounds,
-            spacing: sheet.settings.grid_spacing as f64,
+            spacing: folio.settings.grid_spacing as f64,
         });
     }
 
     let mut wires_and_junctions = Vec::new();
     let mut hit_regions = Vec::new();
-    for (wire_id, wire) in &sheet.wires {
+    for (wire_id, wire) in &folio.wires {
         let points = wire
             .route
             .iter()
@@ -345,7 +345,7 @@ pub fn project_sheet(
             });
         }
     }
-    for (junction_id, junction) in &sheet.junctions {
+    for (junction_id, junction) in &folio.junctions {
         let position = world_point(junction.position);
         wires_and_junctions.push(DrawPrimitive::Circle {
             center: position,
@@ -359,7 +359,7 @@ pub fn project_sheet(
     }
 
     let mut symbols = Vec::new();
-    for (symbol_id, symbol) in &sheet.symbol_instances {
+    for (symbol_id, symbol) in &folio.symbol_instances {
         let bounds = symbol_body_bounds(symbol);
         symbols.push(DrawPrimitive::SymbolBody {
             symbol_id: *symbol_id,
@@ -386,7 +386,7 @@ pub fn project_sheet(
     }
 
     let mut fields_and_annotations = Vec::new();
-    for symbol in sheet.symbol_instances.values() {
+    for symbol in folio.symbol_instances.values() {
         let origin = world_point(symbol.position);
         for (index, (field_name, value)) in symbol.fields.iter().enumerate() {
             fields_and_annotations.push(DrawPrimitive::Text {
@@ -395,7 +395,7 @@ pub fn project_sheet(
             });
         }
     }
-    for wire in sheet.wires.values() {
+    for wire in folio.wires.values() {
         if let Some(position) = wire.route.first().copied().map(world_point) {
             for (index, (field_name, value)) in wire.fields.iter().enumerate() {
                 fields_and_annotations.push(DrawPrimitive::Text {
@@ -405,7 +405,7 @@ pub fn project_sheet(
             }
         }
     }
-    for (annotation_id, annotation) in &sheet.annotations {
+    for (annotation_id, annotation) in &folio.annotations {
         let position = world_point(annotation.position);
         fields_and_annotations.push(DrawPrimitive::Text {
             text: annotation.text.clone(),
@@ -423,10 +423,10 @@ pub fn project_sheet(
         }
     }
 
-    let overlays = overlay_primitives(sheet, editor_presentation);
+    let overlays = overlay_primitives(folio, editor_presentation);
 
     Some(Scene {
-        sheet_id,
+        folio_id,
         viewport: editor_presentation.viewport,
         layers: vec![
             SceneLayer {
@@ -455,12 +455,12 @@ pub fn project_sheet(
 }
 
 fn overlay_primitives(
-    sheet: &athena_domain::Sheet,
+    folio: &athena_domain::Folio,
     presentation: &EditorPresentation,
 ) -> Vec<DrawPrimitive> {
     let mut overlays = Vec::new();
     for item in &presentation.selected {
-        if let Some(bounds) = item_bounds(sheet, *item) {
+        if let Some(bounds) = item_bounds(folio, *item) {
             overlays.push(DrawPrimitive::Overlay {
                 overlay: Overlay::SelectionBounds {
                     item: *item,
@@ -478,7 +478,7 @@ fn overlay_primitives(
             }
         }
         if let PresentationItemId::Wire(wire_id) = item
-            && let Some(wire) = sheet.wires.get(wire_id)
+            && let Some(wire) = folio.wires.get(wire_id)
         {
             project_selected_wire_overlay_primitives(*wire_id, &wire.route, &mut overlays);
         }
@@ -602,22 +602,22 @@ fn project_selected_wire_overlays(
     }
 }
 
-fn item_bounds(sheet: &athena_domain::Sheet, item: PresentationItemId) -> Option<Rect> {
+fn item_bounds(folio: &athena_domain::Folio, item: PresentationItemId) -> Option<Rect> {
     match item {
-        PresentationItemId::Symbol(symbol_id) => sheet
+        PresentationItemId::Symbol(symbol_id) => folio
             .symbol_instances
             .get(&symbol_id)
             .map(symbol_body_bounds),
-        PresentationItemId::Wire(wire_id) => route_bounds(&sheet.wires.get(&wire_id)?.route),
+        PresentationItemId::Wire(wire_id) => route_bounds(&folio.wires.get(&wire_id)?.route),
         PresentationItemId::Junction(junction_id) => {
-            let point = world_point(sheet.junctions.get(&junction_id)?.position);
+            let point = world_point(folio.junctions.get(&junction_id)?.position);
             Some(Rect::from_corners(
                 WorldPoint::new(point.x - JUNCTION_RADIUS, point.y - JUNCTION_RADIUS),
                 WorldPoint::new(point.x + JUNCTION_RADIUS, point.y + JUNCTION_RADIUS),
             ))
         }
         PresentationItemId::Annotation(annotation_id) => {
-            let annotation = sheet.annotations.get(&annotation_id)?;
+            let annotation = folio.annotations.get(&annotation_id)?;
             Some(text_bounds(
                 world_point(annotation.position),
                 &annotation.text,

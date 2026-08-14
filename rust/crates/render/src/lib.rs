@@ -6,7 +6,7 @@ mod scene;
 pub use hit_test::hit_test;
 pub use scene::{
     DrawPrimitive, EditorPresentation, Guide, HitRegion, Marquee, Overlay, PresentationItemId,
-    Scene, SceneLayer, SceneLayerKind, ValidationMessage, Viewport, project_sheet,
+    Scene, SceneLayer, SceneLayerKind, ValidationMessage, Viewport, project_folio,
 };
 
 /// Compile-time marker for the render crate.
