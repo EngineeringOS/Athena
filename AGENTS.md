@@ -70,6 +70,14 @@
   message/tool routing, viewport/canvas, overlays, panels, and platform
   wrappers first. Then fill those boundaries with Athena's electrical
   schematic kernel and QElectroTech-derived feature outcomes.
+- Graphite is the visual-layout and panel-system reference: application shell,
+  docked panel geometry, document viewport, tool shelf, panel lifecycle, and
+  modern interaction affordances follow Graphite. QElectroTech is the
+  electrical panel-plate reference: panel content, electrical categories,
+  typed fields, property groups, report inputs, and user workflows must expose
+  the QElectroTech-equivalent domain meaning inside the Graphite-style layout.
+  Do not copy QElectroTech's Qt visual chrome; do not fill Graphite-like panels
+  with invented generic fields.
 - Every core Rust file touched in a milestone must be self-documenting: include
   a module-level `//!` summary, document public types/functions that define a
   cross-crate contract, and add short comments before non-obvious state,
