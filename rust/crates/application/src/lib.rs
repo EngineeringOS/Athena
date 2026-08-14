@@ -1,4 +1,25 @@
 //! Platform-neutral application coordination for Athena's typed editor boundary.
 //!
-//! M005 Task 1 reserves this crate boundary without defining runtime behavior.
-//! Later tasks add the editor facade, dispatcher, handlers, and frontend effects.
+//! Platform adapters submit typed messages and reduce ordered frontend effects;
+//! project, history, layout, and widget authority remain inside this crate.
+
+mod application;
+mod dispatcher;
+mod document;
+mod frontend_message;
+mod layout;
+mod message;
+mod portfolio;
+mod widget;
+
+pub use application::{AthenaEditor, EditorSnapshot};
+pub use dispatcher::AthenaDispatcher;
+pub use frontend_message::AthenaFrontendMessage;
+pub use layout::{LayoutTarget, PanelId, PanelState, WorkspaceLayout};
+pub use message::{AthenaMessage, DocumentMessage, LayoutMessage, PortfolioMessage, SaveOutcome};
+pub use portfolio::SaveRequestId;
+pub use widget::{Widget, WidgetCallback, WidgetId, WidgetKind, WidgetValue};
+
+pub(crate) use document::{DocumentHandler, outline_effect};
+pub(crate) use layout::LayoutHandler;
+pub(crate) use portfolio::PortfolioHandler;

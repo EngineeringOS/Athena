@@ -243,9 +243,9 @@ QET-TITLE-002, QET-VAR-001, GRA-DOC-001, GRA-HISTORY-001.
 GRA-DISPATCH-001, GRA-MSG-001, GRA-FRONTEND-001, GRA-PORTFOLIO-001,
 GRA-DOC-001, GRA-HISTORY-001.
 
-- [ ] Write failing tests that submit typed messages to `AthenaEditor` and
+- [x] Write failing tests that submit typed messages to `AthenaEditor` and
   assert ordered frontend effects and canonical state.
-- [ ] Define the narrow facade and root protocol:
+- [x] Define the narrow facade and root protocol:
 
 ```rust
 pub struct AthenaEditor {
@@ -266,24 +266,24 @@ pub enum AthenaMessage {
 }
 ```
 
-- [ ] Implement a deterministic queue where handlers append child messages and
+- [x] Implement a deterministic queue where handlers append child messages and
   frontend effects; prevent reentrant direct calls into sibling handlers.
-- [ ] Make `PortfolioHandler` own project lifetime/open/save coordination,
+- [x] Make `PortfolioHandler` own project lifetime/open/save coordination,
   `DocumentHandler` own the active project editing session, and
   `LayoutHandler` own workspace/plate presentation state.
-- [ ] Emit effects for open/close, active folio, dirty state, outline/order,
+- [x] Emit effects for open/close, active folio, dirty state, outline/order,
   targeted panel layout, save/open requests, diagnostics, and errors.
-- [ ] Route platform save results back through typed messages carrying
+- [x] Route platform save results back through typed messages carrying
   `SaveRequestId`, project identity, and `DocumentRevision`. Permit at most one
   active save per project. Matching success establishes only the echoed revision
   as the clean checkpoint. Matching success, cancellation, or failure releases
   the active request; cancellation/failure preserve document state. A stale or
   mismatched result emits a typed diagnostic without clearing the actual active
   request.
-- [ ] Add an architecture test proving no public application API returns a
+- [x] Add an architecture test proving no public application API returns a
   mutable domain or editor-session reference.
-- [ ] Run `cargo test -p athena-application`.
-- [ ] Commit with `git commit -m "feat: add typed application dispatcher"`.
+- [x] Run `cargo test -p athena-application`.
+- [x] Commit with `git commit -m "feat: add typed application dispatcher"`.
 
 ### Task 6: Implement Backend-Owned Workspace and Electrical Plates
 
