@@ -5,8 +5,8 @@
 > `superpowers:executing-plans` to execute this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** `PROPOSED`. Do not execute until the user approves
-`docs/superpowers/specs/2026-08-14-m005-application-spine-and-folio-foundation.md`.
+**Status:** `APPROVED` for implementation on 2026-08-14. Runtime, visual, and
+user-acceptance gates remain open until fresh M005 evidence proves them.
 
 **Goal:** Deliver project creation, ordered folios, inherited title-block
 variables, and save/reopen through a Graphite-derived typed application spine

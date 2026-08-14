@@ -61,7 +61,7 @@
 - [x] Scope exactly one workflow: project -> ordered folio -> title-block variables -> save/reopen, routed through the Graphite-derived application/message/frontend boundary.
 - [x] Cite only the reviewed M005 set: QET-PROJ-001, QET-PERSIST-001, QET-FOLIO-001/002, QET-TITLE-001/002, QET-VAR-001, QET-HISTORY-001, QET-PLATE-001, GRA-APP-001, GRA-DISPATCH-001, GRA-MSG-001, GRA-FRONTEND-001, GRA-LAYOUT-001, GRA-PANEL-001, GRA-PORTFOLIO-001, GRA-DOC-001, GRA-HISTORY-001, GRA-PROPS-001, GRA-WASM-001, GRA-PLATFORM-001, and GRA-UX-001.
 - [x] Define field-level model, messages, handler state ownership, frontend outputs, desktop/web workflow, persistence rules, reference screenshots, and every required gate before code is permitted.
-- [ ] Submit M005 specification for user approval. Do not write implementation code before approval.
+- [x] Submit M005 specification for user approval. Approval was received on 2026-08-14 before product-code work began.
 
 ### Task 6: M004 Verification and Review
 

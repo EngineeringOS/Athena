@@ -2,7 +2,7 @@
 
 ## Verdict
 
-`READY-FOR-USER-REVIEW`, not `USER-ACCEPTED` and not `CERTIFIED`.
+`USER-ACCEPTED` on 2026-08-14, not `CERTIFIED`.
 
 M004 is a research/governance milestone. This report verifies the evidence
 package and M005 proposal; it does not claim product implementation, QET parity,
@@ -136,9 +136,9 @@ results, and requires retry/stale-result tests. All findings were corrected
 before the final fresh verification pass. No current documentation consistency
 check remains failed.
 
-The User Gate is not failed; it is pending. M004 must not be marked
-`USER-ACCEPTED` or `CERTIFIED` unless the user explicitly accepts this evidence
-package.
+The user accepted the M004 evidence package and authorized M005 implementation
+on 2026-08-14. M004 remains not `CERTIFIED`; acceptance does not prove any M005
+runtime, visual, cross-platform, or behavior gate.
 
 ## SKIPPED
 
@@ -152,7 +152,7 @@ package.
 
 ## User Review Checklist
 
-- [ ] Accept M004 as the reference-certification baseline.
-- [ ] Accept the rule `Graphite panel system + QET electrical plate content`.
-- [ ] Approve the M005 bounded vertical slice and implementation plan.
-- [ ] Authorize product-code work for M005.
+- [x] Accept M004 as the reference-certification baseline.
+- [x] Accept the rule `Graphite panel system + QET electrical plate content`.
+- [x] Approve the M005 bounded vertical slice and implementation plan.
+- [x] Authorize product-code work for M005.

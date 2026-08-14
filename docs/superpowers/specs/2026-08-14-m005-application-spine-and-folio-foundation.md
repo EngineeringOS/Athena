@@ -2,8 +2,9 @@
 
 ## Status
 
-`PROPOSED`, not implementation-authorized. This specification requires user
-approval before any product-code task may start.
+`APPROVED` for implementation on 2026-08-14 by explicit user direction to
+continue until the plan is complete. Approval authorizes M005 only; it does not
+pre-accept its runtime, visual, or certification gates.
 
 ## Why
 
