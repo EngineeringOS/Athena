@@ -1,10 +1,24 @@
 //! Typed semantic effects consumed by GPUI and browser platform adapters.
 
-use athena_domain::{FolioId, ProjectId};
+use athena_domain::{FolioId, ProjectId, ResolvedTemplateText};
 use athena_editor::DocumentRevision;
 use serde::{Deserialize, Serialize};
 
 use crate::{LayoutTarget, SaveRequestId, Widget, WidgetId, WidgetValue, WorkspaceLayout};
+
+/// Resolved QET-equivalent title-block values displayed in a folio viewport.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ResolvedTitleBlockDisplay {
+    pub title: ResolvedTemplateText,
+    pub author: ResolvedTemplateText,
+    pub date_text: ResolvedTemplateText,
+    pub file_label: ResolvedTemplateText,
+    pub folio_label: ResolvedTemplateText,
+    pub plant: ResolvedTemplateText,
+    pub location: ResolvedTemplateText,
+    pub revision: ResolvedTemplateText,
+    pub page_number: ResolvedTemplateText,
+}
 
 /// One ordered frontend or platform effect emitted by the dispatcher.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -33,6 +47,10 @@ pub enum AthenaFrontendMessage {
     WidgetValuesUpdated {
         target: LayoutTarget,
         values: Vec<(WidgetId, WidgetValue)>,
+    },
+    ResolvedTitleBlockUpdated {
+        folio_id: FolioId,
+        display: Box<ResolvedTitleBlockDisplay>,
     },
     SaveRequested {
         request_id: SaveRequestId,

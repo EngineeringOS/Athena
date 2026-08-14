@@ -7,8 +7,8 @@
 use std::{collections::BTreeMap, path::PathBuf};
 
 use athena_application::{
-    AthenaEditor, AthenaFrontendMessage, AthenaMessage, EditorSnapshot, LayoutTarget,
-    PortfolioMessage, SaveOutcome, Widget, WorkspaceLayout,
+    AthenaEditor, AthenaFrontendMessage, AthenaMessage, EditorSnapshot, LayoutTarget, OpenOutcome,
+    PortfolioMessage, ResolvedTitleBlockDisplay, SaveOutcome, Widget, WorkspaceLayout,
 };
 use athena_domain::{FolioId, ProjectId};
 
@@ -32,6 +32,7 @@ pub struct DesktopViewState {
     /// Last platform or application status suitable for the status bar.
     pub status: Option<String>,
     plates: BTreeMap<LayoutTarget, Vec<Widget>>,
+    resolved_title_blocks: BTreeMap<FolioId, ResolvedTitleBlockDisplay>,
     pending_save: Option<AthenaFrontendMessage>,
     open_dialog_pending: bool,
 }
@@ -41,6 +42,12 @@ impl DesktopViewState {
     #[must_use]
     pub fn widgets(&self, target: LayoutTarget) -> &[Widget] {
         self.plates.get(&target).map(Vec::as_slice).unwrap_or(&[])
+    }
+
+    /// Returns application-resolved title-block display data for one folio.
+    #[must_use]
+    pub fn resolved_title_block(&self, folio_id: FolioId) -> Option<&ResolvedTitleBlockDisplay> {
+        self.resolved_title_blocks.get(&folio_id)
     }
 
     /// Reports whether GPUI must resolve an emitted native save request.
@@ -138,9 +145,10 @@ impl DesktopEditor {
         if !self.view.open_dialog_pending {
             return Err("No desktop open request is pending".into());
         }
-        self.view.open_dialog_pending = false;
         let Some(path) = path else {
-            self.view.status = Some("Open cancelled".into());
+            self.dispatch(PortfolioMessage::OpenResult {
+                outcome: OpenOutcome::Cancelled,
+            });
             return Ok(());
         };
         let name = path
@@ -150,11 +158,17 @@ impl DesktopEditor {
             Ok(bytes) => bytes,
             Err(error) => {
                 let message = error.to_string();
-                self.view.status = Some(format!("Open failed: {message}"));
+                self.dispatch(PortfolioMessage::OpenResult {
+                    outcome: OpenOutcome::Failed {
+                        message: message.clone(),
+                    },
+                });
                 return Err(message);
             }
         };
-        let effects = self.dispatch(PortfolioMessage::OpenBytes { bytes });
+        let effects = self.dispatch(PortfolioMessage::OpenResult {
+            outcome: OpenOutcome::Success { bytes },
+        });
         if effects
             .iter()
             .any(|effect| matches!(effect, AthenaFrontendMessage::Error { .. }))
@@ -174,6 +188,7 @@ impl DesktopEditor {
     fn reduce_effect(&mut self, effect: &AthenaFrontendMessage) {
         match effect {
             AthenaFrontendMessage::ProjectOpened { project_id, name } => {
+                self.view.open_dialog_pending = false;
                 self.view.project_id = Some(*project_id);
                 self.view.project_name = Some(name.clone());
                 self.view.status = Some(format!("Project open: {name}"));
@@ -212,6 +227,11 @@ impl DesktopEditor {
                     }
                 }
             }
+            AthenaFrontendMessage::ResolvedTitleBlockUpdated { folio_id, display } => {
+                self.view
+                    .resolved_title_blocks
+                    .insert(*folio_id, display.as_ref().clone());
+            }
             effect @ AthenaFrontendMessage::SaveRequested { .. } => {
                 self.view.pending_save = Some(effect.clone());
                 self.view.status = Some("Choose a project save location".into());
@@ -224,10 +244,19 @@ impl DesktopEditor {
                 self.view.status = Some(match code.as_str() {
                     "save-failed" => format!("Save failed: {message}"),
                     "save-cancelled" => "Save cancelled".into(),
+                    "open-failed" => {
+                        self.view.open_dialog_pending = false;
+                        format!("Open failed: {message}")
+                    }
+                    "open-cancelled" => {
+                        self.view.open_dialog_pending = false;
+                        "Open cancelled".into()
+                    }
                     _ => message.clone(),
                 });
             }
             AthenaFrontendMessage::Error { message } => {
+                self.view.open_dialog_pending = false;
                 self.view.status = Some(format!("Error: {message}"));
             }
         }

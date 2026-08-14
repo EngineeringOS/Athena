@@ -3,6 +3,8 @@ use athena_application::{
     PortfolioMessage, WidgetId, WidgetValue,
 };
 use athena_domain::ProjectId;
+use athena_domain::{TemplateSegment, TemplateText, VariableReference};
+use athena_editor::{TitleBlockField, TitleBlockValue};
 use uuid::Uuid;
 
 fn editor() -> AthenaEditor {
@@ -166,5 +168,35 @@ fn direct_document_edits_refresh_existing_plate_values() {
             target: LayoutTarget::Project,
             ..
         }
+    )));
+}
+
+#[test]
+fn folio_plate_emits_resolved_title_block_display_for_scoped_references() {
+    let mut editor = editor();
+    let folio_id = editor.state_snapshot().unwrap().active_folio_id;
+    editor.handle_message(DocumentMessage::SetProjectVariable {
+        key: "plant".into(),
+        value: Some("PLANT-A".into()),
+    });
+    editor.handle_message(DocumentMessage::SetFolioVariable {
+        folio_id,
+        key: "area".into(),
+        value: Some("MCC-01".into()),
+    });
+    let effects = editor.handle_message(DocumentMessage::SetTitleBlockValue {
+        folio_id,
+        field: TitleBlockField::Title,
+        value: TitleBlockValue::Template(TemplateText(vec![
+            TemplateSegment::Variable(VariableReference::Project("plant".into())),
+            TemplateSegment::Literal(" / ".into()),
+            TemplateSegment::Variable(VariableReference::Folio("area".into())),
+        ])),
+    });
+
+    assert!(effects.iter().any(|effect| matches!(
+        effect,
+        AthenaFrontendMessage::ResolvedTitleBlockUpdated { folio_id: id, display }
+            if *id == folio_id && display.title.text == "PLANT-A / MCC-01"
     )));
 }

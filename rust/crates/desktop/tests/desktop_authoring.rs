@@ -4,7 +4,7 @@ use athena_application::{
     DocumentMessage, LayoutMessage, LayoutTarget, PanelId, PortfolioMessage, WidgetId, WidgetValue,
 };
 use athena_desktop::app::DesktopEditor;
-use athena_domain::{FolioId, ProjectId, TemplateText};
+use athena_domain::{FolioId, ProjectId, TemplateSegment, TemplateText, VariableReference};
 use uuid::Uuid;
 
 fn project_id(value: u128) -> ProjectId {
@@ -172,6 +172,50 @@ fn failed_native_open_reports_the_platform_error_in_status_feedback() {
             .contains("Open failed")
     );
     assert!(!desktop.view_state().open_dialog_pending());
+}
+
+#[test]
+fn resolved_title_block_effect_is_cached_for_the_native_viewport() {
+    let mut desktop = desktop_with_project();
+    let folio_id = desktop.view_state().active_folio_id.unwrap();
+    desktop.dispatch(DocumentMessage::SetProjectVariable {
+        key: "plant".into(),
+        value: Some("PLANT-A".into()),
+    });
+    desktop.dispatch(DocumentMessage::SetFolioVariable {
+        folio_id,
+        key: "area".into(),
+        value: Some("MCC-01".into()),
+    });
+    desktop.dispatch(LayoutMessage::CommitWidget {
+        target: LayoutTarget::Folio(folio_id),
+        widget_id: WidgetId::new("folio.title"),
+        value: WidgetValue::Template(TemplateText(vec![
+            TemplateSegment::Variable(VariableReference::Project("plant".into())),
+            TemplateSegment::Literal(" / ".into()),
+            TemplateSegment::Variable(VariableReference::Folio("area".into())),
+        ])),
+    });
+
+    assert_eq!(
+        desktop
+            .view_state()
+            .resolved_title_block(folio_id)
+            .expect("resolved display effect is cached")
+            .title
+            .text,
+        "PLANT-A / MCC-01"
+    );
+}
+
+#[test]
+fn desktop_open_adapter_reports_every_completion_through_typed_outcomes() {
+    let app = include_str!("../src/app.rs");
+    assert!(app.contains("OpenOutcome::Success"));
+    assert!(app.contains("OpenOutcome::Cancelled"));
+    assert!(app.contains("OpenOutcome::Failed"));
+    assert!(!app.contains("self.view.status = Some(\"Open cancelled\""));
+    assert!(!app.contains("self.view.status = Some(format!(\"Open failed:"));
 }
 
 #[test]

@@ -43,6 +43,9 @@ pub enum PortfolioMessage {
     OpenBytes {
         bytes: Vec<u8>,
     },
+    OpenResult {
+        outcome: OpenOutcome,
+    },
     RequestSave,
     SaveResult {
         request_id: SaveRequestId,
@@ -51,6 +54,18 @@ pub enum PortfolioMessage {
         outcome: SaveOutcome,
     },
     CloseProject,
+}
+
+/// Result reported by a desktop or browser open adapter.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
+pub enum OpenOutcome {
+    /// User selected a project and the adapter read its bytes.
+    Success { bytes: Vec<u8> },
+    /// User dismissed the platform open dialog.
+    Cancelled,
+    /// Platform storage could not read the selected project.
+    Failed { message: String },
 }
 
 /// Result reported by a desktop or browser persistence adapter.

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AthenaFrontendMessage, AthenaMessage, DocumentHandler, DocumentMessage, EditorSnapshot,
-    LayoutMessage, PortfolioMessage, SaveOutcome, outline_effect,
+    LayoutMessage, OpenOutcome, PortfolioMessage, SaveOutcome, outline_effect,
 };
 
 /// Deterministic save request identity allocated by the application layer.
@@ -101,38 +101,11 @@ impl PortfolioHandler {
                 effects: vec![AthenaFrontendMessage::OpenRequested],
                 messages: Vec::new(),
             },
-            PortfolioMessage::OpenBytes { bytes } => match SnapshotStore::decode_snapshot(&bytes) {
-                Ok(persisted) => {
-                    let project_id = persisted.project.id;
-                    let name = persisted.project.name.clone();
-                    let active_folio_id = persisted.active_folio_id;
-                    self.document = Some(DocumentHandler::new(persisted.project, active_folio_id));
-                    self.active_save = None;
-                    let snapshot = self.snapshot().expect("opened document");
-                    PortfolioOutput {
-                        effects: vec![
-                            AthenaFrontendMessage::ProjectOpened { project_id, name },
-                            AthenaFrontendMessage::ActiveFolioChanged {
-                                folio_id: active_folio_id,
-                            },
-                            outline_effect(&snapshot),
-                            AthenaFrontendMessage::DirtyStateChanged { dirty: false },
-                        ],
-                        messages: vec![
-                            LayoutMessage::RequestWorkspace.into(),
-                            LayoutMessage::RequestFolioPlate {
-                                folio_id: active_folio_id,
-                            }
-                            .into(),
-                        ],
-                    }
-                }
-                Err(error) => PortfolioOutput {
-                    effects: vec![AthenaFrontendMessage::Error {
-                        message: error.to_string(),
-                    }],
-                    messages: Vec::new(),
-                },
+            PortfolioMessage::OpenBytes { bytes } => self.open_bytes(bytes),
+            PortfolioMessage::OpenResult { outcome } => match outcome {
+                OpenOutcome::Success { bytes } => self.open_bytes(bytes),
+                OpenOutcome::Cancelled => diagnostic("open-cancelled", "Open was cancelled"),
+                OpenOutcome::Failed { message } => diagnostic("open-failed", &message),
             },
             PortfolioMessage::RequestSave => self.request_save(),
             PortfolioMessage::SaveResult {
@@ -149,6 +122,42 @@ impl PortfolioHandler {
                     messages: Vec::new(),
                 }
             }
+        }
+    }
+
+    fn open_bytes(&mut self, bytes: Vec<u8>) -> PortfolioOutput {
+        match SnapshotStore::decode_snapshot(&bytes) {
+            Ok(persisted) => {
+                let project_id = persisted.project.id;
+                let name = persisted.project.name.clone();
+                let active_folio_id = persisted.active_folio_id;
+                self.document = Some(DocumentHandler::new(persisted.project, active_folio_id));
+                self.active_save = None;
+                let snapshot = self.snapshot().expect("opened document");
+                PortfolioOutput {
+                    effects: vec![
+                        AthenaFrontendMessage::ProjectOpened { project_id, name },
+                        AthenaFrontendMessage::ActiveFolioChanged {
+                            folio_id: active_folio_id,
+                        },
+                        outline_effect(&snapshot),
+                        AthenaFrontendMessage::DirtyStateChanged { dirty: false },
+                    ],
+                    messages: vec![
+                        LayoutMessage::RequestWorkspace.into(),
+                        LayoutMessage::RequestFolioPlate {
+                            folio_id: active_folio_id,
+                        }
+                        .into(),
+                    ],
+                }
+            }
+            Err(error) => PortfolioOutput {
+                effects: vec![AthenaFrontendMessage::Error {
+                    message: error.to_string(),
+                }],
+                messages: Vec::new(),
+            },
         }
     }
 

@@ -2,13 +2,13 @@
 
 use std::collections::BTreeMap;
 
-use athena_domain::{FolioId, TitleBlockPlacement};
+use athena_domain::{FolioId, TitleBlockPlacement, resolve_template_text};
 use athena_editor::{TitleBlockField, TitleBlockValue};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AthenaFrontendMessage, AthenaMessage, DocumentMessage, EditorSnapshot, LayoutMessage, Widget,
-    WidgetCallback, WidgetId, WidgetKind, WidgetValue,
+    AthenaFrontendMessage, AthenaMessage, DocumentMessage, EditorSnapshot, LayoutMessage,
+    ResolvedTitleBlockDisplay, Widget, WidgetCallback, WidgetId, WidgetKind, WidgetValue,
 };
 
 /// Stable panel identity in the Graphite-derived workbench hierarchy.
@@ -128,6 +128,14 @@ impl LayoutHandler {
                 if let Some(state) = state
                     && let Some(widgets) = folio_widgets(state, folio_id)
                 {
+                    if let Some(display) = resolved_title_block(state, folio_id) {
+                        output
+                            .effects
+                            .push(AthenaFrontendMessage::ResolvedTitleBlockUpdated {
+                                folio_id,
+                                display: Box::new(display),
+                            });
+                    }
                     self.emit_plate(LayoutTarget::Folio(folio_id), widgets, &mut output.effects);
                 }
             }
@@ -194,6 +202,27 @@ impl LayoutHandler {
         }
         self.rendered.insert(target, next);
     }
+}
+
+fn resolved_title_block(
+    state: &EditorSnapshot,
+    folio_id: FolioId,
+) -> Option<ResolvedTitleBlockDisplay> {
+    let folio = state.project.folio(folio_id)?;
+    let values = &folio.title_block;
+    let resolve =
+        |template| resolve_template_text(template, &state.project.variables, &folio.variables);
+    Some(ResolvedTitleBlockDisplay {
+        title: resolve(&values.title),
+        author: resolve(&values.author),
+        date_text: resolve(&values.date_text),
+        file_label: resolve(&values.file_label),
+        folio_label: resolve(&values.folio_label),
+        plant: resolve(&values.plant),
+        location: resolve(&values.location),
+        revision: resolve(&values.revision),
+        page_number: resolve(&values.page_number),
+    })
 }
 
 fn same_structure(left: &[Widget], right: &[Widget]) -> bool {

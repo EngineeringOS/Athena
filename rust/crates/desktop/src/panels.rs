@@ -10,10 +10,10 @@ use athena_application::{
     DocumentMessage, LayoutMessage, LayoutTarget, PanelId, PortfolioMessage, Widget, WidgetId,
     WidgetKind, WidgetValue,
 };
-use athena_domain::{FolioId, ProjectId, TemplateSegment, TemplateText};
+use athena_domain::{FolioId, ProjectId, TemplateSegment, TemplateText, VariableReference};
 use gpui::{
-    AnyElement, App, Application, Context, Entity, IntoElement, PathPromptOptions, Render,
-    SharedString, Subscription, Window, WindowOptions, div, prelude::*, px, rgb,
+    AnyElement, App, Application, Context, Entity, Focusable, IntoElement, PathPromptOptions,
+    Render, SharedString, Subscription, Window, WindowOptions, div, prelude::*, px, rgb,
 };
 use gpui_component::{
     IconName, Root, Selectable, Sizable, StyledExt,
@@ -129,12 +129,7 @@ impl NativeShell {
                 });
                 let widget_id = widget.id.clone();
                 let subscription = cx.subscribe(&state, move |this, input, event, cx| {
-                    let commit = match kind {
-                        InputValueKind::VariableEdit => {
-                            matches!(event, InputEvent::PressEnter { .. })
-                        }
-                        _ => matches!(event, InputEvent::PressEnter { .. } | InputEvent::Blur),
-                    };
+                    let commit = matches!(event, InputEvent::PressEnter { .. } | InputEvent::Blur);
                     if !commit {
                         return;
                     }
@@ -155,10 +150,11 @@ impl NativeShell {
                     state,
                     _subscription: subscription,
                 });
-            } else if !matches!(kind, InputValueKind::VariableEdit) {
+            } else {
                 let expected = input_text(&widget.value);
                 let input = &self.inputs[&Self::control_key(target, &widget.id)].state;
-                if input.read(cx).value().as_ref() != expected {
+                let is_focused = input.read(cx).focus_handle(cx).is_focused(window);
+                if !is_focused && input.read(cx).value().as_ref() != expected {
                     input.update(cx, |input, cx| input.set_value(expected, window, cx));
                 }
             }
@@ -219,6 +215,7 @@ impl NativeShell {
     fn render_outline(&mut self, cx: &mut Context<Self>) -> AnyElement {
         let active = self.editor.view_state().active_folio_id;
         let outline = self.editor.view_state().outline.clone();
+        let outline_len = outline.len();
         let project_name = self
             .editor
             .view_state()
@@ -234,15 +231,17 @@ impl NativeShell {
             .border_color(rgb(0x30343b))
             .child(panel_heading("PROJECT"))
             .child(
-                Button::new("project-properties")
-                    .w_full()
-                    .justify_start()
-                    .label(project_name)
-                    .selected(matches!(self.properties_target, LayoutTarget::Project))
-                    .on_click(cx.listener(|this, _, _, cx| {
-                        this.properties_target = LayoutTarget::Project;
-                        this.dispatch(LayoutMessage::RequestProjectPlate, cx);
-                    })),
+                div().debug_selector(|| "project-properties".into()).child(
+                    Button::new("project-properties")
+                        .w_full()
+                        .justify_start()
+                        .label(project_name)
+                        .selected(matches!(self.properties_target, LayoutTarget::Project))
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.properties_target = LayoutTarget::Project;
+                            this.dispatch(LayoutMessage::RequestProjectPlate, cx);
+                        })),
+                ),
             )
             .child(
                 div()
@@ -254,38 +253,100 @@ impl NativeShell {
                     .child("FOLIOS"),
             )
             .child(
-                div()
-                    .flex_1()
-                    .overflow_y_scrollbar()
-                    .px_1()
-                    .children(outline.into_iter().map(|(folio_id, label)| {
-                        Button::new(("folio", folio_id.as_uuid().as_u128() as u64))
-                            .w_full()
-                            .justify_start()
-                            .label(label)
-                            .selected(active == Some(folio_id))
-                            .on_click(cx.listener(move |this, _, _, cx| {
-                                this.properties_target = LayoutTarget::Folio(folio_id);
-                                this.dispatch(DocumentMessage::ActivateFolio { folio_id }, cx);
-                            }))
-                    })),
+                div().flex_1().overflow_y_scrollbar().px_1().children(
+                    outline
+                        .into_iter()
+                        .enumerate()
+                        .map(|(index, (folio_id, label))| {
+                            let folio_selector = format!("folio-{folio_id:?}");
+                            let move_up_selector = format!("move-up-{folio_id:?}");
+                            let move_down_selector = format!("move-down-{folio_id:?}");
+                            div()
+                                .flex()
+                                .items_center()
+                                .gap_1()
+                                .child(
+                                    div().flex_1().debug_selector(move || folio_selector).child(
+                                        Button::new(("folio", folio_id.as_uuid().as_u128() as u64))
+                                            .w_full()
+                                            .justify_start()
+                                            .label(label)
+                                            .selected(active == Some(folio_id))
+                                            .on_click(cx.listener(move |this, _, _, cx| {
+                                                this.properties_target =
+                                                    LayoutTarget::Folio(folio_id);
+                                                this.dispatch(
+                                                    DocumentMessage::ActivateFolio { folio_id },
+                                                    cx,
+                                                );
+                                            })),
+                                    ),
+                                )
+                                .when(index > 0, |row| {
+                                    row.child(
+                                        div().debug_selector(move || move_up_selector).child(
+                                            Button::new((
+                                                "move-up",
+                                                folio_id.as_uuid().as_u128() as u64,
+                                            ))
+                                            .small()
+                                            .icon(IconName::ArrowUp)
+                                            .tooltip("Move folio up")
+                                            .on_click(cx.listener(move |this, _, _, cx| {
+                                                this.dispatch(
+                                                    DocumentMessage::MoveFolio {
+                                                        folio_id,
+                                                        to: index - 1,
+                                                    },
+                                                    cx,
+                                                );
+                                            })),
+                                        ),
+                                    )
+                                })
+                                .when(index + 1 < outline_len, |row| {
+                                    row.child(
+                                        div().debug_selector(move || move_down_selector).child(
+                                            Button::new((
+                                                "move-down",
+                                                folio_id.as_uuid().as_u128() as u64,
+                                            ))
+                                            .small()
+                                            .icon(IconName::ArrowDown)
+                                            .tooltip("Move folio down")
+                                            .on_click(cx.listener(move |this, _, _, cx| {
+                                                this.dispatch(
+                                                    DocumentMessage::MoveFolio {
+                                                        folio_id,
+                                                        to: index + 1,
+                                                    },
+                                                    cx,
+                                                );
+                                            })),
+                                        ),
+                                    )
+                                })
+                        }),
+                ),
             )
             .child(
                 div().p_2().child(
-                    Button::new("add-folio")
-                        .w_full()
-                        .icon(IconName::Plus)
-                        .label("Add folio")
-                        .on_click(cx.listener(|this, _, _, cx| {
-                            let number = this.editor.view_state().outline.len() + 1;
-                            this.dispatch(
-                                DocumentMessage::AddFolio {
-                                    folio_id: FolioId::new(),
-                                    label: format!("Folio {number}"),
-                                },
-                                cx,
-                            );
-                        })),
+                    div().debug_selector(|| "add-folio".into()).child(
+                        Button::new("add-folio")
+                            .w_full()
+                            .icon(IconName::Plus)
+                            .label("Add folio")
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                let number = this.editor.view_state().outline.len() + 1;
+                                this.dispatch(
+                                    DocumentMessage::AddFolio {
+                                        folio_id: FolioId::new(),
+                                        label: format!("Folio {number}"),
+                                    },
+                                    cx,
+                                );
+                            })),
+                    ),
                 ),
             )
             .into_any_element()
@@ -338,6 +399,10 @@ impl NativeShell {
         widget: Widget,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let widget_selector = format!("widget-{}", widget.id.0.replace(['.', '_'], "-"));
+        let template_references = matches!(widget.value, WidgetValue::Template(_))
+            .then(|| self.variable_references(target))
+            .unwrap_or_default();
         let control = match &widget.kind {
             WidgetKind::Select { options } => {
                 let selected = match &widget.value {
@@ -385,19 +450,73 @@ impl NativeShell {
                         rows.into_iter()
                             .map(|row| div().px_2().py_1().bg(rgb(0x252930)).text_xs().child(row)),
                     )
-                    .child(Input::new(&input.state).small())
+                    .child(
+                        div()
+                            .debug_selector(move || widget_selector.clone())
+                            .child(Input::new(&input.state).small()),
+                    )
                     .child(
                         div()
                             .text_xs()
                             .text_color(rgb(0x7f8997))
-                            .child("Press Enter to set; empty value removes"),
+                            .child("Enter or leave field to set; empty value removes"),
                     )
                     .into_any_element()
             }
             WidgetKind::TextInput => {
                 let key = Self::control_key(target, &widget.id);
                 let input = self.inputs.get(&key).expect("input synchronized");
-                Input::new(&input.state).w_full().small().into_any_element()
+                let input = div()
+                    .debug_selector(move || widget_selector)
+                    .child(Input::new(&input.state).w_full().small());
+                if template_references.is_empty() {
+                    input.into_any_element()
+                } else {
+                    let widget_id = widget.id.clone();
+                    let template = match &widget.value {
+                        WidgetValue::Template(template) => template.clone(),
+                        _ => unreachable!("reference pickers are only built for template widgets"),
+                    };
+                    div()
+                        .flex()
+                        .flex_col()
+                        .gap_1()
+                        .child(input)
+                        .child(
+                            div().flex().flex_wrap().gap_1().children(
+                                template_references
+                                    .into_iter()
+                                    .map(|(scope, key, reference)| {
+                                        let selector = format!(
+                                            "reference-{}-{scope}-{key}",
+                                            widget_id.0.replace(['.', '_'], "-")
+                                        );
+                                        let mut next = template.clone();
+                                        next.0.push(TemplateSegment::Variable(reference));
+                                        let callback_id = widget_id.clone();
+                                        div().debug_selector(move || selector).child(
+                                            Button::new(SharedString::from(format!(
+                                                "reference-{}-{scope}-{key}",
+                                                callback_id.0
+                                            )))
+                                            .small()
+                                            .label(format!("{scope}: {key}"))
+                                            .on_click(cx.listener(move |this, _, _, cx| {
+                                                this.dispatch(
+                                                    LayoutMessage::CommitWidget {
+                                                        target,
+                                                        widget_id: callback_id.clone(),
+                                                        value: WidgetValue::Template(next.clone()),
+                                                    },
+                                                    cx,
+                                                );
+                                            })),
+                                        )
+                                    }),
+                            ),
+                        )
+                        .into_any_element()
+                }
             }
         };
         div()
@@ -415,6 +534,30 @@ impl NativeShell {
             .into_any_element()
     }
 
+    fn variable_references(
+        &self,
+        target: LayoutTarget,
+    ) -> Vec<(&'static str, String, VariableReference)> {
+        let mut references = variables_from_widgets(
+            self.editor.view_state().widgets(LayoutTarget::Project),
+            "project.variables",
+        )
+        .map(|key| ("project", key.clone(), VariableReference::Project(key)))
+        .collect::<Vec<_>>();
+        if let LayoutTarget::Folio(folio_id) = target {
+            references.extend(
+                variables_from_widgets(
+                    self.editor
+                        .view_state()
+                        .widgets(LayoutTarget::Folio(folio_id)),
+                    "folio.variables",
+                )
+                .map(|key| ("folio", key.clone(), VariableReference::Folio(key))),
+            );
+        }
+        references
+    }
+
     fn render_viewport(&self) -> AnyElement {
         let active = self.editor.view_state().active_folio_id;
         let label = active
@@ -427,17 +570,35 @@ impl NativeShell {
                     .map(|(_, label)| label.clone())
             })
             .unwrap_or_else(|| "No folio".into());
-        let title = active
-            .and_then(|folio_id| {
-                self.editor
-                    .view_state()
-                    .widgets(LayoutTarget::Folio(folio_id))
-                    .iter()
-                    .find(|widget| widget.id == WidgetId::new("folio.title"))
-                    .map(|widget| input_text(&widget.value))
-            })
+        let resolved =
+            active.and_then(|folio_id| self.editor.view_state().resolved_title_block(folio_id));
+        let title = resolved
+            .map(|display| display.title.text.clone())
             .filter(|title| !title.is_empty())
             .unwrap_or_else(|| "Untitled schematic".into());
+        let plant_location = resolved
+            .map(|display| {
+                [display.plant.text.as_str(), display.location.text.as_str()]
+                    .into_iter()
+                    .filter(|value| !value.is_empty())
+                    .collect::<Vec<_>>()
+                    .join(" / ")
+            })
+            .unwrap_or_default();
+        let page_revision = resolved
+            .map(|display| {
+                [
+                    (!display.page_number.text.is_empty())
+                        .then(|| format!("Page {}", display.page_number.text)),
+                    (!display.revision.text.is_empty())
+                        .then(|| format!("Rev {}", display.revision.text)),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>()
+                .join("  ")
+            })
+            .unwrap_or_default();
 
         div()
             .h_full()
@@ -499,8 +660,20 @@ impl NativeShell {
                                             .flex()
                                             .flex_col()
                                             .justify_between()
-                                            .child(title)
-                                            .child(label),
+                                            .child(
+                                                div()
+                                                    .debug_selector(|| {
+                                                        "viewport-resolved-title".into()
+                                                    })
+                                                    .child(title),
+                                            )
+                                            .child(
+                                                div()
+                                                    .flex()
+                                                    .justify_between()
+                                                    .child(label)
+                                                    .child(plant_location),
+                                            ),
                                     )
                                     .child(
                                         div()
@@ -509,7 +682,11 @@ impl NativeShell {
                                             .border_l_1()
                                             .border_color(rgb(0x707782))
                                             .text_xs()
-                                            .child("ATHENA ELECTRICAL"),
+                                            .flex()
+                                            .flex_col()
+                                            .justify_between()
+                                            .child("ATHENA ELECTRICAL")
+                                            .child(page_revision),
                                     ),
                             ),
                     ),
@@ -567,12 +744,14 @@ impl Render for NativeShell {
                             })),
                     )
                     .child(
-                        Button::new("save")
-                            .icon(IconName::File)
-                            .tooltip("Save project")
-                            .on_click(cx.listener(|this, _, window, cx| {
-                                this.request_save_dialog(window, cx)
-                            })),
+                        div().debug_selector(|| "save".into()).child(
+                            Button::new("save")
+                                .icon(IconName::File)
+                                .tooltip("Save project")
+                                .on_click(cx.listener(|this, _, window, cx| {
+                                    this.request_save_dialog(window, cx)
+                                })),
+                        ),
                     )
                     .child(
                         Button::new("undo")
@@ -708,10 +887,72 @@ fn template_source(value: &TemplateText) -> String {
         .collect()
 }
 
+fn variables_from_widgets<'a>(
+    widgets: &'a [Widget],
+    widget_id: &str,
+) -> impl Iterator<Item = String> + 'a {
+    widgets
+        .iter()
+        .find(|widget| widget.id.0 == widget_id)
+        .and_then(|widget| match &widget.value {
+            WidgetValue::Variables(values) => Some(values.keys().cloned().collect::<Vec<_>>()),
+            _ => None,
+        })
+        .unwrap_or_default()
+        .into_iter()
+}
+
+fn parse_template_text(raw: &str) -> TemplateText {
+    let mut segments = Vec::new();
+    let mut remaining = raw;
+    while let Some(start) = remaining.find('{') {
+        push_literal(&mut segments, &remaining[..start]);
+        let Some(relative_end) = remaining[start + 1..].find('}') else {
+            push_literal(&mut segments, &remaining[start..]);
+            remaining = "";
+            break;
+        };
+        let end = start + 1 + relative_end;
+        let token = &remaining[start + 1..end];
+        if let Some(reference) = parse_variable_reference(token) {
+            segments.push(TemplateSegment::Variable(reference));
+        } else {
+            push_literal(&mut segments, &remaining[start..=end]);
+        }
+        remaining = &remaining[end + 1..];
+    }
+    push_literal(&mut segments, remaining);
+    TemplateText(segments)
+}
+
+fn parse_variable_reference(token: &str) -> Option<VariableReference> {
+    let (scope, key) = token.split_once(':')?;
+    let key = key.trim();
+    if key.is_empty() {
+        return None;
+    }
+    match scope {
+        "project" => Some(VariableReference::Project(key.into())),
+        "folio" => Some(VariableReference::Folio(key.into())),
+        _ => None,
+    }
+}
+
+fn push_literal(segments: &mut Vec<TemplateSegment>, value: &str) {
+    if value.is_empty() {
+        return;
+    }
+    if let Some(TemplateSegment::Literal(previous)) = segments.last_mut() {
+        previous.push_str(value);
+    } else {
+        segments.push(TemplateSegment::Literal(value.into()));
+    }
+}
+
 fn committed_value(kind: InputValueKind, raw: &str) -> Option<WidgetValue> {
     match kind {
         InputValueKind::Text => Some(WidgetValue::Text(raw.into())),
-        InputValueKind::Template => Some(WidgetValue::Template(TemplateText::literal(raw))),
+        InputValueKind::Template => Some(WidgetValue::Template(parse_template_text(raw))),
         InputValueKind::VariableEdit => {
             let (key, value) = raw.split_once('=')?;
             let key = key.trim();
@@ -741,9 +982,16 @@ pub fn run_native_shell() {
 
 #[cfg(test)]
 mod tests {
-    use athena_application::WidgetValue;
+    use std::{cell::RefCell, rc::Rc};
 
-    use super::{InputValueKind, committed_value};
+    use athena_application::WidgetValue;
+    use athena_domain::{TemplateSegment, VariableReference};
+    use gpui::{
+        Action as _, AppContext as _, Keystroke, Modifiers, TestAppContext, VisualTestContext,
+    };
+    use gpui_component::input::Enter as InputEnter;
+
+    use super::{InputValueKind, NativeShell, committed_value};
 
     #[test]
     fn variable_input_maps_to_the_backend_owned_variable_callback_value() {
@@ -761,5 +1009,169 @@ mod tests {
                 value: None,
             })
         );
+    }
+
+    #[test]
+    fn template_input_parses_scoped_variable_references_into_typed_segments() {
+        assert_eq!(
+            committed_value(
+                InputValueKind::Template,
+                "Feed {project:plant} / {folio:area}",
+            ),
+            Some(WidgetValue::Template(athena_domain::TemplateText(vec![
+                TemplateSegment::Literal("Feed ".into()),
+                TemplateSegment::Variable(VariableReference::Project("plant".into())),
+                TemplateSegment::Literal(" / ".into()),
+                TemplateSegment::Variable(VariableReference::Folio("area".into())),
+            ])))
+        );
+    }
+
+    #[test]
+    fn template_input_keeps_unknown_or_unclosed_tokens_literal() {
+        assert_eq!(
+            committed_value(
+                InputValueKind::Template,
+                "{system:plant} / {project:} / {folio:area",
+            ),
+            Some(WidgetValue::Template(athena_domain::TemplateText(vec![
+                TemplateSegment::Literal("{system:plant} / {project:} / {folio:area".into(),),
+            ])))
+        );
+    }
+
+    fn redraw(cx: &mut VisualTestContext) {
+        cx.update(|window, cx| {
+            let _ = window.draw(cx);
+        });
+    }
+
+    fn click(cx: &mut VisualTestContext, selector: &'static str) {
+        redraw(cx);
+        let bounds = cx
+            .debug_bounds(selector)
+            .unwrap_or_else(|| panic!("missing rendered control: {selector}"));
+        cx.simulate_click(bounds.center(), Modifiers::none());
+    }
+
+    fn enter_text(cx: &mut VisualTestContext, selector: &'static str, value: &str) {
+        click(cx, selector);
+        cx.simulate_keystrokes("ctrl-a");
+        cx.simulate_input(value);
+        cx.dispatch_action(InputEnter { secondary: false });
+    }
+
+    fn enter_text_without_parking(cx: &mut VisualTestContext, selector: &'static str, value: &str) {
+        click(cx, selector);
+        for key in std::iter::once("ctrl-a").chain(value.split("")) {
+            let keystroke = Keystroke::parse(key).expect("valid test keystroke");
+            cx.update(|window, cx| window.dispatch_keystroke(keystroke, cx));
+        }
+        cx.update(|window, cx| {
+            window.dispatch_action(InputEnter { secondary: false }.boxed_clone(), cx)
+        });
+    }
+
+    #[gpui::test]
+    fn gpui_controls_drive_the_m005_workflow_through_ui_events(cx: &mut TestAppContext) {
+        cx.update(gpui_component::init);
+        let shell_slot = Rc::new(RefCell::new(None));
+        let captured_shell = shell_slot.clone();
+        let (_, cx) = cx.add_window_view(move |window, cx| {
+            let shell = cx.new(|cx| NativeShell::new(window, cx));
+            *captured_shell.borrow_mut() = Some(shell.clone());
+            gpui_component::Root::new(shell, window, cx)
+        });
+        let shell = shell_slot
+            .borrow_mut()
+            .take()
+            .expect("test window exposes its NativeShell");
+
+        click(cx, "add-folio");
+        let added = shell.read_with(cx, |shell, _| shell.editor.view_state().outline[1].0);
+        let folio_selector = Box::leak(format!("folio-{added:?}").into_boxed_str());
+        click(cx, folio_selector);
+        let move_selector = Box::leak(format!("move-up-{added:?}").into_boxed_str());
+        click(cx, move_selector);
+        enter_text(cx, "widget-folio-label", "Control");
+        let rename_state = shell.read_with(cx, |shell, cx| {
+            (
+                shell
+                    .editor
+                    .state_snapshot()
+                    .unwrap()
+                    .project
+                    .folio(added)
+                    .unwrap()
+                    .label
+                    .clone(),
+                shell.inputs[&format!("folio:{added:?}:folio.label")]
+                    .state
+                    .read(cx)
+                    .value()
+                    .to_string(),
+            )
+        });
+        assert_eq!(rename_state, ("Control".into(), "Control".into()));
+
+        click(cx, "project-properties");
+        enter_text(cx, "widget-project-variables", "plant=PLANT-A");
+        click(cx, folio_selector);
+        enter_text(cx, "widget-folio-variables", "area=MCC-01");
+        enter_text(cx, "widget-folio-title", "Feed ");
+        let variables = shell.read_with(cx, |shell, _| {
+            let snapshot = shell.editor.state_snapshot().unwrap();
+            (
+                snapshot.project.variables.get("plant").cloned(),
+                snapshot
+                    .project
+                    .folio(added)
+                    .unwrap()
+                    .variables
+                    .get("area")
+                    .cloned(),
+            )
+        });
+        assert_eq!(variables, (Some("PLANT-A".into()), Some("MCC-01".into())));
+        click(cx, "reference-folio-title-project-plant");
+        click(cx, "reference-folio-title-folio-area");
+
+        let state = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
+        assert_eq!(state.project.folio_order()[0], added);
+        assert_eq!(state.project.folio(added).unwrap().label, "Control");
+        assert_eq!(
+            shell.read_with(cx, |shell, _| {
+                shell
+                    .editor
+                    .view_state()
+                    .resolved_title_block(added)
+                    .unwrap()
+                    .title
+                    .text
+                    .clone()
+            }),
+            "Feed PLANT-AMCC-01"
+        );
+
+        click(cx, "save");
+        assert!(cx.did_prompt_for_new_path());
+        assert!(shell.read_with(cx, |shell, _| {
+            shell.editor.state_snapshot().unwrap().save_pending
+        }));
+        enter_text_without_parking(
+            cx,
+            "widget-folio-label",
+            "Control edited after save request",
+        );
+        let state = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
+        assert!(state.save_pending);
+        assert!(state.dirty);
+        assert_eq!(
+            state.project.folio(added).unwrap().label,
+            "Control edited after save request"
+        );
+
+        cx.simulate_new_path_selection(|_| None);
+        cx.run_until_parked();
     }
 }

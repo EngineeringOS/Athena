@@ -14,9 +14,11 @@ mod widget;
 
 pub use application::{AthenaEditor, EditorSnapshot};
 pub use dispatcher::AthenaDispatcher;
-pub use frontend_message::AthenaFrontendMessage;
+pub use frontend_message::{AthenaFrontendMessage, ResolvedTitleBlockDisplay};
 pub use layout::{LayoutTarget, PanelId, PanelState, WorkspaceLayout};
-pub use message::{AthenaMessage, DocumentMessage, LayoutMessage, PortfolioMessage, SaveOutcome};
+pub use message::{
+    AthenaMessage, DocumentMessage, LayoutMessage, OpenOutcome, PortfolioMessage, SaveOutcome,
+};
 pub use portfolio::SaveRequestId;
 pub use widget::{Widget, WidgetCallback, WidgetId, WidgetKind, WidgetValue};
 

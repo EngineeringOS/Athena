@@ -1,6 +1,6 @@
 use athena_application::{
-    AthenaEditor, AthenaFrontendMessage, AthenaMessage, DocumentMessage, PortfolioMessage,
-    SaveOutcome,
+    AthenaEditor, AthenaFrontendMessage, AthenaMessage, DocumentMessage, OpenOutcome,
+    PortfolioMessage, SaveOutcome,
 };
 use athena_domain::{FolioId, ProjectId};
 use athena_editor::DocumentRevision;
@@ -24,6 +24,7 @@ fn typed_messages_produce_ordered_effects_and_canonical_state() {
             AthenaFrontendMessage::OutlineChanged { .. },
             AthenaFrontendMessage::DirtyStateChanged { dirty: false },
             AthenaFrontendMessage::WorkspaceLayoutUpdated(_),
+            AthenaFrontendMessage::ResolvedTitleBlockUpdated { .. },
             AthenaFrontendMessage::PanelLayoutUpdated { .. },
         ] if *opened == project_id
     ));
@@ -184,6 +185,30 @@ fn dispatcher_accepts_only_root_message_families() {
     fn accepts_root(_: impl Into<AthenaMessage>) {}
     accepts_root(PortfolioMessage::RequestOpen);
     accepts_root(DocumentMessage::Undo);
+}
+
+#[test]
+fn native_open_cancellation_and_read_failure_return_typed_diagnostics() {
+    let mut editor = AthenaEditor::default();
+    assert!(matches!(
+        editor
+            .handle_message(PortfolioMessage::OpenResult {
+                outcome: OpenOutcome::Cancelled,
+            })
+            .as_slice(),
+        [AthenaFrontendMessage::Diagnostic { code, .. }] if code == "open-cancelled"
+    ));
+    assert!(matches!(
+        editor
+            .handle_message(PortfolioMessage::OpenResult {
+                outcome: OpenOutcome::Failed {
+                    message: "permission denied".into(),
+                },
+            })
+            .as_slice(),
+        [AthenaFrontendMessage::Diagnostic { code, message }]
+            if code == "open-failed" && message == "permission denied"
+    ));
 }
 
 #[test]
