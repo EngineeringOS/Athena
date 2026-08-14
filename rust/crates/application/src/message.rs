@@ -8,6 +8,7 @@ use crate::{LayoutTarget, PanelId, SaveRequestId, WidgetId, WidgetValue};
 
 /// Root protocol family routed by [`crate::AthenaDispatcher`].
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum AthenaMessage {
     Portfolio(PortfolioMessage),
     Document(DocumentMessage),
@@ -32,6 +33,7 @@ impl From<LayoutMessage> for AthenaMessage {
 
 /// Project lifetime and platform persistence messages.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum PortfolioMessage {
     CreateProject {
         project_id: ProjectId,
@@ -53,6 +55,7 @@ pub enum PortfolioMessage {
 
 /// Result reported by a desktop or browser persistence adapter.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum SaveOutcome {
     Success,
     Cancelled,
@@ -61,6 +64,7 @@ pub enum SaveOutcome {
 
 /// Typed document editing messages translated into deterministic commands.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum DocumentMessage {
     AddFolio {
         folio_id: FolioId,
@@ -109,6 +113,7 @@ pub enum DocumentMessage {
 
 /// Workspace, panel, and backend-owned widget messages.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum LayoutMessage {
     RequestWorkspace,
     RequestProjectPlate,

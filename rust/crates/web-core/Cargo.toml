@@ -8,12 +8,14 @@ license.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+athena-application = { path = "../application" }
 athena-domain = { path = "../domain" }
 athena-editor = { path = "../editor" }
-athena-format = { path = "../format" }
-athena-library = { path = "../library" }
-athena-geometry = { path = "../geometry" }
-athena-render = { path = "../render" }
 serde.workspace = true
 serde_json.workspace = true
 wasm-bindgen.workspace = true
+js-sys.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.77"

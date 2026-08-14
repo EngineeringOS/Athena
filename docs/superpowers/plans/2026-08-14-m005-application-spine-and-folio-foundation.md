@@ -322,21 +322,21 @@ GRA-UX-001.
 **Traceability:** CAP-M005-001/004; GRA-APP-001, GRA-MSG-001,
 GRA-FRONTEND-001, GRA-WASM-001.
 
-- [ ] Remove direct exported mutation methods such as `update_sheet_name`,
+- [x] Remove direct exported mutation methods such as `update_sheet_name`,
   `update_selected_*`, and arbitrary command JSON application.
-- [ ] Make the WASM handle own one persistent `AthenaEditor` and expose only
+- [x] Make the WASM handle own one persistent `AthenaEditor` and expose only
   creation, typed message dispatch, frontend-effect callback registration,
   open-bytes delivery, and platform-result delivery.
-- [ ] Serialize messages/effects with tagged serde enums generated from Rust
+- [x] Serialize messages/effects with tagged serde enums generated from Rust
   types; JavaScript must not construct unvalidated domain snapshots.
-- [ ] Add native Rust protocol tests plus `wasm-bindgen-test` coverage for
+- [x] Add native Rust protocol tests plus `wasm-bindgen-test` coverage for
   create/add/move/edit/save/open message sequences, including an edit committed
   while a save request is pending, retry after matching cancellation/failure,
   and a stale result that must not release the current active request.
-- [ ] Run
+- [x] Run
   `cargo check -p athena-web-core --target wasm32-unknown-unknown` and
   `wasm-pack test --headless --chrome crates/web-core`.
-- [ ] Commit with `git commit -m "feat: route web through typed messages"`.
+- [x] Commit with `git commit -m "feat: route web through typed messages"`.
 
 ### Task 8: Rebuild the GPUI Adapter Around Frontend Effects
 

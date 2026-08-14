@@ -21,6 +21,7 @@ impl WidgetId {
 
 /// Rendering control kind understood by native and browser adapters.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum WidgetKind {
     TextInput,
     Select { options: Vec<String> },
@@ -29,6 +30,7 @@ pub enum WidgetKind {
 
 /// Platform-neutral widget value.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum WidgetValue {
     Text(String),
     Choice(String),

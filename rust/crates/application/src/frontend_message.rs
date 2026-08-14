@@ -8,6 +8,7 @@ use crate::{LayoutTarget, SaveRequestId, Widget, WidgetId, WidgetValue, Workspac
 
 /// One ordered frontend or platform effect emitted by the dispatcher.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum AthenaFrontendMessage {
     ProjectOpened {
         project_id: ProjectId,

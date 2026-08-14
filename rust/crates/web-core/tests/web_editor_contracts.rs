@@ -1,180 +1,128 @@
+use athena_application::{AthenaFrontendMessage, DocumentMessage, PortfolioMessage, SaveOutcome};
+use athena_domain::{FolioId, ProjectId};
 use athena_web_core::WebEditorCore;
+use uuid::Uuid;
 
 #[test]
-fn project_scene_and_snapshot_round_trip_through_the_web_editor_contract() {
-    let mut editor = WebEditorCore::new("Browser project");
-    assert!(
-        editor
-            .render_active_sheet()
-            .expect("scene serializes")
-            .contains("layers")
+fn web_core_routes_create_add_move_edit_save_and_open_through_messages() {
+    let project_id = ProjectId::from_uuid(Uuid::from_u128(1));
+    let control = FolioId::from_uuid(Uuid::from_u128(2));
+    let io = FolioId::from_uuid(Uuid::from_u128(3));
+    let mut core = WebEditorCore::new();
+    core.dispatch_message(
+        PortfolioMessage::CreateProject {
+            project_id,
+            name: "Main Distribution".into(),
+        }
+        .into(),
+    );
+    core.dispatch_message(
+        DocumentMessage::AddFolio {
+            folio_id: control,
+            label: "Control".into(),
+        }
+        .into(),
+    );
+    core.dispatch_message(
+        DocumentMessage::AddFolio {
+            folio_id: io,
+            label: "I/O".into(),
+        }
+        .into(),
+    );
+    core.dispatch_message(
+        DocumentMessage::MoveFolio {
+            folio_id: io,
+            to: 1,
+        }
+        .into(),
+    );
+    core.dispatch_message(DocumentMessage::ActivateFolio { folio_id: control }.into());
+    core.dispatch_message(
+        DocumentMessage::SetProjectVariable {
+            key: "plant".into(),
+            value: Some("PLANT-A".into()),
+        }
+        .into(),
     );
 
-    let snapshot = editor.encode_snapshot().expect("project snapshot encodes");
-    editor.load_snapshot(&snapshot).expect("snapshot reloads");
+    let save = core.dispatch_message(PortfolioMessage::RequestSave.into());
+    let (request_id, revision, bytes) = save
+        .into_iter()
+        .find_map(|effect| match effect {
+            AthenaFrontendMessage::SaveRequested {
+                request_id,
+                revision,
+                bytes,
+                ..
+            } => Some((request_id, revision, bytes)),
+            _ => None,
+        })
+        .expect("save effect");
+    core.deliver_save_result(request_id, project_id, revision, SaveOutcome::Success);
 
-    assert!(
-        editor
-            .render_active_sheet()
-            .expect("scene serializes")
-            .contains("PageAndGrid")
-    );
-}
-
-#[test]
-fn placement_and_wire_commands_stay_inside_the_wasm_controller() {
-    let mut editor = WebEditorCore::new("Browser project");
-    editor
-        .begin_placement_by_name("Resistor")
-        .expect("resistor is available");
-    editor.pointer_click(100, 80).expect("first symbol places");
-    editor
-        .begin_placement_by_name("Resistor")
-        .expect("resistor is available");
-    editor.pointer_click(200, 80).expect("second symbol places");
-    editor.begin_wire();
-    editor
-        .pointer_click(120, 80)
-        .expect("wire start terminal selects");
-    editor
-        .pointer_click(180, 80)
-        .expect("wire end terminal completes the shared command");
-    assert!(
-        editor
-            .render_active_sheet()
-            .expect("scene serializes")
-            .contains("Polyline")
-    );
-}
-
-fn fixture_place_two_symbols_and_wire(editor: &mut WebEditorCore) {
-    editor
-        .begin_placement_by_name("Resistor")
-        .expect("resistor is available");
-    editor.pointer_click(100, 80).expect("first symbol places");
-    editor
-        .begin_placement_by_name("Resistor")
-        .expect("resistor is available");
-    editor
-        .pointer_click(220, 120)
-        .expect("second symbol places");
-    editor.begin_wire();
-    editor
-        .pointer_click(120, 80)
-        .expect("wire start terminal selects");
-    editor
-        .pointer_click(200, 120)
-        .expect("wire end terminal completes the shared command");
-}
-
-fn fixture_web_editor_with_selected_wire() -> WebEditorCore {
-    let mut editor = WebEditorCore::new("Browser project");
-    fixture_place_two_symbols_and_wire(&mut editor);
-    editor
-        .select_wire_for_test(0)
-        .expect("fixture wire selects");
-    editor
+    let before = core.state_snapshot().unwrap();
+    core.dispatch_message(PortfolioMessage::CloseProject.into());
+    core.deliver_open_bytes(bytes);
+    let reopened = core.state_snapshot().unwrap();
+    assert_eq!(reopened.project, before.project);
+    assert_eq!(reopened.active_folio_id, control);
+    assert!(!reopened.dirty);
 }
 
 #[test]
-fn web_controller_exposes_directional_marquee_and_property_editing() {
-    let mut editor = WebEditorCore::new("Browser project");
-    fixture_place_two_symbols_and_wire(&mut editor);
-
-    editor
-        .pointer_down(80, 60, false, false)
-        .expect("marquee starts");
-    editor
-        .pointer_move(260, 140, false, false)
-        .expect("marquee updates");
-    assert!(
-        editor
-            .render_active_sheet()
-            .expect("scene serializes")
-            .contains("MarqueeRect")
-    );
-    editor
-        .pointer_up(260, 140, false, false)
-        .expect("marquee completes");
-    assert_eq!(editor.selection_count(), 3);
-
-    editor
-        .select_symbol_for_test(0)
-        .expect("fixture symbol selects");
-    editor
-        .update_selected_symbol_reference("K1".to_owned())
-        .expect("reference updates through the shared session");
-    assert_eq!(editor.selected_symbol_reference(), Some("K1".to_owned()));
+fn json_protocol_is_tagged_and_rejects_untyped_snapshots() {
+    let mut core = WebEditorCore::new();
+    let message = serde_json::to_string(&athena_application::AthenaMessage::Portfolio(
+        PortfolioMessage::CreateProject {
+            project_id: ProjectId::from_uuid(Uuid::from_u128(10)),
+            name: "Browser".into(),
+        },
+    ))
+    .unwrap();
+    assert!(message.contains("\"type\":\"Portfolio\""));
+    let effects = core.dispatch_json(&message).unwrap();
+    assert!(effects.contains("ProjectOpened"));
+    assert!(core.dispatch_json(r#"{"project":{"name":"bad"}}"#).is_err());
 }
 
 #[test]
-fn web_controller_drags_a_wire_vertex_through_the_shared_pointer_contract() {
-    let mut editor = fixture_web_editor_with_selected_wire();
-
-    editor
-        .pointer_down(160, 80, false, false)
-        .expect("vertex drag starts");
-    editor
-        .pointer_move(160, 100, false, false)
-        .expect("vertex drag updates");
-    editor
-        .pointer_up(160, 100, false, false)
-        .expect("vertex drag commits");
-
-    assert!(
-        editor
-            .render_active_sheet()
-            .expect("scene serializes")
-            .contains("WireVertexHandle")
+fn stale_save_result_does_not_release_the_active_request() {
+    let project_id = ProjectId::from_uuid(Uuid::from_u128(20));
+    let mut core = WebEditorCore::new();
+    core.dispatch_message(
+        PortfolioMessage::CreateProject {
+            project_id,
+            name: "Browser".into(),
+        }
+        .into(),
     );
-}
-
-#[test]
-fn web_controller_exposes_shared_transform_delete_and_cancel_commands() {
-    let mut editor = WebEditorCore::new("Browser project");
-    editor
-        .begin_placement_by_name("Resistor")
-        .expect("resistor is available");
-    editor
-        .cancel_active_tool()
-        .expect("escape clears placement mode");
-    editor
-        .pointer_click(100, 80)
-        .expect("empty click remains a selection gesture");
-    assert!(
-        !editor
-            .render_active_sheet()
-            .expect("scene serializes")
-            .contains("SymbolBody")
+    core.dispatch_message(
+        DocumentMessage::RenameProject {
+            name: "Edited".into(),
+        }
+        .into(),
     );
-
-    fixture_place_two_symbols_and_wire(&mut editor);
-    editor.select_symbol_for_test(0).expect("symbol selects");
-    editor
-        .rotate_selection_90()
-        .expect("rotate reaches the shared session");
-    editor
-        .mirror_selection()
-        .expect("mirror reaches the shared session");
-    editor
-        .delete_selection()
-        .expect("delete reaches the shared session");
-    assert_eq!(editor.selection_count(), 0);
-}
-
-#[test]
-fn web_controller_exposes_selected_wire_vertex_insert_and_delete() {
-    let mut editor = fixture_web_editor_with_selected_wire();
-    editor
-        .insert_selected_wire_vertex(0, athena_domain::Point::new(140, 80))
-        .expect("selected wire segment accepts an interior vertex");
-    editor
-        .delete_selected_wire_vertex(1)
-        .expect("selected wire interior vertex deletes");
-    assert!(
-        editor
-            .render_active_sheet()
-            .expect("scene serializes")
-            .contains("WirePathHighlight")
+    let save = core.dispatch_message(PortfolioMessage::RequestSave.into());
+    let (request_id, revision) = save
+        .iter()
+        .find_map(|effect| match effect {
+            AthenaFrontendMessage::SaveRequested {
+                request_id,
+                revision,
+                ..
+            } => Some((*request_id, *revision)),
+            _ => None,
+        })
+        .unwrap();
+    core.deliver_save_result(
+        request_id,
+        project_id,
+        athena_editor::DocumentRevision(revision.0 + 1),
+        SaveOutcome::Success,
     );
+    assert!(core.state_snapshot().unwrap().save_pending);
+    core.deliver_save_result(request_id, project_id, revision, SaveOutcome::Cancelled);
+    assert!(!core.state_snapshot().unwrap().save_pending);
+    assert!(core.state_snapshot().unwrap().dirty);
 }
