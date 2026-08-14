@@ -261,31 +261,31 @@ document-priority behavior.
 
 **Traceability:** CAP-M006-005; Automated Contract Gate.
 
-- [ ] **Step 1: Write the failing cross-adapter fixture assertions**
+- [x] **Step 1: Write the failing cross-adapter fixture assertions**
 
   Replay one deterministic sequence containing request, activation, reorder,
   move, split, resize, abort, close/reopen, focus, and overlay transitions
   through `AthenaEditor`, `WebEditorCore`, and `DesktopEditor`. Assert identical
   serialized effects and final `WorkspaceShell` hashes.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
   Run `cargo test -p athena-web-core --test cross_platform_equivalence` and
   `cargo test -p athena-desktop --test desktop_authoring`.
   Expected: failures because adapters do not cache shell effects.
 
-- [ ] **Step 3: Add the canonical fixture and adapter caches**
+- [x] **Step 3: Add the canonical fixture and adapter caches**
 
   Export `canonical_m006_shell_messages()`. Add `shell: WorkspaceShell` to
   `DesktopViewState`, reduce every shell effect in order, and expose a read-only
   accessor. Keep WebEditorCore as a protocol pass-through with no DOM state.
 
-- [ ] **Step 4: Run equivalence tests**
+- [x] **Step 4: Run equivalence tests**
 
   Run all three focused test binaries. Expected: identical effect traces and
   final hashes across application, native adapter, and WASM adapter.
 
-- [ ] **Step 5: Commit the equivalence proof**
+- [x] **Step 5: Commit the equivalence proof**
 
   ```powershell
   git add rust/crates/application/src/shell_fixture.rs rust/crates/application/src/lib.rs rust/crates/application/tests/shell_fixture.rs rust/crates/web-core/tests/cross_platform_equivalence.rs rust/crates/desktop/src/app.rs rust/crates/desktop/tests/desktop_authoring.rs

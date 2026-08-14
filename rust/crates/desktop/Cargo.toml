@@ -15,4 +15,5 @@ windows-sys = { version = "0.61.2", features = ["Win32_Storage_FileSystem"] }
 
 [dev-dependencies]
 gpui = { workspace = true, features = ["test-support"] }
+serde_json.workspace = true
 uuid.workspace = true

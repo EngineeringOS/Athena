@@ -5,7 +5,7 @@
 
 use athena_application::{
     AthenaEditor, AthenaFrontendMessage, AthenaMessage, EditorSnapshot, PortfolioMessage,
-    SaveOutcome, SaveRequestId,
+    SaveOutcome, SaveRequestId, WorkspaceShell,
 };
 use athena_domain::ProjectId;
 use athena_editor::DocumentRevision;
@@ -65,6 +65,12 @@ impl WebEditorCore {
     #[must_use]
     pub fn state_snapshot(&self) -> Option<EditorSnapshot> {
         self.editor.state_snapshot()
+    }
+
+    /// Returns the shared Rust shell for protocol certification and diagnostics.
+    #[must_use]
+    pub fn shell_snapshot(&self) -> WorkspaceShell {
+        self.editor.shell_snapshot()
     }
 }
 

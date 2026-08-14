@@ -458,6 +458,7 @@ dependencies = [
  "athena-domain",
  "gpui",
  "gpui-component",
+ "serde_json",
  "uuid",
  "windows-sys 0.61.2",
 ]

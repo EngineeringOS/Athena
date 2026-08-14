@@ -8,7 +8,8 @@ use std::{collections::BTreeMap, path::PathBuf};
 
 use athena_application::{
     AthenaEditor, AthenaFrontendMessage, AthenaMessage, EditorSnapshot, LayoutTarget, OpenOutcome,
-    PortfolioMessage, ResolvedTitleBlockDisplay, SaveOutcome, Widget, WorkspaceLayout,
+    PortfolioMessage, ResolvedTitleBlockDisplay, SaveOutcome, ShellEffect, ShellNode, Widget,
+    WorkspaceShell,
 };
 use athena_domain::{FolioId, ProjectId};
 
@@ -25,8 +26,8 @@ pub struct DesktopViewState {
     pub active_folio_id: Option<FolioId>,
     /// Ordered project/folio outline supplied by the application.
     pub outline: Vec<(FolioId, String)>,
-    /// Backend-owned panel hierarchy and visibility state.
-    pub workspace: WorkspaceLayout,
+    /// Backend-owned recursive panel hierarchy and shell presentation state.
+    pub shell: WorkspaceShell,
     /// Whether the open document differs from its save checkpoint.
     pub dirty: bool,
     /// Last platform or application status suitable for the status bar.
@@ -91,6 +92,12 @@ impl DesktopEditor {
     #[must_use]
     pub fn state_snapshot(&self) -> Option<EditorSnapshot> {
         self.application.state_snapshot()
+    }
+
+    /// Returns the effect-derived shell cache without exposing mutable adapter state.
+    #[must_use]
+    pub const fn shell_snapshot(&self) -> &WorkspaceShell {
+        &self.view.shell
     }
 
     /// Completes the active native save dialog and reports its result through a typed message.
@@ -210,9 +217,9 @@ impl DesktopEditor {
                 self.view.status = Some(format!("Project open: {name}"));
             }
             AthenaFrontendMessage::ProjectClosed => {
-                let workspace = self.view.workspace.clone();
+                let shell = self.view.shell.clone();
                 self.view = DesktopViewState {
-                    workspace,
+                    shell,
                     status: Some("Project closed".into()),
                     ..DesktopViewState::default()
                 };
@@ -228,8 +235,21 @@ impl DesktopEditor {
                 self.view.project_name = Some(project_name.clone());
                 self.view.outline.clone_from(folios);
             }
-            AthenaFrontendMessage::WorkspaceLayoutUpdated(workspace) => {
-                self.view.workspace = workspace.clone();
+            AthenaFrontendMessage::Shell(ShellEffect::Replaced(shell)) => {
+                self.view.shell = shell.clone();
+            }
+            AthenaFrontendMessage::Shell(ShellEffect::ValuesChanged {
+                active_tabs,
+                shares,
+                focus,
+                overlay,
+            }) => {
+                reduce_shell_values(&mut self.view.shell.root, active_tabs, shares);
+                self.view.shell.focus = *focus;
+                self.view.shell.floating_layers.overlay = *overlay;
+            }
+            AthenaFrontendMessage::Shell(ShellEffect::DockPreview(target)) => {
+                self.view.shell.floating_layers.dock_preview = *target;
             }
             AthenaFrontendMessage::PanelLayoutUpdated { target, widgets } => {
                 self.view.plates.insert(*target, widgets.clone());
@@ -274,6 +294,32 @@ impl DesktopEditor {
             AthenaFrontendMessage::Error { message } => {
                 self.view.open_dialog_pending = false;
                 self.view.status = Some(format!("Error: {message}"));
+            }
+        }
+    }
+}
+
+// Value-only effects preserve the recursive topology, so adapters patch stable
+// node identities instead of creating a second layout state machine.
+fn reduce_shell_values(
+    node: &mut ShellNode,
+    active_tabs: &[(athena_application::GroupId, athena_application::TabId)],
+    shares: &[(athena_application::SplitId, Vec<u32>)],
+) {
+    match node {
+        ShellNode::PanelGroup(group) => {
+            if let Some((_, active_tab)) = active_tabs.iter().find(|(id, _)| *id == group.id) {
+                group.active_tab = *active_tab;
+            }
+        }
+        ShellNode::Split(split) => {
+            if let Some((_, values)) = shares.iter().find(|(id, _)| *id == split.id) {
+                for (child, share) in split.children.iter_mut().zip(values) {
+                    child.share = *share;
+                }
+            }
+            for child in &mut split.children {
+                reduce_shell_values(&mut child.node, active_tabs, shares);
             }
         }
     }

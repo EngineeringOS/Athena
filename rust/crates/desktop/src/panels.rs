@@ -7,8 +7,8 @@
 use std::collections::BTreeMap;
 
 use athena_application::{
-    DocumentMessage, LayoutMessage, LayoutTarget, PanelId, PortfolioMessage, Widget, WidgetId,
-    WidgetKind, WidgetValue,
+    DocumentMessage, LayoutMessage, LayoutTarget, PanelRole, PortfolioMessage, ShellMessage,
+    ShellNode, TabId, Widget, WidgetId, WidgetKind, WidgetValue, WorkspaceShell,
 };
 use athena_domain::{FolioId, ProjectId, TemplateSegment, TemplateText, VariableReference};
 use gpui::{
@@ -74,6 +74,21 @@ impl NativeShell {
     ) {
         self.editor.dispatch(message);
         cx.notify();
+    }
+
+    fn toggle_panel(&mut self, role: PanelRole, cx: &mut Context<Self>) {
+        let open_tab = tab_id_for_role(&self.editor.view_state().shell.root, role);
+        let stable_tab =
+            open_tab.or_else(|| tab_id_for_role(&WorkspaceShell::default().root, role));
+        let Some(tab_id) = stable_tab else {
+            return;
+        };
+        let message = if open_tab.is_some() {
+            ShellMessage::ClosePanel { tab_id }
+        } else {
+            ShellMessage::ReopenPanel { tab_id }
+        };
+        self.dispatch(message, cx);
     }
 
     fn control_key(target: LayoutTarget, widget_id: &WidgetId) -> String {
@@ -700,11 +715,27 @@ impl NativeShell {
     }
 }
 
+fn tab_id_for_role(node: &ShellNode, role: PanelRole) -> Option<TabId> {
+    match node {
+        ShellNode::PanelGroup(group) => group
+            .tabs
+            .iter()
+            .find(|tab| tab.role == role)
+            .map(|tab| tab.id),
+        ShellNode::Split(split) => split
+            .children
+            .iter()
+            .find_map(|child| tab_id_for_role(&child.node, role)),
+    }
+}
+
 impl Render for NativeShell {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.synchronize_inputs(window, cx);
         let view = self.editor.view_state();
-        let workspace = view.workspace.clone();
+        let shell = view.shell.clone();
+        let left_open = tab_id_for_role(&shell.root, PanelRole::Project).is_some();
+        let right_open = tab_id_for_role(&shell.root, PanelRole::SelectionProperties).is_some();
         let project_name = view.project_name.clone().unwrap_or_else(|| "Athena".into());
         let dirty_marker = if view.dirty { " *" } else { "" };
         let status = view.status.clone().unwrap_or_else(|| "Ready".into());
@@ -801,32 +832,18 @@ impl Render for NativeShell {
                         Button::new("left-panel")
                             .icon(IconName::PanelLeft)
                             .tooltip("Toggle project outline")
-                            .selected(workspace.left_panel.open)
+                            .selected(left_open)
                             .on_click(cx.listener(|this, _, _, cx| {
-                                let open = !this.editor.view_state().workspace.left_panel.open;
-                                this.dispatch(
-                                    LayoutMessage::SetPanelOpen {
-                                        panel_id: PanelId::ProjectOutline,
-                                        open,
-                                    },
-                                    cx,
-                                );
+                                this.toggle_panel(PanelRole::Project, cx);
                             })),
                     )
                     .child(
                         Button::new("right-panel")
                             .icon(IconName::PanelRight)
                             .tooltip("Toggle electrical properties")
-                            .selected(workspace.right_panel.open)
+                            .selected(right_open)
                             .on_click(cx.listener(|this, _, _, cx| {
-                                let open = !this.editor.view_state().workspace.right_panel.open;
-                                this.dispatch(
-                                    LayoutMessage::SetPanelOpen {
-                                        panel_id: PanelId::Properties,
-                                        open,
-                                    },
-                                    cx,
-                                );
+                                this.toggle_panel(PanelRole::SelectionProperties, cx);
                             })),
                     ),
             )
@@ -835,10 +852,10 @@ impl Render for NativeShell {
                     .flex_1()
                     .min_h(px(0.0))
                     .flex()
-                    .when(workspace.left_panel.open, |this| {
+                    .when(left_open, |this| {
                         this.child(
                             div()
-                                .w(px(f32::from(workspace.left_panel.size)))
+                                .w(px(240.0))
                                 .min_w(px(190.0))
                                 .child(self.render_outline(cx)),
                         )
@@ -849,10 +866,10 @@ impl Render for NativeShell {
                             .min_w(px(360.0))
                             .child(self.render_viewport()),
                     )
-                    .when(workspace.right_panel.open, |this| {
+                    .when(right_open, |this| {
                         this.child(
                             div()
-                                .w(px(f32::from(workspace.right_panel.size)))
+                                .w(px(300.0))
                                 .min_w(px(260.0))
                                 .child(self.render_properties(cx)),
                         )

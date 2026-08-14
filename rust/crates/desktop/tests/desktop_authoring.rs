@@ -1,7 +1,8 @@
 use std::fs;
 
 use athena_application::{
-    DocumentMessage, LayoutMessage, LayoutTarget, PanelId, PortfolioMessage, WidgetId, WidgetValue,
+    AthenaEditor, DocumentMessage, LayoutMessage, LayoutTarget, PanelRole, PortfolioMessage,
+    ShellNode, WidgetId, WidgetValue, WorkspaceShell, canonical_m006_shell_messages,
 };
 use athena_desktop::app::DesktopEditor;
 use athena_domain::{FolioId, ProjectId, TemplateSegment, TemplateText, VariableReference};
@@ -26,6 +27,26 @@ fn desktop_with_project() -> DesktopEditor {
     desktop
 }
 
+fn shell_hash(shell: &WorkspaceShell) -> u64 {
+    serde_json::to_vec(shell)
+        .expect("shell serializes")
+        .iter()
+        .fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+            (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
+        })
+}
+
+fn shell_roles(node: &ShellNode) -> Vec<PanelRole> {
+    match node {
+        ShellNode::PanelGroup(group) => group.tabs.iter().map(|tab| tab.role).collect(),
+        ShellNode::Split(split) => split
+            .children
+            .iter()
+            .flat_map(|child| shell_roles(&child.node))
+            .collect(),
+    }
+}
+
 #[test]
 fn typed_effects_build_the_desktop_workbench_without_duplicate_document_state() {
     let mut desktop = desktop_with_project();
@@ -41,16 +62,35 @@ fn typed_effects_build_the_desktop_workbench_without_duplicate_document_state() 
     assert_eq!(view.project_name.as_deref(), Some("Main Distribution"));
     assert_eq!(view.active_folio_id, Some(control));
     assert_eq!(view.outline.len(), 2);
-    assert_eq!(view.workspace.left_panel.id, PanelId::ProjectOutline);
-    assert_eq!(view.workspace.center_panel.id, PanelId::DocumentViewport);
-    assert_eq!(view.workspace.right_panel.id, PanelId::Properties);
-    assert!(view.workspace.left_panel.open);
-    assert!(view.workspace.right_panel.open);
+    assert_eq!(shell_roles(&view.shell.root).len(), 9);
+    assert!(shell_roles(&view.shell.root).contains(&PanelRole::Project));
+    assert!(shell_roles(&view.shell.root).contains(&PanelRole::FolioDocument));
+    assert!(shell_roles(&view.shell.root).contains(&PanelRole::SelectionProperties));
     assert!(
         view.widgets(LayoutTarget::Folio(control))
             .iter()
             .any(|widget| widget.id == WidgetId::new("folio.title"))
     );
+}
+
+#[test]
+fn desktop_shell_cache_matches_the_application_effect_trace_and_hash() {
+    let mut application = AthenaEditor::default();
+    let mut desktop = DesktopEditor::default();
+    let mut application_trace = Vec::new();
+    let mut desktop_trace = Vec::new();
+
+    for message in canonical_m006_shell_messages() {
+        application_trace.extend(application.handle_message(message.clone()));
+        desktop_trace.extend(desktop.dispatch(message));
+    }
+
+    assert_eq!(application_trace, desktop_trace);
+    assert_eq!(
+        shell_hash(&application.shell_snapshot()),
+        shell_hash(desktop.shell_snapshot())
+    );
+    assert_eq!(&application.shell_snapshot(), desktop.shell_snapshot());
 }
 
 #[test]

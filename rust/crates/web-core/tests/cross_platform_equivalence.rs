@@ -1,7 +1,8 @@
 //! Native/WASM protocol equivalence for the canonical M005 authoring workflow.
 
 use athena_application::{
-    AthenaEditor, AthenaFrontendMessage, PortfolioMessage, SaveOutcome, canonical_m005_messages,
+    AthenaEditor, AthenaFrontendMessage, PortfolioMessage, SaveOutcome, WorkspaceShell,
+    canonical_m005_messages, canonical_m006_shell_messages,
 };
 use athena_domain::{FolioId, ProjectId};
 use athena_web_core::WebEditorCore;
@@ -20,6 +21,10 @@ fn stable_hash(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
         (hash ^ u64::from(*byte)).wrapping_mul(0x0000_0100_0000_01b3)
     })
+}
+
+fn shell_hash(shell: &WorkspaceShell) -> u64 {
+    stable_hash(&serde_json::to_vec(shell).expect("shell serializes"))
 }
 
 fn save_identity(
@@ -102,4 +107,32 @@ fn native_and_web_protocols_produce_identical_state_hashes_and_effect_traces() {
     assert_eq!(stable_hash(&native_state), stable_hash(&web_state));
     assert_eq!(native_state, web_state);
     assert_eq!(native_trace, web_trace);
+}
+
+#[test]
+fn native_and_web_shell_protocols_produce_identical_hashes_and_effect_traces() {
+    let messages = canonical_m006_shell_messages();
+    let mut native = AthenaEditor::default();
+    let mut web = WebEditorCore::new();
+    let mut native_trace = Vec::new();
+    let mut web_trace = Vec::new();
+
+    for message in messages {
+        native_trace.extend(native.handle_message(message.clone()));
+        let message_json = serde_json::to_string(&message).expect("shell message serializes");
+        let effects = web
+            .dispatch_json(&message_json)
+            .expect("web shell dispatch succeeds");
+        web_trace.extend(
+            serde_json::from_str::<Vec<AthenaFrontendMessage>>(&effects)
+                .expect("web shell effects deserialize"),
+        );
+    }
+
+    assert_eq!(native_trace, web_trace);
+    assert_eq!(
+        shell_hash(&native.shell_snapshot()),
+        shell_hash(&web.shell_snapshot())
+    );
+    assert_eq!(native.shell_snapshot(), web.shell_snapshot());
 }

@@ -12,6 +12,7 @@ mod message;
 mod plate;
 mod portfolio;
 mod shell;
+mod shell_fixture;
 mod shell_model;
 mod widget;
 
@@ -25,6 +26,7 @@ pub use message::{
 };
 pub use plate::LayoutTarget;
 pub use portfolio::SaveRequestId;
+pub use shell_fixture::canonical_m006_shell_messages;
 pub use shell_model::{
     DockPlacement, DockTarget, FloatingLayersState, GroupId, MIN_PANEL_PX, PanelGroup, PanelRole,
     PanelTab, ShellFocus, ShellModelError, ShellNode, SplitAxis, SplitChild, SplitId, SplitNode,
