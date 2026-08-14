@@ -1,517 +1,733 @@
-//! GPUI workbench composition for the electrical schematic desktop shell.
+//! GPUI composition for Athena's Graphite-style electrical workbench.
 //!
-//! Rendering and controls here delegate all schematic behavior to `DesktopEditor`
-//! and its shared editor session.
+//! The shell renders the backend-owned workspace and widget plates. Native
+//! controls retain focus and dialog handles, but every document action is sent
+//! through [`athena_application::AthenaMessage`].
 
+use std::collections::BTreeMap;
+
+use athena_application::{
+    DocumentMessage, LayoutMessage, LayoutTarget, PanelId, PortfolioMessage, Widget, WidgetId,
+    WidgetKind, WidgetValue,
+};
+use athena_domain::{FolioId, ProjectId, TemplateSegment, TemplateText};
 use gpui::{
-    App, Application, Context, Entity, InteractiveElement, IntoElement, MouseButton,
-    MouseDownEvent, MouseMoveEvent, MouseUpEvent, Render, Subscription, Window, WindowOptions, div,
-    prelude::*, px, rgb,
+    AnyElement, App, Application, Context, Entity, IntoElement, PathPromptOptions, Render,
+    SharedString, Subscription, Window, WindowOptions, div, prelude::*, px, rgb,
 };
 use gpui_component::{
-    PixelsExt, Root, Sizable,
+    IconName, Root, Selectable, Sizable, StyledExt,
     button::Button,
     input::{Input, InputEvent, InputState},
     scroll::ScrollableElement,
 };
 
-use crate::{app::DesktopEditor, canvas::render_scene};
+use crate::app::DesktopEditor;
 
+#[derive(Clone, Copy)]
+enum InputValueKind {
+    Text,
+    Template,
+    VariableEdit,
+}
+
+struct WidgetInput {
+    state: Entity<InputState>,
+    _subscription: Subscription,
+}
+
+/// Native GPUI view over the effect-derived desktop adapter state.
 pub struct NativeShell {
     editor: DesktopEditor,
-    reference_input: Entity<InputState>,
-    description_input: Entity<InputState>,
-    wire_label_input: Entity<InputState>,
-    sheet_name_input: Entity<InputState>,
-    grid_spacing_input: Entity<InputState>,
-    grid_visible: bool,
-    canvas_gesture_active: bool,
-    synchronizing_inspector: bool,
-    _reference_subscription: Subscription,
-    _description_subscription: Subscription,
-    _wire_label_subscription: Subscription,
-    _sheet_name_subscription: Subscription,
-    _grid_spacing_subscription: Subscription,
+    properties_target: LayoutTarget,
+    inputs: BTreeMap<String, WidgetInput>,
 }
 
 impl NativeShell {
     fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let reference_input = cx.new(|cx| InputState::new(window, cx).placeholder("Reference"));
-        let reference_subscription = cx.subscribe(&reference_input, |this, input, event, cx| {
-            if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
-                let _ = this
-                    .editor
-                    .set_selected_symbol_reference(&input.read(cx).value());
-                cx.notify();
-            }
+        let mut editor = DesktopEditor::default();
+        editor.dispatch(PortfolioMessage::CreateProject {
+            project_id: ProjectId::new(),
+            name: "Untitled electrical project".into(),
         });
-        let description_input = cx.new(|cx| InputState::new(window, cx).placeholder("Description"));
-        let description_subscription =
-            cx.subscribe(&description_input, |this, input, event, cx| {
-                if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
-                    let _ = this
-                        .editor
-                        .set_selected_symbol_description(&input.read(cx).value());
-                    cx.notify();
-                }
-            });
-        let wire_label_input = cx.new(|cx| InputState::new(window, cx).placeholder("Wire label"));
-        let wire_label_subscription = cx.subscribe(&wire_label_input, |this, input, event, cx| {
-            if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
-                let _ = this.editor.set_selected_wire_label(&input.read(cx).value());
-                cx.notify();
-            }
-        });
-        let sheet_name_input = cx.new(|cx| InputState::new(window, cx).default_value("Sheet 1"));
-        let sheet_name_subscription = cx.subscribe(&sheet_name_input, |this, input, event, cx| {
-            if !this.synchronizing_inspector && matches!(event, InputEvent::Change) {
-                let (_, spacing) = this.editor.sheet_grid_for_test();
-                let _ = this.editor.set_sheet_properties(
-                    &input.read(cx).value(),
-                    this.grid_visible,
-                    spacing,
-                );
-                cx.notify();
-            }
-        });
-        let grid_spacing_input = cx.new(|cx| InputState::new(window, cx).default_value("10"));
-        let grid_spacing_subscription =
-            cx.subscribe(&grid_spacing_input, |this, input, event, cx| {
-                if !this.synchronizing_inspector
-                    && matches!(event, InputEvent::Change)
-                    && let Ok(spacing) = input.read(cx).value().parse::<i64>()
-                {
-                    let _ = this.editor.set_sheet_properties(
-                        &this.editor.sheet_name_for_test(),
-                        this.grid_visible,
-                        spacing,
+        editor.dispatch(LayoutMessage::RequestProjectPlate);
+        let properties_target = LayoutTarget::Folio(
+            editor
+                .view_state()
+                .active_folio_id
+                .expect("new projects always contain a folio"),
+        );
+        let mut shell = Self {
+            editor,
+            properties_target,
+            inputs: BTreeMap::new(),
+        };
+        shell.synchronize_inputs(window, cx);
+        shell
+    }
+
+    fn dispatch(
+        &mut self,
+        message: impl Into<athena_application::AthenaMessage>,
+        cx: &mut Context<Self>,
+    ) {
+        self.editor.dispatch(message);
+        cx.notify();
+    }
+
+    fn control_key(target: LayoutTarget, widget_id: &WidgetId) -> String {
+        match target {
+            LayoutTarget::Project => format!("project:{}", widget_id.0),
+            LayoutTarget::Folio(folio_id) => format!("folio:{folio_id:?}:{}", widget_id.0),
+        }
+    }
+
+    fn synchronize_inputs(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(active) = self.editor.view_state().active_folio_id
+            && matches!(self.properties_target, LayoutTarget::Folio(id) if id != active)
+        {
+            self.properties_target = LayoutTarget::Folio(active);
+        }
+        let mut plate_widgets = self
+            .editor
+            .view_state()
+            .widgets(LayoutTarget::Project)
+            .iter()
+            .cloned()
+            .map(|widget| (LayoutTarget::Project, widget))
+            .collect::<Vec<_>>();
+        if let Some(active) = self.editor.view_state().active_folio_id {
+            plate_widgets.extend(
+                self.editor
+                    .view_state()
+                    .widgets(LayoutTarget::Folio(active))
+                    .iter()
+                    .cloned()
+                    .map(|widget| (LayoutTarget::Folio(active), widget)),
+            );
+        }
+
+        for (target, widget) in plate_widgets {
+            let kind = match (&widget.kind, &widget.value) {
+                (WidgetKind::TextInput, WidgetValue::Text(_)) => Some(InputValueKind::Text),
+                (WidgetKind::TextInput, WidgetValue::Template(_)) => Some(InputValueKind::Template),
+                (WidgetKind::VariableTable, _) => Some(InputValueKind::VariableEdit),
+                _ => None,
+            };
+            let Some(kind) = kind else { continue };
+            let key = Self::control_key(target, &widget.id);
+            if let std::collections::btree_map::Entry::Vacant(entry) = self.inputs.entry(key) {
+                let initial = input_text(&widget.value);
+                let placeholder = match kind {
+                    InputValueKind::VariableEdit => "variable=value",
+                    _ => "Enter value",
+                };
+                let state = cx.new(|cx| {
+                    InputState::new(window, cx)
+                        .default_value(initial)
+                        .placeholder(placeholder)
+                });
+                let widget_id = widget.id.clone();
+                let subscription = cx.subscribe(&state, move |this, input, event, cx| {
+                    let commit = match kind {
+                        InputValueKind::VariableEdit => {
+                            matches!(event, InputEvent::PressEnter { .. })
+                        }
+                        _ => matches!(event, InputEvent::PressEnter { .. } | InputEvent::Blur),
+                    };
+                    if !commit {
+                        return;
+                    }
+                    let raw = input.read(cx).value().to_string();
+                    let Some(value) = committed_value(kind, &raw) else {
+                        return;
+                    };
+                    this.dispatch(
+                        LayoutMessage::CommitWidget {
+                            target,
+                            widget_id: widget_id.clone(),
+                            value,
+                        },
+                        cx,
                     );
-                    cx.notify();
+                });
+                entry.insert(WidgetInput {
+                    state,
+                    _subscription: subscription,
+                });
+            } else if !matches!(kind, InputValueKind::VariableEdit) {
+                let expected = input_text(&widget.value);
+                let input = &self.inputs[&Self::control_key(target, &widget.id)].state;
+                if input.read(cx).value().as_ref() != expected {
+                    input.update(cx, |input, cx| input.set_value(expected, window, cx));
                 }
-            });
-        Self {
-            editor: DesktopEditor::new("Untitled electrical project"),
-            reference_input,
-            description_input,
-            wire_label_input,
-            sheet_name_input,
-            grid_spacing_input,
-            grid_visible: true,
-            canvas_gesture_active: false,
-            synchronizing_inspector: false,
-            _reference_subscription: reference_subscription,
-            _description_subscription: description_subscription,
-            _wire_label_subscription: wire_label_subscription,
-            _sheet_name_subscription: sheet_name_subscription,
-            _grid_spacing_subscription: grid_spacing_subscription,
-        }
-    }
-
-    fn canvas_point(position: gpui::Point<gpui::Pixels>) -> athena_domain::Point {
-        // GPUI pointer positions are window-relative. The canvas host starts
-        // after the fixed 208px library and 40px toolbar; its 1px border and
-        // the renderer's 24px scene inset are the only local offsets.
-        const CANVAS_LEFT: f32 = 208.0 + 1.0 + 24.0;
-        const CANVAS_TOP: f32 = 40.0 + 36.0 + 1.0 + 24.0;
-        athena_domain::Point::new(
-            (position.x.as_f32() - CANVAS_LEFT).round() as i64,
-            (position.y.as_f32() - CANVAS_TOP).round() as i64,
-        )
-    }
-
-    fn modifiers(modifiers: gpui::Modifiers) -> crate::app::DesktopModifiers {
-        crate::app::DesktopModifiers {
-            shift: modifiers.shift,
-            command: modifiers.secondary(),
-        }
-    }
-
-    fn canvas_mouse_down(
-        &mut self,
-        event: &MouseDownEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let point = Self::canvas_point(event.position);
-        match self.editor.active_tool() {
-            crate::input::ActiveTool::Select | crate::input::ActiveTool::Pan => {
-                self.canvas_gesture_active = self
-                    .editor
-                    .pointer_down(point, Self::modifiers(event.modifiers))
-                    .is_ok();
-            }
-            crate::input::ActiveTool::PlaceSymbol(_) | crate::input::ActiveTool::Wire { .. } => {
-                let world = self.editor.canvas_point_to_world(point);
-                let _ = self.editor.canvas_click(world);
             }
         }
-        cx.notify();
     }
 
-    fn canvas_mouse_move(
-        &mut self,
-        event: &MouseMoveEvent,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if self.canvas_gesture_active && event.dragging() {
-            let _ = self.editor.pointer_move(
-                Self::canvas_point(event.position),
-                Self::modifiers(event.modifiers),
-            );
+    fn request_save_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.editor.dispatch(PortfolioMessage::RequestSave);
+        if !self.editor.view_state().save_dialog_pending() {
             cx.notify();
+            return;
         }
+        let directory = std::env::current_dir().unwrap_or_default();
+        let receiver = cx.prompt_for_new_path(&directory, Some("project.athena.json"));
+        let view = cx.entity();
+        cx.spawn_in(window, async move |_, window| {
+            let selected = receiver.await.ok().and_then(Result::ok).flatten();
+            window
+                .update(|_, cx| {
+                    view.update(cx, |this, cx| {
+                        let _ = this.editor.complete_save_dialog(selected);
+                        cx.notify();
+                    })
+                })
+                .ok()
+        })
+        .detach();
     }
 
-    fn canvas_mouse_up(
+    fn request_open_dialog(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.editor.dispatch(PortfolioMessage::RequestOpen);
+        let receiver = cx.prompt_for_paths(PathPromptOptions {
+            files: true,
+            directories: false,
+            multiple: false,
+            prompt: Some("Open Athena electrical project".into()),
+        });
+        let view = cx.entity();
+        cx.spawn_in(window, async move |_, window| {
+            let selected = receiver
+                .await
+                .ok()
+                .and_then(Result::ok)
+                .flatten()
+                .and_then(|paths| paths.into_iter().next());
+            window
+                .update(|_, cx| {
+                    view.update(cx, |this, cx| {
+                        let _ = this.editor.complete_open_dialog(selected);
+                        cx.notify();
+                    })
+                })
+                .ok()
+        })
+        .detach();
+    }
+
+    fn render_outline(&mut self, cx: &mut Context<Self>) -> AnyElement {
+        let active = self.editor.view_state().active_folio_id;
+        let outline = self.editor.view_state().outline.clone();
+        let project_name = self
+            .editor
+            .view_state()
+            .project_name
+            .clone()
+            .unwrap_or_else(|| "No project".into());
+        div()
+            .h_full()
+            .flex()
+            .flex_col()
+            .bg(rgb(0x171a1f))
+            .border_r_1()
+            .border_color(rgb(0x30343b))
+            .child(panel_heading("PROJECT"))
+            .child(
+                Button::new("project-properties")
+                    .w_full()
+                    .justify_start()
+                    .label(project_name)
+                    .selected(matches!(self.properties_target, LayoutTarget::Project))
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.properties_target = LayoutTarget::Project;
+                        this.dispatch(LayoutMessage::RequestProjectPlate, cx);
+                    })),
+            )
+            .child(
+                div()
+                    .px_2()
+                    .pt_3()
+                    .pb_1()
+                    .text_xs()
+                    .text_color(rgb(0x8f98a6))
+                    .child("FOLIOS"),
+            )
+            .child(
+                div()
+                    .flex_1()
+                    .overflow_y_scrollbar()
+                    .px_1()
+                    .children(outline.into_iter().map(|(folio_id, label)| {
+                        Button::new(("folio", folio_id.as_uuid().as_u128() as u64))
+                            .w_full()
+                            .justify_start()
+                            .label(label)
+                            .selected(active == Some(folio_id))
+                            .on_click(cx.listener(move |this, _, _, cx| {
+                                this.properties_target = LayoutTarget::Folio(folio_id);
+                                this.dispatch(DocumentMessage::ActivateFolio { folio_id }, cx);
+                            }))
+                    })),
+            )
+            .child(
+                div().p_2().child(
+                    Button::new("add-folio")
+                        .w_full()
+                        .icon(IconName::Plus)
+                        .label("Add folio")
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            let number = this.editor.view_state().outline.len() + 1;
+                            this.dispatch(
+                                DocumentMessage::AddFolio {
+                                    folio_id: FolioId::new(),
+                                    label: format!("Folio {number}"),
+                                },
+                                cx,
+                            );
+                        })),
+                ),
+            )
+            .into_any_element()
+    }
+
+    fn render_properties(&mut self, cx: &mut Context<Self>) -> AnyElement {
+        let widgets = self
+            .editor
+            .view_state()
+            .widgets(self.properties_target)
+            .to_vec();
+        let target_label = match self.properties_target {
+            LayoutTarget::Project => "PROJECT DEFAULTS",
+            LayoutTarget::Folio(_) => "FOLIO TITLE BLOCK",
+        };
+        div()
+            .h_full()
+            .flex()
+            .flex_col()
+            .bg(rgb(0x1d2026))
+            .border_l_1()
+            .border_color(rgb(0x30343b))
+            .child(panel_heading("ELECTRICAL PROPERTIES"))
+            .child(
+                div()
+                    .px_3()
+                    .py_2()
+                    .text_xs()
+                    .text_color(rgb(0x8f98a6))
+                    .child(target_label),
+            )
+            .child(
+                div()
+                    .flex_1()
+                    .overflow_y_scrollbar()
+                    .px_3()
+                    .pb_4()
+                    .children(
+                        widgets
+                            .into_iter()
+                            .map(|widget| self.render_widget(self.properties_target, widget, cx)),
+                    ),
+            )
+            .into_any_element()
+    }
+
+    fn render_widget(
         &mut self,
-        event: &MouseUpEvent,
-        _window: &mut Window,
+        target: LayoutTarget,
+        widget: Widget,
         cx: &mut Context<Self>,
-    ) {
-        if self.canvas_gesture_active {
-            let _ = self.editor.pointer_up(
-                Self::canvas_point(event.position),
-                Self::modifiers(event.modifiers),
-            );
-            self.canvas_gesture_active = false;
-        }
-        cx.notify();
+    ) -> AnyElement {
+        let control = match &widget.kind {
+            WidgetKind::Select { options } => {
+                let selected = match &widget.value {
+                    WidgetValue::Choice(value) => value.clone(),
+                    _ => String::new(),
+                };
+                div()
+                    .flex()
+                    .gap_1()
+                    .children(options.clone().into_iter().map(|option| {
+                        let value = option.clone();
+                        let widget_id = widget.id.clone();
+                        Button::new(SharedString::from(format!("{}-{option}", widget.id.0)))
+                            .small()
+                            .label(option.clone())
+                            .selected(option == selected)
+                            .on_click(cx.listener(move |this, _, _, cx| {
+                                this.dispatch(
+                                    LayoutMessage::CommitWidget {
+                                        target,
+                                        widget_id: widget_id.clone(),
+                                        value: WidgetValue::Choice(value.clone()),
+                                    },
+                                    cx,
+                                );
+                            }))
+                    }))
+                    .into_any_element()
+            }
+            WidgetKind::VariableTable => {
+                let rows = match &widget.value {
+                    WidgetValue::Variables(values) => values
+                        .iter()
+                        .map(|(key, value)| format!("{key} = {value}"))
+                        .collect::<Vec<_>>(),
+                    _ => Vec::new(),
+                };
+                let key = Self::control_key(target, &widget.id);
+                let input = self.inputs.get(&key).expect("input synchronized");
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap_1()
+                    .children(
+                        rows.into_iter()
+                            .map(|row| div().px_2().py_1().bg(rgb(0x252930)).text_xs().child(row)),
+                    )
+                    .child(Input::new(&input.state).small())
+                    .child(
+                        div()
+                            .text_xs()
+                            .text_color(rgb(0x7f8997))
+                            .child("Press Enter to set; empty value removes"),
+                    )
+                    .into_any_element()
+            }
+            WidgetKind::TextInput => {
+                let key = Self::control_key(target, &widget.id);
+                let input = self.inputs.get(&key).expect("input synchronized");
+                Input::new(&input.state).w_full().small().into_any_element()
+            }
+        };
+        div()
+            .pt_2()
+            .flex()
+            .flex_col()
+            .gap_1()
+            .child(
+                div()
+                    .text_xs()
+                    .text_color(rgb(0xb7bec8))
+                    .child(widget.label),
+            )
+            .child(control)
+            .into_any_element()
     }
 
-    fn synchronize_input(
-        input: &Entity<InputState>,
-        value: &str,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        if input.read(cx).value().as_ref() != value {
-            input.update(cx, |input, cx| {
-                input.set_value(value.to_owned(), window, cx)
-            });
-        }
-    }
+    fn render_viewport(&self) -> AnyElement {
+        let active = self.editor.view_state().active_folio_id;
+        let label = active
+            .and_then(|active| {
+                self.editor
+                    .view_state()
+                    .outline
+                    .iter()
+                    .find(|(id, _)| *id == active)
+                    .map(|(_, label)| label.clone())
+            })
+            .unwrap_or_else(|| "No folio".into());
+        let title = active
+            .and_then(|folio_id| {
+                self.editor
+                    .view_state()
+                    .widgets(LayoutTarget::Folio(folio_id))
+                    .iter()
+                    .find(|widget| widget.id == WidgetId::new("folio.title"))
+                    .map(|widget| input_text(&widget.value))
+            })
+            .filter(|title| !title.is_empty())
+            .unwrap_or_else(|| "Untitled schematic".into());
 
-    fn synchronize_inspector(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.synchronizing_inspector = true;
-        Self::synchronize_input(
-            &self.reference_input,
-            self.editor
-                .selected_symbol_reference_for_test()
-                .as_deref()
-                .unwrap_or_default(),
-            window,
-            cx,
-        );
-        Self::synchronize_input(
-            &self.description_input,
-            self.editor
-                .selected_symbol_description_for_test()
-                .as_deref()
-                .unwrap_or_default(),
-            window,
-            cx,
-        );
-        Self::synchronize_input(
-            &self.wire_label_input,
-            self.editor
-                .selected_wire_label_for_test()
-                .as_deref()
-                .unwrap_or_default(),
-            window,
-            cx,
-        );
-        Self::synchronize_input(
-            &self.sheet_name_input,
-            &self.editor.sheet_name_for_test(),
-            window,
-            cx,
-        );
-        let (_, spacing) = self.editor.sheet_grid_for_test();
-        Self::synchronize_input(&self.grid_spacing_input, &spacing.to_string(), window, cx);
-        self.synchronizing_inspector = false;
+        div()
+            .h_full()
+            .flex()
+            .flex_col()
+            .bg(rgb(0x111318))
+            .child(
+                div()
+                    .h(px(34.0))
+                    .flex()
+                    .items_center()
+                    .px_3()
+                    .bg(rgb(0x1b1e24))
+                    .border_b_1()
+                    .border_color(rgb(0x30343b))
+                    .text_sm()
+                    .child(label.clone()),
+            )
+            .child(
+                div()
+                    .flex_1()
+                    .min_h(px(0.0))
+                    .p_5()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(
+                        div()
+                            .w_full()
+                            .h_full()
+                            .max_w(px(980.0))
+                            .max_h(px(680.0))
+                            .min_w(px(420.0))
+                            .min_h(px(300.0))
+                            .flex()
+                            .flex_col()
+                            .bg(rgb(0xf7f8fa))
+                            .text_color(rgb(0x22262d))
+                            .border_1()
+                            .border_color(rgb(0x707782))
+                            .child(
+                                div()
+                                    .flex_1()
+                                    .p_5()
+                                    .text_xs()
+                                    .text_color(rgb(0x717985))
+                                    .child("Electrical schematic viewport"),
+                            )
+                            .child(
+                                div()
+                                    .h(px(76.0))
+                                    .flex()
+                                    .border_t_1()
+                                    .border_color(rgb(0x707782))
+                                    .child(
+                                        div()
+                                            .flex_1()
+                                            .p_3()
+                                            .flex()
+                                            .flex_col()
+                                            .justify_between()
+                                            .child(title)
+                                            .child(label),
+                                    )
+                                    .child(
+                                        div()
+                                            .w(px(150.0))
+                                            .p_3()
+                                            .border_l_1()
+                                            .border_color(rgb(0x707782))
+                                            .text_xs()
+                                            .child("ATHENA ELECTRICAL"),
+                                    ),
+                            ),
+                    ),
+            )
+            .into_any_element()
     }
 }
 
 impl Render for NativeShell {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        self.synchronize_inspector(window, cx);
-        let symbol_buttons = self
-            .editor
-            .catalog_symbols()
-            .into_iter()
-            .map(|symbol| {
-                let definition_id = symbol.definition_id;
-                Button::new(("place", definition_id.as_uuid().as_u128() as u64))
-                    .small()
-                    .label(symbol.name)
-                    .on_click(cx.listener(move |this, _, _, cx| {
-                        this.editor.begin_placement(definition_id);
-                        cx.notify();
-                    }))
-            })
-            .collect::<Vec<_>>();
-        let scene = self.editor.scene();
-        let status = format!(
-            "{}   |   symbols: {}   |   wires: {}   |   selected: {}   |   undo: {} redo: {}",
-            self.editor.project_name(),
-            self.editor.symbol_count(),
-            self.editor.wire_count(),
-            self.editor.selected_count(),
-            self.editor.history_lengths().0,
-            self.editor.history_lengths().1
-        );
-        let selected_reference = self.editor.selected_symbol_reference_for_test();
-        let inspector_summary = match selected_reference {
-            Some(reference) => format!("Selected symbol: {reference}"),
-            None => "Select a symbol to edit its reference".to_owned(),
-        };
-        let (grid_visible, _) = self.editor.sheet_grid_for_test();
-        self.grid_visible = grid_visible;
+        self.synchronize_inputs(window, cx);
+        let view = self.editor.view_state();
+        let workspace = view.workspace.clone();
+        let project_name = view.project_name.clone().unwrap_or_else(|| "Athena".into());
+        let dirty_marker = if view.dirty { " *" } else { "" };
+        let status = view.status.clone().unwrap_or_else(|| "Ready".into());
+        let outline_count = view.outline.len();
 
         div()
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(0xf1f5f9))
-            .text_color(rgb(0x0f172a))
+            .bg(rgb(0x111318))
+            .text_color(rgb(0xdfe3e8))
             .child(
                 div()
-                    .h(px(40.0))
+                    .h(px(38.0))
                     .flex()
                     .items_center()
-                    .gap_2()
-                    .px_3()
-                    .bg(rgb(0x0f172a))
-                    .text_color(rgb(0xf8fafc))
-                    .child("A  Athena Electrical")
-                    .child("Untitled electrical project")
-                    .child("Sheet 1  /  Main control")
+                    .gap_1()
+                    .px_2()
+                    .bg(rgb(0x20242a))
+                    .border_b_1()
+                    .border_color(rgb(0x353a43))
                     .child(
-                        Button::new("wire-tool")
-                            .small()
-                            .label("Wire")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.editor.begin_wiring();
-                                cx.notify();
-                            })),
+                        div()
+                            .px_2()
+                            .font_semibold()
+                            .text_color(rgb(0x5cc8b2))
+                            .child("ATHENA"),
                     )
                     .child(
-                        Button::new("undo")
-                            .small()
-                            .label("Undo")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let _ = this.editor.undo();
-                                cx.notify();
-                            })),
+                        div()
+                            .flex_1()
+                            .px_2()
+                            .text_sm()
+                            .child(format!("{project_name}{dirty_marker}")),
                     )
                     .child(
-                        Button::new("redo")
-                            .small()
-                            .label("Redo")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let _ = this.editor.redo();
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        Button::new("rotate")
-                            .small()
-                            .label("Rotate")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let _ = this.editor.rotate_selected(1);
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        Button::new("mirror")
-                            .small()
-                            .label("Mirror")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let _ = this.editor.mirror_selected();
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        Button::new("delete")
-                            .small()
-                            .label("Delete")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let _ = this.editor.delete_selected();
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        Button::new("zoom-in")
-                            .small()
-                            .label("+")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.editor.zoom(1.2);
-                                cx.notify();
-                            })),
-                    )
-                    .child(
-                        Button::new("zoom-out")
-                            .small()
-                            .label("-")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.editor.zoom(0.8);
-                                cx.notify();
+                        Button::new("open")
+                            .icon(IconName::FolderOpen)
+                            .tooltip("Open project")
+                            .on_click(cx.listener(|this, _, window, cx| {
+                                this.request_open_dialog(window, cx)
                             })),
                     )
                     .child(
                         Button::new("save")
-                            .small()
-                            .label("Save")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                let _ = this.editor.save_to_path("athena-project.json");
-                                cx.notify();
+                            .icon(IconName::File)
+                            .tooltip("Save project")
+                            .on_click(cx.listener(|this, _, window, cx| {
+                                this.request_save_dialog(window, cx)
                             })),
                     )
                     .child(
-                        Button::new("open")
-                            .small()
-                            .label("Open")
+                        Button::new("undo")
+                            .icon(IconName::Undo2)
+                            .tooltip("Undo")
                             .on_click(cx.listener(|this, _, _, cx| {
-                                let _ = this.editor.load_from_path("athena-project.json");
-                                cx.notify();
+                                this.dispatch(DocumentMessage::Undo, cx)
+                            })),
+                    )
+                    .child(
+                        Button::new("redo")
+                            .icon(IconName::Redo2)
+                            .tooltip("Redo")
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.dispatch(DocumentMessage::Redo, cx)
+                            })),
+                    )
+                    .child(
+                        Button::new("left-panel")
+                            .icon(IconName::PanelLeft)
+                            .tooltip("Toggle project outline")
+                            .selected(workspace.left_panel.open)
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                let open = !this.editor.view_state().workspace.left_panel.open;
+                                this.dispatch(
+                                    LayoutMessage::SetPanelOpen {
+                                        panel_id: PanelId::ProjectOutline,
+                                        open,
+                                    },
+                                    cx,
+                                );
+                            })),
+                    )
+                    .child(
+                        Button::new("right-panel")
+                            .icon(IconName::PanelRight)
+                            .tooltip("Toggle electrical properties")
+                            .selected(workspace.right_panel.open)
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                let open = !this.editor.view_state().workspace.right_panel.open;
+                                this.dispatch(
+                                    LayoutMessage::SetPanelOpen {
+                                        panel_id: PanelId::Properties,
+                                        open,
+                                    },
+                                    cx,
+                                );
                             })),
                     ),
-            )
-            .child(
-                div()
-                    .h(px(36.0))
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .px_3()
-                    .bg(rgb(0xf7f9fb))
-                    .border_b_1()
-                    .border_color(rgb(0xcbd5e1))
-                    .text_color(rgb(0x526277))
-                    .child("TOOLS")
-                    .child(Button::new("select-tool").small().label("Select").on_click(
-                        cx.listener(|this, _, _, cx| {
-                            this.editor.cancel_active_tool();
-                            cx.notify();
-                        }),
-                    ))
-                    .child(
-                        Button::new("place-tool")
-                            .small()
-                            .label("Place")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                if let Some(symbol) = this.editor.catalog_symbols().first() {
-                                    this.editor.begin_placement(symbol.definition_id);
-                                }
-                                cx.notify();
-                            })),
-                    )
-                    .child("EDIT")
-                    .child(Button::new("fit-page").small().label("Fit page").on_click(
-                        cx.listener(|this, _, _, cx| {
-                            this.editor.zoom(1.0);
-                            cx.notify();
-                        }),
-                    )),
             )
             .child(
                 div()
                     .flex_1()
                     .min_h(px(0.0))
                     .flex()
+                    .when(workspace.left_panel.open, |this| {
+                        this.child(
+                            div()
+                                .w(px(f32::from(workspace.left_panel.size)))
+                                .min_w(px(190.0))
+                                .child(self.render_outline(cx)),
+                        )
+                    })
                     .child(
                         div()
-                            .w(px(208.0))
-                            .h_full()
-                            .overflow_y_scrollbar()
-                            .p_3()
-                            .flex()
-                            .flex_col()
-                            .gap_2()
-                            .bg(rgb(0xffffff))
-                            .border_r_1()
-                            .border_color(rgb(0xcbd5e1))
-                            .child("CATALOG")
-                            .child("Symbols")
-                            .child("Search symbols")
-                            .children(symbol_buttons),
-                    )
-                    .child(
-                        div()
-                            .id("schematic-canvas")
                             .flex_1()
-                            .h_full()
                             .min_w(px(360.0))
-                            .bg(rgb(0xf8fafc))
-                            .border_1()
-                            .border_color(rgb(0xcbd5e1))
-                            .text_color(rgb(0x334155))
-                            .on_mouse_down(MouseButton::Left, cx.listener(Self::canvas_mouse_down))
-                            .on_mouse_move(cx.listener(Self::canvas_mouse_move))
-                            .on_mouse_up(MouseButton::Left, cx.listener(Self::canvas_mouse_up))
-                            .on_mouse_up_out(MouseButton::Left, cx.listener(Self::canvas_mouse_up))
-                            .child(render_scene(scene)),
+                            .child(self.render_viewport()),
                     )
-                    .child(
-                        div()
-                            .w(px(224.0))
-                            .h_full()
-                            .p_3()
-                            .flex()
-                            .flex_col()
-                            .gap_2()
-                            .bg(rgb(0xffffff))
-                            .border_l_1()
-                            .border_color(rgb(0xcbd5e1))
-                            .child("PROPERTIES")
-                            .child("Inspector")
-                            .child("Electrical properties")
-                            .child(inspector_summary)
-                            .child("Reference")
-                            .child(Input::new(&self.reference_input).w_full().small())
-                            .child("Description")
-                            .child(Input::new(&self.description_input).w_full().small())
-                            .child("Wire label")
-                            .child(Input::new(&self.wire_label_input).w_full().small())
-                            .child("Sheet")
-                            .child(Input::new(&self.sheet_name_input).w_full().small())
-                            .child("Grid spacing")
-                            .child(Input::new(&self.grid_spacing_input).w_full().small())
-                            .child(
-                                Button::new("toggle-grid")
-                                    .small()
-                                    .label(if grid_visible {
-                                        "Hide grid"
-                                    } else {
-                                        "Show grid"
-                                    })
-                                    .on_click(cx.listener(|this, _, _, cx| {
-                                        let (_, spacing) = this.editor.sheet_grid_for_test();
-                                        this.grid_visible = !this.grid_visible;
-                                        let _ = this.editor.set_sheet_properties(
-                                            &this.editor.sheet_name_for_test(),
-                                            this.grid_visible,
-                                            spacing,
-                                        );
-                                        cx.notify();
-                                    })),
-                            ),
-                    ),
+                    .when(workspace.right_panel.open, |this| {
+                        this.child(
+                            div()
+                                .w(px(f32::from(workspace.right_panel.size)))
+                                .min_w(px(260.0))
+                                .child(self.render_properties(cx)),
+                        )
+                    }),
             )
             .child(
                 div()
-                    .h(px(28.0))
-                    .px_3()
+                    .h(px(24.0))
                     .flex()
                     .items_center()
-                    .bg(rgb(0xe2e8f0))
-                    .text_sm()
-                    .child(status),
+                    .justify_between()
+                    .px_3()
+                    .bg(rgb(0x20242a))
+                    .border_t_1()
+                    .border_color(rgb(0x353a43))
+                    .text_xs()
+                    .text_color(rgb(0xaeb5bf))
+                    .child(status)
+                    .child(format!("{outline_count} folios  |  Local project")),
             )
     }
 }
 
+fn panel_heading(label: &'static str) -> AnyElement {
+    div()
+        .h(px(32.0))
+        .flex()
+        .items_center()
+        .px_3()
+        .bg(rgb(0x20242a))
+        .border_b_1()
+        .border_color(rgb(0x30343b))
+        .text_xs()
+        .font_semibold()
+        .child(label)
+        .into_any_element()
+}
+
+fn input_text(value: &WidgetValue) -> String {
+    match value {
+        WidgetValue::Text(value) | WidgetValue::Choice(value) => value.clone(),
+        WidgetValue::Template(value) => template_source(value),
+        WidgetValue::Variables(_) | WidgetValue::VariableEdit { .. } => String::new(),
+    }
+}
+
+fn template_source(value: &TemplateText) -> String {
+    value
+        .0
+        .iter()
+        .map(|segment| match segment {
+            TemplateSegment::Literal(value) => value.clone(),
+            TemplateSegment::Variable(athena_domain::VariableReference::Project(key)) => {
+                format!("{{project:{key}}}")
+            }
+            TemplateSegment::Variable(athena_domain::VariableReference::Folio(key)) => {
+                format!("{{folio:{key}}}")
+            }
+        })
+        .collect()
+}
+
+fn committed_value(kind: InputValueKind, raw: &str) -> Option<WidgetValue> {
+    match kind {
+        InputValueKind::Text => Some(WidgetValue::Text(raw.into())),
+        InputValueKind::Template => Some(WidgetValue::Template(TemplateText::literal(raw))),
+        InputValueKind::VariableEdit => {
+            let (key, value) = raw.split_once('=')?;
+            let key = key.trim();
+            if key.is_empty() {
+                return None;
+            }
+            let value = value.trim();
+            Some(WidgetValue::VariableEdit {
+                key: key.into(),
+                value: (!value.is_empty()).then(|| value.into()),
+            })
+        }
+    }
+}
+
+/// Starts the desktop application and installs gpui-component services.
 pub fn run_native_shell() {
     Application::new().run(|cx: &mut App| {
         gpui_component::init(cx);
@@ -521,4 +737,29 @@ pub fn run_native_shell() {
         });
         cx.activate(true);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use athena_application::WidgetValue;
+
+    use super::{InputValueKind, committed_value};
+
+    #[test]
+    fn variable_input_maps_to_the_backend_owned_variable_callback_value() {
+        assert_eq!(
+            committed_value(InputValueKind::VariableEdit, "plant = PLANT-A"),
+            Some(WidgetValue::VariableEdit {
+                key: "plant".into(),
+                value: Some("PLANT-A".into()),
+            })
+        );
+        assert_eq!(
+            committed_value(InputValueKind::VariableEdit, "plant="),
+            Some(WidgetValue::VariableEdit {
+                key: "plant".into(),
+                value: None,
+            })
+        );
+    }
 }

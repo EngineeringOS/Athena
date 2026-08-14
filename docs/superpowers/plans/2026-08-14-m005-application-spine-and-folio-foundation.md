@@ -352,21 +352,21 @@ GRA-FRONTEND-001, GRA-WASM-001.
 GRA-FRONTEND-001, GRA-LAYOUT-001, GRA-PANEL-001, GRA-PROPS-001,
 GRA-PLATFORM-001, GRA-UX-001.
 
-- [ ] Make the desktop state own `AthenaEditor` plus adapter-only GPUI view
+- [x] Make the desktop state own `AthenaEditor` plus adapter-only GPUI view
   state. All user actions dispatch messages and then reduce returned effects.
-- [ ] Render the Graphite-evidenced shell hierarchy: compact application/title
+- [x] Render the Graphite-evidenced shell hierarchy: compact application/title
   controls, document viewport, project outline panel, contextual electrical
   properties panel, and status feedback. Use `gpui-component` controls and
   icons where available.
-- [ ] Render fields from Rust layout/widget data; widget commits dispatch stable
+- [x] Render fields from Rust layout/widget data; widget commits dispatch stable
   callback messages. Do not hard-code a second title-block form model.
-- [ ] Implement adapter-owned open/save dialogs and atomic file replacement,
+- [x] Implement adapter-owned open/save dialogs and atomic file replacement,
   then report success/failure back as typed messages.
-- [ ] Add a GPUI integration harness that runs the required M005 workflow
+- [x] Add a GPUI integration harness that runs the required M005 workflow
   without calling domain/editor methods directly.
-- [ ] Run `cargo test -p athena-desktop` and `cargo run -p athena-desktop` for
+- [x] Run `cargo test -p athena-desktop` and `cargo run -p athena-desktop` for
   interactive verification.
-- [ ] Commit with `git commit -m "feat: adapt gpui shell to application effects"`.
+- [x] Commit with `git commit -m "feat: adapt gpui shell to application effects"`.
 
 ### Task 9: Reduce the Browser to a Thin WASM Shell
 

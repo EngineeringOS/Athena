@@ -444,15 +444,12 @@ dependencies = [
 name = "athena-desktop"
 version = "0.1.0"
 dependencies = [
+ "athena-application",
  "athena-domain",
- "athena-editor",
- "athena-format",
- "athena-geometry",
- "athena-library",
- "athena-render",
  "gpui",
  "gpui-component",
  "uuid",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
