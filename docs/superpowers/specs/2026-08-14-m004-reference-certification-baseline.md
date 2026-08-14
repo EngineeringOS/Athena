@@ -17,11 +17,14 @@ because it was implemented before a complete reference-to-Athena mapping.
 
 ### CAP-M004-001: Evidence Registry
 
-Every future requirement has a stable QET or GRA ID, a primary-source path and
-line, an observable outcome, an Athena owner, and a certification status.
+Every future requirement has a stable milestone requirement ID, an observable
+outcome, an Athena owner, and a status. It maps to one or more QET/GRA IDs with
+primary-source path/line evidence, or is explicitly labeled an Athena
+`PROPOSED` design constraint cited to `AGENTS.md` and requiring user approval.
 
-Success: no code/task/claim can enter a milestone without at least one source
-ID and a listed verification method.
+Success: no code/task/claim can enter a milestone without an evidence/design
+mapping and a listed verification method; proposed design may not masquerade as
+reference behavior.
 
 ### CAP-M004-002: QElectroTech Electrical Behavior Inventory
 

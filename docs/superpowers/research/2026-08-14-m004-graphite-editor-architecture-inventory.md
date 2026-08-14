@@ -1,0 +1,118 @@
+# M004 Graphite Editor Architecture Evidence Inventory
+
+**Status:** source-evidenced architecture baseline, not Athena implementation certification.
+
+**Primary source:** local `reference/Graphite` checkout at commit
+`461ddbc8726c587a8abc536cab301b0b2206a54c`.
+
+This report records what Graphite's source actually establishes about its
+editor architecture. It does not authorize copying Graphite source, product
+features, file formats, Svelte implementation, or CEF desktop wrapper. Athena
+may reproduce the proven boundaries and interaction patterns in its own Rust,
+GPUI, and WASM modules.
+
+## Confirmed
+
+| ID | Confirmed Graphite contract | Local primary-source evidence | Athena transfer constraint |
+| --- | --- | --- | --- |
+| `GRA-APP-001` | The top-level `Editor` is a small application boundary that owns one `Dispatcher`. Construction injects environment, resource storage, application I/O, and a wake callback. `handle_message` submits a typed message and returns the accumulated `FrontendMessage` effects. | `reference/Graphite/editor/src/application.rs:8-30`; `reference/Graphite/editor/src/application.rs:49-57`; `reference/Graphite/editor/src/application.rs:76-108` | Reproduce the narrow application facade and dependency injection boundary. Do not expose arbitrary document mutation methods through platform shells. |
+| `GRA-DISPATCH-001` | `Dispatcher` owns nested message queues, frontend responses, deferred frontend-update messages, and the complete set of specialized handlers. Child messages are processed through deeper queues, while repeated side-effect-free or frame-update work is coalesced. | `reference/Graphite/editor/src/dispatcher.rs:12-41`; `reference/Graphite/editor/src/dispatcher.rs:59-82`; `reference/Graphite/editor/src/dispatcher.rs:105-167`; `reference/Graphite/editor/src/dispatcher.rs:172-180`; `reference/Graphite/editor/src/dispatcher.rs:347-350` | Athena needs one deterministic routing spine with explicit handler ownership and ordering semantics before further shell work. Graphite's exact handler set is not the required set. |
+| `GRA-MSG-001` | The root `Message` is a typed hierarchy containing application, input, layout, portfolio, tool, viewport, frontend, and other child message families. The dispatcher routes by variant and supplies handler-specific context instead of letting frontend code directly mutate editor internals. | `reference/Graphite/editor/src/messages/message.rs:4-54`; `reference/Graphite/editor/src/dispatcher.rs:175-240`; `reference/Graphite/editor/src/dispatcher.rs:249-264`; `reference/Graphite/editor/src/dispatcher.rs:316-340` | Reproduce typed intent/effect routing. Athena message families must be electrical-editor-specific and may be fewer or differently named. |
+| `GRA-FRONTEND-001` | `FrontendMessage` is the typed effect boundary from editor to platform UI/services. The dispatcher collects these variants rather than processing them as editor mutations. Workspace layout, widget-layout diffs, viewport bounds, overlays, files, dialogs, persistence, and window actions cross this boundary. | `reference/Graphite/editor/src/messages/frontend/frontend_message.rs:23-45`; `reference/Graphite/editor/src/messages/frontend/frontend_message.rs:208-215`; `reference/Graphite/editor/src/messages/frontend/frontend_message.rs:322-350`; `reference/Graphite/editor/src/dispatcher.rs:215-217`; `reference/Graphite/editor/src/application.rs:49-53` | Define Athena frontend effects separately from domain commands. Browser and desktop adapters consume the same semantic effects but may render them differently. |
+| `GRA-LAYOUT-001` | Backend-generated widget layouts are first-class state. `LayoutMessage` supports send, destroy, resend, update, commit, and drag/drop callbacks by stable target and widget ID. `LayoutMessageHandler` stores layouts by target, replaces IDs deterministically, computes structural widget diffs, skips empty diffs, decorates shortcuts, and emits `FrontendMessage::UpdateLayout`. | `reference/Graphite/editor/src/messages/layout/layout_message.rs:4-32`; `reference/Graphite/editor/src/messages/layout/layout_message_handler.rs:15-79`; `reference/Graphite/editor/src/messages/layout/layout_message_handler.rs:469-518`; `reference/Graphite/editor/src/messages/frontend/frontend_message.rs:212-215` | Reproduce backend-owned contextual panel/tool content and stable diff/callback identity where it lowers duplicated UI state. Do not assume Graphite's generic widget schema is directly reusable. |
+| `GRA-PANEL-001` | Workspace docking is backend-owned model state, not CSS-only visibility. `PanelType` identifies panel roles. A recursive alternating row/column tree holds tabbed panel groups, active tab indices, weighted split children, saved restoration positions, and focus-document mode. The frontend recursively renders this tree and reports resizing, tab moves, group moves, and edge splits back through editor commands. | `reference/Graphite/editor/src/messages/portfolio/utility_types.rs:4-17`; `reference/Graphite/editor/src/messages/portfolio/utility_types.rs:38-100`; `reference/Graphite/editor/src/messages/portfolio/utility_types.rs:102-133`; `reference/Graphite/editor/src/messages/portfolio/utility_types.rs:135-179`; `reference/Graphite/frontend/src/components/window/MainWindow.svelte:22-29`; `reference/Graphite/frontend/src/components/window/PanelSubdivision.svelte:32-40`; `reference/Graphite/frontend/src/components/window/PanelSubdivision.svelte:54-89`; `reference/Graphite/frontend/src/components/window/PanelSubdivision.svelte:134-184` | Mirror recursive docking, tabs, resize persistence, lifecycle, and focus mode. Athena panel types and default arrangement must serve schematic work; Graphite's `Data`, `Layers`, and `Properties` names are not automatically the final electrical plate taxonomy. |
+| `GRA-PORTFOLIO-001` | `PortfolioMessageHandler` owns loaded documents, unloaded metadata, document ordering, active document identity, persistent state, shared fonts/executor, workspace panel layout, and working-copy root. Portfolio messages own document lifetime, persistence loading, autosave, selection, and panel operations. Only the active document receives ordinary `DocumentMessage` processing. | `reference/Graphite/editor/src/messages/portfolio/portfolio_message_handler.rs:47-71`; `reference/Graphite/editor/src/messages/portfolio/portfolio_message_handler.rs:73-107`; `reference/Graphite/editor/src/messages/portfolio/portfolio_message.rs:10-43`; `reference/Graphite/editor/src/messages/portfolio/portfolio_message.rs:45-69`; `reference/Graphite/editor/src/messages/portfolio/portfolio_message.rs:77-105` | Reproduce a platform-independent project/document portfolio owner. Athena must adapt this to electrical projects and sheets rather than equating a Graphite document with a QElectroTech project. |
+| `GRA-DOC-001` | Each document owns its child navigation, graph, overlay, properties, and data handlers plus persisted document data and document-scoped presentation state. PTZ, render mode, overlay visibility, rulers, snapping, and panel-collapse choices are explicitly document-owned. | `reference/Graphite/editor/src/messages/portfolio/document/document_message_handler.rs:73-88`; `reference/Graphite/editor/src/messages/portfolio/document/document_message_handler.rs:89-120`; `reference/Graphite/editor/src/messages/portfolio/document/document_message_handler.rs:130-136` | Preserve the separation between persisted electrical state and document-scoped editing/presentation state, but independently decide which Athena view settings are persisted. |
+| `GRA-TOOL-001` | `ToolMessageHandler` owns active tool selection and tool lifetime. Switching tools aborts old/new FSM activity, updates hints/cursor/options/shelf, cancels incompatible transforms, changes event subscriptions, and installs overlay providers. Individual tools expose state-dependent action sets and explicit FSM states/transitions. The artboard tool demonstrates `Ready`, `Drawing`, `ResizingBounds`, and `Dragging`, beginning a transaction when pointer-down selects a transition. | `reference/Graphite/editor/src/messages/tool/tool_message_handler.rs:98-180`; `reference/Graphite/editor/src/messages/tool/utility_types.rs:155-205`; `reference/Graphite/editor/src/messages/tool/tool_messages/artboard_tool.rs:16-38`; `reference/Graphite/editor/src/messages/tool/tool_messages/artboard_tool.rs:52-72`; `reference/Graphite/editor/src/messages/tool/tool_messages/artboard_tool.rs:81-102`; `reference/Graphite/editor/src/messages/tool/tool_messages/artboard_tool.rs:230-240`; `reference/Graphite/editor/src/messages/tool/tool_messages/artboard_tool.rs:295-315` | Athena tools should be explicit electrical interaction FSMs with activation/deactivation, abort, hints, overlays, and transaction boundaries. Do not copy Graphite drawing-tool states blindly; derive states from evidenced schematic workflows. |
+| `GRA-INPUT-001` | Raw platform events first become typed `InputPreprocessorMessage`s. The preprocessor owns normalized keyboard, mouse, time, and frame-time state, transforms editor coordinates through the viewport, reconstructs button transitions, and emits normalized mapper messages. The mapping layer matches current input and advertised actions to a semantic `Message`, including platform accelerator handling. | `reference/Graphite/editor/src/messages/input_preprocessor/input_preprocessor_message.rs:5-17`; `reference/Graphite/editor/src/messages/input_preprocessor/input_preprocessor_message_handler.rs:8-24`; `reference/Graphite/editor/src/messages/input_preprocessor/input_preprocessor_message_handler.rs:26-108`; `reference/Graphite/editor/src/messages/input_preprocessor/input_preprocessor_message_handler.rs:112-125`; `reference/Graphite/editor/src/messages/input_mapper/input_mapper_message_handler.rs:8-27`; `reference/Graphite/editor/src/messages/input_mapper/input_mapper_message_handler.rs:31-52` | Desktop and web should translate native events into the same normalized input contract before tool routing. Platform adapters must not maintain separate tool state machines. |
+| `GRA-VIEWPORT-001` | Window viewport bounds and device scale are owned by `ViewportMessageHandler`; logical/physical conversion is centralized there. Document canvas pan/tilt/zoom is separate document state (`PTZ`) operated by `NavigationMessageHandler`, which emits transform and redraw/update messages. | `reference/Graphite/editor/src/messages/viewport/viewport_message.rs:3-8`; `reference/Graphite/editor/src/messages/viewport/viewport_message_handler.rs:6-21`; `reference/Graphite/editor/src/messages/viewport/viewport_message_handler.rs:25-64`; `reference/Graphite/editor/src/messages/viewport/viewport_message_handler.rs:70-123`; `reference/Graphite/editor/src/messages/portfolio/document/document_message_handler.rs:107-108`; `reference/Graphite/editor/src/messages/portfolio/document/navigation/navigation_message_handler.rs:17-34`; `reference/Graphite/editor/src/messages/portfolio/document/navigation/navigation_message_handler.rs:49-74`; `reference/Graphite/editor/src/messages/portfolio/document/navigation/navigation_message_handler.rs:132-143` | Reproduce the distinction between platform viewport metrics and document view transform. Athena may omit canvas tilt if electrical workflow evidence does not justify it. |
+| `GRA-OVERLAY-001` | Transient interaction visuals are managed by a dedicated document overlay handler with registered providers. On web, it obtains a browser canvas/context and invokes providers after clearing; on native, it builds an overlay scene and emits a render effect. Tool activation/deactivation adds/removes providers. Overlay visibility and viewport are explicit inputs. | `reference/Graphite/editor/src/messages/portfolio/document/overlays/overlays_message_handler.rs:4-17`; `reference/Graphite/editor/src/messages/portfolio/document/overlays/overlays_message_handler.rs:19-74`; `reference/Graphite/editor/src/messages/portfolio/document/overlays/overlays_message_handler.rs:75-99`; `reference/Graphite/editor/src/messages/tool/utility_types.rs:155-205`; `reference/Graphite/editor/src/messages/frontend/frontend_message.rs:333-338` | Reproduce overlay lifecycle and provider separation, but keep Athena's platform-neutral core free of `web_sys` and native rendering APIs. Core should emit platform-neutral overlay scene data. |
+| `GRA-PROPS-001` | The properties panel is contextual backend-owned layout, not an independent frontend form model. Refresh is suppressed/cleared when closed; when open, it collates properties from the current selection/document context and emits a layout targeted at `PropertiesPanel`. The frontend keeps a dedicated reactive store and applies backend diffs to that panel only. | `reference/Graphite/editor/src/messages/portfolio/document/properties_panel/properties_panel_message_handler.rs:9-22`; `reference/Graphite/editor/src/messages/portfolio/document/properties_panel/properties_panel_message_handler.rs:24-67`; `reference/Graphite/frontend/src/stores/portfolio.ts:37-52`; `reference/Graphite/frontend/src/stores/portfolio.ts:139-168` | Reproduce lifecycle, contextual refresh, and backend ownership. Populate the plate only from evidenced QElectroTech electrical property groups, not Graphite node/vector fields or invented generic fields. |
+| `GRA-HISTORY-001` | User interactions use explicit transaction messages: start, end, commit, cancel, abort, and repeated abort. Ending commits only when mutation occurred; cancel discards the provisional undo; commit closes the transaction, clears redo, writes a storage snapshot, and refreshes document state; abort undoes the in-progress interaction and redraws. Tool gestures choose end versus abort based on a drag threshold. | `reference/Graphite/editor/src/messages/portfolio/document/document_message.rs:203-214`; `reference/Graphite/editor/src/messages/portfolio/document/document_message_handler.rs:1341-1387`; `reference/Graphite/editor/src/messages/input_mapper/utility_types/input_mouse.rs:61-66`; `reference/Graphite/editor/src/messages/tool/tool_messages/artboard_tool.rs:295-315` | Reproduce message-level gesture transactions and deterministic undo/redo integration. Athena's transaction payload and persistence snapshot mechanism must be designed around electrical commands and the shared core. |
+| `GRA-WASM-001` | The web wrapper owns editor initialization and the JS callback, dispatches typed messages into the in-process editor, serializes each `FrontendMessage` to JS, and exposes generated editor commands that map JS arguments to `Message`s. The frontend routes typed effects by message name and layout target instead of owning backend mutation logic. | `reference/Graphite/frontend/wrapper/src/editor_wrapper.rs:31-50`; `reference/Graphite/frontend/wrapper/src/editor_wrapper.rs:53-87`; `reference/Graphite/frontend/wrapper/src/editor_wrapper.rs:93-141`; `reference/Graphite/frontend/wrapper/src/editor_commands.rs:1-39`; `reference/Graphite/frontend/src/subscriptions-router.ts:1-31`; `reference/Graphite/frontend/src/subscriptions-router.ts:46-99`; `reference/Graphite/frontend/src/utility-functions/wasm-loader.ts:1-24` | Reproduce a thin browser adapter over the shared Rust editor/message spine. JavaScript may host WASM, map browser APIs/events, route effects, and render shell components, but must not duplicate schematic state or command semantics. |
+| `GRA-PLATFORM-001` | Graphite's native path preserves the same editor and frontend message semantics through an additional desktop-wrapper dispatcher. It batches editor messages, intercepts platform effects such as overlays/files/persistence/window operations, and forwards remaining frontend messages to the embedded web UI. The native communication layer centralizes command/effect serialization. | `reference/Graphite/desktop/wrapper/src/message_dispatcher.rs:9-43`; `reference/Graphite/desktop/wrapper/src/message_dispatcher.rs:57-76`; `reference/Graphite/desktop/wrapper/src/intercept_frontend_message.rs:8-20`; `reference/Graphite/desktop/wrapper/src/intercept_frontend_message.rs:29-89`; `reference/Graphite/frontend/wrapper/src/native_communication.rs:1-39`; `reference/Graphite/frontend/wrapper/src/native_communication.rs:42-72`; `reference/Graphite/frontend/wrapper/src/native_communication.rs:75-98` | Reproduce semantic parity across platform adapters, not Graphite's embedded-web desktop stack. Athena desktop remains GPUI and consumes the same core effects through a native Rust adapter. |
+| `GRA-UX-001` | The shell is composed as a title bar, recursive docked workspace, status bar, and floating dialog/tooltip layers. Panel leaves come from a typed registry and implement tabs, rename, close, reorder, group drag, cross-panel movement, edge docking, and persisted split resizing. Tool activation separately refreshes the icon-led tool shelf, contextual options, cursor, and hints. | `reference/Graphite/frontend/src/components/window/MainWindow.svelte:22-35`; `reference/Graphite/frontend/src/components/window/Panel.svelte:16-43`; `reference/Graphite/frontend/src/components/window/Panel.svelte:54-85`; `reference/Graphite/frontend/src/components/window/Panel.svelte:112-170`; `reference/Graphite/frontend/src/components/window/PanelSubdivision.svelte:54-89`; `reference/Graphite/frontend/src/components/window/PanelSubdivision.svelte:134-184`; `reference/Graphite/editor/src/messages/tool/tool_message_handler.rs:98-118`; `reference/Graphite/editor/src/messages/tool/tool_message_handler.rs:154-180` | These sources certify shell hierarchy and interaction responsibilities, not visual fidelity. Athena needs separate runtime screenshot, measurement, focus/hover, responsive, and user-acceptance evidence before using `professional` or `Graphite-mirrored`. |
+
+## Confirmed Shell Composition
+
+The frontend composition is also concrete: `MainWindow` renders a title bar, a
+workspace containing the recursive panel tree, a status bar, and floating
+dialog/tooltip layers (`reference/Graphite/frontend/src/components/window/MainWindow.svelte:22-35`).
+Panel leaves select a component from a typed panel registry and support tabs,
+rename, close, reorder, group drag, and cross-panel docking
+(`reference/Graphite/frontend/src/components/window/Panel.svelte:16-43`;
+`reference/Graphite/frontend/src/components/window/Panel.svelte:54-85`;
+`reference/Graphite/frontend/src/components/window/Panel.svelte:112-170`). This
+proves the shell hierarchy and panel lifecycle. It does not prove that Athena
+should copy Graphite's exact colors, dimensions, icons, or product panels.
+
+## Non-transferable
+
+| ID | Graphite detail not transferable as an Athena requirement | Evidence and reason |
+| --- | --- | --- |
+| `GRA-NONXFER-001` | Graphite's node graph, raster/vector artwork model, artboards, color tools, Graphite file format, and image-rendering pipeline are product-domain features, not electrical-schematic requirements. | The document owns a `NodeNetworkInterface`, node graph handler, render mode, and graph overlay (`reference/Graphite/editor/src/messages/portfolio/document/document_message_handler.rs:79-120`). Athena transfers boundaries, not this domain model. |
+| `GRA-NONXFER-002` | Graphite's Svelte frontend and embedded-web/CEF desktop implementation are not the desktop architecture to copy. | The browser mounts Svelte (`reference/Graphite/frontend/src/main.ts:1-17`), while the native wrapper forwards messages between editor and embedded web UI (`reference/Graphite/desktop/wrapper/src/message_dispatcher.rs:57-76`). Athena's desktop target is GPUI. |
+| `GRA-NONXFER-003` | Graphite's `web_sys` canvas inside the editor crate cannot be copied into Athena's platform-neutral core. | The WASM overlay handler stores `HtmlCanvasElement` and `CanvasRenderingContext2d` (`reference/Graphite/editor/src/messages/portfolio/document/overlays/overlays_message_handler.rs:10-17`) and draws directly (`reference/Graphite/editor/src/messages/portfolio/document/overlays/overlays_message_handler.rs:25-73`). Athena guardrails require platform-neutral scene data. |
+| `GRA-NONXFER-004` | Graphite's exact panel taxonomy is not Athena's electrical panel plate. | `PanelType` is limited to Welcome, Document, Layers, Properties, and Data (`reference/Graphite/editor/src/messages/portfolio/utility_types.rs:9-17`). Athena must fill the Graphite-style panel system with QElectroTech-evidenced project, folio, collection, element, conductor, numbering, title-block, and report semantics. |
+| `GRA-NONXFER-005` | Graphite's canvas tilt, artwork render modes, artboard interactions, and generic vector property widgets are not automatically parity requirements. | PTZ includes tilt usage and document render mode (`reference/Graphite/editor/src/messages/portfolio/document/document_message_handler.rs:107-114`); the example FSM is artboard-specific (`reference/Graphite/editor/src/messages/tool/tool_messages/artboard_tool.rs:91-115`). Only patterns supported by schematic workflows transfer. |
+
+## Unknown / Not Yet Certified
+
+- `GRA-UNKNOWN-001`: The complete initialization sequence from frontend mount
+  through every initial layout, panel, tool, persistence, and first-render
+  message has not been traced end to end.
+- `GRA-UNKNOWN-002`: The exact ordering guarantees for asynchronous messages,
+  animation frames, graph evaluation, deferred messages, and frontend retries
+  need dedicated sequence tests before Athena copies the scheduling policy.
+- `GRA-UNKNOWN-003`: Workspace layout persistence, migration, malformed-layout
+  recovery, and all docking edge cases are not fully certified by the cited
+  model and component paths.
+- `GRA-UNKNOWN-004`: The full widget schema, focus semantics, accessibility,
+  keyboard navigation, validation, and update-versus-commit rules are not yet
+  inventoried.
+- `GRA-UNKNOWN-005`: Native overlay compositing, DPI behavior, GPU viewport
+  hole-punching, and input-coordinate equivalence across Graphite web and native
+  have not been verified through runtime evidence.
+- `GRA-UNKNOWN-006`: Graphite's transaction/storage history implementation is
+  only evidenced here at the message-coordination level. Snapshot format,
+  branching behavior, crash recovery, collaboration implications, and memory
+  limits remain unresearched.
+- `GRA-UNKNOWN-007`: No visual certification is provided by this source report.
+  Exact layout geometry, density, responsive behavior, iconography, colors,
+  hover/focus states, and interaction timing require separately captured
+  runtime screenshots and measurements.
+
+Unknown items are implementation blockers whenever a future Athena spec depends
+on their exact behavior. They must not be filled by intuition.
+
+## Evidenced Architecture Spine
+
+The local source evidence supports this transferable relationship:
+
+```text
+Platform event
+  -> typed input preprocessing
+  -> semantic input mapping
+  -> Editor
+  -> queued Dispatcher
+  -> specialized portfolio/document/tool/layout/viewport handlers
+  -> typed FrontendMessage effects
+  -> GPUI or browser platform adapter
+```
+
+Workspace and contextual panel presentation follows a second explicit path:
+
+```text
+electrical/document state
+  -> backend-owned contextual Layout
+  -> deterministic widget diff
+  -> FrontendMessage::UpdateLayout
+  -> target-specific panel store/view
+  -> typed widget callback message
+  -> Dispatcher
+```
+
+This evidence certifies Graphite's architectural boundaries as an M004 input.
+It does not certify any existing Athena implementation as Graphite-mirrored and
+does not authorize M004 completion without the remaining gap and acceptance
+gates.
