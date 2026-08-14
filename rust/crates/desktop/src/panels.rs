@@ -1144,15 +1144,16 @@ mod tests {
         enter_text(cx, "widget-project-variables", "plant=PLANT-A");
         enter_text(cx, "widget-project-variables", "designer=A. Engineer");
         click(cx, io_selector);
-        enter_text(cx, "widget-folio-variables", "area=MCC-01");
         enter_text(cx, "widget-folio-title", "Main control");
         click(cx, "reference-folio-author-project-designer");
         scroll_properties(cx, -80.0);
         enter_text(cx, "widget-folio-location", "MCC-01");
         enter_text(cx, "widget-folio-revision", "A");
         enter_text(cx, "widget-folio-page-number", "2");
+        enter_text(cx, "widget-folio-variables", "area=MCC-01");
 
         let state = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
+        let expected_order = state.project.folio_order().to_vec();
         assert_eq!(state.project.folio_order()[1], io);
         assert_eq!(state.project.folio(control).unwrap().label, "Control");
         assert_eq!(state.project.folio(io).unwrap().label, "I/O");
@@ -1160,6 +1161,16 @@ mod tests {
         assert_eq!(
             state.project.variables.get("designer").unwrap(),
             "A. Engineer"
+        );
+        assert_eq!(
+            state
+                .project
+                .folio(io)
+                .unwrap()
+                .variables
+                .get("area")
+                .unwrap(),
+            "MCC-01"
         );
         let resolved = shell.read_with(cx, |shell, _| {
             shell
@@ -1174,6 +1185,7 @@ mod tests {
         assert_eq!(resolved.location.text, "MCC-01");
         assert_eq!(resolved.revision.text, "A");
         assert_eq!(resolved.page_number.text, "2");
+        let expected_resolved = resolved;
 
         let saved_path = temporary_project_path();
         click(cx, "save");
@@ -1208,12 +1220,23 @@ mod tests {
         cx.run_until_parked();
         let reopened = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
         assert_eq!(reopened.project.id, project_id);
-        assert_eq!(reopened.project.folio_order()[1], io);
+        assert_eq!(reopened.project.folio_order(), expected_order);
         assert_eq!(reopened.active_folio_id, io);
         assert_eq!(reopened.project.folio(io).unwrap().label, "I/O");
+        assert_eq!(reopened.project.variables.get("plant").unwrap(), "PLANT-A");
         assert_eq!(
             reopened.project.variables.get("designer").unwrap(),
             "A. Engineer"
+        );
+        assert_eq!(
+            reopened
+                .project
+                .folio(io)
+                .unwrap()
+                .variables
+                .get("area")
+                .unwrap(),
+            "MCC-01"
         );
         assert!(!reopened.dirty);
         assert_eq!(
@@ -1223,11 +1246,9 @@ mod tests {
                     .view_state()
                     .resolved_title_block(io)
                     .unwrap()
-                    .author
-                    .text
                     .clone()
             }),
-            "A. Engineer"
+            expected_resolved
         );
         fs::remove_file(saved_path).expect("temporary GPUI workflow project removes");
     }
