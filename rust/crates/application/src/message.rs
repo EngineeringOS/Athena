@@ -4,7 +4,10 @@ use athena_domain::{FolioId, ProjectId, TemplateText, TitleBlockPlacement};
 use athena_editor::{DocumentRevision, TitleBlockField, TitleBlockValue};
 use serde::{Deserialize, Serialize};
 
-use crate::{LayoutTarget, PanelId, SaveRequestId, WidgetId, WidgetValue};
+use crate::{
+    DockPlacement, DockTarget, GroupId, LayoutTarget, SaveRequestId, SplitId, TabId, WidgetId,
+    WidgetValue,
+};
 
 /// Root protocol family routed by [`crate::AthenaDispatcher`].
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -13,6 +16,7 @@ pub enum AthenaMessage {
     Portfolio(PortfolioMessage),
     Document(DocumentMessage),
     Layout(LayoutMessage),
+    Shell(ShellMessage),
 }
 
 impl From<PortfolioMessage> for AthenaMessage {
@@ -28,6 +32,11 @@ impl From<DocumentMessage> for AthenaMessage {
 impl From<LayoutMessage> for AthenaMessage {
     fn from(value: LayoutMessage) -> Self {
         Self::Layout(value)
+    }
+}
+impl From<ShellMessage> for AthenaMessage {
+    fn from(value: ShellMessage) -> Self {
+        Self::Shell(value)
     }
 }
 
@@ -131,18 +140,73 @@ pub enum DocumentMessage {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "type", content = "data")]
 pub enum LayoutMessage {
-    RequestWorkspace,
     RequestProjectPlate,
     RequestFolioPlate {
         folio_id: FolioId,
-    },
-    SetPanelOpen {
-        panel_id: PanelId,
-        open: bool,
     },
     CommitWidget {
         target: LayoutTarget,
         widget_id: WidgetId,
         value: WidgetValue,
+    },
+}
+
+/// Platform-neutral workspace shell messages.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
+pub enum ShellMessage {
+    Request,
+    ActivateTab {
+        group_id: GroupId,
+        tab_id: TabId,
+    },
+    ReorderTab {
+        group_id: GroupId,
+        tab_id: TabId,
+        to: usize,
+    },
+    MoveTab {
+        tab_id: TabId,
+        target_group_id: GroupId,
+        to: usize,
+    },
+    SplitGroup {
+        tab_id: TabId,
+        target_group_id: GroupId,
+        placement: DockPlacement,
+        new_group_id: GroupId,
+        new_split_id: SplitId,
+    },
+    BeginResize {
+        split_id: SplitId,
+        before_index: usize,
+        available_px: u32,
+    },
+    ResizeAdjacent {
+        split_id: SplitId,
+        before_index: usize,
+        delta_px: i32,
+    },
+    CommitResize,
+    AbortResize,
+    ResetAdjacent {
+        split_id: SplitId,
+        before_index: usize,
+    },
+    ClosePanel {
+        tab_id: TabId,
+    },
+    ReopenPanel {
+        tab_id: TabId,
+    },
+    SetDocumentFocus {
+        focused: bool,
+    },
+    OpenOverlay {
+        group_id: GroupId,
+    },
+    CloseOverlay,
+    SetDockPreview {
+        target: Option<DockTarget>,
     },
 }

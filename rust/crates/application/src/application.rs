@@ -4,7 +4,7 @@ use athena_domain::{FolioId, Project};
 use athena_editor::DocumentRevision;
 use serde::{Deserialize, Serialize};
 
-use crate::{AthenaDispatcher, AthenaFrontendMessage, AthenaMessage};
+use crate::{AthenaDispatcher, AthenaFrontendMessage, AthenaMessage, WorkspaceShell};
 
 /// Immutable application state returned for tests, rendering, and diagnostics.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -40,5 +40,11 @@ impl AthenaEditor {
     #[must_use]
     pub fn state_snapshot(&self) -> Option<EditorSnapshot> {
         self.dispatcher.state_snapshot()
+    }
+
+    /// Returns the platform-neutral shell without exposing mutable handler state.
+    #[must_use]
+    pub fn shell_snapshot(&self) -> WorkspaceShell {
+        self.dispatcher.shell_snapshot()
     }
 }

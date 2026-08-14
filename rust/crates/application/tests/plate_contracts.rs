@@ -1,5 +1,5 @@
 use athena_application::{
-    AthenaEditor, AthenaFrontendMessage, DocumentMessage, LayoutMessage, LayoutTarget, PanelId,
+    AthenaEditor, AthenaFrontendMessage, DocumentMessage, LayoutMessage, LayoutTarget,
     PortfolioMessage, WidgetId, WidgetValue,
 };
 use athena_domain::{FolioId, ProjectId};
@@ -19,36 +19,6 @@ fn editor_and_effects() -> (AthenaEditor, Vec<AthenaFrontendMessage>) {
         name: "Main Distribution".into(),
     });
     (editor, effects)
-}
-
-#[test]
-fn workspace_owns_outline_viewport_properties_and_panel_lifecycle() {
-    let mut editor = editor();
-    let effects = editor.handle_message(LayoutMessage::RequestWorkspace);
-    let workspace = effects
-        .iter()
-        .find_map(|effect| match effect {
-            AthenaFrontendMessage::WorkspaceLayoutUpdated(workspace) => Some(workspace),
-            _ => None,
-        })
-        .expect("workspace effect");
-    assert_eq!(workspace.left_panel.id, PanelId::ProjectOutline);
-    assert_eq!(workspace.center_panel.id, PanelId::DocumentViewport);
-    assert_eq!(workspace.right_panel.id, PanelId::Properties);
-
-    editor.handle_message(LayoutMessage::SetPanelOpen {
-        panel_id: PanelId::Properties,
-        open: false,
-    });
-    let closed = editor.handle_message(LayoutMessage::RequestWorkspace);
-    assert!(closed.iter().any(|effect| matches!(
-        effect,
-        AthenaFrontendMessage::WorkspaceLayoutUpdated(workspace) if !workspace.right_panel.open
-    )));
-    editor.handle_message(LayoutMessage::SetPanelOpen {
-        panel_id: PanelId::Properties,
-        open: true,
-    });
 }
 
 #[test]

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AthenaFrontendMessage, AthenaMessage, DocumentHandler, DocumentMessage, EditorSnapshot,
-    LayoutMessage, OpenOutcome, PortfolioMessage, SaveOutcome, outline_effect,
+    LayoutMessage, OpenOutcome, PortfolioMessage, SaveOutcome, ShellMessage, outline_effect,
 };
 
 /// Deterministic save request identity allocated by the application layer.
@@ -92,7 +92,7 @@ impl PortfolioHandler {
                         AthenaFrontendMessage::DirtyStateChanged { dirty: false },
                     ],
                     messages: vec![
-                        LayoutMessage::RequestWorkspace.into(),
+                        ShellMessage::Request.into(),
                         LayoutMessage::RequestFolioPlate {
                             folio_id: active_folio_id,
                         }
@@ -147,7 +147,7 @@ impl PortfolioHandler {
                         AthenaFrontendMessage::DirtyStateChanged { dirty: false },
                     ],
                     messages: vec![
-                        LayoutMessage::RequestWorkspace.into(),
+                        ShellMessage::Request.into(),
                         LayoutMessage::RequestFolioPlate {
                             folio_id: active_folio_id,
                         }

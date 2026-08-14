@@ -4,7 +4,27 @@ use athena_domain::{FolioId, ProjectId, ResolvedTemplateText};
 use athena_editor::DocumentRevision;
 use serde::{Deserialize, Serialize};
 
-use crate::{LayoutTarget, SaveRequestId, Widget, WidgetId, WidgetValue, WorkspaceLayout};
+use crate::{
+    DockTarget, GroupId, LayoutTarget, SaveRequestId, ShellFocus, SplitId, TabId, Widget, WidgetId,
+    WidgetValue, WorkspaceShell,
+};
+
+/// Semantic shell effects reduced by both platform adapters.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", content = "data")]
+pub enum ShellEffect {
+    /// Complete tree replacement after structural changes or an explicit request.
+    Replaced(WorkspaceShell),
+    /// Value-only update that preserves the recursive node structure.
+    ValuesChanged {
+        active_tabs: Vec<(GroupId, TabId)>,
+        shares: Vec<(SplitId, Vec<u32>)>,
+        focus: ShellFocus,
+        overlay: Option<GroupId>,
+    },
+    /// Floating docking feedback that never changes split geometry.
+    DockPreview(Option<DockTarget>),
+}
 
 /// Resolved QET-equivalent title-block values displayed in a folio viewport.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -39,7 +59,7 @@ pub enum AthenaFrontendMessage {
         project_name: String,
         folios: Vec<(FolioId, String)>,
     },
-    WorkspaceLayoutUpdated(WorkspaceLayout),
+    Shell(ShellEffect),
     PanelLayoutUpdated {
         target: LayoutTarget,
         widgets: Vec<Widget>,

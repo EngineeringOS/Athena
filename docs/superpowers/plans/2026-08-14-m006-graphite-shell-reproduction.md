@@ -184,7 +184,7 @@ document-priority behavior.
 
 **Traceability:** CAP-M006-002/005; full Interaction Contract.
 
-- [ ] **Step 1: Write failing transition tests**
+- [x] **Step 1: Write failing transition tests**
 
   Cover tab activation/reorder/move, edge split, adjacent resize conservation,
   100px minimum clamping, drag abort restoration, 80:20 document reset,
@@ -192,19 +192,20 @@ document-priority behavior.
   document focus restoration, and narrow overlay open/close. Each test compares
   the complete resulting tree and ordered semantic effects.
 
-- [ ] **Step 2: Run the tests and confirm RED**
+- [x] **Step 2: Run the tests and confirm RED**
 
   Run `cargo test -p athena-application --test shell_transitions`.
   Expected: compile failure because `ShellMessage` and `ShellEffect` are absent.
 
-- [ ] **Step 3: Add the shell-only protocol**
+- [x] **Step 3: Add the shell-only protocol**
 
   Add `AthenaMessage::Shell(ShellMessage)` and
   `AthenaFrontendMessage::Shell(ShellEffect)`. Define messages for
   `Request`, `ActivateTab`, `ReorderTab`, `MoveTab`, `SplitGroup`,
   `BeginResize`, `ResizeAdjacent`, `CommitResize`, `AbortResize`,
   `ResetAdjacent`, `ClosePanel`, `ReopenPanel`, `SetDocumentFocus`,
-  `OpenOverlay`, and `CloseOverlay`. Define the effect contract explicitly:
+  `OpenOverlay`, `CloseOverlay`, and `SetDockPreview`. Define the effect contract
+  explicitly:
 
   ```rust
   pub enum ShellEffect {
@@ -228,20 +229,20 @@ document-priority behavior.
   `RequestWorkspace`, `SetPanelOpen`, and `WorkspaceLayoutUpdated`. Rename the
   existing test file and preserve every M005 plate assertion.
 
-- [ ] **Step 4: Implement normalization and transaction state**
+- [x] **Step 4: Implement normalization and transaction state**
 
   Make `ShellHandler` the only writer of the tree. Preserve combined adjacent
   shares, use viewport logical pixels only to calculate minimum shares, store
   resize snapshots for abort, prune empty splits, and retain restorable panel
   locations. Reject invalid IDs with a typed diagnostic and no mutation.
 
-- [ ] **Step 5: Run the focused and application suites**
+- [x] **Step 5: Run the focused and application suites**
 
   Run `cargo test -p athena-application --test shell_transitions`,
   `cargo test -p athena-application --test plate_contracts`, and
   `cargo test -p athena-application`. Expected: all tests pass.
 
-- [ ] **Step 6: Commit the shell state machine**
+- [x] **Step 6: Commit the shell state machine**
 
   ```powershell
   git add rust/crates/application/src/shell.rs rust/crates/application/src/plate.rs rust/crates/application/src/layout.rs rust/crates/application/src/message.rs rust/crates/application/src/frontend_message.rs rust/crates/application/src/dispatcher.rs rust/crates/application/src/lib.rs rust/crates/application/tests/layout_contracts.rs rust/crates/application/tests/plate_contracts.rs rust/crates/application/tests/shell_transitions.rs

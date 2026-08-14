@@ -1,4 +1,4 @@
-//! Backend-owned workspace hierarchy and QET-evidenced electrical plates.
+//! Backend-owned QElectroTech-evidenced electrical property plates.
 
 use std::collections::BTreeMap;
 
@@ -11,58 +11,6 @@ use crate::{
     ResolvedTitleBlockDisplay, Widget, WidgetCallback, WidgetId, WidgetKind, WidgetValue,
 };
 
-/// Stable panel identity in the Graphite-derived workbench hierarchy.
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub enum PanelId {
-    ProjectOutline,
-    DocumentViewport,
-    Properties,
-}
-
-/// One persistent workspace panel slot.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct PanelState {
-    /// Stable panel identity.
-    pub id: PanelId,
-    /// Backend-owned visibility state.
-    pub open: bool,
-    /// Preferred panel size in logical pixels.
-    pub size: u16,
-}
-
-/// Rust-owned three-column editor workspace.
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct WorkspaceLayout {
-    /// Persistent project outline slot.
-    pub left_panel: PanelState,
-    /// Always-present document viewport slot.
-    pub center_panel: PanelState,
-    /// Contextual electrical properties slot.
-    pub right_panel: PanelState,
-}
-
-impl Default for WorkspaceLayout {
-    fn default() -> Self {
-        Self {
-            left_panel: PanelState {
-                id: PanelId::ProjectOutline,
-                open: true,
-                size: 248,
-            },
-            center_panel: PanelState {
-                id: PanelId::DocumentViewport,
-                open: true,
-                size: 720,
-            },
-            right_panel: PanelState {
-                id: PanelId::Properties,
-                open: true,
-                size: 320,
-            },
-        }
-    }
-}
-
 /// Context whose property plate is being rendered or updated.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum LayoutTarget {
@@ -71,50 +19,29 @@ pub enum LayoutTarget {
 }
 
 /// Result of one layout message without direct document-handler calls.
-pub(crate) struct LayoutOutput {
+pub(crate) struct PlateOutput {
     pub effects: Vec<AthenaFrontendMessage>,
     pub messages: Vec<AthenaMessage>,
 }
 
 /// Owns workspace state, rendered plate caches, and stable callback routing.
 #[derive(Default)]
-pub struct LayoutHandler {
-    workspace: WorkspaceLayout,
+pub struct PlateHandler {
     rendered: BTreeMap<LayoutTarget, Vec<Widget>>,
     callbacks: BTreeMap<(LayoutTarget, WidgetId), WidgetCallback>,
 }
 
-impl LayoutHandler {
+impl PlateHandler {
     pub(crate) fn handle(
         &mut self,
         message: LayoutMessage,
         state: Option<&EditorSnapshot>,
-    ) -> LayoutOutput {
-        let mut output = LayoutOutput {
+    ) -> PlateOutput {
+        let mut output = PlateOutput {
             effects: Vec::new(),
             messages: Vec::new(),
         };
         match message {
-            LayoutMessage::RequestWorkspace => {
-                output
-                    .effects
-                    .push(AthenaFrontendMessage::WorkspaceLayoutUpdated(
-                        self.workspace.clone(),
-                    ))
-            }
-            LayoutMessage::SetPanelOpen { panel_id, open } => {
-                let panel = match panel_id {
-                    PanelId::ProjectOutline => &mut self.workspace.left_panel,
-                    PanelId::DocumentViewport => &mut self.workspace.center_panel,
-                    PanelId::Properties => &mut self.workspace.right_panel,
-                };
-                panel.open = open;
-                output
-                    .effects
-                    .push(AthenaFrontendMessage::WorkspaceLayoutUpdated(
-                        self.workspace.clone(),
-                    ));
-            }
             LayoutMessage::RequestProjectPlate => {
                 if let Some(state) = state {
                     self.emit_plate(

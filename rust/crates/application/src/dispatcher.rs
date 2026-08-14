@@ -3,14 +3,16 @@
 use std::collections::VecDeque;
 
 use crate::{
-    AthenaFrontendMessage, AthenaMessage, EditorSnapshot, LayoutHandler, PortfolioHandler,
+    AthenaFrontendMessage, AthenaMessage, EditorSnapshot, PlateHandler, PortfolioHandler,
+    ShellHandler, WorkspaceShell,
 };
 
 /// Owns handlers and prevents reentrant direct calls between sibling handlers.
 #[derive(Default)]
 pub struct AthenaDispatcher {
     portfolio: PortfolioHandler,
-    layout: LayoutHandler,
+    plate: PlateHandler,
+    shell: ShellHandler,
 }
 
 impl AthenaDispatcher {
@@ -32,10 +34,11 @@ impl AthenaDispatcher {
                 }
                 AthenaMessage::Layout(message) => {
                     let snapshot = self.portfolio.snapshot();
-                    let output = self.layout.handle(message, snapshot.as_ref());
+                    let output = self.plate.handle(message, snapshot.as_ref());
                     effects.extend(output.effects);
                     queue.extend(output.messages);
                 }
+                AthenaMessage::Shell(message) => effects.extend(self.shell.handle(message)),
             }
         }
         effects
@@ -45,5 +48,11 @@ impl AthenaDispatcher {
     #[must_use]
     pub fn state_snapshot(&self) -> Option<EditorSnapshot> {
         self.portfolio.snapshot()
+    }
+
+    /// Returns an immutable clone of the current recursive shell.
+    #[must_use]
+    pub fn shell_snapshot(&self) -> WorkspaceShell {
+        self.shell.snapshot()
     }
 }

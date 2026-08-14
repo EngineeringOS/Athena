@@ -24,7 +24,7 @@ fn typed_messages_produce_ordered_effects_and_canonical_state() {
             AthenaFrontendMessage::ActiveFolioChanged { .. },
             AthenaFrontendMessage::OutlineChanged { .. },
             AthenaFrontendMessage::DirtyStateChanged { dirty: false },
-            AthenaFrontendMessage::WorkspaceLayoutUpdated(_),
+            AthenaFrontendMessage::Shell(athena_application::ShellEffect::Replaced(_)),
             AthenaFrontendMessage::ResolvedTitleBlockUpdated { .. },
             AthenaFrontendMessage::PanelLayoutUpdated { .. },
         ] if *opened == project_id
