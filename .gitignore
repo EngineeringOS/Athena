@@ -25,7 +25,6 @@ src/ant/.ant-targets-upload-dist.xml
 *.graphml
 node
 node_modules
-package-lock.json
 **/*.tsbuildinfo
 
 # Generated Theia and TypeScript build outputs

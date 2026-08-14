@@ -21,7 +21,7 @@ the same messages without duplicating layout authority.
 
 **Tech Stack:** latest compatible stable Rust; serde and proptest; GPUI and
 `gpui-component` for native; `wasm-bindgen`; Svelte 5, Vite 8,
-`@sveltejs/vite-plugin-svelte`, Lucide Svelte; Playwright.
+`@sveltejs/vite-plugin-svelte`, `@lucide/svelte`; Playwright.
 
 Run Cargo and `wasm-pack` commands from `rust/`; run npm/Vite/Playwright commands
 from the repository root. Stage only files explicitly listed by each task so
@@ -32,6 +32,7 @@ the pre-existing M005 work and legacy removals remain independent.
 ### Task 1: Freeze the Source, License, and Dependency Ledger
 
 **Files:**
+- Modify: `.gitignore`
 - Create: `docs/superpowers/verification/2026-08-14-m006-source-ledger.md`
 - Modify: `package.json`
 - Modify: `package-lock.json`
@@ -40,7 +41,7 @@ the pre-existing M005 work and legacy removals remain independent.
 `reference/Graphite/LICENSE.txt`; supplemental OpenCADStudio Rust-library and
 native/WASM architecture evidence with all CAD behavior excluded.
 
-- [ ] **Step 1: Record exact source ownership before adaptation**
+- [x] **Step 1: Record exact source ownership before adaptation**
 
   Create a ledger row for every planned Athena shell file with columns
   `Athena file`, `authority`, `source range`, `status`, `removed dependencies`,
@@ -55,7 +56,7 @@ native/WASM architecture evidence with all CAD behavior excluded.
   Mark its `iced` widgets, subscriptions, pane-grid, renderer, and event loop as
   toolkit-specific exclusions; Zed/GPUI remains the native implementation path.
 
-- [ ] **Step 2: Verify current compatible package releases**
+- [x] **Step 2: Verify current compatible package releases**
 
   Run:
 
@@ -63,25 +64,28 @@ native/WASM architecture evidence with all CAD behavior excluded.
   npm view svelte version
   npm view vite version
   npm view @sveltejs/vite-plugin-svelte version
-  npm view lucide-svelte version
+  npm view @lucide/svelte version
   ```
 
-  Expected on 2026-08-14: `5.56.9`, `8.2.1`, `7.3.0`, and `1.0.1`, or newer
+  Expected at execution: `5.56.9`, `8.2.1`, `7.3.0`, and `1.31.0`, or newer
   mutually compatible stable releases documented in the ledger.
 
-- [ ] **Step 3: Add only the web presentation dependencies**
+- [x] **Step 3: Add only the web presentation dependencies**
 
   Add scripts `dev`, `build`, `preview`, and `test`; add Svelte, Vite, the
-  Svelte Vite plugin, and Lucide Svelte as dev dependencies. Run `npm install`
-  and record the resolved versions and licenses.
+  Svelte Vite plugin, and `@lucide/svelte` as dev dependencies. Do not use the
+  deprecated `lucide-svelte` package. Run `npm install` and record the resolved
+  versions and licenses.
 
-- [ ] **Step 4: Verify the dependency boundary**
+- [x] **Step 4: Verify the dependency boundary**
 
-  Run `npm run build` and `cargo metadata --format-version 1 --no-deps`.
-  Expected: web tooling resolves; application/domain crates do not depend on
-  Svelte, GPUI, browser, filesystem, or cloud APIs.
+  Run `npm ls --depth=0` and
+  `cargo metadata --format-version 1 --no-deps`. Expected: exact web
+  presentation versions resolve; application/domain crates do not depend on
+  Svelte, GPUI, browser, filesystem, or cloud APIs. The first Vite build remains
+  Task 5 because that task creates `vite.config.js` and the Svelte entry point.
 
-- [ ] **Step 5: Commit the ledger and dependency boundary**
+- [x] **Step 5: Commit the ledger and dependency boundary**
 
   ```powershell
   git add package.json package-lock.json docs/superpowers/verification/2026-08-14-m006-source-ledger.md
