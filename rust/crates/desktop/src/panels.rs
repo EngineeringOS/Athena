@@ -4,6 +4,8 @@
 //! desktop effect cache and transient pointer-drag coordinates; the recursive
 //! topology remains owned by `athena-application`.
 
+use std::borrow::Cow;
+
 use athena_application::{
     GroupId, PanelRole, ShellMessage, ShellNode, SplitAxis, SplitId, TabId, WorkspaceShell,
 };
@@ -12,9 +14,15 @@ use gpui::{
     MouseButton, MouseUpEvent, Point, Render, Window, WindowBounds, WindowOptions, div, prelude::*,
     px, size,
 };
-use gpui_component::{PixelsExt, Root};
+use gpui_component::{
+    PixelsExt, Root,
+    theme::{Theme, ThemeMode},
+};
 
 use crate::app::DesktopEditor;
+
+const SOURCE_SANS_PRO_REGULAR: &[u8] =
+    include_bytes!("../assets/fonts/source-sans-pro-regular.ttf");
 
 /// Active GPUI gutter transaction coordinates kept outside persistent shell state.
 #[derive(Clone, Copy, Debug)]
@@ -246,21 +254,34 @@ fn tab_for_role(node: &ShellNode, role: PanelRole) -> Option<TabId> {
     })
 }
 
+/// Initializes gpui-component with colors that match Athena's dark shell.
+pub fn initialize_component_theme(cx: &mut App) {
+    gpui_component::init(cx);
+    Theme::change(ThemeMode::Dark, None, cx);
+}
+
 /// Starts the desktop application and installs gpui-component services.
 pub fn run_native_shell() {
-    Application::new().run(|cx: &mut App| {
-        gpui_component::init(cx);
-        let bounds = Bounds::centered(None, size(px(1440.0), px(900.0)), cx);
-        let _ = cx.open_window(
-            WindowOptions {
-                window_bounds: Some(WindowBounds::Windowed(bounds)),
-                ..WindowOptions::default()
-            },
-            |window, cx| {
-                let view: Entity<NativeShell> = cx.new(|cx| NativeShell::new(window, cx));
-                cx.new(|cx| Root::new(view, window, cx))
-            },
-        );
-        cx.activate(true);
-    });
+    Application::new()
+        .with_assets(gpui_component_assets::Assets)
+        .run(|cx: &mut App| {
+            // GPUI does not fall back when an explicitly requested family is absent,
+            // so register the Graphite-matched UI font before the first text layout.
+            cx.text_system()
+                .add_fonts(vec![Cow::Borrowed(SOURCE_SANS_PRO_REGULAR)])
+                .expect("embedded Source Sans Pro must be a valid font");
+            initialize_component_theme(cx);
+            let bounds = Bounds::centered(None, size(px(1440.0), px(900.0)), cx);
+            let _ = cx.open_window(
+                WindowOptions {
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    ..WindowOptions::default()
+                },
+                |window, cx| {
+                    let view: Entity<NativeShell> = cx.new(|cx| NativeShell::new(window, cx));
+                    cx.new(|cx| Root::new(view, window, cx))
+                },
+            );
+            cx.activate(true);
+        });
 }

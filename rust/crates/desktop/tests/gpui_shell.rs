@@ -9,7 +9,7 @@ use gpui::{
 };
 
 fn setup(cx: &mut TestAppContext) -> (&mut VisualTestContext, gpui::Entity<NativeShell>) {
-    cx.update(gpui_component::init);
+    cx.update(athena_desktop::panels::initialize_component_theme);
     let (shell, cx) = cx.add_window_view(NativeShell::new);
     (cx, shell)
 }
@@ -73,6 +73,9 @@ fn rendered_shell_exposes_graphite_regions_recursive_groups_and_empty_folio(
 ) {
     let (cx, _shell) = setup(cx);
 
+    let native_root = cx
+        .debug_bounds("athena-native-shell")
+        .expect("native root renders");
     let title = cx.debug_bounds("athena-title-bar").expect("title renders");
     let workspace = cx
         .debug_bounds("athena-workspace")
@@ -84,6 +87,11 @@ fn rendered_shell_exposes_graphite_regions_recursive_groups_and_empty_folio(
     assert_eq!(status.size.height, px(tokens::STATUS_BAR_HEIGHT));
     assert!(title.bottom() <= workspace.top());
     assert!(workspace.bottom() <= status.top());
+    assert_eq!(
+        status.bottom(),
+        native_root.bottom(),
+        "status bar must remain inside and close the native viewport"
+    );
 
     for selector in [
         "tab-project",
@@ -359,4 +367,51 @@ fn native_shell_source_contains_no_hard_coded_schematic_preview() {
             "forbidden preview token: {forbidden}"
         );
     }
+}
+
+#[test]
+fn native_shell_icon_buttons_use_transparent_ghost_variants() {
+    let source = [
+        include_str!("../src/shell/electrical.rs"),
+        include_str!("../src/shell/panel_group.rs"),
+        include_str!("../src/shell/title_bar.rs"),
+    ]
+    .join("\n");
+    let button_count = source.matches("Button::new").count();
+    let ghost_count = source.matches(".ghost()").count();
+
+    assert!(button_count > 0, "the shell must render icon buttons");
+    assert_eq!(
+        ghost_count, button_count,
+        "every shell icon button must stay transparent over Graphite dark chrome"
+    );
+}
+
+#[test]
+fn native_runtime_embeds_and_registers_source_sans_pro() {
+    let font_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("assets/fonts/source-sans-pro-regular.ttf");
+    let font = std::fs::read(font_path).expect("Source Sans Pro runtime asset must be packaged");
+    assert_eq!(font.len(), 119_080, "unexpected Source Sans Pro asset");
+    assert_eq!(&font[..4], &[0, 1, 0, 0], "asset must be a TrueType font");
+
+    let runtime = include_str!("../src/panels.rs");
+    assert!(runtime.contains("SOURCE_SANS_PRO_REGULAR"));
+    assert!(runtime.contains("text_system()"));
+    assert!(runtime.contains(".add_fonts"));
+    assert!(runtime.contains("with_assets(gpui_component_assets::Assets)"));
+
+    let manifest = include_str!("../Cargo.toml");
+    assert!(manifest.contains("gpui-component-assets.workspace = true"));
+}
+
+#[gpui::test]
+fn native_component_theme_matches_the_dark_graphite_shell(cx: &mut TestAppContext) {
+    cx.update(athena_desktop::panels::initialize_component_theme);
+    cx.update(|cx| {
+        assert_eq!(
+            gpui_component::theme::Theme::global(cx).mode,
+            gpui_component::theme::ThemeMode::Dark
+        );
+    });
 }

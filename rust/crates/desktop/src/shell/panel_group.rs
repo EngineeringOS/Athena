@@ -9,7 +9,10 @@ use gpui::{
     AnyElement, Context, Empty, IntoElement, KeyDownEvent, MouseButton, MouseDownEvent,
     MouseMoveEvent, Render, SharedString, Window, div, prelude::*, px, relative, rgb, rgba,
 };
-use gpui_component::{IconName, Sizable, button::Button};
+use gpui_component::{
+    IconName, Sizable,
+    button::{Button, ButtonVariants as _},
+};
 
 use crate::{
     panels::{NativeShell, TabDragState},
@@ -159,6 +162,7 @@ pub(crate) fn render(
                             this.child(
                                 Button::new(SharedString::from(format!("close-tab-{}", tab.id)))
                                     .icon(IconName::Close)
+                                    .ghost()
                                     .xsmall()
                                     .tab_index(-1)
                                     .tooltip("Close panel")

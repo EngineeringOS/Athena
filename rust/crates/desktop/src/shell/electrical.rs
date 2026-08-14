@@ -2,7 +2,10 @@
 
 use athena_application::PanelRole;
 use gpui::{AnyElement, div, prelude::*, px, relative, rgb};
-use gpui_component::{Disableable, IconName, Sizable, button::Button};
+use gpui_component::{
+    Disableable, IconName, Sizable,
+    button::{Button, ButtonVariants as _},
+};
 
 use crate::shell::tokens;
 
@@ -130,6 +133,7 @@ fn render_tool(tool: &ElectricalToolSpec) -> AnyElement {
         .child(
             Button::new(selector)
                 .icon(tool.icon.clone())
+                .ghost()
                 .xsmall()
                 .tooltip(tool.label)
                 .disabled(tool.disabled),

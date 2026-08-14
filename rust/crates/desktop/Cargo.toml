@@ -9,6 +9,7 @@ athena-application = { path = "../application" }
 athena-domain = { path = "../domain" }
 gpui.workspace = true
 gpui-component.workspace = true
+gpui-component-assets.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_Storage_FileSystem"] }

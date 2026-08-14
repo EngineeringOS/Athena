@@ -2,7 +2,10 @@
 
 use athena_application::{PanelRole, ShellFocus, ShellMessage, WorkspaceShell};
 use gpui::{AnyElement, div, prelude::*, px, rgb};
-use gpui_component::{Disableable, IconName, Selectable, Sizable, button::Button};
+use gpui_component::{
+    Disableable, IconName, Selectable, Sizable,
+    button::{Button, ButtonVariants as _},
+};
 
 use crate::{panels::NativeShell, shell::tokens};
 
@@ -113,6 +116,7 @@ fn control(
         .child(
             Button::new(selector)
                 .icon(icon)
+                .ghost()
                 .xsmall()
                 .selected(selected)
                 .tooltip(tooltip)
@@ -134,6 +138,7 @@ fn disabled_window_control(
         .child(
             Button::new(selector)
                 .icon(icon)
+                .ghost()
                 .xsmall()
                 .tooltip(tooltip)
                 .disabled(true),
