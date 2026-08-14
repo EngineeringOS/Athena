@@ -383,6 +383,7 @@ impl NativeShell {
             )
             .child(
                 div()
+                    .debug_selector(|| "properties-scroll".into())
                     .flex_1()
                     .overflow_y_scrollbar()
                     .px_3()
@@ -747,6 +748,27 @@ impl Render for NativeShell {
                             })),
                     )
                     .child(
+                        div().debug_selector(|| "reopen".into()).child(
+                            Button::new("reopen")
+                                .icon(IconName::FolderOpen)
+                                .tooltip("Reopen recent project")
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    let _ = this.editor.reopen_recent_project();
+                                    cx.notify();
+                                })),
+                        ),
+                    )
+                    .child(
+                        div().debug_selector(|| "close".into()).child(
+                            Button::new("close")
+                                .icon(IconName::Close)
+                                .tooltip("Close project")
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.dispatch(PortfolioMessage::CloseProject, cx)
+                                })),
+                        ),
+                    )
+                    .child(
                         div().debug_selector(|| "save".into()).child(
                             Button::new("save")
                                 .icon(IconName::File)
@@ -757,12 +779,14 @@ impl Render for NativeShell {
                         ),
                     )
                     .child(
-                        Button::new("undo")
-                            .icon(IconName::Undo2)
-                            .tooltip("Undo")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.dispatch(DocumentMessage::Undo, cx)
-                            })),
+                        div().debug_selector(|| "undo".into()).child(
+                            Button::new("undo")
+                                .icon(IconName::Undo2)
+                                .tooltip("Undo")
+                                .on_click(cx.listener(|this, _, _, cx| {
+                                    this.dispatch(DocumentMessage::Undo, cx)
+                                })),
+                        ),
                     )
                     .child(
                         Button::new("redo")
@@ -955,12 +979,13 @@ pub fn run_native_shell() {
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::RefCell, rc::Rc};
+    use std::{cell::RefCell, fs, path::PathBuf, rc::Rc, time::SystemTime};
 
     use athena_application::WidgetValue;
     use athena_domain::{TemplateSegment, TemplateText, VariableReference};
     use gpui::{
-        Action as _, AppContext as _, Keystroke, Modifiers, TestAppContext, VisualTestContext,
+        Action as _, AppContext as _, Keystroke, Modifiers, ScrollDelta, ScrollWheelEvent,
+        TestAppContext, VisualTestContext, point, px,
     };
     use gpui_component::input::Enter as InputEnter;
 
@@ -1056,6 +1081,31 @@ mod tests {
         });
     }
 
+    fn scroll_properties(cx: &mut VisualTestContext, delta_y: f32) {
+        redraw(cx);
+        let bounds = cx
+            .debug_bounds("properties-scroll")
+            .expect("missing rendered properties scroll region");
+        for _ in 0..12 {
+            cx.simulate_event(ScrollWheelEvent {
+                position: bounds.center(),
+                delta: ScrollDelta::Pixels(point(px(0.0), px(delta_y))),
+                ..Default::default()
+            });
+        }
+    }
+
+    fn temporary_project_path() -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("the clock is after the Unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "athena-gpui-workflow-{}-{unique}.athena.json",
+            std::process::id()
+        ))
+    }
+
     #[gpui::test]
     fn gpui_controls_drive_the_m005_workflow_through_ui_events(cx: &mut TestAppContext) {
         cx.update(gpui_component::init);
@@ -1072,90 +1122,113 @@ mod tests {
             .expect("test window exposes its NativeShell");
 
         click(cx, "add-folio");
-        let added = shell.read_with(cx, |shell, _| shell.editor.view_state().outline[1].0);
-        let folio_selector = Box::leak(format!("folio-{added:?}").into_boxed_str());
-        click(cx, folio_selector);
-        let move_selector = Box::leak(format!("move-up-{added:?}").into_boxed_str());
-        click(cx, move_selector);
-        enter_text(cx, "widget-folio-label", "Control");
-        let rename_state = shell.read_with(cx, |shell, cx| {
+        click(cx, "add-folio");
+        let (project_id, control, io) = shell.read_with(cx, |shell, _| {
+            let snapshot = shell.editor.state_snapshot().unwrap();
             (
-                shell
-                    .editor
-                    .state_snapshot()
-                    .unwrap()
-                    .project
-                    .folio(added)
-                    .unwrap()
-                    .label
-                    .clone(),
-                shell.inputs[&format!("folio:{added:?}:folio.label")]
-                    .state
-                    .read(cx)
-                    .value()
-                    .to_string(),
+                snapshot.project.id,
+                snapshot.project.folio_order()[1],
+                snapshot.project.folio_order()[2],
             )
         });
-        assert_eq!(rename_state, ("Control".into(), "Control".into()));
+        let control_selector = Box::leak(format!("folio-{control:?}").into_boxed_str());
+        click(cx, control_selector);
+        enter_text(cx, "widget-folio-label", "Control");
+        let io_selector = Box::leak(format!("folio-{io:?}").into_boxed_str());
+        click(cx, io_selector);
+        enter_text(cx, "widget-folio-label", "I/O");
+        let move_selector = Box::leak(format!("move-up-{io:?}").into_boxed_str());
+        click(cx, move_selector);
 
         click(cx, "project-properties");
         enter_text(cx, "widget-project-variables", "plant=PLANT-A");
-        click(cx, folio_selector);
+        enter_text(cx, "widget-project-variables", "designer=A. Engineer");
+        click(cx, io_selector);
         enter_text(cx, "widget-folio-variables", "area=MCC-01");
-        enter_text(cx, "widget-folio-title", "Feed ");
-        let variables = shell.read_with(cx, |shell, _| {
-            let snapshot = shell.editor.state_snapshot().unwrap();
-            (
-                snapshot.project.variables.get("plant").cloned(),
-                snapshot
-                    .project
-                    .folio(added)
-                    .unwrap()
-                    .variables
-                    .get("area")
-                    .cloned(),
-            )
-        });
-        assert_eq!(variables, (Some("PLANT-A".into()), Some("MCC-01".into())));
-        click(cx, "reference-folio-title-project-plant");
-        click(cx, "reference-folio-title-folio-area");
+        enter_text(cx, "widget-folio-title", "Main control");
+        click(cx, "reference-folio-author-project-designer");
+        scroll_properties(cx, -80.0);
+        enter_text(cx, "widget-folio-location", "MCC-01");
+        enter_text(cx, "widget-folio-revision", "A");
+        enter_text(cx, "widget-folio-page-number", "2");
 
         let state = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
-        assert_eq!(state.project.folio_order()[0], added);
-        assert_eq!(state.project.folio(added).unwrap().label, "Control");
+        assert_eq!(state.project.folio_order()[1], io);
+        assert_eq!(state.project.folio(control).unwrap().label, "Control");
+        assert_eq!(state.project.folio(io).unwrap().label, "I/O");
+        assert_eq!(state.project.variables.get("plant").unwrap(), "PLANT-A");
         assert_eq!(
-            shell.read_with(cx, |shell, _| {
-                shell
-                    .editor
-                    .view_state()
-                    .resolved_title_block(added)
-                    .unwrap()
-                    .title
-                    .text
-                    .clone()
-            }),
-            "Feed PLANT-AMCC-01"
+            state.project.variables.get("designer").unwrap(),
+            "A. Engineer"
         );
+        let resolved = shell.read_with(cx, |shell, _| {
+            shell
+                .editor
+                .view_state()
+                .resolved_title_block(io)
+                .unwrap()
+                .clone()
+        });
+        assert_eq!(resolved.title.text, "Main control");
+        assert_eq!(resolved.author.text, "A. Engineer");
+        assert_eq!(resolved.location.text, "MCC-01");
+        assert_eq!(resolved.revision.text, "A");
+        assert_eq!(resolved.page_number.text, "2");
 
+        let saved_path = temporary_project_path();
         click(cx, "save");
         assert!(cx.did_prompt_for_new_path());
         assert!(shell.read_with(cx, |shell, _| {
             shell.editor.state_snapshot().unwrap().save_pending
         }));
-        enter_text_without_parking(
-            cx,
-            "widget-folio-label",
-            "Control edited after save request",
-        );
+        scroll_properties(cx, 80.0);
+        enter_text_without_parking(cx, "widget-folio-label", "I/O pending edit");
         let state = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
         assert!(state.save_pending);
         assert!(state.dirty);
-        assert_eq!(
-            state.project.folio(added).unwrap().label,
-            "Control edited after save request"
-        );
+        assert_eq!(state.project.folio(io).unwrap().label, "I/O pending edit");
 
-        cx.simulate_new_path_selection(|_| None);
+        let selected_path = saved_path.clone();
+        cx.simulate_new_path_selection(move |_| Some(selected_path));
         cx.run_until_parked();
+        let state = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
+        assert!(!state.save_pending);
+        assert!(
+            state.dirty,
+            "post-request edit stays dirty after save success"
+        );
+        click(cx, "undo");
+        let state = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
+        assert!(!state.dirty);
+        assert_eq!(state.project.folio(io).unwrap().label, "I/O");
+
+        click(cx, "close");
+        assert!(shell.read_with(cx, |shell, _| shell.editor.state_snapshot().is_none()));
+        click(cx, "reopen");
+        cx.run_until_parked();
+        let reopened = shell.read_with(cx, |shell, _| shell.editor.state_snapshot().unwrap());
+        assert_eq!(reopened.project.id, project_id);
+        assert_eq!(reopened.project.folio_order()[1], io);
+        assert_eq!(reopened.active_folio_id, io);
+        assert_eq!(reopened.project.folio(io).unwrap().label, "I/O");
+        assert_eq!(
+            reopened.project.variables.get("designer").unwrap(),
+            "A. Engineer"
+        );
+        assert!(!reopened.dirty);
+        assert_eq!(
+            shell.read_with(cx, |shell, _| {
+                shell
+                    .editor
+                    .view_state()
+                    .resolved_title_block(io)
+                    .unwrap()
+                    .author
+                    .text
+                    .clone()
+            }),
+            "A. Engineer"
+        );
+        fs::remove_file(saved_path).expect("temporary GPUI workflow project removes");
     }
 }

@@ -68,6 +68,7 @@ impl DesktopViewState {
 pub struct DesktopEditor {
     application: AthenaEditor,
     view: DesktopViewState,
+    recent_project_path: Option<PathBuf>,
 }
 
 impl DesktopEditor {
@@ -104,14 +105,14 @@ impl DesktopEditor {
             return Err("No desktop save request is pending".into());
         };
 
-        let (outcome, result, saved_name) = match path {
-            None => (SaveOutcome::Cancelled, Ok(()), None),
+        let (outcome, result, saved_name, saved_path) = match path {
+            None => (SaveOutcome::Cancelled, Ok(()), None, None),
             Some(path) => {
                 let saved_name = path
                     .file_name()
                     .map(|name| name.to_string_lossy().into_owned());
-                match FileSnapshotStore::new(path).write(&bytes) {
-                    Ok(()) => (SaveOutcome::Success, Ok(()), saved_name),
+                match FileSnapshotStore::new(&path).write(&bytes) {
+                    Ok(()) => (SaveOutcome::Success, Ok(()), saved_name, Some(path)),
                     Err(error) => {
                         let message = error.to_string();
                         (
@@ -120,6 +121,7 @@ impl DesktopEditor {
                             },
                             Err(message),
                             saved_name,
+                            None,
                         )
                     }
                 }
@@ -136,6 +138,9 @@ impl DesktopEditor {
             && let Some(name) = saved_name
         {
             self.view.status = Some(format!("Saved {name}"));
+        }
+        if let Some(path) = saved_path {
+            self.recent_project_path = Some(path);
         }
         result
     }
@@ -154,7 +159,7 @@ impl DesktopEditor {
         let name = path
             .file_name()
             .map(|name| name.to_string_lossy().into_owned());
-        let bytes = match FileSnapshotStore::new(path).read() {
+        let bytes = match FileSnapshotStore::new(&path).read() {
             Ok(bytes) => bytes,
             Err(error) => {
                 let message = error.to_string();
@@ -182,7 +187,18 @@ impl DesktopEditor {
         if let Some(name) = name {
             self.view.status = Some(format!("Opened {name}"));
         }
+        self.recent_project_path = Some(path);
         Ok(())
+    }
+
+    /// Reopens the last successfully saved or opened project through typed open messages.
+    pub fn reopen_recent_project(&mut self) -> Result<(), String> {
+        let Some(path) = self.recent_project_path.clone() else {
+            self.view.status = Some("No recent project is available".into());
+            return Err("No recent project is available".into());
+        };
+        self.dispatch(PortfolioMessage::RequestOpen);
+        self.complete_open_dialog(Some(path))
     }
 
     fn reduce_effect(&mut self, effect: &AthenaFrontendMessage) {
