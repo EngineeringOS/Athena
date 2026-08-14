@@ -364,19 +364,19 @@ document-priority behavior.
 
 **Traceability:** CAP-M006-001/002/003; Graphite Apache-2.0 adaptation.
 
-- [ ] **Step 1: Write failing metric and interaction tests**
+- [x] **Step 1: Write failing metric and interaction tests**
 
   Assert 28px title/tab bars, 24px status, 4px gutters, 6px panels, 2px
   rectangular controls, Source Sans Pro 14px, neutral `#111`-`#eee` tokens,
   root `20/64/16` bounds, tab activation, keyboard traversal, pointer resize,
   Escape abort, and 500ms double-click reset.
 
-- [ ] **Step 2: Run and confirm RED**
+- [x] **Step 2: Run and confirm RED**
 
   Run `npm test -- web/tests/shell-metrics.spec.js web/tests/shell-interactions.spec.js`.
   Expected: missing component/metric failures.
 
-- [ ] **Step 3: Adapt the Graphite hierarchy with attribution**
+- [x] **Step 3: Adapt the Graphite hierarchy with attribution**
 
   Put the Apache-2.0 copyright, license reference, and `Modified for Athena`
   notice in every source-derived file and summarize adaptations in `NOTICE.md`.
@@ -385,19 +385,19 @@ document-priority behavior.
   Remove Graphite portfolio, document, graph, node, raster/vector, storage,
   dialog product logic, branding, and stores.
 
-- [ ] **Step 4: Wire every interaction to Rust messages**
+- [x] **Step 4: Wire every interaction to Rust messages**
 
   Components receive serialized tree values and dispatch typed messages through
   `athena.js`. Pointer capture and focus remain DOM concerns. Use Lucide icons
   with tooltips and visible hover/focus/selected/disabled states; do not use
   text glyphs as icons.
 
-- [ ] **Step 5: Run focused web tests and build**
+- [x] **Step 5: Run focused web tests and build**
 
   Run both focused Playwright files and `npm run build`. Expected: all metric
   and interaction assertions pass with no console/page errors.
 
-- [ ] **Step 6: Commit the Graphite web shell**
+- [x] **Step 6: Commit the Graphite web shell**
 
   ```powershell
   git add web/src/shell web/tests/shell-metrics.spec.js web/tests/shell-interactions.spec.js docs/superpowers/verification/2026-08-14-m006-source-ledger.md

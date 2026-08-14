@@ -1,8 +1,9 @@
 <script>
   import { onMount } from "svelte";
 
-  import { startAthena } from "./lib/athena.js";
+  import { dispatchShell, startAthena } from "./lib/athena.js";
   import { createShellStore } from "./lib/shell-store.svelte.js";
+  import MainWindow from "./shell/MainWindow.svelte";
 
   const shellStore = createShellStore();
 
@@ -23,33 +24,6 @@
   aria-label="Athena electrical schematic editor"
 >
   {#if shellStore.shell}
-    <section data-shell-root aria-label="Electrical workspace"></section>
+    <MainWindow {shellStore} dispatch={dispatchShell} />
   {/if}
 </main>
-
-<style>
-  :global(*) {
-    box-sizing: border-box;
-  }
-
-  :global(html, body, #app) {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-  }
-
-  :global(body) {
-    overflow: hidden;
-    background: #111;
-    color: #eee;
-    font-family: "Source Sans Pro", "Segoe UI", sans-serif;
-    font-size: 14px;
-    letter-spacing: 0;
-  }
-
-  main {
-    width: 100%;
-    height: 100%;
-    background: #111;
-  }
-</style>
