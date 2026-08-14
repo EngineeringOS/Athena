@@ -66,6 +66,16 @@
   separate layers, with explicit state ownership and composable interactions.
   Use `gpui-component` for native component patterns where it fits. These are
   architectural and UX references, not product dependencies or source to copy.
+- Use `reference/OpenCADStudio` only as a supplemental evidence source for Rust
+  libraries, module design, architectural boundaries, and native/WASM
+  engineering patterns. It does not replace Graphite as shell authority or
+  QElectroTech as the electrical behavior oracle. Do not copy its CAD feature
+  set, command semantics, UI, file formats, 2D/3D product behavior, ribbon, or
+  other generic-CAD assumptions. Its `iced` widget, event, subscription,
+  pane-grid, and renderer patterns are toolkit-specific and must not enter the
+  GPUI desktop adapter. Athena remains an EPLAN/QElectroTech-class
+  electrical-schematic product only; Zed, GPUI, and `gpui-component` remain the
+  native implementation authorities.
 - For shell work, mirror Graphite's proven separation of document state,
   message/tool routing, viewport/canvas, overlays, panels, and platform
   wrappers first. Then fill those boundaries with Athena's electrical

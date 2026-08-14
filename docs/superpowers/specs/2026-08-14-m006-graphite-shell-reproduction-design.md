@@ -34,6 +34,7 @@ QElectroTech behavior one bounded slice at a time.
 | Theme and typography | Graphite | `reference/Graphite/frontend/src/components/Editor.svelte:89-128` defines the neutral color ramp; `Editor.svelte:253-270` defines Source Sans Pro at 14px. |
 | Default document priority | Graphite | `reference/Graphite/editor/src/messages/portfolio/utility_types.rs:376-428` gives the document 80% and a properties/layers column 20%. |
 | Native workspace composition | Zed | `reference/zed/crates/workspace/src/workspace.rs:1372-1430` owns center, left/right/bottom docks, title item, and status bar; `workspace.rs:8991-9460` renders and resizes them in GPUI. |
+| Rust/native-WASM architecture comparison | OpenCADStudio (supplemental) | `reference/OpenCADStudio/docs/native-vs-web.md:3-12,64-69` documents one Rust application's native/browser boundary and web platform adaptation. M006 may use toolkit-neutral library and architecture choices only as comparison evidence. Its `iced` UI/event/rendering patterns do not map to GPUI and must not be copied; Graphite remains shell authority and QElectroTech remains the electrical oracle. |
 | Project panel content | QElectroTech | `reference/qelectrotech-doc/source/users/interface/panels/projects_panel.rst:7-31` defines projects, folios, title blocks, activation, ordering, filtering, and properties entry points. |
 | Element-library content | QElectroTech | `reference/qelectrotech-doc/source/users/interface/panels/collections_panel.rst` defines the electrical element collection/search surface. |
 | Contextual properties | QElectroTech | `reference/qelectrotech-doc/source/users/interface/panels/selection_properties_panel.rst:7-35` defines selection-specific electrical properties and cross references. |
@@ -289,6 +290,12 @@ visual result. Passing tests alone is insufficient.
   only for the shell subset. Graphite product logic and branding are excluded.
 - QElectroTech supplies electrical surface names and future behavior, not Qt
   architecture, UI styling, XML, or source code.
+- OpenCADStudio supplies supplemental evidence for Rust libraries, module
+  design, architecture, and native/WASM boundaries only. Its CAD commands,
+  feature set, UI, file formats, 2D/3D product behavior, ribbon, and generic-CAD
+  assumptions are excluded. Its `iced` widget, subscription, pane-grid,
+  renderer, and event-loop implementation are also excluded from Athena's GPUI
+  desktop adapter.
 - No Theia/Electron code participates.
 
 ## Non-goals
