@@ -270,5 +270,6 @@ fn desktop_adapter_source_has_no_legacy_direct_editor_session_path() {
     }
     assert!(app.contains("AthenaEditor"));
     assert!(app.contains("AthenaFrontendMessage"));
-    assert!(panels.contains("LayoutMessage::CommitWidget"));
+    assert!(panels.contains("ShellMessage"));
+    assert!(!panels.contains("LayoutMessage::CommitWidget"));
 }
