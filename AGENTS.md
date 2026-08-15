@@ -2,8 +2,8 @@
 
 ## Product Direction
 
-- Athena is a clean-room Rust rewrite inspired by QElectroTech's user-facing
-  schematic-authoring capabilities, workflows, and interaction quality.
+- Athena is a source-based Rust product fork using Graphite's complete
+  Apache-2.0 codebase as its initial editor and shell implementation.
 - The product domain is electrical schematics only. Generic diagramming is not
   a first-class scope for this rewrite.
 - `reference/qelectrotech-source-mirror` and `reference/qelectrotech-doc` are
@@ -14,37 +14,35 @@
   inventory. `reference/zed`, `reference/gpui-component`, and
   `reference/Graphite` are the new-age foundation references for Rust module
   boundaries, editor-shell composition, component behavior, interaction
-  semantics, rendering/presentation separation, and desktop-first UX. Never
-  let the old-world implementation dictate the new-world architecture or UI.
-- Prefer learning from and reproducing proven reference patterns when that is
-  the fastest path: inspect the reference code and behavior, record the
-  evidence, then implement the applicable architecture and interaction in
-  Athena's own Rust modules. Copying a proven design pattern is encouraged;
-  copying source files, implementation code, dependencies, or unrelated
-  product assumptions is not.
+  semantics, rendering/presentation separation, and desktop-first UX. Graphite
+  is copied as the working product base; its UI and interaction remain intact
+  while its graphics-domain functions are replaced one by one with Athena's
+  electrical-schematic logic. QElectroTech, Zed, gpui-component, and
+  OpenCADStudio remain evidence sources and are not source-copy donors.
+- Preserve Graphite's Apache-2.0 license, copyright, repository revision, and
+  modification notices. Never describe copied Graphite code as clean-room or
+  Athena-authored. Do not selectively redraw or approximate the Graphite shell
+  before the unmodified imported baseline runs and is visually certified.
 - Legacy Theia/Electron code under `ide/` is out of scope. Do not extend,
   integrate with, or use it as an architectural constraint for the rewrite.
 
 ## Target Architecture
 
-- This is a greenfield project. At implementation time, select the latest
-  stable Rust toolchain and latest compatible stable releases of GPUI,
-  `gpui-component`, and supporting crates. Do not copy stale versions or lock
-  files from the reference checkouts without checking their current release and
-  compatibility status.
-- Build a Rust workspace with a platform-neutral core compiled for native and
-  `wasm32-unknown-unknown` targets.
+- Import Graphite revision `461ddbc8726c587a8abc536cab301b0b2206a54c` as the
+  initial root Rust workspace, including its pinned lockfiles and build tools.
+  Update dependencies only after the unchanged baseline is reproducible.
+- Keep Athena's electrical core platform-neutral and compile it for native and
+  `wasm32-unknown-unknown` when it is integrated into the Graphite base.
 - The core owns the domain model, validation, geometry, deterministic commands,
   undo/redo, persistence schema/migrations, rendering scene data, and sync
   contracts. It must not depend on UI, filesystem, browser, or cloud APIs.
-- The desktop application uses GPUI; `reference/gpui-component` may be used for
-  desktop UI components.
-- The browser is a distinct WASM frontend over the same Rust core. Do not assume
-  GPUI or `gpui-component` compiles to, or is the UI toolkit for, the web.
-- For the MVP, keep the browser layer deliberately small: HTML/JavaScript may
-  host the WASM module, map browser events and platform APIs, and provide the
-  minimum shell needed to render the editor. Do not move schematic behavior or
-  duplicate application state into TypeScript/JavaScript.
+- The imported Graphite Svelte/WASM frontend and desktop wrapper are the initial
+  shared product shell. Do not maintain a parallel hand-built GPUI/Svelte shell.
+  Zed, GPUI, and `gpui-component` remain optional later references, not M007
+  runtime constraints.
+- Keep electrical behavior in Rust. Svelte maps browser/desktop-wrapper events
+  and renders Graphite frontend messages; it must not become a second electrical
+  state authority.
 - Provide local-first persistence first. Design commands and document identities
   for later cloud projects, sharing, realtime collaboration, history, and
   conflict resolution from the outset.
@@ -61,11 +59,12 @@
   oracle, then redesign for ergonomic, composable, testable workflows rather
   than cloning its UI. When legacy behavior conflicts with modern interaction
   quality, preserve the electrical outcome and redesign the interaction.
-- Use Zed and Graphite as the primary editor-shell references: keep document
+- Use Graphite as the imported editor-shell implementation and Zed as a
+  supplemental architecture reference: keep document
   state, tools, viewport/canvas, commands, rendering, and platform wrappers as
   separate layers, with explicit state ownership and composable interactions.
-  Use `gpui-component` for native component patterns where it fits. These are
-  architectural and UX references, not product dependencies or source to copy.
+  Existing Graphite source retains its original provenance. New Athena code
+  must be clearly separated from unchanged or modified Graphite code.
 - Use `reference/OpenCADStudio` only as a supplemental evidence source for Rust
   libraries, module design, architectural boundaries, and native/WASM
   engineering patterns. It does not replace Graphite as shell authority or
