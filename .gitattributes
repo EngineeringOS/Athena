@@ -1,21 +1,10 @@
-* text=auto
+# Requires Git to check out files with the LF (not CRLF) line endings for files it automatically recognizes as being text-based
+# The `*` targets all files
+# The `text=auto` makes it apply a conversion only to files detected as text-based
+# The `eol=lf` sets the conversion to an LF line ending
+# https://git-scm.com/docs/gitattributes
+* text=auto eol=lf
 
-*.md text eol=lf
-*.txt text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.toml text eol=lf
-*.json text eol=lf
-*.xml text eol=lf
-*.kt text eol=lf
-*.kts text eol=lf
-*.ts text eol=lf
-*.tsx text eol=lf
-*.js text eol=lf
-*.jsx text eol=lf
-*.css text eol=lf
-*.html text eol=lf
-
-*.bat text eol=crlf
-*.cmd text eol=crlf
-*.ps1 text eol=crlf
+# Adds syntax highlighting to Graphite files on GitHub and minimizes diffs both locally and on GitHub
+*.graphite binary linguist-generated linguist-language=JSON
+/node-graph/graphene-cli/test_files/*.graphite text diff -linguist-generated
