@@ -34,7 +34,13 @@ runs and is captured.
 
 ## Replacement Contract
 
-- Existing Athena Rust crates under `rust/` are migration donors only.
+- The pre-M007 Athena runtime, custom shell, generated artifacts, and obsolete
+  milestone documents are recoverable from Git commit `45af3e6` and earlier;
+  they must not remain in the M007 working tree as migration donors.
+- Remove the old `rust/`, `web/`, root npm/Vite/Playwright files, custom
+  branding, root `LICENSE`, failed M006 evidence, and generated root dependency
+  or test-output directories. Retain `reference/`, `.agents/`, M007 artifacts,
+  and the imported Graphite source tree.
 - Replace Graphite functions one bounded electrical workflow at a time.
 - Each replacement begins with behavior evidence from QElectroTech, preserves
   the Graphite shell and interaction surface, and adds Rust tests plus a visual
@@ -46,6 +52,8 @@ runs and is captured.
 
 - `Copy Gate`: reference/import manifest has zero missing or changed files.
 - `License Gate`: Graphite Apache-2.0 license and provenance are present.
+- `Legacy Cleanup Gate`: no pre-M007 Athena runtime or custom-shell artifact
+  remains outside Git history.
 - `Web Baseline Gate`: imported Graphite Web editor runs and is captured.
 - `Desktop Baseline Gate`: imported desktop runs or is recorded `BLOCKED` with
   the exact missing prerequisite; Web success cannot be relabeled desktop pass.

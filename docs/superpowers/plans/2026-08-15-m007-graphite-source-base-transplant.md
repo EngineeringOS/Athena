@@ -10,8 +10,9 @@ source baseline before replacing any graphics function with electrical logic.
 
 **Architecture:** Graphite's root Rust workspace, Svelte/WASM frontend, editor
 backend, and desktop wrapper are copied unchanged into Athena's root with
-Apache-2.0 provenance. Existing Athena `rust/` crates remain isolated migration
-donors until later milestones connect one electrical workflow at a time.
+Apache-2.0 provenance. The pre-M007 Athena runtime and custom shell remain
+recoverable from Git history but are absent from the working tree. Later
+milestones replace one Graphite workflow at a time using source evidence.
 
 **Tech Stack:** Graphite's pinned Rust workspace; Svelte 5; Vite 8; WASM;
 Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
@@ -29,7 +30,7 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
   Apache-2.0 source-base rule.**
 - [x] **Step 2: Record the exact source revision, copy boundary, baseline gate,
   and one-function-at-a-time replacement rule.**
-- [ ] **Step 3: Commit only M007 governance documents.**
+- [x] **Step 3: Commit only M007 governance documents.**
 
 ### Task 2: Import The Complete Graphite Tree
 
@@ -38,15 +39,15 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
 - Exclude: `reference/Graphite/.git`
 - Create: `docs/superpowers/verification/2026-08-15-m007-graphite-source-manifest.csv`
 
-- [ ] **Step 1: Record the reference revision with `git -C reference/Graphite rev-parse HEAD`.**
-- [ ] **Step 2: Copy every top-level Graphite directory and file, including
+- [x] **Step 1: Record the reference revision with `git -C reference/Graphite rev-parse HEAD`.**
+- [x] **Step 2: Copy every top-level Graphite directory and file, including
   hidden configuration, except `.git`, into the repository root.**
-- [ ] **Step 3: Generate relative-path, byte-length, and SHA-256 rows for every
+- [x] **Step 3: Generate relative-path, byte-length, and SHA-256 rows for every
   reference file and its imported counterpart.**
-- [ ] **Step 4: Fail the Copy Gate if any imported file is missing or differs.**
-- [ ] **Step 5: Commit the unchanged Graphite baseline and manifest.**
+- [x] **Step 4: Fail the Copy Gate if any imported file is missing or differs.**
+- [x] **Step 5: Commit the unchanged Graphite baseline and manifest.**
 
-### Task 3: Install The Pinned Graphite Toolchain
+### Task 4: Install The Pinned Graphite Toolchain
 
 **Files:**
 - Use unchanged: `Cargo.toml`, `Cargo.lock`, `frontend/package.json`,
@@ -59,7 +60,27 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
   changing source or lockfiles.**
 - [ ] **Step 4: Record exact tool versions and any prerequisite blocker.**
 
-### Task 4: Run The Unmodified Web Baseline
+### Task 3: Remove The Superseded Athena Baseline
+
+**Files:**
+- Remove: `rust/`, `web/`, `branding/`
+- Remove: root `package.json`, `package-lock.json`, `vite.config.js`,
+  `playwright.config.js`, and `LICENSE`
+- Remove: root `node_modules/`, `test-results/`
+- Remove: superseded M001-M006 plans, specs, verification reports, and M006
+  screenshots
+- Preserve: `reference/`, `.agents/`, M007 artifacts, relevant source-research
+  inventories, imported Graphite source, and Graphite build outputs
+
+- [x] **Step 1: Prove the old implementation is recoverable from commit
+  `45af3e6` and earlier.**
+- [x] **Step 2: Resolve every deletion target to an exact path inside the
+  repository workspace.**
+- [x] **Step 3: Remove the superseded files and generated directories.**
+- [x] **Step 4: Verify no pre-M007 runtime, custom shell, or failed milestone
+  artifact remains in the working tree.**
+
+### Task 5: Run The Unmodified Web Baseline
 
 **Files:**
 - Use unchanged: `frontend/`, `frontend/wrapper/`, `editor/`, `node-graph/`
@@ -72,7 +93,7 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
   and keep the Web Baseline Gate open if it materially differs.**
 - [ ] **Step 5: Commit Web baseline evidence.**
 
-### Task 5: Run The Unmodified Desktop Baseline
+### Task 6: Run The Unmodified Desktop Baseline
 
 **Files:**
 - Use unchanged: `desktop/`
@@ -83,7 +104,7 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
 - [ ] **Step 3: If blocked, record the exact command, error, and prerequisite;
   do not substitute Athena's old GPUI shell.**
 
-### Task 6: Close M007 Baseline Gates
+### Task 7: Close M007 Baseline Gates
 
 **Files:**
 - Create: `docs/superpowers/verification/2026-08-15-m007-graphite-source-base-transplant.md`
