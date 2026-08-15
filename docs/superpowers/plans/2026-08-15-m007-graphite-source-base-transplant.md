@@ -53,12 +53,12 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
 - Use unchanged: `Cargo.toml`, `Cargo.lock`, `frontend/package.json`,
   `frontend/package-lock.json`, `tools/cargo-run/`
 
-- [ ] **Step 1: Run `npm ci` from `frontend/`.**
-- [ ] **Step 2: Install or verify the exact `wasm-bindgen-cli 0.2.121` required
+- [x] **Step 1: Run `npm ci` from `frontend/`.**
+- [x] **Step 2: Install or verify the exact `wasm-bindgen-cli 0.2.121` required
   by Graphite's workspace.**
-- [ ] **Step 3: Verify Graphite's other reported build prerequisites without
+- [x] **Step 3: Verify Graphite's other reported build prerequisites without
   changing source or lockfiles.**
-- [ ] **Step 4: Record exact tool versions and any prerequisite blocker.**
+- [x] **Step 4: Record exact tool versions and any prerequisite blocker.**
 
 ### Task 3: Remove The Superseded Athena Baseline
 
@@ -86,10 +86,10 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
 - Use unchanged: `frontend/`, `frontend/wrapper/`, `editor/`, `node-graph/`
 - Create: `docs/superpowers/verification/assets/m007/graphite-web-1440x900.png`
 
-- [ ] **Step 1: Run the imported Graphite root's documented Web development command.**
-- [ ] **Step 2: Verify the editor loads without page or console errors.**
-- [ ] **Step 3: Capture the unmodified editor at 1440x900.**
-- [ ] **Step 4: Compare the capture with the user-provided Graphite reference
+- [x] **Step 1: Run the imported Graphite root's documented Web development command.**
+- [x] **Step 2: Verify the editor loads without page or console errors.**
+- [x] **Step 3: Capture the unmodified editor at 1440x900.**
+- [x] **Step 4: Compare the capture with the user-provided Graphite reference
   and keep the Web Baseline Gate open if it materially differs.**
 - [ ] **Step 5: Commit Web baseline evidence.**
 
@@ -99,9 +99,9 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
 - Use unchanged: `desktop/`
 - Create when runnable: `docs/superpowers/verification/assets/m007/graphite-desktop-1440x900.png`
 
-- [ ] **Step 1: Run the imported desktop command with its exact Windows prerequisites.**
-- [ ] **Step 2: Capture the full 1440x900 desktop client if it starts.**
-- [ ] **Step 3: If blocked, record the exact command, error, and prerequisite;
+- [x] **Step 1: Run the imported desktop command with its exact Windows prerequisites.**
+- [x] **Step 2: Capture the full 1440x900 desktop client if it starts.**
+- [x] **Step 3: If blocked, record the exact command, error, and prerequisite;
   do not substitute Athena's old GPUI shell.**
 
 ### Task 7: Close M007 Baseline Gates
@@ -110,8 +110,8 @@ Graphite desktop wrapper; PowerShell SHA-256 manifest verification.
 - Create: `docs/superpowers/verification/2026-08-15-m007-graphite-source-base-transplant.md`
 - Modify: `docs/superpowers/plans/2026-08-15-m007-graphite-source-base-transplant.md`
 
-- [ ] **Step 1: Record Copy, License, Web, Desktop, Visual, and User gates.**
-- [ ] **Step 2: Keep the imported Web and Desktop targets running when stable.**
+- [x] **Step 1: Record Copy, License, Web, Desktop, Visual, and User gates.**
+- [x] **Step 2: Keep the imported Web and Desktop targets running when stable.**
 - [ ] **Step 3: Commit and push verified M007 evidence to `next-001`.**
 - [ ] **Step 4: Start M008 with exactly one QElectroTech electrical workflow;
   preserve the certified Graphite shell throughout the replacement.**
